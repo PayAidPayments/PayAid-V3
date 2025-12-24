@@ -45,15 +45,17 @@ interface Website {
 }
 
 export default async function PublicWebsitePage({
+  // Handle Next.js 16+ async params
+  const resolvedParams = await params
   params,
 }: {
-  params: { subdomain: string }
+  params: Promise<{ subdomain: string }>
 }) {
   // Debug logging
-  console.log('🔍 Public website lookup for subdomain:', params.subdomain)
+  console.log('🔍 Public website lookup for subdomain:', resolvedParams.subdomain)
   
   const website = await prisma.website.findUnique({
-    where: { subdomain: params.subdomain },
+    where: { subdomain: resolvedParams.subdomain },
     include: {
       tenant: {
         select: {
@@ -84,7 +86,7 @@ export default async function PublicWebsitePage({
   } : 'NOT FOUND')
 
   if (!website) {
-    console.log('❌ Website not found for subdomain:', params.subdomain)
+    console.log('❌ Website not found for subdomain:', resolvedParams.subdomain)
     notFound()
   }
 
@@ -135,7 +137,7 @@ export default async function PublicWebsitePage({
               )}
               {section.cta && (
                 <a
-                  href={`/sites/${params.subdomain}${section.cta.link}`}
+                  href={`/sites/${resolvedParams.subdomain}${section.cta.link}`}
                   className="inline-block bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
                 >
                   {section.cta.text}
@@ -181,12 +183,12 @@ export default async function PublicWebsitePage({
           <nav className="bg-white border-b sticky top-0 z-10 shadow-sm">
             <div className="max-w-7xl mx-auto px-4 py-4">
               <div className="flex items-center justify-between">
-                <a href={`/sites/${params.subdomain}`} className="text-xl font-bold text-gray-900">{website.name}</a>
+                <a href={`/sites/${resolvedParams.subdomain}`} className="text-xl font-bold text-gray-900">{website.name}</a>
                 <div className="flex gap-4">
                   {website.pages.map((page) => (
                     <a
                       key={page.id}
-                      href={`/sites/${params.subdomain}${page.path}`}
+                      href={`/sites/${resolvedParams.subdomain}${page.path}`}
                       className={`text-sm font-medium ${
                         page.path === currentPath
                           ? 'text-blue-600'
@@ -237,7 +239,7 @@ export default async function PublicWebsitePage({
                   {website.pages.map((page) => (
                     <a
                       key={page.id}
-                      href={`/sites/${params.subdomain}${page.path}`}
+                      href={`/sites/${resolvedParams.subdomain}${page.path}`}
                       className="text-gray-400 text-sm hover:text-white"
                     >
                       {page.title}
