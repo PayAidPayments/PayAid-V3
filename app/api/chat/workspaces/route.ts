@@ -130,10 +130,10 @@ export async function GET(request: NextRequest) {
                   },
                 },
               },
-              _count: {
-                select: {
-                  messages: true,
-                },
+            },
+            _count: {
+              select: {
+                messages: true,
               },
             },
             orderBy: { createdAt: 'asc' },
