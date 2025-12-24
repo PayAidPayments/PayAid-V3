@@ -1,0 +1,36 @@
+name: Cron Jobs
+
+on:
+  schedule:
+    # Recalculate scores every hour
+    - cron: '0 * * * *'
+    # Send scheduled emails every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  recalculate-scores:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Recalculate Lead Scores
+        run: |
+          curl -X POST ${{ secrets.APP_URL }}/api/cron/recalculate-scores \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -w "\nHTTP Status: %{http_code}\n"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+  send-emails:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Scheduled Emails
+        run: |
+          curl -X POST ${{ secrets.APP_URL }}/api/cron/send-scheduled-emails \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -w "\nHTTP Status: %{http_code}\n"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

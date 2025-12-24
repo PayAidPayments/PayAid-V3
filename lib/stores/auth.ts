@@ -1,0 +1,252 @@
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+
+interface User {
+  id: string
+  email: string
+  name: string | null
+  role: string
+  avatar: string | null
+}
+
+interface Tenant {
+  id: string
+  name: string
+  subdomain: string | null
+  plan: string
+  // NEW: Module licensing (Phase 1)
+  licensedModules?: string[]
+  subscriptionTier?: string
+}
+
+interface AuthState {
+  user: User | null
+  tenant: Tenant | null
+  token: string | null
+  isAuthenticated: boolean
+  isLoading: boolean
+  login: (email: string, password: string) => Promise<void>
+  register: (data: {
+    email: string
+    password: string
+    name: string
+    tenantName: string
+    subdomain: string
+  }) => Promise<void>
+  logout: () => void
+  fetchUser: () => Promise<void>
+}
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      tenant: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false, // Start as false - will be set during hydration if needed
+
+      login: async (email: string, password: string) => {
+        set({ isLoading: true })
+        try {
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          })
+
+          if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Login failed')
+          }
+
+          const data = await response.json()
+          
+          set({
+            user: data.user,
+            tenant: {
+              ...data.tenant,
+              licensedModules: data.tenant?.licensedModules || [],
+              subscriptionTier: data.tenant?.subscriptionTier || 'free',
+            },
+            token: data.token,
+            isAuthenticated: true,
+            isLoading: false,
+          })
+        } catch (error) {
+          set({ isLoading: false })
+          throw error
+        }
+      },
+
+      register: async (data) => {
+        set({ isLoading: true })
+        try {
+          const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+          })
+
+          if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Registration failed')
+          }
+
+          const result = await response.json()
+          
+          set({
+            user: result.user,
+            tenant: result.tenant,
+            token: result.token,
+            isAuthenticated: true,
+            isLoading: false,
+          })
+        } catch (error) {
+          set({ isLoading: false })
+          throw error
+        }
+      },
+
+      logout: () => {
+        set({
+          user: null,
+          tenant: null,
+          token: null,
+          isAuthenticated: false,
+        })
+      },
+
+      fetchUser: async () => {
+        const { token } = get()
+        if (!token) {
+          set({ isAuthenticated: false, isLoading: false })
+          return
+        }
+
+        set({ isLoading: true })
+        try {
+          // Add timeout to prevent hanging - reduced to 2 seconds for faster failure
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 2000) // 2 second timeout
+
+          const response = await fetch('/api/auth/me', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            signal: controller.signal,
+          })
+
+          clearTimeout(timeoutId)
+
+          if (!response.ok) {
+            // Only clear token if it's a 401 (unauthorized)
+            if (response.status === 401) {
+              set({
+                isAuthenticated: false,
+                isLoading: false,
+                user: null,
+                tenant: null,
+                token: null,
+              })
+              return
+            }
+            throw new Error('Failed to fetch user')
+          }
+
+          const userData = await response.json()
+          
+          // CRITICAL: Always use tenant data from API response (database source of truth)
+          // If token had wrong tenantId, API will return correct tenant from database
+          const tenantFromDb = userData.tenant
+          
+          // If tenant ID from API doesn't match token's tenantId, we need to refresh token
+          const tokenTenantId = (() => {
+            try {
+              const decoded = JSON.parse(atob(token.split('.')[1]))
+              return decoded.tenantId
+            } catch {
+              return null
+            }
+          })()
+          
+          if (tenantFromDb && tokenTenantId && tenantFromDb.id !== tokenTenantId) {
+            console.warn(
+              `⚠️ Tenant ID mismatch: Token has ${tokenTenantId}, ` +
+              `Database has ${tenantFromDb.id}. Token needs refresh.`
+            )
+            // Token will be refreshed on next login, but use DB tenant for now
+          }
+          
+          set({
+            user: {
+              id: userData.id,
+              email: userData.email,
+              name: userData.name,
+              role: userData.role,
+              avatar: userData.avatar,
+            },
+            tenant: tenantFromDb ? {
+              id: tenantFromDb.id, // Always use database tenant ID (source of truth)
+              name: tenantFromDb.name,
+              subdomain: tenantFromDb.subdomain,
+              plan: tenantFromDb.plan,
+              licensedModules: tenantFromDb.licensedModules || [],
+              subscriptionTier: tenantFromDb.subscriptionTier || 'free',
+            } : null,
+            isAuthenticated: true,
+            isLoading: false,
+          })
+        } catch (error) {
+          console.error('Failed to fetch user:', error)
+          
+          // Handle abort/timeout errors
+          if (error instanceof Error && error.name === 'AbortError') {
+            console.warn('User fetch timed out after 5 seconds')
+          }
+          
+          // Don't clear token on network errors, only on auth errors
+          // The token might still be valid, just a network issue
+          set({
+            isLoading: false,
+            // Keep existing auth state if token exists
+            isAuthenticated: !!token,
+          })
+        }
+      },
+    }),
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({
+        token: state.token,
+        user: state.user,
+        tenant: state.tenant ? {
+          ...state.tenant,
+          licensedModules: state.tenant.licensedModules || [],
+          subscriptionTier: state.tenant.subscriptionTier || 'free',
+        } : null,
+        isAuthenticated: state.isAuthenticated,
+      }),
+      onRehydrateStorage: () => {
+        return (state, error) => {
+          // After rehydration, set isLoading to false immediately
+          if (error) {
+            console.error('Rehydration error:', error)
+          }
+          if (state) {
+            // Immediately set loading to false after rehydration
+            state.isLoading = false
+            // If we have a token but not authenticated, mark as authenticated
+            // (the token was persisted, so it should be valid)
+            if (state.token && !state.isAuthenticated) {
+              state.isAuthenticated = true
+            }
+          } else {
+            // If state is null/undefined, still set loading to false immediately
+            useAuthStore.setState({ isLoading: false })
+          }
+        }
+      },
+    }
+  )
+)

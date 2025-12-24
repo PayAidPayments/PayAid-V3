@@ -1,0 +1,306 @@
+// Additional Super SaaS Features - Landing Page Builder
+model LandingPage {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  slug        String   @unique // URL slug
+  status      String   @default("DRAFT") // DRAFT, PUBLISHED, ARCHIVED
+  
+  // Content
+  contentJson Json     // Page builder content
+  metaTitle   String?
+  metaDescription String?
+  
+  // A/B Testing
+  variantA    String?  // Variant A content JSON
+  variantB    String?  // Variant B content JSON
+  activeVariant String? // A or B
+  
+  // Analytics
+  views       Int      @default(0)
+  conversions Int      @default(0)
+  conversionRate Decimal? @db.Decimal(5, 2)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([slug])
+}
+
+// Additional Super SaaS Features - Checkout Page Builder
+model CheckoutPage {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  slug        String   @unique
+  
+  // Payment methods
+  paymentMethods Json   // {upi: true, cards: true, netbanking: true, wallets: true}
+  
+  // Coupons
+  couponsEnabled Boolean @default(true)
+  
+  // Order summary
+  showOrderSummary Boolean @default(true)
+  showShippingOptions Boolean @default(true)
+  
+  // Content
+  contentJson Json     // Customizable checkout form
+  
+  status      String   @default("DRAFT") // DRAFT, PUBLISHED
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([slug])
+}
+
+// Additional Super SaaS Features - AI Website Chatbot
+model WebsiteChatbot {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  websiteId   String?  // Linked website
+  website     Website? @relation(fields: [websiteId], references: [id])
+  
+  // Appearance
+  position    String   @default("bottom-right") // bottom-right, bottom-left, etc.
+  primaryColor String  @default("#007bff")
+  greetingMessage String @default("Hello! How can I help you today?")
+  
+  // Behavior
+  autoGreet  Boolean  @default(true)
+  autoGreetDelay Int  @default(3000) // milliseconds
+  leadQualification Boolean @default(true) // Auto-qualify leads
+  
+  // AI Settings
+  aiModel    String   @default("gpt-3.5-turbo")
+  temperature Decimal @default(0.7) @db.Decimal(3, 2)
+  
+  // Knowledge base
+  faqEnabled Boolean  @default(true)
+  knowledgeBase Json? // FAQ knowledge base
+  
+  isActive   Boolean  @default(true)
+  
+  conversations ChatbotConversation[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([tenantId, websiteId])
+  @@index([tenantId, isActive])
+}
+
+model ChatbotConversation {
+  id          String   @id @default(cuid())
+  chatbotId   String
+  chatbot     WebsiteChatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  
+  visitorId   String   // Anonymous visitor ID
+  sessionId   String   // Session ID
+  
+  // Lead info (if qualified)
+  contactId   String?  // Created/linked contact
+  leadId      String?   // Created lead
+  
+  // Messages
+  messages    Json     // Array of messages
+  
+  // Analytics
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+  messageCount Int     @default(0)
+  qualified   Boolean  @default(false)
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([chatbotId])
+  @@index([visitorId])
+  @@index([contactId])
+  @@index([leadId])
+}
+
+// Additional Super SaaS Features - Event Management
+model Event {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?
+  slug        String   @unique
+  
+  // Event details
+  startDate   DateTime
+  endDate     DateTime
+  timezone    String   @default("Asia/Kolkata")
+  
+  // Location
+  locationType String  @default("PHYSICAL") // PHYSICAL, VIRTUAL, HYBRID
+  address     String?
+  city        String?
+  state       String?
+  virtualUrl  String?  // For virtual events
+  
+  // Registration
+  registrationEnabled Boolean @default(true)
+  maxAttendees Int?
+  registrationDeadline DateTime?
+  priceInr     Decimal? @db.Decimal(10, 2)
+  
+  // Streaming
+  streamingEnabled Boolean @default(false)
+  streamingUrl     String?
+  
+  // Status
+  status      String   @default("DRAFT") // DRAFT, PUBLISHED, LIVE, ENDED, CANCELLED
+  
+  registrations EventRegistration[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([slug])
+  @@index([startDate])
+}
+
+model EventRegistration {
+  id          String   @id @default(cuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  // Registrant info
+  name        String
+  email       String
+  phone       String?
+  company     String?
+  
+  // Registration
+  status      String   @default("REGISTERED") // REGISTERED, CONFIRMED, CANCELLED, ATTENDED
+  registeredAt DateTime @default(now())
+  confirmedAt DateTime?
+  attendedAt  DateTime?
+  
+  // Payment
+  paidAmountInr Decimal? @db.Decimal(10, 2)
+  paymentStatus String?  // PENDING, PAID, REFUNDED
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([eventId, email])
+  @@index([tenantId])
+  @@index([eventId])
+  @@index([email])
+  @@index([status])
+}
+
+// Additional Features - Email Template Library
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  category    String?  // welcome, invoice, marketing, transactional, etc.
+  subject     String
+  
+  // Content
+  htmlContent String
+  textContent String?
+  
+  // Variables
+  variables   Json?    // Available variables like {{name}}, {{company}}
+  
+  // Usage
+  timesUsed   Int      @default(0)
+  lastUsedAt  DateTime?
+  
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([tenantId, category])
+  @@index([tenantId, isActive])
+}
+
+// Additional Features - Custom Dashboards
+model CustomDashboard {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?
+  
+  // Layout
+  layoutJson  Json     // Widget positions and sizes
+  widgets     Json     // Array of widget configurations
+  
+  isDefault   Boolean  @default(false)
+  isPublic    Boolean  @default(false) // Shareable with team
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([tenantId, isDefault])
+}
+
+// Additional Features - Advanced Reports
+model CustomReport {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?
+  
+  // Report configuration
+  reportType  String   // sales, marketing, finance, hr, custom
+  filters     Json     // Report filters
+  columns     Json     // Selected columns
+  grouping    Json?    // Grouping configuration
+  sorting     Json?    // Sorting configuration
+  
+  // Scheduling
+  scheduleEnabled Boolean @default(false)
+  scheduleFrequency String? // daily, weekly, monthly
+  scheduleDay      Int?    // Day of week/month
+  scheduleTime     String? // HH:mm format
+  recipients       Json?    // Email recipients
+  
+  // Export
+  exportFormats Json?    // [csv, pdf, excel]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([tenantId, reportType])
+}

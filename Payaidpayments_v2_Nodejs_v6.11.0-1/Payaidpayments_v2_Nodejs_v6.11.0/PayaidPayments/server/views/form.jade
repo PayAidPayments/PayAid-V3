@@ -1,0 +1,115 @@
+// Created by Mallikarjun on 06-07-2017.
+html
+	head
+		script(src='http://code.jquery.com/jquery-1.11.1.min.js')
+		script(src='/public/js/payment.js')
+		
+	body
+		h2 PayaidPayments Form
+		
+		#error(style='display: none;color:red;') Fill all mandatory fields
+		br
+		form(action='#{action}', method='post', name='payaidpaymentsForm')
+			input(type='hidden', name='api_key', value='#{api_key}')
+			input(type='hidden', name='hash', value='')
+			label Amount* 
+			input(name='amount', value='',required)
+			br
+			br
+
+			label Name *
+			input(name='name', value='')
+			br
+			br
+			label Email *
+			input(name='email', value='')
+			br
+			br
+
+			label phone *
+			input(name='phone', value='')
+			br
+			br
+
+			label Address Line 1 *
+			input(name='address_line_1', value='',required)
+			br
+			br
+
+			label Address Line 2 
+			input(name='address_line_2', value='')
+			br
+			br
+
+			label Order Id *
+			input(name='order_id', value='')
+			br
+			br
+			
+			label Description *
+			input(name='description', value='')
+			br
+			br
+			
+			label Mode *
+			input(name='mode', value='TEST')
+			br
+			br
+			
+			label Return Url *
+			input(name='return_url', value='http://localhost:8888/paymentResponse')
+			br
+			br
+			
+			label Currency *
+			input(name='currency', value='INR')
+			br
+			br
+
+			label Country *
+			input(name='country', value='IND')
+			br
+			br
+
+			label Zip Code *
+			input(name='zip_code', value='')
+			br
+			br
+
+			label State *
+			input(name='state', value='')
+			br
+			br
+
+			label City *
+			input(name='city', value='')
+			br
+			br
+
+			label Udf1 	
+			input(name='udf1', value='')
+			br
+			br
+
+			label Udf2 
+			input(name='udf2', value='')
+			br
+			br
+
+			label Udf3 
+			input(name='udf3', value='')
+			br
+			br
+
+			label Udf4 
+			input(name='udf4', value='')
+			br
+			br
+
+			label Udf5 
+			input(name='udf5', value='')
+			br
+			br
+
+			input(type='submit', value='Submit')
+

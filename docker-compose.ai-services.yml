@@ -1,0 +1,159 @@
+services:
+  # API Gateway - Routes requests to appropriate AI services
+  ai-gateway:
+    build:
+      context: ./services/ai-gateway
+      dockerfile: Dockerfile
+    container_name: payaid-ai-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - TEXT_TO_SPEECH_URL=http://text-to-speech:7860
+      - SPEECH_TO_TEXT_URL=http://speech-to-text:7860
+      - IMAGE_TO_TEXT_URL=http://image-to-text:7860
+    depends_on:
+      - text-to-speech
+      - speech-to-text
+      - image-to-text
+    volumes:
+      - ./services/ai-gateway:/app
+    restart: unless-stopped
+    networks:
+      - ai-services
+
+  # Text to Speech Service (Coqui TTS)
+  text-to-speech:
+    build:
+      context: ./services/text-to-speech
+      dockerfile: Dockerfile
+    container_name: payaid-text-to-speech
+    ports:
+      - "7861:7860"
+    environment:
+      - MODEL_NAME=tts_models/multilingual/multi-dataset/xtts_v2
+      - HF_HOME=/models
+    volumes:
+      - text-to-speech-models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          memory: 6G
+          cpus: '1.5'
+    restart: unless-stopped
+    networks:
+      - ai-services
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Speech to Text Service (Whisper)
+  speech-to-text:
+    build:
+      context: ./services/speech-to-text
+      dockerfile: Dockerfile
+    container_name: payaid-speech-to-text
+    ports:
+      - "7862:7860"
+    environment:
+      - MODEL_NAME=openai/whisper-large-v3
+      - HF_HOME=/models
+    volumes:
+      - speech-to-text-models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          memory: 6G
+          cpus: '1.5'
+    restart: unless-stopped
+    networks:
+      - ai-services
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Image to Text Service (BLIP-2 + OCR)
+  image-to-text:
+    build:
+      context: ./services/image-to-text
+      dockerfile: Dockerfile
+    container_name: payaid-image-to-text
+    ports:
+      - "7864:7860"
+    environment:
+      - BLIP_MODEL=Salesforce/blip-2-opt-2.7b
+      - OCR_MODEL=paddleocr
+      - HF_HOME=/models
+    volumes:
+      - image-to-text-models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          memory: 8G
+          cpus: '1.5'
+    restart: unless-stopped
+    networks:
+      - ai-services
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Redis for caching and rate limiting
+  # Note: Using existing Redis from main docker-compose if available
+  # If you need a separate Redis, uncomment below and change port
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: payaid-ai-redis
+  #   ports:
+  #     - "6380:6379"  # Changed port to avoid conflict
+  #   volumes:
+  #     - redis-ai-data:/data
+  #   command: redis-server --appendonly yes
+  #   restart: unless-stopped
+  #   networks:
+  #     - ai-services
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+
+volumes:
+  text-to-speech-models:
+    driver: local
+  speech-to-text-models:
+    driver: local
+  image-to-text-models:
+    driver: local
+  # redis-ai-data:
+  #   driver: local
+
+networks:
+  ai-services:
+    driver: bridge

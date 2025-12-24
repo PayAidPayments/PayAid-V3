@@ -1,0 +1,348 @@
+// Super SaaS Features - Website Analytics
+model Website {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  domain      String?  @unique // Custom domain
+  subdomain   String?  @unique // payaid-generated subdomain
+  status      String   @default("DRAFT") // DRAFT, PUBLISHED, ARCHIVED
+  
+  // SEO
+  metaTitle   String?
+  metaDescription String?
+  faviconUrl  String?
+  
+  // Analytics
+  trackingCode String  @unique // Unique tracking code for pixel
+  
+  visits      WebsiteVisit[]
+  sessions    WebsiteSession[]
+  events      WebsiteEvent[]
+  heatmaps    WebsiteHeatmap[]
+  pages       WebsitePage[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([domain])
+  @@index([subdomain])
+  @@index([trackingCode])
+}
+
+model WebsitePage {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  
+  path        String   // /, /about, /contact, etc.
+  title       String
+  contentJson Json     // Page builder content (blocks, elements)
+  isPublished Boolean  @default(false)
+  
+  visits      WebsiteVisit[]
+  events      WebsiteEvent[]
+  heatmaps    WebsiteHeatmap[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([websiteId, path])
+  @@index([websiteId])
+  @@index([websiteId, isPublished])
+}
+
+model WebsiteVisit {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  pageId      String?
+  page        WebsitePage? @relation(fields: [pageId], references: [id])
+  sessionId   String?
+  session     WebsiteSession? @relation(fields: [sessionId], references: [id])
+  
+  // Visitor info
+  ipAddress   String?
+  userAgent   String?
+  referrer    String?
+  country     String?
+  city        String?
+  device      String? // desktop, mobile, tablet
+  browser     String?
+  os          String?
+  
+  // Visit data
+  visitedAt   DateTime @default(now())
+  duration    Int?     // seconds
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([tenantId, websiteId])
+  @@index([websiteId])
+  @@index([sessionId])
+  @@index([visitedAt])
+}
+
+model WebsiteSession {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  
+  sessionId   String   @unique // Client-side session ID
+  visitorId   String?  // Anonymous visitor ID
+  
+  // Session data
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+  duration    Int?     // seconds
+  pageViews   Int      @default(1)
+  isBounce    Boolean  @default(true) // Single page visit
+  
+  // Recording
+  recordingUrl String? // Session recording video URL
+  
+  visits      WebsiteVisit[]
+  events      WebsiteEvent[]
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([tenantId, websiteId])
+  @@index([websiteId])
+  @@index([sessionId])
+  @@index([startedAt])
+}
+
+model WebsiteEvent {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  pageId      String?
+  page        WebsitePage? @relation(fields: [pageId], references: [id])
+  sessionId   String?
+  session     WebsiteSession? @relation(fields: [sessionId], references: [id])
+  
+  eventType   String   // click, scroll, form_submit, download, etc.
+  eventName   String   // button_click, form_submit, etc.
+  elementId   String?  // HTML element ID
+  elementText String?  // Text content of element
+  elementSelector String? // CSS selector
+  
+  // Event data
+  metadata    Json?    // Additional event data
+  occurredAt  DateTime @default(now())
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([tenantId, websiteId])
+  @@index([websiteId])
+  @@index([sessionId])
+  @@index([eventType])
+  @@index([occurredAt])
+}
+
+model WebsiteHeatmap {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  pageId      String?
+  page        WebsitePage? @relation(fields: [pageId], references: [id])
+  
+  heatmapType String   // click, scroll, move, attention
+  dataJson    Json     // Heatmap data (coordinates, intensity)
+  imageUrl    String?  // Rendered heatmap image
+  
+  // Date range
+  startDate   DateTime
+  endDate     DateTime
+  
+  createdAt DateTime @default(now())
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([tenantId, websiteId])
+  @@index([websiteId])
+  @@index([pageId])
+  @@index([heatmapType])
+}
+
+// Super SaaS Features - AI Calling Bot
+model AICall {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Call info
+  phoneNumber String   // Incoming/outgoing number
+  direction   String   @default("INBOUND") // INBOUND, OUTBOUND
+  status      String   @default("RINGING") // RINGING, ANSWERED, COMPLETED, FAILED, BUSY, NO_ANSWER
+  
+  // Twilio
+  twilioCallSid String? @unique
+  twilioAccountSid String?
+  
+  // Call data
+  startedAt   DateTime @default(now())
+  answeredAt  DateTime?
+  endedAt     DateTime?
+  duration    Int?     // seconds
+  
+  // AI handling
+  handledByAI Boolean  @default(true)
+  aiIntent    String?  // detected intent
+  aiConfidence Decimal? @db.Decimal(5, 2)
+  
+  // CRM integration
+  contactId   String?  // Linked contact
+  dealId      String?  // Linked deal
+  leadId      String?  // Created lead
+  
+  recordings  CallRecording[]
+  transcripts CallTranscript[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([tenantId, phoneNumber])
+  @@index([tenantId, status])
+  @@index([twilioCallSid])
+  @@index([startedAt])
+}
+
+model CallRecording {
+  id          String   @id @default(cuid())
+  callId      String
+  call        AICall   @relation(fields: [callId], references: [id], onDelete: Cascade)
+  
+  recordingUrl String  // S3/MinIO URL
+  duration    Int      // seconds
+  format      String   @default("mp3") // mp3, wav
+  
+  createdAt DateTime @default(now())
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([callId])
+}
+
+model CallTranscript {
+  id          String   @id @default(cuid())
+  callId      String
+  call        AICall   @relation(fields: [callId], references: [id], onDelete: Cascade)
+  
+  transcript  String   // Full transcript text
+  segments    Json?    // Timestamped segments
+  language    String   @default("en")
+  
+  // Sentiment analysis
+  sentiment   String?  // positive, negative, neutral
+  sentimentScore Decimal? @db.Decimal(5, 2)
+  
+  // Key insights
+  keyPoints   Json?    // Extracted key points
+  actionItems Json?    // Action items extracted
+  
+  createdAt DateTime @default(now())
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([callId])
+  @@index([sentiment])
+}
+
+model CallFAQ {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  question    String
+  answer      String
+  category    String?  // pricing, product, support, etc.
+  
+  // Usage tracking
+  timesUsed   Int      @default(0)
+  lastUsedAt  DateTime?
+  
+  isActive    Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([tenantId, category])
+  @@index([tenantId, isActive])
+}
+
+// Super SaaS Features - Logo Generator
+model Logo {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  businessName String
+  industry     String?
+  style        String?  // modern, traditional, playful, elegant, minimal, bold
+  colors       Json?    // Array of hex colors
+  
+  // Generation
+  prompt       String   // AI prompt used
+  modelUsed    String?  // dall-e, stable-diffusion, etc.
+  
+  // Status
+  status       String   @default("GENERATING") // GENERATING, COMPLETED, FAILED
+  
+  variations   LogoVariation[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model LogoVariation {
+  id          String   @id @default(cuid())
+  logoId      String
+  logo        Logo     @relation(fields: [logoId], references: [id], onDelete: Cascade)
+  
+  // Image
+  imageUrl    String   // S3/MinIO URL
+  thumbnailUrl String? // Thumbnail URL
+  
+  // Customization
+  colors      Json?    // Custom colors applied
+  fonts       Json?    // Fonts used
+  iconStyle   String?  // Icon style variant
+  
+  // Export
+  exportedFormats Json? // {png: url, svg: url, pdf: url}
+  
+  isSelected Boolean  @default(false) // Selected as primary logo
+  
+  createdAt DateTime @default(now())
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([logoId])
+  @@index([tenantId, isSelected])
+}
