@@ -94,7 +94,14 @@ export async function POST(request: NextRequest) {
     const payaid = new PayAidPayments(adminConfig)
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
     
-    const itemNames = validated.items.map(i => i.name || i.moduleId || i.bundleId).join(', ')
+    const itemNames = validated.items.map(i => {
+      if (i.type === 'module' && i.moduleId) {
+        return i.moduleId
+      } else if (i.type === 'bundle' && i.bundleId) {
+        return i.bundleId
+      }
+      return `${i.type} (${i.tier || 'default'})`
+    }).join(', ')
     
     const paymentResponse = await payaid.getPaymentRequestUrl({
       order_id: order.orderNumber,
