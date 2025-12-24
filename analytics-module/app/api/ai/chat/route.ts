@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireModuleAccess, handleLicenseError } from '@payaid/auth'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { getOllamaClient } from '@/lib/ai/ollama'
 import { getGroqClient } from '@/lib/ai/groq'
 import { getHuggingFaceClient } from '@/lib/ai/huggingface'
