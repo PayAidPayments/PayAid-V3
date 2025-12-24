@@ -16,7 +16,7 @@ export async function PUT(request: NextRequest) {
     // Get user's sales rep record
     const salesRep = await prisma.salesRep.findFirst({
       where: {
-        userId: user.id,
+        userId: user.userId,
         tenantId: user.tenantId,
       },
     })
