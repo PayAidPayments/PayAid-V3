@@ -35,8 +35,9 @@ export async function GET(request: NextRequest) {
     const b2c: any[] = []
 
     invoices.forEach(invoice => {
-      if (invoice.customer?.customerGSTIN) {
-        const gstin = invoice.customer.customerGSTIN
+      // Check invoice's customerGSTIN first, then fall back to customer's gstin
+      const gstin = invoice.customerGSTIN || invoice.customer?.gstin
+      if (gstin) {
         if (!b2b[gstin]) {
           b2b[gstin] = []
         }
