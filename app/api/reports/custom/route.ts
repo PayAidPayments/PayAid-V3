@@ -23,7 +23,7 @@ const createReportSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Check analytics module license
-    const { tenantId, userId } = await requireAnalyticsAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'analytics')
 
     const searchParams = request.nextUrl.searchParams
     const reportType = searchParams.get('reportType')
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check analytics module license
-    const { tenantId, userId } = await requireAnalyticsAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'analytics')
 
     const body = await request.json()
     const validated = createReportSchema.parse(body)
