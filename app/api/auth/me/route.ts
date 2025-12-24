@@ -36,7 +36,14 @@ export async function GET(request: NextRequest) {
     const userData = await Promise.race([
       prisma.user.findUnique({
         where: { id: payload.userId },
-        include: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          avatar: true,
+          createdAt: true,
+          lastLoginAt: true,
           tenant: {
             select: {
               id: true,
@@ -52,16 +59,6 @@ export async function GET(request: NextRequest) {
               maxStorage: true,
             },
           },
-        },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          avatar: true,
-          createdAt: true,
-          lastLoginAt: true,
-          tenant: true,
         },
       }),
       new Promise((_, reject) => 
