@@ -45,12 +45,12 @@ interface Website {
 }
 
 export default async function PublicWebsitePage({
-  // Handle Next.js 16+ async params
-  const resolvedParams = await params
   params,
 }: {
   params: Promise<{ subdomain: string }>
 }) {
+  // Handle Next.js 16+ async params
+  const resolvedParams = await params
   // Debug logging
   console.log('🔍 Public website lookup for subdomain:', resolvedParams.subdomain)
   
@@ -257,6 +257,7 @@ export default async function PublicWebsitePage({
     </html>
   )
 }
+
 
 
 
