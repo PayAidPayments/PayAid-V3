@@ -64,9 +64,8 @@ export async function POST(request: NextRequest) {
       if (moduleIdsJson) {
         moduleIds = JSON.parse(moduleIdsJson)
       } else {
-        // Fallback: parse from order notes
-        const notes = order.notes ? JSON.parse(order.notes) : {}
-        moduleIds = notes.moduleIds || []
+        // Module IDs should be provided in UDF3 - if not available, log warning
+        console.warn('Module IDs not provided in webhook UDF3 field')
       }
     } catch (e) {
       console.error('Failed to parse module IDs:', e)
@@ -167,19 +166,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Update order with payment info
+    // Note: Order model doesn't have notes field - payment info is logged separately
     await prisma.order.update({
       where: { id: order.id },
       data: {
         status: orderStatus,
-        notes: JSON.stringify({
-          ...(order.notes ? JSON.parse(order.notes) : {}),
-          paymentStatus,
-          transactionId,
-          responseCode,
-          responseMessage,
-          paymentDatetime: body.payment_datetime || new Date().toISOString(),
-        }),
       },
+    })
+    
+    // Log payment details separately (could be stored in a payment_logs table if needed)
+    console.log('Payment webhook processed:', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      paymentStatus,
+      transactionId,
+      responseCode,
+      responseMessage,
+      paymentDatetime: body.payment_datetime || new Date().toISOString(),
     })
 
     return NextResponse.json({
