@@ -57,7 +57,15 @@ export async function GET(request: NextRequest) {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          subdomain: true,
+          status: true,
+          subscriptionTier: true,
+          licensedModules: true,
+          createdAt: true,
           subscription: {
             select: {
               id: true,
@@ -74,18 +82,6 @@ export async function GET(request: NextRequest) {
               users: true,
             },
           },
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          subdomain: true,
-          status: true,
-          subscriptionTier: true,
-          licensedModules: true,
-          createdAt: true,
-          subscription: true,
-          _count: true,
         },
       }),
       prisma.tenant.count({ where }),
