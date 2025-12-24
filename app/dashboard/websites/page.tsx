@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams, usePathname } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
 import { ModuleGate } from '@/components/modules/ModuleGate'
+import { useAuthStore } from '@/lib/stores/auth'
 
 interface Website {
   id: string
@@ -26,6 +27,25 @@ interface Website {
 
 function WebsitesPageContent() {
   const router = useRouter()
+  const pathname = usePathname()
+  const { tenant } = useAuthStore()
+  
+  // Extract tenant ID from pathname (e.g., /dashboard/[tenantId]/websites)
+  // or get from auth store
+  const pathParts = pathname.split('/').filter(Boolean)
+  const tenantIdFromPath = pathParts.length > 1 && pathParts[0] === 'dashboard' && pathParts[1].length > 15 
+    ? pathParts[1] 
+    : null
+  const tenantId = tenantIdFromPath || tenant?.id
+
+  // Helper to create tenant-aware URLs
+  const getUrl = (path: string) => {
+    if (tenantId) {
+      const cleanPath = path.replace(/^\/dashboard\/?/, '')
+      return `/dashboard/${tenantId}${cleanPath ? '/' + cleanPath : ''}`
+    }
+    return path
+  }
 
   const { data, isLoading, refetch } = useQuery<{ websites: Website[] }>({
     queryKey: ['websites'],
@@ -45,7 +65,7 @@ function WebsitesPageContent() {
           <h1 className="text-3xl font-bold text-gray-900">Websites</h1>
           <p className="mt-2 text-gray-600">Manage your websites and track analytics</p>
         </div>
-        <Link href="/dashboard/websites/new">
+        <Link href={getUrl('/dashboard/websites/new')}>
           <Button>Create Website</Button>
         </Link>
       </div>
@@ -55,11 +75,40 @@ function WebsitesPageContent() {
       ) : websites.length === 0 ? (
         <Card>
           <CardContent className="py-12">
-            <div className="text-center">
-              <p className="text-gray-500 mb-4">No websites found</p>
-              <Link href="/dashboard/websites/new">
-                <Button>Create Your First Website</Button>
-              </Link>
+            <div className="text-center max-w-2xl mx-auto">
+              <div className="text-6xl mb-4">🏗️</div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">No Websites Yet</h2>
+              <p className="text-gray-600 mb-6">
+                Create your first website to get started with the AI Website Builder. 
+                You'll be able to generate React components, use templates, and build beautiful websites with AI.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link href={getUrl('/dashboard/websites/new')}>
+                  <Button size="lg" className="w-full sm:w-auto">
+                    Create Your First Website
+                  </Button>
+                </Link>
+              </div>
+              <div className="mt-8 pt-8 border-t">
+                <p className="text-sm text-gray-500 mb-3">What you'll get:</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="text-2xl mb-2">🤖</div>
+                    <h3 className="font-semibold mb-1">AI Builder</h3>
+                    <p className="text-sm text-gray-600">Generate React components from natural language</p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="text-2xl mb-2">📦</div>
+                    <h3 className="font-semibold mb-1">Templates</h3>
+                    <p className="text-sm text-gray-600">Choose from pre-built component templates</p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="text-2xl mb-2">💡</div>
+                    <h3 className="font-semibold mb-1">AI Suggestions</h3>
+                    <p className="text-sm text-gray-600">Get AI-powered code improvements</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -105,12 +154,17 @@ function WebsitesPageContent() {
                   </code>
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <Link href={`/dashboard/analytics?websiteId=${website.id}`} className="flex-1">
+                  <Link href={getUrl(`/dashboard/websites/${website.id}/builder`)} className="flex-1">
+                    <Button size="sm" className="w-full">
+                      🏗️ Builder
+                    </Button>
+                  </Link>
+                  <Link href={getUrl(`/dashboard/analytics?websiteId=${website.id}`)} className="flex-1">
                     <Button variant="outline" size="sm" className="w-full">
                       Analytics
                     </Button>
                   </Link>
-                  <Link href={`/dashboard/websites/${website.id}`} className="flex-1">
+                  <Link href={getUrl(`/dashboard/websites/${website.id}`)} className="flex-1">
                     <Button variant="outline" size="sm" className="w-full">
                       Edit
                     </Button>

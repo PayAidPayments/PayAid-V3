@@ -22,7 +22,7 @@ export async function GET(
     // Handle Next.js 16+ async params
     const resolvedParams = await params
     // Check CRM module license
-    const { tenantId } = await requireCRMAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const deal = await prisma.deal.findFirst({
       where: {
@@ -64,7 +64,7 @@ export async function PATCH(
     // Handle Next.js 16+ async params
     const resolvedParams = await params
     // Check CRM module license
-    const { tenantId } = await requireCRMAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const body = await request.json()
     const validated = updateDealSchema.parse(body)
@@ -142,7 +142,7 @@ export async function DELETE(
     // Handle Next.js 16+ async params
     const resolvedParams = await params
     // Check CRM module license
-    const { tenantId } = await requireCRMAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'crm')
 
     // Check if deal exists and belongs to tenant
     const existing = await prisma.deal.findFirst({

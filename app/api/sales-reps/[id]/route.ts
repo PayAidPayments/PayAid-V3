@@ -16,7 +16,7 @@ export async function GET(
 ) {
   try {
     // Check crm module license
-    const { tenantId, userId } = await requireCRMAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
     const rep = await prisma.salesRep.findFirst({
       where: {
@@ -98,7 +98,7 @@ export async function PATCH(
 ) {
   try {
     // Check crm module license
-    const { tenantId, userId } = await requireCRMAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
     // Only admins/owners can update sales reps
     if (user.role !== 'owner' && user.role !== 'admin') {
@@ -178,7 +178,7 @@ export async function DELETE(
 ) {
   try {
     // Check crm module license
-    const { tenantId, userId } = await requireCRMAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
     // Only admins/owners can delete sales reps
     if (user.role !== 'owner' && user.role !== 'admin') {

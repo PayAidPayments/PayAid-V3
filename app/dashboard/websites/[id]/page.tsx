@@ -182,6 +182,11 @@ export default function WebsiteDetailPage() {
         <div className="flex gap-2">
           {!isEditing && (
             <>
+              <Link href={`/dashboard/websites/${id}/builder`}>
+                <Button>
+                  🏗️ AI Builder
+                </Button>
+              </Link>
               <Link href={`/dashboard/websites/${id}/preview`}>
                 <Button variant="outline">
                   👁️ Preview Website

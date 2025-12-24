@@ -31,29 +31,56 @@ export function useContacts(params?: { page?: number; limit?: number; type?: str
         })
         if (!response.ok) {
           let error: any
+          let errorText = ''
           try {
-            const errorText = await response.text()
-            try {
-              error = JSON.parse(errorText)
-            } catch {
-              error = { error: errorText || `HTTP ${response.status}: ${response.statusText}` }
+            errorText = await response.text()
+            // Check if errorText is empty or just whitespace
+            if (!errorText || errorText.trim() === '') {
+              error = { 
+                error: `HTTP ${response.status}: ${response.statusText}`,
+                message: `No error details provided by server`,
+              }
+            } else {
+              try {
+                error = JSON.parse(errorText)
+                // Check if parsed result is an empty object
+                if (Object.keys(error).length === 0) {
+                  error = { 
+                    error: `HTTP ${response.status}: ${response.statusText}`,
+                    message: `Server returned empty error object`,
+                    rawResponse: errorText,
+                  }
+                }
+              } catch {
+                error = { 
+                  error: errorText || `HTTP ${response.status}: ${response.statusText}`,
+                  message: errorText || `Failed to fetch contacts (${response.status})`,
+                }
+              }
             }
           } catch (parseError) {
-            error = { error: `Failed to fetch contacts (${response.status})` }
+            error = { 
+              error: `Failed to fetch contacts (${response.status})`,
+              message: `Failed to parse error response`,
+              parseError: parseError instanceof Error ? parseError.message : String(parseError),
+            }
           }
           
-          // Log the full error details
+          // Log the full error details with better diagnostics
           const errorStr = typeof error === 'string' ? error : JSON.stringify(error, null, 2)
           console.error('Contacts API error:', {
             status: response.status,
             statusText: response.statusText,
+            url: queryUrl,
             error: errorStr,
             fullError: error,
+            hasErrorText: !!errorText,
+            errorTextLength: errorText?.length || 0,
           })
           
           // Also log the raw error text if available
-          if (error?.error && typeof error.error === 'string') {
-            console.error('Raw error message:', error.error)
+          if (errorText && errorText.trim()) {
+            console.error('Raw error response:', errorText)
           }
           
           // Include more details in error message

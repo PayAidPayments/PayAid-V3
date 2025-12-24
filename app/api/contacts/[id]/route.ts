@@ -31,7 +31,7 @@ export async function GET(
   try {
     // Handle Next.js 16+ async params
     const resolvedParams = await params
-    const { tenantId } = await requireCRMAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const contact = await prisma.contact.findFirst({
       where: {
@@ -88,7 +88,7 @@ export async function PATCH(
   try {
     // Handle Next.js 16+ async params
     const resolvedParams = await params
-    const { tenantId } = await requireCRMAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const body = await request.json()
     const validated = updateContactSchema.parse(body)
@@ -159,7 +159,7 @@ export async function DELETE(
   try {
     // Handle Next.js 16+ async params
     const resolvedParams = await params
-    const { tenantId } = await requireCRMAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'crm')
 
     // Check if contact exists and belongs to tenant
     const existing = await prisma.contact.findFirst({

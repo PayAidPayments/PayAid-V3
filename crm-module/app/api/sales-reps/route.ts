@@ -13,7 +13,7 @@ const createSalesRepSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Check crm module license
-    const { tenantId, userId } = await requireCRMAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
     const reps = await prisma.salesRep.findMany({
       where: {
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check crm module license
-    const { tenantId, userId } = await requireCRMAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
     // Only admins/owners can create sales reps
     if (user.role !== 'owner' && user.role !== 'admin') {

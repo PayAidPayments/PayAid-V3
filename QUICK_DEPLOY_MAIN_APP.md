@@ -25,20 +25,25 @@
    - **Make it PUBLIC** (uncheck "Keep this code private")
 6. Click **"Publish Repository"**
 
-### Step 2: Deploy to Vercel (5 min)
+### Step 2: Deploy to Vercel (10-15 min)
 
+**📖 For detailed instructions, see [VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md)**
+
+**Quick Steps:**
 1. Go to: https://vercel.com/dashboard
 2. Click **"Add New..." → "Project"**
 3. **Import:** `PayAidPayments/PayAid-V3`
-4. **Settings:**
-   - Framework: Next.js (auto-detected)
-   - Root Directory: `/`
-   - Build Command: `npm run build`
-   - Output Directory: `.next`
-5. **Environment Variables:**
-   - Add variables from `.env.example`
-   - Database URL, API keys, etc.
-6. Click **"Deploy"**
+4. **Configure Environment Variables** (REQUIRED before deployment):
+   - See [VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md) for complete list
+   - **Minimum Required:**
+     - `DATABASE_URL`
+     - `JWT_SECRET`
+     - `NEXTAUTH_URL` (update after deployment with your Vercel URL)
+     - `NEXTAUTH_SECRET`
+     - `ENCRYPTION_KEY`
+     - `APP_URL` and `NEXT_PUBLIC_APP_URL`
+5. Click **"Deploy"**
+6. **After deployment:** Update `NEXTAUTH_URL`, `APP_URL`, and `NEXT_PUBLIC_APP_URL` with your actual Vercel URL and redeploy
 
 ### Step 3: Get Your URL & Share (1 min)
 
@@ -87,11 +92,18 @@ Add these in Vercel project settings:
 
 - [x] Git initialized
 - [x] Code committed
-- [ ] Published to GitHub (public)
+- [x] Published to GitHub (public) ✅ **COMPLETE**
 - [ ] Deployed to Vercel
 - [ ] Environment variables added
 - [ ] Single URL obtained
 - [ ] Shared with team
+
+---
+
+## 📚 Detailed Deployment Guide
+
+For comprehensive step-by-step instructions with all environment variables, see:
+- **[VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md)** - Complete Vercel deployment guide
 
 ---
 
