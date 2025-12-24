@@ -16,15 +16,17 @@ const updateDealSchema = z.object({
 // GET /api/deals/[id] - Get a single deal
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     // Check CRM module license
     const { tenantId } = await requireCRMAccess(request)
 
     const deal = await prisma.deal.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -56,9 +58,11 @@ export async function GET(
 // PATCH /api/deals/[id] - Update a deal
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     // Check CRM module license
     const { tenantId } = await requireCRMAccess(request)
 
@@ -68,7 +72,7 @@ export async function PATCH(
     // Check if deal exists and belongs to tenant
     const existing = await prisma.deal.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -94,7 +98,7 @@ export async function PATCH(
     if (validated.lostReason !== undefined) updateData.lostReason = validated.lostReason
 
     const deal = await prisma.deal.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData,
       include: {
         contact: {
@@ -132,16 +136,18 @@ export async function PATCH(
 // DELETE /api/deals/[id] - Delete a deal
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     // Check CRM module license
     const { tenantId } = await requireCRMAccess(request)
 
     // Check if deal exists and belongs to tenant
     const existing = await prisma.deal.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -154,7 +160,7 @@ export async function DELETE(
     }
 
     await prisma.deal.delete({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     })
 
     return NextResponse.json({ success: true })
