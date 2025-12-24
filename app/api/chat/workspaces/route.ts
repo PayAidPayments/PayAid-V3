@@ -112,19 +112,18 @@ export async function GET(request: NextRequest) {
       workspace = await prisma.chatWorkspace.findUnique({
         where: { id: newWorkspace.id },
         include: {
-          channels: {
-            include: {
-              members: {
-                include: {
-                  member: {
-                    include: {
-                      user: {
-                        select: {
-                          id: true,
-                          name: true,
-                          email: true,
-                          avatar: true,
-                        },
+        channels: {
+          include: {
+            members: {
+              include: {
+                member: {
+                  include: {
+                    user: {
+                      select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        avatar: true,
                       },
                     },
                   },
@@ -136,8 +135,9 @@ export async function GET(request: NextRequest) {
                 messages: true,
               },
             },
-            orderBy: { createdAt: 'asc' },
           },
+          orderBy: { createdAt: 'asc' },
+        },
         members: {
           include: {
             user: {
