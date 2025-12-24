@@ -46,15 +46,16 @@ export async function GET(
       )
     }
 
-    // Parse order notes for subscription info
-    let subscriptionInfo: any = {}
-    try {
-      if (order.notes) {
-        subscriptionInfo = JSON.parse(order.notes)
-      }
-    } catch (e) {
-      // Ignore parse errors
-    }
+    // Get order items for subscription info
+    const orderItems = await prisma.orderItem.findMany({
+      where: { orderId: order.id },
+      select: {
+        productName: true,
+        quantity: true,
+        price: true,
+        total: true,
+      },
+    })
 
     return NextResponse.json({
       id: order.id,
@@ -65,8 +66,8 @@ export async function GET(
       tax: order.tax,
       createdAt: order.createdAt.toISOString(),
       paidAt: order.paidAt?.toISOString(),
-      modules: subscriptionInfo.moduleIds || [],
-      items: subscriptionInfo.items || [],
+      modules: [], // Module info not stored in Order model - would need separate tracking
+      items: orderItems,
     })
   } catch (error) {
     console.error('Get order error:', error)
