@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Add empty turbopack config to silence error and use webpack instead
+  turbopack: {},
   webpack: (config, { isServer }) => {
     // Fix for Windows path issues
     if (!isServer) {
