@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         pageId,
         sessionId: session.id,
         eventType: validated.eventType,
-        eventName: validated.eventName,
+        eventName: validated.eventName || validated.eventType,
         elementId: validated.elementId,
         elementText: validated.elementText,
         elementSelector: validated.elementSelector,
