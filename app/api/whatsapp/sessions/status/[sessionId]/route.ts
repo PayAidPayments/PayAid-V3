@@ -6,14 +6,14 @@ import axios from 'axios'
 // GET /api/whatsapp/sessions/status/[sessionId] - Check session connection status
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     // Check WhatsApp module license
     const { tenantId, userId } = await requireModuleAccess(request, 'marketing')
 
     const session = await prisma.whatsappSession.findUnique({
-      where: { id: params.sessionId },
+      where: { id: resolvedParams.sessionId },
       include: { account: true },
     })
 
@@ -53,7 +53,7 @@ export async function GET(
         // Update if changed
         if (newStatus !== session.status || phoneNumber !== session.phoneNumber) {
           await prisma.whatsappSession.update({
-            where: { id: params.sessionId },
+            where: { id: resolvedParams.sessionId },
             data: {
               status: newStatus,
               phoneNumber,

@@ -8,13 +8,13 @@ import { getAllocationSuggestions } from '@/lib/sales-automation/lead-allocation
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
     const { tenantId, userId } = await requireCRMAccess(request)
 
-    const contactId = params.id
+    const contactId = resolvedParams.id
     const suggestions = await getAllocationSuggestions(contactId, tenantId)
 
     return NextResponse.json({

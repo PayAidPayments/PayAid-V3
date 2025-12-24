@@ -15,7 +15,7 @@ const updateWebsiteSchema = z.object({
 // GET /api/websites/[id] - Get single website
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
@@ -23,7 +23,7 @@ export async function GET(
 
     const website = await prisma.website.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -60,7 +60,7 @@ export async function GET(
 // PATCH /api/websites/[id] - Update website
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
@@ -71,7 +71,7 @@ export async function PATCH(
 
     const existing = await prisma.website.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -89,7 +89,7 @@ export async function PATCH(
         const domainExists = await prisma.website.findUnique({
           where: { domain: validated.domain },
         })
-        if (domainExists && domainExists.id !== params.id) {
+        if (domainExists && domainExists.id !== resolvedParams.id) {
           return NextResponse.json(
             { error: 'Domain already taken' },
             { status: 400 }
@@ -103,7 +103,7 @@ export async function PATCH(
         const subdomainExists = await prisma.website.findUnique({
           where: { subdomain: validated.subdomain },
         })
-        if (subdomainExists && subdomainExists.id !== params.id) {
+        if (subdomainExists && subdomainExists.id !== resolvedParams.id) {
           return NextResponse.json(
             { error: 'Subdomain already taken' },
             { status: 400 }
@@ -113,7 +113,7 @@ export async function PATCH(
     }
 
     const website = await prisma.website.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: {
         ...(validated.name && { name: validated.name }),
         ...(validated.domain !== undefined && { domain: validated.domain }),

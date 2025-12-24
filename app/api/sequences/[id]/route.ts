@@ -8,13 +8,13 @@ import { prisma } from '@payaid/db'
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
     const { tenantId, userId } = await requireCRMAccess(request)
 
-    const enrollmentId = params.id
+    const enrollmentId = resolvedParams.id
 
     // Verify enrollment belongs to tenant
     const enrollment = await prisma.nurtureEnrollment.findFirst({

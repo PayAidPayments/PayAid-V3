@@ -26,7 +26,7 @@ const updateProductSchema = z.object({
 // GET /api/products/[id] - Get a single product
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check CRM module license (products are part of sales/CRM)
@@ -34,7 +34,7 @@ export async function GET(
 
     const product = await prisma.product.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -63,7 +63,7 @@ export async function GET(
 // PATCH /api/products/[id] - Update a product
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check CRM module license (products are part of sales/CRM)
@@ -75,7 +75,7 @@ export async function PATCH(
     // Check if product exists and belongs to tenant
     const existing = await prisma.product.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -105,13 +105,13 @@ export async function PATCH(
     }
 
     const product = await prisma.product.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: validated,
     })
 
     // Invalidate cache
     await cache.deletePattern(`products:${tenantId}:*`)
-    await cache.delete(`product:${params.id}`)
+    await cache.delete(`product:${resolvedParams.id}`)
 
     return NextResponse.json(product)
   } catch (error) {
@@ -138,7 +138,7 @@ export async function PATCH(
 // DELETE /api/products/[id] - Delete a product
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check CRM module license (products are part of sales/CRM)
@@ -147,7 +147,7 @@ export async function DELETE(
     // Check if product exists and belongs to tenant
     const existing = await prisma.product.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -160,12 +160,12 @@ export async function DELETE(
     }
 
     await prisma.product.delete({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     })
 
     // Invalidate cache
     await cache.deletePattern(`products:${tenantId}:*`)
-    await cache.delete(`product:${params.id}`)
+    await cache.delete(`product:${resolvedParams.id}`)
 
     return NextResponse.json({ success: true })
   } catch (error) {

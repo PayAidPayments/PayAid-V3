@@ -7,7 +7,7 @@ import { Decimal } from '@prisma/client/runtime/library'
 // POST /api/hr/payroll/cycles/[id]/generate - Generate payroll runs for all employees
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -15,7 +15,7 @@ export async function POST(
 
     const cycle = await prisma.payrollCycle.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -52,7 +52,7 @@ export async function POST(
           where: {
             tenantId_cycleId_employeeId: {
               tenantId: tenantId,
-              cycleId: params.id,
+              cycleId: resolvedParams.id,
               employeeId: employee.id,
             },
           },
@@ -95,7 +95,7 @@ export async function POST(
         // Create payroll run
         const payrollRun = await prisma.payrollRun.create({
           data: {
-            cycleId: params.id,
+            cycleId: resolvedParams.id,
             employeeId: employee.id,
             grossEarningsInr: calculation.grossEarningsInr,
             grossDeductionsInr: calculation.grossDeductionsInr,
@@ -127,7 +127,7 @@ export async function POST(
 
     // Update cycle status
     await prisma.payrollCycle.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: { status: 'IN_PROGRESS' },
     })
 

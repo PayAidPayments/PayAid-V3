@@ -7,7 +7,7 @@ import { GSTCalculation } from '@/lib/invoicing/gst'
 // GET /api/invoices/[id]/pdf - Download invoice PDF
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check invoicing module license
@@ -15,7 +15,7 @@ export async function GET(
 
     const invoice = await prisma.invoice.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {

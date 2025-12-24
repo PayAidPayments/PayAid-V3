@@ -13,7 +13,7 @@ const updateSalaryStructureSchema = z.object({
 // GET /api/hr/payroll/salary-structures/[id] - Get a single salary structure
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -21,7 +21,7 @@ export async function GET(
 
     const structure = await prisma.salaryStructure.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -55,7 +55,7 @@ export async function GET(
 // PATCH /api/hr/payroll/salary-structures/[id] - Update a salary structure
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -63,7 +63,7 @@ export async function PATCH(
 
     const existing = await prisma.salaryStructure.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -84,7 +84,7 @@ export async function PATCH(
         where: {
           tenantId: tenantId,
           isDefault: true,
-          id: { not: params.id },
+          id: { not: resolvedParams.id },
         },
         data: {
           isDefault: false,
@@ -99,7 +99,7 @@ export async function PATCH(
     if (validated.isDefault !== undefined) updateData.isDefault = validated.isDefault
 
     const structure = await prisma.salaryStructure.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData,
     })
 
@@ -128,7 +128,7 @@ export async function PATCH(
 // DELETE /api/hr/payroll/salary-structures/[id] - Delete a salary structure
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -136,7 +136,7 @@ export async function DELETE(
 
     const structure = await prisma.salaryStructure.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -164,7 +164,7 @@ export async function DELETE(
     }
 
     await prisma.salaryStructure.delete({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     })
 
     return NextResponse.json({ message: 'Salary structure deleted successfully' })

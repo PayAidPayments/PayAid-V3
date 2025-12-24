@@ -5,7 +5,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 // PUT /api/hr/onboarding/instances/[id]/tasks/[taskId]/complete - Mark task as complete
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; taskId: string } }
+  { params }: { params: Promise<{ id: string; taskId: string }> }
 ) {
   try {
     // Check HR module license
@@ -13,7 +13,7 @@ export async function PUT(
 
     const instanceTask = await prisma.onboardingInstanceTask.findFirst({
       where: {
-        instanceId: params.id,
+        instanceId: resolvedParams.id,
         taskId: params.taskId,
         instance: {
           tenantId: tenantId,
@@ -48,7 +48,7 @@ export async function PUT(
     // Check if all tasks are completed
     const allTasks = await prisma.onboardingInstanceTask.findMany({
       where: {
-        instanceId: params.id,
+        instanceId: resolvedParams.id,
       },
     })
 
@@ -56,7 +56,7 @@ export async function PUT(
 
     if (allCompleted) {
       await prisma.onboardingInstance.update({
-        where: { id: params.id },
+        where: { id: resolvedParams.id },
         data: {
           status: 'COMPLETED',
           completedAt: new Date(),

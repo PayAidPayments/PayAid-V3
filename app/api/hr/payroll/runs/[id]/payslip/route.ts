@@ -6,7 +6,7 @@ import { generatePayslipPDF } from '@/lib/invoicing/pdf'
 // GET /api/hr/payroll/runs/[id]/payslip - Generate and download payslip PDF
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -14,7 +14,7 @@ export async function GET(
 
     const payrollRun = await prisma.payrollRun.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {

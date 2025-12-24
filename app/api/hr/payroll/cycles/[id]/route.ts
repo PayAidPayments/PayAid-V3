@@ -10,7 +10,7 @@ const updatePayrollCycleSchema = z.object({
 // GET /api/hr/payroll/cycles/[id] - Get a single payroll cycle
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -18,7 +18,7 @@ export async function GET(
 
     const cycle = await prisma.payrollCycle.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -64,7 +64,7 @@ export async function GET(
 // PATCH /api/hr/payroll/cycles/[id] - Update payroll cycle status
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -72,7 +72,7 @@ export async function PATCH(
 
     const existing = await prisma.payrollCycle.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -88,7 +88,7 @@ export async function PATCH(
     const validated = updatePayrollCycleSchema.parse(body)
 
     const cycle = await prisma.payrollCycle.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: {
         status: validated.status,
       },

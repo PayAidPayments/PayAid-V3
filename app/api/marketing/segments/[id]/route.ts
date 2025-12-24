@@ -13,7 +13,7 @@ const updateSegmentSchema = z.object({
 // GET /api/marketing/segments/[id] - Get a single segment
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check CRM module license (marketing segments are part of CRM)
@@ -21,7 +21,7 @@ export async function GET(
 
     const segment = await prisma.segment.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -64,7 +64,7 @@ export async function GET(
 // PUT /api/marketing/segments/[id] - Update a segment
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check CRM module license (marketing segments are part of CRM)
@@ -76,7 +76,7 @@ export async function PUT(
     // Check if segment exists and belongs to tenant
     const existingSegment = await prisma.segment.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -86,7 +86,7 @@ export async function PUT(
     }
 
     const segment = await prisma.segment.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: {
         ...(validated.name && { name: validated.name }),
         ...(validated.description !== undefined && { description: validated.description }),
@@ -140,7 +140,7 @@ export async function PUT(
 // DELETE /api/marketing/segments/[id] - Delete a segment
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check CRM module license (marketing segments are part of CRM)
@@ -149,7 +149,7 @@ export async function DELETE(
     // Check if segment exists and belongs to tenant
     const segment = await prisma.segment.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -159,7 +159,7 @@ export async function DELETE(
     }
 
     await prisma.segment.delete({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     })
 
     return NextResponse.json({ success: true })

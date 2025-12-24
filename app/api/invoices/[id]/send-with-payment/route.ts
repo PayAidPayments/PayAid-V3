@@ -11,7 +11,7 @@ import { mediumPriorityQueue } from '@/lib/queue/bull'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check invoicing module license
@@ -23,7 +23,7 @@ export async function POST(
     // Get invoice with customer and tenant details
     const invoice = await prisma.invoice.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {

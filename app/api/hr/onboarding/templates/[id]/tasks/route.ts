@@ -14,7 +14,7 @@ const createTaskSchema = z.object({
 // GET /api/hr/onboarding/templates/[id]/tasks - Get tasks for a template
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -22,7 +22,7 @@ export async function GET(
 
     const template = await prisma.onboardingTemplate.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -36,7 +36,7 @@ export async function GET(
 
     const tasks = await prisma.onboardingTask.findMany({
       where: {
-        templateId: params.id,
+        templateId: resolvedParams.id,
       },
       orderBy: { order: 'asc' },
     })
@@ -58,7 +58,7 @@ export async function GET(
 // POST /api/hr/onboarding/templates/[id]/tasks - Add a task to template
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -66,7 +66,7 @@ export async function POST(
 
     const template = await prisma.onboardingTemplate.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -83,7 +83,7 @@ export async function POST(
 
     const task = await prisma.onboardingTask.create({
       data: {
-        templateId: params.id,
+        templateId: resolvedParams.id,
         title: validated.title,
         description: validated.description,
         assignedToRole: validated.assignedToRole,

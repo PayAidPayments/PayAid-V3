@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db/prisma'
 // GET /api/industries/[industry] - Get industry information and enabled features
 export async function GET(
   request: NextRequest,
-  { params }: { params: { industry: string } }
+  { params }: { params: Promise<{ industry: string }> }
 ) {
   try {
     // Check crm module license
@@ -21,7 +21,7 @@ export async function GET(
       },
     })
 
-    if (!tenant || tenant.industry !== params.industry) {
+    if (!tenant || tenant.industry !== resolvedParams.industry) {
       return NextResponse.json(
         { error: 'Industry mismatch or not set' },
         { status: 403 }
@@ -61,7 +61,7 @@ export async function GET(
 // POST /api/industries/[industry] - Set industry and auto-enable features
 export async function POST(
   request: NextRequest,
-  { params }: { params: { industry: string } }
+  { params }: { params: Promise<{ industry: string }> }
 ) {
   try {
     // Check crm module license
@@ -74,14 +74,14 @@ export async function POST(
     const tenant = await prisma.tenant.update({
       where: { id: tenantId },
       data: {
-        industry: params.industry,
+        industry: resolvedParams.industry,
         industrySubType: industrySubType || null,
         industrySettings: industrySettings || null,
       },
     })
 
     // Auto-enable features based on industry
-    const industryFeatures = getDefaultEnabledFeatures(params.industry)
+    const industryFeatures = getDefaultEnabledFeatures(resolvedParams.industry)
     
     // Enable features for this industry
     await Promise.all(

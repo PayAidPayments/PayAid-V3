@@ -11,7 +11,7 @@ const acceptOfferSchema = z.object({
 // PUT /api/hr/offers/[id]/accept - Accept an offer and create employee
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -22,7 +22,7 @@ export async function PUT(
 
     const offer = await prisma.offer.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -51,7 +51,7 @@ export async function PUT(
       : offer.offeredCtcInr
 
     const updatedOffer = await prisma.offer.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: {
         offerStatus: 'ACCEPTED',
         acceptedCtcInr: acceptedCtc,
@@ -85,7 +85,7 @@ export async function PUT(
 
     // Update offer with employee ID
     await prisma.offer.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: {
         employeeId: employee.id,
       },

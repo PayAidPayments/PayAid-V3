@@ -5,7 +5,7 @@ import { prisma } from '@payaid/db'
 // GET /api/whatsapp/sessions/[accountId] - List all sessions for an account
 export async function GET(
   request: NextRequest,
-  { params }: { params: { accountId: string } }
+  { params }: { params: Promise<{ accountId: string }> }
 ) {
   try {
     // Check WhatsApp module license
@@ -13,7 +13,7 @@ export async function GET(
 
     // Verify ownership
     const account = await prisma.whatsappAccount.findUnique({
-      where: { id: params.accountId },
+      where: { id: resolvedParams.accountId },
     })
 
     if (!account || account.tenantId !== tenantId) {
@@ -24,7 +24,7 @@ export async function GET(
     }
 
     const sessions = await prisma.whatsappSession.findMany({
-      where: { accountId: params.accountId },
+      where: { accountId: resolvedParams.accountId },
       include: {
         employee: {
           select: {

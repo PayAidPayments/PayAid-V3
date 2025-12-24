@@ -12,14 +12,14 @@ const updateConversationSchema = z.object({
 // GET /api/whatsapp/conversations/[conversationId] - Get single conversation details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { conversationId: string } }
+  { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
     // Check WhatsApp module license
     const { tenantId } = await requireModuleAccess(request, 'marketing')
 
     const conversation = await prisma.whatsappConversation.findUnique({
-      where: { id: params.conversationId },
+      where: { id: resolvedParams.conversationId },
       include: {
         contact: true,
         session: {
@@ -78,7 +78,7 @@ export async function GET(
 // PATCH /api/whatsapp/conversations/[conversationId] - Update conversation
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { conversationId: string } }
+  { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
     // Check WhatsApp module license
@@ -88,7 +88,7 @@ export async function PATCH(
     const validated = updateConversationSchema.parse(body)
 
     const conversation = await prisma.whatsappConversation.findUnique({
-      where: { id: params.conversationId },
+      where: { id: resolvedParams.conversationId },
       include: { account: true },
     })
 
@@ -126,7 +126,7 @@ export async function PATCH(
     if (validated.status !== undefined) updateData.status = validated.status
 
     const updated = await prisma.whatsappConversation.update({
-      where: { id: params.conversationId },
+      where: { id: resolvedParams.conversationId },
       data: updateData,
       include: {
         contact: true,

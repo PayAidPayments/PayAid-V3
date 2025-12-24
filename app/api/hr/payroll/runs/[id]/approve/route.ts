@@ -5,7 +5,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 // PUT /api/hr/payroll/runs/[id]/approve - Approve a payroll run
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -13,7 +13,7 @@ export async function PUT(
 
     const payrollRun = await prisma.payrollRun.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -36,7 +36,7 @@ export async function PUT(
     }
 
     const updated = await prisma.payrollRun.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: {
         approvedAt: new Date(),
       },

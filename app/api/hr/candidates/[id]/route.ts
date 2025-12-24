@@ -22,7 +22,7 @@ const updateCandidateSchema = z.object({
 // GET /api/hr/candidates/[id] - Get a single candidate
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -30,7 +30,7 @@ export async function GET(
 
     const candidate = await prisma.candidate.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -97,7 +97,7 @@ export async function GET(
 // PATCH /api/hr/candidates/[id] - Update a candidate
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -105,7 +105,7 @@ export async function PATCH(
 
     const existing = await prisma.candidate.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -126,7 +126,7 @@ export async function PATCH(
         where: {
           tenantId: tenantId,
           email: validated.email,
-          id: { not: params.id },
+          id: { not: resolvedParams.id },
         },
       })
 
@@ -159,7 +159,7 @@ export async function PATCH(
     if (validated.status !== undefined) updateData.status = validated.status
 
     const candidate = await prisma.candidate.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData,
     })
 
@@ -188,7 +188,7 @@ export async function PATCH(
 // DELETE /api/hr/candidates/[id] - Delete a candidate
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -196,7 +196,7 @@ export async function DELETE(
 
     const candidate = await prisma.candidate.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -209,7 +209,7 @@ export async function DELETE(
     }
 
     await prisma.candidate.delete({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     })
 
     return NextResponse.json({ message: 'Candidate deleted successfully' })

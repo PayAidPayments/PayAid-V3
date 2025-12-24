@@ -17,7 +17,7 @@ import axios from 'axios'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { accountId: string } }
+  { params }: { params: Promise<{ accountId: string }> }
 ) {
   try {
     // Check WhatsApp module license
@@ -25,7 +25,7 @@ export async function GET(
 
     // Verify ownership
     const account = await prisma.whatsappAccount.findUnique({
-      where: { id: params.accountId },
+      where: { id: resolvedParams.accountId },
     })
 
     if (!account || account.tenantId !== tenantId) {
@@ -61,7 +61,7 @@ export async function GET(
         newStatus = 'active'
         if (account.status !== 'active') {
           await prisma.whatsappAccount.update({
-            where: { id: params.accountId },
+            where: { id: resolvedParams.accountId },
             data: {
               status: 'active',
               errorMessage: null,
@@ -70,7 +70,7 @@ export async function GET(
 
           await prisma.whatsappAuditLog.create({
             data: {
-              accountId: params.accountId,
+              accountId: resolvedParams.accountId,
               action: 'account_qr_scanned',
               status: 'success',
               description: `WhatsApp connected: ${phoneNumber}`,
@@ -89,7 +89,7 @@ export async function GET(
       })
     } catch (error: any) {
       // WAHA not responding, but account exists
-      console.warn(`[WHATSAPP] WAHA status check failed for ${params.accountId}:`, error.message)
+      console.warn(`[WHATSAPP] WAHA status check failed for ${resolvedParams.accountId}:`, error.message)
       return NextResponse.json({
         status: account.status,
         phoneNumber: null,

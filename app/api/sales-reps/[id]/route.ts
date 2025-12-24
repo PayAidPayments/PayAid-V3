@@ -12,7 +12,7 @@ const updateSalesRepSchema = z.object({
 // GET /api/sales-reps/[id] - Get a single sales rep
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
@@ -20,7 +20,7 @@ export async function GET(
 
     const rep = await prisma.salesRep.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -94,7 +94,7 @@ export async function GET(
 // PATCH /api/sales-reps/[id] - Update a sales rep
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
@@ -114,7 +114,7 @@ export async function PATCH(
     // Verify rep belongs to tenant
     const rep = await prisma.salesRep.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -128,7 +128,7 @@ export async function PATCH(
 
     // Update rep
     const updated = await prisma.salesRep.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data,
       include: {
         user: {
@@ -174,7 +174,7 @@ export async function PATCH(
 // DELETE /api/sales-reps/[id] - Delete a sales rep
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
@@ -191,7 +191,7 @@ export async function DELETE(
     // Verify rep belongs to tenant
     const rep = await prisma.salesRep.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -206,7 +206,7 @@ export async function DELETE(
     // Check if rep has assigned leads
     const assignedLeadsCount = await prisma.contact.count({
       where: {
-        assignedToId: params.id,
+        assignedToId: resolvedParams.id,
       },
     })
 
@@ -220,7 +220,7 @@ export async function DELETE(
     }
 
     await prisma.salesRep.delete({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     })
 
     return NextResponse.json({ success: true })

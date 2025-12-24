@@ -18,7 +18,7 @@ const updateJobRequisitionSchema = z.object({
 // GET /api/hr/job-requisitions/[id] - Get a single job requisition
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -26,7 +26,7 @@ export async function GET(
 
     const requisition = await prisma.jobRequisition.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -94,7 +94,7 @@ export async function GET(
 // PATCH /api/hr/job-requisitions/[id] - Update a job requisition
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -102,7 +102,7 @@ export async function PATCH(
 
     const existing = await prisma.jobRequisition.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -139,7 +139,7 @@ export async function PATCH(
     }
 
     const requisition = await prisma.jobRequisition.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData,
       include: {
         department: true,
@@ -172,7 +172,7 @@ export async function PATCH(
 // DELETE /api/hr/job-requisitions/[id] - Delete a job requisition
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -180,7 +180,7 @@ export async function DELETE(
 
     const requisition = await prisma.jobRequisition.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -194,11 +194,11 @@ export async function DELETE(
 
     // Check if there are candidates or offers
     const candidateCount = await prisma.candidateJob.count({
-      where: { requisitionId: params.id },
+      where: { requisitionId: resolvedParams.id },
     })
 
     const offerCount = await prisma.offer.count({
-      where: { requisitionId: params.id },
+      where: { requisitionId: resolvedParams.id },
     })
 
     if (candidateCount > 0 || offerCount > 0) {
@@ -211,7 +211,7 @@ export async function DELETE(
     }
 
     await prisma.jobRequisition.delete({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     })
 
     return NextResponse.json({ message: 'Job requisition deleted successfully' })

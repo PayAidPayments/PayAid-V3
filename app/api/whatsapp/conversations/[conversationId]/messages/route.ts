@@ -5,7 +5,7 @@ import { prisma } from '@payaid/db'
 // GET /api/whatsapp/conversations/[conversationId]/messages - Get message history for a conversation (paginated)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { conversationId: string } }
+  { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
     // Check WhatsApp module license
@@ -17,7 +17,7 @@ export async function GET(
 
     // Verify conversation belongs to tenant
     const conversation = await prisma.whatsappConversation.findUnique({
-      where: { id: params.conversationId },
+      where: { id: resolvedParams.conversationId },
       include: { account: true },
     })
 
@@ -36,7 +36,7 @@ export async function GET(
     }
 
     const messages = await prisma.whatsappMessage.findMany({
-      where: { conversationId: params.conversationId },
+      where: { conversationId: resolvedParams.conversationId },
       orderBy: { createdAt: 'desc' },
       take: Math.min(limit, 100),
       skip: offset,
@@ -67,7 +67,7 @@ export async function GET(
     })
 
     const total = await prisma.whatsappMessage.count({
-      where: { conversationId: params.conversationId },
+      where: { conversationId: resolvedParams.conversationId },
     })
 
     return NextResponse.json({

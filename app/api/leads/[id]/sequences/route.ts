@@ -8,13 +8,13 @@ import { prisma } from '@payaid/db'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
     const { tenantId, userId } = await requireCRMAccess(request)
 
-    const contactId = params.id
+    const contactId = resolvedParams.id
 
     // Verify contact belongs to tenant
     const contact = await prisma.contact.findFirst({

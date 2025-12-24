@@ -16,7 +16,7 @@ const updateInterviewSchema = z.object({
 // GET /api/hr/interviews/[id] - Get a single interview
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -24,7 +24,7 @@ export async function GET(
 
     const interview = await prisma.interviewRound.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         candidate: {
           tenantId: tenantId,
         },
@@ -74,7 +74,7 @@ export async function GET(
 // PATCH /api/hr/interviews/[id] - Update an interview
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -82,7 +82,7 @@ export async function PATCH(
 
     const existing = await prisma.interviewRound.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         candidate: {
           tenantId: tenantId,
         },
@@ -109,7 +109,7 @@ export async function PATCH(
     if (validated.status !== undefined) updateData.status = validated.status
 
     const interview = await prisma.interviewRound.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData,
       include: {
         candidate: {

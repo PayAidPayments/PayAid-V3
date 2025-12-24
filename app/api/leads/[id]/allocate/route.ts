@@ -16,13 +16,13 @@ const allocateRequestSchema = z.object({
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
     const { tenantId, userId } = await requireCRMAccess(request)
 
-    const contactId = params.id
+    const contactId = resolvedParams.id
     const body = await request.json().catch(() => ({}))
     const { repId, autoAssign } = allocateRequestSchema.parse(body)
 

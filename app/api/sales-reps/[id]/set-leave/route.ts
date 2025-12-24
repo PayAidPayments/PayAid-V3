@@ -14,13 +14,13 @@ const setLeaveSchema = z.object({
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
     const { tenantId, userId } = await requireCRMAccess(request)
 
-    const repId = params.id
+    const repId = resolvedParams.id
     const body = await request.json()
     const { isOnLeave, leaveEndDate } = setLeaveSchema.parse(body)
 

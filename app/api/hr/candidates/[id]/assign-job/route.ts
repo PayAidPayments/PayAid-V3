@@ -11,7 +11,7 @@ const assignJobSchema = z.object({
 // POST /api/hr/candidates/[id]/assign-job - Assign candidate to a job requisition
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -23,7 +23,7 @@ export async function POST(
     // Verify candidate belongs to tenant
     const candidate = await prisma.candidate.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -53,7 +53,7 @@ export async function POST(
     // Check if already assigned
     const existing = await prisma.candidateJob.findFirst({
       where: {
-        candidateId: params.id,
+        candidateId: resolvedParams.id,
         requisitionId: validated.requisitionId,
       },
     })
@@ -68,7 +68,7 @@ export async function POST(
     // Create assignment
     const candidateJob = await prisma.candidateJob.create({
       data: {
-        candidateId: params.id,
+        candidateId: resolvedParams.id,
         requisitionId: validated.requisitionId,
         stage: validated.stage,
       },

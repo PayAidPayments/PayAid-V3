@@ -12,7 +12,7 @@ const updateOrderSchema = z.object({
 // GET /api/orders/[id] - Get a single order
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check CRM module license (orders are part of sales/CRM)
@@ -20,7 +20,7 @@ export async function GET(
 
     const order = await prisma.order.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -57,7 +57,7 @@ export async function GET(
 // PATCH /api/orders/[id] - Update an order
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check CRM module license (orders are part of sales/CRM)
@@ -69,7 +69,7 @@ export async function PATCH(
     // Check if order exists and belongs to tenant
     const existing = await prisma.order.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -94,7 +94,7 @@ export async function PATCH(
     if (validated.shiprocketOrderId) updateData.shiprocketOrderId = validated.shiprocketOrderId
 
     const order = await prisma.order.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData,
       include: {
         customer: {

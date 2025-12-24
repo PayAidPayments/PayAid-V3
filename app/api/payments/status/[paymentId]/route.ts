@@ -3,7 +3,7 @@ import { getPayAidPayments } from '@/lib/payments/payaid'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { paymentId: string } }
+  { params }: { params: Promise<{ paymentId: string }> }
 ) {
   try {
     const { paymentId } = params

@@ -16,7 +16,7 @@ const updateLandingPageSchema = z.object({
 // GET /api/landing-pages/[id] - Get single landing page
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
@@ -24,7 +24,7 @@ export async function GET(
 
     const page = await prisma.landingPage.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -49,7 +49,7 @@ export async function GET(
 // PATCH /api/landing-pages/[id] - Update landing page
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
@@ -60,7 +60,7 @@ export async function PATCH(
 
     const existing = await prisma.landingPage.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -77,7 +77,7 @@ export async function PATCH(
       const slugExists = await prisma.landingPage.findUnique({
         where: { slug: validated.slug },
       })
-      if (slugExists && slugExists.id !== params.id) {
+      if (slugExists && slugExists.id !== resolvedParams.id) {
         return NextResponse.json(
           { error: 'Slug already taken' },
           { status: 400 }
@@ -86,7 +86,7 @@ export async function PATCH(
     }
 
     const page = await prisma.landingPage.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: {
         name: validated.name,
         slug: validated.slug,

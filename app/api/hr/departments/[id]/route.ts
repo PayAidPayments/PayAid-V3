@@ -12,7 +12,7 @@ const updateDepartmentSchema = z.object({
 // GET /api/hr/departments/[id] - Get a single department
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -20,7 +20,7 @@ export async function GET(
 
     const department = await prisma.department.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -54,7 +54,7 @@ export async function GET(
 // PATCH /api/hr/departments/[id] - Update a department
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -62,7 +62,7 @@ export async function PATCH(
 
     const existing = await prisma.department.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -83,7 +83,7 @@ export async function PATCH(
         where: {
           tenantId: tenantId,
           name: validated.name,
-          id: { not: params.id },
+          id: { not: resolvedParams.id },
         },
       })
 
@@ -96,7 +96,7 @@ export async function PATCH(
     }
 
     const department = await prisma.department.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: validated,
     })
 
@@ -125,7 +125,7 @@ export async function PATCH(
 // DELETE /api/hr/departments/[id] - Delete a department
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -134,7 +134,7 @@ export async function DELETE(
     // Check if department has employees
     const employeeCount = await prisma.employee.count({
       where: {
-        departmentId: params.id,
+        departmentId: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -147,7 +147,7 @@ export async function DELETE(
     }
 
     await prisma.department.delete({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     })
 
     return NextResponse.json({ message: 'Department deleted successfully' })

@@ -16,7 +16,7 @@ const updateTaskSchema = z.object({
 // GET /api/tasks/[id] - Get a single task
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check CRM module license (tasks are part of CRM)
@@ -24,7 +24,7 @@ export async function GET(
 
     const task = await prisma.task.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -59,7 +59,7 @@ export async function GET(
 // PATCH /api/tasks/[id] - Update a task
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check CRM module license (tasks are part of CRM)
@@ -71,7 +71,7 @@ export async function PATCH(
     // Check if task exists and belongs to tenant
     const existing = await prisma.task.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -100,7 +100,7 @@ export async function PATCH(
     if (validated.assignedToId) updateData.assignedToId = validated.assignedToId
 
     const task = await prisma.task.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData,
       include: {
         contact: {
@@ -143,7 +143,7 @@ export async function PATCH(
 // DELETE /api/tasks/[id] - Delete a task
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check CRM module license (tasks are part of CRM)
@@ -152,7 +152,7 @@ export async function DELETE(
     // Check if task exists and belongs to tenant
     const existing = await prisma.task.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -165,7 +165,7 @@ export async function DELETE(
     }
 
     await prisma.task.delete({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     })
 
     return NextResponse.json({ success: true })

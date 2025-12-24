@@ -5,7 +5,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 // PUT /api/logos/[id]/variations/[variationId]/select - Select logo variation
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; variationId: string } }
+  { params }: { params: Promise<{ id: string; variationId: string }> }
 ) {
   try {
     // Check crm module license
@@ -13,7 +13,7 @@ export async function PUT(
 
     const logo = await prisma.logo.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -28,7 +28,7 @@ export async function PUT(
     // Unselect all variations
     await prisma.logoVariation.updateMany({
       where: {
-        logoId: params.id,
+        logoId: resolvedParams.id,
         tenantId: tenantId,
       },
       data: {

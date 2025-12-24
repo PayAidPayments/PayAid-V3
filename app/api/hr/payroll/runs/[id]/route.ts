@@ -17,7 +17,7 @@ const updatePayrollRunSchema = z.object({
 // GET /api/hr/payroll/runs/[id] - Get a single payroll run
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -25,7 +25,7 @@ export async function GET(
 
     const run = await prisma.payrollRun.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -67,7 +67,7 @@ export async function GET(
 // PATCH /api/hr/payroll/runs/[id] - Update payroll run (manual adjustment)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -75,7 +75,7 @@ export async function PATCH(
 
     const existing = await prisma.payrollRun.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -175,7 +175,7 @@ export async function PATCH(
     // Update payroll run and create adjustments
     const updated = await prisma.$transaction(async (tx) => {
       const run = await tx.payrollRun.update({
-        where: { id: params.id },
+        where: { id: resolvedParams.id },
         data: updateData,
       })
 
@@ -183,7 +183,7 @@ export async function PATCH(
       for (const adj of adjustments) {
         await tx.payrollAdjustment.create({
           data: {
-            payrollRunId: params.id,
+            payrollRunId: resolvedParams.id,
             componentName: adj.componentName,
             originalAmount: adj.originalAmount,
             adjustedAmount: adj.adjustedAmount,

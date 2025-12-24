@@ -12,7 +12,7 @@ const updateOnboardingTemplateSchema = z.object({
 // GET /api/hr/onboarding/templates/[id] - Get a single onboarding template
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -20,7 +20,7 @@ export async function GET(
 
     const template = await prisma.onboardingTemplate.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -54,7 +54,7 @@ export async function GET(
 // PATCH /api/hr/onboarding/templates/[id] - Update an onboarding template
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -62,7 +62,7 @@ export async function PATCH(
 
     const existing = await prisma.onboardingTemplate.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -83,7 +83,7 @@ export async function PATCH(
     if (validated.isActive !== undefined) updateData.isActive = validated.isActive
 
     const template = await prisma.onboardingTemplate.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData,
       include: {
         tasks: {
@@ -117,7 +117,7 @@ export async function PATCH(
 // DELETE /api/hr/onboarding/templates/[id] - Delete an onboarding template
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -125,7 +125,7 @@ export async function DELETE(
 
     const template = await prisma.onboardingTemplate.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -153,7 +153,7 @@ export async function DELETE(
     }
 
     await prisma.onboardingTemplate.delete({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     })
 
     return NextResponse.json({ message: 'Onboarding template deleted successfully' })

@@ -15,7 +15,7 @@ const updateLocationSchema = z.object({
 // GET /api/hr/locations/[id] - Get a single location
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -23,7 +23,7 @@ export async function GET(
 
     const location = await prisma.location.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -57,7 +57,7 @@ export async function GET(
 // PATCH /api/hr/locations/[id] - Update a location
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -65,7 +65,7 @@ export async function PATCH(
 
     const existing = await prisma.location.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -86,7 +86,7 @@ export async function PATCH(
         where: {
           tenantId: tenantId,
           name: validated.name,
-          id: { not: params.id },
+          id: { not: resolvedParams.id },
         },
       })
 
@@ -99,7 +99,7 @@ export async function PATCH(
     }
 
     const location = await prisma.location.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: validated,
     })
 
@@ -128,7 +128,7 @@ export async function PATCH(
 // DELETE /api/hr/locations/[id] - Delete a location
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -137,7 +137,7 @@ export async function DELETE(
     // Check if location has employees
     const employeeCount = await prisma.employee.count({
       where: {
-        locationId: params.id,
+        locationId: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -150,7 +150,7 @@ export async function DELETE(
     }
 
     await prisma.location.delete({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     })
 
     return NextResponse.json({ message: 'Location deleted successfully' })

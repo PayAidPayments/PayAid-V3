@@ -12,7 +12,7 @@ const createTicketSchema = z.object({
 // POST /api/whatsapp/conversations/[conversationId]/create-ticket - Create a support ticket from WhatsApp conversation
 export async function POST(
   request: NextRequest,
-  { params }: { params: { conversationId: string } }
+  { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
     // Check WhatsApp module license
@@ -22,7 +22,7 @@ export async function POST(
     const validated = createTicketSchema.parse(body)
 
     const conversation = await prisma.whatsappConversation.findUnique({
-      where: { id: params.conversationId },
+      where: { id: resolvedParams.conversationId },
       include: {
         contact: true,
         account: true,
@@ -59,7 +59,7 @@ export async function POST(
           description: validated.description || 'Created from WhatsApp conversation',
           priority: validated.priority || 'medium',
           source: 'whatsapp',
-          sourceRefId: params.conversationId,
+          sourceRefId: resolvedParams.conversationId,
           contactId: conversation.contactId,
           status: 'open',
         },
@@ -73,7 +73,7 @@ export async function POST(
     // Link conversation to ticket if created
     if (ticketId) {
       await prisma.whatsappConversation.update({
-        where: { id: params.conversationId },
+        where: { id: resolvedParams.conversationId },
         data: { ticketId },
       })
     }
@@ -83,7 +83,7 @@ export async function POST(
         accountId: conversation.accountId,
         action: 'conversation_to_ticket',
         status: 'success',
-        description: `Conversation ${params.conversationId} ${ticketId ? `linked to ticket ${ticketId}` : 'marked for ticket creation'}`,
+        description: `Conversation ${resolvedParams.conversationId} ${ticketId ? `linked to ticket ${ticketId}` : 'marked for ticket creation'}`,
         userId: userId,
         ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
         userAgent: request.headers.get('user-agent') || undefined,

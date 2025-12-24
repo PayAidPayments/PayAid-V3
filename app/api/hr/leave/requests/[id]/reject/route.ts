@@ -10,7 +10,7 @@ const rejectSchema = z.object({
 // PUT /api/hr/leave/requests/[id]/reject - Reject a leave request
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -21,7 +21,7 @@ export async function PUT(
 
     const leaveRequest = await prisma.leaveRequest.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -50,7 +50,7 @@ export async function PUT(
 
     // Update leave request status
     const updated = await prisma.leaveRequest.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: {
         status: 'REJECTED',
         rejectedAt: new Date(),

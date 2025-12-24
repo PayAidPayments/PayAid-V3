@@ -13,7 +13,7 @@ const updatePageSchema = z.object({
 // GET /api/websites/[id]/pages/[pageId] - Get single page
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; pageId: string } }
+  { params }: { params: Promise<{ id: string; pageId: string }> }
 ) {
   try {
     // Check crm module license
@@ -21,7 +21,7 @@ export async function GET(
 
     const website = await prisma.website.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -36,7 +36,7 @@ export async function GET(
     const page = await prisma.websitePage.findFirst({
       where: {
         id: params.pageId,
-        websiteId: params.id,
+        websiteId: resolvedParams.id,
       },
     })
 
@@ -60,7 +60,7 @@ export async function GET(
 // PATCH /api/websites/[id]/pages/[pageId] - Update page
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; pageId: string } }
+  { params }: { params: Promise<{ id: string; pageId: string }> }
 ) {
   try {
     // Check crm module license
@@ -68,7 +68,7 @@ export async function PATCH(
 
     const website = await prisma.website.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -86,7 +86,7 @@ export async function PATCH(
     const existing = await prisma.websitePage.findFirst({
       where: {
         id: params.pageId,
-        websiteId: params.id,
+        websiteId: resolvedParams.id,
       },
     })
 
@@ -102,7 +102,7 @@ export async function PATCH(
       const pathExists = await prisma.websitePage.findUnique({
         where: {
           websiteId_path: {
-            websiteId: params.id,
+            websiteId: resolvedParams.id,
             path: validated.path,
           },
         },
@@ -145,7 +145,7 @@ export async function PATCH(
 // DELETE /api/websites/[id]/pages/[pageId] - Delete page
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; pageId: string } }
+  { params }: { params: Promise<{ id: string; pageId: string }> }
 ) {
   try {
     // Check crm module license
@@ -153,7 +153,7 @@ export async function DELETE(
 
     const website = await prisma.website.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -168,7 +168,7 @@ export async function DELETE(
     const page = await prisma.websitePage.findFirst({
       where: {
         id: params.pageId,
-        websiteId: params.id,
+        websiteId: resolvedParams.id,
       },
     })
 

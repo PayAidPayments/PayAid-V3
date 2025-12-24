@@ -5,7 +5,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 // POST /api/social-media/posts/[id]/publish - Publish a post to social media
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
@@ -13,7 +13,7 @@ export async function POST(
 
     const post = await prisma.socialPost.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {

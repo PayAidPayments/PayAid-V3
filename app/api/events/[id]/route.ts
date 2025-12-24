@@ -16,7 +16,7 @@ const updateEventSchema = z.object({
 // GET /api/events/[id] - Get single event
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
@@ -24,7 +24,7 @@ export async function GET(
 
     const event = await prisma.event.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -58,7 +58,7 @@ export async function GET(
 // PATCH /api/events/[id] - Update event
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
@@ -69,7 +69,7 @@ export async function PATCH(
 
     const existing = await prisma.event.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -90,7 +90,7 @@ export async function PATCH(
     if (validated.status) updateData.status = validated.status
 
     const event = await prisma.event.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData,
     })
 

@@ -11,7 +11,7 @@ const approveTaxDeclarationSchema = z.object({
 // PUT /api/hr/tax-declarations/[id]/approve - Approve tax declaration
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -22,7 +22,7 @@ export async function PUT(
 
     const declaration = await prisma.employeeTaxDeclaration.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -55,7 +55,7 @@ export async function PUT(
     }
 
     const updated = await prisma.employeeTaxDeclaration.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: {
         status: 'APPROVED',
         approvedAmountInr: approvedAmount,

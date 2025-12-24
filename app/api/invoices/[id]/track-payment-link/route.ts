@@ -7,11 +7,11 @@ import { prisma } from '@payaid/db'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const invoice = await prisma.invoice.findFirst({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     })
 
     if (!invoice) {

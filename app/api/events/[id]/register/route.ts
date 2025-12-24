@@ -13,14 +13,16 @@ const registerEventSchema = z.object({
 // POST /api/events/[id]/register - Register for event (public)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     const body = await request.json()
     const validated = registerEventSchema.parse(body)
 
     const event = await prisma.event.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     })
 
     if (!event) {
@@ -56,7 +58,7 @@ export async function POST(
     if (event.maxAttendees) {
       const currentRegistrations = await prisma.eventRegistration.count({
         where: {
-          eventId: params.id,
+          eventId: resolvedParams.id,
           status: { in: ['REGISTERED', 'CONFIRMED'] },
         },
       })
@@ -73,7 +75,7 @@ export async function POST(
     const existing = await prisma.eventRegistration.findUnique({
       where: {
         eventId_email: {
-          eventId: params.id,
+          eventId: resolvedParams.id,
           email: validated.email,
         },
       },
@@ -89,7 +91,7 @@ export async function POST(
     // Create registration
     const registration = await prisma.eventRegistration.create({
       data: {
-        eventId: params.id,
+        eventId: resolvedParams.id,
         name: validated.name,
         email: validated.email,
         phone: validated.phone,

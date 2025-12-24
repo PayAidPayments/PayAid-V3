@@ -54,7 +54,7 @@ const updateEmployeeSchema = z.object({
 // GET /api/hr/employees/[id] - Get a single employee
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -62,7 +62,7 @@ export async function GET(
 
     const employee = await prisma.employee.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -102,7 +102,7 @@ export async function GET(
 // PATCH /api/hr/employees/[id] - Update an employee
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -111,7 +111,7 @@ export async function PATCH(
     // Check if employee exists
     const existing = await prisma.employee.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -132,7 +132,7 @@ export async function PATCH(
         where: {
           tenantId: tenantId,
           officialEmail: validated.officialEmail,
-          id: { not: params.id },
+          id: { not: resolvedParams.id },
         },
       })
 
@@ -185,7 +185,7 @@ export async function PATCH(
     const beforeSnapshot = JSON.stringify(existing)
 
     const employee = await prisma.employee.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData,
       include: {
         department: true,
@@ -235,7 +235,7 @@ export async function PATCH(
 // DELETE /api/hr/employees/[id] - Delete an employee (soft delete by setting status to EXITED)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check HR module license
@@ -243,7 +243,7 @@ export async function DELETE(
 
     const employee = await prisma.employee.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -257,7 +257,7 @@ export async function DELETE(
 
     // Soft delete: Set status to EXITED
     const updated = await prisma.employee.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: {
         status: 'EXITED',
         exitDate: new Date(),

@@ -5,7 +5,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 // GET /api/marketing/campaigns/[id] - Get a single campaign
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check CRM module license (marketing campaigns are part of CRM)
@@ -13,7 +13,7 @@ export async function GET(
 
     const campaign = await prisma.campaign.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })

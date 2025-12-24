@@ -13,7 +13,7 @@ const updateOrderSchema = z.object({
 // GET /api/industries/restaurant/orders/[id] - Get single order
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
@@ -21,7 +21,7 @@ export async function GET(
 
     const order = await prisma.restaurantOrder.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -50,7 +50,7 @@ export async function GET(
 // PATCH /api/industries/restaurant/orders/[id] - Update order status
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
@@ -61,7 +61,7 @@ export async function PATCH(
 
     const order = await prisma.restaurantOrder.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -82,7 +82,7 @@ export async function PATCH(
     }
 
     const updatedOrder = await prisma.restaurantOrder.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData,
       include: {
         items: {

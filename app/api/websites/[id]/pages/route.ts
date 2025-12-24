@@ -12,7 +12,7 @@ const createPageSchema = z.object({
 // GET /api/websites/[id]/pages - Get all pages for a website
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
@@ -20,7 +20,7 @@ export async function GET(
 
     const website = await prisma.website.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -34,7 +34,7 @@ export async function GET(
 
     const pages = await prisma.websitePage.findMany({
       where: {
-        websiteId: params.id,
+        websiteId: resolvedParams.id,
       },
       orderBy: { path: 'asc' },
     })
@@ -52,7 +52,7 @@ export async function GET(
 // POST /api/websites/[id]/pages - Create a new page
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check crm module license
@@ -60,7 +60,7 @@ export async function POST(
 
     const website = await prisma.website.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -79,7 +79,7 @@ export async function POST(
     const existing = await prisma.websitePage.findUnique({
       where: {
         websiteId_path: {
-          websiteId: params.id,
+          websiteId: resolvedParams.id,
           path: validated.path,
         },
       },
@@ -94,7 +94,7 @@ export async function POST(
 
     const page = await prisma.websitePage.create({
       data: {
-        websiteId: params.id,
+        websiteId: resolvedParams.id,
         path: validated.path,
         title: validated.title,
         contentJson: validated.contentJson || {

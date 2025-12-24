@@ -11,14 +11,14 @@ const updateInvoiceSchema = z.object({
 // GET /api/invoices/[id] - Get a single invoice
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { tenantId } = await requireFinanceAccess(request)
 
     const invoice = await prisma.invoice.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -55,7 +55,7 @@ export async function GET(
 // PATCH /api/invoices/[id] - Update an invoice
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { tenantId } = await requireFinanceAccess(request)
@@ -66,7 +66,7 @@ export async function PATCH(
     // Check if invoice exists and belongs to tenant
     const existing = await prisma.invoice.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -86,7 +86,7 @@ export async function PATCH(
     }
 
     const invoice = await prisma.invoice.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData,
       include: {
         customer: {
