@@ -42,9 +42,10 @@ const nextConfig = {
       })
     }
     
-    // Add alias for @payaid/db
+    // Add aliases for path resolution
     config.resolve.alias = {
       ...config.resolve.alias,
+      '@': require('path').resolve(__dirname),
       '@payaid/db': require('path').resolve(__dirname, 'lib/db/prisma'),
     }
     return config
