@@ -5,14 +5,13 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 // POST /api/websites/[id]/pages/update-content - Update all pages with business content
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
-
-    // Handle both sync and async params (Next.js 15+ uses async params)
-    const resolvedParams = await Promise.resolve(params)
     const websiteId = resolvedParams.id
 
     console.log('📝 Update content request for website:', websiteId)
