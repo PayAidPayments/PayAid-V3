@@ -17,15 +17,17 @@ const updateEmailTemplateSchema = z.object({
 // GET /api/email-templates/[id] - Get single template
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireCRMAccess(request)
 
     const template = await prisma.emailTemplate.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -50,9 +52,11 @@ export async function GET(
 // PATCH /api/email-templates/[id] - Update template
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireCRMAccess(request)
 
@@ -61,7 +65,7 @@ export async function PATCH(
 
     const existing = await prisma.emailTemplate.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -79,7 +83,7 @@ export async function PATCH(
         where: {
           tenantId: tenantId,
           isDefault: true,
-          id: { not: params.id },
+          id: { not: resolvedParams.id },
         },
         data: {
           isDefault: false,
@@ -88,7 +92,7 @@ export async function PATCH(
     }
 
     const template = await prisma.emailTemplate.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: {
         name: validated.name,
         category: validated.category,
