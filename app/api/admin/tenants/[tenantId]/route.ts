@@ -185,7 +185,7 @@ export async function PATCH(
     }
 
     const updatedTenant = await prisma.tenant.update({
-      where: { id: params.tenantId },
+      where: { id: resolvedParams.tenantId },
       data: updateData,
     })
 
