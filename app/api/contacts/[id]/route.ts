@@ -26,14 +26,16 @@ const updateContactSchema = z.object({
 // GET /api/contacts/[id] - Get a single contact
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     const { tenantId } = await requireCRMAccess(request)
 
     const contact = await prisma.contact.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
       include: {
@@ -81,9 +83,11 @@ export async function GET(
 // PATCH /api/contacts/[id] - Update a contact
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     const { tenantId } = await requireCRMAccess(request)
 
     const body = await request.json()
@@ -92,7 +96,7 @@ export async function PATCH(
     // Check if contact exists and belongs to tenant
     const existing = await prisma.contact.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -122,13 +126,13 @@ export async function PATCH(
     }
 
     const contact = await prisma.contact.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: validated,
     })
 
     // Invalidate cache
-    await cache.deletePattern(`contacts:${user.tenantId}:*`)
-    await cache.delete(`contact:${params.id}`)
+    await cache.deletePattern(`contacts:${tenantId}:*`)
+    await cache.delete(`contact:${resolvedParams.id}`)
 
     return NextResponse.json(contact)
   } catch (error) {
@@ -150,15 +154,17 @@ export async function PATCH(
 // DELETE /api/contacts/[id] - Delete a contact
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     const { tenantId } = await requireCRMAccess(request)
 
     // Check if contact exists and belongs to tenant
     const existing = await prisma.contact.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -171,12 +177,12 @@ export async function DELETE(
     }
 
     await prisma.contact.delete({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     })
 
     // Invalidate cache
-    await cache.deletePattern(`contacts:${user.tenantId}:*`)
-    await cache.delete(`contact:${params.id}`)
+    await cache.deletePattern(`contacts:${tenantId}:*`)
+    await cache.delete(`contact:${resolvedParams.id}`)
 
     return NextResponse.json({ success: true })
   } catch (error) {
