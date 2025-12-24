@@ -17,15 +17,17 @@ const updateCheckoutPageSchema = z.object({
 // GET /api/checkout-pages/[id] - Get single checkout page
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'sales')
 
     const page = await prisma.checkoutPage.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -50,9 +52,11 @@ export async function GET(
 // PATCH /api/checkout-pages/[id] - Update checkout page
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'sales')
 
@@ -61,7 +65,7 @@ export async function PATCH(
 
     const existing = await prisma.checkoutPage.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         tenantId: tenantId,
       },
     })
@@ -78,7 +82,7 @@ export async function PATCH(
       const slugExists = await prisma.checkoutPage.findUnique({
         where: { slug: validated.slug },
       })
-      if (slugExists && slugExists.id !== params.id) {
+      if (slugExists && slugExists.id !== resolvedParams.id) {
         return NextResponse.json(
           { error: 'Slug already taken' },
           { status: 400 }
@@ -87,7 +91,7 @@ export async function PATCH(
     }
 
     const page = await prisma.checkoutPage.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: {
         name: validated.name,
         slug: validated.slug,
