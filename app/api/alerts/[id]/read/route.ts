@@ -21,7 +21,7 @@ export async function PUT(
     // Verify alert belongs to user's sales rep
     const salesRep = await prisma.salesRep.findFirst({
       where: {
-        userId: user.id,
+        userId: user.userId,
         tenantId: user.tenantId,
       },
     })
