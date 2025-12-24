@@ -96,49 +96,33 @@ export async function POST(request: NextRequest) {
     
     try {
       const groq = getGroqClient()
-      if (groq) {
-        const groqResponse = await groq.chat.completions.create({
-          model: 'llama-3.1-70b-versatile',
-          messages: [
-            {
-              role: 'system',
-              content: `You are a helpful business assistant for PayAid. Help with business-related questions only. Context: ${businessContext}`,
-            },
-            {
-              role: 'user',
-              content: validated.message,
-            },
-          ],
-          temperature: 0.7,
-          max_tokens: 1000,
-        })
-        response = groqResponse.choices[0]?.message?.content || 'I apologize, but I could not generate a response.'
-      } else {
-        throw new Error('Groq client not available')
-      }
+      const groqResponse = await groq.chat([
+        {
+          role: 'system',
+          content: `You are a helpful business assistant for PayAid. Help with business-related questions only. Context: ${businessContext}`,
+        },
+        {
+          role: 'user',
+          content: validated.message,
+        },
+      ])
+      response = groqResponse.message || 'I apologize, but I could not generate a response.'
     } catch (groqError) {
       // Fallback to Ollama
       try {
         const ollama = getOllamaClient()
-        if (ollama) {
-          const ollamaResponse = await ollama.chat({
-            model: 'llama3.1',
-            messages: [
-              {
-                role: 'system',
-                content: `You are a helpful business assistant. Context: ${businessContext}`,
-              },
-              {
-                role: 'user',
-                content: validated.message,
-              },
-            ],
-          })
-          response = ollamaResponse.message.content || 'I apologize, but I could not generate a response.'
-          usedService = 'ollama'
-        } else {
-          throw new Error('Ollama client not available')
-        }
+        const ollamaResponse = await ollama.chat([
+          {
+            role: 'system',
+            content: `You are a helpful business assistant. Context: ${businessContext}`,
+          },
+          {
+            role: 'user',
+            content: validated.message,
+          },
+        ])
+        response = ollamaResponse.message || 'I apologize, but I could not generate a response.'
+        usedService = 'ollama'
       } catch (ollamaError) {
         // Last resort - simple response
         response = 'I apologize, but AI services are currently unavailable. Please try again later.'
