@@ -32,6 +32,22 @@ interface TeamPerformance {
       assignedLeads: number
     }
   }>
+  performance: Array<{
+    repId: string
+    name: string
+    email: string
+    specialization: string | null
+    metrics: {
+      callsMade: number
+      emailsSent: number
+      meetingsScheduled: number
+      dealsClosed: number
+      revenue: number
+      conversionRate: string
+      closeRate: string
+      assignedLeads: number
+    }
+  }>
 }
 
 export default function TeamPerformancePage() {
