@@ -12,8 +12,8 @@ const editImageSchema = z.object({
 // POST /api/ai/nanobanana/edit-image - Edit existing image with text prompt
 export async function POST(request: NextRequest) {
   try {
-    // Check analytics module license
-    const { tenantId, userId } = await requireAIStudioAccess(request)
+    // Check AI Studio module license
+    const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     const body = await request.json()
     const validated = editImageSchema.parse(body)

@@ -12,8 +12,8 @@ const sttSchema = z.object({
 // POST /api/ai/speech-to-text - Convert speech to text
 export async function POST(request: NextRequest) {
   try {
-    // Check analytics module license
-    const { tenantId, userId } = await requireAIStudioAccess(request)
+    // Check AI Studio module license
+    const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     const body = await request.json()
     const validated = sttSchema.parse(body)

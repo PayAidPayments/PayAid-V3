@@ -4,8 +4,8 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 // GET /api/ai/test - Test AI service connections
 export async function GET(request: NextRequest) {
   try {
-    // Check analytics module license
-    const { tenantId, userId } = await requireAIStudioAccess(request)
+    // Check AI Studio module license
+    const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     const results: any = {
       groq: {

@@ -5,8 +5,8 @@ import { getOllamaClient } from '@/lib/ai/ollama'
 // GET /api/ai/ollama/health - Check Ollama health status
 export async function GET(request: NextRequest) {
   try {
-    // Check analytics module license
-    const { tenantId, userId } = await requireAIStudioAccess(request)
+    // Check AI Studio module license
+    const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
     const model = process.env.OLLAMA_MODEL || 'mistral:7b'

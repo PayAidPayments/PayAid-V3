@@ -5,8 +5,8 @@ import { prisma } from '@payaid/db'
 // GET /api/ai/integrations - Get all AI integrations for the current tenant
 export async function GET(request: NextRequest) {
   try {
-    // Check analytics module license
-    const { tenantId, userId } = await requireAIStudioAccess(request)
+    // Check AI Studio module license
+    const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     const integrations = await prisma.oAuthIntegration.findMany({
       where: {

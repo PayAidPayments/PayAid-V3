@@ -4,8 +4,8 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 // Generate Google AI Studio OAuth authorization URL
 export async function GET(request: NextRequest) {
   try {
-    // Check analytics module license
-    const { tenantId, userId } = await requireAIStudioAccess(request)
+    // Check AI Studio module license
+    const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     const clientId = process.env.GOOGLE_CLIENT_ID
     if (!clientId) {

@@ -6,8 +6,8 @@ import { prisma } from '@payaid/db'
 // GET /api/ai/usage - Get AI service usage statistics
 export async function GET(request: NextRequest) {
   try {
-    // Check analytics module license
-    const { tenantId, userId } = await requireAIStudioAccess(request)
+    // Check AI Studio module license
+    const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     // Get token from request headers
     const authHeader = request.headers.get('authorization')

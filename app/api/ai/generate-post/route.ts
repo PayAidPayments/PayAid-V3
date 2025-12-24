@@ -16,8 +16,8 @@ const generatePostSchema = z.object({
 // POST /api/ai/generate-post - Generate social media post using AI
 export async function POST(request: NextRequest) {
   try {
-    // Check analytics module license
-    const { tenantId, userId } = await requireAIStudioAccess(request)
+    // Check AI Studio module license
+    const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     const body = await request.json()
     const validated = generatePostSchema.parse(body)
