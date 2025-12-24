@@ -70,15 +70,11 @@ export async function GET(request: NextRequest) {
         select: { name: true },
       })
 
-      workspace = await prisma.chatWorkspace.create({
+      const newWorkspace = await prisma.chatWorkspace.create({
         data: {
           tenantId: tenantId,
           name: tenant?.name || 'Workspace',
           description: 'Team communication workspace',
-        },
-        include: {
-          channels: true,
-          members: true,
         },
       })
 
@@ -92,7 +88,7 @@ export async function GET(request: NextRequest) {
         defaultChannels.map((channel) =>
           prisma.chatChannel.create({
             data: {
-              workspaceId: workspace.id,
+              workspaceId: newWorkspace.id,
               name: channel.name,
               description: channel.description,
               isPrivate: channel.isPrivate,
@@ -104,7 +100,7 @@ export async function GET(request: NextRequest) {
       // Add user as member
       await prisma.chatMember.create({
         data: {
-          workspaceId: workspace.id,
+          workspaceId: newWorkspace.id,
           userId: userId,
           displayName: user.name || user.email,
           avatar: user.avatar,
@@ -114,7 +110,7 @@ export async function GET(request: NextRequest) {
 
       // Reload with all relations
       workspace = await prisma.chatWorkspace.findUnique({
-        where: { id: workspace.id },
+        where: { id: newWorkspace.id },
         include: {
           channels: {
             include: {
@@ -134,15 +130,14 @@ export async function GET(request: NextRequest) {
                   },
                 },
               },
-            },
-            _count: {
-              select: {
-                messages: true,
+              _count: {
+                select: {
+                  messages: true,
+                },
               },
             },
+            orderBy: { createdAt: 'asc' },
           },
-          orderBy: { createdAt: 'asc' },
-        },
         members: {
           include: {
             user: {
