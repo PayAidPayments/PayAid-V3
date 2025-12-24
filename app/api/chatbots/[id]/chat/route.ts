@@ -11,14 +11,16 @@ const chatMessageSchema = z.object({
 // POST /api/chatbots/[id]/chat - Handle chatbot conversation
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     const body = await request.json()
     const validated = chatMessageSchema.parse(body)
 
     const chatbot = await prisma.websiteChatbot.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       include: {
         website: true,
       },
@@ -37,7 +39,7 @@ export async function POST(
 
     let conversation = await prisma.chatbotConversation.findFirst({
       where: {
-        chatbotId: params.id,
+        chatbotId: resolvedParams.id,
         sessionId,
       },
       orderBy: { createdAt: 'desc' },
@@ -46,7 +48,7 @@ export async function POST(
     if (!conversation) {
       conversation = await prisma.chatbotConversation.create({
         data: {
-          chatbotId: params.id,
+          chatbotId: resolvedParams.id,
           visitorId,
           sessionId,
           messages: [],
