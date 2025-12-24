@@ -14,8 +14,8 @@ const fuseImagesSchema = z.object({
 // POST /api/ai/nanobanana/fuse-images - Blend multiple images together
 export async function POST(request: NextRequest) {
   try {
-    // Check analytics module license
-    const { tenantId, userId } = await requireAIStudioAccess(request)
+    // Check AI Studio module license
+    const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     const body = await request.json()
     const validated = fuseImagesSchema.parse(body)

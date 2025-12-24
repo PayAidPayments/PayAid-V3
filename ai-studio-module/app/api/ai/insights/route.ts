@@ -8,8 +8,8 @@ import { mediumPriorityQueue } from '@/lib/queue/bull'
 // GET /api/ai/insights - Get AI-powered business insights
 export async function GET(request: NextRequest) {
   try {
-    // Check Analytics module license (AI insights are part of analytics)
-    const { tenantId, userId } = await requireAIStudioAccess(request)
+    // Check AI Studio module license
+    const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     // Get business data with limits to prevent loading too much data
     const [
