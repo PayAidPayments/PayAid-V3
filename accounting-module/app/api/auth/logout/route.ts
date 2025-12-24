@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { clearTokenCookie } from '@payaid/oauth-client'
+
+function clearTokenCookie(response: NextResponse): void {
+  response.cookies.delete('payaid_token', {
+    domain: '.payaid.io',
+    path: '/',
+  })
+  response.cookies.delete('payaid_refresh_token', {
+    domain: '.payaid.io',
+    path: '/',
+  })
+}
 
 export async function POST(request: NextRequest) {
   const response = NextResponse.json({ success: true })
