@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 function clearTokenCookie(response: NextResponse): void {
-  response.cookies.delete('payaid_token', {
+  // Delete cookies by setting them to empty with past expiration
+  response.cookies.set('payaid_token', '', {
+    expires: new Date(0),
     domain: '.payaid.io',
     path: '/',
   })
-  response.cookies.delete('payaid_refresh_token', {
+  response.cookies.set('payaid_refresh_token', '', {
+    expires: new Date(0),
     domain: '.payaid.io',
     path: '/',
   })
