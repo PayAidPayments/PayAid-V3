@@ -126,18 +126,8 @@ export async function POST(request: NextRequest) {
     })
 
     // Update order with payment UUID
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        notes: JSON.stringify({
-          type: 'subscription',
-          items: validated.items,
-          moduleIds: [...new Set(moduleIds)],
-          billingInfo: validated.billingInfo,
-          paymentUuid: paymentResponse.uuid,
-        }),
-      },
-    })
+    // Note: Order model doesn't have notes field - payment UUID is stored in payment system
+    // If needed, we could add a paymentUuid field to the Order model in the future
 
     return NextResponse.json({
       orderId: order.id,
