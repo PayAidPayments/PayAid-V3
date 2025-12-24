@@ -79,13 +79,6 @@ export async function POST(request: NextRequest) {
         shippingCity: validated.billingInfo.city,
         shippingPostal: validated.billingInfo.postalCode,
         shippingCountry: 'India',
-        // Store module info in metadata JSON field if it exists, or use notes
-        notes: JSON.stringify({
-          type: 'subscription',
-          items: validated.items,
-          moduleIds: [...new Set(moduleIds)],
-          billingInfo: validated.billingInfo,
-        }),
       },
     })
 
