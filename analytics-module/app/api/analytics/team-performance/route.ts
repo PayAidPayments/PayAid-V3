@@ -9,7 +9,7 @@ import { prisma } from '@payaid/db'
 export async function GET(request: NextRequest) {
   try {
     // Check Analytics module license
-    const { tenantId } = await requireAnalyticsAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'analytics')
 
     const searchParams = request.nextUrl.searchParams
     const period = searchParams.get('period') || 'month' // today, week, month, year

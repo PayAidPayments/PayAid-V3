@@ -6,7 +6,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 export async function GET(request: NextRequest) {
   try {
     // Check Analytics module license
-    const { tenantId } = await requireAnalyticsAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'analytics')
 
     const searchParams = request.nextUrl.searchParams
     const websiteId = searchParams.get('websiteId')

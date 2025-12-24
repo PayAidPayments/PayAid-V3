@@ -9,7 +9,7 @@ import { getLeadSourceROI } from '@/lib/analytics/lead-source-tracking'
 export async function GET(request: NextRequest) {
   try {
     // Check Analytics module license
-    const { tenantId } = await requireAnalyticsAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'analytics')
 
     const sources = await getLeadSourceROI(tenantId)
 

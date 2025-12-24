@@ -6,7 +6,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 export async function GET(request: NextRequest) {
   try {
     // Check Analytics module license
-    const { tenantId } = await requireAnalyticsAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'analytics')
 
     // Get business metrics in parallel for better performance
     // Use counts and limited queries instead of fetching all records
