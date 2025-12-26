@@ -9,7 +9,7 @@
 
 ### 2. Connection String Format
 ```
-postgresql://postgres:x7RV7sVVfFvxApQ@8@db.zjcutguakjavahdrytxc.supabase.co:5432/postgres?schema=public
+postgresql://postgres:[YOUR-PASSWORD]@db.zjcutguakjavahdrytxc.supabase.co:5432/postgres?schema=public
 ```
 
 **Note:** Password contains special character `@` which may need URL encoding as `%40` if connection fails.
@@ -32,7 +32,7 @@ postgresql://postgres:x7RV7sVVfFvxApQ@8@db.zjcutguakjavahdrytxc.supabase.co:5432
 
 3. **Connection String Format**
    - Password with `@` might need URL encoding
-   - **Solution:** Try URL-encoded password: `x7RV7sVVfFvxApQ%408`
+   - **Solution:** Try URL-encoded password (replace `@` with `%40`)
 
 4. **IP Restrictions**
    - Supabase might have IP allowlist enabled
@@ -62,7 +62,7 @@ Instead of direct connection, use Supabase's connection pooling:
 Try connecting with a PostgreSQL client:
 ```bash
 # Using psql (if installed)
-psql "postgresql://postgres:x7RV7sVVfFvxApQ@8@db.zjcutguakjavahdrytxc.supabase.co:5432/postgres"
+psql "postgresql://postgres:[YOUR-PASSWORD]@db.zjcutguakjavahdrytxc.supabase.co:5432/postgres"
 ```
 
 ### Step 4: Check Supabase SQL Editor
@@ -109,7 +109,7 @@ If Prisma connection continues to fail, you can use Supabase client temporarily:
 ## 🔐 Security Note
 
 The `.env` file contains sensitive credentials:
-- Database password: `x7RV7sVVfFvxApQ@8`
+- Database password (get from Supabase Dashboard)
 - Supabase API key
 
 **Never commit `.env` to version control!** (Already in `.gitignore`)

@@ -3,7 +3,7 @@
 ## ✅ Configuration Complete
 
 Your `.env` file has been configured with:
-- ✅ **DATABASE_URL**: `postgresql://postgres:x7RV7sVVfFvxApQ%408@db.zjcutguakjavahdrytxc.supabase.co:5432/postgres?schema=public`
+- ✅ **DATABASE_URL**: `postgresql://postgres:[YOUR-PASSWORD]@db.zjcutguakjavahdrytxc.supabase.co:5432/postgres?schema=public`
 - ✅ **SUPABASE_URL**: `https://zjcutguakjavahdrytxc.supabase.co`
 - ✅ **SUPABASE_KEY**: Configured
 
@@ -71,10 +71,10 @@ If the project appears active but still can't connect:
 
 Your connection string is correctly formatted:
 ```
-postgresql://postgres:x7RV7sVVfFvxApQ%408@db.zjcutguakjavahdrytxc.supabase.co:5432/postgres?schema=public
+postgresql://postgres:[YOUR-PASSWORD]@db.zjcutguakjavahdrytxc.supabase.co:5432/postgres?schema=public
 ```
 
-**Note:** Password `@` is URL-encoded as `%40` ✓
+**Note:** If your password contains `@`, it must be URL-encoded as `%40` ✓
 
 ---
 
@@ -117,7 +117,7 @@ If the project was deleted or you can't access it:
 
 - [ ] Supabase project is active (not paused)
 - [ ] Project reference matches: `zjcutguakjavahdrytxc`
-- [ ] Database password is correct: `x7RV7sVVfFvxApQ@8`
+- [ ] Database password is correct (get from Supabase Dashboard)
 - [ ] `.env` file has correct `DATABASE_URL`
 - [ ] Can access Supabase Dashboard
 - [ ] SQL Editor works in dashboard

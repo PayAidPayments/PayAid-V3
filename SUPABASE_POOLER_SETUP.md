@@ -34,12 +34,12 @@
 
 Based on your project details:
 - **Project Reference:** `zjcutguakjavahdrytxc`
-- **Password:** `x7RV7sVVfFvxApQ@8`
+- **Password:** `[YOUR-PASSWORD]` (get from Supabase Dashboard)
 - **Region:** ap-south-1 (likely, based on your location)
 
 **Format:**
 ```
-postgresql://postgres.zjcutguakjavahdrytxc:x7RV7sVVfFvxApQ%408@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?schema=public
+postgresql://postgres.zjcutguakjavahdrytxc:[YOUR-PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?schema=public
 ```
 
 **Note:** 
@@ -56,7 +56,7 @@ Once you have the pooler connection string:
 
 ```env
 # Replace the direct connection with pooler connection
-DATABASE_URL="postgresql://postgres.zjcutguakjavahdrytxc:x7RV7sVVfFvxApQ%408@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?schema=public"
+DATABASE_URL="postgresql://postgres.zjcutguakjavahdrytxc:[YOUR-PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?schema=public"
 ```
 
 **Key Differences:**

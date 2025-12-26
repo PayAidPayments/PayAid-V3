@@ -4,8 +4,8 @@ var express = require('express'),
     port = 8888,
     bodyParser = require('body-parser'),
     crypto = require('crypto'),
-    API_KEY = "9b62ff8e-f03b-1587-afds-b630edad99df",
-    SALT = "18e6063d4105erdsee9132wer6be8dbf237a6c15ed",
+    API_KEY = "[YOUR-API-KEY]",
+    SALT = "[YOUR-SALT]",
 	URL = "https://api.payaidpayments.com/v2/paymentrequest",
     server;
 

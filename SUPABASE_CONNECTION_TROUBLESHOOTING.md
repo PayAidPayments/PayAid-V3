@@ -29,7 +29,7 @@ Supabase provides connection pooling URLs that are more reliable:
 
 3. **Update `.env`:**
    ```env
-   DATABASE_URL="postgresql://postgres.zjcutguakjavahdrytxc:x7RV7sVVfFvxApQ%408@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?schema=public"
+   DATABASE_URL="postgresql://postgres.zjcutguakjavahdrytxc:[YOUR-PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?schema=public"
    ```
 
 ### Solution 2: Check Supabase Database Settings
@@ -63,13 +63,13 @@ If your network doesn't support IPv6 properly:
 3. Scroll to **Connection Pooling** section
 4. Find **Transaction** mode
 5. Copy the connection string
-6. Replace `[YOUR-PASSWORD]` with: `x7RV7sVVfFvxApQ@8`
-7. URL-encode `@` as `%40` in password
+6. Replace `[YOUR-PASSWORD]` with your actual password from Supabase Dashboard
+7. If password contains `@`, URL-encode it as `%40`
 8. Add `?schema=public` at the end
 
 **Expected format:**
 ```
-postgresql://postgres.zjcutguakjavahdrytxc:x7RV7sVVfFvxApQ%408@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?schema=public
+postgresql://postgres.zjcutguakjavahdrytxc:[YOUR-PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?schema=public
 ```
 
 ## 🔍 Network Diagnostics

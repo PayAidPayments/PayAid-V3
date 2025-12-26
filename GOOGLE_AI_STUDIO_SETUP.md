@@ -26,7 +26,7 @@ Google AI Studio provides free image generation using Gemini 2.5 Flash Image. Si
 Add the API key to your `.env` file:
 
 ```env
-GOOGLE_AI_STUDIO_API_KEY="AIzaSyCBViUq8bVuLVGN2gmpVqldYu-bbFybMiM"
+GOOGLE_AI_STUDIO_API_KEY="[YOUR-API-KEY]"
 ```
 
 ### 3. Restart Your Application

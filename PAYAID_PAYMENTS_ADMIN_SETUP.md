@@ -8,8 +8,8 @@
 ## 🔐 **Admin Credentials Configured**
 
 ### **Credentials (Admin-Only)**
-- **API Key:** `9306f7fd-57c4-409d-807d-2c23cb4a0212`
-- **SALT:** `a64c89fea6c404275bcf5bd59d592c4878ae4d45`
+- **API Key:** `[YOUR-API-KEY]` (get from PayAid Payments dashboard)
+- **SALT:** `[YOUR-SALT]` (get from PayAid Payments dashboard)
 - **Base URL:** `https://api.payaidpayments.com`
 
 **Security:** These credentials are admin-only and used for platform payments only.
@@ -49,8 +49,8 @@ Add these to your `.env` file:
 
 ```env
 # Admin PayAid Payments Credentials (Platform Payments Only)
-PAYAID_ADMIN_API_KEY="9306f7fd-57c4-409d-807d-2c23cb4a0212"
-PAYAID_ADMIN_SALT="a64c89fea6c404275bcf5bd59d592c4878ae4d45"
+PAYAID_ADMIN_API_KEY="[YOUR-API-KEY]"
+PAYAID_ADMIN_SALT="[YOUR-SALT]"
 PAYAID_PAYMENTS_BASE_URL="https://api.payaidpayments.com"
 PAYAID_PAYMENTS_PG_API_URL="https://api.payaidpayments.com"
 ```

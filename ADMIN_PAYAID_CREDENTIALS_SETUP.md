@@ -20,12 +20,12 @@ These credentials are for **PayAid Admin Team ONLY** and are used for:
 
 ### **Admin API Key**
 ```
-9306f7fd-57c4-409d-807d-2c23cb4a0212
+[YOUR-API-KEY] (get from PayAid Payments dashboard)
 ```
 
 ### **Admin SALT**
 ```
-a64c89fea6c404275bcf5bd59d592c4878ae4d45
+[YOUR-SALT] (get from PayAid Payments dashboard)
 ```
 
 ### **Base URL**
@@ -45,14 +45,14 @@ Add these environment variables to your `.env` file:
 # Admin PayAid Payments Credentials (Platform Payments Only)
 # SECURITY: These are admin-only credentials
 # Tenants must configure their own credentials for their payments
-PAYAID_ADMIN_API_KEY="9306f7fd-57c4-409d-807d-2c23cb4a0212"
-PAYAID_ADMIN_SALT="a64c89fea6c404275bcf5bd59d592c4878ae4d45"
+PAYAID_ADMIN_API_KEY="[YOUR-API-KEY]"
+PAYAID_ADMIN_SALT="[YOUR-SALT]"
 PAYAID_PAYMENTS_BASE_URL="https://api.payaidpayments.com"
 PAYAID_PAYMENTS_PG_API_URL="https://api.payaidpayments.com"
 
 # Backward compatibility (uses admin credentials)
-PAYAID_PAYMENTS_API_KEY="9306f7fd-57c4-409d-807d-2c23cb4a0212"
-PAYAID_PAYMENTS_SALT="a64c89fea6c404275bcf5bd59d592c4878ae4d45"
+PAYAID_PAYMENTS_API_KEY="[YOUR-API-KEY]"
+PAYAID_PAYMENTS_SALT="[YOUR-SALT]"
 ```
 
 ### **Step 2: Verify `.env` is in `.gitignore`**

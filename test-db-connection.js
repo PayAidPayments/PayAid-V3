@@ -3,7 +3,9 @@
 
 const { Client } = require('pg');
 
-const connectionString = 'postgresql://postgres:x7RV7sVVfFvxApQ%408@db.zjcutguakjavahdrytxc.supabase.co:5432/postgres?schema=public';
+// IMPORTANT: Replace [YOUR-PASSWORD] with your actual password from Supabase Dashboard
+// If password contains @, URL-encode it as %40
+const connectionString = 'postgresql://postgres:[YOUR-PASSWORD]@db.zjcutguakjavahdrytxc.supabase.co:5432/postgres?schema=public';
 
 const client = new Client({
   connectionString: connectionString,
