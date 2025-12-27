@@ -24,9 +24,10 @@ export async function POST(request: NextRequest) {
     const result = await recalculateAllLeadScores(tenantId)
 
     return NextResponse.json({
-      success: true,
       message: 'Lead scores recalculated',
-      ...result,
+      total: result.total,
+      successful: result.success,
+      errors: result.errors,
     })
   } catch (error) {
     console.error('Recalculate scores cron error:', error)
