@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 
@@ -16,7 +16,7 @@ const createEmailAccountSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Check CRM module license (email is part of customer communication/CRM)
-    const { tenantId } = await requireCommunicationAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'communication')
 
     const accounts = await prisma.emailAccount.findMany({
       where: {
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check CRM module license (email is part of customer communication/CRM)
-    const { tenantId } = await requireCommunicationAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'communication')
 
     const body = await request.json()
     const validated = createEmailAccountSchema.parse(body)
