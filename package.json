@@ -24,6 +24,7 @@
     "@types/papaparse": "^5.5.2",
     "@types/pdfkit": "^0.17.4",
     "@types/node": "^20.14.0",
+    "@types/bcryptjs": "^2.4.6",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.0",
@@ -54,7 +55,6 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
-    "@types/bcryptjs": "^2.4.6",
     "@types/dockerode": "^3.3.47",
     "@types/jsonwebtoken": "^9.0.5",
     "cross-env": "^10.1.0",
