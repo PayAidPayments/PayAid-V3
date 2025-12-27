@@ -22,9 +22,10 @@ export async function POST(request: NextRequest) {
     const result = await processScheduledEmails(tenantId)
 
     return NextResponse.json({
-      success: true,
       message: 'Scheduled emails processed',
-      ...result,
+      total: result.total,
+      successful: result.success,
+      failures: result.failures,
     })
   } catch (error) {
     console.error('Send scheduled emails cron error:', error)
