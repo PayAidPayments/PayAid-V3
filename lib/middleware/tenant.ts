@@ -1,5 +1,6 @@
 import { prisma } from '../db/prisma'
 import { cache } from '../redis/client'
+import type { Tenant } from '@prisma/client'
 
 /**
  * Middleware to enforce tenant isolation
@@ -18,11 +19,11 @@ export function withTenant<T extends { tenantId: string }>(
 /**
  * Get tenant by ID with caching
  */
-export async function getTenant(tenantId: string) {
+export async function getTenant(tenantId: string): Promise<Tenant | null> {
   const cacheKey = `tenant:${tenantId}`
   
   // Try cache first
-  const cached = await cache.get(cacheKey)
+  const cached = await cache.get(cacheKey) as Tenant | null
   if (cached) {
     return cached
   }
@@ -67,8 +68,12 @@ export async function getTenantBySubdomain(subdomain: string) {
 
 /**
  * Check if tenant has reached plan limits
+ * @param tenantId - Tenant ID
+ * @param resource - Resource type (contacts, invoices, users, storage)
+ * @param newCount - Optional: number of new items being created (default: 0)
  */
-export async function checkTenantLimits(tenantId: string, resource: string): Promise<boolean> {
+export async function checkTenantLimits(tenantId: string, resource: string, newCount?: number): Promise<boolean> {
+  const additionalCount = newCount ?? 0
   const tenant = await getTenant(tenantId)
   if (!tenant) return false
   
@@ -83,20 +88,20 @@ export async function checkTenantLimits(tenantId: string, resource: string): Pro
   if (!limit) return true // No limit
   
   // Count current usage
-  let count = 0
+  let currentCount = 0
   switch (resource) {
     case 'contacts':
-      count = await prisma.contact.count({ where: { tenantId } })
+      currentCount = await prisma.contact.count({ where: { tenantId } })
       break
     case 'invoices':
-      count = await prisma.invoice.count({ where: { tenantId } })
+      currentCount = await prisma.invoice.count({ where: { tenantId } })
       break
     case 'users':
-      count = await prisma.user.count({ where: { tenantId } })
+      currentCount = await prisma.user.count({ where: { tenantId } })
       break
     // Storage would need file system check
   }
   
-  return count < limit
+  return (currentCount + additionalCount) <= limit
 }
 
