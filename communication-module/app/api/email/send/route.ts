@@ -23,7 +23,7 @@ const sendEmailSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Check CRM module license (email is part of customer communication/CRM)
-    await requireCommunicationAccess(request)
+    await requireModuleAccess(request, 'crm')
 
     const body = await request.json()
     const validated = sendEmailSchema.parse(body)
@@ -37,7 +37,12 @@ export async function POST(request: NextRequest) {
     if (validated.template && emailTemplates[validated.template]) {
       const template = emailTemplates[validated.template]
       html = renderTemplate(template.html, validated.templateVariables || {})
-      text = renderTemplate(template.text || '', validated.templateVariables || {})
+      // Templates may not have text property, use empty string as fallback
+      if ('text' in template && typeof template.text === 'string' && template.text) {
+        text = renderTemplate(template.text, validated.templateVariables || {})
+      } else {
+        text = text || ''
+      }
     }
 
     // Send email asynchronously

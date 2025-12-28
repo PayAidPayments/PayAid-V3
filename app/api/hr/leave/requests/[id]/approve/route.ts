@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 
 // PUT /api/hr/leave/requests/[id]/approve - Approve a leave request
@@ -8,8 +8,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+  const resolvedParams = await params
     // Check HR module license
-    const { tenantId, userId } = await requireHRAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'hr')
 
     const leaveRequest = await prisma.leaveRequest.findFirst({
       where: {
@@ -86,7 +87,7 @@ export async function PUT(
         data: {
           employeeId: leaveRequest.employeeId,
           leaveTypeId: leaveRequest.leaveTypeId,
-          balance: balance.balance - leaveRequest.days,
+          balance: Number(balance.balance) - Number(leaveRequest.days),
           asOfDate: new Date(),
           tenantId: tenantId,
         },

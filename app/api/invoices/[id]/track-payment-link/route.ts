@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 
 /**
  * POST /api/invoices/[id]/track-payment-link
@@ -10,6 +10,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+  const resolvedParams = await params
     const invoice = await prisma.invoice.findFirst({
       where: { id: resolvedParams.id },
     })

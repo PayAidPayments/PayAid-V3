@@ -109,6 +109,7 @@ class NanoBananaClient {
       const response = await this.model!.generateContent({
         contents: [
           {
+            role: 'user',
             parts: [
               {
                 text: enhancedPrompt,
@@ -183,6 +184,7 @@ class NanoBananaClient {
       const response = await this.model!.generateContent({
         contents: [
           {
+            role: 'user',
             parts: [
               {
                 text: options.editPrompt,
@@ -265,6 +267,7 @@ class NanoBananaClient {
       const response = await this.model!.generateContent({
         contents: [
           {
+            role: 'user',
             parts,
           },
         ],

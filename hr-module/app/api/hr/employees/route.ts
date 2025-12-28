@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { Decimal } from '@prisma/client/runtime/library'
@@ -60,7 +60,7 @@ const updateEmployeeSchema = createEmployeeSchema.partial().extend({
 export async function GET(request: NextRequest) {
   try {
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const searchParams = request.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check HR module license
-    const { tenantId, userId } = await requireHRAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'hr')
 
     const body = await request.json()
     const validated = createEmployeeSchema.parse(body)

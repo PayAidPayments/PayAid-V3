@@ -11,7 +11,10 @@ import { prisma } from '@/lib/db/prisma'
 import type { Contact, SalesRep } from '@prisma/client'
 
 interface AllocationScore {
-  rep: SalesRep & { user: { name: string; email: string } }
+  rep: SalesRep & { 
+    user: { name: string; email: string }
+    assignedLeads?: { id: string }[]
+  }
   score: number
   reasons: string[]
 }
@@ -34,7 +37,10 @@ const DEFAULT_CONFIG: AllocationConfig = {
  * Calculate allocation score for a sales rep
  */
 function calculateRepScore(
-  rep: SalesRep & { user: { name: string; email: string } },
+  rep: SalesRep & { 
+    user: { name: string; email: string }
+    assignedLeads?: { id: string }[]
+  },
   contact: Contact,
   config: AllocationConfig = DEFAULT_CONFIG
 ): AllocationScore {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 import { UAParser } from 'ua-parser-js'
 

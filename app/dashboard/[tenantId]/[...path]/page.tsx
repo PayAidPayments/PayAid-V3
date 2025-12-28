@@ -1,16 +1,16 @@
 'use client'
 
-import { useParams } from 'next/navigation'
+import { useParams, usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 
 // This catch-all route handles tenant-scoped dashboard paths
-// It redirects to the actual route without tenantId (which will be handled by existing routes)
-// The middleware ensures tenantId is in the URL, but internally we use the existing route structure
+// It validates the tenant and ensures the URL structure is correct
 export default function TenantDashboardCatchAll() {
   const params = useParams()
   const router = useRouter()
+  const pathname = usePathname()
   const { tenant } = useAuthStore()
 
   const tenantIdFromUrl = params?.tenantId as string | undefined
@@ -30,16 +30,13 @@ export default function TenantDashboardCatchAll() {
       return
     }
 
-    // For paths with segments, redirect to the path without tenantId
-    // The middleware will handle adding tenantId back
-    const pathWithoutTenant = `/${path.join('/')}`
-    router.replace(`/dashboard${pathWithoutTenant}`)
+    // IMPORTANT: Don't redirect - preserve the tenant ID in the URL
+    // The actual route files at /dashboard/websites, etc. will be matched
+    // by Next.js routing, but the URL will keep the tenant ID
+    // This is handled by Next.js rewrites in next.config.js
   }, [tenant?.id, tenantIdFromUrl, path, router])
 
-  // Show loading while redirecting
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-    </div>
-  )
+  // This component doesn't render anything - it's just for route matching
+  // The actual page components will render
+  return null
 }

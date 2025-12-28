@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { prisma } from '@/lib/db/prisma'
+import { getDefaultEnabledFeatures } from '@/lib/industries/features'
 
 // GET /api/industries/[industry] - Get industry information and enabled features
 export async function GET(
@@ -8,6 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ industry: string }> }
 ) {
   try {
+  const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
@@ -64,6 +66,7 @@ export async function POST(
   { params }: { params: Promise<{ industry: string }> }
 ) {
   try {
+    const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 

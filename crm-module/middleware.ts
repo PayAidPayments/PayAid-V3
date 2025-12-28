@@ -1,5 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyRequestToken, redirectToAuth } from '@payaid/oauth-client'
+import { verifyToken } from '@/lib/auth/jwt'
+
+// OAuth2 configuration
+const CORE_AUTH_URL = process.env.CORE_AUTH_URL || 'https://payaid.io'
+const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID || ''
+
+function getTokenFromRequest(request: NextRequest): string | null {
+  const authHeader = request.headers.get('authorization')
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.substring(7)
+  }
+  const tokenCookie = request.cookies.get('payaid_token')
+  if (tokenCookie) {
+    return tokenCookie.value
+  }
+  return null
+}
+
+function verifyRequestToken(request: NextRequest): any {
+  const token = getTokenFromRequest(request)
+  if (!token) {
+    return null
+  }
+  try {
+    return verifyToken(token)
+  } catch {
+    return null
+  }
+}
+
+function redirectToAuth(returnUrl: string): NextResponse {
+  const authUrl = new URL(`${CORE_AUTH_URL}/api/oauth/authorize`)
+  authUrl.searchParams.set('client_id', OAUTH_CLIENT_ID)
+  authUrl.searchParams.set('redirect_uri', returnUrl)
+  authUrl.searchParams.set('response_type', 'code')
+  authUrl.searchParams.set('scope', 'openid profile email')
+  return NextResponse.redirect(authUrl.toString())
+}
 
 /**
  * Next.js Middleware for CRM Module

@@ -15,7 +15,7 @@ export default function Home() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
 
   // Animation variants
-  const fadeInUp = {
+  const fadeInUp: any = {
     hidden: { opacity: 0, y: 30 },
     visible: { 
       opacity: 1, 

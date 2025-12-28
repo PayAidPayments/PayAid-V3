@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 
@@ -19,7 +19,7 @@ const createLeavePolicySchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const leavePolicies = await prisma.leavePolicy.findMany({
       where: {
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const body = await request.json()
     const validated = createLeavePolicySchema.parse(body)
@@ -91,19 +91,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const data: any = {
+      leaveTypeId: validated.leaveTypeId,
+      accrualType: validated.accrualType,
+      requiresApproval: validated.requiresApproval ?? false,
+      requiresDocument: validated.requiresDocument ?? false,
+      tenantId: tenantId,
+    }
+    
+    if (validated.accrualAmount !== undefined) data.accrualAmount = validated.accrualAmount
+    if (validated.maxBalance !== undefined) data.maxBalance = validated.maxBalance
+    if (validated.carryForwardLimit !== undefined) data.carryForwardLimit = validated.carryForwardLimit
+    if (validated.minDaysNotice !== undefined) data.minDaysNotice = validated.minDaysNotice
+    if (validated.maxConsecutiveDays !== undefined) data.maxConsecutiveDays = validated.maxConsecutiveDays
+
     const leavePolicy = await prisma.leavePolicy.create({
-      data: {
-        leaveTypeId: validated.leaveTypeId,
-        accrualType: validated.accrualType,
-        accrualAmount: validated.accrualAmount,
-        maxBalance: validated.maxBalance,
-        carryForwardLimit: validated.carryForwardLimit,
-        minDaysNotice: validated.minDaysNotice,
-        maxConsecutiveDays: validated.maxConsecutiveDays,
-        requiresApproval: validated.requiresApproval,
-        requiresDocument: validated.requiresDocument,
-        tenantId: tenantId,
-      },
+      data,
       include: {
         leaveType: true,
       },

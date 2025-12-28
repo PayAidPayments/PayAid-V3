@@ -3,7 +3,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { getGroqClient } from '@/lib/ai/groq'
 import { getOllamaClient } from '@/lib/ai/ollama'
 import { analyzePromptContext, formatClarifyingQuestions } from '@/lib/ai/context-analyzer'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 
 const generatePostSchema = z.object({

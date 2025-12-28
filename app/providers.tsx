@@ -10,7 +10,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 5 * 60 * 1000, // 5 minutes - data considered fresh
-            cacheTime: 10 * 60 * 1000, // 10 minutes - keep in cache
+            gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache (formerly cacheTime)
             refetchOnWindowFocus: false,
             refetchOnMount: false, // Don't refetch on component mount if data is fresh
             retry: 1, // Only retry once on failure

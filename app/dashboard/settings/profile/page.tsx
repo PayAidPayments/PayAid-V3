@@ -17,7 +17,7 @@ function getAuthHeaders() {
 
 export default function ProfileSettingsPage() {
   const queryClient = useQueryClient()
-  const { user, setUser } = useAuthStore()
+  const { user } = useAuthStore()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -58,7 +58,7 @@ export default function ProfileSettingsPage() {
       queryClient.invalidateQueries({ queryKey: ['user-profile'] })
       // Update auth store if email or name changed
       if (data.email || data.name) {
-        setUser({ ...user, email: data.email || user?.email, name: data.name || user?.name })
+        useAuthStore.setState({ user: { ...user!, email: data.email || user?.email || '', name: data.name || user?.name } })
       }
       setSuccess('Profile updated successfully!')
       setError('')

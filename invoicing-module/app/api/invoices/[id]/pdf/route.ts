@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { generateInvoicePDF } from '@/lib/invoicing/pdf'
 import { GSTCalculation } from '@/lib/invoicing/gst'
@@ -11,7 +11,7 @@ export async function GET(
 ) {
   try {
     // Check invoicing module license
-    const { tenantId } = await requireFinanceAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'finance')
 
     const invoice = await prisma.invoice.findFirst({
       where: {
@@ -46,7 +46,7 @@ export async function GET(
       try {
         const itemsArray = Array.isArray(invoice.items) 
           ? invoice.items 
-          : JSON.parse(invoice.items as string)
+          : JSON.parse(invoice.items as unknown as string)
         
         invoiceItems = itemsArray.map((item: any) => ({
           description: item.description || 'Item',
@@ -133,7 +133,7 @@ export async function GET(
       terms: invoice.termsAndConditions || invoice.terms || undefined,
     })
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as unknown as Blob, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
-import { authenticateRequest } from '@/lib/middleware/auth'
+import { prisma } from '@/lib/db/prisma'
+import { authenticateRequest, requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { cache } from '@/lib/redis/client'
 import { z } from 'zod'
 

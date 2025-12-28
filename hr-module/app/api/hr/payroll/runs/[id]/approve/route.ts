@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 
 // PUT /api/hr/payroll/runs/[id]/approve - Approve a payroll run
@@ -9,7 +9,7 @@ export async function PUT(
 ) {
   try {
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const payrollRun = await prisma.payrollRun.findFirst({
       where: {

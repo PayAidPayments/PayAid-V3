@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { updateLeadScore } from '@/lib/ai-helpers/lead-scoring'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 
 /**
  * PUT /api/leads/[id]/update-score

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 
@@ -20,7 +20,7 @@ export async function GET(
 ) {
   try {
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const interview = await prisma.interviewRound.findFirst({
       where: {
@@ -38,15 +38,7 @@ export async function GET(
             phone: true,
           },
         },
-        interviewer: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            employeeCode: true,
-            officialEmail: true,
-          },
-        },
+        // interviewerId is just a string, not a relation
       },
     })
 
@@ -78,7 +70,7 @@ export async function PATCH(
 ) {
   try {
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const existing = await prisma.interviewRound.findFirst({
       where: {
@@ -119,14 +111,7 @@ export async function PATCH(
             email: true,
           },
         },
-        interviewer: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            employeeCode: true,
-          },
-        },
+        // interviewerId is just a string, not a relation
       },
     })
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { getOllamaClient } from '@/lib/ai/ollama'
 import { getGroqClient } from '@/lib/ai/groq'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { mediumPriorityQueue } from '@/lib/queue/bull'
 
 // GET /api/ai/insights - Get AI-powered business insights

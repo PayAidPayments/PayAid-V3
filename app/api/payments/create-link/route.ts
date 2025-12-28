@@ -23,13 +23,21 @@ export async function POST(request: NextRequest) {
     
     // Ensure currency is INR
     const payaid = getPayAidPayments()
-    const paymentLink = await payaid.createPaymentLink({
-      ...validated,
+    const paymentLink = await payaid.getPaymentRequestUrl({
+      order_id: validated.orderId || `ORDER-${Date.now()}`,
+      amount: validated.amount,
       currency: 'INR', // Always INR
-      notify: {
-        sms: true,
-        email: true,
-      },
+      description: validated.description,
+      name: validated.customer.name,
+      email: validated.customer.email,
+      phone: validated.customer.phone || '',
+      city: '',
+      country: 'India',
+      zip_code: '',
+      return_url: validated.callbackUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/payments/callback/success`,
+      return_url_failure: validated.callbackUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/payments/callback/failure`,
+      return_url_cancel: validated.callbackUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/payments/callback/cancel`,
+      expiry_in_minutes: 10080, // 7 days
     })
 
     return NextResponse.json(paymentLink)

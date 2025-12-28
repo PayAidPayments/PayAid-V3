@@ -18,7 +18,7 @@ const calculatePayrollSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const body = await request.json()
     const validated = calculatePayrollSchema.parse(body)
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       year: validated.year,
       daysWorked: validated.daysWorked,
       totalDays: validated.totalDays,
-      lopDays: validated.lopDays ? new Decimal(validated.lopDays) : undefined,
+      lopDays: validated.lopDays,
       variablePayments: validated.variablePayments,
     })
 

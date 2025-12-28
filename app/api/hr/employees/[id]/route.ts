@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { Decimal } from '@prisma/client/runtime/library'
@@ -57,8 +57,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+  const resolvedParams = await params
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const employee = await prisma.employee.findFirst({
       where: {
@@ -105,8 +106,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params
     // Check HR module license
-    const { tenantId, userId } = await requireHRAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'hr')
 
     // Check if employee exists
     const existing = await prisma.employee.findFirst({
@@ -238,8 +240,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+  const resolvedParams = await params
     // Check HR module license
-    const { tenantId, userId } = await requireHRAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'hr')
 
     const employee = await prisma.employee.findFirst({
       where: {

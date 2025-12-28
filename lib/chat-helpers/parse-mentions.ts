@@ -99,11 +99,8 @@ export async function searchDealsForMention(
     const deals = await prisma.deal.findMany({
       where: {
         tenantId,
-        OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-        ],
-        status: { not: 'lost' },
+        name: { contains: query, mode: 'insensitive' },
+        stage: { not: 'lost' },
       },
       select: {
         id: true,

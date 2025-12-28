@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 import axios from 'axios'
 
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check WhatsApp module license
-    const { tenantId, userId } = await requireWhatsAppAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'marketing')
 
     const body = await request.json()
     const validated = createWhatsappAccountSchema.parse(body)
@@ -130,8 +130,8 @@ export async function POST(request: NextRequest) {
         channelType: validated.channelType || 'web',
         wahaBaseUrl: validated.wahaBaseUrl || null,
         wahaApiKey: validated.wahaApiKey || null, // In production, encrypt this
-        businessName: validated.businessName || null,
-        primaryPhone: validated.primaryPhone || null,
+        businessName: validated.businessName || 'Business',
+        primaryPhone: validated.primaryPhone || '',
         isWebConnected: true,
         status: 'active',
       },

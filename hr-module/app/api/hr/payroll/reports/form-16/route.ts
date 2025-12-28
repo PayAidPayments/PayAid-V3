@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { Decimal } from '@prisma/client/runtime/library'
 
 // GET /api/hr/payroll/reports/form-16 - Generate Form 16 for employee
 export async function GET(request: NextRequest) {
   try {
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const searchParams = request.nextUrl.searchParams
     const employeeId = searchParams.get('employeeId')

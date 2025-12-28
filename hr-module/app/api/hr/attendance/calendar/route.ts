@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 
 // GET /api/hr/attendance/calendar - Get attendance calendar
 export async function GET(request: NextRequest) {
   try {
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const searchParams = request.nextUrl.searchParams
     const employeeId = searchParams.get('employeeId')
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     const absentDays = records.filter((r) => r.status === 'ABSENT').length
     const halfDays = records.filter((r) => r.status === 'HALF_DAY').length
     const totalWorkingDays = daysInMonth - holidays.filter((h) => !h.isOptional).length
-    const totalWorkHours = records.reduce((sum, r) => sum + (r.workHours || 0), 0)
+    const totalWorkHours = records.reduce((sum, r) => sum + Number(r.workHours || 0), 0)
 
     return NextResponse.json({
       calendar,

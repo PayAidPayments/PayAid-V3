@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 
 // PUT /api/logos/[id]/variations/[variationId]/select - Select logo variation
@@ -8,6 +8,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string; variationId: string }> }
 ) {
   try {
+  const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
@@ -39,7 +40,7 @@ export async function PUT(
     // Select the specified variation
     const variation = await prisma.logoVariation.update({
       where: {
-        id: params.variationId,
+        id: resolvedParams.variationId,
       },
       data: {
         isSelected: true,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 
 // GET /api/chat/workspaces - Get chat workspace for tenant
 export async function GET(request: NextRequest) {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get or create workspace for tenant
-    let workspace = await prisma.chatWorkspace.findUnique({
+    let workspace = await prisma.chatWorkspace.findFirst({
       where: { tenantId: tenantId },
       include: {
         channels: {
@@ -70,15 +70,11 @@ export async function GET(request: NextRequest) {
         select: { name: true },
       })
 
-      workspace = await prisma.chatWorkspace.create({
+      const newWorkspace = await prisma.chatWorkspace.create({
         data: {
           tenantId: tenantId,
           name: tenant?.name || 'Workspace',
           description: 'Team communication workspace',
-        },
-        include: {
-          channels: true,
-          members: true,
         },
       })
 
@@ -92,7 +88,7 @@ export async function GET(request: NextRequest) {
         defaultChannels.map((channel) =>
           prisma.chatChannel.create({
             data: {
-              workspaceId: workspace.id,
+              workspaceId: newWorkspace.id,
               name: channel.name,
               description: channel.description,
               isPrivate: channel.isPrivate,
@@ -104,7 +100,7 @@ export async function GET(request: NextRequest) {
       // Add user as member
       await prisma.chatMember.create({
         data: {
-          workspaceId: workspace.id,
+          workspaceId: newWorkspace.id,
           userId: userId,
           displayName: user.name || user.email,
           avatar: user.avatar,
@@ -114,7 +110,7 @@ export async function GET(request: NextRequest) {
 
       // Reload with all relations
       workspace = await prisma.chatWorkspace.findUnique({
-        where: { id: workspace.id },
+        where: { id: newWorkspace.id },
         include: {
           channels: {
             include: {
@@ -134,23 +130,23 @@ export async function GET(request: NextRequest) {
                   },
                 },
               },
-            },
-            _count: {
-              select: {
-                messages: true,
+              _count: {
+                select: {
+                  messages: true,
+                },
               },
             },
+            orderBy: { createdAt: 'asc' },
           },
-          orderBy: { createdAt: 'asc' },
-        },
-        members: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                avatar: true,
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  avatar: true,
+                },
               },
             },
           },

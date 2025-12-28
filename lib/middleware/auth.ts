@@ -24,16 +24,16 @@ export async function authenticateRequest(
   }
 }
 
-export function requireAuth(
+export async function requireAuth(
   request: NextRequest
-): JWTPayload {
-  const user = authenticateRequest(request)
+): Promise<JWTPayload> {
+  const user = await authenticateRequest(request)
   
   if (!user) {
     throw new Error('Unauthorized')
   }
   
-  return user as JWTPayload
+  return user
 }
 
 // Re-export license middleware functions for backward compatibility

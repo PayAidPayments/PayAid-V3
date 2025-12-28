@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { authenticateRequest } from '@/lib/middleware/auth'
 
 // GET /api/settings/invoices/test - Test invoice settings database access
@@ -86,6 +86,9 @@ export async function GET(request: NextRequest) {
     }, { status: 500 })
   }
 }
+
+
+
 
 
 

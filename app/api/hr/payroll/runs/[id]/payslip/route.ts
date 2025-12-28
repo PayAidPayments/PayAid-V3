@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { generatePayslipPDF } from '@/lib/invoicing/pdf'
 
@@ -9,8 +9,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+  const resolvedParams = await params
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const payrollRun = await prisma.payrollRun.findFirst({
       where: {
@@ -61,7 +62,7 @@ export async function GET(
     // Update payslip URL (in production, upload to S3/MinIO)
     // For now, we'll return the PDF directly
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as any, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="payslip-${payrollRun.employee.employeeCode}-${payrollRun.cycle.month}-${payrollRun.cycle.year}.pdf"`,

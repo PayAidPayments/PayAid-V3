@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { authenticateRequest } from '@/lib/middleware/auth'
 
 // GET /api/user/licenses - Get user's licensed modules
@@ -18,9 +18,6 @@ export async function GET(request: NextRequest) {
     // Get tenant with subscription
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      include: {
-        subscription: true,
-      },
       select: {
         id: true,
         name: true,

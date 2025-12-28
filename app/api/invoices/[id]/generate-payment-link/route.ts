@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { createPayAidPayments } from '@/lib/payments/payaid'
 import { getTenantPayAidConfig } from '@/lib/payments/get-tenant-payment-config'
@@ -13,8 +13,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+  const resolvedParams = await params
     // Check invoicing module license
-    const { tenantId } = await requireFinanceAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'finance')
 
     // Get invoice with customer and tenant details
     const invoice = await prisma.invoice.findFirst({
@@ -61,8 +62,7 @@ export async function POST(
                    'http://localhost:3000'
 
     // Get tenant-specific payment gateway config
-    const { tenantId: authTenantId } = await requireFinanceAccess(request)
-    const paymentConfig = await getTenantPayAidConfig(authTenantId)
+    const paymentConfig = await getTenantPayAidConfig(tenantId)
     if (!paymentConfig) {
       return NextResponse.json(
         { 

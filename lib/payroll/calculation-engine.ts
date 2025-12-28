@@ -44,7 +44,7 @@ export async function calculatePayroll(
       tenantId: input.tenantId,
     },
       include: {
-        employeeSalaryStructures: {
+        salaryStructures: {
           where: {
             effectiveFrom: { lte: new Date(input.year, input.month - 1, 1) },
             OR: [
@@ -99,7 +99,7 @@ export async function calculatePayroll(
   ])
 
   // Get salary structure
-  const salaryStructure = employee.employeeSalaryStructures[0]?.structure
+  const salaryStructure = employee.salaryStructures[0]?.structure
   if (!salaryStructure) {
     throw new Error('No salary structure assigned to employee')
   }
@@ -110,7 +110,7 @@ export async function calculatePayroll(
   // Calculate days
   const totalDays = input.totalDays || getWorkingDaysInMonth(input.month, input.year)
   const daysWorked = input.daysWorked || totalDays
-  const lopDays = input.lopDays || new Decimal(totalDays - daysWorked)
+  const lopDays = input.lopDays ? new Decimal(input.lopDays) : new Decimal(totalDays - daysWorked)
   const prorationFactor = new Decimal(daysWorked).div(new Decimal(totalDays))
 
   // Calculate earnings from structure

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 
 // GET /api/marketing/analytics - Get aggregated marketing analytics
@@ -118,6 +118,11 @@ export async function GET(request: NextRequest) {
       topCampaigns,
     })
   } catch (error) {
+    // Handle license errors
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
+    
     console.error('Get marketing analytics error:', error)
     
     // Log full error details for debugging
@@ -156,11 +161,5 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     )
-  } catch (error) {
-    // Handle license errors
-    if (error && typeof error === 'object' && 'moduleId' in error) {
-      return handleLicenseError(error)
-    }
-    throw error
   }
 }

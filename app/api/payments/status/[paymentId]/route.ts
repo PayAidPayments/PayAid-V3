@@ -6,10 +6,11 @@ export async function GET(
   { params }: { params: Promise<{ paymentId: string }> }
 ) {
   try {
-    const { paymentId } = params
+    const resolvedParams = await params
+    const { paymentId } = resolvedParams
     
     const payaid = getPayAidPayments()
-    const status = await payaid.getPaymentStatus(paymentId)
+    const status = await payaid.getPaymentStatus({ order_id: paymentId })
 
     return NextResponse.json(status)
   } catch (error) {

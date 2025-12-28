@@ -16,16 +16,11 @@ interface Interview {
   status: string
   feedback?: string
   rating?: number
+  interviewerId?: string // interviewer relation doesn't exist in schema, use interviewerId instead
   candidate: {
     id: string
     fullName: string
     email: string
-  }
-  interviewer: {
-    id: string
-    firstName: string
-    lastName: string
-    employeeCode: string
   }
 }
 
@@ -148,8 +143,11 @@ export default function InterviewsPage() {
                         {interview.mode.replace('_', ' ').toLowerCase()}
                       </TableCell>
                       <TableCell>
-                        {interview.interviewer.firstName} {interview.interviewer.lastName}
-                        <div className="text-sm text-gray-500">{interview.interviewer.employeeCode}</div>
+                        {interview.interviewerId ? (
+                          <span className="text-sm text-gray-600">ID: {interview.interviewerId}</span>
+                        ) : (
+                          <span className="text-sm text-gray-400">Not assigned</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {interview.rating ? (

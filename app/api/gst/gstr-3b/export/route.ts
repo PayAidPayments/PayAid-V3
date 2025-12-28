@@ -46,8 +46,14 @@ export async function GET(request: NextRequest) {
     }
 
     const inwardSupplies = {
-      taxable: expenses.reduce((sum, exp) => sum + (exp.amount ? Number(exp.amount) : 0), 0),
-      gst: expenses.reduce((sum, exp) => sum + (exp.gstAmount ? Number(exp.gstAmount) : 0), 0),
+      taxable: expenses.reduce((sum, exp) => {
+        const amount = exp.amount ? exp.amount.toNumber() : 0
+        return sum + amount
+      }, 0),
+      gst: expenses.reduce((sum, exp) => {
+        const gstAmount = exp.gstAmount ? exp.gstAmount.toNumber() : 0
+        return sum + gstAmount
+      }, 0),
     }
 
     const inputTaxCredit = inwardSupplies.gst

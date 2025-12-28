@@ -52,7 +52,7 @@ const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
         ref,
         onClick: (e: React.MouseEvent) => {
           context.onOpenChange(true)
-          if (children.props.onClick) {
+          if (children.props && typeof children.props === 'object' && 'onClick' in children.props && typeof children.props.onClick === 'function') {
             children.props.onClick(e)
           }
         },

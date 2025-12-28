@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 
@@ -14,7 +14,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { tenantId } = await requireFinanceAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'finance')
 
     const invoice = await prisma.invoice.findFirst({
       where: {
@@ -58,7 +58,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { tenantId } = await requireFinanceAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'finance')
 
     const body = await request.json()
     const validated = updateInvoiceSchema.parse(body)

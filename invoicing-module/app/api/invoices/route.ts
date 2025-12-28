@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { checkTenantLimits } from '@/lib/middleware/tenant'
 import { calculateGST, getGSTRate, getHSNCode } from '@/lib/invoicing/gst'
@@ -24,6 +24,7 @@ const createInvoiceSchema = z.object({
   template: z.string().optional(),
   orderNumber: z.string().optional(),
   terms: z.string().optional(),
+  termsAndConditions: z.string().optional(),
   accountsReceivable: z.string().optional(),
   salespersonId: z.string().optional(),
   discount: z.number().default(0),
@@ -49,7 +50,7 @@ const createInvoiceSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Check Finance module license
-    const { tenantId } = await requireFinanceAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'finance')
 
     const searchParams = request.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')
@@ -109,7 +110,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check Finance module license
-    const { tenantId } = await requireFinanceAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'finance')
 
     // Check tenant limits
     const canCreate = await checkTenantLimits(tenantId, 'invoices')
@@ -250,7 +251,7 @@ export async function POST(request: NextRequest) {
       discountType: validated.discountType || 'amount',
       tdsType: validated.tdsType || null,
       tdsTax: validated.tdsTax || null,
-      tdsAmount: tdsAmount > 0 ? tdsAmount : null,
+      tdsAmount: null, // TODO: Calculate TDS amount if needed
       adjustment: validated.adjustment || 0,
       notes: validated.notes || null,
       items: invoiceItems, // Store invoice items as JSON
@@ -361,12 +362,6 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     )
-  } catch (error) {
-    // Handle license errors
-    if (error && typeof error === 'object' && 'moduleId' in error) {
-      return handleLicenseError(error)
-    }
-    throw error
   }
 }
 

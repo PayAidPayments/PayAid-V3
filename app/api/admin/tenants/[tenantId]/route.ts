@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { z } from 'zod'
 
@@ -136,7 +136,7 @@ export async function PATCH(
   { params }: { params: Promise<{ tenantId: string }> }
 ) {
   try {
-    const resolvedParams = await Promise.resolve(params)
+    const resolvedParams = await params
     const auth = await authenticateRequest(request)
     if (!auth) {
       return NextResponse.json(

@@ -13,7 +13,7 @@ const createFolderSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Check CRM module license (email is part of customer communication/CRM)
-    const { tenantId } = await requireCommunicationAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const searchParams = request.nextUrl.searchParams
     const accountId = searchParams.get('accountId')
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check CRM module license (email is part of customer communication/CRM)
-    const { tenantId } = await requireCommunicationAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const body = await request.json()
     const validated = createFolderSchema.parse(body)

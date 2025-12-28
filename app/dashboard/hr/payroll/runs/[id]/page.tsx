@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
-import { numberToWords } from '@/lib/invoicing/pdf'
+import { numberToWords } from '@/lib/utils/number-to-words'
 
 interface PayrollAdjustment {
   id: string

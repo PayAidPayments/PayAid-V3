@@ -121,6 +121,7 @@ class SendGridClient {
   ): Promise<void> {
     return this.sendEmail({
       to,
+      from: this.fromEmail,
       subject: subject || 'Email from PayAid',
       templateId,
       dynamicTemplateData,

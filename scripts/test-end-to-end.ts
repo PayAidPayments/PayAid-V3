@@ -29,33 +29,42 @@ const ENVIRONMENTS = {
 interface TestResult {
   name: string
   passed: boolean
+  success: boolean
+  duration: number
   error?: string
 }
 
 async function testModuleAccessibility(url: string, moduleName: string): Promise<TestResult> {
+  const startTime = Date.now()
   try {
     const response = await fetch(url, { redirect: 'manual' })
+    const duration = Date.now() - startTime
     
     // Should return 200, 302 (redirect), or 401 (unauthorized)
     if (response.status === 200 || response.status === 302 || response.status === 401) {
-      return { name: `${moduleName} accessibility`, passed: true }
+      return { name: `${moduleName} accessibility`, passed: true, success: true, duration }
     }
     
     return {
       name: `${moduleName} accessibility`,
       passed: false,
+      success: false,
+      duration: Date.now() - startTime,
       error: `Unexpected status: ${response.status}`,
     }
   } catch (error: any) {
     return {
       name: `${moduleName} accessibility`,
       passed: false,
+      success: false,
+      duration: Date.now() - startTime,
       error: error.message,
     }
   }
 }
 
 async function testOAuth2Flow(coreUrl: string, moduleUrl: string, moduleName: string): Promise<TestResult> {
+  const startTime = Date.now()
   try {
     // Test authorization endpoint
     const authUrl = `${coreUrl}/api/oauth/authorize?client_id=${moduleName}&redirect_uri=${encodeURIComponent(moduleUrl + '/api/oauth/callback')}&response_type=code`
@@ -65,6 +74,8 @@ async function testOAuth2Flow(coreUrl: string, moduleUrl: string, moduleName: st
       return {
         name: `${moduleName} OAuth2 authorization`,
         passed: false,
+        success: false,
+        duration: Date.now() - startTime,
         error: `Authorization endpoint returned ${authResponse.status}`,
       }
     }
@@ -87,21 +98,26 @@ async function testOAuth2Flow(coreUrl: string, moduleUrl: string, moduleName: st
       return {
         name: `${moduleName} OAuth2 token`,
         passed: false,
+        success: false,
+        duration: Date.now() - startTime,
         error: `Token endpoint returned ${tokenResponse.status}`,
       }
     }
-
-    return { name: `${moduleName} OAuth2 flow`, passed: true }
+    
+    return { name: `${moduleName} OAuth2 flow`, passed: true, success: true, duration: Date.now() - startTime }
   } catch (error: any) {
     return {
       name: `${moduleName} OAuth2 flow`,
       passed: false,
+      success: false,
+      duration: Date.now() - startTime,
       error: error.message,
     }
   }
 }
 
 async function testCrossModuleNavigation(modules: Record<string, string>): Promise<TestResult> {
+  const startTime = Date.now()
   try {
     // Test navigation between modules
     const moduleUrls = Object.values(modules)
@@ -119,18 +135,22 @@ async function testCrossModuleNavigation(modules: Record<string, string>): Promi
     }
 
     if (accessibleCount === moduleUrls.length) {
-      return { name: 'Cross-module navigation', passed: true }
+      return { name: 'Cross-module navigation', passed: true, success: true, duration: Date.now() - startTime }
     }
 
     return {
       name: 'Cross-module navigation',
       passed: false,
+      success: false,
+      duration: Date.now() - startTime,
       error: `Only ${accessibleCount}/${moduleUrls.length} modules accessible`,
     }
   } catch (error: any) {
     return {
       name: 'Cross-module navigation',
       passed: false,
+      success: false,
+      duration: Date.now() - startTime,
       error: error.message,
     }
   }

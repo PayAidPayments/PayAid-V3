@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { prisma } from '@payaid/db'
+import { requireModuleAccess, handleLicenseError, authenticateRequest } from '@/lib/middleware/auth'
+import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 import {
   allocatePort,
@@ -38,10 +38,12 @@ const quickConnectSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
-    const user = await authenticateRequest(request)
-    if (!user) {
+    const auth = await authenticateRequest(request)
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const tenantId = auth.tenantId || ''
+    const userId = auth.userId || ''
 
     const body = await request.json()
     const validated = quickConnectSchema.parse(body)

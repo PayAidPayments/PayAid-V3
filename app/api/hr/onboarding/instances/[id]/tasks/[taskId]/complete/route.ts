@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 
 // PUT /api/hr/onboarding/instances/[id]/tasks/[taskId]/complete - Mark task as complete
@@ -8,13 +8,14 @@ export async function PUT(
   { params }: { params: Promise<{ id: string; taskId: string }> }
 ) {
   try {
+  const resolvedParams = await params
     // Check HR module license
-    const { tenantId, userId } = await requireHRAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'hr')
 
     const instanceTask = await prisma.onboardingInstanceTask.findFirst({
       where: {
         instanceId: resolvedParams.id,
-        taskId: params.taskId,
+        taskId: resolvedParams.taskId,
         instance: {
           tenantId: tenantId,
         },
@@ -41,7 +42,7 @@ export async function PUT(
       data: {
         status: 'COMPLETED',
         completedAt: new Date(),
-        assigneeId: user.id,
+        assigneeId: userId,
       },
     })
 

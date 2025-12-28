@@ -94,14 +94,31 @@ export default function DashboardPage() {
           ;(error as any).moduleId = errorData.moduleId
           throw error
         }
-        throw new Error(errorData.error || 'Failed to fetch dashboard stats')
+        // Check if it's a database connection error
+        if (response.status === 503 && errorData.error?.includes('Database')) {
+          const error = new Error(
+            errorData.error + (errorData.details ? `: ${errorData.details}` : '')
+          )
+          ;(error as any).isDatabaseError = true
+          throw error
+        }
+        // Check if it's an authentication error
+        if (response.status === 401) {
+          const error = new Error(errorData.error || 'Authentication required')
+          ;(error as any).isAuthError = true
+          throw error
+        }
+        throw new Error(
+          errorData.error || 'Failed to fetch dashboard stats' + 
+          (errorData.details ? `: ${errorData.details}` : '')
+        )
       }
       return response.json()
     },
     enabled: !!token,
     retry: false, // Don't retry license errors
     staleTime: 2 * 60 * 1000, // 2 minutes - dashboard stats don't change frequently
-    cacheTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes (formerly cacheTime)
   })
 
   useEffect(() => {
@@ -191,7 +208,15 @@ export default function DashboardPage() {
 
       {/* Error Message */}
       {statsError && (
-        <div className="p-4 text-sm bg-yellow-50 border border-yellow-200 rounded-md">
+        <div className={`p-4 text-sm border rounded-md ${
+          (statsError as any)?.isLicenseError 
+            ? "bg-yellow-50 border-yellow-200"
+            : (statsError as any)?.isDatabaseError
+            ? "bg-red-50 border-red-200"
+            : (statsError as any)?.isAuthError
+            ? "bg-orange-50 border-orange-200"
+            : "bg-yellow-50 border-yellow-200"
+        }`}>
           {(statsError as any)?.isLicenseError ? (
             <div>
               <p className="font-semibold text-yellow-800 mb-2">
@@ -206,9 +231,61 @@ export default function DashboardPage() {
                 </Button>
               </Link>
             </div>
+          ) : (statsError as any)?.isDatabaseError ? (
+            <div>
+              <p className="font-semibold text-red-800 mb-2">
+                🗄️ Database Connection Error
+              </p>
+              <p className="text-red-700 mb-3">
+                {statsError.message || 'Failed to connect to database. Please check your DATABASE_URL configuration.'}
+              </p>
+              <p className="text-red-600 text-xs mb-2">
+                Make sure:
+              </p>
+              <ul className="text-red-600 text-xs list-disc list-inside mb-3">
+                <li>Your database server is running</li>
+                <li>DATABASE_URL is correctly set in your .env file</li>
+                <li>Database migrations have been run (npm run db:migrate)</li>
+              </ul>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-red-800 border-red-300 hover:bg-red-100"
+                onClick={() => window.location.reload()}
+              >
+                Refresh Page
+              </Button>
+            </div>
+          ) : (statsError as any)?.isAuthError ? (
+            <div>
+              <p className="font-semibold text-orange-800 mb-2">
+                🔐 Authentication Required
+              </p>
+              <p className="text-orange-700 mb-3">
+                {statsError.message || 'Please log in to view dashboard statistics.'}
+              </p>
+              <Link href="/login">
+                <Button variant="outline" size="sm" className="text-orange-800 border-orange-300 hover:bg-orange-100">
+                  Go to Login
+                </Button>
+              </Link>
+            </div>
           ) : (
-            <div className="text-red-600">
-              Failed to load dashboard stats. Please refresh the page.
+            <div>
+              <p className="font-semibold text-yellow-800 mb-2">
+                ⚠️ Error Loading Dashboard Stats
+              </p>
+              <p className="text-yellow-700 mb-3">
+                {statsError.message || 'Failed to load dashboard stats. Please refresh the page.'}
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-yellow-800 border-yellow-300 hover:bg-yellow-100"
+                onClick={() => window.location.reload()}
+              >
+                Refresh Page
+              </Button>
             </div>
           )}
         </div>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { cache } from '@/lib/cache/redis'
 
 // GET /api/bundles - List all bundles with pricing

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { calculatePayroll } from '@/lib/payroll/calculation-engine'
 import { Decimal } from '@prisma/client/runtime/library'
@@ -11,7 +11,7 @@ export async function POST(
 ) {
   try {
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const cycle = await prisma.payrollCycle.findFirst({
       where: {
@@ -89,7 +89,7 @@ export async function POST(
           year: cycle.year,
           daysWorked,
           totalDays,
-          lopDays: new Decimal(lopDays),
+          lopDays: Number(lopDays),
         })
 
         // Create payroll run

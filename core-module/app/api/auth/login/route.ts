@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
-import { comparePassword, signToken } from '@payaid/auth'
+import { prisma } from '@/lib/db/prisma'
+import { verifyPassword } from '@/lib/auth/password'
+import { signToken } from '@/lib/auth/jwt'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify password
-    const isValid = await comparePassword(validated.password, user.password)
+    const isValid = await verifyPassword(validated.password, user.password)
     if (!isValid) {
       console.error('Login failed: Invalid password', { email: validated.email, userId: user.id })
       return NextResponse.json(

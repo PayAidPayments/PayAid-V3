@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
-import { signToken } from '@payaid/auth'
+import { prisma } from '@/lib/db/prisma'
+import { signToken } from '@/lib/auth/jwt'
 import { cache } from '@/lib/redis/client'
 import crypto from 'crypto'
 

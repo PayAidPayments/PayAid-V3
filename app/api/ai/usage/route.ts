@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { aiGateway } from '@/lib/ai/gateway'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 
 // GET /api/ai/usage - Get AI service usage statistics
 export async function GET(request: NextRequest) {

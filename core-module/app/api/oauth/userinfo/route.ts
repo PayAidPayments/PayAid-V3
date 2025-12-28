@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@payaid/auth'
-import { prisma } from '@payaid/db'
+import { verifyToken } from '@/lib/auth/jwt'
+import { prisma } from '@/lib/db/prisma'
 
 /**
  * GET /api/oauth/userinfo

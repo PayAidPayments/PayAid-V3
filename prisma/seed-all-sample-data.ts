@@ -404,7 +404,7 @@ async function seedEmailTemplates(tenantId: string) {
         subject: template.subject,
         htmlContent: template.htmlContent,
         textContent: template.textContent || null,
-        variables: template.variables ? JSON.stringify(template.variables) : null,
+        variables: template.variables ? template.variables : undefined,
         timesUsed: template.timesUsed || 0,
         lastUsedAt: template.lastUsedAt || null,
         isActive: true,
@@ -670,7 +670,6 @@ async function seedSocialMediaPosts(tenantId: string) {
         ...post,
         tenantId,
         imageUrl: Array.isArray(post.mediaUrls) && post.mediaUrls.length > 0 ? post.mediaUrls[0] : null,
-        mediaUrls: undefined, // Remove mediaUrls as it's not in schema
       },
     })
   }
@@ -1446,11 +1445,11 @@ async function seedAdditionalProducts(tenantId: string) {
         name: product.name,
         description: product.description,
         sku: product.sku,
-        costPrice: product.purchasePrice || product.costPrice || 0,
+        costPrice: product.purchasePrice || 0,
         salePrice: product.salePrice,
-        quantity: product.stock || product.quantity || 0,
-        categories: product.categories || (product.category ? [product.category] : []),
-        images: product.images || [],
+        quantity: product.stock || 0,
+        categories: product.category ? [product.category] : [],
+        images: [],
       },
     })
   }
@@ -2754,7 +2753,7 @@ async function seedEvents(tenantId: string, contactIds: string[]) {
               eventId: event.id,
               tenantId,
               name: contact.name,
-              email: contact.email,
+              email: contact.email || `contact${i}@example.com`,
               phone: contact.phone || undefined,
               status: i === 0 ? 'CONFIRMED' : 'REGISTERED',
               registeredAt: new Date(Date.now() - (registrationCount - i) * 24 * 60 * 60 * 1000),
@@ -2877,9 +2876,10 @@ async function seedAICalls(tenantId: string, contactIds: string[]) {
     if (call.status === 'COMPLETED') {
       await prisma.callTranscript.create({
         data: {
-          call: { connect: { id: call.id } },
+          callId: call.id,
+          tenantId,
           transcript: `[AI]: Hello, this is an AI assistant calling from Demo Business. How can I help you today?\n\n[Customer]: Hi, I'm interested in learning more about your services.\n\n[AI]: Great! I'd be happy to help. What specific services are you interested in?\n\n[Customer]: I'm looking for enterprise solutions.\n\n[AI]: Perfect! We have comprehensive enterprise solutions. Let me connect you with our sales team.\n\n[Customer]: That would be great, thank you!`,
-          keyPoints: ['Customer interested in enterprise solutions', 'Requested connection with sales team'],
+          keyPoints: ['Customer interested in enterprise solutions', 'Requested connection with sales team'] as any,
           sentiment: 'positive',
         },
       })
@@ -3066,11 +3066,12 @@ async function seedWebsiteChatbots(tenantId: string, contactIds: string[]) {
     const chatbot = await prisma.websiteChatbot.create({
       data: {
         ...chatbotData,
-        faqKnowledgeBase: JSON.stringify([
+        tenantId,
+        knowledgeBase: [
           { question: 'What are your business hours?', answer: 'We are open Monday to Friday, 9 AM to 6 PM.' },
           { question: 'How can I contact support?', answer: 'You can reach us at support@demobusiness.com' },
           { question: 'Do you offer free trials?', answer: 'Yes, we offer a 14-day free trial with no credit card required.' },
-        ]),
+        ] as any,
       },
     })
     createdChatbots.push(chatbot)
@@ -3082,13 +3083,15 @@ async function seedWebsiteChatbots(tenantId: string, contactIds: string[]) {
           chatbotId: chatbot.id,
           contactId: contactIds[0],
           visitorId: `visitor-${chatbot.id}`,
+          sessionId: `session-${chatbot.id}-${Date.now()}`,
+          tenantId,
           messages: JSON.stringify([
             { role: 'user', content: 'Hello, I need help' },
             { role: 'assistant', content: 'Hi! I\'d be happy to help. What do you need assistance with?' },
             { role: 'user', content: 'What are your business hours?' },
             { role: 'assistant', content: 'We are open Monday to Friday, 9 AM to 6 PM.' },
           ]),
-          isQualified: true,
+          qualified: true,
           startedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
         },
       })
@@ -3166,6 +3169,8 @@ async function seedCustomDashboards(tenantId: string) {
       data: {
         tenantId,
         ...dashboard,
+        layoutJson: dashboard.layout ? JSON.parse(dashboard.layout) : {},
+        widgets: [],
       },
     })
   }
@@ -3229,6 +3234,7 @@ async function seedCustomReports(tenantId: string) {
       data: {
         tenantId,
         ...report,
+        reportType: report.type,
       },
     })
   }
@@ -3281,10 +3287,7 @@ async function seedWhatsAppData(tenantId: string, contactIds: string[]) {
       if (contact && contact.phone) {
         await prisma.whatsappContactIdentity.upsert({
           where: {
-            contactId_whatsappNumber: {
-              contactId: contactIds[i],
-              whatsappNumber: contact.phone,
-            },
+            whatsappNumber: contact.phone || `+91${contactIds[i]}`,
           },
           update: {},
           create: {
@@ -3743,17 +3746,19 @@ async function seedPayroll(tenantId: string) {
   // Create payroll cycle
   const cycle = await prisma.payrollCycle.upsert({
     where: {
-      tenantId_period: {
+      tenantId_month_year_runType: {
         tenantId,
-        period: '2025-01',
+        month: 1,
+        year: 2025,
+        runType: 'REGULAR',
       },
     },
     update: {},
     create: {
       tenantId,
-      period: '2025-01',
-      startDate: new Date('2025-01-01'),
-      endDate: new Date('2025-01-31'),
+      month: 1,
+      year: 2025,
+      runType: 'REGULAR',
       status: 'COMPLETED',
     },
   })
@@ -3805,31 +3810,28 @@ async function seedHiring(tenantId: string) {
 
   if (!dept) return
 
+  // Get a user for requestedBy
+  const user = await prisma.user.findFirst({
+    where: { tenantId },
+  })
+  if (!user) return
+
   // Create job requisition
   const requisition = await prisma.jobRequisition.create({
     data: {
       tenantId,
       departmentId: dept.id,
       title: 'Senior Software Engineer',
-      description: 'We are looking for an experienced software engineer to join our team.',
-      requiredSkills: ['JavaScript', 'React', 'Node.js'],
-      experienceRequired: 3,
       status: 'OPEN',
-      priority: 'HIGH',
+      requestedBy: user.id,
     },
   })
 
   // Create job posting
   const posting = await prisma.jobPosting.create({
     data: {
-      tenantId,
       requisitionId: requisition.id,
-      title: 'Senior Software Engineer - Full Stack',
-      description: 'Join our engineering team and build amazing products.',
-      location: 'Bangalore',
-      employmentType: 'FULL_TIME',
-      status: 'ACTIVE',
-      postedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      status: 'POSTED',
     },
   })
 

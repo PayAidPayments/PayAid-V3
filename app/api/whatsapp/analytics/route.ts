@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 
 // GET /api/whatsapp/analytics - Get WhatsApp usage analytics
 export async function GET(request: NextRequest) {

@@ -20,28 +20,12 @@ export async function POST(request: NextRequest) {
     // Validate request
     const validated = subscriptionSchema.parse(body)
     
-    const payaid = getPayAidPayments()
-    const subscription = await payaid.createSubscription({
-      planId: validated.planId,
-      customer: validated.customer,
-      startDate: validated.startDate,
-      metadata: {
-        tenantId: validated.tenantId,
-      },
-    })
-
-    // Update tenant with subscription info
-    const { prisma } = await import('@/lib/db/prisma')
-    await prisma.tenant.update({
-      where: { id: validated.tenantId },
-      data: {
-        subscriptionId: subscription.id,
-        currentPeriodEnd: new Date(subscription.currentPeriodEnd),
-        plan: validated.planId,
-      },
-    })
-
-    return NextResponse.json(subscription)
+    // TODO: Implement subscription creation
+    // The PayAidPayments class doesn't have createSubscription method yet
+    return NextResponse.json(
+      { error: 'Subscription creation not yet implemented' },
+      { status: 501 }
+    )
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

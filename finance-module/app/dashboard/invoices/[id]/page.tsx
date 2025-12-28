@@ -34,7 +34,7 @@ function numberToWords(amount: number): string {
   
   if (amount === 0) return 'Zero'
   
-  const rupees = Math.floor(amount)
+  let rupees = Math.floor(amount)
   const paise = Math.round((amount - rupees) * 100)
   
   let result = ''

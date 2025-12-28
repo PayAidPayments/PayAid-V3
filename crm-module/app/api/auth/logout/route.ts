@@ -1,5 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { clearTokenCookie } from '@payaid/oauth-client'
+
+function clearTokenCookie(response: NextResponse): void {
+  // Delete cookies by setting them to empty with past expiration
+  response.cookies.set('payaid_token', '', {
+    expires: new Date(0),
+    domain: '.payaid.io',
+    path: '/',
+  })
+  response.cookies.set('payaid_refresh_token', '', {
+    expires: new Date(0),
+    domain: '.payaid.io',
+    path: '/',
+  })
+}
 
 /**
  * POST /api/auth/logout

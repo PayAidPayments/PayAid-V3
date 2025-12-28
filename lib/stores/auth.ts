@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 
 interface User {
   id: string
@@ -35,6 +35,44 @@ interface AuthState {
   }) => Promise<void>
   logout: () => void
   fetchUser: () => Promise<void>
+}
+
+// SSR-safe storage implementation
+const getSSRSafeStorage = () => {
+  if (typeof window === 'undefined') {
+    // Return a no-op storage for SSR
+    return {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    }
+  }
+
+  // Client-side: use localStorage with error handling
+  return {
+    getItem: (name: string): string | null => {
+      try {
+        return localStorage.getItem(name)
+      } catch (error) {
+        console.error('Error reading from localStorage:', error)
+        return null
+      }
+    },
+    setItem: (name: string, value: string): void => {
+      try {
+        localStorage.setItem(name, value)
+      } catch (error) {
+        console.error('Error writing to localStorage:', error)
+      }
+    },
+    removeItem: (name: string): void => {
+      try {
+        localStorage.removeItem(name)
+      } catch (error) {
+        console.error('Error removing from localStorage:', error)
+      }
+    },
+  }
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -217,6 +255,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      storage: createJSONStorage(() => getSSRSafeStorage()),
       partialize: (state) => ({
         token: state.token,
         user: state.user,

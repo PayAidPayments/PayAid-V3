@@ -1,0 +1,484 @@
+﻿node.exe : ΓÜá `images.domains` is deprecated in favor of `images.remotePatterns`. Please update next.config.js to 
+protect your application from malicious users.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ΓÜá `images.dom...alicious users.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Γû▓ Next.js 16.1.0 (webpack)
+- Environments: .env
+
+ΓÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: 
+https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 83s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+≡ƒöº OllamaClient initialized: {
+  baseUrl: 'http://localhost:11434',
+  model: 'llama3.1:8b',
+  hasApiKey: false,
+  apiKeyLength: 0
+}
+≡ƒöº GroqClient initialized: { hasApiKey: false, apiKeyLength: 0, model: 'llama-3.1-8b-instant' }
+≡ƒöº HuggingFaceClient initialized: {
+  hasApiKey: false,
+  apiKeyLength: 0,
+  model: 'google/gemma-2-2b-it',
+  imageModel: 'ByteDance/SDXL-Lightning'
+}
+≡ƒöº HuggingFaceClient initialized: {
+  hasApiKey: false,
+  apiKeyLength: 0,
+  model: 'google/gemma-2-2b-it',
+  imageModel: 'ByteDance/SDXL-Lightning'
+}
+ΓÜá∩╕Å GEMINI_API_KEY not found in environment variables
+≡ƒöº GroqClient initialized: { hasApiKey: false, apiKeyLength: 0, model: 'llama-3.1-8b-instant' }
+≡ƒöº OllamaClient initialized: {
+  baseUrl: 'http://localhost:11434',
+  model: 'llama3.1:8b',
+  hasApiKey: false,
+  apiKeyLength: 0
+}
+≡ƒöº GroqClient initialized: { hasApiKey: false, apiKeyLength: 0, model: 'llama-3.1-8b-instant' }
+≡ƒöº OllamaClient initialized: {
+  baseUrl: 'http://localhost:11434',
+  model: 'llama3.1:8b',
+  hasApiKey: false,
+  apiKeyLength: 0
+}
+≡ƒöº OllamaClient initialized: {
+  baseUrl: 'http://localhost:11434',
+  model: 'llama3.1:8b',
+  hasApiKey: false,
+  apiKeyLength: 0
+}
+≡ƒöº GroqClient initialized: { hasApiKey: false, apiKeyLength: 0, model: 'llama-3.1-8b-instant' }
+ΓÜá∩╕Å GEMINI_API_KEY not found in environment variables
+ΓÜá∩╕Å GEMINI_API_KEY not found in environment variables
+≡ƒöº OllamaClient initialized: {
+  baseUrl: 'http://localhost:11434',
+  model: 'llama3.1:8b',
+  hasApiKey: false,
+  apiKeyLength: 0
+}
+≡ƒöº HuggingFaceClient initialized: {
+  hasApiKey: false,
+  apiKeyLength: 0,
+  model: 'google/gemma-2-2b-it',
+  imageModel: 'ByteDance/SDXL-Lightning'
+}
+≡ƒöº HuggingFaceClient initialized: {
+  hasApiKey: false,
+  apiKeyLength: 0,
+  model: 'google/gemma-2-2b-it',
+  imageModel: 'ByteDance/SDXL-Lightning'
+}
+≡ƒöº GroqClient initialized: { hasApiKey: false, apiKeyLength: 0, model: 'llama-3.1-8b-instant' }
+≡ƒöº HuggingFaceClient initialized: {
+  hasApiKey: false,
+  apiKeyLength: 0,
+  model: 'google/gemma-2-2b-it',
+  imageModel: 'ByteDance/SDXL-Lightning'
+}
+  Generating static pages using 7 workers (0/276) ...
+  Generating static pages using 7 workers (69/276) 
+ΓÜá∩╕Å GEMINI_API_KEY not found in environment variables
+  Generating static pages using 7 workers (138/276) 
+  Generating static pages using 7 workers (207/276) 
+Γ£ô Generating static pages using 7 workers (276/276) in 28.6s
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ ╞Æ /api/accounting/expenses
+Γö£ ╞Æ /api/accounting/reports/balance-sheet
+Γö£ ╞Æ /api/accounting/reports/pl
+Γö£ ╞Æ /api/admin/coupons
+Γö£ ╞Æ /api/admin/reset-password
+Γö£ ╞Æ /api/admin/revenue
+Γö£ ╞Æ /api/admin/tenants
+Γö£ ╞Æ /api/admin/tenants/[tenantId]
+Γö£ ╞Æ /api/admin/tenants/[tenantId]/modules
+Γö£ ╞Æ /api/ai/chat
+Γö£ ╞Æ /api/ai/generate-image
+Γö£ ╞Æ /api/ai/generate-post
+Γö£ ╞Æ /api/ai/google-ai-studio/authorize
+Γö£ ╞Æ /api/ai/google-ai-studio/callback
+Γö£ ╞Æ /api/ai/google-ai-studio/generate-image
+Γö£ ╞Æ /api/ai/image-to-image
+Γö£ ╞Æ /api/ai/image-to-text
+Γö£ ╞Æ /api/ai/insights
+Γö£ ╞Æ /api/ai/integrations
+Γö£ ╞Æ /api/ai/integrations/google-ai-studio
+Γö£ ╞Æ /api/ai/integrations/google-ai-studio/test
+Γö£ ╞Æ /api/ai/nanobanana/edit-image
+Γö£ ╞Æ /api/ai/nanobanana/fuse-images
+Γö£ ╞Æ /api/ai/nanobanana/health
+Γö£ ╞Æ /api/ai/ollama/health
+Γö£ ╞Æ /api/ai/speech-to-text
+Γö£ ╞Æ /api/ai/test
+Γö£ ╞Æ /api/ai/text-to-speech
+Γö£ ╞Æ /api/ai/usage
+Γö£ ╞Æ /api/alerts
+Γö£ ╞Æ /api/alerts/[id]/read
+Γö£ ╞Æ /api/alerts/mark-all-read
+Γö£ ╞Æ /api/analytics/dashboard
+Γö£ ╞Æ /api/analytics/health-score
+Γö£ ╞Æ /api/analytics/lead-sources
+Γö£ ╞Æ /api/analytics/team-performance
+Γö£ ╞Æ /api/analytics/track
+Γö£ ╞Æ /api/analytics/visit
+Γö£ ╞Æ /api/auth/login
+Γö£ ╞Æ /api/auth/me
+Γö£ ╞Æ /api/auth/oauth/google
+Γö£ ╞Æ /api/auth/oauth/google/authorize
+Γö£ ╞Æ /api/auth/oauth/google/callback
+Γö£ ╞Æ /api/auth/register
+Γö£ ╞Æ /api/billing/create-order
+Γö£ ╞Æ /api/billing/orders
+Γö£ ╞Æ /api/billing/orders/[orderId]
+Γö£ ╞Æ /api/billing/webhook
+Γö£ ╞Æ /api/bundles
+Γö£ ╞Æ /api/calls
+Γö£ ╞Æ /api/calls/[id]
+Γö£ ╞Æ /api/calls/faqs
+Γö£ ╞Æ /api/calls/webhook
+Γö£ ╞Æ /api/chat/channels
+Γö£ ╞Æ /api/chat/channels/[channelId]/messages
+Γö£ ╞Æ /api/chat/workspaces
+Γö£ ╞Æ /api/chatbots
+Γö£ ╞Æ /api/chatbots/[id]/chat
+Γö£ ╞Æ /api/checkout-pages
+Γö£ ╞Æ /api/checkout-pages/[id]
+Γö£ ╞Æ /api/contacts
+Γö£ ╞Æ /api/contacts/[id]
+Γö£ ╞Æ /api/contacts/import
+Γö£ ╞Æ /api/contacts/test
+Γö£ ╞Æ /api/cron/check-follow-ups
+Γö£ ╞Æ /api/cron/recalculate-scores
+Γö£ ╞Æ /api/cron/send-scheduled-emails
+Γö£ ╞Æ /api/dashboard/stats
+Γö£ ╞Æ /api/dashboards/custom
+Γö£ ╞Æ /api/deals
+Γö£ ╞Æ /api/deals/[id]
+Γö£ ╞Æ /api/email-templates
+Γö£ ╞Æ /api/email-templates/[id]
+Γö£ ╞Æ /api/email/accounts
+Γö£ ╞Æ /api/email/folders
+Γö£ ╞Æ /api/email/messages
+Γö£ ╞Æ /api/email/send
+Γö£ ╞Æ /api/events
+Γö£ ╞Æ /api/events/[id]
+Γö£ ╞Æ /api/events/[id]/register
+Γö£ ╞Æ /api/gst/gstr-1
+Γö£ ╞Æ /api/gst/gstr-1/export
+Γö£ ╞Æ /api/gst/gstr-3b
+Γö£ ╞Æ /api/gst/gstr-3b/export
+Γö£ ╞Æ /api/gst/search
+Γö£ ╞Æ /api/hr/attendance/biometric-import
+Γö£ ╞Æ /api/hr/attendance/calendar
+Γö£ ╞Æ /api/hr/attendance/check-in
+Γö£ ╞Æ /api/hr/attendance/check-out
+Γö£ ╞Æ /api/hr/attendance/records
+Γö£ ╞Æ /api/hr/candidates
+Γö£ ╞Æ /api/hr/candidates/[id]
+Γö£ ╞Æ /api/hr/candidates/[id]/assign-job
+Γö£ ╞Æ /api/hr/departments
+Γö£ ╞Æ /api/hr/departments/[id]
+Γö£ ╞Æ /api/hr/designations
+Γö£ ╞Æ /api/hr/designations/[id]
+Γö£ ╞Æ /api/hr/employees
+Γö£ ╞Æ /api/hr/employees/[id]
+Γö£ ╞Æ /api/hr/employees/bulk-import
+Γö£ ╞Æ /api/hr/interviews
+Γö£ ╞Æ /api/hr/interviews/[id]
+Γö£ ╞Æ /api/hr/job-requisitions
+Γö£ ╞Æ /api/hr/job-requisitions/[id]
+Γö£ ╞Æ /api/hr/leave/balances
+Γö£ ╞Æ /api/hr/leave/policies
+Γö£ ╞Æ /api/hr/leave/requests
+Γö£ ╞Æ /api/hr/leave/requests/[id]/approve
+Γö£ ╞Æ /api/hr/leave/requests/[id]/reject
+Γö£ ╞Æ /api/hr/leave/types
+Γö£ ╞Æ /api/hr/locations
+Γö£ ╞Æ /api/hr/locations/[id]
+Γö£ ╞Æ /api/hr/offers
+Γö£ ╞Æ /api/hr/offers/[id]/accept
+Γö£ ╞Æ /api/hr/onboarding/instances
+Γö£ ╞Æ /api/hr/onboarding/instances/[id]/tasks/[taskId]/complete
+Γö£ ╞Æ /api/hr/onboarding/templates
+Γö£ ╞Æ /api/hr/onboarding/templates/[id]
+Γö£ ╞Æ /api/hr/onboarding/templates/[id]/tasks
+Γö£ ╞Æ /api/hr/payroll/calculate
+Γö£ ╞Æ /api/hr/payroll/cycles
+Γö£ ╞Æ /api/hr/payroll/cycles/[id]
+Γö£ ╞Æ /api/hr/payroll/cycles/[id]/generate
+Γö£ ╞Æ /api/hr/payroll/cycles/[id]/lock
+Γö£ ╞Æ /api/hr/payroll/payouts/create
+Γö£ ╞Æ /api/hr/payroll/reports/ecr
+Γö£ ╞Æ /api/hr/payroll/reports/form-16
+Γö£ ╞Æ /api/hr/payroll/runs
+Γö£ ╞Æ /api/hr/payroll/runs/[id]
+Γö£ ╞Æ /api/hr/payroll/runs/[id]/approve
+Γö£ ╞Æ /api/hr/payroll/runs/[id]/payslip
+Γö£ ╞Æ /api/hr/payroll/salary-structures
+Γö£ ╞Æ /api/hr/payroll/salary-structures/[id]
+Γö£ ╞Æ /api/hr/payroll/statutory/esi-config
+Γö£ ╞Æ /api/hr/payroll/statutory/pf-config
+Γö£ ╞Æ /api/hr/payroll/statutory/pt-config
+Γö£ ╞Æ /api/hr/tax-declarations
+Γö£ ╞Æ /api/hr/tax-declarations/[id]
+Γö£ ╞Æ /api/hr/tax-declarations/[id]/approve
+Γö£ ╞Æ /api/hr/tax-declarations/[id]/reject
+Γö£ ╞Æ /api/hr/tax-declarations/categories
+Γö£ ╞Æ /api/industries/[industry]
+Γö£ ╞Æ /api/industries/restaurant/kitchen
+Γö£ ╞Æ /api/industries/restaurant/menu
+Γö£ ╞Æ /api/industries/restaurant/orders
+Γö£ ╞Æ /api/industries/restaurant/orders/[id]
+Γö£ ╞Æ /api/industries/retail/products
+Γö£ ╞Æ /api/interactions
+Γö£ ╞Æ /api/invoices
+Γö£ ╞Æ /api/invoices/[id]
+Γö£ ╞Æ /api/invoices/[id]/generate-payment-link
+Γö£ ╞Æ /api/invoices/[id]/pdf
+Γö£ ╞Æ /api/invoices/[id]/send-with-payment
+Γö£ ╞Æ /api/invoices/[id]/track-payment-link
+Γö£ ╞Æ /api/landing-pages
+Γö£ ╞Æ /api/landing-pages/[id]
+Γö£ ╞Æ /api/leads/[id]/allocate
+Γö£ ╞Æ /api/leads/[id]/allocation-suggestions
+Γö£ ╞Æ /api/leads/[id]/enroll-sequence
+Γö£ ╞Æ /api/leads/[id]/sequences
+Γö£ ╞Æ /api/leads/[id]/update-score
+Γö£ ╞Æ /api/leads/import
+Γö£ ╞Æ /api/leads/score
+Γö£ ╞Æ /api/logos
+Γö£ ╞Æ /api/logos/[id]
+Γö£ ╞Æ /api/logos/[id]/variations/[variationId]/select
+Γö£ ╞Æ /api/marketing/analytics
+Γö£ ╞Æ /api/marketing/campaigns
+Γö£ ╞Æ /api/marketing/campaigns/[id]
+Γö£ ╞Æ /api/marketing/campaigns/test
+Γö£ ╞Æ /api/marketing/contacts/upload
+Γö£ ╞Æ /api/marketing/segments
+Γö£ ╞Æ /api/marketing/segments/[id]
+Γö£ ╞Æ /api/modules
+Γö£ ╞Æ /api/nurture/templates
+Γö£ ╞Æ /api/oauth/authorize
+Γö£ ╞Æ /api/oauth/token
+Γö£ ╞Æ /api/oauth/userinfo
+Γö£ ╞Æ /api/orders
+Γö£ ╞Æ /api/orders/[id]
+Γö£ ╞Æ /api/payments/callback
+Γö£ ╞Æ /api/payments/callback/cancel
+Γö£ ╞Æ /api/payments/callback/failure
+Γö£ ╞Æ /api/payments/callback/success
+Γö£ ╞Æ /api/payments/create-link
+Γö£ ╞Æ /api/payments/refund
+Γö£ ╞Æ /api/payments/refund/status
+Γö£ ╞Æ /api/payments/request
+Γö£ ╞Æ /api/payments/status
+Γö£ ╞Æ /api/payments/status/[paymentId]
+Γö£ ╞Æ /api/payments/webhook
+Γö£ ╞Æ /api/products
+Γö£ ╞Æ /api/products/[id]
+Γö£ ╞Æ /api/reports/custom
+Γö£ ╞Æ /api/sales-reps
+Γö£ ╞Æ /api/sales-reps/[id]
+Γö£ ╞Æ /api/sales-reps/[id]/set-leave
+Γö£ ╞Æ /api/sequences/[id]
+Γö£ ╞Æ /api/sequences/[id]/pause
+Γö£ ╞Æ /api/settings/invoices
+Γö£ ╞Æ /api/settings/invoices/test
+Γö£ ╞Æ /api/settings/payment-gateway
+Γö£ ╞Æ /api/settings/profile
+Γö£ ╞Æ /api/settings/tenant
+Γö£ ╞Æ /api/social-media/accounts
+Γö£ ╞Æ /api/social-media/posts
+Γö£ ╞Æ /api/social-media/posts/[id]/publish
+Γö£ ╞Æ /api/social-media/scheduled
+Γö£ ╞Æ /api/subscriptions/create
+Γö£ ╞Æ /api/tasks
+Γö£ ╞Æ /api/tasks/[id]
+Γö£ ╞Æ /api/upload/kyc
+Γö£ ╞Æ /api/user/licenses
+Γö£ ╞Æ /api/websites
+Γö£ ╞Æ /api/websites/[id]
+Γö£ ╞Æ /api/websites/[id]/pages
+Γö£ ╞Æ /api/websites/[id]/pages/[pageId]
+Γö£ ╞Æ /api/websites/[id]/pages/[pageId]/save-component
+Γö£ ╞Æ /api/websites/[id]/pages/update-content
+Γö£ ╞Æ /api/websites/components/library
+Γö£ ╞Æ /api/websites/generate
+Γö£ ╞Æ /api/websites/generate/ab-test
+Γö£ ╞Æ /api/websites/generate/suggestions
+Γö£ ╞Æ /api/websites/generate/variations
+Γö£ ╞Æ /api/websites/templates
+Γö£ ╞Æ /api/websites/templates/custom
+Γö£ ╞Æ /api/whatsapp/accounts
+Γö£ ╞Æ /api/whatsapp/analytics
+Γö£ ╞Æ /api/whatsapp/conversations
+Γö£ ╞Æ /api/whatsapp/conversations/[conversationId]
+Γö£ ╞Æ /api/whatsapp/conversations/[conversationId]/create-ticket
+Γö£ ╞Æ /api/whatsapp/conversations/[conversationId]/messages
+Γö£ ╞Æ /api/whatsapp/messages/send
+Γö£ ╞Æ /api/whatsapp/onboarding/[accountId]/status
+Γö£ ╞Æ /api/whatsapp/onboarding/quick-connect
+Γö£ ╞Æ /api/whatsapp/sessions
+Γö£ ╞Æ /api/whatsapp/sessions/[accountId]
+Γö£ ╞Æ /api/whatsapp/sessions/status/[sessionId]
+Γö£ ╞Æ /api/whatsapp/templates
+Γö£ ╞Æ /api/whatsapp/webhooks/message
+Γö£ ╞Æ /api/whatsapp/webhooks/status
+Γö£ Γùï /app-store
+Γö£ Γùï /checkout/cart
+Γö£ Γùï /checkout/confirmation
+Γö£ Γùï /checkout/payment
+Γö£ Γùï /dashboard
+Γö£ ╞Æ /dashboard/[tenantId]
+Γö£ ╞Æ /dashboard/[tenantId]/[...path]
+Γö£ Γùï /dashboard/accounting
+Γö£ Γùï /dashboard/accounting/expenses
+Γö£ Γùï /dashboard/accounting/expenses/new
+Γö£ Γùï /dashboard/accounting/reports
+Γö£ Γùï /dashboard/admin/modules
+Γö£ Γùï /dashboard/admin/revenue
+Γö£ Γùï /dashboard/admin/tenants
+Γö£ ╞Æ /dashboard/admin/tenants/[tenantId]
+Γö£ Γùï /dashboard/ai
+Γö£ Γùï /dashboard/ai/chat
+Γö£ Γùï /dashboard/ai/insights
+Γö£ Γùï /dashboard/ai/test
+Γö£ Γùï /dashboard/analytics
+Γö£ Γùï /dashboard/analytics/lead-sources
+Γö£ Γùï /dashboard/analytics/team-performance
+Γö£ Γùï /dashboard/billing
+Γö£ Γùï /dashboard/calls
+Γö£ ╞Æ /dashboard/calls/[id]
+Γö£ Γùï /dashboard/calls/faqs
+Γö£ Γùï /dashboard/chat
+Γö£ Γùï /dashboard/checkout-pages
+Γö£ ╞Æ /dashboard/checkout-pages/[id]
+Γö£ Γùï /dashboard/checkout-pages/new
+Γö£ Γùï /dashboard/contacts
+Γö£ ╞Æ /dashboard/contacts/[id]
+Γö£ ╞Æ /dashboard/contacts/[id]/edit
+Γö£ Γùï /dashboard/contacts/new
+Γö£ Γùï /dashboard/dashboards/custom
+Γö£ Γùï /dashboard/deals
+Γö£ ╞Æ /dashboard/deals/[id]
+Γö£ ╞Æ /dashboard/deals/[id]/edit
+Γö£ Γùï /dashboard/deals/new
+Γö£ Γùï /dashboard/email-templates
+Γö£ ╞Æ /dashboard/email-templates/[id]
+Γö£ Γùï /dashboard/email-templates/new
+Γö£ Γùï /dashboard/email/accounts
+Γö£ Γùï /dashboard/email/webmail
+Γö£ Γùï /dashboard/events
+Γö£ ╞Æ /dashboard/events/[id]
+Γö£ Γùï /dashboard/events/new
+Γö£ Γùï /dashboard/gst
+Γö£ Γùï /dashboard/gst/gstr-1
+Γö£ Γùï /dashboard/gst/gstr-3b
+Γö£ Γùï /dashboard/hr/attendance/calendar
+Γö£ Γùï /dashboard/hr/attendance/check-in
+Γö£ Γùï /dashboard/hr/employees
+Γö£ ╞Æ /dashboard/hr/employees/[id]
+Γö£ Γùï /dashboard/hr/hiring/candidates
+Γö£ ╞Æ /dashboard/hr/hiring/candidates/[id]
+Γö£ Γùï /dashboard/hr/hiring/candidates/new
+Γö£ Γùï /dashboard/hr/hiring/interviews
+Γö£ Γùï /dashboard/hr/hiring/interviews/new
+Γö£ Γùï /dashboard/hr/hiring/job-requisitions
+Γö£ ╞Æ /dashboard/hr/hiring/job-requisitions/[id]
+Γö£ Γùï /dashboard/hr/hiring/job-requisitions/new
+Γö£ Γùï /dashboard/hr/hiring/offers
+Γö£ Γùï /dashboard/hr/hiring/offers/new
+Γö£ Γùï /dashboard/hr/leave/apply
+Γö£ Γùï /dashboard/hr/leave/balances
+Γö£ Γùï /dashboard/hr/leave/requests
+Γö£ Γùï /dashboard/hr/onboarding/instances
+Γö£ Γùï /dashboard/hr/onboarding/templates
+Γö£ ╞Æ /dashboard/hr/onboarding/templates/[id]
+Γö£ Γùï /dashboard/hr/onboarding/templates/new
+Γö£ Γùï /dashboard/hr/payroll/cycles
+Γö£ ╞Æ /dashboard/hr/payroll/cycles/[id]
+Γö£ Γùï /dashboard/hr/payroll/cycles/new
+Γö£ Γùï /dashboard/hr/payroll/reports
+Γö£ ╞Æ /dashboard/hr/payroll/runs/[id]
+Γö£ Γùï /dashboard/hr/payroll/salary-structures
+Γö£ Γùï /dashboard/hr/payroll/salary-structures/new
+Γö£ Γùï /dashboard/hr/tax-declarations
+Γö£ ╞Æ /dashboard/hr/tax-declarations/[id]
+Γö£ Γùï /dashboard/hr/tax-declarations/new
+Γö£ Γùï /dashboard/industries
+Γö£ Γùï /dashboard/industries/restaurant/kitchen
+Γö£ Γùï /dashboard/industries/restaurant/menu
+Γö£ Γùï /dashboard/industries/restaurant/orders
+Γö£ Γùï /dashboard/industries/retail/products
+Γö£ Γùï /dashboard/invoices
+Γö£ ╞Æ /dashboard/invoices/[id]
+Γö£ ╞Æ /dashboard/invoices/[id]/edit
+Γö£ Γùï /dashboard/invoices/new
+Γö£ Γùï /dashboard/landing-pages
+Γö£ ╞Æ /dashboard/landing-pages/[id]
+Γö£ Γùï /dashboard/landing-pages/new
+Γö£ Γùï /dashboard/logos
+Γö£ ╞Æ /dashboard/logos/[id]
+Γö£ Γùï /dashboard/marketing
+Γö£ Γùï /dashboard/marketing/analytics
+Γö£ Γùï /dashboard/marketing/campaigns
+Γö£ ╞Æ /dashboard/marketing/campaigns/[id]
+Γö£ Γùï /dashboard/marketing/campaigns/new
+Γö£ Γùï /dashboard/marketing/segments
+Γö£ Γùï /dashboard/marketing/social
+Γö£ Γùï /dashboard/marketing/social/create-image
+Γö£ Γùï /dashboard/marketing/social/create-post
+Γö£ Γùï /dashboard/marketing/social/schedule
+Γö£ Γùï /dashboard/orders
+Γö£ ╞Æ /dashboard/orders/[id]
+Γö£ Γùï /dashboard/orders/new
+Γö£ Γùï /dashboard/products
+Γö£ ╞Æ /dashboard/products/[id]
+Γö£ ╞Æ /dashboard/products/[id]/edit
+Γö£ Γùï /dashboard/products/new
+Γö£ Γùï /dashboard/reports/custom
+Γö£ Γùï /dashboard/settings
+Γö£ Γùï /dashboard/settings/ai
+Γö£ Γùï /dashboard/settings/invoices
+Γö£ Γùï /dashboard/settings/kyc
+Γö£ Γùï /dashboard/settings/payment-gateway
+Γö£ Γùï /dashboard/settings/profile
+Γö£ Γùï /dashboard/settings/sales-reps
+Γö£ Γùï /dashboard/settings/tenant
+Γö£ Γùï /dashboard/setup/industry
+Γö£ Γùï /dashboard/tasks
+Γö£ ╞Æ /dashboard/tasks/[id]
+Γö£ Γùï /dashboard/tasks/new
+Γö£ Γùï /dashboard/websites
+Γö£ ╞Æ /dashboard/websites/[id]
+Γö£ ╞Æ /dashboard/websites/[id]/builder
+Γö£ ╞Æ /dashboard/websites/[id]/pages/[pageId]/preview
+Γö£ ╞Æ /dashboard/websites/[id]/preview
+Γö£ Γùï /dashboard/websites/new
+Γö£ Γùï /dashboard/whatsapp/accounts
+Γö£ Γùï /dashboard/whatsapp/inbox
+Γö£ Γùï /dashboard/whatsapp/sessions
+Γö£ Γùï /dashboard/whatsapp/setup
+Γö£ Γùï /login
+Γö£ Γùï /register
+Γö£ ╞Æ /sites/[subdomain]
+Γöö ╞Æ /sites/[subdomain]/[...path]
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

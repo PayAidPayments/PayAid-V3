@@ -40,12 +40,7 @@ interface Candidate {
     mode: string
     status: string
     rating?: number
-    interviewer?: {
-      id: string
-      firstName: string
-      lastName: string
-      employeeCode: string
-    }
+    interviewerId?: string // interviewer relation doesn't exist in schema, use interviewerId instead
   }>
   offers: Array<{
     id: string
@@ -517,8 +512,8 @@ export default function CandidateDetailPage() {
                         <TableCell>{format(new Date(interview.scheduledAt), 'PPp')}</TableCell>
                         <TableCell>{interview.mode}</TableCell>
                         <TableCell>
-                          {interview.interviewer
-                            ? `${interview.interviewer.employeeCode} - ${interview.interviewer.firstName} ${interview.interviewer.lastName}`
+                          {interview.interviewerId
+                            ? `ID: ${interview.interviewerId}`
                             : '-'}
                         </TableCell>
                         <TableCell>{interview.rating ? `${interview.rating}/5` : '-'}</TableCell>

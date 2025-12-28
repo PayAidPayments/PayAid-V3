@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 
 // GET /api/hr/payroll/reports/ecr - Generate ECR (Electronic Challan cum Return) file
 export async function GET(request: NextRequest) {
   try {
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const searchParams = request.nextUrl.searchParams
     const month = parseInt(searchParams.get('month') || new Date().getMonth().toString())
@@ -54,9 +54,9 @@ export async function GET(request: NextRequest) {
       epsWages: Number(run.pfEmployeeInr) > 0 ? Number(run.grossEarningsInr) : 0,
       edliWages: Number(run.pfEmployeeInr) > 0 ? Number(run.grossEarningsInr) : 0,
       epfContribution: Number(run.pfEmployeeInr),
-      epsContribution: Number(run.pfEmployerInr).mul(3.67).div(12.0), // EPS portion
+      epsContribution: Number(run.pfEmployerInr) * 3.67 / 12.0, // EPS portion
       edliContribution: 0, // EDLI if applicable
-      epfRemittance: Number(run.pfEmployeeInr).add(Number(run.pfEmployerInr)),
+      epfRemittance: Number(run.pfEmployeeInr) + Number(run.pfEmployerInr),
       ncpDays: Number(run.lopDays),
     }))
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 
@@ -15,7 +15,7 @@ const createInterviewSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const searchParams = request.nextUrl.searchParams
     const candidateId = searchParams.get('candidateId')
@@ -47,14 +47,7 @@ export async function GET(request: NextRequest) {
               email: true,
             },
           },
-          interviewer: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              employeeCode: true,
-            },
-          },
+          // interviewer relation doesn't exist in schema, use interviewerId instead
         },
         orderBy: { scheduledAt: 'asc' },
       }),
@@ -87,7 +80,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const body = await request.json()
     const validated = createInterviewSchema.parse(body)
@@ -139,14 +132,7 @@ export async function POST(request: NextRequest) {
             email: true,
           },
         },
-        interviewer: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            employeeCode: true,
-          },
-        },
+        // interviewer relation doesn't exist in schema, use interviewerId instead
       },
     })
 

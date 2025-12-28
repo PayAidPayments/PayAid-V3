@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { getAdminPayAidConfig } from '@/lib/payments/get-admin-payment-config'
 import { PayAidPayments } from '@/lib/payments/payaid'
 

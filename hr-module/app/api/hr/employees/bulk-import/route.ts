@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { Decimal } from '@prisma/client/runtime/library'
@@ -26,7 +26,7 @@ const employeeRowSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Check HR module license
-    const { tenantId, userId } = await requireHRAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'hr')
 
     const formData = await request.formData()
     const file = formData.get('file') as File

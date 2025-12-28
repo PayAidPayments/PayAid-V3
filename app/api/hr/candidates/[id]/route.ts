@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { Decimal } from '@prisma/client/runtime/library'
@@ -25,8 +25,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const candidate = await prisma.candidate.findFirst({
       where: {
@@ -48,15 +49,17 @@ export async function GET(
           },
         },
         interviewRounds: {
-          include: {
-            interviewer: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                employeeCode: true,
-              },
-            },
+          select: {
+            id: true,
+            roundName: true,
+            scheduledAt: true,
+            mode: true,
+            interviewerId: true,
+            feedback: true,
+            rating: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
           },
           orderBy: { scheduledAt: 'asc' },
         },
@@ -100,8 +103,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const existing = await prisma.candidate.findFirst({
       where: {
@@ -191,8 +195,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const candidate = await prisma.candidate.findFirst({
       where: {

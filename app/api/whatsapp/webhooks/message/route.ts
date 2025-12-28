@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 
 // POST /api/whatsapp/webhooks/message - WAHA sends incoming messages via webhook
 // This endpoint should be public (no auth) as WAHA calls it

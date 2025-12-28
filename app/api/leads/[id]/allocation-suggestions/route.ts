@@ -11,6 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+  const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
@@ -26,7 +27,6 @@ export async function GET(
           email: s.rep.user.email,
           specialization: s.rep.specialization,
           conversionRate: s.rep.conversionRate,
-          assignedLeadsCount: s.rep.assignedLeads?.length || 0,
         },
         score: s.score,
         reasons: s.reasons,

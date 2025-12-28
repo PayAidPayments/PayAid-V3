@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
+import { authenticateRequest } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { updateRepConversionRate } from '@/lib/sales-automation/lead-allocation'
 
@@ -101,7 +102,8 @@ export async function PATCH(
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
     // Only admins/owners can update sales reps
-    if (user.role !== 'owner' && user.role !== 'admin') {
+    const authUser = await authenticateRequest(request)
+    if (!authUser || (authUser.role !== 'owner' && authUser.role !== 'admin')) {
       return NextResponse.json(
         { error: 'Only admins can update sales reps' },
         { status: 403 }
@@ -181,7 +183,8 @@ export async function DELETE(
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
     // Only admins/owners can delete sales reps
-    if (user.role !== 'owner' && user.role !== 'admin') {
+    const authUser = await authenticateRequest(request)
+    if (!authUser || (authUser.role !== 'owner' && authUser.role !== 'admin')) {
       return NextResponse.json(
         { error: 'Only admins can delete sales reps' },
         { status: 403 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { mediumPriorityQueue } from '@/lib/queue/bull'
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
         
         const activeLeads = await prisma.contact.findMany({
           where: {
-            tenantId: user.tenantId,
+            tenantId: tenantId,
             status: 'active',
             type: 'lead',
             lastContactedAt: {
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
         // Proposal Stage - deals in proposal or negotiation stage
         const proposalContacts = await prisma.contact.findMany({
           where: {
-            tenantId: user.tenantId,
+            tenantId: tenantId,
             status: 'active',
             deals: {
               some: {
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
         
         const inactiveCustomers = await prisma.contact.findMany({
           where: {
-            tenantId: user.tenantId,
+            tenantId: tenantId,
             status: 'active',
             type: 'customer',
             orders: {
@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
         // Unknown segment - fallback to all active contacts
         const contacts = await prisma.contact.findMany({
           where: {
-            tenantId: user.tenantId,
+            tenantId: tenantId,
             status: 'active',
           },
           select: { id: true },
@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
       // Default: all active contacts
       const contacts = await prisma.contact.findMany({
         where: {
-          tenantId: user.tenantId,
+          tenantId: tenantId,
           status: 'active',
         },
         select: { id: true },
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
     // Create campaign in database
     const campaign = await prisma.campaign.create({
       data: {
-        tenantId: user.tenantId,
+        tenantId: tenantId,
         name: validated.name,
         type: validated.type,
         subject: validated.subject,
@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
     // Queue campaign sending
     await mediumPriorityQueue.add('send-marketing-campaign', {
       campaignId: campaign.id,
-      tenantId: user.tenantId,
+      tenantId: tenantId,
       campaignName: validated.name,
       type: validated.type,
       subject: validated.subject,

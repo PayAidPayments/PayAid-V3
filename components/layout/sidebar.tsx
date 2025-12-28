@@ -7,24 +7,7 @@ import { usePayAidAuth } from '@/lib/hooks/use-payaid-auth'
 import { cn } from '@/lib/utils/cn'
 import { useState, useMemo } from 'react'
 import { getModuleLink, requiresSSO } from '@/lib/navigation/module-navigation'
-
-// Helper to generate tenant-aware dashboard URLs
-function useDashboardUrl(path: string): string {
-  if (!path || typeof path !== 'string') {
-    path = '/dashboard'
-  }
-  
-  const { tenant } = useAuthStore()
-  const tenantId = tenant?.id
-  
-  if (!tenantId) {
-    return `/dashboard${path.startsWith('/') ? path : '/' + path}`
-  }
-  
-  // Remove leading /dashboard if present
-  const cleanPath = path.replace(/^\/dashboard\/?/, '')
-  return `/dashboard/${tenantId}${cleanPath ? '/' + cleanPath : ''}`
-}
+import { useDashboardUrl } from '@/lib/utils/dashboard-url'
 
 // Main navigation items (most frequently used)
 // Map to module IDs for license checking (V2 - 8 Module Structure)
@@ -122,14 +105,23 @@ function NavItem({
   const dashboardUrl = useDashboardUrl(item.href || '/dashboard')
   
   // Use OAuth2 SSO navigation if module requires it
-  const moduleLink = item.module ? getModuleLink(item.module, item.href) : dashboardUrl
   const needsSSO = item.module ? requiresSSO(item.module) : false
+  
+  // If SSO is required, get module link (which may be external)
+  // Otherwise, always use tenant-aware dashboard URL
+  let finalUrl = dashboardUrl
+  if (needsSSO && item.module) {
+    const moduleLink = getModuleLink(item.module, item.href)
+    // If module link is external (starts with http), use it
+    // Otherwise, use tenant-aware URL
+    finalUrl = moduleLink.startsWith('http') ? moduleLink : dashboardUrl
+  }
   
   // CRITICAL: Only render if licensed (filtered at parent level)
   // No locked badges - items are completely hidden if not licensed
   return (
     <Link
-      href={needsSSO ? moduleLink : dashboardUrl}
+      href={finalUrl}
       className={cn(
         'flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
         isActive

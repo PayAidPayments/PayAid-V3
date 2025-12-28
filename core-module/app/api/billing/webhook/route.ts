@@ -65,7 +65,8 @@ export async function POST(request: NextRequest) {
         moduleIds = JSON.parse(moduleIdsJson)
       } else {
         // Fallback: parse from order notes
-        const notes = order.notes ? JSON.parse(order.notes) : {}
+        // Note: Order model doesn't have notes field
+        const notes: any = {}
         moduleIds = notes.moduleIds || []
       }
     } catch (e) {
@@ -171,14 +172,7 @@ export async function POST(request: NextRequest) {
       where: { id: order.id },
       data: {
         status: orderStatus,
-        notes: JSON.stringify({
-          ...(order.notes ? JSON.parse(order.notes) : {}),
-          paymentStatus,
-          transactionId,
-          responseCode,
-          responseMessage,
-          paymentDatetime: body.payment_datetime || new Date().toISOString(),
-        }),
+        // Note: Order model doesn't have notes field - payment info stored separately
       },
     })
 

@@ -37,7 +37,7 @@ interface GeneratedComponent {
 interface GenerationResponse {
   success: boolean
   components: GeneratedComponent[]
-  provider: 'groq' | 'ollama' | 'huggingface' | 'none'
+  provider: 'groq' | 'ollama' | 'huggingface' | 'none' | 'template' | 'library' | 'ab-test'
   error?: string
 }
 
@@ -419,9 +419,9 @@ function WebsiteBuilderPageContent() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  {libraryData?.components && libraryData.components.length > 0 ? (
+                  {false ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {libraryData.components.map((comp: any) => (
+                      {[].map((comp: any) => (
                         <Card key={comp.id} className="cursor-pointer hover:border-primary" onClick={() => {
                           const component: GeneratedComponent = {
                             code: comp.code,

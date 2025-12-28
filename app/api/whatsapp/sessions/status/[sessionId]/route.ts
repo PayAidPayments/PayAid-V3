@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import axios from 'axios'
 
 // GET /api/whatsapp/sessions/status/[sessionId] - Check session connection status
@@ -9,6 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+  const resolvedParams = await params
     // Check WhatsApp module license
     const { tenantId, userId } = await requireModuleAccess(request, 'marketing')
 

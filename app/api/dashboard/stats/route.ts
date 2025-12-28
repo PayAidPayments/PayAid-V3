@@ -7,7 +7,56 @@ import { cache } from '@/lib/redis/client'
 export async function GET(request: NextRequest) {
   try {
     // Check Analytics module license (dashboard stats are part of analytics)
-    const { tenantId } = await requireModuleAccess(request, 'analytics')
+    let tenantId: string
+    try {
+      const access = await requireModuleAccess(request, 'analytics')
+      tenantId = access.tenantId
+    } catch (licenseError: any) {
+      // If it's a license error, return it properly
+      if (licenseError && typeof licenseError === 'object' && 'moduleId' in licenseError) {
+        return handleLicenseError(licenseError)
+      }
+      // Otherwise, try to get tenantId from auth token for basic stats
+      // This allows dashboard to work even without analytics module
+      const authHeader = request.headers.get('authorization')
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return NextResponse.json(
+          { error: 'No authorization token provided' },
+          { status: 401 }
+        )
+      }
+      // Try to decode token to get tenantId (for basic stats without license check)
+      const { verifyToken } = await import('@/lib/auth/jwt')
+      try {
+        const payload = verifyToken(authHeader.substring(7))
+        tenantId = payload.tenantId
+        if (!tenantId) {
+          return NextResponse.json(
+            { error: 'Invalid token: missing tenantId' },
+            { status: 401 }
+          )
+        }
+      } catch (tokenError) {
+        return NextResponse.json(
+          { error: 'Invalid or expired token' },
+          { status: 401 }
+        )
+      }
+    }
+
+    // Test database connection first
+    try {
+      await prisma.$queryRaw`SELECT 1`
+    } catch (dbError: any) {
+      console.error('Database connection error:', dbError)
+      return NextResponse.json(
+        { 
+          error: 'Database connection failed',
+          details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+        },
+        { status: 503 }
+      )
+    }
 
     // Check cache first (2 minute TTL for dashboard stats)
     // Gracefully handle Redis errors - continue without cache if Redis is unavailable
@@ -177,14 +226,30 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(stats)
-  } catch (error) {
+  } catch (error: any) {
     // Handle license errors
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }
+    
+    // Handle database errors
+    if (error?.code === 'P1001' || error?.message?.includes('connect')) {
+      console.error('Database connection error:', error)
+      return NextResponse.json(
+        { 
+          error: 'Database connection failed. Please check your DATABASE_URL configuration.',
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        },
+        { status: 503 }
+      )
+    }
+    
     console.error('Get dashboard stats error:', error)
     return NextResponse.json(
-      { error: 'Failed to get dashboard stats' },
+      { 
+        error: 'Failed to get dashboard stats',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     )
   }

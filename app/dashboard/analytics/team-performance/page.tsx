@@ -167,9 +167,9 @@ export default function TeamPerformancePage() {
           <CardDescription>Detailed metrics for each team member</CardDescription>
         </CardHeader>
         <CardContent>
-          {performance?.performance && performance.performance.length > 0 ? (
+          {data?.leaderboard && data.leaderboard.length > 0 ? (
             <div className="space-y-4">
-              {performance.performance.map((rep) => (
+              {data.leaderboard.map((rep) => (
                 <div key={rep.repId} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div>

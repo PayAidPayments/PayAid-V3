@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
-import { hashPassword, signToken } from '@payaid/auth'
+import { prisma } from '@/lib/db/prisma'
+import { hashPassword } from '@/lib/auth/password'
+import { signToken } from '@/lib/auth/jwt'
 import { z } from 'zod'
 
 const registerSchema = z.object({

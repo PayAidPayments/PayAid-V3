@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 
 // GET /api/whatsapp/conversations/[conversationId]/messages - Get message history for a conversation (paginated)
 export async function GET(
@@ -8,6 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
+  const resolvedParams = await params
     // Check WhatsApp module license
     const { tenantId } = await requireModuleAccess(request, 'marketing')
 

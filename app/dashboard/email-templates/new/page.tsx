@@ -217,7 +217,7 @@ export default function NewEmailTemplatePage() {
                   </div>
                 )}
                 <p className="text-xs text-gray-500 mt-2">
-                  Variables can be used in the template like {{variableName}}
+                  Variables can be used in the template like {'{{variableName}}'}
                 </p>
               </div>
             </div>

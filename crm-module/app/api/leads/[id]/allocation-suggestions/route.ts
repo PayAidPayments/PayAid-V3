@@ -26,7 +26,7 @@ export async function GET(
           email: s.rep.user.email,
           specialization: s.rep.specialization,
           conversionRate: s.rep.conversionRate,
-          assignedLeadsCount: s.rep.assignedLeads?.length || 0,
+          // assignedLeadsCount removed - not available in rep object
         },
         score: s.score,
         reasons: s.reasons,

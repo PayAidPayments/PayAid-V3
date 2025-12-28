@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { cache } from '@/lib/redis/client'
@@ -127,7 +127,7 @@ export async function PATCH(
     })
 
     // Invalidate cache
-    await cache.deletePattern(`contacts:${user.tenantId}:*`)
+    await cache.deletePattern(`contacts:${tenantId}:*`)
     await cache.delete(`contact:${params.id}`)
 
     return NextResponse.json(contact)
@@ -175,7 +175,7 @@ export async function DELETE(
     })
 
     // Invalidate cache
-    await cache.deletePattern(`contacts:${user.tenantId}:*`)
+    await cache.deletePattern(`contacts:${tenantId}:*`)
     await cache.delete(`contact:${params.id}`)
 
     return NextResponse.json({ success: true })

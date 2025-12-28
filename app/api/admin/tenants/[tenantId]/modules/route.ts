@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { verifyToken } from '@/lib/auth/jwt'
 import { z } from 'zod'
 
@@ -15,8 +15,7 @@ export async function PATCH(
   { params }: { params: Promise<{ tenantId: string }> }
 ) {
   try {
-    // Handle Next.js 15+ async params
-    const resolvedParams = await Promise.resolve(params)
+    const resolvedParams = await params
     const tenantId = resolvedParams.tenantId
     // Check authentication only (no module check - this route is for activating modules!)
     const authHeader = request.headers.get('authorization')
@@ -162,8 +161,7 @@ export async function GET(
   { params }: { params: Promise<{ tenantId: string }> }
 ) {
   try {
-    // Handle Next.js 15+ async params
-    const resolvedParams = await Promise.resolve(params)
+    const resolvedParams = await params
     const tenantId = resolvedParams.tenantId
 
     // Check authentication only (no module check - this route is for checking module status!)

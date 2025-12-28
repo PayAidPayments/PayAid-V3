@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { Decimal } from '@prisma/client/runtime/library'
@@ -15,7 +15,7 @@ export async function PUT(
 ) {
   try {
     // Check HR module license
-    const { tenantId, userId } = await requireHRAccess(request)
+    const { tenantId, userId } = await requireModuleAccess(request, 'hr')
 
     const body = await request.json()
     const validated = acceptOfferSchema.parse(body)
@@ -60,7 +60,7 @@ export async function PUT(
 
     // Create employee from candidate
     const employeeCount = await prisma.employee.count({
-      where: { tenantId: user.tenantId },
+      where: { tenantId: tenantId },
     })
     const employeeCode = `EMP-${String(employeeCount + 1).padStart(4, '0')}`
 
@@ -72,14 +72,14 @@ export async function PUT(
         officialEmail: offer.candidate.email,
         mobileCountryCode: '+91',
         mobileNumber: offer.candidate.phone,
-        joiningDate: offer.joiningDate,
+        joiningDate: offer.joiningDate || new Date(),
         status: 'PROBATION',
         departmentId: offer.requisition.departmentId || null,
         locationId: offer.requisition.locationId || null,
         ctcAnnualInr: acceptedCtc,
-        tenantId: user.tenantId,
-        createdBy: user.id,
-        updatedBy: user.id,
+        tenantId: tenantId,
+        createdBy: userId,
+        updatedBy: userId,
       },
     })
 

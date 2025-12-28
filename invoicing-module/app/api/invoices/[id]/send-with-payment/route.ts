@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { createPayAidPayments } from '@/lib/payments/payaid'
 import { getTenantPayAidConfig } from '@/lib/payments/get-tenant-payment-config'
@@ -15,7 +15,7 @@ export async function POST(
 ) {
   try {
     // Check invoicing module license
-    const { tenantId } = await requireFinanceAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'finance')
 
     const body = await request.json()
     const email = body.email || body.customerEmail

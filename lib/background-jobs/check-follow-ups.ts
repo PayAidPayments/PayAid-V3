@@ -140,7 +140,7 @@ export async function checkHotLeads(tenantId?: string) {
             rep: contact.assignedTo as any,
             contact,
             type: 'HOT_LEAD',
-            channels: ['sms', 'whatsapp', 'in-app'], // Multi-channel for hot leads
+            channels: ['sms', 'email', 'in-app'], // Multi-channel for hot leads
           })
           alertCount++
         }

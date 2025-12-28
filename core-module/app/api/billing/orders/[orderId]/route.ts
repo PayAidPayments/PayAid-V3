@@ -45,15 +45,8 @@ export async function GET(
       )
     }
 
-    // Parse order notes for subscription info
-    let subscriptionInfo: any = {}
-    try {
-      if (order.notes) {
-        subscriptionInfo = JSON.parse(order.notes)
-      }
-    } catch (e) {
-      // Ignore parse errors
-    }
+    // Note: Order model doesn't have notes field - subscription info not stored on order
+    const subscriptionInfo: any = {}
 
     return NextResponse.json({
       id: order.id,

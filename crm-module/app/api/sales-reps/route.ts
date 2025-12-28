@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
+import { authenticateRequest } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { updateRepConversionRate } from '@/lib/sales-automation/lead-allocation'
 
@@ -88,7 +89,11 @@ export async function POST(request: NextRequest) {
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
     // Only admins/owners can create sales reps
-    if (user.role !== 'owner' && user.role !== 'admin') {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    })
+    if (!user || (user.role !== 'owner' && user.role !== 'admin')) {
       return NextResponse.json(
         { error: 'Only admins can create sales reps' },
         { status: 403 }
@@ -96,12 +101,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { userId, specialization } = createSalesRepSchema.parse(body)
+    const { userId: targetUserId, specialization } = createSalesRepSchema.parse(body)
 
     // Verify user belongs to tenant
     const targetUser = await prisma.user.findFirst({
       where: {
-        id: userId,
+        id: targetUserId,
         tenantId: tenantId,
       },
     })
@@ -115,7 +120,7 @@ export async function POST(request: NextRequest) {
 
     // Check if rep already exists
     const existing = await prisma.salesRep.findUnique({
-      where: { userId },
+      where: { userId: targetUserId },
     })
 
     if (existing) {
@@ -128,7 +133,7 @@ export async function POST(request: NextRequest) {
     // Create sales rep
     const rep = await prisma.salesRep.create({
       data: {
-        userId,
+        userId: targetUserId,
         tenantId: tenantId,
         specialization,
       },

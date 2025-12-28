@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { autoAllocateLead, assignLeadToRep } from '@/lib/sales-automation/lead-allocation'
 import { sendLeadAlert } from '@/lib/notifications/send-lead-alert'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 
 const allocateRequestSchema = z.object({
@@ -105,7 +105,7 @@ export async function POST(
           email: s.rep.user.email,
           specialization: s.rep.specialization,
           conversionRate: s.rep.conversionRate,
-          assignedLeadsCount: s.rep.assignedLeads?.length || 0,
+          // assignedLeadsCount removed - not available in rep object
         },
         score: s.score,
         reasons: s.reasons,

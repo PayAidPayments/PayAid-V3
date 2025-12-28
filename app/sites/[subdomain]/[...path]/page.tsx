@@ -203,7 +203,7 @@ export default async function PublicWebsitePage({
 
         {/* Page Content */}
         <main>
-          {renderContent(currentPage.contentJson as PageContent)}
+          {renderContent((currentPage.contentJson || { type: 'page', sections: [] }) as unknown as PageContent)}
         </main>
 
         {/* Footer */}

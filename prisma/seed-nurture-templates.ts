@@ -245,8 +245,8 @@ Best regards,
     })
 
     console.log(`✅ Created templates for tenant: ${tenant.name}`)
-    console.log(`   - ${coldTemplate.name} (${coldTemplate.steps.length} steps)`)
-    console.log(`   - ${warmTemplate.name} (${warmTemplate.steps.length} steps)`)
+    console.log(`   - ${coldTemplate.name}`)
+    console.log(`   - ${warmTemplate.name}`)
   }
 
   console.log('✅ Nurture templates seeding complete!')

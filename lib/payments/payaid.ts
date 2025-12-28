@@ -10,7 +10,7 @@
 import { generateHash, verifyResponseHash } from './payaid-hash'
 import { encryptPaymentRequest, decryptPaymentResponse } from './payaid-encryption'
 
-interface PayAidConfig {
+export interface PayAidConfig {
   apiKey: string
   salt: string // Used for hash calculation
   encryptionKey?: string // For encrypted payment requests

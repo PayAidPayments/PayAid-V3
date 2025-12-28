@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 
 // GET /api/hr/payroll/reports/form-16 - Generate Form 16 for employee
 export async function GET(request: NextRequest) {
   try {
     // Check HR module license
-    const { tenantId } = await requireHRAccess(request)
+    const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const searchParams = request.nextUrl.searchParams
     const employeeId = searchParams.get('employeeId')
@@ -81,20 +81,20 @@ export async function GET(request: NextRequest) {
 
     // Calculate annual totals
     const annualGross = payrollRuns.reduce(
-      (sum, run) => sum.add(run.grossEarningsInr),
-      new Decimal(0)
+      (sum, run) => sum + Number(run.grossEarningsInr),
+      0
     )
     const annualPF = payrollRuns.reduce(
-      (sum, run) => sum.add(run.pfEmployeeInr),
-      new Decimal(0)
+      (sum, run) => sum + Number(run.pfEmployeeInr),
+      0
     )
     const annualTDS = payrollRuns.reduce(
-      (sum, run) => sum.add(run.tdsInr),
-      new Decimal(0)
+      (sum, run) => sum + Number(run.tdsInr),
+      0
     )
     const totalDeductions = taxDeclarations.reduce(
-      (sum, decl) => sum.add(decl.approvedAmountInr || decl.declaredAmountInr),
-      new Decimal(0)
+      (sum, decl) => sum + Number(decl.approvedAmountInr || decl.declaredAmountInr),
+      0
     )
 
     // Get TDS config for standard deduction
@@ -102,8 +102,8 @@ export async function GET(request: NextRequest) {
       where: { tenantId: tenantId },
     })
 
-    const standardDeduction = tdsConfig?.standardDeduction || new Decimal(50000)
-    const taxableIncome = annualGross.sub(annualPF).sub(standardDeduction).sub(totalDeductions)
+    const standardDeduction = Number(tdsConfig?.standardDeduction || 50000)
+    const taxableIncome = annualGross - annualPF - standardDeduction - totalDeductions
 
     const form16Data = {
       employee: {
@@ -125,22 +125,22 @@ export async function GET(request: NextRequest) {
           section80C: Number(
             taxDeclarations
               .filter((d) => d.category.code === '80C')
-              .reduce((sum, d) => sum.add(d.approvedAmountInr || d.declaredAmountInr), new Decimal(0))
+              .reduce((sum, d) => sum + Number(d.approvedAmountInr || d.declaredAmountInr), 0)
           ),
           section80D: Number(
             taxDeclarations
               .filter((d) => d.category.code === '80D')
-              .reduce((sum, d) => sum.add(d.approvedAmountInr || d.declaredAmountInr), new Decimal(0))
+              .reduce((sum, d) => sum + Number(d.approvedAmountInr || d.declaredAmountInr), 0)
           ),
           hra: Number(
             taxDeclarations
               .filter((d) => d.category.code === 'HRA')
-              .reduce((sum, d) => sum.add(d.approvedAmountInr || d.declaredAmountInr), new Decimal(0))
+              .reduce((sum, d) => sum + Number(d.approvedAmountInr || d.declaredAmountInr), 0)
           ),
           other: Number(
             taxDeclarations
               .filter((d) => !['80C', '80D', 'HRA'].includes(d.category.code))
-              .reduce((sum, d) => sum.add(d.approvedAmountInr || d.declaredAmountInr), new Decimal(0))
+              .reduce((sum, d) => sum + Number(d.approvedAmountInr || d.declaredAmountInr), 0)
           ),
         },
         totalDeductions: Number(totalDeductions),

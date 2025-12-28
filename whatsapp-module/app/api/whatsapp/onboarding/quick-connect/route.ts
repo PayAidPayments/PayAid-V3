@@ -38,10 +38,8 @@ const quickConnectSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
-    const user = await authenticateRequest(request)
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Check WhatsApp module license
+    const { tenantId, userId } = await requireModuleAccess(request, 'marketing')
 
     const body = await request.json()
     const validated = quickConnectSchema.parse(body)

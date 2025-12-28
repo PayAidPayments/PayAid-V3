@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { verifyToken, JWTPayload } from './lib/auth/jwt'
 
+// Note: Next.js may show a deprecation warning about "middleware" file convention,
+// but this is the correct and supported way to implement middleware in Next.js 16.
+// The "proxy" suggestion in the warning is for a different use case.
+// This middleware file is correct and should not be changed.
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -55,7 +59,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // If we have a tenantId and URL doesn't include it, rewrite the URL
+  // If we have a tenantId and URL doesn't include it, redirect to include it
   if (tenantId) {
     // Remove /dashboard prefix
     const remainingPath = pathname.replace(/^\/dashboard\/?/, '') || ''
@@ -65,7 +69,8 @@ export function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = newPath
     
-    // Rewrite the request to include tenantId (this changes the URL in browser)
+    // Redirect to show tenantId in browser URL
+    // Next.js rewrites in next.config.js will handle internal routing
     return NextResponse.redirect(url)
   }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 
 // DELETE /api/ai/integrations/google-ai-studio - Disconnect Google AI Studio
 export async function DELETE(request: NextRequest) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 import { updateRepConversionRate } from '@/lib/sales-automation/lead-allocation'
 
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     // Check if rep already exists
     const existing = await prisma.salesRep.findUnique({
-      where: { userId },
+      where: { userId: targetUserId },
     })
 
     if (existing) {
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     // Create sales rep
     const rep = await prisma.salesRep.create({
       data: {
-        userId,
+        userId: targetUserId,
         tenantId: tenantId,
         specialization,
       },

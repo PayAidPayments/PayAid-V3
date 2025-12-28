@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { autoAllocateLead, assignLeadToRep } from '@/lib/sales-automation/lead-allocation'
 import { sendLeadAlert } from '@/lib/notifications/send-lead-alert'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 
 const allocateRequestSchema = z.object({
@@ -19,6 +19,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+  const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 

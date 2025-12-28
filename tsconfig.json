@@ -28,6 +28,12 @@
       ],
       "@payaid/db": [
         "./lib/db/prisma"
+      ],
+      "@payaid/auth": [
+        "./packages/@payaid/auth/src"
+      ],
+      "@payaid/oauth-client": [
+        "./packages/@payaid/oauth-client/src"
       ]
     }
   },
@@ -39,6 +45,8 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "scripts",
+    "tests"
   ]
 }

@@ -196,20 +196,19 @@ export default function KYCPage() {
                         }}
                         disabled={uploading === doc.type}
                         className="hidden"
+                        id={`file-input-${doc.type}`}
                       />
                       <Button
                         type="button"
                         variant={uploaded ? 'outline' : 'default'}
                         disabled={uploading === doc.type}
-                        asChild
+                        onClick={() => document.getElementById(`file-input-${doc.type}`)?.click()}
                       >
-                        <span>
-                          {uploading === doc.type
-                            ? 'Uploading...'
-                            : uploaded
-                            ? 'Replace Document'
-                            : 'Upload Document'}
-                        </span>
+                        {uploading === doc.type
+                          ? 'Uploading...'
+                          : uploaded
+                          ? 'Replace Document'
+                          : 'Upload Document'}
                       </Button>
                     </label>
                     {uploaded && (
