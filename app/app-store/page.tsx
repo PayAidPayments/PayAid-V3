@@ -11,12 +11,22 @@ export const metadata = {
   description: 'Browse and purchase PayAid modules',
 }
 
+// Force dynamic rendering to avoid database queries during build
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function getModules() {
-  const modules = await prisma.moduleDefinition.findMany({
-    where: { isActive: true },
-    orderBy: { displayName: 'asc' },
-  })
-  return modules
+  try {
+    const modules = await prisma.moduleDefinition.findMany({
+      where: { isActive: true },
+      orderBy: { displayName: 'asc' },
+    })
+    return modules
+  } catch (error) {
+    console.error('Error fetching modules:', error)
+    // Return empty array if database is not available (e.g., during build)
+    return []
+  }
 }
 
 async function getBundles() {
