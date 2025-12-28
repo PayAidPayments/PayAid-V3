@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { Decimal } from '@prisma/client/runtime/library'
@@ -19,6 +19,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
@@ -61,6 +63,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
