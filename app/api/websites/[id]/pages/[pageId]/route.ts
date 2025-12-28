@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 
@@ -16,6 +16,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string; pageId: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
@@ -35,7 +37,7 @@ export async function GET(
 
     const page = await prisma.websitePage.findFirst({
       where: {
-        id: params.pageId,
+        id: resolvedParams.pageId,
         websiteId: resolvedParams.id,
       },
     })
@@ -63,6 +65,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; pageId: string }> }
 ) {
   try {
+    const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
@@ -85,7 +88,7 @@ export async function PATCH(
 
     const existing = await prisma.websitePage.findFirst({
       where: {
-        id: params.pageId,
+        id: resolvedParams.pageId,
         websiteId: resolvedParams.id,
       },
     })
@@ -116,7 +119,7 @@ export async function PATCH(
     }
 
     const page = await prisma.websitePage.update({
-      where: { id: params.pageId },
+      where: { id: resolvedParams.pageId },
       data: {
         title: validated.title,
         path: validated.path,
@@ -148,6 +151,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; pageId: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
@@ -167,7 +172,7 @@ export async function DELETE(
 
     const page = await prisma.websitePage.findFirst({
       where: {
-        id: params.pageId,
+        id: resolvedParams.pageId,
         websiteId: resolvedParams.id,
       },
     })
@@ -180,7 +185,7 @@ export async function DELETE(
     }
 
     await prisma.websitePage.delete({
-      where: { id: params.pageId },
+      where: { id: resolvedParams.pageId },
     })
 
     return NextResponse.json({ success: true })

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 
 const updateConversationSchema = z.object({
@@ -15,6 +15,8 @@ export async function GET(
   { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     // Check WhatsApp module license
     const { tenantId } = await requireModuleAccess(request, 'marketing')
 
@@ -38,6 +40,7 @@ export async function GET(
             id: true,
             businessName: true,
             status: true,
+            tenantId: true,
           },
         },
         _count: {
@@ -81,6 +84,7 @@ export async function PATCH(
   { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
+    const resolvedParams = await params
     // Check WhatsApp module license
     const { tenantId } = await requireModuleAccess(request, 'marketing')
 

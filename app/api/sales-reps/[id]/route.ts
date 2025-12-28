@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { prisma } from '@payaid/db'
+import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 import { updateRepConversionRate } from '@/lib/sales-automation/lead-allocation'
 
@@ -15,6 +15,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Handle Next.js 16+ async params
+    const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
@@ -97,11 +99,18 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
+    // Fetch user to check role
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    })
+
     // Only admins/owners can update sales reps
-    if (user.role !== 'owner' && user.role !== 'admin') {
+    if (!user || (user.role !== 'owner' && user.role !== 'admin')) {
       return NextResponse.json(
         { error: 'Only admins can update sales reps' },
         { status: 403 }
@@ -177,11 +186,18 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
+    // Fetch user to check role
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    })
+
     // Only admins/owners can delete sales reps
-    if (user.role !== 'owner' && user.role !== 'admin') {
+    if (!user || (user.role !== 'owner' && user.role !== 'admin')) {
       return NextResponse.json(
         { error: 'Only admins can delete sales reps' },
         { status: 403 }
