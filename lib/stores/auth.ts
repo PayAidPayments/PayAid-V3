@@ -114,6 +114,15 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('Invalid response from server')
           }
           
+          // Store token in cookie for middleware access
+          if (typeof document !== 'undefined') {
+            // Set cookie with 7 day expiration
+            const expires = new Date()
+            expires.setTime(expires.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days
+            const isSecure = window.location.protocol === 'https:'
+            document.cookie = `token=${data.token}; expires=${expires.toUTCString()}; path=/; SameSite=Lax${isSecure ? '; Secure' : ''}`
+          }
+          
           set({
             user: data.user,
             tenant: {
@@ -148,6 +157,15 @@ export const useAuthStore = create<AuthState>()(
 
           const result = await response.json()
           
+          // Store token in cookie for middleware access
+          if (typeof document !== 'undefined') {
+            // Set cookie with 7 day expiration
+            const expires = new Date()
+            expires.setTime(expires.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days
+            const isSecure = window.location.protocol === 'https:'
+            document.cookie = `token=${result.token}; expires=${expires.toUTCString()}; path=/; SameSite=Lax${isSecure ? '; Secure' : ''}`
+          }
+          
           set({
             user: result.user,
             tenant: result.tenant,
@@ -162,6 +180,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        // Clear cookie
+        if (typeof document !== 'undefined') {
+          document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+        }
+        
         set({
           user: null,
           tenant: null,
@@ -288,6 +311,14 @@ export const useAuthStore = create<AuthState>()(
             console.error('Rehydration error:', error)
           }
           if (state) {
+            // Sync token to cookie if it exists (for middleware access)
+            if (state.token && typeof document !== 'undefined') {
+              const expires = new Date()
+              expires.setTime(expires.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days
+              const isSecure = window.location.protocol === 'https:'
+              document.cookie = `token=${state.token}; expires=${expires.toUTCString()}; path=/; SameSite=Lax${isSecure ? '; Secure' : ''}`
+            }
+            
             // Immediately set loading to false after rehydration
             state.isLoading = false
             // If we have a token but not authenticated, mark as authenticated
