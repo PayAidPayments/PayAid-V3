@@ -106,11 +106,12 @@ export default function TenantSettingsPage() {
     })
   }
 
+  // Move useState before conditional return to follow React Hooks rules
+  const [copied, setCopied] = useState(false)
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">Loading...</div>
   }
-
-  const [copied, setCopied] = useState(false)
 
   const copyOrgId = async () => {
     if (tenant?.id) {

@@ -158,15 +158,16 @@ function NavSection({ section, pathname }: { section: typeof navigationSections[
     !item.module || hasModule(item.module)
   )
   
-  // CRITICAL: Hide entire section if no licensed items
-  if (licensedItems.length === 0) {
-    return null
-  }
-  
+  // Move useState before conditional return to follow React Hooks rules
   const [isOpen, setIsOpen] = useState(() => {
     // Auto-expand if any item in section is active
     return licensedItems.some(isPathActive)
   })
+  
+  // CRITICAL: Hide entire section if no licensed items
+  if (licensedItems.length === 0) {
+    return null
+  }
 
   const hasActiveItem = licensedItems.some(isPathActive)
 
