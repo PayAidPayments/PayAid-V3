@@ -94,11 +94,25 @@ export const useAuthStore = create<AuthState>()(
           })
 
           if (!response.ok) {
-            const error = await response.json()
-            throw new Error(error.error || 'Login failed')
+            let errorMessage = 'Login failed'
+            try {
+              const error = await response.json()
+              errorMessage = error.error || error.message || `Login failed (${response.status})`
+              console.error('[AUTH] Login error response:', error)
+            } catch (parseError) {
+              // If JSON parsing fails, use status text
+              errorMessage = `Login failed: ${response.statusText || response.status}`
+              console.error('[AUTH] Failed to parse error response:', parseError)
+            }
+            throw new Error(errorMessage)
           }
 
           const data = await response.json()
+          
+          if (!data.user || !data.token) {
+            console.error('[AUTH] Invalid response data:', data)
+            throw new Error('Invalid response from server')
+          }
           
           set({
             user: data.user,
@@ -112,6 +126,7 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           })
         } catch (error) {
+          console.error('[AUTH] Login error:', error)
           set({ isLoading: false })
           throw error
         }
