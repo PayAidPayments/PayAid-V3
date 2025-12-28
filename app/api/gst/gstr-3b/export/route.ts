@@ -41,13 +41,13 @@ export async function GET(request: NextRequest) {
 
     // Calculate totals
     const outwardSupplies = {
-      taxable: invoices.reduce((sum, inv) => sum + (inv.subtotal || 0), 0),
-      gst: invoices.reduce((sum, inv) => sum + (inv.gstAmount || 0), 0),
+      taxable: invoices.reduce((sum, inv) => sum + Number(inv.subtotal || 0), 0),
+      gst: invoices.reduce((sum, inv) => sum + Number(inv.gstAmount || 0), 0),
     }
 
     const inwardSupplies = {
-      taxable: expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0),
-      gst: expenses.reduce((sum, exp) => sum + (exp.gstAmount || 0), 0),
+      taxable: expenses.reduce((sum, exp) => sum + (exp.amount ? Number(exp.amount) : 0), 0),
+      gst: expenses.reduce((sum, exp) => sum + (exp.gstAmount ? Number(exp.gstAmount) : 0), 0),
     }
 
     const inputTaxCredit = inwardSupplies.gst
@@ -72,9 +72,9 @@ export async function GET(request: NextRequest) {
       const outwardData = invoices.map(inv => ({
         'Invoice Number': inv.invoiceNumber,
         'Invoice Date': new Date(inv.invoiceDate).toLocaleDateString('en-IN'),
-        'Taxable Amount': inv.subtotal || 0,
-        'GST Amount': inv.gstAmount || 0,
-        'Total Amount': inv.total || 0,
+        'Taxable Amount': Number(inv.subtotal || 0),
+        'GST Amount': Number(inv.gstAmount || 0),
+        'Total Amount': Number(inv.total || 0),
       }))
       if (outwardData.length > 0) {
         const outwardSheet = XLSX.utils.json_to_sheet(outwardData)
@@ -82,13 +82,17 @@ export async function GET(request: NextRequest) {
       }
 
       // Inward Supplies Sheet
-      const inwardData = expenses.map(exp => ({
-        'Expense Description': exp.description || '',
-        'Date': new Date(exp.date).toLocaleDateString('en-IN'),
-        'Taxable Amount': exp.amount || 0,
-        'GST Amount': exp.gstAmount || 0,
-        'Total Amount': (exp.amount || 0) + (exp.gstAmount || 0),
-      }))
+      const inwardData = expenses.map(exp => {
+        const amount = exp.amount ? Number(exp.amount) : 0
+        const gstAmount = exp.gstAmount ? Number(exp.gstAmount) : 0
+        return {
+          'Expense Description': exp.description || '',
+          'Date': new Date(exp.date).toLocaleDateString('en-IN'),
+          'Taxable Amount': amount,
+          'GST Amount': gstAmount,
+          'Total Amount': amount + gstAmount,
+        }
+      })
       if (inwardData.length > 0) {
         const inwardSheet = XLSX.utils.json_to_sheet(inwardData)
         XLSX.utils.book_append_sheet(workbook, inwardSheet, 'Inward Supplies')
