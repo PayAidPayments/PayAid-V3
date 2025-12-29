@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
-import { requireModuleAccess, handleLicenseError, authenticateRequest } from '@/lib/middleware/auth'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 
 const rejectExpenseSchema = z.object({
@@ -15,7 +15,6 @@ export async function PUT(
   try {
     const resolvedParams = await params
     const { tenantId, userId } = await requireModuleAccess(request, 'finance')
-    const user = await authenticateRequest(request)
 
     // Get expense
     const expense = await prisma.expense.findFirst({
@@ -50,12 +49,18 @@ export async function PUT(
       },
     })
 
+    // Get user details for approver name
+    const userDetails = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    })
+
     // Create approval record
     await prisma.expenseApproval.create({
       data: {
         expenseId: expense.id,
         approverId: userId,
-        approverName: user?.name || 'Unknown',
+        approverName: userDetails?.name || 'Unknown',
         status: 'rejected',
         comments: validated.rejectionReason,
         tenantId: tenantId,
