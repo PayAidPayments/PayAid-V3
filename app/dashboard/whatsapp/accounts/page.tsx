@@ -81,7 +81,7 @@ function WhatsAppAccountsPageContent() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">WhatsApp Accounts</h1>
           <p className="mt-2 text-gray-600">
-            Connect your own self-hosted WAHA instance to enable WhatsApp messaging. Each business needs their own WAHA server.
+            Connect your WhatsApp account to enable messaging features.
           </p>
         </div>
         <Button onClick={() => setShowAddForm(!showAddForm)}>
@@ -95,7 +95,7 @@ function WhatsAppAccountsPageContent() {
           <CardHeader>
             <CardTitle>Connect WAHA Instance</CardTitle>
             <CardDescription>
-              Connect your own self-hosted WAHA (WhatsApp HTTP API) server. Each business needs their own WAHA instance and API key.
+              Connect your WhatsApp account to enable messaging features.
             </CardDescription>
           </CardHeader>
           <CardContent>

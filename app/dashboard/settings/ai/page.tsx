@@ -200,11 +200,15 @@ export default function AISettingsPage() {
               </div>
               <div className="text-sm text-gray-600">
                 <p className="mb-2">✨ You can now use Google AI Studio for image generation!</p>
-                <ul className="list-disc list-inside space-y-1">
+                <ul className="list-disc list-inside space-y-1 mb-4">
                   <li>Free image generation using Gemini 2.5 Flash Image</li>
                   <li>Your API key is configured and working</li>
-                  <li>Go to <strong>Marketing &gt; Social Media &gt; Create Image</strong> to generate images</li>
                 </ul>
+                <Link href="/dashboard/marketing/social/create-image">
+                  <Button className="w-full bg-green-500 text-white hover:bg-green-600">
+                    Go to Image Generation →
+                  </Button>
+                </Link>
               </div>
             </div>
           ) : (
@@ -274,33 +278,6 @@ export default function AISettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Other AI Services Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Other AI Services</CardTitle>
-          <CardDescription>
-            Additional free options for AI-powered features
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4 text-sm">
-            <div>
-              <div className="font-semibold mb-1">Self-Hosted (Hugging Face) - Free</div>
-              <p className="text-gray-600">
-                Use your own self-hosted AI models. Configure in docker-compose.ai-services.yml. 
-                Set <code className="bg-gray-100 px-1 rounded">USE_AI_GATEWAY=true</code> in .env
-              </p>
-              <a 
-                href="/AI_SERVICES_DEPLOYMENT.md" 
-                target="_blank"
-                className="text-blue-600 hover:underline text-xs mt-1 inline-block"
-              >
-                📖 View setup guide →
-              </a>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Troubleshooting */}
       <Card>
@@ -315,13 +292,13 @@ export default function AISettingsPage() {
             <div>
               <div className="font-semibold text-red-600 mb-1">Error: &quot;Google AI Studio not configured&quot;</div>
               <p className="text-gray-600 mb-2">
-                This means the API key is not set or the server hasn&apos;t been restarted.
+                This means the API key is not set. Please add your API key above.
               </p>
               <ol className="list-decimal list-inside space-y-1 text-gray-600">
-                <li>Verify <code className="bg-gray-100 px-1 rounded">GOOGLE_AI_STUDIO_API_KEY</code> is in your <code className="bg-gray-100 px-1 rounded">.env</code> file</li>
-                <li>Make sure there are no extra spaces or quotes around the key</li>
-                <li>Restart your dev server after adding the key</li>
-                <li>Check server logs for detailed error messages</li>
+                <li>Get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a></li>
+                <li>Paste it in the input field above</li>
+                <li>Click &quot;Save API Key&quot;</li>
+                <li>If issues persist, try removing and re-adding the key</li>
               </ol>
             </div>
             <div>

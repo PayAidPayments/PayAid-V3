@@ -244,8 +244,8 @@ export default function DashboardPage() {
               </p>
               <ul className="text-red-600 text-xs list-disc list-inside mb-3">
                 <li>Your database server is running</li>
-                <li>DATABASE_URL is correctly set in your .env file</li>
-                <li>Database migrations have been run (npm run db:migrate)</li>
+                <li>Database connection is properly configured</li>
+                <li>Database migrations have been completed</li>
               </ul>
               <Button 
                 variant="outline" 

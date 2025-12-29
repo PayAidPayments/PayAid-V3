@@ -163,24 +163,12 @@ export default function CreateImagePage() {
         }
         
         // If it's a configuration error, show helpful setup instructions
-        if (errorData.error === 'Image generation service not configured' || errorData.error === 'Self-hosted AI service unavailable') {
+        if (errorData.error === 'Image generation service not configured') {
           let errorMessage = errorData.message || errorData.error
           
-          // Show self-hosted setup if gateway is configured
-          if (errorData.hint && errorData.hint.includes('docker-compose')) {
-            errorMessage += '\n\n' + errorData.hint
-            errorMessage += '\n\nCheck service logs: docker logs payaid-text-to-image'
-          } else if (errorData.setupInstructions) {
-            // Show external API setup instructions
-            const setupInfo = errorData.setupInstructions
-            errorMessage += '\n\n'
-            
-            if (setupInfo?.selfHosted) {
-              errorMessage += 'Self-Hosted Setup (Free):\n'
-              errorMessage += setupInfo.selfHosted.steps.join('\n') + '\n\n'
-            }
-            
-            errorMessage += 'Or connect Google AI Studio in Settings > AI Integrations (Free).'
+          if (errorData.setupInstructions) {
+            // Show external API setup instructions (user-friendly, no technical details)
+            errorMessage += '\n\nPlease configure Google AI Studio in Settings > AI Integrations to generate images.'
           }
           
           throw new Error(errorMessage)
@@ -346,26 +334,6 @@ export default function CreateImagePage() {
                     </Link>
                   </div>
                 )}
-                {provider === 'self-hosted' && (
-                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                    <p className="text-sm text-blue-800 mb-1">
-                      <strong>Self-Hosted Setup:</strong>
-                    </p>
-                    <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
-                      <li>Set USE_AI_GATEWAY=true in .env</li>
-                      <li>Start services: docker-compose -f docker-compose.ai-services.yml up -d</li>
-                      <li>Wait for models to download (30-60 min first time)</li>
-                      <li>Check status: docker-compose -f docker-compose.ai-services.yml ps</li>
-                    </ul>
-                    <a 
-                      href="/AI_SERVICES_DEPLOYMENT.md" 
-                      target="_blank"
-                      className="text-xs text-blue-600 hover:underline mt-2 inline-block"
-                    >
-                      📖 View detailed setup guide →
-                    </a>
-                  </div>
-                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -438,15 +406,6 @@ export default function CreateImagePage() {
                                   Connect Google AI Studio
                                 </Button>
                               </Link>
-                            )}
-                            {(error.includes('self-hosted') || error.includes('USE_AI_GATEWAY') || error.includes('docker-compose')) && (
-                              <a 
-                                href="/AI_SERVICES_DEPLOYMENT.md" 
-                                target="_blank"
-                                className="text-blue-600 hover:underline text-xs self-center"
-                              >
-                                📖 View self-hosted setup guide
-                              </a>
                             )}
                             {(error.includes('Google AI Studio') || error.includes('Rate limit exceeded') || error.includes('quota exhausted')) && (
                               <div className="text-xs text-red-600">

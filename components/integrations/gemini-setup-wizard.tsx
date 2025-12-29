@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -293,12 +294,13 @@ export default function GeminiSetupWizard({ onComplete, onCancel }: GeminiSetupW
       </div>
 
       <div className="flex gap-2">
-        <Button
-          onClick={onComplete}
-          className="w-full bg-green-500 text-white hover:bg-green-600 font-medium"
-        >
-          Start Creating Images →
-        </Button>
+        <Link href="/dashboard/marketing/social/create-image" className="w-full">
+          <Button
+            className="w-full bg-green-500 text-white hover:bg-green-600 font-medium"
+          >
+            Go to Image Generation →
+          </Button>
+        </Link>
       </div>
     </div>
   )
