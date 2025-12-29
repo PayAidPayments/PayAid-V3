@@ -284,9 +284,11 @@ async function executeExpensesReport(fields: string[], grouping: any, sorting: a
     const row: any = {}
     fields.forEach(field => {
       if (field === 'employeeName') {
-        row[field] = expense.employee?.name
+        row[field] = expense.employee 
+          ? `${expense.employee.firstName} ${expense.employee.lastName}`.trim()
+          : null
       } else if (field === 'employeeEmail') {
-        row[field] = expense.employee?.email
+        row[field] = expense.employee?.officialEmail
       } else {
         row[field] = (expense as any)[field]
       }
