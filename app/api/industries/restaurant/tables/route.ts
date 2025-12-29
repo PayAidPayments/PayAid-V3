@@ -46,14 +46,6 @@ export async function GET(request: NextRequest) {
     const tables = await prisma.restaurantTable.findMany({
       where,
       include: {
-        currentOrder: {
-          select: {
-            id: true,
-            orderNumber: true,
-            status: true,
-            totalAmount: true,
-          },
-        },
         _count: {
           select: {
             orders: true,
