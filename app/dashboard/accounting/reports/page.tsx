@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -57,9 +58,19 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Financial Reports</h1>
-        <p className="mt-2 text-gray-600">View your business financial reports</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Financial Reports</h1>
+          <p className="mt-2 text-gray-600">View your business financial reports</p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/dashboard/accounting/reports/revenue">
+            <Button variant="outline">📈 Revenue Dashboard</Button>
+          </Link>
+          <Link href="/dashboard/accounting/reports/expenses">
+            <Button variant="outline">📊 Expense Dashboard</Button>
+          </Link>
+        </div>
       </div>
 
       <Card>
