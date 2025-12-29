@@ -447,57 +447,6 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="border-2 text-center" style={{ borderColor: PAYAID_PURPLE }}>
-            <CardContent className="pt-6">
-              <div className="text-4xl font-bold mb-2" style={{ 
-                background: `linear-gradient(135deg, ${PAYAID_PURPLE} 0%, ${PAYAID_GOLD} 100%)`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>30M+</div>
-              <CardDescription className="text-sm uppercase tracking-wide">SMBs in India</CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 text-center" style={{ borderColor: PAYAID_GOLD }}>
-            <CardContent className="pt-6">
-              <div className="text-4xl font-bold mb-2" style={{ 
-                background: `linear-gradient(135deg, ${PAYAID_PURPLE} 0%, ${PAYAID_GOLD} 100%)`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>50%</div>
-              <CardDescription className="text-sm uppercase tracking-wide">Cost Savings</CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 text-center" style={{ borderColor: PAYAID_PURPLE }}>
-            <CardContent className="pt-6">
-              <div className="text-4xl font-bold mb-2" style={{ 
-                background: `linear-gradient(135deg, ${PAYAID_PURPLE} 0%, ${PAYAID_GOLD} 100%)`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>8</div>
-              <CardDescription className="text-sm uppercase tracking-wide">Complete Modules</CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 text-center" style={{ borderColor: PAYAID_GOLD }}>
-            <CardContent className="pt-6">
-              <div className="text-4xl font-bold mb-2" style={{ 
-                background: `linear-gradient(135deg, ${PAYAID_PURPLE} 0%, ${PAYAID_GOLD} 100%)`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>₹7,999</div>
-              <CardDescription className="text-sm uppercase tracking-wide">All-in-One Price</CardDescription>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Revenue & Pipeline Row */}
         {dashboardStats && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
