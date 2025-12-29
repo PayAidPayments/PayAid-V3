@@ -1255,20 +1255,20 @@ export default function Home() {
       <section className="stats">
         <div className="stats-grid">
           <div className="stat-item scroll-reveal">
-            <div className="stat-number">30M+</div>
-            <div className="stat-label">SMBs in India</div>
+            <div className="stat-number">10×</div>
+            <div className="stat-label">Faster Execution</div>
           </div>
           <div className="stat-item scroll-reveal">
             <div className="stat-number">50%</div>
             <div className="stat-label">Cost Savings</div>
           </div>
           <div className="stat-item scroll-reveal">
-            <div className="stat-number">8</div>
-            <div className="stat-label">Complete Modules</div>
+            <div className="stat-number">100%</div>
+            <div className="stat-label">Business Visibility</div>
           </div>
           <div className="stat-item scroll-reveal">
-            <div className="stat-number">₹7,999</div>
-            <div className="stat-label">All-in-One Price</div>
+            <div className="stat-number">0</div>
+            <div className="stat-label">Tools to Switch</div>
           </div>
         </div>
       </section>
