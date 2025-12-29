@@ -24,10 +24,10 @@ const updateConversationSchema = z.object({
 // GET /api/ai/cofounder/conversations/[id] - Get single conversation
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await Promise.resolve(params)
+    const params = await context.params
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     const conversation = await prisma.aICofounderConversation.findFirst({
@@ -55,10 +55,10 @@ export async function GET(
 // PATCH /api/ai/cofounder/conversations/[id] - Update conversation
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await Promise.resolve(params)
+    const params = await context.params
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     const body = await request.json()
@@ -66,7 +66,7 @@ export async function PATCH(
 
     const conversation = await prisma.aICofounderConversation.findFirst({
       where: {
-        id: resolvedParams.id,
+        id: params.id,
         tenantId,
         userId,
       },
@@ -77,7 +77,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.aICofounderConversation.update({
-      where: { id: resolvedParams.id },
+      where: { id: params.id },
       data: {
         messages: validated.messages,
         messageCount: validated.messages.length,
@@ -107,15 +107,15 @@ export async function PATCH(
 // DELETE /api/ai/cofounder/conversations/[id] - Delete conversation
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await Promise.resolve(params)
+    const params = await context.params
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     const conversation = await prisma.aICofounderConversation.findFirst({
       where: {
-        id: resolvedParams.id,
+        id: params.id,
         tenantId,
         userId,
       },
@@ -126,7 +126,7 @@ export async function DELETE(
     }
 
     await prisma.aICofounderConversation.delete({
-      where: { id: resolvedParams.id },
+      where: { id: params.id },
     })
 
     return NextResponse.json({ success: true })
