@@ -61,8 +61,39 @@ export default function GSTR1Page() {
   })
 
   const handleExport = async (format: 'excel' | 'pdf') => {
-    // TODO: Implement export functionality
-    alert(`Export to ${format.toUpperCase()} will be implemented`)
+    try {
+      const url = `/api/gst/gstr-1/export?month=${month}&year=${year}&format=${format}`
+      const response = await fetch(url, {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      })
+      
+      if (!response.ok) {
+        if (response.status === 501) {
+          alert('PDF export is not yet implemented. Please use Excel export.')
+          return
+        }
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to export')
+      }
+      
+      if (format === 'excel') {
+        const blob = await response.blob()
+        const downloadUrl = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = downloadUrl
+        a.download = `GSTR-1-${month}-${year}.xlsx`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(downloadUrl)
+        document.body.removeChild(a)
+      } else {
+        alert('PDF export is not yet implemented. Please use Excel export.')
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to export GSTR-1')
+    }
   }
 
   if (isLoading) {
