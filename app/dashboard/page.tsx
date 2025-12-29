@@ -156,34 +156,23 @@ export default function DashboardPage() {
     }
   }, [dashboardStats])
 
-  // Sample data for charts (replace with actual data from API)
-  const salesTrendData = [
-    { name: 'Jan', value: 15000, target: 20000 },
-    { name: 'Feb', value: 30000, target: 25000 },
-    { name: 'Mar', value: 28000, target: 30000 },
-    { name: 'Apr', value: 55000, target: 35000 },
-    { name: 'May', value: 55000, target: 40000 },
-    { name: 'Jun', value: 75000, target: 45000 },
+  // Use real chart data from API, fallback to empty data if not available
+  const salesTrendData = dashboardStats?.charts?.salesTrend || [
+    { name: 'No Data', value: 0, target: 0 },
   ]
 
-  const revenueData = [
-    { month: 'Month 1', revenue: 20000, expenses: 16000 },
-    { month: 'Month 2', revenue: 29000, expenses: 24000 },
-    { month: 'Month 3', revenue: 35000, expenses: 25000 },
-    { month: 'Month 4', revenue: 30000, expenses: 23000 },
-    { month: 'Month 5', revenue: 27000, expenses: 18000 },
+  const revenueData = dashboardStats?.charts?.revenueTrend || [
+    { month: 'No Data', revenue: 0, expenses: 0 },
   ]
 
-  const marketShareData = [
-    { name: 'Product A', value: 70, fill: PAYAID_PURPLE },
-    { name: 'Product B', value: 20, fill: PAYAID_GOLD },
-    { name: 'Product C', value: 10, fill: PAYAID_LIGHT_PURPLE },
+  const marketShareData = dashboardStats?.charts?.marketShare || [
+    { name: 'No Data', value: 100, fill: PAYAID_PURPLE },
   ]
 
-  const kpiData = [
-    { name: 'Conversion Rate', value: 8.2, unit: '%' },
-    { name: 'Churn Rate', value: 3.1, unit: '%' },
-    { name: 'Avg Revenue/User', value: 2800, unit: '₹' },
+  const kpiData = dashboardStats?.charts?.kpis || [
+    { name: 'Conversion Rate', value: 0, unit: '%' },
+    { name: 'Churn Rate', value: 0, unit: '%' },
+    { name: 'Avg Revenue/User', value: 0, unit: '₹' },
   ]
 
   return (
@@ -422,7 +411,7 @@ export default function DashboardPage() {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {marketShareData.map((entry, index) => (
+                      {marketShareData.map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                       ))}
                     </Pie>
@@ -537,17 +526,17 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {kpiData.map((kpi, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: '#F8F7F3' }}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl">✓</span>
-                        <span className="font-medium">{kpi.name}</span>
-                      </div>
-                      <span className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>
-                        {kpi.value}{kpi.unit}
-                      </span>
+                {kpiData.map((kpi: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: '#F8F7F3' }}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">✓</span>
+                      <span className="font-medium">{kpi.name}</span>
                     </div>
-                  ))}
+                    <span className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>
+                      {kpi.value}{kpi.unit}
+                    </span>
+                  </div>
+                ))}
                 </div>
               </CardContent>
             </Card>

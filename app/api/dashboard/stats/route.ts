@@ -3,6 +3,11 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { cache } from '@/lib/redis/client'
 
+// Chart color constants
+const PAYAID_PURPLE = '#53328A'
+const PAYAID_GOLD = '#F5C700'
+const PAYAID_LIGHT_PURPLE = '#6B4BA1'
+
 // GET /api/dashboard/stats - Get dashboard statistics
 export async function GET(request: NextRequest) {
   try {
@@ -221,6 +226,133 @@ export async function GET(request: NextRequest) {
       }).catch(() => ({ _sum: { total: 0 } })),
     ])
 
+    // Calculate monthly revenue trends (last 6 months)
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    
+    const monthlyInvoices = await prisma.invoice.findMany({
+      where: {
+        tenantId: tenantId,
+        status: 'paid',
+        paidAt: { gte: sixMonthsAgo },
+      },
+      select: {
+        total: true,
+        paidAt: true,
+      },
+    }).catch(() => [])
+
+    const monthlyOrders = await prisma.order.findMany({
+      where: {
+        tenantId: tenantId,
+        status: { in: ['confirmed', 'shipped', 'delivered'] },
+        createdAt: { gte: sixMonthsAgo },
+      },
+      select: {
+        total: true,
+        createdAt: true,
+      },
+    }).catch(() => [])
+
+    // Group by month
+    const monthlyRevenueMap = new Map<string, number>()
+    const monthlySalesMap = new Map<string, number>()
+    
+    monthlyInvoices.forEach(inv => {
+      if (inv.paidAt) {
+        const monthKey = new Date(inv.paidAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        monthlyRevenueMap.set(monthKey, (monthlyRevenueMap.get(monthKey) || 0) + (inv.total || 0))
+      }
+    })
+
+    monthlyOrders.forEach(order => {
+      if (order.createdAt) {
+        const monthKey = new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        monthlySalesMap.set(monthKey, (monthlySalesMap.get(monthKey) || 0) + (order.total || 0))
+      }
+    })
+
+    // Generate last 6 months data
+    const salesTrendData = []
+    const revenueData = []
+    const monthNames = []
+    
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date()
+      date.setMonth(date.getMonth() - i)
+      const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      const monthName = date.toLocaleDateString('en-US', { month: 'short' })
+      monthNames.push(monthName)
+      
+      const revenue = monthlyRevenueMap.get(monthKey) || 0
+      const sales = monthlySalesMap.get(monthKey) || 0
+      
+      salesTrendData.push({
+        name: monthName,
+        value: Math.round(sales),
+        target: Math.round(sales * 1.2), // 20% growth target
+      })
+      
+      revenueData.push({
+        month: monthName,
+        revenue: Math.round(revenue),
+        expenses: Math.round(revenue * 0.7), // Estimate expenses as 70% of revenue
+      })
+    }
+
+    // Calculate market share from deals by stage
+    const dealsByStage = await prisma.deal.groupBy({
+      by: ['stage'],
+      where: {
+        tenantId: tenantId,
+      },
+      _sum: {
+        value: true,
+      },
+    }).catch(() => [])
+
+    const totalDealValue = dealsByStage.reduce((sum, d) => sum + (d._sum.value || 0), 0)
+    const marketShareData = dealsByStage
+      .filter(d => d._sum.value && d._sum.value > 0)
+      .slice(0, 3)
+      .map((d, idx) => {
+        const percentage = totalDealValue > 0 ? Math.round((d._sum.value! / totalDealValue) * 100) : 0
+        const colors = [PAYAID_PURPLE, PAYAID_GOLD, PAYAID_LIGHT_PURPLE]
+        return {
+          name: d.stage || `Stage ${idx + 1}`,
+          value: percentage,
+          fill: colors[idx] || PAYAID_PURPLE,
+        }
+      })
+
+    // If no deals, use default data
+    if (marketShareData.length === 0) {
+      marketShareData.push(
+        { name: 'Active Deals', value: 100, fill: PAYAID_PURPLE }
+      )
+    }
+
+    // Calculate KPIs from real data
+    const totalContacts = contacts
+    const totalDeals = deals
+    const conversionRate = totalContacts > 0 ? ((totalDeals / totalContacts) * 100).toFixed(1) : '0.0'
+    const avgRevenuePerUser = totalContacts > 0 ? Math.round((revenueAllTime._sum.total || 0) / totalContacts) : 0
+    
+    // Calculate churn rate (simplified: based on inactive deals)
+    const lostDeals = await prisma.deal.count({
+      where: {
+        tenantId: tenantId,
+        stage: 'lost',
+      },
+    }).catch(() => 0)
+    const churnRate = totalDeals > 0 ? ((lostDeals / totalDeals) * 100).toFixed(1) : '0.0'
+
+    const kpiData = [
+      { name: 'Conversion Rate', value: parseFloat(conversionRate), unit: '%' },
+      { name: 'Churn Rate', value: parseFloat(churnRate), unit: '%' },
+      { name: 'Avg Revenue/User', value: avgRevenuePerUser, unit: '₹' },
+    ]
+
     const stats = {
       counts: {
         contacts,
@@ -248,6 +380,12 @@ export async function GET(request: NextRequest) {
         contacts: recentContacts,
         deals: recentDeals,
         orders: recentOrdersList,
+      },
+      charts: {
+        salesTrend: salesTrendData,
+        revenueTrend: revenueData,
+        marketShare: marketShareData,
+        kpis: kpiData,
       },
     }
 
