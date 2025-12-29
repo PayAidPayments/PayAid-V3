@@ -1266,12 +1266,11 @@ export default function Home() {
           <div className="hero-image">
             <img 
               src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/digital-heroes-payaid.png" 
-              alt="PayAid Digital Heroes - Transform Your Business" 
-              style={{
-                width: '100%',
-                height: 'auto',
-                maxWidth: '600px',
-                objectFit: 'contain'
+              alt="PayAid Digital Heroes - Transform Your Business"
+              onError={(e) => {
+                console.error('Image failed to load:', e);
+                // Fallback to a placeholder or different image
+                e.currentTarget.src = 'https://via.placeholder.com/600x400/53328A/F5C700?text=PayAid+Digital+Heroes';
               }}
             />
           </div>
