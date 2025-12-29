@@ -1154,7 +1154,18 @@ export default function Home() {
               <div className="mega-menu">
                 <div className="mega-menu-grid">
                   <div className="menu-column">
-                    <h4>Core Modules</h4>
+                    <h4>AI Services</h4>
+                    <ul>
+                      <li><a href="#ai-services">Conversational AI</a></li>
+                      <li><a href="#ai-services">Agentic Automation</a></li>
+                      <li><a href="#ai-services">Knowledge & RAG AI</a></li>
+                      <li><a href="#ai-services">AI Co-founder</a></li>
+                      <li><a href="#ai-services">AI Insights</a></li>
+                      <li><a href="#ai-services">Website Builder</a></li>
+                    </ul>
+                  </div>
+                  <div className="menu-column">
+                    <h4>Business Modules</h4>
                     <ul>
                       <li><a href="#features">CRM Management</a></li>
                       <li><a href="#features">Invoicing & Billing</a></li>
@@ -1162,17 +1173,6 @@ export default function Home() {
                       <li><a href="#features">Payment Processing</a></li>
                       <li><a href="#features">HR & Payroll</a></li>
                       <li><a href="#features">Accounting & GST</a></li>
-                    </ul>
-                  </div>
-                  <div className="menu-column">
-                    <h4>Advanced Features</h4>
-                    <ul>
-                      <li><a href="#features">Analytics & Reports</a></li>
-                      <li><a href="#features">AI Co-founder</a></li>
-                      <li><a href="#features">Third-party Integrations</a></li>
-                      <li><a href="#features">Mobile Applications</a></li>
-                      <li><a href="#features">API Access</a></li>
-                      <li><a href="#features">Enterprise Security</a></li>
                     </ul>
                   </div>
                 </div>
@@ -1207,7 +1207,7 @@ export default function Home() {
             <li><a href="#features">Company</a></li>
             <li><Link href="/login">Sign In</Link></li>
           </ul>
-          <Link href="/register" className="cta-header">Get Started</Link>
+          <Link href="/register" className="cta-header">Book AI Consultation</Link>
           <button className="menu-toggle">☰</button>
         </nav>
       </header>
@@ -1215,14 +1215,14 @@ export default function Home() {
       {/* HERO SECTION */}
       <section className="hero">
         <div className="hero-content">
-          <h1>One App For Your Business</h1>
+          <h1>Your Complete Business OS, <span style={{display: 'block'}}>Powered by AI</span></h1>
           <p>
-            One App To Run Your Entire Business Operations. Manage CRM, Invoicing, Inventory, HR, Payments, and Accounting—all in one powerful platform. 
-            Built specifically for Indian businesses.
+            AI-powered CRM, automation, and intelligence to streamline operations, reduce costs, and elevate customer experiences. 
+            Everything your business needs—from conversational AI to workflow automation—all in one platform. Built for India.
           </p>
           <div className="hero-buttons">
             <Link href="/register" className="btn-primary">Start Free Trial</Link>
-            <a href="#dashboard-showcase" className="btn-secondary">Watch Demo</a>
+            <a href="#ai-services" className="btn-secondary">Explore AI Features →</a>
           </div>
         </div>
       </section>
@@ -1273,11 +1273,63 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FEATURES SECTION */}
+      {/* CORE AI SERVICES SECTION */}
+      <section className="features" id="ai-services" style={{background: 'linear-gradient(135deg, var(--bg-light) 0%, var(--white) 100%)'}}>
+        <div className="section-title">
+          <h2>Our Core AI Services</h2>
+          <p>Powerful AI automation and smart solutions to transform your business operations</p>
+        </div>
+        <div className="features-grid">
+          <div className="feature-card scroll-reveal">
+            <div className="feature-icon" style={{background: 'linear-gradient(135deg, var(--primary-purple), var(--light-purple))'}}>
+              <span style={{fontSize: '2.5rem'}}>💬</span>
+            </div>
+            <h3>Conversational AI</h3>
+            <p>Build multilingual, context-aware chatbots for web, WhatsApp, apps, or voice. Turn conversations into conversions with intelligent lead qualification and automated customer support.</p>
+          </div>
+          <div className="feature-card scroll-reveal">
+            <div className="feature-icon" style={{background: 'linear-gradient(135deg, var(--primary-purple), var(--light-purple))'}}>
+              <span style={{fontSize: '2.5rem'}}>🤖</span>
+            </div>
+            <h3>Agentic Workflow Automation</h3>
+            <p>Deploy smart AI agents to automate email parsing, form-filling, document review, and tasks in real time. Reduce manual work and accelerate business processes.</p>
+          </div>
+          <div className="feature-card scroll-reveal">
+            <div className="feature-icon" style={{background: 'linear-gradient(135deg, var(--primary-purple), var(--light-purple))'}}>
+              <span style={{fontSize: '2.5rem'}}>📚</span>
+            </div>
+            <h3>Knowledge & RAG AI</h3>
+            <p>Ask questions from your documents or SOPs and get instant, cited answers via intelligent retrieval. Transform your knowledge base into a searchable AI assistant with full audit trails.</p>
+          </div>
+          <div className="feature-card scroll-reveal">
+            <div className="feature-icon" style={{background: 'linear-gradient(135deg, var(--primary-purple), var(--light-purple))'}}>
+              <span style={{fontSize: '2.5rem'}}>🚀</span>
+            </div>
+            <h3>AI Co-founder</h3>
+            <p>Your strategic business partner with 22 specialist agents. Get business insights, recommendations, and execute actions automatically. From idea to IPO, guided by AI.</p>
+          </div>
+          <div className="feature-card scroll-reveal">
+            <div className="feature-icon" style={{background: 'linear-gradient(135deg, var(--primary-purple), var(--light-purple))'}}>
+              <span style={{fontSize: '2.5rem'}}>🎨</span>
+            </div>
+            <h3>AI Website Builder</h3>
+            <p>Create stunning websites and landing pages with AI-powered component generation. Build, customize, and deploy professional sites in minutes, not weeks.</p>
+          </div>
+          <div className="feature-card scroll-reveal">
+            <div className="feature-icon" style={{background: 'linear-gradient(135deg, var(--primary-purple), var(--light-purple))'}}>
+              <span style={{fontSize: '2.5rem'}}>📊</span>
+            </div>
+            <h3>AI-Powered Insights</h3>
+            <p>Get intelligent business analysis, revenue insights, and risk warnings. Make data-driven decisions with AI that understands your business context.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* BUSINESS OPERATING SYSTEM SECTION */}
       <section className="features" id="features">
         <div className="section-title">
-          <h2>PayAid Does It All</h2>
-          <p>Fair, User Friendly, Customisable, Your Business in Pocket.</p>
+          <h2>Complete Business Operating System</h2>
+          <p>All your business modules integrated with AI-powered intelligence</p>
         </div>
         <div className="features-grid">
           <div className="feature-card scroll-reveal">
@@ -1297,8 +1349,8 @@ export default function Home() {
           </div>
           <div className="feature-card scroll-reveal">
             <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/3634df48-2ea7-4641-bb4d-cd1c631bbcc1.png" alt="AI-Powered Intelligence" /></div>
-            <h3>Essential Features, No Fluff</h3>
-            <p>Purpose-Driven Functionality: We believe in delivering only the essential tools your business needs, without the clutter of unnecessary features. Simplify operations and boost productivity with what matters most. Optimized for Efficiency: Enjoy streamlined workflows.</p>
+            <h3>AI-Powered Intelligence</h3>
+            <p>Every module is enhanced with AI capabilities. From smart lead scoring to automated invoice processing, AI works behind the scenes to make your business operations smarter and more efficient. Get insights, predictions, and recommendations tailored to your business.</p>
           </div>
           <div className="feature-card scroll-reveal">
             <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/2b88452a-f5f2-4a3b-8e26-dccc89f76fa9.png" alt="Lightning Fast Implementation" /></div>
@@ -1439,17 +1491,27 @@ export default function Home() {
 
       {/* FINAL CTA */}
       <section className="final-cta">
-        <h2>Ready to Transform Your Business?</h2>
-        <p>Join thousands of Indian businesses already growing with PayAid. Start your free trial today. No credit card required.</p>
-        <Link href="/register" className="cta-button-large">Get Started Today</Link>
+        <h2>Ready to Accelerate Your Growth with AI?</h2>
+        <p>Whether you're a startup or scaling enterprise—PayAid can craft AI-powered workflows, chatbots, and automation tools tailored for you. Book your free AI consultation or start your trial today.</p>
+        <div style={{display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '2rem'}}>
+          <Link href="/register" className="cta-button-large">Start Free Trial</Link>
+          <a href="#ai-services" className="btn-secondary" style={{background: 'rgba(255, 255, 255, 0.1)', color: 'var(--white)', borderColor: 'rgba(255, 255, 255, 0.3)'}}>Book AI Consultation</a>
+        </div>
       </section>
 
       {/* FOOTER */}
       <footer>
         <div className="footer-content">
           <div className="footer-section">
+            <h4>AI Services</h4>
+            <a href="#ai-services">Conversational AI</a>
+            <a href="#ai-services">Agentic Automation</a>
+            <a href="#ai-services">Knowledge & RAG AI</a>
+            <a href="#ai-services">AI Co-founder</a>
+          </div>
+          <div className="footer-section">
             <h4>Product</h4>
-            <a href="#features">Features</a>
+            <a href="#features">Business Modules</a>
             <a href="#pricing">Pricing</a>
             <a href="#features">Integrations</a>
             <a href="#features">Security</a>
