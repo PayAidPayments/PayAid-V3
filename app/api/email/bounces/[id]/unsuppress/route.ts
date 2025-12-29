@@ -11,7 +11,7 @@ export async function POST(
     const { tenantId } = await requireModuleAccess(request, 'communication')
     const { id } = await params
 
-    const bounce = await prisma.emailBounces.update({
+    const bounce = await prisma.emailBounce.update({
       where: {
         id,
         tenantId,

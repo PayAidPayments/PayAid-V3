@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       if (endDate) where.scheduledStartDate.lte = new Date(endDate)
     }
 
-    const schedules = await prisma.productionSchedules.findMany({
+    const schedules = await prisma.productionSchedule.findMany({
       where,
       include: {
         order: {
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const schedule = await prisma.productionSchedules.create({
+    const schedule = await prisma.productionSchedule.create({
       data: {
         tenantId,
         orderId: validated.orderId,
