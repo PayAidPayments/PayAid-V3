@@ -13,9 +13,10 @@ const updateMediaSchema = z.object({
 // GET /api/media-library/[id] - Get single media item
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await authenticateRequest(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -23,7 +24,7 @@ export async function GET(
 
     const media = await prisma.mediaLibrary.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId: user.tenantId,
       },
       include: {
@@ -54,9 +55,10 @@ export async function GET(
 // PATCH /api/media-library/[id] - Update media metadata
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await authenticateRequest(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -67,7 +69,7 @@ export async function PATCH(
 
     const media = await prisma.mediaLibrary.updateMany({
       where: {
-        id: params.id,
+        id,
         tenantId: user.tenantId,
       },
       data: validated,
@@ -78,7 +80,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.mediaLibrary.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json(updated)
@@ -101,9 +103,10 @@ export async function PATCH(
 // DELETE /api/media-library/[id] - Delete media
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await authenticateRequest(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -111,7 +114,7 @@ export async function DELETE(
 
     const media = await prisma.mediaLibrary.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId: user.tenantId,
       },
     })
@@ -121,7 +124,7 @@ export async function DELETE(
     }
 
     await prisma.mediaLibrary.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({ success: true })
