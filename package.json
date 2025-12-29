@@ -16,6 +16,7 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "db:seed-campaigns": "npx tsx prisma/seed-campaigns.ts",
     "db:seed-all": "npx tsx prisma/seed-all-sample-data.ts",
+    "enable-all-modules": "npx tsx scripts/enable-all-modules.ts",
     "type-check": "tsc --noEmit",
     "verify-env": "npx tsx scripts/verify-env.ts",
     "check-vercel-logs": "powershell -ExecutionPolicy Bypass -File scripts/check-vercel-logs.ps1",
