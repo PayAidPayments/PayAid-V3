@@ -1,51 +1,24 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
-import { Button } from '@/components/ui/button'
-import { motion, useInView, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import Script from 'next/script'
 
 export default function Home() {
   const router = useRouter()
   const { isAuthenticated, isLoading, token, fetchUser } = useAuthStore()
   const [mounted, setMounted] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
 
-  // Animation variants
-  const fadeInUp: any = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.6, ease: 'easeOut' }
-    }
-  }
-
-  const staggerContainer = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  }
-
-  // Mark as mounted after first render to avoid hydration issues
   useEffect(() => {
     setMounted(true)
   }, [])
 
   useEffect(() => {
-    // Only check auth after component is mounted and not loading
     if (!mounted || isLoading) return
 
-    // Only redirect if user is actually authenticated (not just has a token)
     if (isAuthenticated && token) {
-      // Redirect to dashboard with tenant ID
       const { tenant } = useAuthStore.getState()
       if (tenant?.id) {
         router.push(`/dashboard/${tenant.id}`)
@@ -53,800 +26,1460 @@ export default function Home() {
         router.push('/dashboard')
       }
     } else if (token && !isAuthenticated) {
-      // Try to fetch user if we have a token but aren't authenticated yet
-      // Don't block rendering - fetch in background
-      fetchUser().catch(() => {
-        // If fetch fails, user will stay on landing page
-      })
+      fetchUser().catch(() => {})
     }
   }, [mounted, isAuthenticated, isLoading, token, router, fetchUser])
 
-  // Show loading only very briefly during mount, then show landing page immediately
-  // Don't wait for auth check - show page and check auth in background
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    // Header scroll effect
+    const header = document.querySelector('header')
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        header?.classList.add('scrolled')
+      } else {
+        header?.classList.remove('scrolled')
+      }
+    }
+    window.addEventListener('scroll', handleScroll)
+
+    // Scroll reveal animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -100px 0px'
+    }
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible')
+        }
+      })
+    }, observerOptions)
+
+    document.querySelectorAll('.scroll-reveal').forEach(el => {
+      observer.observe(el)
+    })
+
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault()
+        const href = this.getAttribute('href')
+        if (href) {
+          const target = document.querySelector(href)
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+        }
+      })
+    })
+
+    // Tab functionality - DYNAMIC IMAGE SWITCHING
+    const tabButtons = document.querySelectorAll('.tab-btn')
+    const showcaseImages = document.querySelectorAll('.showcase-image img')
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const tabName = this.getAttribute('data-tab')
+        
+        // Update active button
+        tabButtons.forEach(b => b.classList.remove('active'))
+        this.classList.add('active')
+        
+        // Hide all images and show selected one
+        showcaseImages.forEach(img => img.classList.add('hidden'))
+        const targetImg = document.getElementById(tabName || '')
+        if (targetImg) {
+          targetImg.classList.remove('hidden')
+        }
+      })
+    })
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [mounted])
+
   if (!mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-payaid-purple"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#53328A]"></div>
       </div>
     )
   }
 
   if (isAuthenticated) {
-    return null // Will redirect to dashboard
+    return null
   }
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
-      {/* HEADER & NAVIGATION */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          {/* Logo */}
-          <Link href="/" className="text-2xl font-bold">
-            <span className="text-payaid-purple">Pay</span>
-            <span className="text-payaid-gold">Aid</span>
+    <>
+      <style jsx global>{`
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-purple: #53328A;
+            --primary-gold: #F5C700;
+            --dark-purple: #2D1B47;
+            --light-purple: #6B4BA1;
+            --text-dark: #1A1A1A;
+            --text-light: #666666;
+            --text-light-2: #888888;
+            --white: #FFFFFF;
+            --bg-light: #F8F7F3;
+            --border-light: #E8E7E3;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--white);
+            overflow-x: hidden;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+            padding: 0.75rem 2rem;
+        }
+
+        header.scrolled {
+            box-shadow: 0 8px 32px rgba(83, 50, 138, 0.1);
+        }
+
+        nav {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--primary-purple);
+        }
+
+        .logo img {
+            height: 40px;
+            width: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.5rem 0;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-purple);
+        }
+
+        .dropdown-arrow {
+            font-size: 0.7rem;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-item:hover .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        /* ===== MEGA MENU ===== */
+        .mega-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            min-width: 600px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+        }
+
+        .nav-item:hover .mega-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .mega-menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .menu-column h4 {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--primary-purple);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .menu-column ul {
+            list-style: none;
+        }
+
+        .menu-column li {
+            margin-bottom: 0.75rem;
+        }
+
+        .menu-column a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .menu-column a:hover {
+            color: var(--primary-purple);
+            transform: translateX(4px);
+        }
+
+        .cta-header {
+            background: linear-gradient(135deg, var(--primary-purple), var(--light-purple));
+            color: var(--white);
+            padding: 0.6rem 1.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(83, 50, 138, 0.2);
+        }
+
+        .cta-header:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(83, 50, 138, 0.3);
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--primary-purple);
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero {
+            margin-top: 70px;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--white) 0%, var(--bg-light) 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 2rem;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(245, 199, 0, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -10%;
+            left: -5%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(83, 50, 138, 0.05) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 10s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(30px); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 900px;
+            animation: slideIn 0.8s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: clamp(2rem, 6vw, 4rem);
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-gold) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            color: var(--text-light);
+            margin-bottom: 2.5rem;
+            line-height: 1.7;
+            max-width: 600px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            animation: fadeIn 1s ease-out 0.3s backwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-purple), var(--light-purple));
+            color: var(--white);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(83, 50, 138, 0.2);
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 35px rgba(83, 50, 138, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--white);
+            color: var(--primary-purple);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            border: 2px solid var(--primary-purple);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-purple);
+            color: var(--white);
+            transform: translateY(-4px);
+        }
+
+        /* ===== DASHBOARD SHOWCASE ===== */
+        .dashboard-showcase {
+            padding: 6rem 2rem;
+            background: var(--white);
+            position: relative;
+            z-index: 10;
+        }
+
+        .showcase-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .showcase-left h2 {
+            font-size: clamp(1.8rem, 3vw, 2.5rem);
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+            line-height: 1.3;
+        }
+
+        .showcase-left p {
+            font-size: 1.05rem;
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+
+        .showcase-tabs {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 0.8rem 1.4rem;
+            border: 2px solid var(--border-light);
+            background: var(--white);
+            color: var(--text-light);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--primary-purple);
+            color: var(--primary-purple);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--primary-purple), var(--light-purple));
+            color: var(--white);
+            border-color: transparent;
+        }
+
+        .showcase-image {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            animation: slideInRight 0.8s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .showcase-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: opacity 0.5s ease;
+        }
+
+        .showcase-image img.hidden {
+            display: none;
+        }
+
+        /* ===== STATS SECTION ===== */
+        .stats {
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, var(--bg-light) 0%, var(--white) 100%);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .stat-item {
+            animation: countUp 0.8s ease-out;
+        }
+
+        @keyframes countUp {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .stat-number {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-purple), var(--primary-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        /* ===== FEATURES SECTION ===== */
+        .features {
+            padding: 6rem 2rem;
+            background: var(--white);
+            position: relative;
+            z-index: 10;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-title h2 {
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+        }
+
+        .section-title p {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, rgba(245, 199, 0, 0.03) 0%, rgba(83, 50, 138, 0.03) 100%);
+            padding: 2.5rem 2rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-gold), var(--primary-purple));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            background: linear-gradient(135deg, rgba(245, 199, 0, 0.05) 0%, rgba(83, 50, 138, 0.05) 100%);
+            border-color: var(--border-light);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: transparent;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            color: var(--white);
+            box-shadow: none;
+            overflow: hidden;
+        }
+
+        .feature-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.75rem;
+            color: var(--primary-purple);
+            font-weight: 700;
+        }
+
+        .feature-card p {
+            color: var(--text-light-2);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* ===== USE CASES SECTION ===== */
+        .use-cases {
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, var(--bg-light) 0%, var(--white) 100%);
+        }
+
+        .use-cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            margin-top: 3rem;
+        }
+
+        .use-case-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.03);
+        }
+
+        .use-case-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+            border-color: var(--primary-gold);
+        }
+
+        .use-case-icon {
+            width: 70px;
+            height: 70px;
+            background: transparent;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            color: var(--white);
+            overflow: hidden;
+        }
+
+        .use-case-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .use-case-card h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-purple);
+            margin-bottom: 0.75rem;
+        }
+
+        .use-case-card p {
+            font-size: 0.95rem;
+            color: var(--text-light-2);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .use-case-link {
+            color: var(--primary-purple);
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .use-case-link:hover {
+            gap: 1rem;
+            color: var(--primary-gold);
+        }
+
+        /* ===== PRICING SECTION ===== */
+        .pricing {
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, var(--dark-purple) 0%, var(--primary-purple) 100%);
+            color: var(--white);
+        }
+
+        .pricing .section-title h2 {
+            color: var(--white);
+        }
+
+        .pricing .section-title p {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .pricing-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 2.5rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .pricing-card.featured {
+            background: linear-gradient(135deg, var(--primary-gold) 0%, #FFA500 100%);
+            color: var(--text-dark);
+            transform: scale(1.05);
+            box-shadow: 0 20px 60px rgba(245, 199, 0, 0.3);
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 15px 50px rgba(255, 255, 255, 0.1);
+        }
+
+        .pricing-card.featured:hover {
+            transform: scale(1.08) translateY(-8px);
+        }
+
+        .badge {
+            position: absolute;
+            top: -15px;
+            right: 20px;
+            background: var(--primary-gold);
+            color: var(--text-dark);
+            padding: 0.6rem 1.2rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .pricing-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .price {
+            font-size: 3rem;
+            font-weight: 800;
+            margin: 1.5rem 0;
+        }
+
+        .pricing-card.featured .price {
+            color: var(--text-dark);
+        }
+
+        .price-period {
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .features-list {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .features-list li {
+            padding: 0.75rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.95rem;
+        }
+
+        .pricing-card.featured .features-list li {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .features-list li:last-child {
+            border-bottom: none;
+        }
+
+        .check-icon {
+            color: var(--primary-gold);
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+
+        .pricing-card.featured .check-icon {
+            color: var(--text-dark);
+        }
+
+        .price-cta {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 50px;
+            border: none;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+        }
+
+        .pricing-card.featured .price-cta {
+            background: var(--text-dark);
+            color: var(--primary-gold);
+        }
+
+        .pricing-card:not(.featured) .price-cta {
+            background: var(--primary-gold);
+            color: var(--text-dark);
+        }
+
+        .price-cta:hover {
+            transform: translateY(-2px);
+        }
+
+        /* ===== TESTIMONIALS ===== */
+        .testimonials {
+            padding: 6rem 2rem;
+            background: var(--white);
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            margin-top: 3rem;
+        }
+
+        .testimonial-card {
+            background: linear-gradient(135deg, rgba(245, 199, 0, 0.03) 0%, rgba(83, 50, 138, 0.03) 100%);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+        }
+
+        .testimonial-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .stars {
+            color: var(--primary-gold);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+        }
+
+        .testimonial-text {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            font-weight: 700;
+            color: var(--primary-purple);
+            margin-bottom: 0.25rem;
+        }
+
+        .testimonial-role {
+            font-size: 0.85rem;
+            color: var(--text-light-2);
+        }
+
+        /* ===== FINAL CTA ===== */
+        .final-cta {
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--dark-purple) 100%);
+            color: var(--white);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .final-cta::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(245, 199, 0, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .final-cta h2 {
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            margin-bottom: 1rem;
+            font-weight: 800;
+            position: relative;
+            z-index: 2;
+        }
+
+        .final-cta p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .cta-button-large {
+            background: var(--primary-gold);
+            color: var(--text-dark);
+            padding: 1.25rem 2.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(245, 199, 0, 0.3);
+            display: inline-block;
+            position: relative;
+            z-index: 2;
+        }
+
+        .cta-button-large:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 35px rgba(245, 199, 0, 0.4);
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            background: var(--text-dark);
+            color: var(--white);
+            padding: 4rem 2rem 2rem;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-section h4 {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary-gold);
+        }
+
+        .footer-section a {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: block;
+            margin-bottom: 0.75rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: var(--primary-gold);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .mega-menu {
+                min-width: auto;
+                width: calc(100vw - 4rem);
+            }
+
+            .mega-menu-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .showcase-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+            }
+
+            .btn-primary, .btn-secondary {
+                width: 100%;
+                text-align: center;
+            }
+
+            .pricing-card.featured {
+                transform: scale(1);
+            }
+
+            header {
+                padding: 0.5rem 1rem;
+            }
+
+            .hero {
+                margin-top: 60px;
+                padding: 1rem;
+            }
+        }
+
+        /* ===== SCROLL REVEAL ===== */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .scroll-reveal.visible {
+            animation: slideUp 0.6s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+      `}</style>
+
+      {/* HEADER WITH MEGA MENU */}
+      <header>
+        <nav>
+          <Link href="/" className="logo">
+            <img src="https://payaidpayments.com/wp-content/uploads/2023/03/payaidPNG-2048x1058.png" alt="PayAid" />
           </Link>
-
-          {/* Desktop Navigation Menu */}
-          <div className="hidden md:flex gap-6 lg:gap-8 items-center">
-            <Link href="#features" className="text-payaid-charcoal hover:text-payaid-purple font-medium transition-colors">Features</Link>
-            <Link href="#modules" className="text-payaid-charcoal hover:text-payaid-purple font-medium transition-colors">Modules</Link>
-            <Link href="#pricing" className="text-payaid-charcoal hover:text-payaid-purple font-medium transition-colors">Pricing</Link>
-            <Link href="/login" className="text-payaid-charcoal hover:text-payaid-purple font-medium transition-colors">Sign In</Link>
-            <Link href="/register">
-              <Button className="bg-payaid-gold hover:bg-payaid-gold-hover text-white px-6 py-2 rounded-lg font-medium transition-all transform hover:scale-105 shadow-md">
-                Start Free Trial
-              </Button>
-            </Link>
-          </div>
-          
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-payaid-purple"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
-          </button>
+          <ul className="nav-links">
+            <li className="nav-item">
+              <a href="#products">Products <span className="dropdown-arrow">▼</span></a>
+              <div className="mega-menu">
+                <div className="mega-menu-grid">
+                  <div className="menu-column">
+                    <h4>Core Modules</h4>
+                    <ul>
+                      <li><a href="#features">CRM Management</a></li>
+                      <li><a href="#features">Invoicing & Billing</a></li>
+                      <li><a href="#features">Inventory Tracking</a></li>
+                      <li><a href="#features">Payment Processing</a></li>
+                      <li><a href="#features">HR & Payroll</a></li>
+                      <li><a href="#features">Accounting & GST</a></li>
+                    </ul>
+                  </div>
+                  <div className="menu-column">
+                    <h4>Advanced Features</h4>
+                    <ul>
+                      <li><a href="#features">Analytics & Reports</a></li>
+                      <li><a href="#features">AI Co-founder</a></li>
+                      <li><a href="#features">Third-party Integrations</a></li>
+                      <li><a href="#features">Mobile Applications</a></li>
+                      <li><a href="#features">API Access</a></li>
+                      <li><a href="#features">Enterprise Security</a></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </li>
+            <li className="nav-item">
+              <a href="#solutions">Solutions <span className="dropdown-arrow">▼</span></a>
+              <div className="mega-menu">
+                <div className="mega-menu-grid">
+                  <div className="menu-column">
+                    <h4>By Industry</h4>
+                    <ul>
+                      <li><a href="#features">Restaurants & Cafes</a></li>
+                      <li><a href="#features">Retail Stores</a></li>
+                      <li><a href="#features">Service Businesses</a></li>
+                      <li><a href="#features">Manufacturing</a></li>
+                    </ul>
+                  </div>
+                  <div className="menu-column">
+                    <h4>Use Cases</h4>
+                    <ul>
+                      <li><a href="#features">Multi-Location Management</a></li>
+                      <li><a href="#features">E-Commerce Integration</a></li>
+                      <li><a href="#features">GST Compliance</a></li>
+                      <li><a href="#features">Business Scaling</a></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#features">Company</a></li>
+            <li><Link href="/login">Sign In</Link></li>
+          </ul>
+          <Link href="/register" className="cta-header">Get Started</Link>
+          <button className="menu-toggle">☰</button>
         </nav>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white border-t border-gray-200"
-          >
-            <div className="px-4 py-4 space-y-3">
-              <Link href="#features" className="block text-payaid-charcoal hover:text-payaid-purple font-medium">Features</Link>
-              <Link href="#modules" className="block text-payaid-charcoal hover:text-payaid-purple font-medium">Modules</Link>
-              <Link href="#pricing" className="block text-payaid-charcoal hover:text-payaid-purple font-medium">Pricing</Link>
-              <Link href="/login" className="block text-payaid-charcoal hover:text-payaid-purple font-medium">Sign In</Link>
-              <Link href="/register" className="block">
-                <Button className="w-full bg-payaid-gold hover:bg-payaid-gold-hover text-white">Start Free Trial</Button>
-              </Link>
-            </div>
-          </motion.div>
-        )}
       </header>
 
-      {/* HERO SECTION - Enhanced with floating graphics */}
-      <section className="relative bg-gradient-to-br from-[#53328A] via-[#4A2A7A] to-[#3F1F62] text-white py-20 md:py-40 overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Floating orbs */}
-          <motion.div
-            className="absolute top-20 left-10 w-72 h-72 bg-payaid-gold/20 rounded-full blur-3xl"
-            animate={{
-              x: [0, 100, 0],
-              y: [0, 50, 0],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-          <motion.div
-            className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl"
-            animate={{
-              x: [0, -80, 0],
-              y: [0, -60, 0],
-              scale: [1, 1.3, 1],
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-          
-          {/* Grid pattern */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8 }}
-            className="mb-8"
-          >
-            <motion.span
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="inline-block px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium mb-6 border border-white/20"
-            >
-              🚀 All-in-One Business Platform
-            </motion.span>
-          </motion.div>
-
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 leading-tight"
-          >
-            <span className="block">Run Your Entire</span>
-            <span className="block bg-gradient-to-r from-payaid-gold to-yellow-300 bg-clip-text text-transparent">
-              Business on PayAid
-            </span>
-          </motion.h1>
-          
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-            className="text-xl md:text-2xl text-white/90 mb-12 max-w-3xl mx-auto"
-          >
-            One platform. Eight powerful modules. Built for India.
-          </motion.p>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.7 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
-          >
-            <Link href="/register">
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-payaid-gold hover:bg-payaid-gold-hover text-payaid-purple px-10 py-5 rounded-xl font-bold text-lg transition-all shadow-2xl hover:shadow-payaid-gold/50"
-              >
-                Start Free Trial →
-              </motion.button>
-            </Link>
-            <motion.button 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="border-2 border-white/30 backdrop-blur-sm text-white hover:bg-white/10 px-10 py-5 rounded-xl font-bold text-lg transition-all"
-            >
-              Watch Demo
-            </motion.button>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.9 }}
-            className="flex flex-wrap justify-center gap-6 text-white/80 text-sm"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-payaid-gold text-xl">✓</span>
-              <span>14-day free trial</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-payaid-gold text-xl">✓</span>
-              <span>No credit card</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-payaid-gold text-xl">✓</span>
-              <span>Setup in minutes</span>
-            </div>
-          </motion.div>
-        </div>
-
-          {/* Floating Module Icons */}
-        <div className="absolute inset-0 pointer-events-none">
-          {[
-            { icon: '🎯', x: '10%', y: '30%', delay: 0 },
-            { icon: '🛒', x: '85%', y: '25%', delay: 0.15 },
-            { icon: '📢', x: '5%', y: '20%', delay: 0.3 },
-            { icon: '💰', x: '90%', y: '50%', delay: 0.45 },
-            { icon: '👔', x: '15%', y: '70%', delay: 0.6 },
-            { icon: '💬', x: '88%', y: '75%', delay: 0.75 },
-            { icon: '✨', x: '8%', y: '50%', delay: 0.9 },
-            { icon: '📈', x: '92%', y: '40%', delay: 1.05 },
-          ].map((item, i) => (
-            <motion.div
-              key={i}
-              className="absolute text-4xl md:text-5xl"
-              style={{ left: item.x, top: item.y }}
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ 
-                opacity: [0.3, 0.6, 0.3],
-                scale: [1, 1.2, 1],
-                y: [0, -20, 0]
-              }}
-              transition={{
-                duration: 4,
-                delay: item.delay,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            >
-              {item.icon}
-            </motion.div>
-          ))}
+      {/* HERO SECTION */}
+      <section className="hero">
+        <div className="hero-content">
+          <h1>One App For Your Business</h1>
+          <p>
+            Everything your business needs in one powerful platform. Manage CRM, Invoicing, Inventory, HR, Payments, Accounting, and more. 
+            Built specifically for Indian SMBs.
+          </p>
+          <div className="hero-buttons">
+            <Link href="/register" className="btn-primary">Start Free Trial</Link>
+            <a href="#dashboard-showcase" className="btn-secondary">Watch Demo</a>
+          </div>
         </div>
       </section>
 
-      {/* STATISTICS SECTION */}
-      <SectionWrapper>
-        <section className="py-16 bg-gradient-to-r from-gray-50 to-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div 
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-8"
-            >
-              {[
-                { number: '10K+', label: 'Businesses', icon: '🏢' },
-                { number: '50K+', label: 'Users', icon: '👥' },
-                { number: '₹2.5Cr+', label: 'Processed', icon: '💰' },
-                { number: '99.9%', label: 'Uptime', icon: '⚡' },
-              ].map((stat, i) => (
-                <motion.div
-                  key={i}
-                  variants={fadeInUp}
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  className="text-center p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all"
-                >
-                  <div className="text-4xl mb-3">{stat.icon}</div>
-                  <div className="text-3xl md:text-4xl font-bold text-payaid-purple mb-2">{stat.number}</div>
-                  <div className="text-payaid-charcoal font-medium">{stat.label}</div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-      </SectionWrapper>
-
-      {/* MODULES SHOWCASE - Visual Cards */}
-      <SectionWrapper>
-        <section id="modules" className="py-20 md:py-32 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              variants={fadeInUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-4xl md:text-5xl font-bold text-payaid-purple mb-4">
-                Everything You Need
-              </h2>
-              <p className="text-xl text-payaid-charcoal">
-                Eight powerful modules, working seamlessly together
-              </p>
-            </motion.div>
-
-            <motion.div 
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-            >
-              {[
-                { 
-                  name: 'CRM', 
-                  icon: '🎯', 
-                  desc: 'Customer relationship management',
-                  gradient: 'from-blue-500 to-purple-600',
-                  features: ['Contacts', 'Deals', 'Pipeline', 'Tasks']
-                },
-                { 
-                  name: 'Sales', 
-                  icon: '🛒', 
-                  desc: 'Sales pages & order management',
-                  gradient: 'from-yellow-500 to-orange-600',
-                  features: ['Landing Pages', 'Checkout', 'Orders']
-                },
-                { 
-                  name: 'Marketing', 
-                  icon: '📢', 
-                  desc: 'Campaigns & customer engagement',
-                  gradient: 'from-purple-500 to-pink-600',
-                  features: ['Campaigns', 'WhatsApp', 'Email', 'Social']
-                },
-                { 
-                  name: 'Finance', 
-                  icon: '💰', 
-                  desc: 'Invoices, accounting & GST',
-                  gradient: 'from-green-500 to-emerald-600',
-                  features: ['Invoicing', 'Accounting', 'GST Reports', 'Expenses']
-                },
-                { 
-                  name: 'HR & Payroll', 
-                  icon: '👔', 
-                  desc: 'Employee management & payroll',
-                  gradient: 'from-pink-500 to-rose-600',
-                  features: ['Payroll', 'Attendance', 'Leave', 'Hiring']
-                },
-                { 
-                  name: 'Communication', 
-                  icon: '💬', 
-                  desc: 'Email & team collaboration',
-                  gradient: 'from-indigo-500 to-blue-600',
-                  features: ['Email Accounts', 'Webmail', 'Team Chat']
-                },
-                { 
-                  name: 'AI Studio', 
-                  icon: '✨', 
-                  desc: 'AI-powered business tools',
-                  gradient: 'from-cyan-500 to-blue-600',
-                  features: ['AI Chat', 'Website Builder', 'Logo Generator', 'AI Calling']
-                },
-                { 
-                  name: 'Analytics & Reporting', 
-                  icon: '📈', 
-                  desc: 'Business intelligence & insights',
-                  gradient: 'from-orange-500 to-red-600',
-                  features: ['Dashboards', 'Custom Reports', 'Insights']
-                },
-              ].map((module, i) => (
-                <motion.div
-                  key={i}
-                  variants={fadeInUp}
-                  whileHover={{ y: -12, scale: 1.02 }}
-                  className="group relative overflow-hidden bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all cursor-pointer border border-gray-100"
-                >
-                  {/* Gradient Background */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${module.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
-                  
-                  <div className="relative p-8">
-                    <motion.div 
-                      className="text-6xl mb-4"
-                      whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      {module.icon}
-                    </motion.div>
-                    <h3 className="text-2xl font-bold text-payaid-purple mb-2">{module.name}</h3>
-                    <p className="text-payaid-charcoal mb-4">{module.desc}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {module.features.map((feature, j) => (
-                        <span key={j} className="px-3 py-1 bg-gray-100 rounded-full text-sm text-payaid-charcoal">
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Hover effect border */}
-                  <div className={`absolute inset-0 border-2 border-transparent group-hover:border-gradient-to-br ${module.gradient} rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity`} />
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-      </SectionWrapper>
-
-      {/* WHY PAYAID - Visual Features */}
-      <SectionWrapper>
-        <section id="features" className="py-20 md:py-32 bg-gradient-to-b from-gray-50 to-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              variants={fadeInUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-4xl md:text-5xl font-bold text-payaid-purple mb-4">
-                Why Choose PayAid?
-              </h2>
-            </motion.div>
-            
-            <motion.div 
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-            >
-              {[
-                {
-                  icon: '⚡',
-                  title: '2x Faster',
-                  desc: 'Pages load in <1 second',
-                  color: 'text-yellow-500'
-                },
-                {
-                  icon: '💰',
-                  title: 'Affordable',
-                  desc: 'Starting ₹2,499/month',
-                  color: 'text-green-500'
-                },
-                {
-                  icon: '💬',
-                  title: 'WhatsApp Native',
-                  desc: 'Send invoices instantly',
-                  color: 'text-green-400'
-                },
-                {
-                  icon: '🇮🇳',
-                  title: 'India-First',
-                  desc: 'Built for Indian SMBs',
-                  color: 'text-orange-500'
-                },
-                {
-                  icon: '🤖',
-                  title: 'AI-Powered',
-                  desc: 'Smart automation',
-                  color: 'text-purple-500'
-                },
-                {
-                  icon: '✅',
-                  title: 'Easy Setup',
-                  desc: '30 minutes to live',
-                  color: 'text-blue-500'
-                },
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  variants={fadeInUp}
-                  whileHover={{ y: -8, rotateY: 5 }}
-                  className="relative p-8 bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-gray-100 group"
-                >
-                  <div className={`text-5xl mb-4 ${item.color} group-hover:scale-110 transition-transform`}>
-                    {item.icon}
-                  </div>
-                  <h3 className="text-2xl font-bold text-payaid-purple mb-2">{item.title}</h3>
-                  <p className="text-payaid-charcoal">{item.desc}</p>
-                  
-                  {/* Decorative element */}
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-payaid-purple/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-      </SectionWrapper>
-
-      {/* PRICING SECTION */}
-      <SectionWrapper>
-        <section id="pricing" className="py-20 md:py-32 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              variants={fadeInUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-4xl md:text-5xl font-bold text-payaid-purple mb-4">
-                Simple, Transparent Pricing
-              </h2>
-              <p className="text-xl text-payaid-charcoal">
-                Choose the plan that fits your business
-              </p>
-            </motion.div>
-
-            <motion.div 
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8"
-            >
-              {[
-                {
-                  name: 'Starter',
-                  price: '₹2,499',
-                  features: ['CRM', 'Finance', 'Basic Support'],
-                  cta: 'Start Free',
-                  popular: false,
-                  icon: '🚀'
-                },
-                {
-                  name: 'Professional',
-                  price: '₹7,999',
-                  features: ['All Modules', 'Priority Support', 'Advanced Reports'],
-                  cta: 'Most Popular',
-                  popular: true,
-                  icon: '⭐'
-                },
-                {
-                  name: 'Enterprise',
-                  price: '₹14,999',
-                  features: ['Everything', 'Premium Support', 'API Access', 'Custom Features'],
-                  cta: 'Contact Sales',
-                  popular: false,
-                  icon: '🏆'
-                },
-              ].map((plan, i) => (
-                <motion.div
-                  key={i}
-                  variants={fadeInUp}
-                  whileHover={{ y: -8, scale: plan.popular ? 1.05 : 1.02 }}
-                  className={`rounded-2xl p-8 relative overflow-hidden ${
-                    plan.popular
-                      ? 'bg-gradient-to-br from-payaid-purple to-payaid-purple-dark text-white border-2 border-payaid-gold shadow-2xl'
-                      : 'bg-gray-50 border border-gray-200'
-                  }`}
-                >
-                  {plan.popular && (
-                    <motion.div 
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute top-4 right-4 bg-payaid-gold text-payaid-purple px-4 py-2 rounded-full text-sm font-bold"
-                    >
-                      🏆 Popular
-                    </motion.div>
-                  )}
-                  
-                  <div className="text-5xl mb-4">{plan.icon}</div>
-                  <h3 className="text-3xl font-bold mb-2">{plan.name}</h3>
-                  <div className="text-5xl font-bold mb-2">
-                    {plan.price}
-                    <span className="text-xl">/month</span>
-                  </div>
-                  
-                  <ul className="mb-8 space-y-3 mt-6">
-                    {plan.features.map((feature, j) => (
-                      <li key={j} className="flex items-center gap-2">
-                        <span className="text-payaid-gold">✓</span>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  <Link href="/register">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
-                        plan.popular
-                          ? 'bg-payaid-gold text-payaid-purple hover:bg-payaid-gold-hover shadow-lg'
-                          : 'bg-payaid-purple text-white hover:bg-payaid-purple-dark'
-                      }`}
-                    >
-                      {plan.cta}
-                    </motion.button>
-                  </Link>
-                </motion.div>
-              ))}
-            </motion.div>
-
-            <motion.p 
-              variants={fadeInUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="text-center text-payaid-charcoal text-lg"
-            >
-              💰 Save up to ₹1,50,000/year compared to traditional solutions
-            </motion.p>
-          </div>
-        </section>
-      </SectionWrapper>
-
-      {/* TESTIMONIALS - Visual */}
-      <SectionWrapper>
-        <section className="py-20 md:py-32 bg-gradient-to-b from-white to-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              variants={fadeInUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-4xl md:text-5xl font-bold text-payaid-purple mb-4">
-                Loved by Thousands
-              </h2>
-            </motion.div>
-
-            <motion.div 
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-8"
-            >
-              {[
-                {
-                  quote: "PayAid saved us 20 hours per week. The speed alone is worth it.",
-                  author: "Rajesh Kumar",
-                  title: "Founder, TechStart India",
-                  rating: 5,
-                  avatar: '👨‍💼'
-                },
-                {
-                  quote: "Finally, a CRM built for India. WhatsApp integration is a game-changer.",
-                  author: "Priya Sharma",
-                  title: "Director, E-Commerce Venture",
-                  rating: 5,
-                  avatar: '👩‍💼'
-                },
-                {
-                  quote: "PayAid is intuitive, affordable, and just works. Setup was effortless.",
-                  author: "Amit Patel",
-                  title: "CEO, Manufacturing SMB",
-                  rating: 5,
-                  avatar: '👨‍💻'
-                },
-              ].map((testimonial, i) => (
-                <motion.div 
-                  key={i}
-                  variants={fadeInUp}
-                  whileHover={{ y: -8, scale: 1.02 }}
-                  className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-gray-100"
-                >
-                  <div className="flex mb-4">
-                    {[...Array(testimonial.rating)].map((_, j) => (
-                      <span key={j} className="text-payaid-gold text-xl">★</span>
-                    ))}
-                  </div>
-                  <p className="text-payaid-charcoal mb-6 text-lg italic">&quot;{testimonial.quote}&quot;</p>
-                  <div className="flex items-center gap-4">
-                    <div className="text-4xl">{testimonial.avatar}</div>
-                    <div>
-                      <p className="font-bold text-payaid-purple">{testimonial.author}</p>
-                      <p className="text-gray-600 text-sm">{testimonial.title}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-      </SectionWrapper>
-
-      {/* FINAL CTA SECTION */}
-      <SectionWrapper>
-        <section className="relative bg-gradient-to-r from-payaid-purple via-purple-700 to-payaid-purple-dark text-white py-20 md:py-32 overflow-hidden">
-          {/* Animated background */}
-          <div className="absolute inset-0">
-            <motion.div
-              className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_50%,rgba(245,199,0,0.1),transparent_50%)]"
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.3, 0.5, 0.3],
-              }}
-              transition={{
-                duration: 8,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            />
-          </div>
-          
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-            <motion.h2 
-              variants={fadeInUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="text-4xl md:text-5xl font-bold mb-6"
-            >
-              Ready to Transform Your Business?
-            </motion.h2>
-            <motion.p 
-              variants={fadeInUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="text-xl md:text-2xl mb-10 text-white/90"
-            >
-              Join 10,000+ businesses already using PayAid
-            </motion.p>
-            <motion.div
-              variants={fadeInUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
-              <Link href="/register">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-payaid-gold hover:bg-payaid-gold-hover text-payaid-purple px-12 py-6 rounded-xl font-bold text-xl transition-all shadow-2xl hover:shadow-payaid-gold/50"
-                >
-                  Start Your Free Trial Now →
-                </motion.button>
-              </Link>
-            </motion.div>
-            <motion.p
-              variants={fadeInUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="mt-6 text-white/80"
-            >
-              No credit card required • Setup in minutes • Cancel anytime
-            </motion.p>
-          </div>
-        </section>
-      </SectionWrapper>
-
-      {/* FOOTER */}
-      <footer className="bg-payaid-charcoal text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h4 className="font-bold mb-4 text-lg">Product</h4>
-              <ul className="space-y-2 text-gray-300">
-                <li><Link href="#modules" className="hover:text-payaid-gold transition-colors">Modules</Link></li>
-                <li><Link href="#features" className="hover:text-payaid-gold transition-colors">Features</Link></li>
-                <li><Link href="#pricing" className="hover:text-payaid-gold transition-colors">Pricing</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-bold mb-4 text-lg">Company</h4>
-              <ul className="space-y-2 text-gray-300">
-                <li><Link href="#" className="hover:text-payaid-gold transition-colors">About</Link></li>
-                <li><Link href="#" className="hover:text-payaid-gold transition-colors">Careers</Link></li>
-                <li><Link href="#" className="hover:text-payaid-gold transition-colors">Contact</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-4 text-lg">Resources</h4>
-              <ul className="space-y-2 text-gray-300">
-                <li><Link href="#" className="hover:text-payaid-gold transition-colors">Blog</Link></li>
-                <li><Link href="#" className="hover:text-payaid-gold transition-colors">Docs</Link></li>
-                <li><Link href="#" className="hover:text-payaid-gold transition-colors">Support</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-4 text-lg">Connect</h4>
-              <div className="flex gap-4 text-gray-300">
-                <Link href="#" className="hover:text-payaid-gold text-2xl transition-colors">📘</Link>
-                <Link href="#" className="hover:text-payaid-gold text-2xl transition-colors">🐦</Link>
-                <Link href="#" className="hover:text-payaid-gold text-2xl transition-colors">💼</Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-600 pt-8 text-gray-400 text-sm text-center">
-            <p>© 2025 PayAid Payments. All rights reserved.</p>
-            <p className="mt-2">
-              <Link href="#" className="hover:text-payaid-gold transition-colors">Privacy Policy</Link> | 
-              <Link href="#" className="hover:text-payaid-gold transition-colors"> Terms of Service</Link>
+      {/* DASHBOARD SHOWCASE */}
+      <section className="dashboard-showcase" id="dashboard-showcase">
+        <div className="showcase-container">
+          <div className="showcase-left">
+            <h2>All Your Business, One Dashboard</h2>
+            <p>
+              Manage your entire business from a single, intuitive dashboard. Access customer management, invoicing, inventory, payments, HR, accounting, analytics, and AI-powered insights all in one place. No switching between tools. No learning curves.
             </p>
+            <div className="showcase-tabs">
+              <button className="tab-btn active" data-tab="crm">CRM</button>
+              <button className="tab-btn" data-tab="invoicing">Invoicing</button>
+              <button className="tab-btn" data-tab="inventory">Inventory</button>
+              <button className="tab-btn" data-tab="analytics">Analytics</button>
+            </div>
+          </div>
+          <div className="showcase-image">
+            <img id="crm" src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/c0edae1a-228f-4ed9-ac4c-7416f122b23c.png" alt="CRM Dashboard" />
+            <img id="invoicing" className="hidden" src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/11f51316-40e0-48f1-b809-89197160a22e.png" alt="Invoicing Dashboard" />
+            <img id="inventory" className="hidden" src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/87901090-3bfc-4120-b4fc-456db282f481.png" alt="Inventory Dashboard" />
+            <img id="analytics" className="hidden" src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/df4d5758-332c-4e79-89ec-4f9af8b1c070.png" alt="Analytics Dashboard" />
           </div>
         </div>
+      </section>
+
+      {/* STATS SECTION */}
+      <section className="stats">
+        <div className="stats-grid">
+          <div className="stat-item scroll-reveal">
+            <div className="stat-number">30M+</div>
+            <div className="stat-label">SMBs in India</div>
+          </div>
+          <div className="stat-item scroll-reveal">
+            <div className="stat-number">50%</div>
+            <div className="stat-label">Cost Savings</div>
+          </div>
+          <div className="stat-item scroll-reveal">
+            <div className="stat-number">8</div>
+            <div className="stat-label">Complete Modules</div>
+          </div>
+          <div className="stat-item scroll-reveal">
+            <div className="stat-number">₹7,999</div>
+            <div className="stat-label">All-in-One Price</div>
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURES SECTION */}
+      <section className="features" id="features">
+        <div className="section-title">
+          <h2>Why Choose PayAid?</h2>
+          <p>Enterprise-grade features built for Indian business growth</p>
+        </div>
+        <div className="features-grid">
+          <div className="feature-card scroll-reveal">
+            <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/a710366a-897f-4ae7-bc18-1f725c29151f.png" alt="All-in-One Platform" /></div>
+            <h3>All-in-One Platform</h3>
+            <p>Stop using multiple tools. Manage CRM, invoicing, inventory, HR, payments, and accounting all in one unified platform.</p>
+          </div>
+          <div className="feature-card scroll-reveal">
+            <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/a1747960-4b63-446e-ad29-c247eb134d4c.png" alt="50% More Affordable" /></div>
+            <h3>50% More Affordable</h3>
+            <p>₹7,999/month for complete features. No hidden costs. No feature paywalls. Everything is included in your plan.</p>
+          </div>
+          <div className="feature-card scroll-reveal">
+            <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/32625e56-4103-46fc-a059-89161398fc9b.png" alt="India-First Design" /></div>
+            <h3>India-First Design</h3>
+            <p>Built with GST compliance, FSSAI support, and ONDC integration. Hindi language support available for all users.</p>
+          </div>
+          <div className="feature-card scroll-reveal">
+            <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/3634df48-2ea7-4641-bb4d-cd1c631bbcc1.png" alt="AI-Powered Intelligence" /></div>
+            <h3>AI-Powered Intelligence</h3>
+            <p>Get automated business insights and smart recommendations. Your personal AI advisor included at no extra cost.</p>
+          </div>
+          <div className="feature-card scroll-reveal">
+            <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/2b88452a-f5f2-4a3b-8e26-dccc89f76fa9.png" alt="Lightning Fast Implementation" /></div>
+            <h3>Lightning Fast Implementation</h3>
+            <p>Start using PayAid in minutes, not months. Simple onboarding, intuitive interface, and immediate productivity gains.</p>
+          </div>
+          <div className="feature-card scroll-reveal">
+            <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/7dce85d1-4485-457c-825c-a9b5ca0008a7.png" alt="Enterprise-Grade Security" /></div>
+            <h3>Enterprise-Grade Security</h3>
+            <p>Your data is encrypted, backed up, and protected. Bank-grade security with enterprise-level compliance standards.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* USE CASES SECTION */}
+      <section className="use-cases">
+        <div className="section-title">
+          <h2>Built for Indian Businesses</h2>
+          <p>Serving restaurants, retail, services, and more across India</p>
+        </div>
+        <div className="use-cases-grid">
+          <div className="use-case-card scroll-reveal">
+            <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/d5698294-4698-48a6-bad4-7ff8d841d471.png" alt="Restaurants" /></div>
+            <h3>Restaurants</h3>
+            <p>Manage online and offline orders, payment processing, inventory tracking, and staff scheduling from one dashboard.</p>
+            <a href="#features" className="use-case-link">Learn more</a>
+          </div>
+          <div className="use-case-card scroll-reveal">
+            <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/3c6c7a46-58ea-426f-9c3c-7b415040e598.png" alt="Retail Stores" /></div>
+            <h3>Retail Stores</h3>
+            <p>Multi-location inventory management, customer loyalty programs, point of sale systems, and centralized analytics.</p>
+            <a href="#features" className="use-case-link">Learn more</a>
+          </div>
+          <div className="use-case-card scroll-reveal">
+            <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/ef72d266-1453-4f1b-879f-c1e44a154e80.png" alt="Service Businesses" /></div>
+            <h3>Service Businesses</h3>
+            <p>Project management, client invoicing, team scheduling, expense tracking, and profitability analysis in real-time.</p>
+            <a href="#features" className="use-case-link">Learn more</a>
+          </div>
+          <div className="use-case-card scroll-reveal">
+            <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/50ad44eb-346a-42cc-b988-01e39a718fd4.png" alt="E-Commerce Platforms" /></div>
+            <h3>E-Commerce Platforms</h3>
+            <p>Multi-channel selling, inventory synchronization, order management, fulfillment tracking, and customer insights.</p>
+            <a href="#features" className="use-case-link">Learn more</a>
+          </div>
+          <div className="use-case-card scroll-reveal">
+            <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/770d8b48-df7a-4d19-8632-9d8f28f844a7.png" alt="Manufacturing" /></div>
+            <h3>Manufacturing</h3>
+            <p>Production tracking, supplier management, quality control, logistics optimization, and compliance reporting.</p>
+            <a href="#features" className="use-case-link">Learn more</a>
+          </div>
+          <div className="use-case-card scroll-reveal">
+            <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/81b13c03-2331-4efa-8fa4-c85f7d0f8c04.png" alt="Professional Services" /></div>
+            <h3>Professional Services</h3>
+            <p>Client project management, team collaboration, resource planning, time tracking, and invoice automation.</p>
+            <a href="#features" className="use-case-link">Learn more</a>
+          </div>
+        </div>
+      </section>
+
+      {/* PRICING SECTION */}
+      <section className="pricing" id="pricing">
+        <div className="section-title">
+          <h2>Simple, Transparent Pricing</h2>
+          <p>No hidden charges. No surprise fees. Scale as you grow.</p>
+        </div>
+        <div className="pricing-cards">
+          <div className="pricing-card scroll-reveal">
+            <h3>Starter</h3>
+            <div className="price">₹3,999</div>
+            <div className="price-period">per month</div>
+            <ul className="features-list">
+              <li><span className="check-icon">✓</span> CRM & Invoicing</li>
+              <li><span className="check-icon">✓</span> Up to 5 Users</li>
+              <li><span className="check-icon">✓</span> Basic Analytics</li>
+              <li><span className="check-icon">✓</span> Email Support</li>
+              <li><span className="check-icon">✓</span> Mobile App</li>
+            </ul>
+            <Link href="/register" className="price-cta">Start Free Trial</Link>
+          </div>
+          <div className="pricing-card featured scroll-reveal">
+            <div className="badge">Most Popular</div>
+            <h3>Professional</h3>
+            <div className="price">₹7,999</div>
+            <div className="price-period">per month</div>
+            <ul className="features-list">
+              <li><span className="check-icon">✓</span> All Modules Included</li>
+              <li><span className="check-icon">✓</span> Unlimited Users</li>
+              <li><span className="check-icon">✓</span> AI Co-founder</li>
+              <li><span className="check-icon">✓</span> Advanced Analytics</li>
+              <li><span className="check-icon">✓</span> Priority Support</li>
+            </ul>
+            <Link href="/register" className="price-cta">Start Free Trial</Link>
+          </div>
+          <div className="pricing-card scroll-reveal">
+            <h3>Enterprise</h3>
+            <div className="price">Custom</div>
+            <div className="price-period">per month</div>
+            <ul className="features-list">
+              <li><span className="check-icon">✓</span> Everything Included</li>
+              <li><span className="check-icon">✓</span> Custom Integrations</li>
+              <li><span className="check-icon">✓</span> Dedicated Account Manager</li>
+              <li><span className="check-icon">✓</span> White-label Options</li>
+              <li><span className="check-icon">✓</span> SLA Guarantee</li>
+            </ul>
+            <Link href="/register" className="price-cta">Contact Sales</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* TESTIMONIALS SECTION */}
+      <section className="testimonials">
+        <div className="section-title">
+          <h2>Trusted by Indian Entrepreneurs</h2>
+          <p>Hear from businesses transforming with PayAid</p>
+        </div>
+        <div className="testimonials-grid">
+          <div className="testimonial-card scroll-reveal">
+            <div className="stars">★★★★★</div>
+            <p className="testimonial-text">&quot;PayAid has been transformative for our restaurant chain. We now manage orders, payments, and staff across all locations from a single dashboard. Saved us ₹18,000 per month.&quot;</p>
+            <p className="testimonial-author">Rajesh Kumar</p>
+            <p className="testimonial-role">Restaurant Owner, Mumbai</p>
+          </div>
+          <div className="testimonial-card scroll-reveal">
+            <div className="stars">★★★★★</div>
+            <p className="testimonial-text">&quot;As a retail store owner, I needed an affordable yet powerful solution. PayAid delivered exactly that. The support team is incredibly responsive and helpful with implementations.&quot;</p>
+            <p className="testimonial-author">Priya Singh</p>
+            <p className="testimonial-role">Retail Store Manager, Delhi</p>
+          </div>
+          <div className="testimonial-card scroll-reveal">
+            <div className="stars">★★★★★</div>
+            <p className="testimonial-text">&quot;The AI co-founder feature is remarkable. It provides business insights we didn&apos;t even know we needed. PayAid feels like having a business consultant on our team every day.&quot;</p>
+            <p className="testimonial-author">Amit Patel</p>
+            <p className="testimonial-role">Service Business Owner, Bangalore</p>
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="final-cta">
+        <h2>Ready to Transform Your Business?</h2>
+        <p>Join thousands of Indian businesses already growing with PayAid. Start your free trial today. No credit card required.</p>
+        <Link href="/register" className="cta-button-large">Get Started Today</Link>
+      </section>
+
+      {/* FOOTER */}
+      <footer>
+        <div className="footer-content">
+          <div className="footer-section">
+            <h4>Product</h4>
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#features">Integrations</a>
+            <a href="#features">Security</a>
+          </div>
+          <div className="footer-section">
+            <h4>Solutions</h4>
+            <a href="#features">Restaurants</a>
+            <a href="#features">Retail</a>
+            <a href="#features">Services</a>
+            <a href="#features">E-Commerce</a>
+          </div>
+          <div className="footer-section">
+            <h4>Company</h4>
+            <a href="#features">About</a>
+            <a href="#features">Blog</a>
+            <a href="#features">Careers</a>
+            <a href="#features">Contact</a>
+          </div>
+          <div className="footer-section">
+            <h4>Legal</h4>
+            <a href="#features">Privacy Policy</a>
+            <a href="#features">Terms of Service</a>
+            <a href="#features">Compliance</a>
+            <a href="#features">Security</a>
+          </div>
+        </div>
+        <div className="footer-bottom">
+          <p>&copy; 2025 PayAid. Built for Indian Businesses. All rights reserved.</p>
+        </div>
       </footer>
-    </div>
-  )
-}
-
-// Helper component for scroll animations
-function SectionWrapper({ children }: { children: React.ReactNode }) {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: '-100px' })
-
-  return (
-    <div ref={ref}>
-      {children}
-    </div>
+    </>
   )
 }
