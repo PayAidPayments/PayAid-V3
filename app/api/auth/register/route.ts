@@ -64,6 +64,18 @@ export async function POST(request: NextRequest) {
     // Create tenant and user in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create tenant with personalized ID
+      // Enable all 8 modules by default for new tenants (development/testing)
+      const defaultModules = [
+        'crm',
+        'sales',
+        'marketing',
+        'finance',
+        'hr',
+        'communication',
+        'ai-studio',
+        'analytics',
+      ]
+      
       const tenant = await tx.tenant.create({
         data: {
           id: personalizedTenantId, // Use personalized ID instead of default CUID
@@ -75,6 +87,8 @@ export async function POST(request: NextRequest) {
           maxInvoices: 10,
           maxUsers: 1,
           maxStorage: 1024, // 1GB
+          licensedModules: defaultModules, // Enable all modules by default
+          subscriptionTier: 'professional', // Set to professional tier for full access
         },
       })
 
@@ -92,12 +106,14 @@ export async function POST(request: NextRequest) {
       return { tenant, user }
     })
 
-    // Generate JWT token
+    // Generate JWT token with licensed modules
     const token = signToken({
       userId: result.user.id,
       tenantId: result.tenant.id,
       email: result.user.email,
       role: result.user.role,
+      licensedModules: result.tenant.licensedModules || [],
+      subscriptionTier: result.tenant.subscriptionTier || 'free',
     })
 
     return NextResponse.json({
@@ -112,6 +128,8 @@ export async function POST(request: NextRequest) {
         name: result.tenant.name,
         subdomain: result.tenant.subdomain,
         plan: result.tenant.plan,
+        licensedModules: result.tenant.licensedModules || [],
+        subscriptionTier: result.tenant.subscriptionTier || 'free',
       },
       token,
     })
