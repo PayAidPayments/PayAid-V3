@@ -269,8 +269,14 @@ async function executeExpensesReport(fields: string[], grouping: any, sorting: a
     include: {
       employee: {
         select: {
-          name: true,
-          email: true,
+          id: true,
+          employeeId: true,
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
         },
       },
     },
