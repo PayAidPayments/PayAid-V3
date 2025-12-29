@@ -25,6 +25,9 @@ export async function POST(
 
     const chatbot = await prisma.websiteChatbot.findUnique({
       where: { id },
+      include: {
+        website: true,
+      },
     })
 
     if (!chatbot || !chatbot.isActive) {
