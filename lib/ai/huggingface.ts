@@ -36,13 +36,13 @@ class HuggingFaceClient {
     // - Qwen/Qwen2.5-7B-Instruct-1M
     // - mistralai/Mistral-7B-Instruct-v0.2:hf-inference (with provider)
     // Note: Router endpoint may require provider specification (model:provider)
-    const model = process.env.HUGGINGFACE_MODEL || 'google/gemma-2-2b-it'
+    const model = (process.env.HUGGINGFACE_MODEL || 'google/gemma-2-2b-it').trim()
     
     // Image generation models (via hf-inference endpoint):
     // - ByteDance/SDXL-Lightning (fast, good quality)
     // - black-forest-labs/FLUX.1-Krea-dev (high quality)
     // - ByteDance/Hyper-SD (high performance)
-    const imageModel = process.env.HUGGINGFACE_IMAGE_MODEL || 'ByteDance/SDXL-Lightning'
+    const imageModel = (process.env.HUGGINGFACE_IMAGE_MODEL || 'ByteDance/SDXL-Lightning').trim()
     
     console.log('🔧 HuggingFaceClient initialized:', {
       hasApiKey: !!apiKey,

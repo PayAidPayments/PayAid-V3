@@ -12,7 +12,7 @@ let _encryptionKey: string | null = null
 const getEncryptionKey = (): string => {
   if (_encryptionKey) return _encryptionKey
   
-  const key = process.env.ENCRYPTION_KEY
+  const key = process.env.ENCRYPTION_KEY?.trim()
   if (!key) {
     // During build time, allow missing key (will be set in production)
     if (process.env.NEXT_PHASE === 'phase-production-build' || process.env.VERCEL === '1') {
@@ -29,11 +29,12 @@ const getEncryptionKey = (): string => {
   }
   
   // Validate key format (should be 64 hex characters for AES-256)
-  if (key.length !== 64 || !/^[0-9a-fA-F]+$/.test(key)) {
+  const trimmedKey = key.trim()
+  if (trimmedKey.length !== 64 || !/^[0-9a-fA-F]+$/.test(trimmedKey)) {
     throw new Error('ENCRYPTION_KEY must be a 64-character hexadecimal string. Generate with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"')
   }
   
-  _encryptionKey = key
+  _encryptionKey = trimmedKey
   return _encryptionKey
 }
 

@@ -182,11 +182,26 @@ export async function POST(request: NextRequest) {
           console.log('✅ Image generated successfully with Google AI Studio')
           return NextResponse.json(googleData)
         }
-        // If Google fails but provider is auto, fall through to other options
+        
+        // If Google fails, log the error and handle based on provider
+        const errorData = await googleResponse.json().catch(() => ({}))
+        console.error('❌ Google AI Studio API error:', {
+          status: googleResponse.status,
+          error: errorData,
+        })
+        
+        // If explicitly selected, return error immediately
         if (provider === 'google-ai-studio') {
-          const errorData = await googleResponse.json().catch(() => ({}))
-          return NextResponse.json(errorData, { status: googleResponse.status })
+          return NextResponse.json({
+            error: 'Google AI Studio API error',
+            message: errorData.error?.message || errorData.message || `API returned ${googleResponse.status}`,
+            hint: errorData.hint || 'Please check your API key in Settings > AI Integrations.',
+            details: errorData,
+          }, { status: googleResponse.status })
         }
+        
+        // If auto mode, continue to fallback (Hugging Face)
+        console.log('⚠️ Google AI Studio failed in auto mode, falling back to Hugging Face...')
       } catch (googleError) {
         console.error('❌ Google AI Studio error:', googleError)
         // If explicitly selected, return error
@@ -275,13 +290,20 @@ export async function POST(request: NextRequest) {
     } else {
       // Auto mode - check what's available
       if (hasHuggingFace) {
-        // Hugging Face is configured but failed - this is unexpected
-        errorMessage = 'Image generation failed. Hugging Face API key is configured, but generation failed.'
-        hint = 'Your HUGGINGFACE_API_KEY is set, but image generation failed. Please:\n1. Check server logs for detailed error messages\n2. Verify your API key is valid at https://huggingface.co/settings/tokens\n3. Try restarting the dev server: npm run dev\n\nAlternatively, you can configure Google AI Studio in Settings > AI Integrations.'
+        // Both Google AI Studio (if tried) and Hugging Face failed
+        const triedGoogle = shouldUseGoogle && tenant?.googleAiStudioApiKey
+        if (triedGoogle) {
+          errorMessage = 'Image generation failed. Both Google AI Studio and Hugging Face were tried but failed.'
+          hint = 'Both services were attempted:\n\n1. Google AI Studio: Failed (check Settings > AI Integrations)\n2. Hugging Face: Failed (check API key at https://huggingface.co/settings/tokens)\n\nPlease:\n- Check server logs for detailed error messages\n- Verify your API keys are valid\n- Try selecting a specific provider instead of "Auto"'
+        } else {
+          // Only Hugging Face was tried (Google not configured)
+          errorMessage = 'Image generation failed. Hugging Face API key is configured, but generation failed.'
+          hint = 'Your HUGGINGFACE_API_KEY is set, but image generation failed. Please:\n1. Check server logs for detailed error messages\n2. Verify your API key is valid at https://huggingface.co/settings/tokens\n3. The model may be loading - try again in a few moments\n4. Try a different model by setting HUGGINGFACE_IMAGE_MODEL in Vercel\n\nAlternatively, you can configure Google AI Studio in Settings > AI Integrations.'
+        }
       } else {
         // Nothing configured
         errorMessage = 'Image generation service not configured. Please configure one of these free cloud services:\n\n1. Google AI Studio: Get free key from https://aistudio.google.com/app/apikey (Recommended)\n2. Hugging Face: Get free key from https://huggingface.co/settings/tokens'
-        hint = 'Image generation requires one of:\n- Google AI Studio API key (free, per-tenant - add via Dashboard > Settings > AI Integrations)\n- Hugging Face API key (free, cloud-based - add to .env file)\n\nNote: Self-hosted Docker image generation has been removed. See CLOUD_ONLY_SETUP.md for details.'
+        hint = 'Image generation requires one of:\n- Google AI Studio API key (free, per-tenant - add via Dashboard > Settings > AI Integrations)\n- Hugging Face API key (free, cloud-based - add to Vercel environment variables)\n\nNote: Self-hosted Docker image generation has been removed. See CLOUD_ONLY_SETUP.md for details.'
       }
     }
     
