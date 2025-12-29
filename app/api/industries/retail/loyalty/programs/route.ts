@@ -82,8 +82,8 @@ export async function POST(request: NextRequest) {
         pointsPerRupee: validated.pointsPerRupee,
         redemptionRate: validated.redemptionRate,
         enableTiers: validated.enableTiers,
-        tiers: validated.tiers || null,
-        expiryDays: validated.expiryDays || null,
+        tiers: validated.tiers || undefined,
+        expiryDays: validated.expiryDays || undefined,
         minRedemptionPoints: validated.minRedemptionPoints,
       },
     })
