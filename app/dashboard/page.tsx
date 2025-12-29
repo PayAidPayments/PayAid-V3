@@ -361,11 +361,11 @@ export default function DashboardPage() {
         {/* Charts Row 1 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Sales Performance Line Chart */}
-          <Link href={getDashboardLink('/stats/revenue')} className="block">
+          <Link href={getDashboardLink('/deals')} className="block">
             <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02]" style={{ borderColor: PAYAID_PURPLE }}>
               <CardHeader>
                 <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Sales Performance</CardTitle>
-                <CardDescription>Revenue trends over time - Click to see details</CardDescription>
+                <CardDescription>Sales trends over time - Click to see deals</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
@@ -400,11 +400,11 @@ export default function DashboardPage() {
           </Link>
 
           {/* Market Share Donut Chart */}
-          <Link href={getDashboardLink('/analytics')} className="block">
+          <Link href={getDashboardLink('/stats/pipeline')} className="block">
             <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02]" style={{ borderColor: PAYAID_GOLD }}>
               <CardHeader>
                 <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Market Share Distribution</CardTitle>
-                <CardDescription>Product market share - Click to see details</CardDescription>
+                <CardDescription>Deal stage distribution - Click to see pipeline details</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
@@ -437,11 +437,11 @@ export default function DashboardPage() {
           </Link>
 
           {/* Revenue Trend Bar Chart */}
-          <Link href={getDashboardLink('/stats/revenue')} className="block">
+          <Link href={getDashboardLink('/accounting/reports/revenue')} className="block">
             <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02]" style={{ borderColor: PAYAID_PURPLE }}>
               <CardHeader>
                 <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Revenue Trend</CardTitle>
-                <CardDescription>Monthly revenue comparison - Click to see details</CardDescription>
+                <CardDescription>Monthly revenue comparison - Click to see revenue dashboard</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
@@ -525,11 +525,11 @@ export default function DashboardPage() {
 
         {/* KPI Metrics Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Link href={getDashboardLink('/analytics')} className="block">
+          <Link href={getDashboardLink('/accounting/reports/revenue')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
               <CardHeader>
                 <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Monthly KPI Metrics</CardTitle>
-                <CardDescription>Click to see detailed analytics</CardDescription>
+                <CardDescription>Click to see revenue dashboard with KPIs</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -566,11 +566,11 @@ export default function DashboardPage() {
           </Link>
 
           {/* Active Users */}
-          <Link href={getDashboardLink('/analytics')} className="block">
+          <Link href={getDashboardLink('/contacts')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
               <CardHeader>
                 <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Active Users</CardTitle>
-                <CardDescription>Click to see user analytics</CardDescription>
+                <CardDescription>Click to see all contacts</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
