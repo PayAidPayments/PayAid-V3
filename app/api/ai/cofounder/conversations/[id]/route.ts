@@ -32,7 +32,7 @@ export async function GET(
 
     const conversation = await prisma.aICofounderConversation.findFirst({
       where: {
-        id: resolvedParams.id,
+        id: params.id,
         tenantId,
         userId,
       },
