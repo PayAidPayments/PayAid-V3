@@ -58,8 +58,8 @@ export async function GET(
       businessPostalCode: tenant.postalCode || undefined,
       businessGSTIN: tenant.gstin || undefined,
       businessPhone: tenant.phone || undefined,
-      customerName: transaction.customer?.name || 'Walk-in Customer',
-      customerPhone: transaction.customer?.phone || undefined,
+      customerName: 'Walk-in Customer', // TODO: Fetch customer from customerId if needed
+      customerPhone: undefined,
       items: transaction.items.map((item) => ({
         name: item.product.name,
         quantity: item.quantity,
