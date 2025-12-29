@@ -162,7 +162,6 @@ export default function NewPurchaseOrderPage() {
                 <Select
                   value={formData.vendorId}
                   onValueChange={(value) => setFormData({ ...formData, vendorId: value })}
-                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a vendor" />
@@ -283,7 +282,6 @@ export default function NewPurchaseOrderPage() {
                             value={item.productName}
                             onChange={(e) => updateItem(index, 'productName', e.target.value)}
                             placeholder="Product name"
-                            required
                           />
                         </TableCell>
                         <TableCell>
@@ -300,7 +298,6 @@ export default function NewPurchaseOrderPage() {
                             value={item.quantity}
                             onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
                             className="w-20"
-                            required
                           />
                         </TableCell>
                         <TableCell>
@@ -311,7 +308,6 @@ export default function NewPurchaseOrderPage() {
                             value={item.unitPrice}
                             onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
                             className="w-24"
-                            required
                           />
                         </TableCell>
                         <TableCell>

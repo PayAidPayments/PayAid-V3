@@ -128,7 +128,6 @@ export default function NewReportPage() {
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
                   placeholder="e.g., Monthly Sales Report"
                 />
               </div>
