@@ -172,7 +172,6 @@ export default function NewReportPage() {
                     selectedFields: [], // Reset fields when data source changes
                   })
                 }}
-                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a data source" />
