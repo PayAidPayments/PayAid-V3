@@ -93,16 +93,49 @@ export async function PATCH(request: NextRequest) {
     const updateData: any = { ...validated }
     if (validated.googleAiStudioApiKey !== undefined) {
       try {
-        updateData.googleAiStudioApiKey = validated.googleAiStudioApiKey
-          ? encrypt(validated.googleAiStudioApiKey)
-          : null
+        // Trim the API key to remove any whitespace
+        const trimmedApiKey = validated.googleAiStudioApiKey?.trim()
+        
+        if (trimmedApiKey) {
+          // Validate API key format (Google AI Studio keys start with "AIza")
+          if (!trimmedApiKey.startsWith('AIza')) {
+            return NextResponse.json(
+              {
+                error: 'Invalid API key format',
+                message: 'Google AI Studio API keys should start with "AIza". Please check your key and try again.',
+                hint: 'Get your API key from https://aistudio.google.com/app/apikey',
+              },
+              { status: 400 }
+            )
+          }
+          
+          // Encrypt the API key
+          updateData.googleAiStudioApiKey = encrypt(trimmedApiKey)
+        } else {
+          updateData.googleAiStudioApiKey = null
+        }
       } catch (encryptError) {
         console.error('Encryption error:', encryptError)
+        const errorMessage = encryptError instanceof Error ? encryptError.message : String(encryptError)
+        
+        // Check if it's an ENCRYPTION_KEY format error
+        if (errorMessage.includes('64-character hexadecimal')) {
+          return NextResponse.json(
+            {
+              error: 'Encryption failed',
+              message: 'Server encryption key is not properly configured. Please contact support.',
+              details: errorMessage,
+              hint: 'ENCRYPTION_KEY must be a 64-character hexadecimal string. This is a server configuration issue that needs to be fixed by the administrator.',
+            },
+            { status: 500 }
+          )
+        }
+        
         return NextResponse.json(
           {
             error: 'Encryption failed',
             message: 'Failed to encrypt API key. Please check server configuration.',
-            details: encryptError instanceof Error ? encryptError.message : String(encryptError),
+            details: errorMessage,
             hint: 'ENCRYPTION_KEY must be set in server environment variables. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
           },
           { status: 500 }

@@ -207,15 +207,6 @@ export default function AISettingsPage() {
                 </ul>
               </div>
             </div>
-          ) : showWizard ? (
-            <GeminiSetupWizard
-              onComplete={() => {
-                setShowWizard(false)
-                fetchIntegrations()
-                setMessage({ type: 'success', text: 'Google Gemini connected successfully!' })
-              }}
-              onCancel={() => setShowWizard(false)}
-            />
           ) : (
             <div className="space-y-4">
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
@@ -225,26 +216,58 @@ export default function AISettingsPage() {
                 </p>
               </div>
               
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-md text-center">
-                <p className="text-sm text-blue-800 mb-4">
-                  Link your Google Gemini account in just 3 simple steps. No technical knowledge required!
-                </p>
-                <Button
-                  onClick={() => setShowWizard(true)}
-                  className="bg-blue-500 text-white hover:bg-blue-600 px-6 py-2"
-                >
-                  Link Google Gemini →
-                </Button>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 mb-2">
+                    Google AI Studio API Key
+                  </label>
+                  <Input
+                    id="apiKey"
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="Paste your API key here (starts with AIza...)"
+                    className="w-full font-mono text-sm"
+                    disabled={isSaving}
+                  />
+                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    🔒 Your key will be encrypted before storing
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleSaveApiKey}
+                    disabled={!apiKey.trim() || isSaving}
+                    className="flex-1"
+                  >
+                    {isSaving ? (
+                      <>
+                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block"></span>
+                        Saving...
+                      </>
+                    ) : (
+                      'Save API Key'
+                    )}
+                  </Button>
+                  <Button
+                    onClick={() => setShowWizard(true)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Use Setup Wizard →
+                  </Button>
+                </div>
               </div>
 
               <div className="text-sm text-gray-600">
-                <p className="font-semibold mb-2">Benefits:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>✅ Free image generation (generous free tier)</li>
-                  <li>✅ Simple 3-step setup (no technical knowledge needed)</li>
-                  <li>✅ High-quality images with Gemini 2.5 Flash Image</li>
-                  <li>✅ Fast and reliable</li>
-                </ul>
+                <p className="font-semibold mb-2">How to get your API key:</p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a></li>
+                  <li>Click &quot;Create API Key&quot;</li>
+                  <li>Copy the key (starts with <code className="bg-gray-100 px-1 rounded">AIza...</code>)</li>
+                  <li>Paste it above and click &quot;Save API Key&quot;</li>
+                </ol>
               </div>
             </div>
           )}
