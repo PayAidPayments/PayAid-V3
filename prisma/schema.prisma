@@ -3229,7 +3229,6 @@ model RetailProduct {
   isActive Boolean @default(true)
 
   transactionItems RetailTransactionItem[]
-  loyaltyTransactions LoyaltyTransaction[] @relation("RetailTransactionLoyalty")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3430,7 +3429,7 @@ model Supplier {
 
   // Relations
   materials ManufacturingMaterial[]
-  purchaseOrders PurchaseOrder[]
+  purchaseOrders PurchaseOrder[] @relation("SupplierPurchaseOrders")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3549,6 +3548,12 @@ model SMSDeliveryReport {
   campaignId String?
   campaign   Campaign? @relation(fields: [campaignId], references: [id])
 
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id])
+
+  campaignId String? // Link to Campaign if from campaign
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+
   phoneNumber String
   message     String
   messageId   String? // Provider message ID (Twilio/Exotel)
@@ -3568,10 +3573,6 @@ model SMSDeliveryReport {
 
   // Cost tracking
   cost Decimal? @db.Decimal(10, 4) // Cost per SMS
-
-  // Source tracking
-  campaignId String? // Link to Campaign if from campaign
-  contactId  String? // Link to Contact
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -4721,6 +4722,9 @@ model PurchaseOrder {
 
   vendorId String
   vendor   Vendor @relation(fields: [vendorId], references: [id])
+
+  supplierId String? // Link to Supplier (for manufacturing)
+  supplier   Supplier? @relation("SupplierPurchaseOrders", fields: [supplierId], references: [id])
 
   status String @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, SENT, PARTIALLY_RECEIVED, RECEIVED, CANCELLED
 
