@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,6 +26,12 @@ export default function CreatePostPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedPost, setGeneratedPost] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  
+  // Image selection state
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false)
+  const [mediaLibrary, setMediaLibrary] = useState<any[]>([])
+  const [isLoadingMedia, setIsLoadingMedia] = useState(false)
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,6 +72,52 @@ export default function CreatePostPage() {
       navigator.clipboard.writeText(generatedPost)
       alert('Post copied to clipboard!')
     }
+  }
+
+  const loadMediaLibrary = async () => {
+    setIsLoadingMedia(true)
+    try {
+      const response = await fetch('/api/media-library?category=social-media&limit=20', {
+        headers: getAuthHeaders(),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setMediaLibrary(data.media || [])
+      }
+    } catch (error) {
+      console.error('Failed to load media library:', error)
+    } finally {
+      setIsLoadingMedia(false)
+    }
+  }
+
+  useEffect(() => {
+    if (showMediaLibrary) {
+      loadMediaLibrary()
+    }
+  }, [showMediaLibrary])
+
+  const handleImageSelect = (imageUrl: string) => {
+    setSelectedImage(imageUrl)
+    setShowMediaLibrary(false)
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file')
+      return
+    }
+
+    // Convert to data URL for preview
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setSelectedImage(reader.result as string)
+    }
+    reader.readAsDataURL(file)
   }
 
   return (
@@ -167,6 +219,115 @@ export default function CreatePostPage() {
                   </select>
                 </div>
               </div>
+
+              {/* Image Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Image (Optional)
+                </label>
+                <div className="space-y-2">
+                  {selectedImage ? (
+                    <div className="relative border border-gray-200 rounded-lg overflow-hidden">
+                      <img
+                        src={selectedImage}
+                        alt="Selected"
+                        className="w-full h-48 object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => setSelectedImage(null)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowMediaLibrary(true)}
+                        className="flex-1"
+                      >
+                        📚 Choose from Library
+                      </Button>
+                      <label className="flex-1">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          asChild
+                        >
+                          <span>📤 Upload Image</span>
+                        </Button>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Media Library Modal */}
+              {showMediaLibrary && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                  <Card className="w-full max-w-4xl max-h-[80vh] overflow-hidden">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle>Select Image from Library</CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowMediaLibrary(false)}
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="overflow-y-auto max-h-[60vh]">
+                      {isLoadingMedia ? (
+                        <div className="text-center py-12">Loading images...</div>
+                      ) : mediaLibrary.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-4">
+                          {mediaLibrary.map((media) => (
+                            <div
+                              key={media.id}
+                              className="border border-gray-200 rounded-lg overflow-hidden cursor-pointer hover:border-blue-500 transition-colors"
+                              onClick={() => handleImageSelect(media.fileUrl)}
+                            >
+                              <img
+                                src={media.fileUrl}
+                                alt={media.title || media.fileName}
+                                className="w-full h-32 object-cover"
+                              />
+                              <div className="p-2">
+                                <p className="text-xs font-medium truncate">
+                                  {media.title || media.fileName}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12 text-gray-500">
+                          <p>No images in library yet</p>
+                          <p className="text-sm mt-2">
+                            <Link href="/dashboard/marketing/social/create-image" className="text-blue-600 hover:underline">
+                              Generate an image
+                            </Link> or upload one
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
 
               {error && (
                 <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">

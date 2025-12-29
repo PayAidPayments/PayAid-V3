@@ -156,6 +156,11 @@ export default function AIChatPage() {
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
           if (response.status === 401) {
+            // Token is invalid - suggest logging out and back in
+            const errorMsg = errorData.error || errorData.message || 'Invalid or expired token'
+            if (errorMsg.includes('Invalid or expired token')) {
+              throw new Error('Your session has expired. Please log out and log back in to continue.')
+            }
             throw new Error('Please log in to use the AI chat')
           }
           throw new Error(errorData.message || errorData.error || 'Failed to send message')

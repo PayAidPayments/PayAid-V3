@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { verifyPassword } from '@/lib/auth/password'
 import { signToken } from '@/lib/auth/jwt'
+import { isDevelopment } from '@/lib/utils/env'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -61,6 +62,13 @@ export async function POST(request: NextRequest) {
     // Step 3: Find user in database
     step = 'find_user'
     console.log('[LOGIN] Step 3: Finding user in database...', { email: validated.email.toLowerCase().trim() })
+    
+    // Check database connection first
+    if (!process.env.DATABASE_URL) {
+      console.error('[LOGIN] DATABASE_URL is not configured')
+      throw new Error('Database configuration error: DATABASE_URL is missing')
+    }
+    
     let user
     try {
       user = await prisma.user.findUnique({
@@ -84,14 +92,29 @@ export async function POST(request: NextRequest) {
         hasTenant: !!user?.tenant,
       })
     } catch (dbError: any) {
+      const errorMessage = dbError instanceof Error ? dbError.message : String(dbError)
+      const errorCode = dbError?.code
+      const errorMeta = dbError?.meta
+      
       console.error('[LOGIN] Database query failed:', {
         step: 'find_user',
-        error: dbError instanceof Error ? dbError.message : String(dbError),
-        code: dbError?.code,
-        meta: dbError?.meta,
+        error: errorMessage,
+        code: errorCode,
+        meta: errorMeta,
         stack: dbError instanceof Error ? dbError.stack : undefined,
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
       })
-      throw new Error(`Database error: ${dbError instanceof Error ? dbError.message : 'Unknown database error'}`)
+      
+      // Provide more specific error messages for common database errors
+      if (errorCode === 'P1001' || errorMessage.includes('Can\'t reach database server')) {
+        throw new Error('Database connection failed. Please check your database configuration.')
+      } else if (errorCode === 'P2025' || errorMessage.includes('does not exist')) {
+        throw new Error('Database table not found. Please run database migrations.')
+      } else if (errorCode === 'P1000' || errorMessage.includes('Authentication failed')) {
+        throw new Error('Database authentication failed. Please check your database credentials.')
+      }
+      
+      throw new Error(`Database error: ${errorMessage}`)
     }
 
     // Step 4: Check if user exists
@@ -242,7 +265,7 @@ export async function POST(request: NextRequest) {
       stack: errorStack,
       duration: `${duration}ms`,
       // Environment info
-      nodeEnv: process.env.NODE_ENV,
+      nodeEnv: isDevelopment() ? 'development' : 'production',
       hasDatabaseUrl: !!process.env.DATABASE_URL,
       hasJwtSecret: !!process.env.JWT_SECRET,
     }
@@ -254,24 +277,27 @@ export async function POST(request: NextRequest) {
     if (error && typeof error === 'object' && 'meta' in error) {
       errorLog.meta = (error as any).meta
     }
-    if (process.env.NODE_ENV === 'development') {
+    if (isDevelopment()) {
       errorLog.fullError = error
     }
     
     console.error('[LOGIN] ❌ Error occurred:', errorLog)
     
     // Return error response with appropriate detail level
-    const responseMessage = process.env.NODE_ENV === 'development' 
+    const responseMessage = isDevelopment()
       ? `${errorMessage} (failed at step: ${step})`
-      : 'An error occurred during login'
+      : errorMessage.includes('Database') || errorMessage.includes('database')
+        ? 'Database connection error. Please try again later.'
+        : 'An error occurred during login'
     
     return NextResponse.json(
       { 
         error: 'Login failed',
         message: responseMessage,
-        ...(process.env.NODE_ENV === 'development' && {
+        ...(isDevelopment() && {
           step,
           errorName,
+          stack: errorStack,
         }),
       },
       { status: 500 }

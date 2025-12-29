@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayAid - Complete Business OS for Indian SMBs</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-purple: #53328A;
+            --primary-gold: #F5C700;
+            --dark-purple: #2D1B47;
+            --light-purple: #6B4BA1;
+            --text-dark: #1A1A1A;
+            --text-light: #666666;
+            --white: #FFFFFF;
+            --bg-light: #F8F7F3;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--white);
+            overflow-x: hidden;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(83, 50, 138, 0.1);
+            transition: all 0.3s ease;
+            padding: 0.75rem 2rem;
+        }
+
+        header.scrolled {
+            box-shadow: 0 8px 32px rgba(83, 50, 138, 0.15);
+        }
+
+        nav {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--primary-purple);
+        }
+
+        .logo img {
+            height: 40px;
+            width: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.5rem 0;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-purple);
+        }
+
+        .nav-links .dropdown-arrow {
+            font-size: 0.7rem;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-item:hover .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        /* ===== MEGA MENU ===== */
+        .mega-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(83, 50, 138, 0.2);
+            padding: 2rem;
+            min-width: 600px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+        }
+
+        .nav-item:hover .mega-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .mega-menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .menu-column h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--primary-purple);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .menu-column ul {
+            list-style: none;
+        }
+
+        .menu-column li {
+            margin-bottom: 0.75rem;
+        }
+
+        .menu-column a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .menu-column a:hover {
+            color: var(--primary-purple);
+            transform: translateX(4px);
+        }
+
+        .menu-icon {
+            font-size: 1rem;
+        }
+
+        .cta-header {
+            background: linear-gradient(135deg, var(--primary-purple), var(--light-purple));
+            color: var(--white);
+            padding: 0.6rem 1.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(83, 50, 138, 0.3);
+        }
+
+        .cta-header:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(83, 50, 138, 0.4);
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--primary-purple);
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero {
+            margin-top: 70px;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--white) 0%, var(--bg-light) 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 2rem;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(245, 199, 0, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -10%;
+            left: -5%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(83, 50, 138, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 10s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(30px); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 900px;
+            animation: slideIn 0.8s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: clamp(2rem, 6vw, 4rem);
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-gold) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            color: var(--text-light);
+            margin-bottom: 2.5rem;
+            line-height: 1.7;
+            max-width: 600px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            animation: fadeIn 1s ease-out 0.3s backwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-purple), var(--light-purple));
+            color: var(--white);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(83, 50, 138, 0.3);
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 35px rgba(83, 50, 138, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--white);
+            color: var(--primary-purple);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            border: 2px solid var(--primary-purple);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-purple);
+            color: var(--white);
+            transform: translateY(-4px);
+        }
+
+        /* ===== DASHBOARD SHOWCASE ===== */
+        .dashboard-showcase {
+            padding: 6rem 2rem;
+            background: var(--white);
+            position: relative;
+            z-index: 10;
+        }
+
+        .showcase-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .showcase-left h2 {
+            font-size: clamp(1.8rem, 3vw, 2.5rem);
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+            line-height: 1.3;
+        }
+
+        .showcase-left p {
+            font-size: 1.05rem;
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+            line-height: 1.8;
+        }
+
+        .showcase-tabs {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 0.6rem 1.2rem;
+            border: 2px solid rgba(83, 50, 138, 0.2);
+            background: var(--white);
+            color: var(--text-dark);
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover,
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--primary-purple), var(--light-purple));
+            color: var(--white);
+            border-color: transparent;
+        }
+
+        .showcase-image {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(83, 50, 138, 0.2);
+            animation: slideInRight 0.8s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .showcase-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* ===== STATS SECTION ===== */
+        .stats {
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, var(--bg-light) 0%, var(--white) 100%);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .stat-item {
+            animation: countUp 0.8s ease-out;
+        }
+
+        @keyframes countUp {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .stat-number {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-purple), var(--primary-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        /* ===== FEATURES SECTION ===== */
+        .features {
+            padding: 6rem 2rem;
+            background: var(--white);
+            position: relative;
+            z-index: 10;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-title h2 {
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+        }
+
+        .section-title p {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, rgba(245, 199, 0, 0.05) 0%, rgba(83, 50, 138, 0.05) 100%);
+            padding: 2.5rem 2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(83, 50, 138, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-gold), var(--primary-purple));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            background: linear-gradient(135deg, rgba(245, 199, 0, 0.1) 0%, rgba(83, 50, 138, 0.1) 100%);
+            border-color: var(--primary-gold);
+            box-shadow: 0 12px 40px rgba(83, 50, 138, 0.15);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--primary-gold), var(--primary-purple));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: var(--white);
+            box-shadow: 0 8px 20px rgba(83, 50, 138, 0.2);
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.75rem;
+            color: var(--primary-purple);
+            font-weight: 700;
+        }
+
+        .feature-card p {
+            color: var(--text-light);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* ===== USE CASES SECTION ===== */
+        .use-cases {
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, var(--bg-light) 0%, var(--white) 100%);
+        }
+
+        .use-cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            margin-top: 3rem;
+        }
+
+        .use-case-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(83, 50, 138, 0.1);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .use-case-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(83, 50, 138, 0.15);
+            border-color: var(--primary-gold);
+        }
+
+        .use-case-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .use-case-card h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-purple);
+            margin-bottom: 0.75rem;
+        }
+
+        .use-case-card p {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .use-case-link {
+            color: var(--primary-purple);
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .use-case-link:hover {
+            gap: 1rem;
+            color: var(--primary-gold);
+        }
+
+        /* ===== PRICING SECTION ===== */
+        .pricing {
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, var(--dark-purple) 0%, var(--primary-purple) 100%);
+            color: var(--white);
+        }
+
+        .pricing .section-title h2 {
+            color: var(--white);
+        }
+
+        .pricing .section-title p {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .pricing-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 2.5rem;
+            border-radius: 16px;
+            border: 1px solid rgba(245, 199, 0, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .pricing-card.featured {
+            background: linear-gradient(135deg, var(--primary-gold) 0%, #FFA500 100%);
+            color: var(--text-dark);
+            transform: scale(1.05);
+            box-shadow: 0 20px 60px rgba(245, 199, 0, 0.3);
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--primary-gold);
+            box-shadow: 0 15px 50px rgba(245, 199, 0, 0.2);
+        }
+
+        .pricing-card.featured:hover {
+            transform: scale(1.08) translateY(-8px);
+        }
+
+        .badge {
+            position: absolute;
+            top: -15px;
+            right: 20px;
+            background: var(--primary-gold);
+            color: var(--text-dark);
+            padding: 0.6rem 1.2rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .pricing-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .price {
+            font-size: 3rem;
+            font-weight: 800;
+            margin: 1.5rem 0;
+        }
+
+        .pricing-card.featured .price {
+            color: var(--text-dark);
+        }
+
+        .price-period {
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .features-list {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .features-list li {
+            padding: 0.75rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.95rem;
+        }
+
+        .pricing-card.featured .features-list li {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .features-list li:last-child {
+            border-bottom: none;
+        }
+
+        .check-icon {
+            color: var(--primary-gold);
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+
+        .pricing-card.featured .check-icon {
+            color: var(--text-dark);
+        }
+
+        .price-cta {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 50px;
+            border: none;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .pricing-card.featured .price-cta {
+            background: var(--text-dark);
+            color: var(--primary-gold);
+        }
+
+        .pricing-card:not(.featured) .price-cta {
+            background: var(--primary-gold);
+            color: var(--text-dark);
+        }
+
+        .price-cta:hover {
+            transform: translateY(-2px);
+        }
+
+        /* ===== TESTIMONIALS ===== */
+        .testimonials {
+            padding: 6rem 2rem;
+            background: var(--white);
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            margin-top: 3rem;
+        }
+
+        .testimonial-card {
+            background: linear-gradient(135deg, rgba(245, 199, 0, 0.05) 0%, rgba(83, 50, 138, 0.05) 100%);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(83, 50, 138, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .testimonial-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 30px rgba(83, 50, 138, 0.15);
+        }
+
+        .stars {
+            color: var(--primary-gold);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .testimonial-text {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            font-weight: 700;
+            color: var(--primary-purple);
+            margin-bottom: 0.25rem;
+        }
+
+        .testimonial-role {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        /* ===== FINAL CTA ===== */
+        .final-cta {
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--dark-purple) 100%);
+            color: var(--white);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .final-cta::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(245, 199, 0, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .final-cta h2 {
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            margin-bottom: 1rem;
+            font-weight: 800;
+            position: relative;
+            z-index: 2;
+        }
+
+        .final-cta p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .cta-button-large {
+            background: var(--primary-gold);
+            color: var(--text-dark);
+            padding: 1.25rem 2.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(245, 199, 0, 0.3);
+            display: inline-block;
+            position: relative;
+            z-index: 2;
+        }
+
+        .cta-button-large:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 35px rgba(245, 199, 0, 0.4);
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            background: var(--text-dark);
+            color: var(--white);
+            padding: 4rem 2rem 2rem;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-section h4 {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary-gold);
+        }
+
+        .footer-section a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: block;
+            margin-bottom: 0.75rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: var(--primary-gold);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .mega-menu {
+                min-width: auto;
+                width: calc(100vw - 4rem);
+            }
+
+            .mega-menu-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .showcase-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+            }
+
+            .btn-primary, .btn-secondary {
+                width: 100%;
+                text-align: center;
+            }
+
+            .pricing-card.featured {
+                transform: scale(1);
+            }
+
+            header {
+                padding: 0.5rem 1rem;
+            }
+
+            .hero {
+                margin-top: 60px;
+                padding: 1rem;
+            }
+        }
+
+        /* ===== SCROLL REVEAL ===== */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .scroll-reveal.visible {
+            animation: slideUp 0.6s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER WITH MEGA MENU -->
+    <header>
+        <nav>
+            <a href="#" class="logo">
+                <img src="https://payaidpayments.com/wp-content/uploads/2023/03/payaidPNG-2048x1058.png" alt="PayAid">
+            </a>
+            <ul class="nav-links">
+                <li class="nav-item">
+                    <a href="#products">Products <span class="dropdown-arrow">▼</span></a>
+                    <div class="mega-menu">
+                        <div class="mega-menu-grid">
+                            <div class="menu-column">
+                                <h4>Core Modules</h4>
+                                <ul>
+                                    <li><a href="#"><span class="menu-icon">👥</span> CRM</a></li>
+                                    <li><a href="#"><span class="menu-icon">📄</span> Invoicing</a></li>
+                                    <li><a href="#"><span class="menu-icon">📦</span> Inventory</a></li>
+                                    <li><a href="#"><span class="menu-icon">💳</span> Payments</a></li>
+                                    <li><a href="#"><span class="menu-icon">👔</span> HR & Payroll</a></li>
+                                    <li><a href="#"><span class="menu-icon">📊</span> Accounting</a></li>
+                                </ul>
+                            </div>
+                            <div class="menu-column">
+                                <h4>Advanced Features</h4>
+                                <ul>
+                                    <li><a href="#"><span class="menu-icon">📈</span> Analytics & Reports</a></li>
+                                    <li><a href="#"><span class="menu-icon">🤖</span> AI Co-founder</a></li>
+                                    <li><a href="#"><span class="menu-icon">🔗</span> Integrations</a></li>
+                                    <li><a href="#"><span class="menu-icon">📱</span> Mobile App</a></li>
+                                    <li><a href="#"><span class="menu-icon">🌐</span> API Access</a></li>
+                                    <li><a href="#"><span class="menu-icon">🔒</span> Security</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a href="#solutions">Solutions <span class="dropdown-arrow">▼</span></a>
+                    <div class="mega-menu">
+                        <div class="mega-menu-grid">
+                            <div class="menu-column">
+                                <h4>By Business Type</h4>
+                                <ul>
+                                    <li><a href="#"><span class="menu-icon">🍔</span> Restaurants</a></li>
+                                    <li><a href="#"><span class="menu-icon">🏪</span> Retail</a></li>
+                                    <li><a href="#"><span class="menu-icon">💼</span> Services</a></li>
+                                    <li><a href="#"><span class="menu-icon">🏭</span> Manufacturing</a></li>
+                                </ul>
+                            </div>
+                            <div class="menu-column">
+                                <h4>Use Cases</h4>
+                                <ul>
+                                    <li><a href="#"><span class="menu-icon">📊</span> Multi-location</a></li>
+                                    <li><a href="#"><span class="menu-icon">🛒</span> E-commerce</a></li>
+                                    <li><a href="#"><span class="menu-icon">💰</span> GST Compliance</a></li>
+                                    <li><a href="#"><span class="menu-icon">🚀</span> Scaling</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#">Company</a></li>
+            </ul>
+            <a href="#" class="cta-header">Get Started</a>
+            <button class="menu-toggle">☰</button>
+        </nav>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>One App For Your Business</h1>
+            <p>
+                Everything your business needs in one powerful platform. Manage CRM, Invoicing, Inventory, HR, Payments, Accounting, and more. 
+                Built specifically for Indian SMBs.
+            </p>
+            <div class="hero-buttons">
+                <a href="#" class="btn-primary">Start Free Trial</a>
+                <a href="#" class="btn-secondary">Watch Demo →</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- DASHBOARD SHOWCASE -->
+    <section class="dashboard-showcase">
+        <div class="showcase-container">
+            <div class="showcase-left">
+                <h2>All Your Business, One Dashboard</h2>
+                <p>
+                    Manage your entire business from a single, intuitive dashboard. Access CRM, invoicing, inventory, payments, HR, accounting, analytics, and AI intelligence all in one place. No switching between tools. No learning curves.
+                </p>
+                <div class="showcase-tabs">
+                    <button class="tab-btn active">🎯 CRM</button>
+                    <button class="tab-btn">📄 Invoicing</button>
+                    <button class="tab-btn">📦 Inventory</button>
+                    <button class="tab-btn">📊 Analytics</button>
+                    <button class="tab-btn">🤖 AI</button>
+                </div>
+            </div>
+            <div class="showcase-image">
+                <img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/920693ab-392e-4a61-a258-0ab2ad939128.png" alt="PayAid Dashboard">
+            </div>
+        </div>
+    </section>
+
+    <!-- STATS SECTION -->
+    <section class="stats">
+        <div class="stats-grid">
+            <div class="stat-item scroll-reveal">
+                <div class="stat-number">30M+</div>
+                <div class="stat-label">SMBs in India</div>
+            </div>
+            <div class="stat-item scroll-reveal">
+                <div class="stat-number">50%</div>
+                <div class="stat-label">Cheaper</div>
+            </div>
+            <div class="stat-item scroll-reveal">
+                <div class="stat-number">8</div>
+                <div class="stat-label">Complete Modules</div>
+            </div>
+            <div class="stat-item scroll-reveal">
+                <div class="stat-number">₹7,999</div>
+                <div class="stat-label">All-in-One Price</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section class="features" id="features">
+        <div class="section-title">
+            <h2>Why Choose PayAid?</h2>
+            <p>Everything built for your success</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">🎯</div>
+                <h3>All-in-One Platform</h3>
+                <p>Stop using 5+ tools. Manage CRM, invoicing, inventory, HR, payments, and accounting all in one place.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">💰</div>
+                <h3>50% Cheaper</h3>
+                <p>₹7,999/month for complete features. No hidden costs. No feature paywalls. Everything included.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">🇮🇳</div>
+                <h3>India-First Design</h3>
+                <p>GST, FSSAI, ONDC ready. Built by Indians, for Indian businesses. Hindi support included.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">🤖</div>
+                <h3>AI Co-founder</h3>
+                <p>Get business intelligence and smart recommendations. Your personal AI advisor included.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">⚡</div>
+                <h3>Lightning Fast Setup</h3>
+                <p>Start using PayAid in minutes, not months. Quick onboarding, easy implementation, immediate results.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">🔒</div>
+                <h3>Bank-Grade Security</h3>
+                <p>Your data is encrypted, backed up, and protected. Enterprise-level security at SMB prices.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- USE CASES SECTION -->
+    <section class="use-cases">
+        <div class="section-title">
+            <h2>Made for Indian Businesses</h2>
+            <p>Trusted by restaurants, retail stores, service businesses, and more</p>
+        </div>
+        <div class="use-cases-grid">
+            <div class="use-case-card scroll-reveal">
+                <span class="use-case-icon">🍔</span>
+                <h3>Restaurants</h3>
+                <p>Manage online orders, offline payments, inventory tracking, and staff management from one dashboard.</p>
+                <a href="#" class="use-case-link">Learn more →</a>
+            </div>
+            <div class="use-case-card scroll-reveal">
+                <span class="use-case-icon">🏪</span>
+                <h3>Retail</h3>
+                <p>Multi-location inventory, customer loyalty programs, point of sale, and centralized analytics.</p>
+                <a href="#" class="use-case-link">Learn more →</a>
+            </div>
+            <div class="use-case-card scroll-reveal">
+                <span class="use-case-icon">💼</span>
+                <h3>Services</h3>
+                <p>Project management, client invoicing, team scheduling, expense tracking, and profitability analysis.</p>
+                <a href="#" class="use-case-link">Learn more →</a>
+            </div>
+            <div class="use-case-card scroll-reveal">
+                <span class="use-case-icon">👕</span>
+                <h3>E-commerce</h3>
+                <p>Multi-channel selling, inventory sync, order management, fulfillment tracking, and customer data.</p>
+                <a href="#" class="use-case-link">Learn more →</a>
+            </div>
+            <div class="use-case-card scroll-reveal">
+                <span class="use-case-icon">🏭</span>
+                <h3>Manufacturing</h3>
+                <p>Production tracking, supplier management, quality control, logistics, and compliance reporting.</p>
+                <a href="#" class="use-case-link">Learn more →</a>
+            </div>
+            <div class="use-case-card scroll-reveal">
+                <span class="use-case-icon">🎓</span>
+                <h3>Agencies</h3>
+                <p>Client projects, team collaboration, resource planning, time tracking, and invoice automation.</p>
+                <a href="#" class="use-case-link">Learn more →</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING SECTION -->
+    <section class="pricing" id="pricing">
+        <div class="section-title">
+            <h2>Simple, Transparent Pricing</h2>
+            <p>No hidden charges. No surprise fees. Pay only for what you use.</p>
+        </div>
+        <div class="pricing-cards">
+            <div class="pricing-card scroll-reveal">
+                <h3>Starter</h3>
+                <div class="price">₹3,999</div>
+                <div class="price-period">per month</div>
+                <ul class="features-list">
+                    <li><span class="check-icon">✓</span> CRM & Invoicing</li>
+                    <li><span class="check-icon">✓</span> Up to 5 users</li>
+                    <li><span class="check-icon">✓</span> Basic Analytics</li>
+                    <li><span class="check-icon">✓</span> Email Support</li>
+                    <li><span class="check-icon">✓</span> Mobile App</li>
+                </ul>
+                <button class="price-cta">Start Free Trial</button>
+            </div>
+            <div class="pricing-card featured scroll-reveal">
+                <div class="badge">Most Popular</div>
+                <h3>Professional</h3>
+                <div class="price">₹7,999</div>
+                <div class="price-period">per month</div>
+                <ul class="features-list">
+                    <li><span class="check-icon">✓</span> All Modules Included</li>
+                    <li><span class="check-icon">✓</span> Unlimited Users</li>
+                    <li><span class="check-icon">✓</span> AI Co-founder</li>
+                    <li><span class="check-icon">✓</span> Advanced Analytics</li>
+                    <li><span class="check-icon">✓</span> Priority Support</li>
+                </ul>
+                <button class="price-cta">Start Free Trial</button>
+            </div>
+            <div class="pricing-card scroll-reveal">
+                <h3>Enterprise</h3>
+                <div class="price">Custom</div>
+                <div class="price-period">per month</div>
+                <ul class="features-list">
+                    <li><span class="check-icon">✓</span> Everything Included</li>
+                    <li><span class="check-icon">✓</span> Custom Integrations</li>
+                    <li><span class="check-icon">✓</span> Dedicated Account Manager</li>
+                    <li><span class="check-icon">✓</span> White-label Options</li>
+                    <li><span class="check-icon">✓</span> SLA Guarantee</li>
+                </ul>
+                <button class="price-cta">Contact Sales</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- TESTIMONIALS SECTION -->
+    <section class="testimonials">
+        <div class="section-title">
+            <h2>Loved by Indian Entrepreneurs</h2>
+            <p>Hear from businesses transforming with PayAid</p>
+        </div>
+        <div class="testimonials-grid">
+            <div class="testimonial-card scroll-reveal">
+                <div class="stars">★★★★★</div>
+                <p class="testimonial-text">"PayAid has been a game-changer for our restaurant business. We manage orders, payments, and staff all in one place. Saved us ₹15,000/month!"</p>
+                <p class="testimonial-author">Rajesh Kumar</p>
+                <p class="testimonial-role">Restaurant Owner, Mumbai</p>
+            </div>
+            <div class="testimonial-card scroll-reveal">
+                <div class="stars">★★★★★</div>
+                <p class="testimonial-text">"As a small business owner, I needed something affordable but powerful. PayAid delivered exactly that. The support team is incredibly helpful!"</p>
+                <p class="testimonial-author">Priya Singh</p>
+                <p class="testimonial-role">Retail Store Manager, Delhi</p>
+            </div>
+            <div class="testimonial-card scroll-reveal">
+                <div class="stars">★★★★★</div>
+                <p class="testimonial-text">"The AI co-founder feature is amazing. It gives me business insights I didn't even know I needed. PayAid is like having a consultant on my team."</p>
+                <p class="testimonial-author">Amit Patel</p>
+                <p class="testimonial-role">Service Business Owner, Bangalore</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="final-cta">
+        <h2>Ready to Transform Your Business?</h2>
+        <p>Join thousands of Indian businesses already growing with PayAid. Start your free trial today. No credit card required.</p>
+        <a href="#" class="cta-button-large">Get Started Today →</a>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Product</h4>
+                <a href="#">Features</a>
+                <a href="#">Pricing</a>
+                <a href="#">Integrations</a>
+                <a href="#">Security</a>
+            </div>
+            <div class="footer-section">
+                <h4>Solutions</h4>
+                <a href="#">Restaurants</a>
+                <a href="#">Retail</a>
+                <a href="#">Services</a>
+                <a href="#">E-commerce</a>
+            </div>
+            <div class="footer-section">
+                <h4>Company</h4>
+                <a href="#">About</a>
+                <a href="#">Blog</a>
+                <a href="#">Careers</a>
+                <a href="#">Contact</a>
+            </div>
+            <div class="footer-section">
+                <h4>Legal</h4>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+                <a href="#">Compliance</a>
+                <a href="#">Security</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 PayAid. Built for Indian Businesses. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Header scroll effect
+        const header = document.querySelector('header');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        // Scroll reveal animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.scroll-reveal').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Tab functionality
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                tabButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

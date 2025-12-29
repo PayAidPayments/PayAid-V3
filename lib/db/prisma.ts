@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { isDevelopment, isProduction } from '@/lib/utils/env'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -6,7 +7,7 @@ const globalForPrisma = globalThis as unknown as {
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   // Only log errors in production, disable query logging for performance
-  log: process.env.NODE_ENV === 'development' 
+  log: isDevelopment()
     ? (process.env.PRISMA_LOG_QUERIES === 'true' ? ['query', 'error', 'warn'] : ['error', 'warn'])
     : ['error'],
   datasources: {
@@ -16,7 +17,7 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   },
 })
 
-if (process.env.NODE_ENV !== 'production') {
+if (!isProduction()) {
   globalForPrisma.prisma = prisma
 }
 
