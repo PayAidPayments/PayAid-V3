@@ -36,8 +36,11 @@ const navigationSections = [
     name: 'Sales & Operations',
     icon: '💼',
     items: [
+      { name: 'Projects', href: '/dashboard/projects', icon: '📁', module: 'crm' }, // NEW: Project Management
       { name: 'Tasks', href: '/dashboard/tasks', icon: '✅', module: 'crm' },
       { name: 'Accounting', href: '/dashboard/accounting', icon: '💰', module: 'finance' }, // Updated: accounting → finance
+      { name: 'Purchase Orders', href: '/dashboard/purchases/orders', icon: '🛒', module: 'finance' }, // NEW: Purchase Orders
+      { name: 'Vendors', href: '/dashboard/purchases/vendors', icon: '🏢', module: 'finance' }, // NEW: Vendor Management
       { name: 'Analytics', href: '/dashboard/analytics', icon: '📈', module: 'analytics' },
     ],
   },
@@ -89,7 +92,7 @@ const navigationSections = [
     icon: '📊',
     items: [
       { name: 'GST Reports', href: '/dashboard/gst/gstr-1', icon: '📋', module: 'finance' }, // Updated: accounting → finance
-      { name: 'Custom Reports', href: '/dashboard/reports/custom', icon: '📈', module: 'analytics' },
+      { name: 'Custom Reports', href: '/dashboard/reports', icon: '📈', module: 'analytics' }, // NEW: Advanced Reporting
       { name: 'Custom Dashboards', href: '/dashboard/dashboards/custom', icon: '📊', module: 'analytics' },
     ],
   },

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
 import { ModuleGate } from '@/components/modules/ModuleGate'
 import { useAuthStore } from '@/lib/stores/auth'
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 
 interface Campaign {
   id: string
@@ -162,54 +163,111 @@ function CampaignDetailPageContent() {
 
       {/* Analytics */}
       {campaign.status === 'sent' && campaign.sent > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Campaign Analytics</CardTitle>
-            <CardDescription>Performance metrics for this campaign</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <div className="text-sm text-gray-600">Delivered</div>
-                <div className="text-2xl font-bold">{campaign.delivered.toLocaleString()}</div>
-                <div className="text-xs text-gray-500">
-                  {campaign.sent > 0
-                    ? `${((campaign.delivered / campaign.sent) * 100).toFixed(1)}%`
-                    : '-'}
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Campaign Analytics</CardTitle>
+              <CardDescription>Performance metrics for this campaign</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div>
+                  <div className="text-sm text-gray-600">Delivered</div>
+                  <div className="text-2xl font-bold">{campaign.delivered.toLocaleString()}</div>
+                  <div className="text-xs text-gray-500">
+                    {campaign.sent > 0
+                      ? `${((campaign.delivered / campaign.sent) * 100).toFixed(1)}%`
+                      : '-'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600">Opened</div>
+                  <div className="text-2xl font-bold">{campaign.opened.toLocaleString()}</div>
+                  <div className="text-xs text-gray-500">
+                    {campaign.delivered > 0
+                      ? `${((campaign.opened / campaign.delivered) * 100).toFixed(1)}%`
+                      : '-'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600">Clicked</div>
+                  <div className="text-2xl font-bold">{campaign.clicked.toLocaleString()}</div>
+                  <div className="text-xs text-gray-500">
+                    {campaign.opened > 0
+                      ? `${((campaign.clicked / campaign.opened) * 100).toFixed(1)}%`
+                      : '-'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600">Bounced</div>
+                  <div className="text-2xl font-bold text-red-600">
+                    {campaign.bounced.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {campaign.sent > 0
+                      ? `${((campaign.bounced / campaign.sent) * 100).toFixed(1)}%`
+                      : '-'}
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className="text-sm text-gray-600">Opened</div>
-                <div className="text-2xl font-bold">{campaign.opened.toLocaleString()}</div>
-                <div className="text-xs text-gray-500">
-                  {campaign.delivered > 0
-                    ? `${((campaign.opened / campaign.delivered) * 100).toFixed(1)}%`
-                    : '-'}
+
+              {/* Visualization Charts */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                {/* Delivery Status Pie Chart */}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-4">Delivery Status</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Delivered', value: campaign.delivered, fill: '#10b981' },
+                          { name: 'Bounced', value: campaign.bounced, fill: '#ef4444' },
+                          { name: 'Pending', value: campaign.sent - campaign.delivered - campaign.bounced, fill: '#f59e0b' },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }: { name?: string; percent?: number }) => `${name || ''} ${percent ? (percent * 100).toFixed(0) : 0}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {[
+                          { name: 'Delivered', value: campaign.delivered, fill: '#10b981' },
+                          { name: 'Bounced', value: campaign.bounced, fill: '#ef4444' },
+                          { name: 'Pending', value: campaign.sent - campaign.delivered - campaign.bounced, fill: '#f59e0b' },
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Engagement Bar Chart */}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-4">Engagement Metrics</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart
+                      data={[
+                        { name: 'Sent', value: campaign.sent },
+                        { name: 'Delivered', value: campaign.delivered },
+                        { name: 'Opened', value: campaign.opened },
+                        { name: 'Clicked', value: campaign.clicked },
+                      ]}
+                    >
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#53328A" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
-              <div>
-                <div className="text-sm text-gray-600">Clicked</div>
-                <div className="text-2xl font-bold">{campaign.clicked.toLocaleString()}</div>
-                <div className="text-xs text-gray-500">
-                  {campaign.opened > 0
-                    ? `${((campaign.clicked / campaign.opened) * 100).toFixed(1)}%`
-                    : '-'}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Bounced</div>
-                <div className="text-2xl font-bold text-red-600">
-                  {campaign.bounced.toLocaleString()}
-                </div>
-                <div className="text-xs text-gray-500">
-                  {campaign.sent > 0
-                    ? `${((campaign.bounced / campaign.sent) * 100).toFixed(1)}%`
-                    : '-'}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* Campaign Details */}

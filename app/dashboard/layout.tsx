@@ -15,10 +15,20 @@ export default function DashboardLayout({
 }) {
   const params = useParams()
   const router = useRouter()
-  const { tenant } = useAuthStore()
+  const { tenant, token, fetchUser } = useAuthStore()
 
   // Extract tenantId from URL params
   const tenantIdFromUrl = params?.tenantId as string | undefined
+
+  // Refresh tenant data on mount to get latest modules
+  useEffect(() => {
+    if (token && !tenant?.licensedModules?.length) {
+      // If tenant doesn't have modules, fetch latest from API
+      fetchUser().catch(() => {
+        // Silently fail - user might not be authenticated
+      })
+    }
+  }, [token, tenant?.licensedModules?.length, fetchUser])
 
   // Verify tenantId matches logged-in tenant
   useEffect(() => {

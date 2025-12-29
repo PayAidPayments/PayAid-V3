@@ -156,7 +156,7 @@ export default function GSTR1Page() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              ₹{((gstr1?.summary.totalAmount || 0) / 100000).toFixed(2)}L
+              ₹{((gstr1?.summary.totalAmount || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
@@ -166,7 +166,7 @@ export default function GSTR1Page() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              ₹{((gstr1?.summary.totalGST || 0) / 100000).toFixed(2)}L
+              ₹{((gstr1?.summary.totalGST || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
@@ -192,7 +192,7 @@ export default function GSTR1Page() {
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-semibold">
-                        ₹{((b2bGroup.total || 0) / 100000).toFixed(2)}L
+                        ₹{((b2bGroup.total || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                       <div className="text-sm text-gray-600">Total</div>
                     </div>
@@ -215,13 +215,13 @@ export default function GSTR1Page() {
                             {new Date(invoice.invoiceDate).toLocaleDateString('en-IN')}
                           </TableCell>
                           <TableCell className="text-right">
-                            ₹{((invoice.amount || 0) / 1000).toFixed(2)}K
+                            ₹{((invoice.amount || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </TableCell>
                           <TableCell className="text-right">
-                            ₹{((invoice.gst || 0) / 1000).toFixed(2)}K
+                            ₹{((invoice.gst || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </TableCell>
                           <TableCell className="text-right font-semibold">
-                            ₹{((invoice.total || 0) / 1000).toFixed(2)}K
+                            ₹{((invoice.total || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -250,7 +250,7 @@ export default function GSTR1Page() {
               </div>
               <div className="text-right">
                 <div className="text-lg font-semibold">
-                  ₹{((gstr1.b2c.total || 0) / 100000).toFixed(2)}L
+                  ₹{((gstr1.b2c.total || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 <div className="text-sm text-gray-600">Total</div>
               </div>
@@ -273,13 +273,13 @@ export default function GSTR1Page() {
                       {new Date(invoice.invoiceDate).toLocaleDateString('en-IN')}
                     </TableCell>
                     <TableCell className="text-right">
-                      ₹{((invoice.amount || 0) / 1000).toFixed(2)}K
+                      ₹{((invoice.amount || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="text-right">
-                      ₹{((invoice.gst || 0) / 1000).toFixed(2)}K
+                      ₹{((invoice.gst || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="text-right font-semibold">
-                      ₹{((invoice.total || 0) / 1000).toFixed(2)}K
+                      ₹{((invoice.total || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                   </TableRow>
                 ))}
