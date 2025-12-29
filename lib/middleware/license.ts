@@ -100,7 +100,14 @@ export async function checkModuleAccess(
       throw error
     }
     
-    // If token verification failed, throw license error
+    // If token verification failed, check if it's a JWT error
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    if (errorMessage.includes('Invalid or expired token') || errorMessage.includes('jwt')) {
+      // Return 401 Unauthorized for token errors (not 403)
+      throw new LicenseError(moduleId, 'Invalid or expired token. Please log out and log back in.')
+    }
+    
+    // Other errors
     throw new LicenseError(moduleId, 'Invalid or expired token')
   }
 }
@@ -153,17 +160,21 @@ export async function hasModuleAccess(
 
 /**
  * Error handler for LicenseError
- * Returns appropriate HTTP response (403 Forbidden)
+ * Returns appropriate HTTP response (401 for token errors, 403 for license errors)
  */
 export function handleLicenseError(error: unknown): NextResponse {
   if (error instanceof LicenseError) {
+    // Check if it's a token error (should return 401)
+    const isTokenError = error.message.includes('Invalid or expired token') || 
+                         error.message.includes('No authorization token')
+    
     return NextResponse.json(
       {
         error: error.message,
-        code: 'MODULE_NOT_LICENSED',
+        code: isTokenError ? 'INVALID_TOKEN' : 'MODULE_NOT_LICENSED',
         moduleId: error.moduleId,
       },
-      { status: 403 }
+      { status: isTokenError ? 401 : 403 }
     )
   }
 

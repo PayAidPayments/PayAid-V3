@@ -127,6 +127,7 @@ model Tenant {
   websiteChatbots          WebsiteChatbot[]
   chatbotConversations     ChatbotConversation[]
   events                   Event[]
+  mediaLibrary             MediaLibrary[]
   eventRegistrations       EventRegistration[]
   emailTemplates           EmailTemplate[]
   customDashboards         CustomDashboard[]
@@ -327,6 +328,9 @@ model User {
   whatsappSessions         WhatsappSession[]
   createdWhatsappTemplates WhatsappTemplate[]
   whatsappMessages         WhatsappMessage[]
+
+  // Media Library
+  uploadedMedia            MediaLibrary[] @relation("MediaUploads")
 
   @@index([email])
   @@index([tenantId])
@@ -3192,6 +3196,48 @@ model SocialPost {
   @@index([tenantId, accountId])
   @@index([accountId])
   @@index([status, scheduledAt])
+}
+
+// Media Library - Store images and files for use in campaigns, posts, etc.
+model MediaLibrary {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // File information
+  fileName  String
+  fileUrl   String   // CDN URL or data URL
+  fileSize  Int      // Bytes
+  mimeType  String   // "image/png", "image/jpeg", etc.
+  width     Int?     // Image width in pixels
+  height    Int?     // Image height in pixels
+
+  // Metadata
+  title       String?  // User-friendly title
+  description String?  // Optional description
+  tags        String[] // Tags for organization/search
+  category    String?  // "social-media", "campaign", "product", etc.
+
+  // Source information
+  source      String?  // "ai-generated", "uploaded", "edited"
+  originalPrompt String? // If AI-generated, store the prompt
+  editHistory Json?    // Array of edit operations if edited
+
+  // Usage tracking
+  usageCount  Int      @default(0) // How many times used in posts/campaigns
+
+  // Uploaded by
+  uploadedById String?
+  uploadedBy   User?   @relation("MediaUploads", fields: [uploadedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, category])
+  @@index([tenantId, source])
+  @@index([tenantId, createdAt])
+  @@index([uploadedById])
 }
 
 model ScheduledPost {

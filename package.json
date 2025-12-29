@@ -15,7 +15,11 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "db:seed-campaigns": "npx tsx prisma/seed-campaigns.ts",
     "db:seed-all": "npx tsx prisma/seed-all-sample-data.ts",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "verify-env": "npx tsx scripts/verify-env.ts",
+    "check-vercel-logs": "powershell -ExecutionPolicy Bypass -File scripts/check-vercel-logs.ps1",
+    "verify-env-and-logs": "powershell -ExecutionPolicy Bypass -File scripts/verify-env-and-logs.ps1",
+    "verify-all": "npm run verify-env && npm run verify-env-and-logs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

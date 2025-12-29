@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayAid - Your Complete Business Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #1E3A8A;
+            --secondary-gold: #D97706;
+            --accent-green: #10B981;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --bg-light: #FAFAF9;
+            --border-light: #E5E7EB;
+            --white: #FFFFFF;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--white);
+            overflow-x: hidden;
+        }
+
+        /* ===== HEADER & NAVIGATION ===== */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+        }
+
+        header.scrolled {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            text-decoration: none;
+        }
+
+        .logo-img {
+            height: 40px;
+            width: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--secondary-gold);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--secondary-gold);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue) 100%);
+            color: var(--white);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(30, 58, 138, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.4);
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--primary-blue);
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero {
+            margin-top: 70px;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue) 50%, rgba(30, 58, 138, 0.9) 100%);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -100px;
+            width: 500px;
+            height: 500px;
+            background: rgba(217, 119, 6, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -50px;
+            left: -100px;
+            width: 400px;
+            height: 400px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(20px); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            text-align: center;
+            padding: 2rem;
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+            font-weight: 300;
+            line-height: 1.6;
+        }
+
+        .hero-highlight {
+            color: var(--secondary-gold);
+            font-weight: 700;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeIn 1s ease-out 0.3s backwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .btn-primary {
+            background: var(--secondary-gold);
+            color: var(--white);
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(217, 119, 6, 0.4);
+            background: #c66f02;
+        }
+
+        .btn-secondary {
+            background: var(--white);
+            color: var(--primary-blue);
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            border: 2px solid var(--white);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-secondary:hover {
+            background: transparent;
+            color: var(--white);
+            transform: translateY(-4px);
+        }
+
+        /* ===== STATS SECTION ===== */
+        .stats {
+            background: var(--white);
+            padding: 4rem 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            max-width: 1200px;
+            margin: -60px auto 0;
+            position: relative;
+            z-index: 10;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-item {
+            text-align: center;
+            animation: scaleIn 0.6s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--secondary-gold);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        /* ===== FEATURES SECTION ===== */
+        .features {
+            padding: 6rem 2rem;
+            background: var(--bg-light);
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: var(--primary-blue);
+        }
+
+        .section-header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-light);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--secondary-gold), var(--accent-green));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--secondary-gold), var(--accent-green));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--white);
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+            color: var(--primary-blue);
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* ===== MODULES SECTION ===== */
+        .modules {
+            padding: 6rem 2rem;
+            background: var(--white);
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .module-card {
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.05), rgba(217, 119, 6, 0.05));
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .module-card:hover {
+            border-color: var(--secondary-gold);
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.1), rgba(217, 119, 6, 0.1));
+        }
+
+        .module-emoji {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .module-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary-blue);
+            font-weight: 700;
+        }
+
+        .module-card p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* ===== PRICING SECTION ===== */
+        .pricing {
+            padding: 6rem 2rem;
+            background: var(--bg-light);
+        }
+
+        .pricing-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: var(--white);
+            padding: 2.5rem;
+            border-radius: 12px;
+            border: 2px solid var(--border-light);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .pricing-card.featured {
+            border-color: var(--secondary-gold);
+            transform: scale(1.05);
+            box-shadow: 0 10px 40px rgba(217, 119, 6, 0.2);
+        }
+
+        .pricing-card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .badge {
+            position: absolute;
+            top: -15px;
+            right: 20px;
+            background: var(--secondary-gold);
+            color: var(--white);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .pricing-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary-blue);
+        }
+
+        .price {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--secondary-gold);
+            margin: 1.5rem 0;
+        }
+
+        .price-period {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        .features-list {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .features-list li {
+            padding: 0.75rem 0;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .features-list li:last-child {
+            border-bottom: none;
+        }
+
+        .check-icon {
+            color: var(--accent-green);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .price-cta {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-card.featured .price-cta {
+            background: var(--secondary-gold);
+            color: var(--white);
+        }
+
+        .pricing-card:not(.featured) .price-cta {
+            background: var(--border-light);
+            color: var(--primary-blue);
+        }
+
+        .price-cta:hover {
+            transform: translateY(-2px);
+        }
+
+        /* ===== CTA SECTION ===== */
+        .cta-section {
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue) 100%);
+            color: var(--white);
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 800;
+        }
+
+        .cta-section p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-button-large {
+            background: var(--secondary-gold);
+            color: var(--white);
+            padding: 1.25rem 2.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+            display: inline-block;
+        }
+
+        .cta-button-large:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(217, 119, 6, 0.4);
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            background: var(--text-primary);
+            color: var(--white);
+            padding: 4rem 2rem 2rem;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-section h4 {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .footer-section a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: block;
+            margin-bottom: 0.75rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: var(--secondary-gold);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+            }
+
+            .btn-primary, .btn-secondary {
+                width: 100%;
+                text-align: center;
+            }
+
+            .section-header h2 {
+                font-size: 1.75rem;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+                margin: -40px 2rem 0;
+            }
+
+            .pricing-card.featured {
+                transform: scale(1);
+            }
+
+            .hero {
+                margin-top: 60px;
+            }
+        }
+
+        /* ===== LOADING ANIMATION ===== */
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        /* ===== SCROLL ANIMATION ===== */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .scroll-reveal.visible {
+            animation: slideUp 0.6s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <nav>
+            <a href="#" class="logo">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231E3A8A'/%3E%3Ctext x='50' y='55' font-size='60' font-weight='bold' fill='%23D97706' text-anchor='middle' font-family='Arial'%3EP%3C/text%3E%3C/svg%3E" alt="PayAid" class="logo-img">
+                PayAid
+            </a>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#modules">Modules</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#faq">FAQ</a></li>
+            </ul>
+            <button class="cta-button">Get Started</button>
+            <button class="menu-toggle">☰</button>
+        </nav>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Your <span class="hero-highlight">Complete Business Platform</span></h1>
+            <p class="hero-subtitle">
+                Everything your business needs in one place. CRM, Invoicing, Inventory, HR, Payments & Compliance.
+                <br><strong>Built for India. Built for You.</strong>
+            </p>
+            <div class="hero-buttons">
+                <button class="btn-primary">Start Free Trial →</button>
+                <button class="btn-secondary">Watch Demo ▶</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- STATS SECTION -->
+    <section class="stats">
+        <div class="stat-item">
+            <div class="stat-number">30M+</div>
+            <div class="stat-label">Indian SMBs</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">50% Cheaper</div>
+            <div class="stat-label">Than Competitors</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">8 Complete</div>
+            <div class="stat-label">Business Modules</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">24/7</div>
+            <div class="stat-label">Hindi Support</div>
+        </div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section class="features" id="features">
+        <div class="section-header">
+            <h2>Why Choose PayAid</h2>
+            <p>Everything you need to run your business efficiently. From small startups to growing enterprises.</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">📊</div>
+                <h3>All-in-One Platform</h3>
+                <p>No need for 5+ different tools. Manage everything from one dashboard.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">💰</div>
+                <h3>Affordable & Transparent</h3>
+                <p>₹7k/month for complete features. No hidden costs, no feature paywalls.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">🇮🇳</div>
+                <h3>India-First Design</h3>
+                <p>GST, FSSAI, ONDC ready. Built specifically for Indian businesses.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">🤖</div>
+                <h3>AI Co-founder Included</h3>
+                <p>Get intelligent insights and recommendations powered by AI.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">⚡</div>
+                <h3>Lightning Fast</h3>
+                <p>Quick setup, easy implementation, immediate productivity.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">🔒</div>
+                <h3>Bank-Grade Security</h3>
+                <p>Your data is encrypted and secure. We take privacy seriously.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- MODULES SECTION -->
+    <section class="modules" id="modules">
+        <div class="section-header">
+            <h2>Everything You Need</h2>
+            <p>Complete business management across all critical areas</p>
+        </div>
+        <div class="modules-grid">
+            <div class="module-card scroll-reveal">
+                <span class="module-emoji">👥</span>
+                <h3>CRM</h3>
+                <p>Manage customers, track interactions, and drive sales</p>
+            </div>
+            <div class="module-card scroll-reveal">
+                <span class="module-emoji">📄</span>
+                <h3>Invoicing</h3>
+                <p>Create, send, and track invoices automatically</p>
+            </div>
+            <div class="module-card scroll-reveal">
+                <span class="module-emoji">📦</span>
+                <h3>Inventory</h3>
+                <p>Track stock, manage warehouses, optimize levels</p>
+            </div>
+            <div class="module-card scroll-reveal">
+                <span class="module-emoji">💳</span>
+                <h3>Payments</h3>
+                <p>Accept payments from anywhere. Multiple gateways integrated.</p>
+            </div>
+            <div class="module-card scroll-reveal">
+                <span class="module-emoji">👔</span>
+                <h3>HR & Payroll</h3>
+                <p>Manage employees, attendance, and payroll with ease</p>
+            </div>
+            <div class="module-card scroll-reveal">
+                <span class="module-emoji">📊</span>
+                <h3>Accounting</h3>
+                <p>Complete accounting, GST returns, financial reports</p>
+            </div>
+            <div class="module-card scroll-reveal">
+                <span class="module-emoji">📈</span>
+                <h3>Analytics</h3>
+                <p>Real-time dashboards and insights for smart decisions</p>
+            </div>
+            <div class="module-card scroll-reveal">
+                <span class="module-emoji">🎯</span>
+                <h3>AI Intelligence</h3>
+                <p>Smart recommendations and business insights powered by AI</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING SECTION -->
+    <section class="pricing" id="pricing">
+        <div class="section-header">
+            <h2>Simple, Transparent Pricing</h2>
+            <p>Choose the plan that fits your business. Upgrade or downgrade anytime.</p>
+        </div>
+        <div class="pricing-cards">
+            <div class="pricing-card scroll-reveal">
+                <h3>Starter</h3>
+                <div class="price">₹3,999</div>
+                <div class="price-period">per month</div>
+                <ul class="features-list">
+                    <li><span class="check-icon">✓</span> CRM & Invoicing</li>
+                    <li><span class="check-icon">✓</span> Up to 5 users</li>
+                    <li><span class="check-icon">✓</span> Basic Analytics</li>
+                    <li><span class="check-icon">✓</span> Email Support</li>
+                    <li><span class="text-secondary">✗</span> AI Features</li>
+                </ul>
+                <button class="price-cta">Start Free Trial</button>
+            </div>
+            <div class="pricing-card featured scroll-reveal">
+                <div class="badge">Most Popular</div>
+                <h3>Professional</h3>
+                <div class="price">₹7,999</div>
+                <div class="price-period">per month</div>
+                <ul class="features-list">
+                    <li><span class="check-icon">✓</span> All Starter features</li>
+                    <li><span class="check-icon">✓</span> Inventory & HR</li>
+                    <li><span class="check-icon">✓</span> Unlimited users</li>
+                    <li><span class="check-icon">✓</span> AI Co-founder</li>
+                    <li><span class="check-icon">✓</span> Priority Support</li>
+                </ul>
+                <button class="price-cta">Start Free Trial</button>
+            </div>
+            <div class="pricing-card scroll-reveal">
+                <h3>Enterprise</h3>
+                <div class="price">Custom</div>
+                <div class="price-period">per month</div>
+                <ul class="features-list">
+                    <li><span class="check-icon">✓</span> Everything</li>
+                    <li><span class="check-icon">✓</span> Custom integrations</li>
+                    <li><span class="check-icon">✓</span> Dedicated support</li>
+                    <li><span class="check-icon">✓</span> SSO & 2FA</li>
+                    <li><span class="check-icon">✓</span> SLA guarantee</li>
+                </ul>
+                <button class="price-cta">Contact Sales</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA SECTION -->
+    <section class="cta-section">
+        <h2>Ready to Transform Your Business?</h2>
+        <p>Join thousands of Indian businesses already growing with PayAid. Start free, no credit card required.</p>
+        <button class="cta-button-large">Get Started Today →</button>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Product</h4>
+                <a href="#">Features</a>
+                <a href="#">Pricing</a>
+                <a href="#">Security</a>
+                <a href="#">Roadmap</a>
+            </div>
+            <div class="footer-section">
+                <h4>Company</h4>
+                <a href="#">About</a>
+                <a href="#">Blog</a>
+                <a href="#">Careers</a>
+                <a href="#">Contact</a>
+            </div>
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <a href="#">Documentation</a>
+                <a href="#">API</a>
+                <a href="#">Community</a>
+                <a href="#">Support</a>
+            </div>
+            <div class="footer-section">
+                <h4>Legal</h4>
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">Security</a>
+                <a href="#">Compliance</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 PayAid. All rights reserved. | Built with ❤️ for Indian Businesses</p>
+        </div>
+    </footer>
+
+    <script>
+        // Header scroll effect
+        const header = document.querySelector('header');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        // Scroll reveal animation
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.scroll-reveal').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Button interactions
+        document.querySelectorAll('.btn-primary, .cta-button, .price-cta, .cta-button-large').forEach(btn => {
+            btn.addEventListener('click', function() {
+                console.log('Call to action clicked');
+                // Add your CTA logic here - redirect to signup, open modal, etc.
+            });
+        });
+    </script>
+</body>
+</html>

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     // }
 
     const body = await request.json()
-    const email = body.email || 'admin@demo.com'
+    const email = (body.email || 'admin@demo.com').toLowerCase().trim()
     const password = body.password || 'Test@1234'
 
     console.log(`🔐 Resetting password for ${email}...`)
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     // Hash the new password
     const hashedPassword = await hashPassword(password)
 
-    // Find the user
+    // Find the user (normalize email for lookup)
     const user = await prisma.user.findUnique({
       where: { email },
     })
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
       await prisma.user.create({
         data: {
-          email,
+          email: email.toLowerCase().trim(),
           name: 'Admin User',
           password: hashedPassword,
           role: 'owner',

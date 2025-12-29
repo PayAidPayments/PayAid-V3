@@ -27,6 +27,16 @@ export default function CreateImagePage() {
   const [error, setError] = useState<string | null>(null)
   const [googleConnected, setGoogleConnected] = useState<boolean | null>(null)
   const [isCheckingConnection, setIsCheckingConnection] = useState(true)
+  
+  // Image editing state
+  const [isEditing, setIsEditing] = useState(false)
+  const [editPrompt, setEditPrompt] = useState('')
+  const [isEditingImage, setIsEditingImage] = useState(false)
+  const [editHistory, setEditHistory] = useState<Array<{ prompt: string; imageUrl: string }>>([])
+  
+  // Media library state
+  const [isSavingToLibrary, setIsSavingToLibrary] = useState(false)
+  const [savedToLibrary, setSavedToLibrary] = useState(false)
 
   // Check Google AI Studio API key configuration status
   useEffect(() => {
@@ -208,6 +218,143 @@ export default function CreateImagePage() {
   }
 
   const [imageCopied, setImageCopied] = useState(false)
+
+  const handleEditImage = async () => {
+    if (!generatedImage || !editPrompt.trim()) return
+
+    setIsEditingImage(true)
+    setError(null)
+
+    try {
+      const { token } = useAuthStore.getState()
+      if (!token) {
+        setError('You must be logged in to edit images.')
+        return
+      }
+
+      // Convert image URL to base64
+      const response = await fetch(generatedImage)
+      const blob = await response.blob()
+      const reader = new FileReader()
+      
+      reader.onloadend = async () => {
+        const base64 = reader.result as string
+        
+        try {
+          const editResponse = await fetch('/api/ai/nanobanana/edit-image', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              imageBase64: base64,
+              imageMimeType: 'image/png',
+              editPrompt: editPrompt.trim(),
+            }),
+          })
+
+          if (!editResponse.ok) {
+            const errorData = await editResponse.json()
+            throw new Error(errorData.error || errorData.message || 'Failed to edit image')
+          }
+
+          const editData = await editResponse.json()
+          
+          // Add to edit history
+          setEditHistory(prev => [...prev, { prompt: editPrompt, imageUrl: generatedImage }])
+          
+          // Update current image
+          setGeneratedImage(editData.imageUrl || editData.image_url)
+          setEditPrompt('')
+          setIsEditing(false)
+        } catch (editError) {
+          const errorMessage = editError instanceof Error ? editError.message : 'Failed to edit image'
+          setError(errorMessage)
+        } finally {
+          setIsEditingImage(false)
+        }
+      }
+      
+      reader.onerror = () => {
+        setError('Failed to read image for editing')
+        setIsEditingImage(false)
+      }
+      
+      reader.readAsDataURL(blob)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to edit image'
+      setError(errorMessage)
+      setIsEditingImage(false)
+    }
+  }
+
+  const handleSaveToLibrary = async () => {
+    if (!generatedImage) return
+
+    setIsSavingToLibrary(true)
+    setError(null)
+
+    try {
+      const { token } = useAuthStore.getState()
+      if (!token) {
+        setError('You must be logged in to save images.')
+        return
+      }
+
+      // Extract image dimensions and metadata
+      const img = new Image()
+      img.src = generatedImage
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve
+        img.onerror = reject
+      })
+
+      // Convert data URL to blob to get size
+      const response = await fetch(generatedImage)
+      const blob = await response.blob()
+      
+      // Extract filename from prompt or use default
+      const fileName = prompt.trim().substring(0, 50).replace(/[^a-z0-9]/gi, '_') || 'ai-generated-image'
+      
+      const saveResponse = await fetch('/api/media-library', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          fileName: `${fileName}.png`,
+          fileUrl: generatedImage,
+          fileSize: blob.size,
+          mimeType: 'image/png',
+          width: img.width,
+          height: img.height,
+          title: prompt.trim().substring(0, 100) || 'AI Generated Image',
+          description: `Generated with style: ${style}, size: ${size}`,
+          tags: [style, 'ai-generated'],
+          category: 'social-media',
+          source: 'ai-generated',
+          originalPrompt: prompt,
+          editHistory: editHistory.length > 0 ? editHistory.map(e => ({ prompt: e.prompt })) : undefined,
+        }),
+      })
+
+      if (!saveResponse.ok) {
+        const errorData = await saveResponse.json()
+        throw new Error(errorData.error || errorData.message || 'Failed to save to media library')
+      }
+
+      setSavedToLibrary(true)
+      setTimeout(() => setSavedToLibrary(false), 3000)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save to media library'
+      setError(errorMessage)
+    } finally {
+      setIsSavingToLibrary(false)
+    }
+  }
 
   const handleCopyImage = async () => {
     if (!generatedImage) return
@@ -538,9 +685,82 @@ export default function CreateImagePage() {
                     Your prompt was automatically enhanced by AI to generate better results.
                   </div>
                 </div>
+                
+                {/* Image Editing Section */}
+                <div className="border-t border-gray-200 pt-4 mt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-700">Edit Image</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditing(!isEditing)
+                        if (!isEditing) {
+                          setEditPrompt('')
+                        }
+                      }}
+                    >
+                      {isEditing ? 'Cancel' : '✏️ Edit with AI'}
+                    </Button>
+                  </div>
+                  
+                  {isEditing && (
+                    <div className="space-y-3 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                      <div>
+                        <label htmlFor="editPrompt" className="block text-xs font-medium text-gray-700 mb-1">
+                          What would you like to change?
+                        </label>
+                        <textarea
+                          id="editPrompt"
+                          value={editPrompt}
+                          onChange={(e) => setEditPrompt(e.target.value)}
+                          placeholder="e.g., Change the background to a beach, add more vibrant colors, make it more professional"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm min-h-[80px]"
+                          disabled={isEditingImage}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Describe the changes you want. Only those changes will be made, the rest of the image stays the same.
+                        </p>
+                      </div>
+                      <Button
+                        onClick={handleEditImage}
+                        disabled={!editPrompt.trim() || isEditingImage}
+                        className="w-full"
+                        size="sm"
+                      >
+                        {isEditingImage ? (
+                          <>
+                            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block"></span>
+                            Editing...
+                          </>
+                        ) : (
+                          'Apply Changes'
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                
                 <div className="flex gap-2">
                   <Button onClick={handleDownload} className="flex-1">
                     Download Image
+                  </Button>
+                  <Button
+                    onClick={handleSaveToLibrary}
+                    variant="outline"
+                    className="flex-1"
+                    disabled={isSavingToLibrary || savedToLibrary}
+                  >
+                    {isSavingToLibrary ? (
+                      <>
+                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2 inline-block"></span>
+                        Saving...
+                      </>
+                    ) : savedToLibrary ? (
+                      '✓ Saved to Library'
+                    ) : (
+                      '💾 Save to Library'
+                    )}
                   </Button>
                   <Button
                     onClick={handleCopyImage}
@@ -554,6 +774,10 @@ export default function CreateImagePage() {
                     onClick={() => {
                       setGeneratedImage(null)
                       setPrompt('')
+                      setIsEditing(false)
+                      setEditPrompt('')
+                      setEditHistory([])
+                      setSavedToLibrary(false)
                     }}
                   >
                     Generate Another

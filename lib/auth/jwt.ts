@@ -1,7 +1,7 @@
 import jwt, { SignOptions } from 'jsonwebtoken'
 
-const JWT_SECRET: string = process.env.JWT_SECRET || 'change-me-in-production'
-const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '24h'
+const JWT_SECRET: string = (process.env.JWT_SECRET || 'change-me-in-production').trim()
+const JWT_EXPIRES_IN: string = (process.env.JWT_EXPIRES_IN || '24h').trim()
 
 export interface JWTPayload {
   userId: string
@@ -14,11 +14,20 @@ export interface JWTPayload {
 }
 
 export function signToken(payload: JWTPayload): string {
-  if (!JWT_SECRET) {
+  if (!JWT_SECRET || JWT_SECRET === 'change-me-in-production') {
     throw new Error('JWT_SECRET is not configured')
   }
+  
+  // Validate and normalize expiresIn value
+  let expiresIn: string | number = JWT_EXPIRES_IN
+  if (!expiresIn || expiresIn.trim() === '') {
+    expiresIn = '24h' // Default fallback
+  } else {
+    expiresIn = expiresIn.trim()
+  }
+  
   return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
+    expiresIn: expiresIn,
   } as SignOptions)
 }
 

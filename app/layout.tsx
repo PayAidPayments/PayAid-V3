@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "PayAid V3 - Business Operating System",
   description: "All-in-one business operating system for Indian startups and SMBs",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
