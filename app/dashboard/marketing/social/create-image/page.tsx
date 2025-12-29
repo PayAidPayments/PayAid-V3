@@ -313,30 +313,30 @@ export default function CreateImagePage() {
                   disabled={isGenerating}
                 >
                   <option value="auto">Auto (Recommended)</option>
-                  <option value="google-ai-studio">Google AI Studio (Free)</option>
-                  <option value="huggingface">Hugging Face (Free - Cloud)</option>
+                  <option value="google-ai-studio">Google AI Studio</option>
+                  <option value="huggingface">PayAid AI Image Generation</option>
                 </select>
-                <p className="mt-1 text-xs text-gray-500">
-                  {provider === 'auto' && 'Will try Google AI Studio first, then Hugging Face (cloud-based)'}
+                <p className="mt-1 text-xs">
+                  {provider === 'auto' && <span className="text-gray-500">Will try Google AI Studio first, then PayAid AI Image Generation</span>}
                   {provider === 'google-ai-studio' && (
                     <>
                       {isCheckingConnection ? (
-                        'Checking API key status...'
+                        <span className="text-gray-500">Checking API key status...</span>
                       ) : googleConnected ? (
-                        '✅ API key configured - Ready to generate images'
+                        <span className="text-green-600 font-medium">✅ Google AI Studio (Configured) - Ready to generate images</span>
                       ) : (
-                        '⚠️ API key not configured - Add your key in Settings > AI Integrations'
+                        <span className="text-red-600 font-medium">⚠️ Google AI Studio (Not Configured) - Add your key in Settings > AI Integrations</span>
                       )}
                     </>
                   )}
-                  {provider === 'huggingface' && 'Uses Hugging Face Inference API (cloud-based, free tier available)'}
+                  {provider === 'huggingface' && <span className="text-gray-500">PayAid's built-in AI image generation service</span>}
                 </p>
                 {provider === 'google-ai-studio' && !isCheckingConnection && !googleConnected && (
-                  <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <p className="text-sm text-yellow-800 mb-2">
+                  <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-800 mb-2">
                       ⚠️ Google AI Studio API key is not configured
                     </p>
-                    <p className="text-xs text-yellow-700 mb-3">
+                    <p className="text-xs text-red-700 mb-3">
                       Each tenant must use their own API key. Get your free key from Google AI Studio and add it below.
                     </p>
                     <Link href="/dashboard/settings/ai">
@@ -416,7 +416,7 @@ export default function CreateImagePage() {
                               (error.includes('Too many requests') && error.includes('Google')))
                               ? '⚠️ Google AI Studio API Error'
                               : (error.includes('Hugging Face') && !error.includes('fallback to Hugging Face'))
-                              ? '⚠️ Hugging Face API Error'
+                              ? '⚠️ PayAid AI Image Generation Error'
                               : '⚠️ Setup Required'}
                           </div>
                           <div className="whitespace-pre-line text-xs font-mono bg-red-100 p-2 rounded mb-2 max-h-40 overflow-y-auto">
@@ -427,7 +427,7 @@ export default function CreateImagePage() {
                               (error.includes('Google AI Studio') || error.includes('Rate limit exceeded') || error.includes('rate limit'))
                                 ? 'Google AI Studio API'
                                 : error.includes('Hugging Face')
-                                ? 'Hugging Face API'
+                                ? 'PayAid AI Image Generation'
                                 : 'the API'
                             }.
                           </div>
@@ -455,14 +455,14 @@ export default function CreateImagePage() {
                                   <>
                                     1. Check your quota usage at <a href="https://ai.dev/usage?tab=rate-limit" target="_blank" className="text-blue-600 hover:underline">https://ai.dev/usage?tab=rate-limit</a><br/>
                                     2. Wait for quota reset (usually daily/monthly)<br/>
-                                    3. Use &quot;Auto&quot; provider to automatically fallback to Hugging Face (free tier available)<br/>
+                                    3. Use &quot;Auto&quot; provider to automatically fallback to PayAid AI Image Generation<br/>
                                     4. Consider upgrading your Google AI Studio plan if needed
                                   </>
                                 ) : (
                                   <>
                                     1. Wait a few moments and try again (rate limits reset quickly)<br/>
                                     2. Check your Google AI Studio usage at <a href="https://aistudio.google.com" target="_blank" className="text-blue-600 hover:underline">https://aistudio.google.com</a><br/>
-                                    3. If persistent, try using &quot;Auto&quot; provider (will fallback to Hugging Face)
+                                    3. If persistent, try using &quot;Auto&quot; provider (will fallback to PayAid AI Image Generation)
                                   </>
                                 )}
                               </div>
@@ -471,11 +471,11 @@ export default function CreateImagePage() {
                               <div className="text-xs text-red-600">
                                 <strong>Next steps:</strong><br/>
                                 1. Check server terminal for full error details<br/>
-                                2. Verify model name in .env: HUGGINGFACE_IMAGE_MODEL<br/>
-                                3. Try a different model if current one fails
+                                2. Try again in a few moments (service may be loading)<br/>
+                                3. If issue persists, contact support
                               </div>
                             )}
-                            {!error.includes('self-hosted') && !error.includes('Hugging Face') && (
+                            {!error.includes('self-hosted') && !error.includes('Hugging Face') && !error.includes('PayAid AI') && (
                               <a 
                                 href="/GOOGLE_AI_STUDIO_SETUP.md" 
                                 target="_blank"
