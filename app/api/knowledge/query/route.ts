@@ -84,13 +84,13 @@ Always cite which source you used (e.g., "According to Source 1...").`
 
     try {
       const groq = getGroqClient()
-      const response = await groq([
+      const response = await groq.chat([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ])
-      answer = response.content || ''
+      answer = response.message || ''
       modelUsed = 'groq-llama-3.1-70b'
-      tokensUsed = response.totalTokens || 0
+      tokensUsed = response.usage?.totalTokens || 0
     } catch (groqError) {
       console.error('Groq error, trying Ollama:', groqError)
       try {
