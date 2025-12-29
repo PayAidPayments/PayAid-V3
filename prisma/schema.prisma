@@ -3374,7 +3374,7 @@ model LoyaltyTransaction {
   program   LoyaltyProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
 
   transactionId String? // Link to RetailTransaction if earned from purchase
-  transaction   RetailTransaction? @relation(fields: [transactionId], references: [id])
+  transaction   RetailTransaction? @relation("RetailTransactionLoyalty", fields: [transactionId], references: [id])
 
   type String // "EARNED", "REDEEMED", "EXPIRED", "ADJUSTED"
   points Decimal @db.Decimal(10, 2) // Positive for earned, negative for redeemed
@@ -3484,13 +3484,15 @@ model EmailBounce {
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  campaignId String? // Link to Campaign if from campaign
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+
   emailAddress String
   bounceType   String // "hard", "soft", "blocked"
   bounceReason String? // Reason for bounce
   bounceCategory String? // "invalid", "spam", "unsubscribed", etc.
 
   // Source tracking
-  campaignId String? // Link to Campaign if from campaign
   messageId  String? // Email message ID
 
   // Suppression
@@ -3540,6 +3542,12 @@ model SMSDeliveryReport {
   id       String @id @default(cuid())
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id])
+
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
 
   phoneNumber String
   message     String
