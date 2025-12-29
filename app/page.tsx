@@ -64,9 +64,9 @@ export default function Home() {
 
     // Smooth scroll
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
+      anchor.addEventListener('click', (e) => {
         e.preventDefault()
-        const href = this.getAttribute('href')
+        const href = anchor.getAttribute('href')
         if (href) {
           const target = document.querySelector(href)
           if (target) {
@@ -81,12 +81,12 @@ export default function Home() {
     const showcaseImages = document.querySelectorAll('.showcase-image img')
 
     tabButtons.forEach(btn => {
-      btn.addEventListener('click', function() {
-        const tabName = this.getAttribute('data-tab')
+      btn.addEventListener('click', () => {
+        const tabName = btn.getAttribute('data-tab')
         
         // Update active button
         tabButtons.forEach(b => b.classList.remove('active'))
-        this.classList.add('active')
+        btn.classList.add('active')
         
         // Hide all images and show selected one
         showcaseImages.forEach(img => img.classList.add('hidden'))
