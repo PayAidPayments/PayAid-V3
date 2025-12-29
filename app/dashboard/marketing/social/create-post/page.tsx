@@ -253,22 +253,26 @@ export default function CreatePostPage() {
                       >
                         📚 Choose from Library
                       </Button>
-                      <label className="flex-1">
+                      <div className="flex-1">
                         <input
                           type="file"
                           accept="image/*"
                           onChange={handleImageUpload}
                           className="hidden"
+                          id="image-upload-input"
                         />
                         <Button
                           type="button"
                           variant="outline"
                           className="w-full"
-                          asChild
+                          onClick={() => {
+                            const input = document.getElementById('image-upload-input') as HTMLInputElement
+                            input?.click()
+                          }}
                         >
-                          <span>📤 Upload Image</span>
+                          📤 Upload Image
                         </Button>
-                      </label>
+                      </div>
                     </div>
                   )}
                 </div>

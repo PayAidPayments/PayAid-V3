@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     const media = await prisma.mediaLibrary.create({
       data: {
         tenantId: user.tenantId,
-        uploadedById: user.id,
+        uploadedById: user.userId,
         ...validated,
       },
       include: {
