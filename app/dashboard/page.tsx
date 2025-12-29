@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -76,6 +77,7 @@ function getAuthHeaders() {
 }
 
 export default function DashboardPage() {
+  const params = useParams()
   const { user, tenant, token } = useAuthStore()
   const [stats, setStats] = useState({
     contacts: 0,
@@ -84,6 +86,21 @@ export default function DashboardPage() {
     invoices: 0,
     tasks: 0,
   })
+
+  // Get tenantId from URL params (if accessed via /dashboard/[tenantId]) or from auth store
+  const tenantIdFromUrl = params?.tenantId as string | undefined
+  const currentTenantId = tenantIdFromUrl || tenant?.id || null
+
+  // Helper function to generate tenant-aware dashboard URLs
+  const getDashboardLink = (path: string) => {
+    if (!currentTenantId) {
+      // Fallback to generic path (for demo/admin access)
+      return `/dashboard${path.startsWith('/') ? path : '/' + path}`
+    }
+    // Remove leading /dashboard if present
+    const cleanPath = path.replace(/^\/dashboard\/?/, '')
+    return `/dashboard/${currentTenantId}${cleanPath ? '/' + cleanPath : ''}`
+  }
 
   // Fetch dashboard stats
   const { data: dashboardStats, isLoading, error: statsError } = useQuery({
@@ -190,7 +207,7 @@ export default function DashboardPage() {
 
         {/* Stats Grid - Modern Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-          <Link href="/dashboard/contacts" className="block">
+          <Link href={getDashboardLink('/contacts')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Contacts</CardTitle>
@@ -203,7 +220,7 @@ export default function DashboardPage() {
             </Card>
           </Link>
 
-          <Link href="/dashboard/deals" className="block">
+          <Link href={getDashboardLink('/deals')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_GOLD }}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Deals</CardTitle>
@@ -216,7 +233,7 @@ export default function DashboardPage() {
             </Card>
           </Link>
 
-          <Link href="/dashboard/orders" className="block">
+          <Link href={getDashboardLink('/orders')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Orders</CardTitle>
@@ -229,7 +246,7 @@ export default function DashboardPage() {
             </Card>
           </Link>
 
-          <Link href="/dashboard/invoices" className="block">
+          <Link href={getDashboardLink('/invoices')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_GOLD }}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Invoices</CardTitle>
@@ -242,7 +259,7 @@ export default function DashboardPage() {
             </Card>
           </Link>
 
-          <Link href="/dashboard/tasks" className="block">
+          <Link href={getDashboardLink('/tasks')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Tasks</CardTitle>
@@ -255,7 +272,7 @@ export default function DashboardPage() {
             </Card>
           </Link>
 
-          <Link href="/dashboard/analytics" className="block">
+          <Link href={getDashboardLink('/analytics')} className="block">
             <HealthScoreWidget />
           </Link>
         </div>
