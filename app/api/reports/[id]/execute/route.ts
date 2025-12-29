@@ -270,7 +270,7 @@ async function executeExpensesReport(fields: string[], grouping: any, sorting: a
       employee: {
         select: {
           id: true,
-          employeeId: true,
+          employeeCode: true,
           user: {
             select: {
               name: true,
