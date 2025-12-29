@@ -3542,13 +3542,7 @@ model SMSDeliveryReport {
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  contactId String?
-  contact   Contact? @relation(fields: [contactId], references: [id])
-
-  campaignId String?
-  campaign   Campaign? @relation(fields: [campaignId], references: [id])
-
-  contactId String?
+  contactId String? // Link to Contact
   contact   Contact? @relation(fields: [contactId], references: [id])
 
   campaignId String? // Link to Campaign if from campaign
