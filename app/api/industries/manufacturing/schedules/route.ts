@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
         scheduledEndDate: new Date(validated.scheduledEndDate),
         machineId: validated.machineId,
         machineName: validated.machineName,
-        assignedWorkers: validated.assignedWorkers || null,
+        assignedWorkers: validated.assignedWorkers || undefined,
         priority: validated.priority,
         notes: validated.notes,
       },
