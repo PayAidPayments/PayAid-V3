@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
@@ -38,6 +38,7 @@ function CampaignDetailPageContent() {
   const router = useRouter()
   const id = params.id as string
   const { token } = useAuthStore()
+  const queryClient = useQueryClient()
 
   const { data: campaign, isLoading } = useQuery<Campaign>({
     queryKey: ['campaign', id],
@@ -49,6 +50,28 @@ function CampaignDetailPageContent() {
       })
       if (!response.ok) throw new Error('Failed to fetch campaign')
       return response.json()
+    },
+  })
+
+  const sendCampaign = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/marketing/campaigns/${id}/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      })
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to send campaign')
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaign', id] })
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] })
+      alert('Campaign queued for sending!')
     },
   })
 
@@ -85,6 +108,18 @@ function CampaignDetailPageContent() {
           <p className="mt-2 text-gray-600 capitalize">{campaign.type} Campaign</p>
         </div>
         <div className="flex gap-2">
+          {campaign?.status === 'draft' && (
+            <Button
+              onClick={() => {
+                if (confirm(`Are you sure you want to send this campaign to ${campaign.recipientCount} recipients?`)) {
+                  sendCampaign.mutate()
+                }
+              }}
+              disabled={sendCampaign.isPending}
+            >
+              {sendCampaign.isPending ? 'Sending...' : '📤 Send Now'}
+            </Button>
+          )}
           <Link href="/dashboard/marketing/campaigns">
             <Button variant="outline">Back</Button>
           </Link>
