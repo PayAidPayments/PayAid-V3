@@ -30,15 +30,6 @@ export async function GET(
         tenantId: user.tenantId,
       },
       include: {
-        currentOrder: {
-          include: {
-            items: {
-              include: {
-                menuItem: true,
-              },
-            },
-          },
-        },
         orders: {
           take: 10,
           orderBy: {
@@ -111,14 +102,6 @@ export async function PATCH(
       where: { id },
       data: validated,
       include: {
-        currentOrder: {
-          select: {
-            id: true,
-            orderNumber: true,
-            status: true,
-            totalAmount: true,
-          },
-        },
         _count: {
           select: {
             orders: true,
