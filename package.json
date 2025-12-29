@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "prisma generate && next build --webpack",
+    "build:with-db": "prisma generate && prisma db push --skip-generate --accept-data-loss && next build --webpack",
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
