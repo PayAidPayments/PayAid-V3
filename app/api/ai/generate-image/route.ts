@@ -321,7 +321,7 @@ export async function POST(request: NextRequest) {
             '4. Add to .env: GEMINI_API_KEY="AIza_xxx"',
             '5. Restart dev server: npm run dev',
           ],
-          cost: '₹3.23 per image (~$0.039 USD)',
+          cost: '₹3.23 per image',
           features: 'Superior quality, faster (5-10s), image editing, multi-image fusion',
         },
         googleAiStudio: {
