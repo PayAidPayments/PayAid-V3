@@ -395,11 +395,17 @@ export default function CreatePostPage() {
                     showText={true}
                     className="flex-1"
                   />
+                  <Link href={`/dashboard/marketing/social/schedule?content=${encodeURIComponent(generatedPost)}&imageUrl=${selectedImage ? encodeURIComponent(selectedImage) : ''}`}>
+                    <Button variant="outline" className="flex-1">
+                      📅 Schedule Post
+                    </Button>
+                  </Link>
                   <Button
                     variant="outline"
                     onClick={() => {
                       setGeneratedPost(null)
                       setTopic('')
+                      setSelectedImage(null)
                     }}
                   >
                     Generate Another

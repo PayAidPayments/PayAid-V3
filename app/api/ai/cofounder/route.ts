@@ -6,7 +6,11 @@ import { z } from 'zod'
 
 const cofounderSchema = z.object({
   message: z.string().min(1),
-  agentId: z.enum(['cofounder', 'finance', 'sales', 'marketing', 'hr', 'website', 'restaurant', 'retail', 'manufacturing']).optional(),
+  agentId: z.enum([
+    'cofounder', 'finance', 'sales', 'marketing', 'hr', 'website', 'restaurant', 'retail', 'manufacturing',
+    'growth-strategist', 'operations', 'product', 'industry-expert', 'analytics', 'customer-success',
+    'compliance', 'fundraising', 'market-research', 'scaling', 'tech-advisor', 'design', 'documentation'
+  ]).optional(),
   context: z.object({
     module: z.string().optional(),
     tenantId: z.string().optional(),
