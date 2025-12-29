@@ -2,50 +2,119 @@
 
 import { useAuthStore } from '@/lib/stores/auth'
 import { decodeToken, JWTPayload } from '@/lib/auth/jwt'
-import { useMemo } from 'react'
+import { useMemo, useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 
 /**
  * Custom hook for PayAid authentication with module licensing
  * 
  * Provides:
  * - User and tenant info
- * - Licensed modules list
+ * - Licensed modules list (always from database, not stale token)
  * - Helper functions to check module access
  */
 export function usePayAidAuth() {
   const { user, tenant, token } = useAuthStore()
+  const [modulesFromApi, setModulesFromApi] = useState<string[] | null>(null)
 
-  // Extract licensed modules from JWT token
+  // Fetch latest modules from API (database is source of truth)
+  const { data: userData } = useQuery({
+    queryKey: ['auth-me', token],
+    queryFn: async () => {
+      if (!token) return null
+      const response = await fetch('/api/auth/me', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (!response.ok) return null
+      return response.json()
+    },
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    retry: 1,
+  })
+
+  // Update modules when API data is fetched and sync to auth store
+  useEffect(() => {
+    if (userData?.tenant) {
+      setModulesFromApi(userData.tenant.licensedModules || [])
+      
+      // Also update auth store with latest tenant data (including modules)
+      // This ensures the store has the most up-to-date information
+      useAuthStore.setState({
+        tenant: {
+          ...useAuthStore.getState().tenant,
+          ...userData.tenant,
+          licensedModules: userData.tenant.licensedModules || [],
+          subscriptionTier: userData.tenant.subscriptionTier || 'free',
+        },
+      })
+    }
+  }, [userData])
+
+  // Extract licensed modules - prioritize database (API) over token
   const licensedModules = useMemo(() => {
-    if (!token) return []
-    
-    try {
-      const decoded = decodeToken(token) as JWTPayload & {
-        licensedModules?: string[]
-        subscriptionTier?: string
-      }
-      return decoded.licensedModules || []
-    } catch {
-      // Fallback to tenant data if JWT decode fails
-      return tenant?.licensedModules || []
+    // Priority 1: Database data from API (most up-to-date)
+    if (modulesFromApi && modulesFromApi.length > 0) {
+      return modulesFromApi
     }
-  }, [token, tenant])
+    
+    // Priority 2: Tenant data from auth store (if available)
+    if (tenant?.licensedModules && tenant.licensedModules.length > 0) {
+      return tenant.licensedModules
+    }
+    
+    // Priority 3: JWT token (may be stale, but better than nothing)
+    if (token) {
+      try {
+        const decoded = decodeToken(token) as JWTPayload & {
+          licensedModules?: string[]
+          subscriptionTier?: string
+        }
+        if (decoded.licensedModules && decoded.licensedModules.length > 0) {
+          return decoded.licensedModules
+        }
+      } catch {
+        // Token decode failed, continue to fallback
+      }
+    }
+    
+    // Fallback: empty array
+    return []
+  }, [modulesFromApi, tenant?.licensedModules, token])
 
-  // Extract subscription tier from JWT token
+  // Extract subscription tier - prioritize database over token
   const subscriptionTier = useMemo(() => {
-    if (!token) return 'free'
-    
-    try {
-      const decoded = decodeToken(token) as JWTPayload & {
-        licensedModules?: string[]
-        subscriptionTier?: string
-      }
-      return decoded.subscriptionTier || 'free'
-    } catch {
-      // Fallback to tenant data if JWT decode fails
-      return tenant?.subscriptionTier || 'free'
+    // Priority 1: Database data from API
+    if (userData?.tenant?.subscriptionTier) {
+      return userData.tenant.subscriptionTier
     }
-  }, [token, tenant])
+    
+    // Priority 2: Tenant data from auth store
+    if (tenant?.subscriptionTier) {
+      return tenant.subscriptionTier
+    }
+    
+    // Priority 3: JWT token
+    if (token) {
+      try {
+        const decoded = decodeToken(token) as JWTPayload & {
+          licensedModules?: string[]
+          subscriptionTier?: string
+        }
+        if (decoded.subscriptionTier) {
+          return decoded.subscriptionTier
+        }
+      } catch {
+        // Token decode failed
+      }
+    }
+    
+    // Fallback
+    return 'free'
+  }, [userData?.tenant?.subscriptionTier, tenant?.subscriptionTier, token])
 
   /**
    * Check if user has access to a specific module

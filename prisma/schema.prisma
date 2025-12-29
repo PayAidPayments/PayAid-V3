@@ -144,10 +144,19 @@ model Tenant {
   // Industry-specific relations
   restaurantOrders       RestaurantOrder[]
   restaurantMenuItems    RestaurantMenuItem[]
+  restaurantTables       RestaurantTable[]
+  restaurantReservations RestaurantReservation[]
   retailTransactions     RetailTransaction[]
   retailProducts         RetailProduct[]
   manufacturingOrders    ManufacturingOrder[]
   manufacturingMaterials ManufacturingMaterial[]
+  vendors                Vendor[] // NEW: Purchase Orders & Vendor Management
+  purchaseOrders         PurchaseOrder[] // NEW: Purchase Orders
+  goodsReceipts          GoodsReceipt[] // NEW: Goods Receipt Notes
+  projects               Project[] // NEW: Project Management
+  reports                Report[] // NEW: Advanced Reporting
+  reportTemplates        ReportTemplate[] // NEW: Report Templates
+  scheduledReportRuns    ScheduledReportRun[] // NEW: Scheduled Report Runs
   realEstateProperties   RealEstateProperty[]
   realEstateAdvances     RealEstateAdvance[]
   healthcarePatients     HealthcarePatient[]
@@ -323,6 +332,12 @@ model User {
   assignedTasks     Task[]         @relation("AssignedTasks")
   salesRep          SalesRep?      @relation("SalesRepUser")
 
+  // Project Management Relations
+  ownedProjects     Project[]      @relation("ProjectOwner")
+  assignedProjectTasks ProjectTask[] @relation("AssignedProjectTasks")
+  projectMemberships ProjectMember[] @relation("ProjectMembers")
+  timeEntries       TimeEntry[]    @relation("TimeEntries")
+
   // Email & Chat Services
   emailAccounts EmailAccount[] @relation("EmailAccounts")
   chatMembers   ChatMember[]   @relation("ChatMembers")
@@ -442,6 +457,7 @@ model Contact {
   tasks                 Task[]
   orders                Order[]                   @relation("CustomerOrders")
   invoices              Invoice[]                 @relation("CustomerInvoices")
+  clientProjects        Project[]                 @relation("ProjectClient")
   scheduledEmails       ScheduledEmail[]
   nurtureEnrollments    NurtureEnrollment[]
   realEstateAdvances    RealEstateAdvance[]
@@ -633,6 +649,7 @@ model Product {
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   orderItems OrderItem[]
+  purchaseOrderItems PurchaseOrderItem[] @relation("PurchaseOrderItems")
 
   @@index([tenantId])
   @@index([tenantId, sku])
@@ -785,6 +802,8 @@ model Invoice {
 
   customerId String?
   customer   Contact? @relation("CustomerInvoices", fields: [customerId], references: [id])
+
+  restaurantOrders RestaurantOrder[] @relation("RestaurantOrderInvoices")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2876,11 +2895,18 @@ model RestaurantOrder {
   updatedAt DateTime  @updatedAt
   servedAt  DateTime?
 
+  invoiceId String? // Link to Invoice for billing
+  invoice   Invoice? @relation("RestaurantOrderInvoices", fields: [invoiceId], references: [id])
+  
+  tableId String? // Link to RestaurantTable
+  table   RestaurantTable? @relation("TableOrders", fields: [tableId], references: [id])
+  
   @@unique([tenantId, orderNumber])
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
   @@index([status, createdAt])
+  @@index([invoiceId])
 }
 
 model RestaurantOrderItem {
@@ -2933,6 +2959,69 @@ model RestaurantMenuItem {
   @@index([tenantId])
   @@index([tenantId, category])
   @@index([tenantId, isAvailable])
+}
+
+model RestaurantTable {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  tableNumber Int // Table number (1, 2, 3, etc.)
+  name        String? // Optional name (e.g., "VIP Table 1")
+  capacity    Int // Number of seats
+  location    String? // "Indoor", "Outdoor", "VIP Section", etc.
+  
+  status String @default("AVAILABLE") // AVAILABLE, OCCUPIED, RESERVED, OUT_OF_SERVICE
+  
+  orders RestaurantOrder[] @relation("TableOrders")
+  
+  notes String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  reservations RestaurantReservation[]
+  
+  @@unique([tenantId, tableNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model RestaurantReservation {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  reservationNumber String // Unique reservation number
+  
+  tableId String?
+  table   RestaurantTable? @relation(fields: [tableId], references: [id])
+  
+  customerName  String
+  customerPhone String
+  customerEmail String?
+  
+  reservationDate DateTime // Date and time of reservation
+  partySize       Int // Number of guests
+  
+  status String @default("CONFIRMED") // CONFIRMED, SEATED, CANCELLED, NO_SHOW, COMPLETED
+  
+  specialRequests String? // Dietary restrictions, celebration, etc.
+  notes           String?
+  
+  confirmedAt DateTime?
+  seatedAt    DateTime?
+  cancelledAt DateTime?
+  cancelledReason String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([tenantId, reservationNumber])
+  @@index([tenantId])
+  @@index([tenantId, reservationDate])
+  @@index([tenantId, status])
+  @@index([tableId])
 }
 
 // ============================================
@@ -4128,4 +4217,495 @@ model Coupon {
   @@index([code])
   @@index([isActive])
   @@index([validFrom, validUntil])
+}
+
+// ============================================
+// PURCHASE ORDERS & VENDOR MANAGEMENT MODELS
+// ============================================
+
+model Vendor {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name        String
+  companyName String?
+  email       String?
+  phone       String?
+  
+  // Address
+  address    String?
+  city       String?
+  state       String?
+  postalCode String?
+  country    String @default("India")
+  
+  // Tax Information
+  gstin      String? // GST Identification Number
+  pan        String? // PAN Number
+  
+  // Payment Terms
+  paymentTerms String? // "Net 30", "Net 60", etc.
+  creditLimit  Decimal? @db.Decimal(10, 2)
+  
+  // Vendor Rating
+  rating      Decimal? @db.Decimal(3, 2) // 0.00 to 5.00
+  ratingCount Int      @default(0)
+  
+  // Status
+  status String @default("ACTIVE") // ACTIVE, INACTIVE, BLACKLISTED
+  
+  notes String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  purchaseOrders PurchaseOrder[]
+  ratings        VendorRating[]
+  
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, gstin])
+}
+
+model PurchaseOrder {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  poNumber String // Purchase Order Number
+  
+  vendorId String
+  vendor   Vendor @relation(fields: [vendorId], references: [id])
+  
+  status String @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, SENT, PARTIALLY_RECEIVED, RECEIVED, CANCELLED
+  
+  // Dates
+  orderDate DateTime @default(now())
+  expectedDeliveryDate DateTime?
+  actualDeliveryDate DateTime?
+  
+  // Items
+  items PurchaseOrderItem[]
+  
+  // Pricing
+  subtotal Decimal @db.Decimal(10, 2)
+  tax      Decimal @db.Decimal(10, 2)
+  discount Decimal @default(0) @db.Decimal(10, 2)
+  total    Decimal @db.Decimal(10, 2)
+  
+  // Approval
+  requestedById String?
+  requestedBy   User? @relation("PORequestedBy", fields: [requestedById], references: [id])
+  approvedById  String?
+  approvedBy    User? @relation("POApprovedBy", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  rejectionReason String?
+  
+  // Notes
+  notes String?
+  termsAndConditions String?
+  
+  // Relations
+  goodsReceipts GoodsReceipt[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([tenantId, poNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, vendorId])
+  @@index([tenantId, orderDate])
+}
+
+model PurchaseOrderItem {
+  id      String         @id @default(cuid())
+  poId    String
+  purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  
+  productId String? // Link to Product if exists
+  product   Product? @relation("PurchaseOrderItems", fields: [productId], references: [id])
+  
+  productName String // Product name (for manual entries)
+  description String?
+  
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(10, 2)
+  taxRate     Decimal @default(0) @db.Decimal(5, 2) // GST rate
+  taxAmount   Decimal @default(0) @db.Decimal(10, 2)
+  total       Decimal @db.Decimal(10, 2)
+  
+  // Received quantities
+  receivedQuantity Int @default(0)
+  
+  hsnCode String? // HSN code for GST
+  
+  notes String?
+  
+  createdAt DateTime @default(now())
+  
+  // Relations
+  goodsReceiptItems GoodsReceiptItem[]
+  
+  @@index([poId])
+  @@index([productId])
+}
+
+model GoodsReceipt {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  grnNumber String // Goods Receipt Note Number
+  
+  poId String
+  purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id])
+  
+  status String @default("PENDING") // PENDING, PARTIAL, COMPLETE, REJECTED
+  
+  receivedDate DateTime @default(now())
+  
+  // Items received
+  items GoodsReceiptItem[]
+  
+  // Quality Check
+  qualityStatus String? // PASSED, FAILED, PENDING
+  qualityNotes  String?
+  
+  // Received By
+  receivedById String?
+  receivedBy   User? @relation("GRReceivedBy", fields: [receivedById], references: [id])
+  
+  notes String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([tenantId, grnNumber])
+  @@index([tenantId])
+  @@index([tenantId, poId])
+  @@index([tenantId, receivedDate])
+}
+
+model GoodsReceiptItem {
+  id      String        @id @default(cuid())
+  grnId   String
+  goodsReceipt GoodsReceipt @relation(fields: [grnId], references: [id], onDelete: Cascade)
+  
+  poItemId String
+  poItem   PurchaseOrderItem @relation(fields: [poItemId], references: [id])
+  
+  receivedQuantity Int
+  acceptedQuantity Int // After quality check
+  rejectedQuantity  Int @default(0)
+  
+  condition String? // "GOOD", "DAMAGED", "DEFECTIVE"
+  notes     String?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([grnId])
+  @@index([poItemId])
+}
+
+model VendorRating {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  vendorId String
+  vendor   Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  
+  rating   Decimal @db.Decimal(3, 2) // 0.00 to 5.00
+  
+  // Rating Categories
+  qualityRating      Decimal? @db.Decimal(3, 2)
+  deliveryRating     Decimal? @db.Decimal(3, 2)
+  communicationRating Decimal? @db.Decimal(3, 2)
+  pricingRating      Decimal? @db.Decimal(3, 2)
+  
+  comment String?
+  
+  ratedById String?
+  ratedBy   User? @relation("VendorRatings", fields: [ratedById], references: [id])
+  
+  createdAt DateTime @default(now())
+  
+  @@index([tenantId])
+  @@index([tenantId, vendorId])
+}
+
+// ============================================
+// PROJECT MANAGEMENT MODELS
+// ============================================
+
+model Project {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  code        String? // Project code/identifier
+  
+  status String @default("PLANNING") // PLANNING, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED
+  
+  startDate DateTime?
+  endDate   DateTime?
+  actualStartDate DateTime?
+  actualEndDate   DateTime?
+  
+  budget      Decimal? @db.Decimal(10, 2)
+  actualCost  Decimal  @default(0) @db.Decimal(10, 2)
+  
+  progress Int @default(0) // 0-100 percentage
+  
+  priority String @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  
+  // Project Manager/Owner
+  ownerId String?
+  owner   User? @relation("ProjectOwner", fields: [ownerId], references: [id])
+  
+  // Client/Customer
+  clientId String?
+  client   Contact? @relation("ProjectClient", fields: [clientId], references: [id])
+  
+  tags String[]
+  
+  notes String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  tasks      ProjectTask[]
+  members    ProjectMember[]
+  timeEntries TimeEntry[]
+  budgets    ProjectBudget[]
+  
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, ownerId])
+  @@index([tenantId, clientId])
+  @@index([code])
+}
+
+model ProjectTask {
+  id        String @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?
+  
+  status String @default("TODO") // TODO, IN_PROGRESS, IN_REVIEW, DONE, BLOCKED
+  
+  priority String @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  
+  // Task assignment
+  assignedToId String?
+  assignedTo   User? @relation("AssignedProjectTasks", fields: [assignedToId], references: [id])
+  
+  // Dates
+  startDate DateTime?
+  dueDate   DateTime?
+  completedAt DateTime?
+  
+  // Task dependencies
+  dependsOnTaskId String?
+  dependsOnTask   ProjectTask? @relation("TaskDependencies", fields: [dependsOnTaskId], references: [id])
+  dependentTasks  ProjectTask[] @relation("TaskDependencies")
+  
+  // Effort estimation
+  estimatedHours Decimal? @db.Decimal(10, 2)
+  actualHours    Decimal  @default(0) @db.Decimal(10, 2)
+  
+  progress Int @default(0) // 0-100 percentage
+  
+  tags String[]
+  
+  notes String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  timeEntries TimeEntry[]
+  
+  @@index([projectId])
+  @@index([projectId, status])
+  @@index([assignedToId])
+  @@index([dependsOnTaskId])
+}
+
+model ProjectMember {
+  id        String @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  userId String
+  user   User @relation("ProjectMembers", fields: [userId], references: [id], onDelete: Cascade)
+  
+  role String @default("MEMBER") // OWNER, MANAGER, MEMBER, VIEWER
+  
+  // Allocation
+  allocationPercentage Int @default(100) // 0-100, how much time allocated to this project
+  
+  joinedAt DateTime @default(now())
+  
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+model TimeEntry {
+  id        String @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  taskId String?
+  task   ProjectTask? @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  userId String
+  user   User @relation("TimeEntries", fields: [userId], references: [id], onDelete: Cascade)
+  
+  date        DateTime
+  hours       Decimal @db.Decimal(10, 2)
+  description String?
+  
+  billable Boolean @default(false)
+  billingRate Decimal? @db.Decimal(10, 2) // Rate per hour for billing
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([projectId])
+  @@index([projectId, taskId])
+  @@index([userId])
+  @@index([date])
+}
+
+model ProjectBudget {
+  id        String @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  category String // "Labor", "Materials", "Equipment", "Travel", "Other"
+  budgetedAmount Decimal @db.Decimal(10, 2)
+  actualAmount   Decimal @default(0) @db.Decimal(10, 2)
+  
+  description String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([projectId])
+  @@index([projectId, category])
+}
+
+// ============================================
+// ADVANCED REPORTING MODELS
+// ============================================
+
+model Report {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  type        String // 'custom', 'template', 'scheduled'
+  
+  // Report Configuration (stored as JSON)
+  config Json // Contains: dataSource, fields, filters, grouping, sorting, etc.
+  
+  // Template reference (if based on template)
+  templateId String?
+  template   ReportTemplate? @relation(fields: [templateId], references: [id])
+  
+  // Schedule (if scheduled report)
+  scheduleConfig Json? // { frequency: 'daily'|'weekly'|'monthly', dayOfWeek, dayOfMonth, time, recipients }
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+  
+  // Access control
+  createdById String
+  createdBy   User @relation("ReportCreator", fields: [createdById], references: [id])
+  isPublic    Boolean @default(false) // If true, all users in tenant can view
+  
+  // Status
+  isActive Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  scheduledRuns ScheduledReportRun[]
+  
+  @@index([tenantId])
+  @@index([tenantId, type])
+  @@index([tenantId, createdById])
+  @@index([tenantId, isActive])
+}
+
+model ReportTemplate {
+  id       String @id @default(cuid())
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  category    String // 'sales', 'finance', 'hr', 'inventory', 'custom'
+  
+  // Template Configuration
+  config Json // Default report configuration
+  
+  // Preview
+  previewImage String? // URL to preview image
+  
+  // Access
+  isPublic Boolean @default(false) // If true, available to all tenants
+  isSystem Boolean @default(false) // System templates (built-in)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  reports Report[]
+  
+  @@index([tenantId])
+  @@index([category])
+  @@index([isPublic])
+}
+
+model ScheduledReportRun {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  reportId String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  status String @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  
+  // Execution details
+  startedAt   DateTime?
+  completedAt DateTime?
+  errorMessage String?
+  
+  // Output
+  outputFormat String @default("PDF") // PDF, Excel, CSV
+  fileUrl      String? // URL to generated report file
+  
+  // Recipients
+  recipients Json? // Array of email addresses
+  
+  createdAt DateTime @default(now())
+  
+  @@index([tenantId])
+  @@index([tenantId, reportId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
 }

@@ -307,21 +307,37 @@ export default function DashboardPage() {
                   {statsError.message || 'Failed to connect to database. Please check your DATABASE_URL configuration.'}
                 </p>
                 <p className="text-red-600 text-xs mb-2">
-                  Make sure:
+                  Troubleshooting steps:
                 </p>
-                <ul className="text-red-600 text-xs list-disc list-inside mb-3">
-                  <li>Your database server is running</li>
-                  <li>Database connection is properly configured</li>
-                  <li>Database migrations have been completed</li>
+                <ul className="text-red-600 text-xs list-disc list-inside mb-3 space-y-1">
+                  <li>Check if your database server is running</li>
+                  <li>Verify DATABASE_URL is configured correctly in environment variables</li>
+                  <li>If using Supabase, check if your project is paused (free tier auto-pauses after 7 days)</li>
+                  <li>Resume your Supabase project from the dashboard if paused</li>
+                  <li>Try using a direct connection URL instead of a pooler URL</li>
+                  <li>Verify database migrations have been completed</li>
+                  <li>Check firewall settings if using a remote database</li>
                 </ul>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-red-800 border-red-300 hover:bg-red-100"
-                  onClick={() => window.location.reload()}
-                >
-                  Refresh Page
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-red-800 border-red-300 hover:bg-red-100"
+                    onClick={() => window.location.reload()}
+                  >
+                    Refresh Page
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-red-800 border-red-300 hover:bg-red-100"
+                    onClick={() => {
+                      window.open('/api/health/db', '_blank')
+                    }}
+                  >
+                    Check Database Health
+                  </Button>
+                </div>
               </div>
             ) : (statsError as any)?.isAuthError ? (
               <div>

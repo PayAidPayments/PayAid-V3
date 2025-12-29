@@ -132,7 +132,7 @@ export default function GSTR3BPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ₹{((gstr3b?.summary.totalSales || 0) / 100000).toFixed(2)}L
+              ₹{((gstr3b?.summary.totalSales || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
@@ -142,7 +142,7 @@ export default function GSTR3BPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ₹{((gstr3b?.summary.totalPurchases || 0) / 100000).toFixed(2)}L
+              ₹{((gstr3b?.summary.totalPurchases || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
@@ -152,7 +152,7 @@ export default function GSTR3BPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              ₹{((gstr3b?.inputTaxCredit || 0) / 100000).toFixed(2)}L
+              ₹{((gstr3b?.inputTaxCredit || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
@@ -162,7 +162,7 @@ export default function GSTR3BPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              ₹{((gstr3b?.summary.gstPayable || 0) / 100000).toFixed(2)}L
+              ₹{((gstr3b?.summary.gstPayable || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
@@ -179,13 +179,13 @@ export default function GSTR3BPage() {
             <div>
               <div className="text-sm text-gray-600 mb-2">Taxable Value</div>
               <div className="text-2xl font-bold">
-                ₹{((gstr3b?.outwardSupplies.taxable || 0) / 100000).toFixed(2)}L
+                ₹{((gstr3b?.outwardSupplies.taxable || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
             <div>
               <div className="text-sm text-gray-600 mb-2">GST Collected</div>
               <div className="text-2xl font-bold">
-                ₹{((gstr3b?.outwardSupplies.gst || 0) / 100000).toFixed(2)}L
+                ₹{((gstr3b?.outwardSupplies.gst || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
           </div>
@@ -203,13 +203,13 @@ export default function GSTR3BPage() {
             <div>
               <div className="text-sm text-gray-600 mb-2">Taxable Value</div>
               <div className="text-2xl font-bold">
-                ₹{((gstr3b?.inwardSupplies.taxable || 0) / 100000).toFixed(2)}L
+                ₹{((gstr3b?.inwardSupplies.taxable || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
             <div>
               <div className="text-sm text-gray-600 mb-2">Input Tax Credit (ITC)</div>
               <div className="text-2xl font-bold text-green-600">
-                ₹{((gstr3b?.inwardSupplies.gst || 0) / 100000).toFixed(2)}L
+                ₹{((gstr3b?.inwardSupplies.gst || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
           </div>
@@ -229,19 +229,19 @@ export default function GSTR3BPage() {
             <div className="flex items-center justify-between">
               <div className="text-lg">GST Collected (Outward Supplies)</div>
               <div className="text-lg font-semibold">
-                ₹{((gstr3b?.outwardSupplies.gst || 0) / 100000).toFixed(2)}L
+                ₹{((gstr3b?.outwardSupplies.gst || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
             <div className="flex items-center justify-between">
               <div className="text-lg">Input Tax Credit (Inward Supplies)</div>
               <div className="text-lg font-semibold text-green-600">
-                - ₹{((gstr3b?.inwardSupplies.gst || 0) / 100000).toFixed(2)}L
+                - ₹{((gstr3b?.inwardSupplies.gst || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
             <div className="border-t pt-4 flex items-center justify-between">
               <div className="text-xl font-bold">Net GST Payable</div>
               <div className="text-2xl font-bold text-red-600">
-                ₹{((gstr3b?.netGSTPayable || 0) / 100000).toFixed(2)}L
+                ₹{((gstr3b?.netGSTPayable || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
           </div>

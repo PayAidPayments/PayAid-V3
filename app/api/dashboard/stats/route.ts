@@ -53,11 +53,33 @@ export async function GET(request: NextRequest) {
     try {
       await prisma.$queryRaw`SELECT 1`
     } catch (dbError: any) {
-      console.error('Database connection error:', dbError)
+      console.error('Database connection error:', {
+        code: dbError?.code,
+        message: dbError?.message,
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+        databaseUrlPreview: process.env.DATABASE_URL ? `${process.env.DATABASE_URL.substring(0, 30)}...` : 'NOT SET',
+      })
+      
+      // Provide more specific error messages based on error code
+      let errorMessage = 'Database connection failed'
+      if (dbError?.code === 'P1001') {
+        errorMessage = 'Database connection timeout. The database server may be down or unreachable.'
+      } else if (dbError?.code === 'P1000') {
+        errorMessage = 'Database authentication failed. Please check your DATABASE_URL credentials.'
+      } else if (dbError?.code === 'P1002') {
+        errorMessage = 'Database connection timeout. Try using a direct connection instead of a pooler.'
+      } else if (dbError?.message?.includes('ENOTFOUND')) {
+        errorMessage = 'Database hostname not found. The database server may be paused or the hostname is incorrect.'
+      } else if (dbError?.message?.includes('ECONNREFUSED')) {
+        errorMessage = 'Database connection refused. The database server may be down or not accepting connections.'
+      }
+      
       return NextResponse.json(
         { 
-          error: 'Database connection failed',
-          details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+          error: errorMessage,
+          code: dbError?.code,
+          details: process.env.NODE_ENV === 'development' ? dbError.message : undefined,
+          hasDatabaseUrl: !!process.env.DATABASE_URL,
         },
         { status: 503 }
       )
@@ -405,13 +427,41 @@ export async function GET(request: NextRequest) {
       return handleLicenseError(error)
     }
     
-    // Handle database errors
-    if (error?.code === 'P1001' || error?.message?.includes('connect')) {
-      console.error('Database connection error:', error)
+    // Handle database errors - catch all Prisma error codes
+    const prismaErrorCodes = ['P1000', 'P1001', 'P1002', 'P1003', 'P1008', 'P1009', 'P1010', 'P1011', 'P1012', 'P1013', 'P1014', 'P1015', 'P1016', 'P1017']
+    const isDatabaseError = prismaErrorCodes.includes(error?.code) || 
+                           error?.message?.toLowerCase().includes('connect') ||
+                           error?.message?.toLowerCase().includes('database') ||
+                           error?.message?.toLowerCase().includes('prisma') ||
+                           error?.message?.toLowerCase().includes('enotfound') ||
+                           error?.message?.toLowerCase().includes('econnrefused')
+    
+    if (isDatabaseError) {
+      console.error('Database connection error:', {
+        code: error?.code,
+        message: error?.message,
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+      })
+      
+      let errorMessage = 'Database connection failed. Please check your DATABASE_URL configuration.'
+      if (error?.code === 'P1001') {
+        errorMessage = 'Database connection timeout. The database server may be down, paused, or unreachable.'
+      } else if (error?.code === 'P1000') {
+        errorMessage = 'Database authentication failed. Please check your DATABASE_URL credentials.'
+      } else if (error?.code === 'P1002') {
+        errorMessage = 'Database connection timeout. Try using a direct connection instead of a pooler.'
+      } else if (error?.message?.includes('ENOTFOUND')) {
+        errorMessage = 'Database hostname not found. The database server may be paused (Supabase free tier) or the hostname is incorrect.'
+      } else if (error?.message?.includes('ECONNREFUSED')) {
+        errorMessage = 'Database connection refused. The database server may be down or not accepting connections.'
+      }
+      
       return NextResponse.json(
         { 
-          error: 'Database connection failed. Please check your DATABASE_URL configuration.',
-          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+          error: errorMessage,
+          code: error?.code,
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+          hasDatabaseUrl: !!process.env.DATABASE_URL,
         },
         { status: 503 }
       )
