@@ -173,7 +173,7 @@ User ID: ${userId}`
 
     // Save conversation to database
     let conversationId = validated.conversationId
-    const userMessage = {
+    const userMessageData = {
       role: 'user' as const,
       content: validated.message,
       timestamp: new Date().toISOString(),
@@ -201,7 +201,7 @@ User ID: ${userId}`
 
         if (existing) {
           const messages = (existing.messages as any[]) || []
-          const updatedMessages = [...messages, userMessage, assistantMessage]
+          const updatedMessages = [...messages, userMessageData, assistantMessage]
           
           await prisma.aICofounderConversation.update({
             where: { id: conversationId },
@@ -209,7 +209,7 @@ User ID: ${userId}`
               messages: updatedMessages,
               messageCount: updatedMessages.length,
               lastMessageAt: new Date(),
-              suggestedActions: topActions.length > 0 ? topActions : existing.suggestedActions,
+              suggestedActions: topActions.length > 0 ? (topActions as any) : existing.suggestedActions,
             },
           })
         } else {
@@ -226,10 +226,10 @@ User ID: ${userId}`
             userId,
             title,
             agentId: agent.id,
-            messages: [userMessage, assistantMessage],
+            messages: [userMessageData, assistantMessage],
             messageCount: 2,
             lastMessageAt: new Date(),
-            suggestedActions: topActions.length > 0 ? topActions : undefined,
+            suggestedActions: topActions.length > 0 ? (topActions as any) : undefined,
           },
         })
         conversationId = newConversation.id
