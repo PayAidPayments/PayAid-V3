@@ -353,11 +353,48 @@ export default function Home() {
             50% { transform: translateY(30px); }
         }
 
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+
         .hero-content {
             position: relative;
             z-index: 2;
-            max-width: 900px;
             animation: slideIn 0.8s ease-out;
+        }
+
+        .hero-image {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: slideIn 0.8s ease-out 0.2s both;
+        }
+
+        .hero-image img {
+            width: 100%;
+            height: auto;
+            max-width: 600px;
+            object-fit: contain;
+        }
+
+        @media (max-width: 968px) {
+            .hero-container {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+                text-align: center;
+            }
+            .hero-image {
+                order: -1;
+            }
         }
 
         @keyframes slideIn {
