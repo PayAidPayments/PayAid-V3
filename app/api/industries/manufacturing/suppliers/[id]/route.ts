@@ -43,7 +43,7 @@ export async function GET(
       )
     }
 
-    const supplier = await prisma.suppliers.findUnique({
+    const supplier = await prisma.supplier.findUnique({
       where: {
         id,
         tenantId,
@@ -114,7 +114,7 @@ export async function PUT(
     const body = await request.json()
     const validated = updateSupplierSchema.parse(body)
 
-    const supplier = await prisma.suppliers.update({
+    const supplier = await prisma.supplier.update({
       where: {
         id,
         tenantId,
@@ -164,7 +164,7 @@ export async function DELETE(
       )
     }
 
-    await prisma.suppliers.delete({
+    await prisma.supplier.delete({
       where: {
         id,
         tenantId,

@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     if (isSuppressed !== null) where.isSuppressed = isSuppressed === 'true'
     if (email) where.emailAddress = { contains: email, mode: 'insensitive' }
 
-    const bounces = await prisma.emailBounces.findMany({
+    const bounces = await prisma.emailBounce.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: 100,

@@ -25,7 +25,7 @@ export async function GET(
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const { id } = await params
 
-    const schedule = await prisma.productionSchedules.findUnique({
+    const schedule = await prisma.productionSchedule.findUnique({
       where: {
         id,
         tenantId,
@@ -88,7 +88,7 @@ export async function PUT(
     if (validated.priority) updateData.priority = validated.priority
     if (validated.notes !== undefined) updateData.notes = validated.notes
 
-    const schedule = await prisma.productionSchedules.update({
+    const schedule = await prisma.productionSchedule.update({
       where: {
         id,
         tenantId,
@@ -129,7 +129,7 @@ export async function DELETE(
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const { id } = await params
 
-    await prisma.productionSchedules.delete({
+    await prisma.productionSchedule.delete({
       where: {
         id,
         tenantId,

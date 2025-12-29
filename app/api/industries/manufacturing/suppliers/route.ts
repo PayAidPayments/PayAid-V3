@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       where.status = status
     }
 
-    const suppliers = await prisma.suppliers.findMany({
+    const suppliers = await prisma.supplier.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       include: {
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     // Check if code is unique (if provided)
     if (validated.code) {
-      const existing = await prisma.suppliers.findUnique({
+      const existing = await prisma.supplier.findUnique({
         where: {
           tenantId_code: {
             tenantId,
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const supplier = await prisma.suppliers.create({
+    const supplier = await prisma.supplier.create({
       data: {
         tenantId,
         name: validated.name,

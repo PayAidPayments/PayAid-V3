@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Create or update bounce record
-        const bounce = await prisma.emailBounces.upsert({
+        const bounce = await prisma.emailBounce.upsert({
           where: {
             tenantId_emailAddress: {
               tenantId,
