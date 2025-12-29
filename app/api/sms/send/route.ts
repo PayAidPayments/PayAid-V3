@@ -102,8 +102,8 @@ export async function POST(request: NextRequest) {
         providerStatus,
         providerError: error,
         sentAt: providerStatus === 'sent' || providerStatus === 'queued' ? new Date() : null,
-        campaignId: validated.campaignId || null,
-        contactId: validated.contactId || null,
+        campaignId: validated.campaignId || undefined,
+        contactId: validated.contactId || undefined,
       },
     })
 
