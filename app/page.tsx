@@ -1214,15 +1214,29 @@ export default function Home() {
 
       {/* HERO SECTION */}
       <section className="hero">
-        <div className="hero-content">
-          <h1>Your Complete Business OS, <span style={{display: 'block'}}>Powered by AI</span></h1>
-          <p>
-            AI-powered CRM, automation, and intelligence to streamline operations, reduce costs, and elevate customer experiences. 
-            Everything your business needs—from conversational AI to workflow automation—all in one platform. Built for India.
-          </p>
-          <div className="hero-buttons">
-            <Link href="/register" className="btn-primary">Start Free Trial</Link>
-            <a href="#ai-services" className="btn-secondary">Explore AI Features →</a>
+        <div className="hero-container">
+          <div className="hero-content">
+            <h1>Your Complete Business OS<span style={{display: 'block'}}>Powered by AI</span></h1>
+            <p>
+              AI-powered CRM, automation, and intelligence to streamline operations, reduce costs, and elevate customer experiences. 
+              Everything your business needs—from conversational AI to workflow automation—all in one platform. Built for India.
+            </p>
+            <div className="hero-buttons">
+              <Link href="/register" className="btn-primary">Start Free Trial</Link>
+              <a href="#ai-services" className="btn-secondary">Explore AI Features →</a>
+            </div>
+          </div>
+          <div className="hero-image">
+            <img 
+              src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/digital-heroes-payaid.png" 
+              alt="PayAid Digital Heroes - Transform Your Business" 
+              style={{
+                width: '100%',
+                height: 'auto',
+                maxWidth: '600px',
+                objectFit: 'contain'
+              }}
+            />
           </div>
         </div>
       </section>
