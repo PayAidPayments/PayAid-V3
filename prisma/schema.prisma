@@ -23,7 +23,7 @@ model Tenant {
   industry         String? // "restaurant", "retail", "manufacturing", "real_estate", "healthcare", etc.
   industrySubType  String? // "restaurant", "cafe", "cloud_kitchen" for F&B industry
   industrySettings Json? // Industry-specific settings (e.g., { cookingTime: 15, terminals: 3 })
-  
+
   // Invoice Settings
   invoiceSettings Json? // Invoice configuration: { template: "standard", defaultReverseCharge: false, etc. }
 
@@ -53,8 +53,8 @@ model Tenant {
   googleAiStudioApiKey String? // Tenant's own Google AI Studio API key
 
   // NEW: Module Licensing (Phase 1)
-  licensedModules       String[]  @default([])  // ['crm', 'invoicing', 'whatsapp', 'analytics', 'accounting', 'hr']
-  subscriptionTier      String    @default("free") // 'free', 'starter', 'professional', 'enterprise'
+  licensedModules  String[] @default([]) // ['crm', 'invoicing', 'whatsapp', 'analytics', 'accounting', 'hr']
+  subscriptionTier String   @default("free") // 'free', 'starter', 'professional', 'enterprise'
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -72,6 +72,8 @@ model Tenant {
   aiUsage                  AIUsage[]
   oauthIntegrations        OAuthIntegration[]
   expenses                 Expense[]
+  expenseApprovals         ExpenseApproval[]
+  budgetLines              BudgetLine[]
   campaigns                Campaign[]
   segments                 Segment[]
   salesReps                SalesRep[]
@@ -164,9 +166,9 @@ model Tenant {
   paymentSettings TenantPaymentSettings?
 
   // NEW: Module Licensing Relations (Phase 1)
-  subscription          Subscription?
-  crmConfig             CRMConfig?
-  invoicingConfig       InvoicingConfig?
+  subscription    Subscription?
+  crmConfig       CRMConfig?
+  invoicingConfig InvoicingConfig?
 
   @@index([subdomain])
   @@index([status])
@@ -176,21 +178,21 @@ model Tenant {
 
 // Tenant Payment Gateway Settings (per-tenant, encrypted)
 model TenantPaymentSettings {
-  id        String   @id @default(cuid())
-  tenantId String   @unique
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // PayAid Payments Configuration (encrypted in production)
-  payaidApiKey         String? // API Key (36-digit merchant key)
-  payaidSalt           String? // SALT for hash calculation (KEEP SECRET - encrypted)
-  payaidBaseUrl        String? // Payment gateway API URL
-  payaidEncryptionKey  String? // Encryption key (optional, encrypted)
-  payaidDecryptionKey  String? // Decryption key (optional, encrypted)
-  payaidWebhookSecret  String? // Webhook secret (optional, encrypted)
+  payaidApiKey        String? // API Key (36-digit merchant key)
+  payaidSalt          String? // SALT for hash calculation (KEEP SECRET - encrypted)
+  payaidBaseUrl       String? // Payment gateway API URL
+  payaidEncryptionKey String? // Encryption key (optional, encrypted)
+  payaidDecryptionKey String? // Decryption key (optional, encrypted)
+  payaidWebhookSecret String? // Webhook secret (optional, encrypted)
 
   // Payment Gateway Status
   isConfigured Boolean @default(false) // Whether payment gateway is configured
-  isActive      Boolean @default(false) // Whether payment gateway is active/enabled
+  isActive     Boolean @default(false) // Whether payment gateway is active/enabled
 
   // Test Mode
   testMode Boolean @default(false) // Use test mode for payments
@@ -203,16 +205,16 @@ model TenantPaymentSettings {
 
 // NEW: Subscription tracking (Phase 1)
 model Subscription {
-  id                String   @id @default(cuid())
-  tenantId          String   @unique
-  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   modules           String[] // ['crm', 'invoicing', 'accounting']
-  tier              String   // 'starter', 'professional', 'enterprise'
-  monthlyPrice      Decimal  @default(0)
+  tier              String // 'starter', 'professional', 'enterprise'
+  monthlyPrice      Decimal   @default(0)
   billingCycleStart DateTime
   billingCycleEnd   DateTime
-  status            String   @default("active") // 'active', 'cancelled', 'expired', 'trial'
+  status            String    @default("active") // 'active', 'cancelled', 'expired', 'trial'
   trialEndsAt       DateTime?
 
   createdAt DateTime @default(now())
@@ -224,19 +226,19 @@ model Subscription {
 
 // NEW: Module definitions (Phase 1)
 model ModuleDefinition {
-  id                String   @id @default(cuid())
-  moduleId          String   @unique // 'crm', 'invoicing', 'whatsapp', 'analytics', 'accounting', 'hr'
-  displayName       String
-  description       String
-  icon              String?
-  
+  id          String  @id @default(cuid())
+  moduleId    String  @unique // 'crm', 'invoicing', 'whatsapp', 'analytics', 'accounting', 'hr'
+  displayName String
+  description String
+  icon        String?
+
   starterPrice      Decimal
   professionalPrice Decimal
   enterprisePrice   Decimal?
-  
-  features          String[]
-  isActive          Boolean  @default(true)
-  
+
+  features String[]
+  isActive Boolean  @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -246,9 +248,9 @@ model ModuleDefinition {
 
 // NEW: CRM-specific config (Phase 1)
 model CRMConfig {
-  id                 String  @id @default(cuid())
-  tenantId           String  @unique
-  tenant             Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   leadScoringEnabled Boolean @default(true)
   automationsEnabled Boolean @default(true)
@@ -262,9 +264,9 @@ model CRMConfig {
 
 // NEW: Invoicing-specific config (Phase 1)
 model InvoicingConfig {
-  id                 String  @id @default(cuid())
-  tenantId           String  @unique
-  tenant             Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   maxInvoicesPerMonth Int     @default(200)
   recurringEnabled    Boolean @default(true)
@@ -329,12 +331,12 @@ model User {
   whatsappSessions         WhatsappSession[]
   createdWhatsappTemplates WhatsappTemplate[]
   whatsappMessages         WhatsappMessage[]
-  
+
   // AI Co-founder Conversations
   aiCofounderConversations AICofounderConversation[] @relation("AICofounderConversations")
 
   // Media Library
-  uploadedMedia            MediaLibrary[] @relation("MediaUploads")
+  uploadedMedia MediaLibrary[] @relation("MediaUploads")
 
   @@index([email])
   @@index([tenantId])
@@ -503,25 +505,25 @@ model AIUsage {
 
 // AI Co-founder Conversation Memory
 model AICofounderConversation {
-  id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation("AICofounderConversations", fields: [userId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation("AICofounderConversations", fields: [userId], references: [id], onDelete: Cascade)
 
-  title     String?  // Auto-generated from first message
-  agentId   String   // Which agent was used (cofounder, finance, etc.)
-  
+  title   String? // Auto-generated from first message
+  agentId String // Which agent was used (cofounder, finance, etc.)
+
   // Messages stored as JSON array
-  messages  Json     // Array of { role: 'user' | 'assistant', content: string, timestamp: string, agent?: { id, name } }
-  
+  messages Json // Array of { role: 'user' | 'assistant', content: string, timestamp: string, agent?: { id, name } }
+
   // Metadata
-  messageCount Int    @default(0)
+  messageCount  Int      @default(0)
   lastMessageAt DateTime @default(now())
-  
+
   // Actions extracted from conversation
   suggestedActions Json? // Array of actionable items extracted from AI responses
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -615,7 +617,7 @@ model Product {
   // GST/Tax Information
   hsnCode  String? // HSN code for goods
   sacCode  String? // SAC code for services
-  gstRate  Float?  // GST rate percentage (e.g., 5, 12, 18, 28)
+  gstRate  Float? // GST rate percentage (e.g., 5, 12, 18, 28)
   itemType String? // 'goods' or 'services'
 
   // Analytics
@@ -713,64 +715,64 @@ model Invoice {
   total    Float
 
   // GST
-  gstRate   Float?
-  gstAmount Float?
-  cgst      Float? // Central GST (for intra-state)
-  sgst      Float? // State GST (for intra-state)
-  igst      Float? // Integrated GST (for inter-state)
-  isInterState Boolean @default(false) // Whether transaction is inter-state
+  gstRate       Float?
+  gstAmount     Float?
+  cgst          Float? // Central GST (for intra-state)
+  sgst          Float? // State GST (for intra-state)
+  igst          Float? // Integrated GST (for inter-state)
+  isInterState  Boolean @default(false) // Whether transaction is inter-state
   placeOfSupply String? // Place of supply state code
-  hsnCode   String?
+  hsnCode       String?
   reverseCharge Boolean @default(false) // Reverse Charge Applicable
   supplierGSTIN String? // Business GSTIN
 
   // Invoice Details
-  orderNumber String? // Order Number
-  terms String? // Payment Terms
+  orderNumber        String? // Order Number
+  terms              String? // Payment Terms
   accountsReceivable String? // Accounts Receivable
-  salespersonId String? // Salesperson/Sales Rep
-  template String? // Invoice template
+  salespersonId      String? // Salesperson/Sales Rep
+  template           String? // Invoice template
 
   // Discount
-  discount Float @default(0) // Discount amount
+  discount     Float  @default(0) // Discount amount
   discountType String @default("amount") // 'amount' or 'percentage'
-  
+
   // TDS/TCS
-  tdsType String? // 'tds' or 'tcs'
-  tdsTax String? // Selected TDS/TCS tax (e.g., "tds-2", "tcs-1")
+  tdsType   String? // 'tds' or 'tcs'
+  tdsTax    String? // Selected TDS/TCS tax (e.g., "tds-2", "tcs-1")
   tdsAmount Float? // Calculated TDS/TCS amount
-  
+
   // Adjustment
   adjustment Float @default(0) // Adjustment amount
-  
+
   // Notes
-  notes String? // Customer Notes
+  notes              String? // Customer Notes
   termsAndConditions String? // Terms & Conditions (separate from payment terms)
 
   // Invoice Items (stored as JSON array)
   items Json? // Array of invoice items: [{description, quantity, rate, hsnCode, sacCode, gstRate, amount}]
 
   // Customer Details (stored directly on invoice for manual entries)
-  customerName String? // Customer name (from form)
-  customerEmail String? // Customer email (from form)
-  customerPhone String? // Customer phone (from form)
-  customerAddress String? // Customer address (from form)
-  customerCity String? // Customer city (from form)
-  customerState String? // Customer state (from form)
+  customerName       String? // Customer name (from form)
+  customerEmail      String? // Customer email (from form)
+  customerPhone      String? // Customer phone (from form)
+  customerAddress    String? // Customer address (from form)
+  customerCity       String? // Customer city (from form)
+  customerState      String? // Customer state (from form)
   customerPostalCode String? // Customer postal code (from form)
-  customerGSTIN String? // Customer GSTIN (from form)
+  customerGSTIN      String? // Customer GSTIN (from form)
 
   // Payment Gateway Integration (PayAid Payments)
-  paymentLinkUrl      String? // Payment link URL from PayAid Payments
-  paymentLinkUuid     String? // UUID from getpaymentrequesturl API
-  paymentLinkExpiry   DateTime? // When payment link expires
-  paymentTransactionId String? // Transaction ID from PayAid Payments
-  paymentStatus       String? // pending, paid, failed, cancelled
-  paymentMode         String? // credit_card, debit_card, netbanking, upi, etc.
-  paymentChannel      String? // Visa, HDFC Bank, etc.
-  paymentDatetime     DateTime? // When payment was made
-  paymentLinkOpenedAt DateTime? // When customer opened payment link
-  paymentLinkOpenedCount Int @default(0) // How many times link was opened
+  paymentLinkUrl         String? // Payment link URL from PayAid Payments
+  paymentLinkUuid        String? // UUID from getpaymentrequesturl API
+  paymentLinkExpiry      DateTime? // When payment link expires
+  paymentTransactionId   String? // Transaction ID from PayAid Payments
+  paymentStatus          String? // pending, paid, failed, cancelled
+  paymentMode            String? // credit_card, debit_card, netbanking, upi, etc.
+  paymentChannel         String? // Visa, HDFC Bank, etc.
+  paymentDatetime        DateTime? // When payment was made
+  paymentLinkOpenedAt    DateTime? // When customer opened payment link
+  paymentLinkOpenedCount Int       @default(0) // How many times link was opened
 
   // Dates
   invoiceDate DateTime  @default(now())
@@ -925,6 +927,7 @@ model Employee {
   exitInstances       ExitInstance[]
   employeeDocuments   EmployeeDocument[]
   offers              Offer[]
+  expenses            Expense[]                 @relation("EmployeeExpenses")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -968,7 +971,7 @@ model OAuthIntegration {
   @@index([provider])
 }
 
-// Expenses (for accounting module)
+// Expenses (for accounting module) - Enhanced with approval workflow
 model Expense {
   id          String   @id @default(cuid())
   tenantId    String
@@ -981,7 +984,27 @@ model Expense {
   gstAmount   Decimal? @db.Decimal(10, 2)
   hsnCode     String?
 
+  // Enhanced: Employee expense tracking
+  employeeId String? // For employee reimbursement expenses
+  employee   Employee? @relation("EmployeeExpenses", fields: [employeeId], references: [id])
+
+  // Enhanced: Approval workflow
+  status          String    @default("pending") // pending, approved, rejected, reimbursed
+  approverId      String? // User ID who approved/rejected
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  reimbursedAt    DateTime?
+
+  // Enhanced: Recurring expenses
+  isRecurring        Boolean   @default(false)
+  recurringFrequency String? // monthly, quarterly, yearly
+  nextRecurrenceDate DateTime?
+
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Relations
+  approvals ExpenseApproval[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -989,6 +1012,51 @@ model Expense {
   @@index([tenantId])
   @@index([tenantId, category])
   @@index([tenantId, date])
+  @@index([tenantId, status])
+  @@index([tenantId, employeeId])
+  @@index([employeeId])
+}
+
+// Expense Approval Workflow
+model ExpenseApproval {
+  id        String  @id @default(cuid())
+  expenseId String
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  approverId   String // User ID
+  approverName String? // Cached approver name
+  status       String // pending, approved, rejected
+  comments     String?
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([expenseId])
+  @@index([approverId])
+}
+
+// Budget Lines (for budget vs actual tracking)
+model BudgetLine {
+  id           String  @id @default(cuid())
+  tenantId     String
+  category     String // Expense category
+  period       String // "2025-01" for January 2025, "2025-Q1" for Q1, "2025" for yearly
+  periodType   String // monthly, quarterly, yearly
+  budgetAmount Decimal @db.Decimal(12, 2)
+  actualAmount Decimal @default(0) @db.Decimal(12, 2) // Calculated from expenses
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, category, period])
+  @@index([tenantId])
+  @@index([tenantId, period])
 }
 
 // Marketing Segments
@@ -3234,31 +3302,31 @@ model SocialPost {
 
 // Media Library - Store images and files for use in campaigns, posts, etc.
 model MediaLibrary {
-  id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // File information
-  fileName  String
-  fileUrl   String   // CDN URL or data URL
-  fileSize  Int      // Bytes
-  mimeType  String   // "image/png", "image/jpeg", etc.
-  width     Int?     // Image width in pixels
-  height    Int?     // Image height in pixels
+  fileName String
+  fileUrl  String // CDN URL or data URL
+  fileSize Int // Bytes
+  mimeType String // "image/png", "image/jpeg", etc.
+  width    Int? // Image width in pixels
+  height   Int? // Image height in pixels
 
   // Metadata
-  title       String?  // User-friendly title
-  description String?  // Optional description
+  title       String? // User-friendly title
+  description String? // Optional description
   tags        String[] // Tags for organization/search
-  category    String?  // "social-media", "campaign", "product", etc.
+  category    String? // "social-media", "campaign", "product", etc.
 
   // Source information
-  source      String?  // "ai-generated", "uploaded", "edited"
+  source         String? // "ai-generated", "uploaded", "edited"
   originalPrompt String? // If AI-generated, store the prompt
-  editHistory Json?    // Array of edit operations if edited
+  editHistory    Json? // Array of edit operations if edited
 
   // Usage tracking
-  usageCount  Int      @default(0) // How many times used in posts/campaigns
+  usageCount Int @default(0) // How many times used in posts/campaigns
 
   // Uploaded by
   uploadedById String?
@@ -4044,14 +4112,14 @@ model WhatsappAuditLog {
 model Coupon {
   id                String   @id @default(cuid())
   code              String   @unique
-  discountType      String   // 'percentage' or 'fixed'
+  discountType      String // 'percentage' or 'fixed'
   discountValue     Float
   validFrom         DateTime
   validUntil        DateTime
   maxUses           Int?
   currentUses       Int      @default(0)
   applicableModules String[] // Which modules this coupon applies to (empty = all)
-  minAmount         Float?   // Minimum order amount to use this coupon
+  minAmount         Float? // Minimum order amount to use this coupon
   isActive          Boolean  @default(true)
 
   createdAt DateTime @default(now())

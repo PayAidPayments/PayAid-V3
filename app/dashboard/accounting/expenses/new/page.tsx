@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,6 +29,9 @@ export default function NewExpensePage() {
     receiptUrl: '',
     gstAmount: '',
     hsnCode: '',
+    employeeId: '',
+    isRecurring: false,
+    recurringFrequency: 'monthly' as 'monthly' | 'quarterly' | 'yearly',
   })
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -41,6 +45,18 @@ export default function NewExpensePage() {
     'Salaries',
     'Other',
   ]
+
+  // Fetch employees for employee expense selection
+  const { data: employeesData } = useQuery({
+    queryKey: ['employees'],
+    queryFn: async () => {
+      const response = await fetch('/api/hr/employees?limit=1000', {
+        headers: getAuthHeaders(),
+      })
+      if (!response.ok) return { employees: [] }
+      return response.json()
+    },
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,6 +72,9 @@ export default function NewExpensePage() {
           amount: parseFloat(formData.amount),
           gstAmount: formData.gstAmount ? parseFloat(formData.gstAmount) : undefined,
           date: formData.date ? new Date(formData.date).toISOString() : undefined,
+          employeeId: formData.employeeId || undefined,
+          isRecurring: formData.isRecurring,
+          recurringFrequency: formData.isRecurring ? formData.recurringFrequency : undefined,
         }),
       })
 
@@ -225,6 +244,57 @@ export default function NewExpensePage() {
                   placeholder="https://example.com/receipt.jpg"
                   disabled={isSubmitting}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="employeeId" className="text-sm font-medium">
+                  Employee (for reimbursement)
+                </label>
+                <select
+                  id="employeeId"
+                  name="employeeId"
+                  value={formData.employeeId}
+                  onChange={handleChange}
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                  disabled={isSubmitting}
+                >
+                  <option value="">Not an employee expense</option>
+                  {employeesData?.employees?.map((emp: any) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.employeeCode} - {emp.firstName} {emp.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="isRecurring"
+                    name="isRecurring"
+                    checked={formData.isRecurring}
+                    onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                    disabled={isSubmitting}
+                    className="h-4 w-4"
+                  />
+                  <label htmlFor="isRecurring" className="text-sm font-medium">
+                    Recurring Expense
+                  </label>
+                </div>
+                {formData.isRecurring && (
+                  <select
+                    name="recurringFrequency"
+                    value={formData.recurringFrequency}
+                    onChange={handleChange}
+                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm mt-2"
+                    disabled={isSubmitting}
+                  >
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                )}
               </div>
             </div>
 
