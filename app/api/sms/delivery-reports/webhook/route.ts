@@ -30,6 +30,7 @@ async function handleTwilioWebhook(body: any, tenantId: string | null) {
   else if (MessageStatus === 'sent') status = 'SENT'
 
   // Find or create delivery report
+  // Note: If report doesn't exist, we'll need to create it with the messageId
   const report = await prisma.sMSDeliveryReport.upsert({
     where: {
       tenantId_messageId: {

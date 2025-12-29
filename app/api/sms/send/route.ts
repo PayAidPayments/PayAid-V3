@@ -90,13 +90,15 @@ export async function POST(request: NextRequest) {
       providerStatus = 'failed'
     }
 
-    // Create delivery report
+    // Create delivery report (use fallback messageId if provider didn't return one)
+    const reportMessageId = messageId || `temp-${Date.now()}-${Math.random().toString(36).substring(7)}`
+    
     const report = await prisma.sMSDeliveryReport.create({
       data: {
         tenantId,
         phoneNumber: normalizedPhone,
         message,
-        messageId,
+        messageId: reportMessageId,
         status: providerStatus === 'sent' || providerStatus === 'queued' ? 'SENT' : providerStatus === 'delivered' ? 'DELIVERED' : 'FAILED',
         provider: validated.provider,
         providerStatus,

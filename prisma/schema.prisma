@@ -164,21 +164,21 @@ model Tenant {
   realEstateAdvances     RealEstateAdvance[]
   healthcarePatients     HealthcarePatient[]
   healthcareAppointments HealthcareAppointment[]
-  
+
   // Retail Loyalty
-  loyaltyPrograms        LoyaltyProgram[]
-  loyaltyPoints          LoyaltyPoints[]
-  loyaltyTransactions    LoyaltyTransaction[]
-  
+  loyaltyPrograms     LoyaltyProgram[]
+  loyaltyPoints       LoyaltyPoints[]
+  loyaltyTransactions LoyaltyTransaction[]
+
   // Manufacturing Suppliers & Scheduling
-  suppliers              Supplier[]
-  productionSchedules    ProductionSchedule[]
-  
+  suppliers           Supplier[]
+  productionSchedules ProductionSchedule[]
+
   // Email & SMS Tracking
-  emailBounces           EmailBounce[]
-  smsTemplates           SMSTemplate[]
-  smsDeliveryReports     SMSDeliveryReport[]
-  smsOptOuts             SMSOptOut[]
+  emailBounces       EmailBounce[]
+  smsTemplates       SMSTemplate[]
+  smsDeliveryReports SMSDeliveryReport[]
+  smsOptOuts         SMSOptOut[]
 
   // Email & Chat Services
   emailAccounts       EmailAccount[]
@@ -1150,14 +1150,14 @@ model Campaign {
   recipientCount Int @default(0)
   sent           Int @default(0)
   delivered      Int @default(0)
-  
+
   // Relations
-  emailBounces      EmailBounce[]
+  emailBounces       EmailBounce[]
   smsDeliveryReports SMSDeliveryReport[]
-  opened         Int @default(0)
-  clicked        Int @default(0)
-  bounced        Int @default(0)
-  unsubscribed   Int @default(0)
+  opened             Int                 @default(0)
+  clicked            Int                 @default(0)
+  bounced            Int                 @default(0)
+  unsubscribed       Int                 @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2685,9 +2685,9 @@ model ChatbotConversation {
 
 // Knowledge & RAG AI - Document Management
 model KnowledgeDocument {
-  id        String   @id @default(cuid())
+  id       String @id @default(cuid())
   tenantId String
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Document Info
   title       String
@@ -2696,29 +2696,29 @@ model KnowledgeDocument {
   tags        String[]
 
   // File Storage
-  fileUrl     String // URL to document file (PDF, DOCX, TXT, etc.)
-  fileName    String
-  fileSize    Int // in bytes
-  fileType    String // "pdf", "docx", "txt", "md"
-  mimeType    String
+  fileUrl  String // URL to document file (PDF, DOCX, TXT, etc.)
+  fileName String
+  fileSize Int // in bytes
+  fileType String // "pdf", "docx", "txt", "md"
+  mimeType String
 
   // Content
   extractedText String? // Full text extracted from document
   summary       String? // AI-generated summary
 
   // Vector Embedding Status
-  isIndexed     Boolean @default(false)
-  indexedAt     DateTime?
+  isIndexed      Boolean   @default(false)
+  indexedAt      DateTime?
   embeddingModel String? // Which embedding model was used
 
   // Metadata
-  uploadedBy   String? // User ID
-  uploadedAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  uploadedBy String? // User ID
+  uploadedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
-  chunks       KnowledgeDocumentChunk[]
-  queries      KnowledgeQuery[]
+  chunks  KnowledgeDocumentChunk[]
+  queries KnowledgeQuery[]
 
   @@index([tenantId])
   @@index([tenantId, category])
@@ -2738,7 +2738,7 @@ model KnowledgeDocumentChunk {
   endChar    Int?
 
   // Embedding
-  embedding    Json? // Vector embedding (stored as JSON array)
+  embedding      Json? // Vector embedding (stored as JSON array)
   embeddingModel String? // Which model generated the embedding
 
   // Metadata
@@ -2752,7 +2752,7 @@ model KnowledgeDocumentChunk {
 
 // Knowledge Queries & Answers (Audit Trail)
 model KnowledgeQuery {
-  id         String            @id @default(cuid())
+  id         String             @id @default(cuid())
   documentId String?
   document   KnowledgeDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
 
@@ -2766,11 +2766,11 @@ model KnowledgeQuery {
   confidence Float? // Confidence score (0-1)
 
   // User Info
-  askedBy   String? // User ID
-  askedAt   DateTime @default(now())
+  askedBy String? // User ID
+  askedAt DateTime @default(now())
 
   // Metadata
-  modelUsed String? // Which AI model was used
+  modelUsed  String? // Which AI model was used
   tokensUsed Int? // Token count for the query
 
   @@index([tenantId])
@@ -3317,10 +3317,10 @@ model LoyaltyProgram {
   tiers       Json? // [{ name: "Silver", minPoints: 1000, discountPercent: 5 }, ...]
 
   // Settings
-  expiryDays Int? // Points expire after X days (null = no expiry)
-  minRedemptionPoints Int @default(100) // Minimum points required for redemption
+  expiryDays          Int? // Points expire after X days (null = no expiry)
+  minRedemptionPoints Int  @default(100) // Minimum points required for redemption
 
-  loyaltyPoints    LoyaltyPoints[]
+  loyaltyPoints       LoyaltyPoints[]
   loyaltyTransactions LoyaltyTransaction[]
 
   createdAt DateTime @default(now())
@@ -3366,8 +3366,8 @@ model LoyaltyTransaction {
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  pointsId String
-  loyaltyPoints   LoyaltyPoints @relation(fields: [pointsId], references: [id], onDelete: Cascade)
+  pointsId      String
+  loyaltyPoints LoyaltyPoints @relation(fields: [pointsId], references: [id], onDelete: Cascade)
 
   programId String
   program   LoyaltyProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
@@ -3375,8 +3375,8 @@ model LoyaltyTransaction {
   transactionId String? // Link to RetailTransaction if earned from purchase
   transaction   RetailTransaction? @relation("RetailTransactionLoyalty", fields: [transactionId], references: [id])
 
-  type String // "EARNED", "REDEEMED", "EXPIRED", "ADJUSTED"
-  points Decimal @db.Decimal(10, 2) // Positive for earned, negative for redeemed
+  type         String // "EARNED", "REDEEMED", "EXPIRED", "ADJUSTED"
+  points       Decimal @db.Decimal(10, 2) // Positive for earned, negative for redeemed
   balanceAfter Decimal @db.Decimal(10, 2) // Points balance after this transaction
 
   description String? // "Purchase #TXN-123", "Redeemed for discount", etc.
@@ -3415,10 +3415,10 @@ model Supplier {
   pan   String?
 
   // Performance tracking
-  rating        Decimal? @db.Decimal(3, 2) // 0.00 to 5.00
-  totalOrders   Int      @default(0)
+  rating         Decimal? @db.Decimal(3, 2) // 0.00 to 5.00
+  totalOrders    Int      @default(0)
   onTimeDelivery Decimal? @db.Decimal(5, 2) // Percentage
-  qualityScore  Decimal? @db.Decimal(5, 2) // Percentage
+  qualityScore   Decimal? @db.Decimal(5, 2) // Percentage
 
   // Payment terms
   paymentTerms String? // "Net 30", "COD", etc.
@@ -3428,8 +3428,8 @@ model Supplier {
   status String @default("ACTIVE") // ACTIVE, INACTIVE, BLACKLISTED
 
   // Relations
-  materials ManufacturingMaterial[]
-  purchaseOrders PurchaseOrder[] @relation("SupplierPurchaseOrders")
+  materials      ManufacturingMaterial[]
+  purchaseOrders PurchaseOrder[]         @relation("SupplierPurchaseOrders")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3453,8 +3453,8 @@ model ProductionSchedule {
   actualEndDate      DateTime?
 
   // Resource allocation
-  machineId String? // Link to machine/resource
-  machineName String?
+  machineId       String? // Link to machine/resource
+  machineName     String?
   assignedWorkers Json? // Array of employee IDs
 
   // Status
@@ -3486,17 +3486,17 @@ model EmailBounce {
   campaignId String? // Link to Campaign if from campaign
   campaign   Campaign? @relation(fields: [campaignId], references: [id])
 
-  emailAddress String
-  bounceType   String // "hard", "soft", "blocked"
-  bounceReason String? // Reason for bounce
+  emailAddress   String
+  bounceType     String // "hard", "soft", "blocked"
+  bounceReason   String? // Reason for bounce
   bounceCategory String? // "invalid", "spam", "unsubscribed", etc.
 
   // Source tracking
-  messageId  String? // Email message ID
+  messageId String? // Email message ID
 
   // Suppression
-  isSuppressed Boolean @default(true) // Don't send emails to this address
-  suppressedAt DateTime @default(now())
+  isSuppressed    Boolean   @default(true) // Don't send emails to this address
+  suppressedAt    DateTime  @default(now())
   suppressedUntil DateTime? // Auto-remove from suppression after this date
 
   createdAt DateTime @default(now())
@@ -3550,15 +3550,15 @@ model SMSDeliveryReport {
 
   phoneNumber String
   message     String
-  messageId   String? // Provider message ID (Twilio/Exotel)
+  messageId   String // Provider message ID (Twilio/Exotel) - required for tracking
 
   // Status
   status String @default("PENDING") // PENDING, SENT, DELIVERED, FAILED, UNDELIVERED
 
   // Provider details
-  provider String? // "twilio", "exotel", "wati"
+  provider       String? // "twilio", "exotel", "wati"
   providerStatus String? // Provider-specific status code
-  providerError   String? // Error message from provider
+  providerError  String? // Error message from provider
 
   // Delivery tracking
   sentAt      DateTime?
@@ -3571,6 +3571,8 @@ model SMSDeliveryReport {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([tenantId, messageId])
+  @@index([tenantId, messageId])
   @@index([tenantId])
   @@index([tenantId, phoneNumber])
   @@index([tenantId, status])
@@ -3589,7 +3591,7 @@ model SMSOptOut {
   source      String? // "webhook", "manual", "api"
 
   // Suppression
-  isSuppressed Boolean @default(true)
+  isSuppressed Boolean  @default(true)
   suppressedAt DateTime @default(now())
 
   createdAt DateTime @default(now())

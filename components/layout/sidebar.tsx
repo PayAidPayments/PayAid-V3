@@ -74,6 +74,7 @@ const navigationSections = [
       { name: 'Websites', href: '/dashboard/websites', icon: '🌐', module: 'ai-studio' }, // Updated: crm → ai-studio
       { name: 'Logo Generator', href: '/dashboard/logos', icon: '🎨', module: 'ai-studio' }, // Updated: crm → ai-studio
       { name: 'AI Chat', href: '/dashboard/ai/chat', icon: '💬', module: 'ai-studio' }, // Updated: analytics → ai-studio
+      { name: 'Knowledge & RAG AI', href: '/dashboard/knowledge', icon: '📚', module: 'ai-studio' }, // NEW: Knowledge & RAG AI
       { name: 'AI Calling Bot', href: '/dashboard/calls', icon: '📞', module: 'ai-studio' }, // Updated: analytics → ai-studio
     ],
   },
