@@ -4,6 +4,7 @@ import { hashPassword } from '@/lib/auth/password'
 import { signToken } from '@/lib/auth/jwt'
 import { z } from 'zod'
 import { checkTenantLimits } from '@/lib/middleware/tenant'
+import { generateTenantId } from '@/lib/utils/tenant-id'
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -45,11 +46,27 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hashPassword(validated.password)
 
+    // Generate personalized tenant ID from business name
+    // Get existing tenant IDs to ensure uniqueness
+    const existingTenants = await prisma.tenant.findMany({
+      select: { id: true },
+    })
+    const existingIds = existingTenants.map(t => t.id)
+    
+    // Generate tenant ID with retry logic in case of conflicts
+    let personalizedTenantId = generateTenantId(validated.tenantName, existingIds)
+    let attempts = 0
+    while (existingIds.includes(personalizedTenantId) && attempts < 5) {
+      personalizedTenantId = generateTenantId(validated.tenantName, existingIds)
+      attempts++
+    }
+
     // Create tenant and user in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Create tenant
+      // Create tenant with personalized ID
       const tenant = await tx.tenant.create({
         data: {
+          id: personalizedTenantId, // Use personalized ID instead of default CUID
           name: validated.tenantName,
           subdomain: validated.subdomain,
           plan: 'free',
