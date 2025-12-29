@@ -16,7 +16,7 @@ const PAYAID_GOLD = '#F5C700'
 const PAYAID_DARK_PURPLE = '#2D1B47'
 const PAYAID_LIGHT_PURPLE = '#6B4BA1'
 
-function HealthScoreWidget() {
+function HealthScoreWidget({ getDashboardLink }: { getDashboardLink: (path: string) => string }) {
   const { token } = useAuthStore()
   const { data: healthScore } = useQuery({
     queryKey: ['health-score'],
@@ -46,25 +46,27 @@ function HealthScoreWidget() {
   }
 
   return (
-    <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Business Health</CardTitle>
-        <span className="text-2xl">💚</span>
-      </CardHeader>
-      <CardContent>
-        <div className={`text-3xl font-bold ${getScoreColor(score)}`}>{score}/100</div>
-        <CardDescription>{getScoreLabel(score)}</CardDescription>
-        {healthScore?.factors && (
-          <div className="mt-3 space-y-1">
-            {healthScore.factors.slice(0, 3).map((factor: any, idx: number) => (
-              <div key={idx} className="text-xs text-gray-600">
-                • {factor.name}: {factor.score}/100
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <Link href={getDashboardLink('/analytics')} className="block">
+      <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Business Health</CardTitle>
+          <span className="text-2xl">💚</span>
+        </CardHeader>
+        <CardContent>
+          <div className={`text-3xl font-bold ${getScoreColor(score)}`}>{score}/100</div>
+          <CardDescription>{getScoreLabel(score)} - Click to see details</CardDescription>
+          {healthScore?.factors && (
+            <div className="mt-3 space-y-1">
+              {healthScore.factors.slice(0, 3).map((factor: any, idx: number) => (
+                <div key={idx} className="text-xs text-gray-600">
+                  • {factor.name}: {factor.score}/100
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </Link>
   )
 }
 
@@ -272,9 +274,7 @@ export default function DashboardPage() {
             </Card>
           </Link>
 
-          <Link href={getDashboardLink('/analytics')} className="block">
-            <HealthScoreWidget />
-          </Link>
+          <HealthScoreWidget getDashboardLink={getDashboardLink} />
         </div>
 
         {/* Error Message */}
@@ -365,266 +365,297 @@ export default function DashboardPage() {
         {/* Charts Row 1 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Sales Performance Line Chart */}
-          <Card className="border-2 hover:shadow-xl transition-shadow" style={{ borderColor: PAYAID_PURPLE }}>
-            <CardHeader>
-              <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Sales Performance</CardTitle>
-              <CardDescription>Revenue trends over time</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={salesTrendData}>
-                  <defs>
-                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={PAYAID_PURPLE} stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor={PAYAID_PURPLE} stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E8E7E3" />
-                  <XAxis dataKey="name" stroke={PAYAID_PURPLE} />
-                  <YAxis stroke={PAYAID_PURPLE} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#fff', 
-                      border: `1px solid ${PAYAID_PURPLE}`,
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke={PAYAID_PURPLE} 
-                    fillOpacity={1} 
-                    fill="url(#colorValue)" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <Link href={getDashboardLink('/stats/revenue')} className="block">
+            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02]" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader>
+                <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Sales Performance</CardTitle>
+                <CardDescription>Revenue trends over time - Click to see details</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <AreaChart data={salesTrendData}>
+                    <defs>
+                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={PAYAID_PURPLE} stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor={PAYAID_PURPLE} stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E8E7E3" />
+                    <XAxis dataKey="name" stroke={PAYAID_PURPLE} />
+                    <YAxis stroke={PAYAID_PURPLE} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#fff', 
+                        border: `1px solid ${PAYAID_PURPLE}`,
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke={PAYAID_PURPLE} 
+                      fillOpacity={1} 
+                      fill="url(#colorValue)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </Link>
 
           {/* Market Share Donut Chart */}
-          <Card className="border-2 hover:shadow-xl transition-shadow" style={{ borderColor: PAYAID_GOLD }}>
-            <CardHeader>
-              <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Market Share Distribution</CardTitle>
-              <CardDescription>Product market share</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={marketShareData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {marketShareData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#fff', 
-                      border: `1px solid ${PAYAID_PURPLE}`,
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <Link href={getDashboardLink('/analytics')} className="block">
+            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02]" style={{ borderColor: PAYAID_GOLD }}>
+              <CardHeader>
+                <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Market Share Distribution</CardTitle>
+                <CardDescription>Product market share - Click to see details</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={marketShareData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {marketShareData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#fff', 
+                        border: `1px solid ${PAYAID_PURPLE}`,
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </Link>
 
           {/* Revenue Trend Bar Chart */}
-          <Card className="border-2 hover:shadow-xl transition-shadow" style={{ borderColor: PAYAID_PURPLE }}>
-            <CardHeader>
-              <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Revenue Trend</CardTitle>
-              <CardDescription>Monthly revenue comparison</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E8E7E3" />
-                  <XAxis dataKey="month" stroke={PAYAID_PURPLE} />
-                  <YAxis stroke={PAYAID_PURPLE} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#fff', 
-                      border: `1px solid ${PAYAID_PURPLE}`,
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Legend />
-                  <Bar dataKey="revenue" fill={PAYAID_PURPLE} radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="expenses" fill={PAYAID_GOLD} radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <Link href={getDashboardLink('/stats/revenue')} className="block">
+            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02]" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader>
+                <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Revenue Trend</CardTitle>
+                <CardDescription>Monthly revenue comparison - Click to see details</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={revenueData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E8E7E3" />
+                    <XAxis dataKey="month" stroke={PAYAID_PURPLE} />
+                    <YAxis stroke={PAYAID_PURPLE} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#fff', 
+                        border: `1px solid ${PAYAID_PURPLE}`,
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="revenue" fill={PAYAID_PURPLE} radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="expenses" fill={PAYAID_GOLD} radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         {/* Revenue & Pipeline Row */}
         {dashboardStats && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="border-2 hover:shadow-lg transition-shadow" style={{ borderColor: PAYAID_PURPLE }}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Revenue (30 Days)</CardTitle>
-                <span className="text-2xl">💰</span>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" style={{ color: PAYAID_PURPLE }}>
-                  ₹{dashboardStats.revenue?.last30Days?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
-                </div>
-                <CardDescription>Last 30 days revenue</CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 hover:shadow-lg transition-shadow" style={{ borderColor: PAYAID_GOLD }}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Pipeline Value</CardTitle>
-                <span className="text-2xl">📈</span>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" style={{ color: PAYAID_GOLD }}>
-                  ₹{dashboardStats.pipeline?.value?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
-                </div>
-                <CardDescription>{dashboardStats.pipeline?.activeDeals || 0} active deals</CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 hover:shadow-lg transition-shadow" style={{ borderColor: PAYAID_PURPLE }}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Alerts</CardTitle>
-                <span className="text-2xl">⚠️</span>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Overdue Invoices</span>
-                    <span className="text-lg font-bold text-red-600">{dashboardStats.alerts?.overdueInvoices || 0}</span>
+            <Link href={getDashboardLink('/stats/revenue')} className="block">
+              <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Revenue (30 Days)</CardTitle>
+                  <span className="text-2xl">💰</span>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: PAYAID_PURPLE }}>
+                    ₹{dashboardStats.revenue?.last30Days?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Pending Tasks</span>
-                    <span className="text-lg font-bold text-yellow-600">{dashboardStats.alerts?.pendingTasks || 0}</span>
+                  <CardDescription>Last 30 days revenue - Click to see breakdown</CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link href={getDashboardLink('/stats/pipeline')} className="block">
+              <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_GOLD }}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Pipeline Value</CardTitle>
+                  <span className="text-2xl">📈</span>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: PAYAID_GOLD }}>
+                    ₹{dashboardStats.pipeline?.value?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <CardDescription>{dashboardStats.pipeline?.activeDeals || 0} active deals - Click to see details</CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link href={getDashboardLink('/stats/alerts')} className="block">
+              <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Alerts</CardTitle>
+                  <span className="text-2xl">⚠️</span>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Overdue Invoices</span>
+                      <span className="text-lg font-bold text-red-600">{dashboardStats.alerts?.overdueInvoices || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Pending Tasks</span>
+                      <span className="text-lg font-bold text-yellow-600">{dashboardStats.alerts?.pendingTasks || 0}</span>
+                    </div>
+                  </div>
+                  <CardDescription className="mt-2">Click to see all alerts</CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
         )}
 
         {/* KPI Metrics Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="border-2" style={{ borderColor: PAYAID_PURPLE }}>
-            <CardHeader>
-              <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Monthly KPI Metrics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {kpiData.map((kpi, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: '#F8F7F3' }}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">✓</span>
-                      <span className="font-medium">{kpi.name}</span>
+          <Link href={getDashboardLink('/analytics')} className="block">
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader>
+                <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Monthly KPI Metrics</CardTitle>
+                <CardDescription>Click to see detailed analytics</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {kpiData.map((kpi, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: '#F8F7F3' }}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">✓</span>
+                        <span className="font-medium">{kpi.name}</span>
+                      </div>
+                      <span className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>
+                        {kpi.value}{kpi.unit}
+                      </span>
                     </div>
-                    <span className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>
-                      {kpi.value}{kpi.unit}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
 
           {/* Customer Engagement */}
-          <Card className="border-2" style={{ borderColor: PAYAID_GOLD }}>
-            <CardHeader>
-              <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Customer Engagement</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <div className="text-3xl font-bold mb-2" style={{ color: PAYAID_GOLD }}>+15%</div>
-                <CardDescription className="text-base">Customer Growth QoQ</CardDescription>
-              </div>
-            </CardContent>
-          </Card>
+          <Link href={getDashboardLink('/contacts')} className="block">
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_GOLD }}>
+              <CardHeader>
+                <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Customer Engagement</CardTitle>
+                <CardDescription>Click to see all contacts</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <div className="text-3xl font-bold mb-2" style={{ color: PAYAID_GOLD }}>+15%</div>
+                  <CardDescription className="text-base">Customer Growth QoQ</CardDescription>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
 
           {/* Active Users */}
-          <Card className="border-2" style={{ borderColor: PAYAID_PURPLE }}>
-            <CardHeader>
-              <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Active Users</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <div className="text-3xl font-bold mb-2" style={{ color: PAYAID_PURPLE }}>45,000</div>
-                <CardDescription className="text-base">Active Users</CardDescription>
-              </div>
-            </CardContent>
-          </Card>
+          <Link href={getDashboardLink('/analytics')} className="block">
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader>
+                <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Active Users</CardTitle>
+                <CardDescription>Click to see user analytics</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <div className="text-3xl font-bold mb-2" style={{ color: PAYAID_PURPLE }}>45,000</div>
+                  <CardDescription className="text-base">Active Users</CardDescription>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         {/* Recent Activity */}
         {dashboardStats?.recentActivity && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {dashboardStats.recentActivity.contacts && dashboardStats.recentActivity.contacts.length > 0 && (
-              <Card className="border-2" style={{ borderColor: PAYAID_PURPLE }}>
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Recent Contacts</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {dashboardStats.recentActivity.contacts.slice(0, 5).map((contact: any, idx: number) => (
-                      <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50">
-                        <span className="text-sm">{contact.name || contact.email}</span>
-                        <span className="text-xs text-gray-500">
-                          {format(new Date(contact.createdAt), 'MMM dd')}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <Link href={getDashboardLink('/contacts')} className="block">
+                <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Recent Contacts</CardTitle>
+                    <CardDescription>Click to see all contacts</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {dashboardStats.recentActivity.contacts.slice(0, 5).map((contact: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50">
+                          <span className="text-sm">{contact.name || contact.email}</span>
+                          <span className="text-xs text-gray-500">
+                            {format(new Date(contact.createdAt), 'MMM dd')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             )}
 
             {dashboardStats.recentActivity.deals && dashboardStats.recentActivity.deals.length > 0 && (
-              <Card className="border-2" style={{ borderColor: PAYAID_GOLD }}>
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Recent Deals</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {dashboardStats.recentActivity.deals.slice(0, 5).map((deal: any, idx: number) => (
-                      <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50">
-                        <span className="text-sm">{deal.name}</span>
-                        <span className="text-sm font-bold" style={{ color: PAYAID_GOLD }}>
-                          ₹{deal.value?.toLocaleString('en-IN') || '0'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <Link href={getDashboardLink('/deals')} className="block">
+                <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_GOLD }}>
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Recent Deals</CardTitle>
+                    <CardDescription>Click to see all deals</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {dashboardStats.recentActivity.deals.slice(0, 5).map((deal: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50">
+                          <span className="text-sm">{deal.name}</span>
+                          <span className="text-sm font-bold" style={{ color: PAYAID_GOLD }}>
+                            ₹{deal.value?.toLocaleString('en-IN') || '0'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             )}
 
             {dashboardStats.recentActivity.orders && dashboardStats.recentActivity.orders.length > 0 && (
-              <Card className="border-2" style={{ borderColor: PAYAID_PURPLE }}>
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Recent Orders</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {dashboardStats.recentActivity.orders.slice(0, 5).map((order: any, idx: number) => (
-                      <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50">
-                        <span className="text-sm">{order.orderNumber || `Order #${order.id}`}</span>
-                        <span className="text-sm font-bold" style={{ color: PAYAID_PURPLE }}>
-                          ₹{order.total?.toLocaleString('en-IN') || '0'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <Link href={getDashboardLink('/orders')} className="block">
+                <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Recent Orders</CardTitle>
+                    <CardDescription>Click to see all orders</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {dashboardStats.recentActivity.orders.slice(0, 5).map((order: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50">
+                          <span className="text-sm">{order.orderNumber || `Order #${order.id}`}</span>
+                          <span className="text-sm font-bold" style={{ color: PAYAID_PURPLE }}>
+                            ₹{order.total?.toLocaleString('en-IN') || '0'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             )}
           </div>
         )}
