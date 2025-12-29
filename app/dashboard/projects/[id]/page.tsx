@@ -54,6 +54,7 @@ interface Project {
   members: Array<{
     id: string
     role: string
+    allocationPercentage: number
     user: {
       id: string
       name: string
