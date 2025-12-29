@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
         type: validated.type,
         config: validated.config,
         templateId: validated.templateId,
-        scheduleConfig: validated.scheduleConfig || null,
+        scheduleConfig: validated.scheduleConfig || undefined,
         nextRunAt,
         createdById: userId,
         isPublic: validated.isPublic || false,
