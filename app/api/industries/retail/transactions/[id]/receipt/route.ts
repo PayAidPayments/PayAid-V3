@@ -37,7 +37,6 @@ export async function GET(
             product: true,
           },
         },
-        customer: true,
       },
     })
 
