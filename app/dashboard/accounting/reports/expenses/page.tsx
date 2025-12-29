@@ -178,7 +178,7 @@ export default function ExpenseDashboardPage() {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => `₹${(value / 1000).toFixed(1)}K`} />
+                  <Tooltip formatter={(value: number | undefined) => value ? `₹${(value / 1000).toFixed(1)}K` : ''} />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
@@ -198,7 +198,7 @@ export default function ExpenseDashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
-                  <Tooltip formatter={(value: number) => `₹${(value / 1000).toFixed(1)}K`} />
+                  <Tooltip formatter={(value: number | undefined) => value ? `₹${(value / 1000).toFixed(1)}K` : ''} />
                   <Bar dataKey="value" fill={PAYAID_PURPLE} />
                 </BarChart>
               </ResponsiveContainer>

@@ -163,7 +163,7 @@ export default function RevenueDashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip formatter={(value: number) => `₹${(value / 1000).toFixed(1)}K`} />
+                <Tooltip formatter={(value: number | undefined) => value ? `₹${(value / 1000).toFixed(1)}K` : ''} />
                 <Legend />
                 <Area
                   type="monotone"
@@ -200,7 +200,7 @@ export default function RevenueDashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip formatter={(value: number) => `₹${(value / 1000).toFixed(1)}K`} />
+                <Tooltip formatter={(value: number | undefined) => value ? `₹${(value / 1000).toFixed(1)}K` : ''} />
                 <Legend />
                 <Bar dataKey="value" fill={PAYAID_PURPLE} name="Actual" />
                 <Bar dataKey="target" fill={PAYAID_GOLD} name="Target" />
