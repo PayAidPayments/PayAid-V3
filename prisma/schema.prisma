@@ -338,6 +338,15 @@ model User {
   projectMemberships ProjectMember[] @relation("ProjectMembers")
   timeEntries       TimeEntry[]    @relation("TimeEntries")
 
+  // Purchase Orders Relations
+  requestedPOs      PurchaseOrder[] @relation("PORequestedBy")
+  approvedPOs       PurchaseOrder[] @relation("POApprovedBy")
+  receivedGRs       GoodsReceipt[]  @relation("GRReceivedBy")
+  vendorRatings     VendorRating[]  @relation("VendorRatings")
+
+  // Advanced Reporting Relations
+  createdReports    Report[] @relation("ReportCreator")
+
   // Email & Chat Services
   emailAccounts EmailAccount[] @relation("EmailAccounts")
   chatMembers   ChatMember[]   @relation("ChatMembers")
