@@ -1215,10 +1215,10 @@ export default function Home() {
       {/* HERO SECTION */}
       <section className="hero">
         <div className="hero-content">
-          <h1>One App For Your Business</h1>
+          <h1>Run Your Business 10× Faster</h1>
           <p>
-            Everything your business needs in one powerful platform. Manage CRM, Invoicing, Inventory, HR, Payments, Accounting, and more. 
-            Built specifically for Indian SMBs.
+            While AI turns every decision into execution. One powerful platform that unifies CRM, Invoicing, Inventory, HR, Payments, and Accounting. 
+            Built for Indian businesses that refuse to slow down.
           </p>
           <div className="hero-buttons">
             <Link href="/register" className="btn-primary">Start Free Trial</Link>
@@ -1231,9 +1231,9 @@ export default function Home() {
       <section className="dashboard-showcase" id="dashboard-showcase">
         <div className="showcase-container">
           <div className="showcase-left">
-            <h2>All Your Business, One Dashboard</h2>
+            <h2>Your Whole Business in One Shared Space</h2>
             <p>
-              Manage your entire business from a single, intuitive dashboard. Access customer management, invoicing, inventory, payments, HR, accounting, analytics, and AI-powered insights all in one place. No switching between tools. No learning curves.
+              See everything, act instantly. Your customers, invoices, inventory, team, and finances—all visible in real-time. No more juggling tools. No more lost context. Just one dashboard that turns decisions into action.
             </p>
             <div className="showcase-tabs">
               <button className="tab-btn active" data-tab="crm">CRM</button>
@@ -1276,39 +1276,39 @@ export default function Home() {
       {/* FEATURES SECTION */}
       <section className="features" id="features">
         <div className="section-title">
-          <h2>Why Choose PayAid?</h2>
-          <p>Enterprise-grade features built for Indian business growth</p>
+          <h2>Four Ways We Revolutionize Business Operations</h2>
+          <p>Stop losing time. Start gaining momentum.</p>
         </div>
         <div className="features-grid">
           <div className="feature-card scroll-reveal">
             <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/a710366a-897f-4ae7-bc18-1f725c29151f.png" alt="All-in-One Platform" /></div>
-            <h3>All-in-One Platform</h3>
-            <p>Stop using multiple tools. Manage CRM, invoicing, inventory, HR, payments, and accounting all in one unified platform.</p>
+            <h3>Leaders Lose Time Chasing Updates</h3>
+            <p>PayAid&apos;s AI reaches out, gathers insights, and reports back automatically. Your business health, revenue trends, and team performance—always visible, always current.</p>
           </div>
           <div className="feature-card scroll-reveal">
             <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/a1747960-4b63-446e-ad29-c247eb134d4c.png" alt="50% More Affordable" /></div>
-            <h3>50% More Affordable</h3>
-            <p>₹7,999/month for complete features. No hidden costs. No feature paywalls. Everything is included in your plan.</p>
+            <h3>Important Work Gets Buried</h3>
+            <p>PayAid turns conversations and decisions into prioritized tasks and execution. Every discussion becomes action. Every decision becomes progress.</p>
           </div>
           <div className="feature-card scroll-reveal">
             <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/32625e56-4103-46fc-a059-89161398fc9b.png" alt="India-First Design" /></div>
-            <h3>India-First Design</h3>
-            <p>Built with GST compliance, FSSAI support, and ONDC integration. Hindi language support available for all users.</p>
+            <h3>Teams Forget Decisions and Context</h3>
+            <p>PayAid builds a living, shared intelligence everyone can query instantly. GST compliance, FSSAI support, ONDC integration—all context, always accessible.</p>
           </div>
           <div className="feature-card scroll-reveal">
             <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/3634df48-2ea7-4641-bb4d-cd1c631bbcc1.png" alt="AI-Powered Intelligence" /></div>
-            <h3>AI-Powered Intelligence</h3>
-            <p>Get automated business insights and smart recommendations. Your personal AI advisor included at no extra cost.</p>
+            <h3>Your AI Co-founder Auto-Executes</h3>
+            <p>Never worry about missing opportunities again. Your AI advisor captures insights, suggests actions, and helps execute—turning every conversation into business growth.</p>
           </div>
           <div className="feature-card scroll-reveal">
             <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/2b88452a-f5f2-4a3b-8e26-dccc89f76fa9.png" alt="Lightning Fast Implementation" /></div>
-            <h3>Lightning Fast Implementation</h3>
-            <p>Start using PayAid in minutes, not months. Simple onboarding, intuitive interface, and immediate productivity gains.</p>
+            <h3>Work Doesn&apos;t Slip</h3>
+            <p>Every ask turns into an action with proof. Start using PayAid in minutes, not months. Simple onboarding, immediate productivity gains.</p>
           </div>
           <div className="feature-card scroll-reveal">
             <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/7dce85d1-4485-457c-825c-a9b5ca0008a7.png" alt="Enterprise-Grade Security" /></div>
-            <h3>Enterprise-Grade Security</h3>
-            <p>Your data is encrypted, backed up, and protected. Bank-grade security with enterprise-level compliance standards.</p>
+            <h3>Leaders See Progress</h3>
+            <p>Not just activity but actual movement on work that matters. Bank-grade security, enterprise compliance, and real-time visibility into what drives your business forward.</p>
           </div>
         </div>
       </section>
@@ -1316,44 +1316,44 @@ export default function Home() {
       {/* USE CASES SECTION */}
       <section className="use-cases">
         <div className="section-title">
-          <h2>Built for Indian Businesses</h2>
-          <p>Serving restaurants, retail, services, and more across India</p>
+          <h2>What Changes with PayAid</h2>
+          <p>Built for impact. Proven in practice across Indian businesses.</p>
         </div>
         <div className="use-cases-grid">
           <div className="use-case-card scroll-reveal">
             <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/d5698294-4698-48a6-bad4-7ff8d841d471.png" alt="Restaurants" /></div>
-            <h3>Restaurants</h3>
-            <p>Manage online and offline orders, payment processing, inventory tracking, and staff scheduling from one dashboard.</p>
+            <h3>Presence Becomes Real</h3>
+            <p>Restaurants feel connected again. Online and offline orders, payments, inventory, and staff—all visible in one shared space, wherever you are.</p>
             <a href="#features" className="use-case-link">Learn more</a>
           </div>
           <div className="use-case-card scroll-reveal">
             <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/3c6c7a46-58ea-426f-9c3c-7b415040e598.png" alt="Retail Stores" /></div>
-            <h3>Retail Stores</h3>
-            <p>Multi-location inventory management, customer loyalty programs, point of sale systems, and centralized analytics.</p>
+            <h3>Save Meeting Time</h3>
+            <p>Retail stores reduce update meetings. Real-time visibility across multi-location inventory, customer loyalty, and sales keeps teams aligned instantly.</p>
             <a href="#features" className="use-case-link">Learn more</a>
           </div>
           <div className="use-case-card scroll-reveal">
             <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/ef72d266-1453-4f1b-879f-c1e44a154e80.png" alt="Service Businesses" /></div>
-            <h3>Service Businesses</h3>
-            <p>Project management, client invoicing, team scheduling, expense tracking, and profitability analysis in real-time.</p>
+            <h3>Work Doesn&apos;t Slip</h3>
+            <p>Service businesses turn every ask into action with proof. Projects, invoicing, scheduling, and expenses—all tracked, all executed, all visible.</p>
             <a href="#features" className="use-case-link">Learn more</a>
           </div>
           <div className="use-case-card scroll-reveal">
             <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/50ad44eb-346a-42cc-b988-01e39a718fd4.png" alt="E-Commerce Platforms" /></div>
-            <h3>E-Commerce Platforms</h3>
-            <p>Multi-channel selling, inventory synchronization, order management, fulfillment tracking, and customer insights.</p>
+            <h3>Culture Tightens</h3>
+            <p>E-commerce platforms create one direction, shared momentum. Multi-channel selling, inventory sync, and order fulfillment—all moving in sync, fewer excuses.</p>
             <a href="#features" className="use-case-link">Learn more</a>
           </div>
           <div className="use-case-card scroll-reveal">
             <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/770d8b48-df7a-4d19-8632-9d8f28f844a7.png" alt="Manufacturing" /></div>
-            <h3>Manufacturing</h3>
-            <p>Production tracking, supplier management, quality control, logistics optimization, and compliance reporting.</p>
+            <h3>Leaders See Progress</h3>
+            <p>Manufacturing teams show not just activity but actual movement. Production tracking, supplier management, and compliance—all progress, all visible, all actionable.</p>
             <a href="#features" className="use-case-link">Learn more</a>
           </div>
           <div className="use-case-card scroll-reveal">
             <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/81b13c03-2331-4efa-8fa4-c85f7d0f8c04.png" alt="Professional Services" /></div>
-            <h3>Professional Services</h3>
-            <p>Client project management, team collaboration, resource planning, time tracking, and invoice automation.</p>
+            <h3>Execution Becomes Automatic</h3>
+            <p>Professional services break the cycle of procrastination. Client projects, team collaboration, and invoicing—every decision becomes a task that&apos;s proactively executed.</p>
             <a href="#features" className="use-case-link">Learn more</a>
           </div>
         </div>
@@ -1362,8 +1362,8 @@ export default function Home() {
       {/* PRICING SECTION */}
       <section className="pricing" id="pricing">
         <div className="section-title">
-          <h2>Simple, Transparent Pricing</h2>
-          <p>No hidden charges. No surprise fees. Scale as you grow.</p>
+          <h2>Start for Free. Cancel Anytime.</h2>
+          <p>No setup. No hidden charges. Just execution.</p>
         </div>
         <div className="pricing-cards">
           <div className="pricing-card scroll-reveal">
@@ -1412,25 +1412,25 @@ export default function Home() {
       {/* TESTIMONIALS SECTION */}
       <section className="testimonials">
         <div className="section-title">
-          <h2>Trusted by Indian Entrepreneurs</h2>
-          <p>Hear from businesses transforming with PayAid</p>
+          <h2>Stories from Our Users</h2>
+          <p>Built for impact. Proven in practice.</p>
         </div>
         <div className="testimonials-grid">
           <div className="testimonial-card scroll-reveal">
             <div className="stars">★★★★★</div>
-            <p className="testimonial-text">&quot;PayAid has been transformative for our restaurant chain. We now manage orders, payments, and staff across all locations from a single dashboard. Saved us ₹18,000 per month.&quot;</p>
+            <p className="testimonial-text">&quot;Running a restaurant chain was already hard. What made it harder? Juggling 5–6 different tools just to keep operations aligned. PayAid changed everything. We now manage orders, payments, and staff across all locations from one dashboard. Saved us ₹18,000 per month.&quot;</p>
             <p className="testimonial-author">Rajesh Kumar</p>
             <p className="testimonial-role">Restaurant Owner, Mumbai</p>
           </div>
           <div className="testimonial-card scroll-reveal">
             <div className="stars">★★★★★</div>
-            <p className="testimonial-text">&quot;As a retail store owner, I needed an affordable yet powerful solution. PayAid delivered exactly that. The support team is incredibly responsive and helpful with implementations.&quot;</p>
+            <p className="testimonial-text">&quot;As a growing retail business, managing our remote team was chaotic. We were juggling multiple tools, and everything felt disconnected. PayAid creates a unified experience—and it&apos;s been a total game changer. Real-time visibility keeps teams aligned instantly.&quot;</p>
             <p className="testimonial-author">Priya Singh</p>
             <p className="testimonial-role">Retail Store Manager, Delhi</p>
           </div>
           <div className="testimonial-card scroll-reveal">
             <div className="stars">★★★★★</div>
-            <p className="testimonial-text">&quot;The AI co-founder feature is remarkable. It provides business insights we didn&apos;t even know we needed. PayAid feels like having a business consultant on our team every day.&quot;</p>
+            <p className="testimonial-text">&quot;The AI co-founder feature turns every conversation into execution. It captures insights, suggests actions, and helps execute—turning every discussion into business growth. PayAid feels like having a strategic partner on our team every day.&quot;</p>
             <p className="testimonial-author">Amit Patel</p>
             <p className="testimonial-role">Service Business Owner, Bangalore</p>
           </div>
@@ -1439,9 +1439,9 @@ export default function Home() {
 
       {/* FINAL CTA */}
       <section className="final-cta">
-        <h2>Ready to Transform Your Business?</h2>
-        <p>Join thousands of Indian businesses already growing with PayAid. Start your free trial today. No credit card required.</p>
-        <Link href="/register" className="cta-button-large">Get Started Today</Link>
+        <h2>Open Your Business Space. Invite Your Team. Feel It Today.</h2>
+        <p>Join thousands of Indian businesses already executing 10× faster with PayAid. Start your free trial today. No setup. Cancel anytime.</p>
+        <Link href="/register" className="cta-button-large">See It in Action</Link>
       </section>
 
       {/* FOOTER */}
