@@ -109,18 +109,119 @@ export async function POST(
       },
     })
 
-    // Check if lead should be qualified
+    // Check if lead should be qualified and create contact/deal
     let contactId: string | undefined
     let leadId: string | undefined
 
     if (chatbot.leadQualification && messages.length >= 3) {
-      // Extract email/phone from conversation
-      const emailMatch = validated.message.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/)
+      // Extract email/phone/name from conversation
+      const emailMatch = validated.message.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/i)
       const phoneMatch = validated.message.match(/\b\d{10}\b/)
+      
+      // Try to extract name (simple pattern: "I'm John" or "My name is John")
+      const namePatterns = [
+        /(?:i'?m|i am|my name is|this is)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i,
+        /^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:here|speaking)/i,
+      ]
+      let nameMatch: string | null = null
+      for (const pattern of namePatterns) {
+        const match = validated.message.match(pattern)
+        if (match) {
+          nameMatch = match[1]
+          break
+        }
+      }
 
-      if (emailMatch || phoneMatch) {
-        // TODO: Create contact/lead in CRM
-        // This would integrate with existing Contact/Deal APIs
+      // Extract company name if mentioned
+      const companyPatterns = [
+        /(?:from|at|works? at|company is)\s+([A-Z][A-Za-z0-9\s&]+)/i,
+      ]
+      let companyMatch: string | null = null
+      for (const pattern of companyPatterns) {
+        const match = validated.message.match(pattern)
+        if (match) {
+          companyMatch = match[1].trim()
+          break
+        }
+      }
+
+      // Check if we already have a contact for this visitor
+      const existingContact = conversation.contactId
+        ? await prisma.contact.findUnique({
+            where: { id: conversation.contactId },
+          })
+        : null
+
+      if (!existingContact && (emailMatch || phoneMatch || nameMatch)) {
+        try {
+          // Create contact in CRM
+          const contact = await prisma.contact.create({
+            data: {
+              tenantId: chatbot.tenantId,
+              name: nameMatch || 'Website Visitor',
+              email: emailMatch ? emailMatch[0] : undefined,
+              phone: phoneMatch ? phoneMatch[0] : undefined,
+              company: companyMatch || undefined,
+              type: 'lead',
+              source: 'website',
+              sourceData: {
+                chatbotId: chatbot.id,
+                sessionId,
+                visitorId,
+                website: chatbot.website?.domain || chatbot.website?.subdomain || undefined,
+              } as any,
+              attributionChannel: 'organic',
+            },
+          })
+
+          contactId = contact.id
+
+          // Update conversation with contact ID
+          await prisma.chatbotConversation.update({
+            where: { id: conversation.id },
+            data: {
+              contactId: contact.id,
+              qualified: true,
+            },
+          })
+
+          // Create a deal if the conversation indicates interest
+          const interestKeywords = [
+            'interested', 'pricing', 'price', 'cost', 'buy', 'purchase',
+            'demo', 'trial', 'sign up', 'subscribe', 'service', 'product',
+          ]
+          const hasInterest = interestKeywords.some((keyword) =>
+            validated.message.toLowerCase().includes(keyword)
+          )
+
+          if (hasInterest) {
+            const deal = await prisma.deal.create({
+              data: {
+                tenantId: chatbot.tenantId,
+                name: `Lead from ${chatbot.website?.domain || chatbot.website?.subdomain || 'Website'}`,
+                value: 0, // Unknown value initially
+                probability: 20, // Low initial probability
+                stage: 'lead',
+                contactId: contact.id,
+              },
+            })
+
+            leadId = deal.id
+
+            // Update conversation with deal ID
+            await prisma.chatbotConversation.update({
+              where: { id: conversation.id },
+              data: {
+                leadId: deal.id,
+              },
+            })
+          }
+        } catch (error) {
+          console.error('Error creating contact/deal from chatbot:', error)
+          // Don't fail the chat response if contact creation fails
+        }
+      } else if (existingContact) {
+        contactId = existingContact.id
       }
     }
 
