@@ -91,17 +91,24 @@ export default function DashboardPage() {
 
   // Get tenantId from URL params (if accessed via /dashboard/[tenantId]) or from auth store
   const tenantIdFromUrl = params?.tenantId as string | undefined
+  
+  // ALWAYS prioritize tenant ID from URL if present - this ensures consistency
+  // Only fall back to auth store if URL doesn't have tenant ID
   const currentTenantId = tenantIdFromUrl || tenant?.id || null
 
   // Helper function to generate tenant-aware dashboard URLs
   const getDashboardLink = (path: string) => {
-    if (!currentTenantId) {
+    // If we have a tenant ID in the URL, ALWAYS use it (don't fall back to auth store)
+    // This ensures all links maintain the same tenant ID as the current URL
+    const tenantIdToUse = tenantIdFromUrl || currentTenantId
+    
+    if (!tenantIdToUse) {
       // Fallback to generic path (for demo/admin access)
       return `/dashboard${path.startsWith('/') ? path : '/' + path}`
     }
     // Remove leading /dashboard if present
     const cleanPath = path.replace(/^\/dashboard\/?/, '')
-    return `/dashboard/${currentTenantId}${cleanPath ? '/' + cleanPath : ''}`
+    return `/dashboard/${tenantIdToUse}${cleanPath ? '/' + cleanPath : ''}`
   }
 
   // Fetch dashboard stats

@@ -132,8 +132,10 @@ export default function StatDrillDownPage() {
   const Icon = statInfo?.icon || AlertCircle
 
   const goBack = () => {
-    if (currentTenantId) {
-      router.push(`/dashboard/${currentTenantId}`)
+    // Always use tenant ID from URL if present, otherwise use currentTenantId
+    const tenantIdToUse = tenantIdFromUrl || currentTenantId
+    if (tenantIdToUse) {
+      router.push(`/dashboard/${tenantIdToUse}`)
     } else {
       router.push('/dashboard')
     }
