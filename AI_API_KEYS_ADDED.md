@@ -8,7 +8,7 @@ All AI API keys have been successfully added to Vercel environment variables.
 
 ### 1. Hugging Face API
 - **Key:** `HUGGINGFACE_API_KEY`
-- **Value:** `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`
+- **Value:** `[REDACTED - Configured in Vercel]`
 - **Environments:** ✅ Production, ✅ Preview
 - **Status:** Added successfully
 
@@ -25,13 +25,13 @@ All AI API keys have been successfully added to Vercel environment variables.
 
 ### 3. Ollama API
 - **Key:** `OLLAMA_API_KEY`
-- **Value:** `c224651ca3cd47f3ae6add8ec0d070c8.OWJ6NzpCY4nU31Ml0Axot9w6`
+- **Value:** `[REDACTED - Configured in Vercel]`
 - **Environments:** ✅ Production, ✅ Preview
 - **Status:** Added successfully
 
 ### 4. Google AI Studio (Gemini)
 - **Key:** `GEMINI_API_KEY`
-- **Value:** `AIzaSyAK1kc2gAJQ-Fj5xMIZ9Gj3uzsC1rDBUT0`
+- **Value:** `[REDACTED - Configured in Vercel]`
 - **Environments:** ✅ Production, ✅ Preview
 - **Status:** Added successfully
 

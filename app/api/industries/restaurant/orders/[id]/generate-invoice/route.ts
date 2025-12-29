@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { prisma } from '@/lib/db/prisma'
-import { generateInvoiceNumber } from '@/lib/invoicing/utils'
 
 // POST /api/industries/restaurant/orders/[id]/generate-invoice - Generate invoice from order
 export async function POST(
@@ -24,7 +23,6 @@ export async function POST(
             menuItem: true,
           },
         },
-        invoice: true, // Check if invoice already exists
       },
     })
 
@@ -70,8 +68,15 @@ export async function POST(
       gstRate: gstRate,
     }))
 
-    // Generate invoice number
-    const invoiceNumber = await generateInvoiceNumber(tenantId)
+    // Generate invoice number (simple sequential for now)
+    const lastInvoice = await prisma.invoice.findFirst({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+      select: { invoiceNumber: true },
+    })
+    const invoiceNumber = lastInvoice
+      ? `INV-${String(parseInt(lastInvoice.invoiceNumber.split('-')[1] || '0') + 1).padStart(6, '0')}`
+      : `INV-000001`
 
     // Create invoice
     const invoice = await prisma.invoice.create({
