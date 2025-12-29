@@ -189,6 +189,38 @@ export async function GET(request: NextRequest) {
 
     const pipelineValue = activeDeals.reduce((sum, deal) => sum + (deal.value || 0), 0)
 
+    // Calculate revenue breakdowns
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const ninetyDaysAgo = new Date()
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
+
+    const [revenueLast7Days, revenueLast90Days, revenueAllTime] = await Promise.all([
+      prisma.invoice.aggregate({
+        where: {
+          tenantId: tenantId,
+          status: 'paid',
+          paidAt: { gte: sevenDaysAgo },
+        },
+        _sum: { total: true },
+      }).catch(() => ({ _sum: { total: 0 } })),
+      prisma.invoice.aggregate({
+        where: {
+          tenantId: tenantId,
+          status: 'paid',
+          paidAt: { gte: ninetyDaysAgo },
+        },
+        _sum: { total: true },
+      }).catch(() => ({ _sum: { total: 0 } })),
+      prisma.invoice.aggregate({
+        where: {
+          tenantId: tenantId,
+          status: 'paid',
+        },
+        _sum: { total: true },
+      }).catch(() => ({ _sum: { total: 0 } })),
+    ])
+
     const stats = {
       counts: {
         contacts,
@@ -199,7 +231,10 @@ export async function GET(request: NextRequest) {
       },
       revenue: {
         total: totalRevenue,
+        last7Days: revenueLast7Days._sum.total || 0,
         last30Days: totalRevenue,
+        last90Days: revenueLast90Days._sum.total || 0,
+        allTime: revenueAllTime._sum.total || 0,
       },
       pipeline: {
         value: pipelineValue,
