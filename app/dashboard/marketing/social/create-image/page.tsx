@@ -325,7 +325,7 @@ export default function CreateImagePage() {
                       ) : googleConnected ? (
                         <span className="text-green-600 font-medium">✅ Google AI Studio (Configured) - Ready to generate images</span>
                       ) : (
-                        <span className="text-red-600 font-medium">⚠️ Google AI Studio (Not Configured) - Add your key in Settings > AI Integrations</span>
+                        <span className="text-red-600 font-medium">⚠️ Google AI Studio (Not Configured) - Add your key in Settings &gt; AI Integrations</span>
                       )}
                     </>
                   )}
