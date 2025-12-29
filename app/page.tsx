@@ -1332,67 +1332,43 @@ export default function Home() {
         </div>
         <div className="features-grid">
           <div className="feature-card scroll-reveal">
-            <div className="feature-icon" style={{background: 'linear-gradient(135deg, var(--primary-purple), var(--light-purple))'}}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: 'white'}}>
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                <path d="M13 8H3"></path>
-                <path d="M17 12H3"></path>
-              </svg>
+            <div className="feature-icon">
+              <img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/3c63721a-ebe9-4360-b817-bde782599651.png" alt="Conversational AI" />
             </div>
             <h3>Conversational AI</h3>
             <p>Build multilingual, context-aware chatbots for web, WhatsApp, apps, or voice. Turn conversations into conversions with intelligent lead qualification and automated customer support.</p>
           </div>
           <div className="feature-card scroll-reveal">
-            <div className="feature-icon" style={{background: 'linear-gradient(135deg, var(--primary-purple), var(--light-purple))'}}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: 'white'}}>
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"></path>
-              </svg>
+            <div className="feature-icon">
+              <img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/537579ef-2324-4aec-b4fc-3b738b5c2df2.png" alt="Agentic Workflow Automation" />
             </div>
             <h3>Agentic Workflow Automation</h3>
             <p>Deploy smart AI agents to automate email parsing, form-filling, document review, and tasks in real time. Reduce manual work and accelerate business processes.</p>
           </div>
           <div className="feature-card scroll-reveal">
-            <div className="feature-icon" style={{background: 'linear-gradient(135deg, var(--primary-purple), var(--light-purple))'}}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: 'white'}}>
-                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
-                <path d="M9 10h6"></path>
-                <path d="M9 14h6"></path>
-              </svg>
+            <div className="feature-icon">
+              <img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/a49c0912-d99c-4897-9126-7a02c39a6a3d.png" alt="Knowledge & RAG AI" />
             </div>
             <h3>Knowledge & RAG AI</h3>
             <p>Ask questions from your documents or SOPs and get instant, cited answers via intelligent retrieval. Transform your knowledge base into a searchable AI assistant with full audit trails.</p>
           </div>
           <div className="feature-card scroll-reveal">
-            <div className="feature-icon" style={{background: 'linear-gradient(135deg, var(--primary-purple), var(--light-purple))'}}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: 'white'}}>
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
+            <div className="feature-icon">
+              <img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/c2b336d8-9b53-4123-963b-45b41f9f65ce.png" alt="AI Co-founder" />
             </div>
             <h3>AI Co-founder</h3>
             <p>Your strategic business partner with 22 specialist agents. Get business insights, recommendations, and execute actions automatically. From idea to IPO, guided by AI.</p>
           </div>
           <div className="feature-card scroll-reveal">
-            <div className="feature-icon" style={{background: 'linear-gradient(135deg, var(--primary-purple), var(--light-purple))'}}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: 'white'}}>
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                <line x1="8" y1="21" x2="16" y2="21"></line>
-                <line x1="12" y1="17" x2="12" y2="21"></line>
-              </svg>
+            <div className="feature-icon">
+              <img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/b5197a7d-a578-4d18-bf84-eccfc41ede45.png" alt="AI Website Builder" />
             </div>
             <h3>AI Website Builder</h3>
             <p>Create stunning websites and landing pages with AI-powered component generation. Build, customize, and deploy professional sites in minutes, not weeks.</p>
           </div>
           <div className="feature-card scroll-reveal">
-            <div className="feature-icon" style={{background: 'linear-gradient(135deg, var(--primary-purple), var(--light-purple))'}}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: 'white'}}>
-                <line x1="18" y1="20" x2="18" y2="10"></line>
-                <line x1="12" y1="20" x2="12" y2="4"></line>
-                <line x1="6" y1="20" x2="6" y2="14"></line>
-              </svg>
+            <div className="feature-icon">
+              <img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/db58238f-481d-4374-b4bf-b2113b642c51.png" alt="AI-Powered Insights" />
             </div>
             <h3>AI-Powered Insights</h3>
             <p>Get intelligent business analysis, revenue insights, and risk warnings. Make data-driven decisions with AI that understands your business context.</p>
