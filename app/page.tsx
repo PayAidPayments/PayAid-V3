@@ -1267,9 +1267,10 @@ export default function Home() {
             <img 
               src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/digital-heroes-payaid.png" 
               alt="PayAid Digital Heroes - Transform Your Business"
+              loading="eager"
               onError={(e) => {
-                console.error('Image failed to load:', e);
-                // Fallback to a placeholder or different image
+                console.error('Image failed to load, using fallback');
+                e.currentTarget.onerror = null; // Prevent infinite loop
                 e.currentTarget.src = 'https://via.placeholder.com/600x400/53328A/F5C700?text=PayAid+Digital+Heroes';
               }}
             />
