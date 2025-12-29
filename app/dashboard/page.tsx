@@ -45,7 +45,7 @@ function HealthScoreWidget() {
   }
 
   return (
-    <Card className="border-2" style={{ borderColor: PAYAID_PURPLE }}>
+    <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Business Health</CardTitle>
         <span className="text-2xl">💚</span>
@@ -190,62 +190,74 @@ export default function DashboardPage() {
 
         {/* Stats Grid - Modern Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-          <Card className="border-2 hover:shadow-lg transition-shadow" style={{ borderColor: PAYAID_PURPLE }}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Contacts</CardTitle>
-              <span className="text-2xl">👥</span>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" style={{ color: PAYAID_PURPLE }}>{stats.contacts}</div>
-              <CardDescription>Total contacts</CardDescription>
-            </CardContent>
-          </Card>
+          <Link href="/dashboard/contacts" className="block">
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Contacts</CardTitle>
+                <span className="text-2xl">👥</span>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" style={{ color: PAYAID_PURPLE }}>{stats.contacts}</div>
+                <CardDescription>Total contacts</CardDescription>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card className="border-2 hover:shadow-lg transition-shadow" style={{ borderColor: PAYAID_GOLD }}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Deals</CardTitle>
-              <span className="text-2xl">💼</span>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" style={{ color: PAYAID_GOLD }}>{stats.deals}</div>
-              <CardDescription>Active deals</CardDescription>
-            </CardContent>
-          </Card>
+          <Link href="/dashboard/deals" className="block">
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_GOLD }}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Deals</CardTitle>
+                <span className="text-2xl">💼</span>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" style={{ color: PAYAID_GOLD }}>{stats.deals}</div>
+                <CardDescription>Active deals</CardDescription>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card className="border-2 hover:shadow-lg transition-shadow" style={{ borderColor: PAYAID_PURPLE }}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Orders</CardTitle>
-              <span className="text-2xl">🛒</span>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" style={{ color: PAYAID_PURPLE }}>{stats.orders}</div>
-              <CardDescription>Total orders</CardDescription>
-            </CardContent>
-          </Card>
+          <Link href="/dashboard/orders" className="block">
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Orders</CardTitle>
+                <span className="text-2xl">🛒</span>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" style={{ color: PAYAID_PURPLE }}>{stats.orders}</div>
+                <CardDescription>Total orders</CardDescription>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card className="border-2 hover:shadow-lg transition-shadow" style={{ borderColor: PAYAID_GOLD }}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Invoices</CardTitle>
-              <span className="text-2xl">🧾</span>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" style={{ color: PAYAID_GOLD }}>{stats.invoices}</div>
-              <CardDescription>Total invoices</CardDescription>
-            </CardContent>
-          </Card>
+          <Link href="/dashboard/invoices" className="block">
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_GOLD }}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Invoices</CardTitle>
+                <span className="text-2xl">🧾</span>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" style={{ color: PAYAID_GOLD }}>{stats.invoices}</div>
+                <CardDescription>Total invoices</CardDescription>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card className="border-2 hover:shadow-lg transition-shadow" style={{ borderColor: PAYAID_PURPLE }}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Tasks</CardTitle>
-              <span className="text-2xl">✅</span>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" style={{ color: PAYAID_PURPLE }}>{stats.tasks}</div>
-              <CardDescription>Total tasks</CardDescription>
-            </CardContent>
-          </Card>
+          <Link href="/dashboard/tasks" className="block">
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Tasks</CardTitle>
+                <span className="text-2xl">✅</span>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" style={{ color: PAYAID_PURPLE }}>{stats.tasks}</div>
+                <CardDescription>Total tasks</CardDescription>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <HealthScoreWidget />
+          <Link href="/dashboard/analytics" className="block">
+            <HealthScoreWidget />
+          </Link>
         </div>
 
         {/* Error Message */}
