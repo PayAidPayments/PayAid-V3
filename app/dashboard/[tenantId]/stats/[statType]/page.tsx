@@ -187,9 +187,9 @@ export default function StatDrillDownPage() {
           </CardHeader>
           <CardContent>
             <div className="text-5xl font-bold mb-4" style={{ color: PAYAID_PURPLE }}>
-              {typeof statInfo.data === 'number' && statInfo.data >= 1000
+              {typeof statInfo.data === 'number'
                 ? `₹${statInfo.data.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
-                : statInfo.data.toLocaleString('en-IN')}
+                : statInfo.data}
             </div>
             <CardDescription className="text-base">{statInfo.description}</CardDescription>
           </CardContent>
