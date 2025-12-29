@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { Send, Bot, User, Loader2, TrendingUp, DollarSign, Users, FileText, Zap } from 'lucide-react'
+import { Send, Bot, User, Loader2, TrendingUp, DollarSign, Users, FileText, Zap, History, CheckCircle, Download, Mail } from 'lucide-react'
 import type { AgentId } from '@/lib/ai/agents'
 import Link from 'next/link'
 
@@ -47,6 +47,9 @@ export default function CoFounderPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [selectedAgent, setSelectedAgent] = useState<AgentId>('cofounder')
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [suggestedActions, setSuggestedActions] = useState<Array<{ action: string; description: string; priority?: string }>>([])
+  const [showConversations, setShowConversations] = useState(false)
 
   // Fetch available agents
   const { data: agentsData } = useQuery<{ agents: Agent[] }>({
@@ -77,6 +80,19 @@ export default function CoFounderPage() {
 
   const agents = agentsData?.agents || []
 
+  // Fetch conversation history
+  const { data: conversationsData, refetch: refetchConversations } = useQuery({
+    queryKey: ['cofounder-conversations'],
+    queryFn: async () => {
+      const response = await fetch('/api/ai/cofounder/conversations', {
+        headers: getAuthHeaders(),
+      })
+      if (!response.ok) return { conversations: [], total: 0 }
+      return response.json()
+    },
+    enabled: !!token,
+  })
+
   const sendMessage = useMutation({
     mutationFn: async (message: string) => {
       const response = await fetch('/api/ai/cofounder', {
@@ -88,6 +104,8 @@ export default function CoFounderPage() {
         body: JSON.stringify({
           message,
           agentId: selectedAgent,
+          conversationId: conversationId || undefined,
+          useMultiSpecialist: selectedAgent === 'cofounder', // Enable multi-specialist for cofounder
         }),
       })
 
@@ -110,6 +128,17 @@ export default function CoFounderPage() {
         },
       ])
       setInput('')
+      
+      // Update conversation ID and suggested actions
+      if (data.conversationId) {
+        setConversationId(data.conversationId)
+      }
+      if (data.suggestedActions && data.suggestedActions.length > 0) {
+        setSuggestedActions(data.suggestedActions)
+      }
+      
+      // Refetch conversations list
+      refetchConversations()
     },
     onError: (err) => {
       setMessages((prev) => [
@@ -335,7 +364,124 @@ export default function CoFounderPage() {
 
           {/* Business Context Panel */}
           <div className="w-80 bg-white border-l-2 p-4 overflow-y-auto" style={{ borderColor: PAYAID_PURPLE }}>
-            <h3 className="text-lg font-bold mb-4" style={{ color: PAYAID_PURPLE }}>Business Context</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Business Context</h3>
+              <button
+                onClick={() => setShowConversations(!showConversations)}
+                className="p-2 rounded-lg hover:bg-gray-100"
+                title="Conversation History"
+              >
+                <History className="w-5 h-5" style={{ color: PAYAID_PURPLE }} />
+              </button>
+            </div>
+
+            {/* Suggested Actions */}
+            {suggestedActions.length > 0 && (
+              <Card className="border-2 mb-4" style={{ borderColor: PAYAID_GOLD }}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: PAYAID_PURPLE }}>
+                    <CheckCircle className="w-4 h-4" />
+                    Suggested Actions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {suggestedActions.map((action, idx) => (
+                    <div
+                      key={idx}
+                      className="p-2 rounded-lg text-sm"
+                      style={{ backgroundColor: `${PAYAID_GOLD}10` }}
+                    >
+                      <div className="font-medium mb-1" style={{ color: PAYAID_PURPLE }}>{action.action}</div>
+                      {action.description && (
+                        <div className="text-xs text-gray-600">{action.description}</div>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 w-full text-xs"
+                        style={{ borderColor: PAYAID_PURPLE, color: PAYAID_PURPLE }}
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/ai/cofounder/actions/convert-to-task', {
+                              method: 'POST',
+                              headers: getAuthHeaders(),
+                              body: JSON.stringify({
+                                action: action.action,
+                                description: action.description,
+                                priority: action.priority || 'medium',
+                                conversationId: conversationId || undefined,
+                              }),
+                            })
+                            if (response.ok) {
+                              alert('Task created successfully!')
+                            }
+                          } catch (err) {
+                            console.error('Failed to create task:', err)
+                          }
+                        }}
+                      >
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Convert to Task
+                      </Button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Conversation History */}
+            {showConversations && (
+              <Card className="border-2 mb-4" style={{ borderColor: PAYAID_PURPLE }}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: PAYAID_PURPLE }}>
+                    <History className="w-4 h-4" />
+                    Recent Conversations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-64">
+                    {conversationsData?.conversations?.length > 0 ? (
+                      <div className="space-y-2">
+                        {conversationsData.conversations.map((conv: any) => (
+                          <button
+                            key={conv.id}
+                            onClick={() => {
+                              // Load conversation
+                              fetch(`/api/ai/cofounder/conversations/${conv.id}`, {
+                                headers: getAuthHeaders(),
+                              })
+                                .then(res => res.json())
+                                .then(data => {
+                                  if (data.messages) {
+                                    setMessages(data.messages.map((m: any) => ({
+                                      role: m.role,
+                                      content: m.content,
+                                      timestamp: new Date(m.timestamp),
+                                      agent: m.agent,
+                                    })))
+                                    setConversationId(conv.id)
+                                    setShowConversations(false)
+                                  }
+                                })
+                            }}
+                            className="w-full text-left p-2 rounded-lg hover:bg-gray-50 text-sm"
+                          >
+                            <div className="font-medium truncate" style={{ color: PAYAID_PURPLE }}>
+                              {conv.title || 'Untitled Conversation'}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(conv.lastMessageAt).toLocaleDateString()}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-500 text-center py-4">No conversations yet</div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            )}
             
             {businessContext ? (
               <div className="space-y-4">

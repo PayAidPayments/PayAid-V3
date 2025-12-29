@@ -137,6 +137,7 @@ model Tenant {
   scheduledPosts           ScheduledPost[]
   featureToggles           FeatureToggle[]
   customFields             CustomField[]
+  aiCofounderConversations AICofounderConversation[]
 
   // Industry-specific relations
   restaurantOrders       RestaurantOrder[]
@@ -328,6 +329,9 @@ model User {
   whatsappSessions         WhatsappSession[]
   createdWhatsappTemplates WhatsappTemplate[]
   whatsappMessages         WhatsappMessage[]
+  
+  // AI Co-founder Conversations
+  aiCofounderConversations AICofounderConversation[] @relation("AICofounderConversations")
 
   // Media Library
   uploadedMedia            MediaLibrary[] @relation("MediaUploads")
@@ -495,6 +499,36 @@ model AIUsage {
   @@index([tenantId, service])
   @@index([tenantId, createdAt])
   @@index([service])
+}
+
+// AI Co-founder Conversation Memory
+model AICofounderConversation {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation("AICofounderConversations", fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String?  // Auto-generated from first message
+  agentId   String   // Which agent was used (cofounder, finance, etc.)
+  
+  // Messages stored as JSON array
+  messages  Json     // Array of { role: 'user' | 'assistant', content: string, timestamp: string, agent?: { id, name } }
+  
+  // Metadata
+  messageCount Int    @default(0)
+  lastMessageAt DateTime @default(now())
+  
+  // Actions extracted from conversation
+  suggestedActions Json? // Array of actionable items extracted from AI responses
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([tenantId, userId])
+  @@index([lastMessageAt])
 }
 
 // Deals (sales pipeline)
