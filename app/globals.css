@@ -67,18 +67,10 @@ main.main-sidebar-closed {
 }
 
 /* News Sidebar Layout Adjustments */
-main.news-sidebar-open {
-  padding-right: 20rem; /* 320px = w-80 */
-}
-
+/* News sidebar is now an overlay - no padding/margin changes to main content */
+main.news-sidebar-open,
 main.news-sidebar-closed {
   padding-right: 0;
-}
-
-@media (max-width: 1024px) {
-  main.news-sidebar-open,
-  main.news-sidebar-closed {
-    padding-right: 0;
-  }
+  margin-right: 0;
 }
 

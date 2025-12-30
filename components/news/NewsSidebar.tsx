@@ -132,29 +132,8 @@ export function NewsSidebar() {
     }
   }, [isCollapsed])
   
-  // Expose state to parent via CSS classes for dynamic padding
-  useEffect(() => {
-    const main = document.querySelector('main')
-    if (main) {
-      // Remove both classes first
-      main.classList.remove('news-sidebar-open', 'news-sidebar-closed')
-      
-      // Add appropriate class based on state
-      if (isCollapsed || !isOpen) {
-        main.classList.add('news-sidebar-closed')
-      } else {
-        main.classList.add('news-sidebar-open')
-      }
-    }
-    
-    // Cleanup on unmount
-    return () => {
-      const main = document.querySelector('main')
-      if (main) {
-        main.classList.remove('news-sidebar-open', 'news-sidebar-closed')
-      }
-    }
-  }, [isCollapsed, isOpen])
+  // News sidebar is now an overlay - no need to modify main content classes
+  // Removed CSS class manipulation since news sidebar doesn't affect main content layout
 
   const { token } = useAuthStore()
 
@@ -234,13 +213,13 @@ export function NewsSidebar() {
 
   if (isCollapsed) {
     return (
-      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40">
+      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-50">
         <button
           onClick={() => {
             setIsCollapsed(false)
             setIsOpen(true)
           }}
-          className="bg-blue-600 text-white p-2 rounded-l-lg shadow-lg hover:bg-blue-700 transition-colors"
+          className="bg-blue-600 text-white p-3 rounded-l-lg shadow-lg hover:bg-blue-700 transition-colors"
           aria-label="Open news sidebar"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -255,12 +234,23 @@ export function NewsSidebar() {
   }
 
   return (
-    <div
-      className={cn(
-        'fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-xl z-30 flex flex-col transition-transform duration-300',
-        isOpen ? 'translate-x-0' : 'translate-x-full'
+    <>
+      {/* Overlay when news sidebar is open */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => {
+            setIsOpen(false)
+            setIsCollapsed(true)
+          }}
+        />
       )}
-    >
+      <div
+        className={cn(
+          'fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-xl z-50 flex flex-col transition-transform duration-300',
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        )}
+      >
       {/* Header */}
       <div className="border-b border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between p-4">

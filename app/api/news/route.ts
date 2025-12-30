@@ -37,9 +37,14 @@ export async function GET(request: NextRequest) {
 
     const tenantId = payload.tenantId
 
-    // Test database connection first
+    // Test database connection first (with timeout to avoid hanging)
     try {
-      await prisma.$queryRaw`SELECT 1`
+      await Promise.race([
+        prisma.$queryRaw`SELECT 1`,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database connection timeout')), 5000)
+        )
+      ])
     } catch (dbError: any) {
       console.error('Database connection error:', {
         code: dbError?.code,
@@ -47,40 +52,47 @@ export async function GET(request: NextRequest) {
         hasDatabaseUrl: !!process.env.DATABASE_URL,
       })
       
-      // Provide more specific error messages based on error code
-      let errorMessage = 'Database connection failed'
-      if (dbError?.code === 'P1001') {
-        errorMessage = 'Database connection timeout. The database server may be down or unreachable.'
-      } else if (dbError?.code === 'P1000') {
-        errorMessage = 'Database authentication failed. Please check your DATABASE_URL credentials.'
-      } else if (dbError?.code === 'P1002') {
-        errorMessage = 'Database connection timeout. Try using a direct connection instead of a pooler.'
-      } else if (dbError?.message?.includes('ENOTFOUND')) {
-        errorMessage = 'Database hostname not found. The database server may be paused or the hostname is incorrect.'
-      } else if (dbError?.message?.includes('ECONNREFUSED')) {
-        errorMessage = 'Database connection refused. The database server may be down or not accepting connections.'
-      }
-      
-      return NextResponse.json(
-        {
-          error: errorMessage,
-          code: dbError?.code,
-          details: process.env.NODE_ENV === 'development' ? dbError.message : undefined,
-          troubleshooting: {
-            message: 'Unable to connect to the database. Please check your database connection.',
-            steps: [
-              'Check if your database server is running',
-              'Verify DATABASE_URL is configured correctly in environment variables',
-              'If using Supabase, check if your project is paused (free tier auto-pauses after 7 days)',
-              'Resume your Supabase project from the dashboard if paused',
-              'Try using a direct connection URL instead of a pooler URL',
-              'Verify database migrations have been completed',
-              'Check firewall settings if using a remote database',
-            ],
+      // Check if it's a pool exhaustion error - if so, continue anyway as database might be working
+      if (dbError?.message?.includes('MaxClientsInSessionMode') || 
+          dbError?.message?.includes('max clients reached')) {
+        console.warn('Database pool exhausted, but continuing with query - database may still be accessible')
+        // Continue with the query - the pool might recover or we might get through
+      } else {
+        // Provide more specific error messages based on error code
+        let errorMessage = 'Database connection failed'
+        if (dbError?.code === 'P1001') {
+          errorMessage = 'Database connection timeout. The database server may be down or unreachable.'
+        } else if (dbError?.code === 'P1000') {
+          errorMessage = 'Database authentication failed. Please check your DATABASE_URL credentials.'
+        } else if (dbError?.code === 'P1002') {
+          errorMessage = 'Database connection timeout. Try using a direct connection instead of a pooler.'
+        } else if (dbError?.message?.includes('ENOTFOUND')) {
+          errorMessage = 'Database hostname not found. The database server may be paused or the hostname is incorrect.'
+        } else if (dbError?.message?.includes('ECONNREFUSED')) {
+          errorMessage = 'Database connection refused. The database server may be down or not accepting connections.'
+        }
+        
+        return NextResponse.json(
+          {
+            error: errorMessage,
+            code: dbError?.code,
+            details: process.env.NODE_ENV === 'development' ? dbError.message : undefined,
+            troubleshooting: {
+              message: 'Unable to connect to the database. Please check your database connection.',
+              steps: [
+                'Check if your database server is running',
+                'Verify DATABASE_URL is configured correctly in environment variables',
+                'If using Supabase, check if your project is paused (free tier auto-pauses after 7 days)',
+                'Resume your Supabase project from the dashboard if paused',
+                'Try using a direct connection URL instead of a pooler URL',
+                'Verify database migrations have been completed',
+                'Check firewall settings if using a remote database',
+              ],
+            },
           },
-        },
-        { status: 503 }
-      )
+          { status: 503 }
+        )
+      }
     }
 
     const searchParams = request.nextUrl.searchParams
