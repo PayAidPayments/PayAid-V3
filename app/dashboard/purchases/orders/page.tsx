@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { getAuthHeaders } from '@/lib/api/client'
+import { getDynamicTitle, getDynamicDescription } from '@/lib/utils/status-labels'
 
 interface PurchaseOrder {
   id: string
@@ -81,13 +82,16 @@ export default function PurchaseOrdersPage() {
 
   const orders = data?.orders || []
   const pagination = data?.pagination
+  
+  const dynamicTitle = getDynamicTitle('Purchase Orders', statusFilter)
+  const dynamicDescription = getDynamicDescription('Purchase Orders', statusFilter)
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Purchase Orders</h1>
-          <p className="text-gray-600 mt-1">Manage your purchase orders and vendor relationships</p>
+          <h1 className="text-3xl font-bold text-gray-900">{dynamicTitle}</h1>
+          <p className="text-gray-600 mt-1">{dynamicDescription}</p>
         </div>
         <Link href="/dashboard/purchases/orders/new">
           <Button>New Purchase Order</Button>

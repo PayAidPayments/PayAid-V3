@@ -14,23 +14,26 @@ interface OrderConfirmationData {
 }
 
 export async function sendOrderConfirmationEmail(data: OrderConfirmationData): Promise<void> {
-  // TODO: Implement email sending
-  // For now, just log
-  console.log('📧 Order Confirmation Email:', {
-    to: data.customerEmail,
-    subject: `Order Confirmation - ${data.orderNumber}`,
-    orderNumber: data.orderNumber,
-    amount: data.amount,
-    modules: data.modules,
-  })
+  try {
+    const { getSendGridClient } = await import('@/lib/email/sendgrid')
+    const sendGrid = getSendGridClient()
 
-  // In production, use your email service (SendGrid, Resend, etc.)
-  // Example:
-  // await emailService.send({
-  //   to: data.customerEmail,
-  //   subject: `Order Confirmation - ${data.orderNumber}`,
-  //   html: generateOrderConfirmationHTML(data),
-  // })
+    const htmlContent = generateOrderConfirmationHTML(data)
+
+    await sendGrid.sendEmail({
+      to: data.customerEmail,
+      from: process.env.SENDGRID_FROM_EMAIL || 'noreply@payaid.com',
+      subject: `Order Confirmation - ${data.orderNumber}`,
+      html: htmlContent,
+      text: `Order Confirmation - ${data.orderNumber}\n\nDear ${data.customerName},\n\nThank you for your purchase. Your order has been confirmed.\n\nOrder Number: ${data.orderNumber}\nAmount: ₹${data.amount.toLocaleString()}\nDate: ${new Date(data.orderDate).toLocaleDateString()}\nModules: ${data.modules.join(', ')}\n\nYou can access your modules from your dashboard.`,
+    })
+
+    console.log(`✅ Order confirmation email sent to ${data.customerEmail}`)
+  } catch (error) {
+    console.error('Failed to send order confirmation email:', error)
+    // Don't throw - email sending failure shouldn't break the order flow
+    // Log for monitoring and retry later if needed
+  }
 }
 
 function generateOrderConfirmationHTML(data: OrderConfirmationData): string {

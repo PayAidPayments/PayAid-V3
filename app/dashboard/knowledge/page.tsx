@@ -104,9 +104,43 @@ export default function KnowledgePage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // TODO: Upload file to storage (S3, etc.) first, then create document
-    // For now, we'll create a placeholder
-    alert('File upload will be implemented with storage integration. Please upload files through your storage service and provide the URL.')
+    try {
+      setUploading(true)
+      
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('title', file.name.replace(/\.[^/.]+$/, '')) // Remove extension for title
+      formData.append('category', 'other')
+      
+      const response = await fetch('/api/knowledge/documents/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
+      }
+
+      const result = await response.json()
+      alert('Document uploaded successfully! Processing will begin shortly.')
+      
+      // Refresh document list
+      if (fetchDocuments) {
+        fetchDocuments()
+      }
+      
+      // Reset file input
+      e.target.value = ''
+    } catch (error: any) {
+      console.error('Upload error:', error)
+      alert(`Upload failed: ${error.message}`)
+    } finally {
+      setUploading(false)
+    }
   }
 
   const formatFileSize = (bytes: number) => {

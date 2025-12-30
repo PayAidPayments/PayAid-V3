@@ -76,29 +76,134 @@ export default function Home() {
       })
     })
 
-    // Tab functionality - DYNAMIC IMAGE SWITCHING
+    // Mobile menu toggle
+    const menuToggle = document.querySelector('.menu-toggle')
+    const mobileMenu = document.querySelector('.mobile-menu')
+    const navLinks = document.querySelector('.nav-links')
+
+    if (menuToggle && mobileMenu) {
+      // Ensure menu starts closed
+      mobileMenu.classList.remove('active')
+      menuToggle.textContent = '☰'
+
+      menuToggle.addEventListener('click', (e) => {
+        e.stopPropagation()
+        mobileMenu.classList.toggle('active')
+        // Toggle hamburger icon
+        if (mobileMenu.classList.contains('active')) {
+          menuToggle.textContent = '✕'
+        } else {
+          menuToggle.textContent = '☰'
+        }
+      })
+
+      // Close menu when clicking outside
+      document.addEventListener('click', (e) => {
+        if (mobileMenu.classList.contains('active') && 
+            !mobileMenu.contains(e.target as Node) && 
+            !menuToggle.contains(e.target as Node)) {
+          mobileMenu.classList.remove('active')
+          menuToggle.textContent = '☰'
+        }
+      })
+
+      // Close menu when clicking on a link
+      mobileMenu.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          mobileMenu.classList.remove('active')
+          menuToggle.textContent = '☰'
+        })
+      })
+
+      // Close menu when clicking a link
+      mobileMenu.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          mobileMenu.classList.remove('active')
+          menuToggle.textContent = '☰'
+        })
+      })
+    }
+
+    // Tab functionality - DYNAMIC IMAGE SWITCHING with AUTO-SCROLL
     const tabButtons = document.querySelectorAll('.tab-btn')
     const showcaseImages = document.querySelectorAll('.showcase-image img')
+    const showcaseSection = document.querySelector('.dashboard-showcase')
+    const tabs = ['crm', 'invoicing', 'inventory', 'analytics']
+    let currentTabIndex = 0
+    let autoScrollInterval: NodeJS.Timeout | null = null
+    let isPaused = false
 
+    // Function to switch to a specific tab
+    const switchTab = (tabName: string) => {
+      // Update active button
+      tabButtons.forEach(b => {
+        if (b.getAttribute('data-tab') === tabName) {
+          b.classList.add('active')
+        } else {
+          b.classList.remove('active')
+        }
+      })
+      
+      // Hide all images and show selected one with smooth transition
+      showcaseImages.forEach(img => {
+        img.classList.add('hidden')
+      })
+      const targetImg = document.getElementById(tabName)
+      if (targetImg) {
+        targetImg.classList.remove('hidden')
+      }
+    }
+
+    // Function to switch to next tab
+    const switchToNextTab = () => {
+      if (!isPaused) {
+        currentTabIndex = (currentTabIndex + 1) % tabs.length
+        switchTab(tabs[currentTabIndex])
+      }
+    }
+
+    // Manual tab click handler
     tabButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const tabName = btn.getAttribute('data-tab')
-        
-        // Update active button
-        tabButtons.forEach(b => b.classList.remove('active'))
-        btn.classList.add('active')
-        
-        // Hide all images and show selected one
-        showcaseImages.forEach(img => img.classList.add('hidden'))
-        const targetImg = document.getElementById(tabName || '')
-        if (targetImg) {
-          targetImg.classList.remove('hidden')
+        if (tabName) {
+          currentTabIndex = tabs.indexOf(tabName)
+          switchTab(tabName)
+          // Reset auto-scroll timer when manually clicked
+          if (autoScrollInterval) {
+            clearInterval(autoScrollInterval)
+          }
+          startAutoScroll()
         }
       })
     })
 
+    // Start auto-scroll
+    const startAutoScroll = () => {
+      if (autoScrollInterval) {
+        clearInterval(autoScrollInterval)
+      }
+      autoScrollInterval = setInterval(switchToNextTab, 5000) // 5 seconds
+    }
+
+    // Pause on hover, resume on mouse leave
+    if (showcaseSection) {
+      showcaseSection.addEventListener('mouseenter', () => {
+        isPaused = true
+      })
+      showcaseSection.addEventListener('mouseleave', () => {
+        isPaused = false
+      })
+    }
+
+    // Start auto-scroll on page load
+    startAutoScroll()
+
     return () => {
       window.removeEventListener('scroll', handleScroll)
+      if (autoScrollInterval) {
+        clearInterval(autoScrollInterval)
+      }
     }
   }, [mounted])
 
@@ -121,6 +226,21 @@ export default function Home() {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        html {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        body {
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        img, video {
+            max-width: 100%;
+            height: auto;
         }
 
         :root {
@@ -309,6 +429,80 @@ export default function Home() {
             font-size: 1.5rem;
             cursor: pointer;
             color: var(--primary-purple);
+            z-index: 1000;
+        }
+
+        .mobile-menu {
+            display: none !important;
+            position: fixed;
+            top: 70px;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            z-index: 999;
+            max-height: calc(100vh - 70px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .mobile-menu.active {
+            display: block !important;
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .mobile-menu ul {
+            list-style: none;
+            padding: 1rem;
+            margin: 0;
+        }
+
+        .mobile-menu li {
+            padding: 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .mobile-menu li:last-child {
+            border-bottom: none;
+        }
+
+        .mobile-menu a {
+            color: var(--text-dark);
+            text-decoration: none;
+            font-weight: 500;
+            display: block;
+            padding: 1rem 0;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .mobile-menu a:active {
+            background: var(--bg-light);
+            color: var(--primary-purple);
+        }
+
+        .mobile-menu .cta-header {
+            background: var(--primary-purple);
+            color: var(--white);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 0.5rem;
+            min-height: 48px;
+            justify-content: center;
+        }
+
+        .mobile-menu .cta-header:active {
+            background: var(--light-purple);
+            color: var(--white);
         }
 
         /* ===== HERO SECTION ===== */
@@ -490,13 +684,27 @@ export default function Home() {
             z-index: 10;
         }
 
+        @media (max-width: 768px) {
+            .dashboard-showcase {
+                padding: 3rem 1rem;
+            }
+        }
+
         .showcase-container {
             max-width: 1200px;
             margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
+            display: flex;
+            flex-direction: row;
             gap: 3rem;
             align-items: center;
+        }
+
+        .showcase-image {
+            flex: 1.2;
+        }
+
+        .showcase-left {
+            flex: 1;
         }
 
         .showcase-left h2 {
@@ -562,15 +770,30 @@ export default function Home() {
             }
         }
 
+        .showcase-image {
+            position: relative;
+        }
+
         .showcase-image img {
             width: 100%;
             height: auto;
             display: block;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.6s ease-in-out, visibility 0.6s ease-in-out;
         }
 
         .showcase-image img.hidden {
-            display: none;
+            opacity: 0;
+            visibility: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .showcase-image img:not(.hidden) {
+            position: relative;
+            opacity: 1;
+            visibility: visible;
         }
 
         /* ===== STATS SECTION ===== */
@@ -619,6 +842,7 @@ export default function Home() {
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: 600;
+            white-space: nowrap;
         }
 
         /* ===== FEATURES SECTION ===== */
@@ -664,6 +888,10 @@ export default function Home() {
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
         }
 
         .feature-card::before {
@@ -745,6 +973,10 @@ export default function Home() {
             border: 1px solid var(--border-light);
             transition: all 0.3s ease;
             box-shadow: 0 2px 15px rgba(0, 0, 0, 0.03);
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
         }
 
         .use-case-card:hover {
@@ -790,6 +1022,7 @@ export default function Home() {
             color: var(--primary-purple);
             font-weight: 600;
             text-decoration: none;
+            display: inline-block;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
@@ -867,12 +1100,14 @@ export default function Home() {
             font-size: 1.5rem;
             margin-bottom: 0.5rem;
             font-weight: 700;
+            white-space: nowrap;
         }
 
         .price {
             font-size: 3rem;
             font-weight: 800;
             margin: 1.5rem 0;
+            white-space: nowrap;
         }
 
         .pricing-card.featured .price {
@@ -883,6 +1118,7 @@ export default function Home() {
             font-size: 0.95rem;
             margin-bottom: 2rem;
             opacity: 0.9;
+            white-space: nowrap;
         }
 
         .features-list {
@@ -954,11 +1190,41 @@ export default function Home() {
 
         .testimonials-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 2rem;
             max-width: 1200px;
             margin: 0 auto;
             margin-top: 3rem;
+        }
+
+        .testimonial-card {
+            white-space: normal;
+        }
+
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .testimonials-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 1rem;
+            }
+            
+            .stat-label {
+                font-size: 0.85rem;
+            }
+            
+            .pricing-cards {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .testimonial-card {
@@ -1092,6 +1358,7 @@ export default function Home() {
             display: block;
             margin-bottom: 0.75rem;
             transition: color 0.3s ease;
+            white-space: nowrap;
         }
 
         .footer-section a:hover {
@@ -1108,52 +1375,380 @@ export default function Home() {
 
         /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
+            /* Header & Navigation */
             .nav-links {
                 display: none;
             }
 
             .menu-toggle {
                 display: block;
+                min-width: 44px;
+                min-height: 44px;
+                padding: 0.5rem;
+            }
+
+            .mobile-menu {
+                display: block;
             }
 
             .mega-menu {
                 min-width: auto;
-                width: calc(100vw - 4rem);
+                width: calc(100vw - 2rem);
+                left: 1rem;
             }
 
             .mega-menu-grid {
                 grid-template-columns: 1fr;
             }
 
-            .showcase-container {
-                grid-template-columns: 1fr;
+            header {
+                padding: 0.75rem 1rem;
+            }
+
+            .logo img {
+                height: 32px;
+            }
+
+            .cta-header {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.9rem;
+                min-height: 44px;
+            }
+
+            /* Hero Section */
+            .hero {
+                margin-top: 60px;
+                padding: 2rem 1rem;
+                min-height: auto;
+            }
+
+            .hero-container {
+                flex-direction: column;
                 gap: 2rem;
             }
 
+            .hero-content {
+                text-align: center;
+            }
+
             .hero h1 {
-                font-size: 2rem;
+                font-size: clamp(1.75rem, 8vw, 2.5rem);
+                line-height: 1.2;
+            }
+
+            .hero p {
+                font-size: 1rem;
+                margin-bottom: 1.5rem;
             }
 
             .hero-buttons {
                 flex-direction: column;
+                gap: 1rem;
+                width: 100%;
             }
 
             .btn-primary, .btn-secondary {
                 width: 100%;
                 text-align: center;
+                padding: 1rem 1.5rem;
+                font-size: 1rem;
+                min-height: 48px;
+            }
+
+            .hero-image {
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .hero-image img {
+                width: 100%;
+                height: auto;
+            }
+
+            /* Dashboard Showcase */
+            .dashboard-showcase {
+                padding: 3rem 1rem;
+            }
+
+            .showcase-container {
+                flex-direction: column;
+                gap: 2rem;
+            }
+
+            .showcase-left {
+                text-align: center;
+            }
+
+            .showcase-left h2 {
+                font-size: clamp(1.5rem, 6vw, 2rem);
+                margin-bottom: 1rem;
+            }
+
+            .showcase-left p {
+                font-size: 0.95rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .showcase-tabs {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .tab-btn {
+                padding: 0.7rem 1.2rem;
+                font-size: 0.85rem;
+                min-height: 44px;
+            }
+
+            .showcase-image {
+                width: 100%;
+            }
+
+            .showcase-image img {
+                width: 100%;
+                height: auto;
+                border-radius: 12px;
+            }
+
+            /* Stats Section */
+            .stats {
+                padding: 3rem 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+            }
+
+            .stat-number {
+                font-size: clamp(1.5rem, 6vw, 2.5rem);
+            }
+
+            .stat-label {
+                font-size: 0.8rem;
+                white-space: nowrap;
+            }
+
+            /* Features Section */
+            .features {
+                padding: 4rem 1rem;
+            }
+
+            .section-title {
+                margin-bottom: 2.5rem;
+            }
+
+            .section-title h2 {
+                font-size: clamp(1.75rem, 6vw, 2.2rem);
+                margin-bottom: 0.75rem;
+            }
+
+            .section-title p {
+                font-size: 0.95rem;
+                padding: 0 1rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .feature-card {
+                padding: 1.5rem;
+            }
+
+            .feature-card h3 {
+                font-size: 1.1rem;
+            }
+
+            .feature-card p {
+                font-size: 0.9rem;
+            }
+
+            .feature-icon {
+                width: 60px;
+                height: 60px;
+            }
+
+            /* Use Cases Section */
+            .use-cases {
+                padding: 4rem 1rem;
+            }
+
+            .use-cases-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .use-case-card {
+                padding: 1.5rem;
+            }
+
+            .use-case-card h3 {
+                font-size: 1.1rem;
+            }
+
+            .use-case-card p {
+                font-size: 0.9rem;
+            }
+
+            .use-case-icon {
+                width: 60px;
+                height: 60px;
+            }
+
+            /* Pricing Section */
+            .pricing {
+                padding: 4rem 1rem;
+            }
+
+            .pricing-cards {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .pricing-card {
+                padding: 2rem 1.5rem;
             }
 
             .pricing-card.featured {
                 transform: scale(1);
             }
 
-            header {
-                padding: 0.5rem 1rem;
+            .pricing-card h3 {
+                font-size: 1.3rem;
             }
 
-            .hero {
-                margin-top: 60px;
+            .pricing-price {
+                font-size: clamp(2rem, 8vw, 3rem);
+            }
+
+            .features-list {
+                font-size: 0.9rem;
+            }
+
+            .features-list li {
+                padding: 0.5rem 0;
+                font-size: 0.9rem;
+            }
+
+            .price-cta {
+                min-height: 48px;
                 padding: 1rem;
+            }
+
+            /* Final CTA */
+            .final-cta {
+                padding: 3rem 1rem;
+            }
+
+            .final-cta h2 {
+                font-size: clamp(1.5rem, 6vw, 2rem);
+                margin-bottom: 1rem;
+            }
+
+            .final-cta p {
+                font-size: 0.95rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .cta-button-large {
+                width: 100%;
+                padding: 1rem 1.5rem;
+                font-size: 1rem;
+                min-height: 48px;
+            }
+
+            /* Footer */
+            footer {
+                padding: 3rem 1rem 1.5rem;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .footer-section {
+                text-align: center;
+            }
+
+            .footer-section h4 {
+                font-size: 1rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .footer-section a {
+                font-size: 0.85rem;
+            }
+
+            .footer-bottom {
+                padding-top: 1.5rem;
+                font-size: 0.85rem;
+            }
+
+            /* General Mobile Improvements */
+            * {
+                -webkit-tap-highlight-color: rgba(83, 50, 138, 0.1);
+            }
+
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+
+            /* Ensure touch targets are at least 44x44px */
+            button, a, input, select, textarea {
+                min-height: 44px;
+            }
+
+            /* Prevent horizontal scroll */
+            html, body {
+                overflow-x: hidden;
+                width: 100%;
+            }
+
+            /* Ensure containers don't overflow */
+            .hero-container,
+            .showcase-container,
+            .stats-grid,
+            .features-grid,
+            .use-cases-grid,
+            .pricing-cards {
+                width: 100%;
+                max-width: 100%;
+            }
+
+            /* Improve text readability */
+            p {
+                line-height: 1.6;
+            }
+        }
+
+        /* Additional mobile optimizations for smaller screens */
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero h1 {
+                font-size: 1.75rem;
+            }
+
+            .showcase-left h2 {
+                font-size: 1.5rem;
+            }
+
+            .section-title h2 {
+                font-size: 1.5rem;
+            }
+
+            .pricing-card {
+                padding: 1.5rem 1rem;
+            }
+
+            .feature-card, .use-case-card {
+                padding: 1.25rem;
             }
         }
 
@@ -1244,63 +1839,24 @@ export default function Home() {
             <li><a href="#features">Company</a></li>
             <li><Link href="/login">Sign In</Link></li>
           </ul>
-          <Link href="/register" className="cta-header">Book AI Consultation</Link>
+          <Link href="/register" className="cta-header">Signup</Link>
           <button className="menu-toggle">☰</button>
         </nav>
+        <div className="mobile-menu">
+          <ul>
+            <li className="nav-item">
+              <a href="#products">Products</a>
+            </li>
+            <li className="nav-item">
+              <a href="#solutions">Solutions</a>
+            </li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#features">Company</a></li>
+            <li><Link href="/login">Sign In</Link></li>
+            <li><Link href="/register" className="cta-header">Signup</Link></li>
+          </ul>
+        </div>
       </header>
-
-      {/* HERO SECTION */}
-      <section className="hero">
-        <div className="hero-container">
-          <div className="hero-content">
-            <h1>Your Complete Business OS<span style={{display: 'block'}}>Powered by AI</span></h1>
-            <p>
-              AI-powered CRM, automation, and intelligence to streamline operations, reduce costs, and elevate customer experiences. 
-              Everything your business needs—from conversational AI to workflow automation—all in one platform. Built for India.
-            </p>
-            <div className="hero-buttons">
-              <Link href="/register" className="btn-primary">Start Free Trial</Link>
-              <a href="#ai-services" className="btn-secondary">Explore AI Features →</a>
-            </div>
-          </div>
-          <div className="hero-image">
-            <img 
-              src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/digital-heroes-payaid.png" 
-              alt="PayAid Digital Heroes - Transform Your Business"
-              loading="eager"
-              onError={(e) => {
-                console.error('Image failed to load, using fallback');
-                e.currentTarget.onerror = null; // Prevent infinite loop
-                e.currentTarget.src = 'https://via.placeholder.com/600x400/53328A/F5C700?text=PayAid+Digital+Heroes';
-              }}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* DASHBOARD SHOWCASE */}
-      <section className="dashboard-showcase" id="dashboard-showcase">
-        <div className="showcase-container">
-          <div className="showcase-left">
-            <h2>All Your Business, One Dashboard</h2>
-            <p>
-              Manage your entire business from a single, intuitive dashboard. Access customer management, invoicing, inventory, payments, HR, accounting, analytics, and AI-powered insights all in one place. No switching between tools. No learning curves.
-            </p>
-            <div className="showcase-tabs">
-              <button className="tab-btn active" data-tab="crm">CRM</button>
-              <button className="tab-btn" data-tab="invoicing">Invoicing</button>
-              <button className="tab-btn" data-tab="inventory">Inventory</button>
-              <button className="tab-btn" data-tab="analytics">Analytics</button>
-            </div>
-          </div>
-          <div className="showcase-image">
-            <img id="crm" src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/c0edae1a-228f-4ed9-ac4c-7416f122b23c.png" alt="CRM Dashboard" />
-            <img id="invoicing" className="hidden" src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/11f51316-40e0-48f1-b809-89197160a22e.png" alt="Invoicing Dashboard" />
-            <img id="inventory" className="hidden" src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/87901090-3bfc-4120-b4fc-456db282f481.png" alt="Inventory Dashboard" />
-            <img id="analytics" className="hidden" src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/df4d5758-332c-4e79-89ec-4f9af8b1c070.png" alt="Analytics Dashboard" />
-          </div>
-        </div>
-      </section>
 
       {/* STATS SECTION */}
       <section className="stats">
@@ -1324,6 +1880,59 @@ export default function Home() {
         </div>
       </section>
 
+      {/* HERO SECTION */}
+      <section className="hero">
+        <div className="hero-container">
+          <div className="hero-content">
+            <h1>Your Complete Business OS<span style={{display: 'block'}}>Powered by AI</span></h1>
+            <p>
+              AI-powered CRM, automation, and intelligence to streamline operations, reduce costs, and elevate customer experiences. 
+              Everything your business needs—from conversational AI to workflow automation—all in one platform. Built for India.
+            </p>
+            <div className="hero-buttons">
+              <Link href="/register" className="btn-primary">Start Free Trial</Link>
+              <a href="#ai-services" className="btn-secondary">Explore AI Features →</a>
+            </div>
+          </div>
+          <div className="hero-image">
+            <img 
+              src="/hero-digital-specialists.png" 
+              alt="Digital Specialists Ready to Transform Your Business - PayAid Co-Founder with Finance, Sales, Logistics, Communication, Legal, Analytics, Chat Bot, Vendor Management, Design, Human Resource, and CRM specialists orbiting around the central Co-Founder figure"
+              loading="eager"
+              onError={(e) => {
+                console.error('Hero image failed to load, using fallback');
+                e.currentTarget.onerror = null; // Prevent infinite loop
+                e.currentTarget.src = 'https://via.placeholder.com/600x400/53328A/F5C700?text=Digital+Specialists+Ready+to+Transform+Your+Business';
+              }}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* DASHBOARD SHOWCASE */}
+      <section className="dashboard-showcase" id="dashboard-showcase">
+        <div className="showcase-container">
+          <div className="showcase-image">
+            <img id="crm" src="/CRM-Dashboard.png" alt="CRM Dashboard" />
+            <img id="invoicing" className="hidden" src="/Invoicing.png" alt="Invoicing Dashboard" />
+            <img id="inventory" className="hidden" src="/Inventory.png" alt="Inventory Dashboard" />
+            <img id="analytics" className="hidden" src="/Analytics.png" alt="Analytics Dashboard" />
+          </div>
+          <div className="showcase-left">
+            <h2>Entire Business, One Dashboard</h2>
+            <p>
+              Manage your entire business from a single, intuitive dashboard. Access customer management, invoicing, inventory, payments, HR, accounting, analytics, and AI-powered insights all in one place. No switching between tools. No learning curves.
+            </p>
+            <div className="showcase-tabs">
+              <button className="tab-btn active" data-tab="crm">CRM</button>
+              <button className="tab-btn" data-tab="invoicing">Invoicing</button>
+              <button className="tab-btn" data-tab="inventory">Inventory</button>
+              <button className="tab-btn" data-tab="analytics">Analytics</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CORE AI SERVICES SECTION */}
       <section className="features" id="ai-services" style={{background: 'linear-gradient(135deg, var(--bg-light) 0%, var(--white) 100%)'}}>
         <div className="section-title">
@@ -1331,48 +1940,48 @@ export default function Home() {
           <p>Powerful AI automation and smart solutions to transform your business operations</p>
         </div>
         <div className="features-grid">
-          <div className="feature-card scroll-reveal">
+          <Link href="/features/conversational-ai" className="feature-card scroll-reveal">
             <div className="feature-icon">
               <img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/3c63721a-ebe9-4360-b817-bde782599651.png" alt="Conversational AI" />
             </div>
             <h3>Conversational AI</h3>
             <p>Build multilingual, context-aware chatbots for web, WhatsApp, apps, or voice. Turn conversations into conversions with intelligent lead qualification and automated customer support.</p>
-          </div>
-          <div className="feature-card scroll-reveal">
+          </Link>
+          <Link href="/features/agentic-workflow-automation" className="feature-card scroll-reveal">
             <div className="feature-icon">
-              <img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/537579ef-2324-4aec-b4fc-3b738b5c2df2.png" alt="Agentic Workflow Automation" />
+              <img src="/Agentic-Workflow-Automation.jpg" alt="Agentic Workflow Automation" />
             </div>
             <h3>Agentic Workflow Automation</h3>
             <p>Deploy smart AI agents to automate email parsing, form-filling, document review, and tasks in real time. Reduce manual work and accelerate business processes.</p>
-          </div>
-          <div className="feature-card scroll-reveal">
+          </Link>
+          <Link href="/features/knowledge-rag-ai" className="feature-card scroll-reveal">
             <div className="feature-icon">
               <img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/a49c0912-d99c-4897-9126-7a02c39a6a3d.png" alt="Knowledge & RAG AI" />
             </div>
             <h3>Knowledge & RAG AI</h3>
             <p>Ask questions from your documents or SOPs and get instant, cited answers via intelligent retrieval. Transform your knowledge base into a searchable AI assistant with full audit trails.</p>
-          </div>
-          <div className="feature-card scroll-reveal">
+          </Link>
+          <Link href="/features/ai-cofounder" className="feature-card scroll-reveal">
             <div className="feature-icon">
-              <img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/c2b336d8-9b53-4123-963b-45b41f9f65ce.png" alt="AI Co-founder" />
+              <img src="/AI-Co-founder.png" alt="AI Co-founder" />
             </div>
             <h3>AI Co-founder</h3>
             <p>Your strategic business partner with 22 specialist agents. Get business insights, recommendations, and execute actions automatically. From idea to IPO, guided by AI.</p>
-          </div>
-          <div className="feature-card scroll-reveal">
+          </Link>
+          <Link href="/features/ai-website-builder" className="feature-card scroll-reveal">
             <div className="feature-icon">
-              <img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/b5197a7d-a578-4d18-bf84-eccfc41ede45.png" alt="AI Website Builder" />
+              <img src="/AI-Website-Builder.png" alt="AI Website Builder" />
             </div>
             <h3>AI Website Builder</h3>
             <p>Create stunning websites and landing pages with AI-powered component generation. Build, customize, and deploy professional sites in minutes, not weeks.</p>
-          </div>
-          <div className="feature-card scroll-reveal">
+          </Link>
+          <Link href="/features/ai-powered-insights" className="feature-card scroll-reveal">
             <div className="feature-icon">
               <img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/db58238f-481d-4374-b4bf-b2113b642c51.png" alt="AI-Powered Insights" />
             </div>
             <h3>AI-Powered Insights</h3>
             <p>Get intelligent business analysis, revenue insights, and risk warnings. Make data-driven decisions with AI that understands your business context.</p>
-          </div>
+          </Link>
         </div>
       </section>
 
@@ -1383,36 +1992,36 @@ export default function Home() {
           <p>All your business modules integrated with AI-powered intelligence</p>
         </div>
         <div className="features-grid">
-          <div className="feature-card scroll-reveal">
-            <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/a710366a-897f-4ae7-bc18-1f725c29151f.png" alt="All-in-One Platform" /></div>
+          <Link href="/features/all-in-one-platform" className="feature-card scroll-reveal">
+            <div className="feature-icon"><img src="/All-in-One-Platform.png" alt="All-in-One Platform" /></div>
             <h3>All-in-One Platform</h3>
             <p>Comprehensive Management: Manage your CRM, Invoicing, Inventory, HR, Payments, and Accounting seamlessly within a single platform. Eliminate the need for multiple, disconnected software solutions and gain a unified view of your business operations.</p>
-          </div>
-          <div className="feature-card scroll-reveal">
-            <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/a1747960-4b63-446e-ad29-c247eb134d4c.png" alt="50% More Affordable" /></div>
+          </Link>
+          <Link href="/features/made-for-indian-businesses" className="feature-card scroll-reveal">
+            <div className="feature-icon"><img src="/Made-for-Indian-Businesses.png" alt="Made for Indian Businesses" /></div>
             <h3>Made for Indian Businesses</h3>
             <p>Tailored Solutions: PayAid is specifically designed to address the unique challenges and requirements of Indian businesses. Localized Support: Enjoy dedicated support and features that align with the Indian market, ensuring your business stays ahead with tools that truly matter.</p>
-          </div>
-          <div className="feature-card scroll-reveal">
-            <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/32625e56-4103-46fc-a059-89161398fc9b.png" alt="India-First Design" /></div>
+          </Link>
+          <Link href="/features/simple-easy-to-use" className="feature-card scroll-reveal">
+            <div className="feature-icon"><img src="/Simple-Easy-to-Use.png" alt="Simple & Easy to Use" /></div>
             <h3>Simple & Easy to Use</h3>
             <p>User-Friendly Interface: Built for simplicity, PayAid ensures that anyone in your organization can use it effortlessly. From HR managers to sales teams, our platform minimizes the learning curve, making it accessible to all. Quick Onboarding: Get started in no time.</p>
-          </div>
-          <div className="feature-card scroll-reveal">
+          </Link>
+          <Link href="/features/ai-powered-intelligence" className="feature-card scroll-reveal">
             <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/3634df48-2ea7-4641-bb4d-cd1c631bbcc1.png" alt="AI-Powered Intelligence" /></div>
             <h3>AI-Powered Intelligence</h3>
             <p>Every module is enhanced with AI capabilities. From smart lead scoring to automated invoice processing, AI works behind the scenes to make your business operations smarter and more efficient. Get insights, predictions, and recommendations tailored to your business.</p>
-          </div>
-          <div className="feature-card scroll-reveal">
-            <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/2b88452a-f5f2-4a3b-8e26-dccc89f76fa9.png" alt="Lightning Fast Implementation" /></div>
+          </Link>
+          <Link href="/features/improved-efficiency" className="feature-card scroll-reveal">
+            <div className="feature-icon"><img src="/Improved-Efficiency.jpg" alt="Improved Efficiency" /></div>
             <h3>Improved Efficiency</h3>
             <p>Streamline workflows and enhance team productivity by integrating all business functions under one roof. Start using PayAid in minutes, not months. Simple onboarding, intuitive interface, and immediate productivity gains.</p>
-          </div>
-          <div className="feature-card scroll-reveal">
+          </Link>
+          <Link href="/features/strong-security" className="feature-card scroll-reveal">
             <div className="feature-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/7dce85d1-4485-457c-825c-a9b5ca0008a7.png" alt="Enterprise-Grade Security" /></div>
             <h3>Strong Security</h3>
             <p>128-bit SSL encryption—the same high-security standard trusted by leading banks. From login to every action you take, your data stays safe, secure & shielded from threats. Bank-grade security with enterprise-level compliance standards.</p>
-          </div>
+          </Link>
         </div>
       </section>
 
@@ -1423,42 +2032,42 @@ export default function Home() {
           <p>Serving restaurants, retail, services, and more across India</p>
         </div>
         <div className="use-cases-grid">
-          <div className="use-case-card scroll-reveal">
+          <Link href="/features/restaurants" className="use-case-card scroll-reveal">
             <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/d5698294-4698-48a6-bad4-7ff8d841d471.png" alt="Restaurants" /></div>
             <h3>Restaurants</h3>
             <p>No more operational headaches! With PayAid, handle online and offline orders, payment processing, inventory tracking, and staff scheduling from one dashboard, ensuring smooth sailing for your team.</p>
-            <a href="#features" className="use-case-link">Learn more</a>
-          </div>
-          <div className="use-case-card scroll-reveal">
+            <span className="use-case-link">Learn more →</span>
+          </Link>
+          <Link href="/features/retail-stores" className="use-case-card scroll-reveal">
             <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/3c6c7a46-58ea-426f-9c3c-7b415040e598.png" alt="Retail Stores" /></div>
             <h3>Retail Stores</h3>
             <p>Manage your leads, assign sales targets and close more deals. Multi-location inventory management, customer loyalty programs, point of sale systems, and centralized analytics.</p>
-            <a href="#features" className="use-case-link">Learn more</a>
-          </div>
-          <div className="use-case-card scroll-reveal">
+            <span className="use-case-link">Learn more →</span>
+          </Link>
+          <Link href="/features/service-businesses" className="use-case-card scroll-reveal">
             <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/ef72d266-1453-4f1b-879f-c1e44a154e80.png" alt="Service Businesses" /></div>
             <h3>Service Businesses</h3>
             <p>Keep a track of all the transactions happening in your business. Project management, client invoicing, team scheduling, expense tracking, and profitability analysis in real-time.</p>
-            <a href="#features" className="use-case-link">Learn more</a>
-          </div>
-          <div className="use-case-card scroll-reveal">
+            <span className="use-case-link">Learn more →</span>
+          </Link>
+          <Link href="/features/ecommerce-platforms" className="use-case-card scroll-reveal">
             <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/50ad44eb-346a-42cc-b988-01e39a718fd4.png" alt="E-Commerce Platforms" /></div>
             <h3>E-Commerce Platforms</h3>
             <p>Manage projects, assign tasks and never miss a project timeline. Multi-channel selling, inventory synchronization, order management, fulfillment tracking, and customer insights.</p>
-            <a href="#features" className="use-case-link">Learn more</a>
-          </div>
-          <div className="use-case-card scroll-reveal">
+            <span className="use-case-link">Learn more →</span>
+          </Link>
+          <Link href="/features/manufacturing" className="use-case-card scroll-reveal">
             <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/770d8b48-df7a-4d19-8632-9d8f28f844a7.png" alt="Manufacturing" /></div>
             <h3>Manufacturing</h3>
             <p>Production tracking, supplier management, quality control, logistics optimization, and compliance reporting—all streamlined in one platform.</p>
-            <a href="#features" className="use-case-link">Learn more</a>
-          </div>
-          <div className="use-case-card scroll-reveal">
-            <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/81b13c03-2331-4efa-8fa4-c85f7d0f8c04.png" alt="Professional Services" /></div>
+            <span className="use-case-link">Learn more →</span>
+          </Link>
+          <Link href="/features/professional-services" className="use-case-card scroll-reveal">
+            <div className="use-case-icon"><img src="https://user-gen-media-assets.s3.amazonaws.com/gemini_images/5157a91e-7bd1-4368-b5d7-94ff202bcadd.png" alt="Professional Services" /></div>
             <h3>Professional Services</h3>
             <p>Client project management, team collaboration, resource planning, time tracking, and invoice automation—all in one place.</p>
-            <a href="#features" className="use-case-link">Learn more</a>
-          </div>
+            <span className="use-case-link">Learn more →</span>
+          </Link>
         </div>
       </section>
 
@@ -1499,7 +2108,6 @@ export default function Home() {
           <div className="pricing-card scroll-reveal">
             <h3>Enterprise</h3>
             <div className="price">Custom</div>
-            <div className="price-period">per month</div>
             <ul className="features-list">
               <li><span className="check-icon">✓</span> Everything Included</li>
               <li><span className="check-icon">✓</span> Custom Integrations</li>
@@ -1515,7 +2123,7 @@ export default function Home() {
       {/* TESTIMONIALS SECTION */}
       <section className="testimonials">
         <div className="section-title">
-          <h2>The Hype is Real. Here&apos;s What They Say</h2>
+          <h2>What our Clients / Users have to say</h2>
           <p>Trusted by Indian entrepreneurs transforming their businesses</p>
         </div>
         <div className="testimonials-grid">
@@ -1546,7 +2154,7 @@ export default function Home() {
         <p>Whether you're a startup or scaling enterprise—PayAid can craft AI-powered workflows, chatbots, and automation tools tailored for you. Book your free AI consultation or start your trial today.</p>
         <div style={{display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '2rem'}}>
           <Link href="/register" className="cta-button-large">Start Free Trial</Link>
-          <a href="#ai-services" className="btn-secondary" style={{background: 'rgba(255, 255, 255, 0.1)', color: 'var(--white)', borderColor: 'rgba(255, 255, 255, 0.3)'}}>Book AI Consultation</a>
+          <Link href="/login" className="btn-secondary" style={{background: 'rgba(255, 255, 255, 0.1)', color: 'var(--white)', borderColor: 'rgba(255, 255, 255, 0.3)'}}>Sign In</Link>
         </div>
       </section>
 
@@ -1555,38 +2163,38 @@ export default function Home() {
         <div className="footer-content">
           <div className="footer-section">
             <h4>AI Services</h4>
-            <a href="#ai-services">Conversational AI</a>
-            <a href="#ai-services">Agentic Automation</a>
-            <a href="#ai-services">Knowledge & RAG AI</a>
-            <a href="#ai-services">AI Co-founder</a>
+            <Link href="/features/conversational-ai">Conversational AI</Link>
+            <Link href="/features/agentic-workflow-automation">Agentic Automation</Link>
+            <Link href="/features/knowledge-rag-ai">Knowledge & RAG AI</Link>
+            <Link href="/features/ai-cofounder">AI Co-founder</Link>
           </div>
           <div className="footer-section">
             <h4>Product</h4>
-            <a href="#features">Business Modules</a>
-            <a href="#pricing">Pricing</a>
-            <a href="#features">Integrations</a>
-            <a href="#features">Security</a>
+            <Link href="/#features">Business Modules</Link>
+            <Link href="/#pricing">Pricing</Link>
+            <Link href="/#features">Integrations</Link>
+            <Link href="/security">Security</Link>
           </div>
           <div className="footer-section">
             <h4>Solutions</h4>
-            <a href="#features">Restaurants</a>
-            <a href="#features">Retail</a>
-            <a href="#features">Services</a>
-            <a href="#features">E-Commerce</a>
+            <Link href="/features/restaurants">Restaurants</Link>
+            <Link href="/features/retail-stores">Retail</Link>
+            <Link href="/features/service-businesses">Services</Link>
+            <Link href="/features/ecommerce-platforms">E-Commerce</Link>
           </div>
           <div className="footer-section">
             <h4>Company</h4>
-            <a href="#features">About</a>
-            <a href="#features">Blog</a>
-            <a href="#features">Careers</a>
-            <a href="#features">Contact</a>
+            <Link href="/about">About</Link>
+            <Link href="/blog">Blog</Link>
+            <Link href="/careers">Careers</Link>
+            <Link href="/contact">Contact</Link>
           </div>
           <div className="footer-section">
             <h4>Legal</h4>
-            <a href="#features">Privacy Policy</a>
-            <a href="#features">Terms of Service</a>
-            <a href="#features">Compliance</a>
-            <a href="#features">Security</a>
+            <Link href="/privacy-policy">Privacy Policy</Link>
+            <Link href="/terms-of-service">Terms of Service</Link>
+            <Link href="/compliance">Compliance</Link>
+            <Link href="/security">Security</Link>
           </div>
         </div>
         <div className="footer-bottom">

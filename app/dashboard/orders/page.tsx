@@ -8,11 +8,15 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
+import { getDynamicTitle, getDynamicDescription } from '@/lib/utils/status-labels'
 
 export default function OrdersPage() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<string>('')
   const { data, isLoading } = useOrders({ page, limit: 20, status: statusFilter || undefined })
+  
+  const dynamicTitle = getDynamicTitle('Orders', statusFilter)
+  const dynamicDescription = getDynamicDescription('Orders', statusFilter)
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">Loading...</div>
@@ -67,9 +71,9 @@ export default function OrdersPage() {
       {/* Orders Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Orders</CardTitle>
+          <CardTitle>{dynamicTitle}</CardTitle>
           <CardDescription>
-            {pagination?.total || 0} total orders
+            {dynamicDescription} ({pagination?.total || 0} total)
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
+import { getDynamicTitle, getDynamicDescription } from '@/lib/utils/status-labels'
 
 interface LeaveRequest {
   id: string
@@ -118,13 +119,16 @@ export default function LeaveRequestsPage() {
 
   const requests = data?.requests || []
   const pagination = data?.pagination
+  
+  const dynamicTitle = getDynamicTitle('Leave Requests', statusFilter)
+  const dynamicDescription = getDynamicDescription('Leave Requests', statusFilter)
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Leave Requests</h1>
-          <p className="mt-2 text-gray-600">Manage employee leave requests</p>
+          <h1 className="text-3xl font-bold text-gray-900">{dynamicTitle}</h1>
+          <p className="mt-2 text-gray-600">{dynamicDescription}</p>
         </div>
         <Link href="/dashboard/hr/leave/apply">
           <Button>Apply for Leave</Button>
@@ -154,9 +158,9 @@ export default function LeaveRequestsPage() {
       {/* Leave Requests Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Leave Requests</CardTitle>
+          <CardTitle>{dynamicTitle}</CardTitle>
           <CardDescription>
-            {pagination?.total || 0} total requests
+            {dynamicDescription} ({pagination?.total || 0} total)
           </CardDescription>
         </CardHeader>
         <CardContent>

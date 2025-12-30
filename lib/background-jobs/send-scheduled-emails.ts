@@ -109,19 +109,23 @@ async function sendEmail(email: any) {
     throw new Error('Contact email not found')
   }
 
-  // TODO: Integrate with SendGrid
-  // const sgMail = require('@sendgrid/mail')
-  // sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-  // await sgMail.send({
-  //   to: email.contact.email,
-  //   from: process.env.SENDGRID_FROM_EMAIL,
-  //   subject: email.subject || 'Message from PayAid',
-  //   html: email.body,
-  // })
+  try {
+    const { getSendGridClient } = await import('@/lib/email/sendgrid')
+    const sendGrid = getSendGridClient()
 
-  // Simulate for now
-  console.log(`📧 Email to ${email.contact.email}: ${email.subject}`)
-  await new Promise((resolve) => setTimeout(resolve, 100))
+    await sendGrid.sendEmail({
+      to: email.contact.email,
+      from: process.env.SENDGRID_FROM_EMAIL || 'noreply@payaid.com',
+      subject: email.subject || 'Message from PayAid',
+      html: email.body || email.htmlContent || '',
+      text: email.textContent || email.body?.replace(/<[^>]*>/g, '') || '',
+    })
+
+    console.log(`✅ Email sent to ${email.contact.email}: ${email.subject}`)
+  } catch (error) {
+    console.error(`❌ Failed to send email to ${email.contact.email}:`, error)
+    throw error
+  }
 }
 
 /**
@@ -132,16 +136,27 @@ async function sendSMS(email: any) {
     throw new Error('Contact phone not found')
   }
 
-  // TODO: Integrate with Twilio or Exotel
-  // await twilio.messages.create({
-  //   to: email.contact.phone,
-  //   from: process.env.TWILIO_PHONE,
-  //   body: email.body,
-  // })
-
-  // Simulate for now
-  console.log(`📱 SMS to ${email.contact.phone}: ${email.body.substring(0, 50)}...`)
-  await new Promise((resolve) => setTimeout(resolve, 100))
+  try {
+    const message = email.body || email.textContent || ''
+    
+    // Try Twilio first, fallback to Exotel
+    if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+      const { getTwilioClient } = await import('@/lib/marketing/twilio')
+      const twilio = getTwilioClient()
+      await twilio.sendSMS(email.contact.phone, message)
+      console.log(`✅ SMS sent via Twilio to ${email.contact.phone}`)
+    } else if (process.env.EXOTEL_API_KEY) {
+      const { getExotelClient } = await import('@/lib/marketing/exotel')
+      const exotel = getExotelClient()
+      await exotel.sendSMS(email.contact.phone, message)
+      console.log(`✅ SMS sent via Exotel to ${email.contact.phone}`)
+    } else {
+      throw new Error('No SMS provider configured (Twilio or Exotel)')
+    }
+  } catch (error) {
+    console.error(`❌ Failed to send SMS to ${email.contact.phone}:`, error)
+    throw error
+  }
 }
 
 /**
@@ -152,13 +167,24 @@ async function sendWhatsApp(email: any) {
     throw new Error('Contact phone not found')
   }
 
-  // TODO: Integrate with WATI or WhatsApp Business API
-  // await wati.sendMessage({
-  //   to: email.contact.phone,
-  //   message: email.body,
-  // })
-
-  // Simulate for now
-  console.log(`💬 WhatsApp to ${email.contact.phone}: ${email.body.substring(0, 50)}...`)
-  await new Promise((resolve) => setTimeout(resolve, 100))
+  try {
+    if (process.env.WATI_API_KEY) {
+      const { getWATIClient } = await import('@/lib/marketing/wati')
+      const wati = getWATIClient()
+      
+      // WATI requires template-based messages, so we'll use a simple template
+      // In production, you should create proper templates in WATI
+      await wati.sendMessage({
+        to: email.contact.phone,
+        templateName: 'simple_message', // Replace with your actual template name
+        bodyParameters: [email.body || email.textContent || ''],
+      })
+      console.log(`✅ WhatsApp sent via WATI to ${email.contact.phone}`)
+    } else {
+      throw new Error('WATI API not configured')
+    }
+  } catch (error) {
+    console.error(`❌ Failed to send WhatsApp to ${email.contact.phone}:`, error)
+    throw error
+  }
 }

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
+import { getDynamicTitle, getDynamicDescription } from '@/lib/utils/status-labels'
 
 export default function TasksPage() {
   const router = useRouter()
@@ -15,6 +16,9 @@ export default function TasksPage() {
   const [page, setPage] = useState(1)
   const { data, isLoading } = useTasks({ page, limit: 20, status: statusFilter || undefined })
   const deleteTask = useDeleteTask()
+  
+  const dynamicTitle = getDynamicTitle('Tasks', statusFilter)
+  const dynamicDescription = getDynamicDescription('Tasks', statusFilter)
 
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this task?')) {
@@ -49,8 +53,8 @@ export default function TasksPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>All Tasks</CardTitle>
-              <CardDescription>View and manage all your tasks</CardDescription>
+              <CardTitle>{dynamicTitle}</CardTitle>
+              <CardDescription>{dynamicDescription}</CardDescription>
             </div>
             <select
               value={statusFilter}

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
 import { ModuleGate } from '@/components/modules/ModuleGate'
+import { getDynamicTitle, getDynamicDescription } from '@/lib/utils/status-labels'
 
 interface Employee {
   id: string
@@ -74,15 +75,18 @@ export default function EmployeesPage() {
 
   const employees = data?.employees || []
   const pagination = data?.pagination
+  
+  const dynamicTitle = getDynamicTitle('Employees', statusFilter)
+  const dynamicDescription = getDynamicDescription('Employees', statusFilter)
 
   return (
     <ModuleGate module="hr">
       <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Employees</h1>
-          <p className="mt-2 text-gray-600">Manage your employee database</p>
-        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">{dynamicTitle}</h1>
+            <p className="mt-2 text-gray-600">{dynamicDescription}</p>
+          </div>
         <div className="flex gap-2">
           <Link href="/dashboard/hr/employees/bulk-import">
             <Button variant="outline">Bulk Import</Button>
@@ -148,9 +152,9 @@ export default function EmployeesPage() {
       {/* Employees Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Employees</CardTitle>
+          <CardTitle>{dynamicTitle}</CardTitle>
           <CardDescription>
-            {pagination?.total || 0} total employees
+            {dynamicDescription} ({pagination?.total || 0} total)
           </CardDescription>
         </CardHeader>
         <CardContent>
