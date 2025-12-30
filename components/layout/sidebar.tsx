@@ -229,19 +229,19 @@ function NavSection({ section, pathname, onLinkClick }: { section: typeof naviga
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-colors',
+          'w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-colors min-h-[44px]',
           hasActiveItem
             ? 'bg-blue-50 text-blue-700'
             : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
         )}
       >
-        <div className="flex items-center">
-          <span className="mr-3 text-lg">{section.icon}</span>
-          <span>{section.name}</span>
+        <div className="flex items-center flex-1 min-w-0">
+          <span className="mr-3 text-lg shrink-0">{section.icon}</span>
+          <span className="truncate">{section.name}</span>
         </div>
         <svg
           className={cn(
-            'w-4 h-4 transition-transform',
+            'w-4 h-4 transition-transform shrink-0 ml-2',
             isOpen ? 'transform rotate-180' : ''
           )}
           fill="none"

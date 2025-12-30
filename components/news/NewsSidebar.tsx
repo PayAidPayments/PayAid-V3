@@ -246,19 +246,22 @@ export function NewsSidebar() {
 
   if (isCollapsed) {
     return (
-      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-[60] pointer-events-auto">
+      <div 
+        className="fixed right-0 top-1/2 -translate-y-1/2 pointer-events-auto"
+        style={{ zIndex: 9999 }}
+      >
         <button
           onClick={() => {
             setIsCollapsed(false)
             setIsOpen(true)
           }}
-          className="bg-[#53328A] text-white p-2 sm:p-3 rounded-l-lg shadow-lg hover:bg-[#6B42A3] active:bg-[#5A2A7A] transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center"
+          className="bg-[#53328A] text-white p-2 sm:p-3 rounded-l-lg shadow-xl hover:bg-[#6B42A3] active:bg-[#5A2A7A] transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center border-2 border-white"
           aria-label="Open news sidebar"
-          style={{ zIndex: 60 }}
+          style={{ zIndex: 9999 }}
         >
           <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -left-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+            <span className="absolute -top-1 -left-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold z-10">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
