@@ -113,11 +113,24 @@ const CATEGORY_CONFIG = {
 }
 
 export function NewsSidebar() {
-  const [isOpen, setIsOpen] = useState(true)
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  // Load saved preference from localStorage, default to closed (collapsed)
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return true // Default to collapsed for SSR
+    const saved = localStorage.getItem('newsSidebarCollapsed')
+    return saved !== null ? saved === 'true' : true // Default to collapsed (closed)
+  })
+  
+  const [isOpen, setIsOpen] = useState(false) // Always start closed, user must open it
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const queryClient = useQueryClient()
+  
+  // Persist collapsed state to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('newsSidebarCollapsed', String(isCollapsed))
+    }
+  }, [isCollapsed])
   
   // Expose state to parent via CSS classes for dynamic padding
   useEffect(() => {
@@ -223,7 +236,10 @@ export function NewsSidebar() {
     return (
       <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40">
         <button
-          onClick={() => setIsCollapsed(false)}
+          onClick={() => {
+            setIsCollapsed(false)
+            setIsOpen(true)
+          }}
           className="bg-blue-600 text-white p-2 rounded-l-lg shadow-lg hover:bg-blue-700 transition-colors"
           aria-label="Open news sidebar"
         >
@@ -270,14 +286,20 @@ export function NewsSidebar() {
               <Filter className="h-4 w-4" />
             </button>
             <button
-              onClick={() => setIsCollapsed(true)}
+              onClick={() => {
+                setIsCollapsed(true)
+                setIsOpen(false)
+              }}
               className="p-1 hover:bg-gray-200 rounded transition-colors"
               aria-label="Collapse sidebar"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={() => {
+                setIsOpen(false)
+                setIsCollapsed(true)
+              }}
               className="p-1 hover:bg-gray-200 rounded transition-colors lg:hidden"
               aria-label="Close sidebar"
             >
