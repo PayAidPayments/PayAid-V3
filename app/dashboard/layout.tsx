@@ -184,7 +184,7 @@ export default function DashboardLayout({
           'sidebar-container',
           'fixed lg:fixed',
           'inset-y-0 left-0',
-          'z-50 lg:z-auto',
+          'z-50',
           'w-64',
           'transform',
           'transition-transform duration-300 ease-in-out',
