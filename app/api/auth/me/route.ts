@@ -97,8 +97,23 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Get user error:', error)
     
-    // Return a more specific error message
+    // Handle pool exhaustion gracefully
     const errorMessage = error instanceof Error ? error.message : 'Failed to get user'
+    const isPoolExhausted = errorMessage.includes('MaxClientsInSessionMode') || 
+                            errorMessage.includes('max clients reached')
+    
+    if (isPoolExhausted) {
+      // Pool exhausted - return 503 with retry suggestion
+      return NextResponse.json(
+        { 
+          error: 'Database temporarily unavailable',
+          message: 'Please try again in a moment',
+        },
+        { status: 503 }
+      )
+    }
+    
+    // Return a more specific error message
     const statusCode = errorMessage.includes('timeout') ? 504 : 500
     
     return NextResponse.json(
