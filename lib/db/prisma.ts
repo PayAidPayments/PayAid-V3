@@ -68,15 +68,6 @@ function createPrismaClient(): PrismaClient {
         url: enhancedDatabaseUrl,
       },
     },
-    // Additional Prisma configuration for production stability
-    ...(isProduction() && {
-      // Disable query engine auto-install in production
-      __internal: {
-        engine: {
-          connectTimeout: 10000, // 10 seconds
-        },
-      },
-    }),
   })
 }
 
