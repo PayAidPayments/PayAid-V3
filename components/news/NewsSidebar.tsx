@@ -213,14 +213,15 @@ export function NewsSidebar() {
 
   if (isCollapsed) {
     return (
-      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-50">
+      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-[60] pointer-events-auto">
         <button
           onClick={() => {
             setIsCollapsed(false)
             setIsOpen(true)
           }}
-          className="bg-blue-600 text-white p-3 rounded-l-lg shadow-lg hover:bg-blue-700 transition-colors"
+          className="bg-[#53328A] text-white p-3 rounded-l-lg shadow-lg hover:bg-[#6B42A3] transition-colors relative"
           aria-label="Open news sidebar"
+          style={{ zIndex: 60 }}
         >
           <ChevronLeft className="h-5 w-5" />
           {unreadCount > 0 && (
@@ -308,7 +309,7 @@ export function NewsSidebar() {
                 className={cn(
                   "px-2 py-1 text-xs rounded-md transition-colors",
                   !selectedCategory 
-                    ? "bg-blue-600 text-white" 
+                    ? "bg-[#53328A] text-white" 
                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 )}
               >
@@ -321,7 +322,7 @@ export function NewsSidebar() {
                   className={cn(
                     "px-2 py-1 text-xs rounded-md transition-colors flex items-center gap-1",
                     selectedCategory === key
-                      ? "bg-blue-600 text-white"
+                      ? "bg-[#53328A] text-white"
                       : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                   )}
                 >
