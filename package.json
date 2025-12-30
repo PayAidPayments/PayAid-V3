@@ -5,6 +5,7 @@
   "scripts": {
     "verify:db": "tsx scripts/verify-database-connection-setup.ts",
     "check:vercel-env": "tsx scripts/check-vercel-env.ts",
+    "check:postgrest": "tsx scripts/check-postgrest-status.ts",
     "dev": "next dev -p 3000",
     "build": "prisma generate && next build --webpack",
     "build:with-db": "prisma generate && prisma db push --skip-generate --accept-data-loss && next build --webpack",
