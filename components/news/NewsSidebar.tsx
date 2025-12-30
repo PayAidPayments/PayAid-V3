@@ -143,6 +143,42 @@ export function NewsSidebar() {
       localStorage.setItem('newsSidebarCollapsed', String(isCollapsed))
     }
   }, [isCollapsed])
+
+  // Listen for custom event from Header button
+  useEffect(() => {
+    const handleOpenNewsSidebar = () => {
+      setIsCollapsed(false)
+      setIsOpen(true)
+    }
+
+    window.addEventListener('openNewsSidebar', handleOpenNewsSidebar)
+    return () => {
+      window.removeEventListener('openNewsSidebar', handleOpenNewsSidebar)
+    }
+  }, [])
+
+  // Listen for storage events (when localStorage changes from other tabs/components)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'newsSidebarCollapsed') {
+        const shouldCollapse = e.newValue === 'true'
+        if (!shouldCollapse && isCollapsed) {
+          setIsCollapsed(false)
+          setIsOpen(true)
+        }
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+    }
+  }, [isCollapsed])
+
+  // Set mounted state
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
   
   // Handle responsive behavior for mobile/tablet
   useEffect(() => {
@@ -245,14 +281,13 @@ export function NewsSidebar() {
 
   const unreadCount = data?.unreadCount || 0
 
-  // Always render the collapsed button, even before mount (prevents flicker)
-  // The button will be visible once mounted
+  // Always render the collapsed button when collapsed
   if (isCollapsed) {
     return (
       <div 
         className="fixed right-0 top-1/2 -translate-y-1/2 pointer-events-auto"
         style={{ 
-          zIndex: 99999,
+          zIndex: 10000,
           position: 'fixed',
           right: 0,
           top: '50%',
@@ -265,9 +300,10 @@ export function NewsSidebar() {
             setIsOpen(true)
           }}
           className="bg-[#53328A] text-white p-2 sm:p-3 rounded-l-lg shadow-2xl hover:bg-[#6B42A3] active:bg-[#5A2A7A] transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center border-2 border-white"
-          aria-label="Open news sidebar"
+          aria-label="Open Industry Intelligence sidebar"
+          title="Industry Intelligence"
           style={{ 
-            zIndex: 99999,
+            zIndex: 10000,
             position: 'relative',
           }}
         >
