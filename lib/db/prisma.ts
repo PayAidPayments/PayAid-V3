@@ -82,33 +82,41 @@ if (!isProduction()) {
 }
 
 // Connection health check and auto-reconnection
-// This ensures connections are validated and reconnected if needed
-if (isProduction()) {
-  // Set up connection health monitoring
-  let isHealthy = true
-  let lastHealthCheck = Date.now()
-  const HEALTH_CHECK_INTERVAL = 60000 // Check every minute
+// Note: In serverless (Vercel), each function invocation is a new instance
+// Health checks are handled per-request, not via intervals
+// Graceful shutdown for long-running processes
+if (!isProduction() || typeof process !== 'undefined') {
+  // Only set up interval health checks in non-serverless environments
+  // In serverless, connections are created per-request and don't need health checks
+  const isServerless = process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME
+  
+  if (!isServerless) {
+    // Set up connection health monitoring for long-running processes
+    let isHealthy = true
+    let lastHealthCheck = Date.now()
+    const HEALTH_CHECK_INTERVAL = 60000 // Check every minute
 
-  // Periodic health check
-  setInterval(async () => {
-    try {
-      await prisma.$queryRaw`SELECT 1`
-      isHealthy = true
-      lastHealthCheck = Date.now()
-    } catch (error) {
-      console.error('Database health check failed:', error)
-      isHealthy = false
-      
-      // Attempt to reconnect
+    // Periodic health check
+    setInterval(async () => {
       try {
-        await prisma.$disconnect()
-        // Prisma will automatically reconnect on next query
+        await prisma.$queryRaw`SELECT 1`
         isHealthy = true
-      } catch (reconnectError) {
-        console.error('Failed to reconnect to database:', reconnectError)
+        lastHealthCheck = Date.now()
+      } catch (error) {
+        console.error('Database health check failed:', error)
+        isHealthy = false
+        
+        // Attempt to reconnect
+        try {
+          await prisma.$disconnect()
+          // Prisma will automatically reconnect on next query
+          isHealthy = true
+        } catch (reconnectError) {
+          console.error('Failed to reconnect to database:', reconnectError)
+        }
       }
-    }
-  }, HEALTH_CHECK_INTERVAL)
+    }, HEALTH_CHECK_INTERVAL)
+  }
 
   // Graceful shutdown
   process.on('beforeExit', async () => {
