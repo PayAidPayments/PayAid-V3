@@ -8,11 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
 import { ModuleGate } from '@/components/modules/ModuleGate'
+import { getDynamicTitle, getDynamicDescription } from '@/lib/utils/status-labels'
 
 function InvoicesPageContent() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<string>('')
   const { data, isLoading } = useInvoices({ page, limit: 20, status: statusFilter || undefined })
+  
+  const dynamicTitle = getDynamicTitle('Invoices', statusFilter)
+  const dynamicDescription = getDynamicDescription('Invoices', statusFilter)
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">Loading...</div>
@@ -65,9 +69,9 @@ function InvoicesPageContent() {
       {/* Invoices Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Invoices</CardTitle>
+          <CardTitle>{dynamicTitle}</CardTitle>
           <CardDescription>
-            {pagination?.total || 0} total invoices
+            {dynamicDescription} ({pagination?.total || 0} total)
           </CardDescription>
         </CardHeader>
         <CardContent>

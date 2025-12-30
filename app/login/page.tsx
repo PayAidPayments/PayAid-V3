@@ -55,6 +55,17 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
+          <div className="flex items-center justify-between mb-2">
+            <Link 
+              href="/" 
+              className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Home
+            </Link>
+          </div>
           <CardTitle className="text-2xl font-bold text-center">
             Sign in to PayAid V3
           </CardTitle>
@@ -131,11 +142,24 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-4 text-center text-sm">
-            <span className="text-gray-600">Don&apos;t have an account? </span>
-            <Link href="/register" className="text-blue-600 hover:underline">
-              Sign up
-            </Link>
+          <div className="mt-4 space-y-2">
+            <div className="text-center text-sm">
+              <span className="text-gray-600">Don&apos;t have an account? </span>
+              <Link href="/register" className="text-blue-600 hover:underline">
+                Sign up
+              </Link>
+            </div>
+            <div className="text-center">
+              <Link 
+                href="/" 
+                className="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Return to Home Page
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>

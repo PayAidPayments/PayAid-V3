@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
+import { getDynamicTitle, getDynamicDescription } from '@/lib/utils/status-labels'
 
 function getAuthHeaders() {
   const { token } = useAuthStore.getState()
@@ -42,6 +43,9 @@ export default function ExpensesPage() {
   const expenses = data?.expenses || []
   const pagination = data?.pagination
   const queryClient = useQueryClient()
+  
+  const dynamicTitle = getDynamicTitle('Expenses', statusFilter)
+  const dynamicDescription = getDynamicDescription('Expenses', statusFilter)
 
   const categories = [
     'Travel',
@@ -137,8 +141,8 @@ export default function ExpensesPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>All Expenses</CardTitle>
-              <CardDescription>View and manage all your expenses</CardDescription>
+              <CardTitle>{dynamicTitle}</CardTitle>
+              <CardDescription>{dynamicDescription}</CardDescription>
             </div>
             <div className="flex gap-2">
               <select

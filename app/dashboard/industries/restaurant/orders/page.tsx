@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/api/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { getDynamicTitle, getDynamicDescription } from '@/lib/utils/status-labels'
 
 interface OrderItem {
   id: string
@@ -66,6 +67,9 @@ export default function RestaurantOrdersPage() {
   })
 
   const orders = data?.orders || []
+  
+  const dynamicTitle = getDynamicTitle('Restaurant Orders', selectedStatus)
+  const dynamicDescription = getDynamicDescription('Restaurant Orders', selectedStatus)
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -87,9 +91,9 @@ export default function RestaurantOrdersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Restaurant Orders</h1>
+        <h1 className="text-3xl font-bold text-gray-900">{dynamicTitle}</h1>
         <p className="mt-2 text-gray-600">
-          Manage and track all restaurant orders
+          {dynamicDescription}
         </p>
       </div>
 

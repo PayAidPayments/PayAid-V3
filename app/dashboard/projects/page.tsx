@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { getAuthHeaders } from '@/lib/api/client'
+import { getDynamicTitle, getDynamicDescription } from '@/lib/utils/status-labels'
 
 interface Project {
   id: string
@@ -98,13 +99,16 @@ export default function ProjectsPage() {
 
   const projects = data?.projects || []
   const pagination = data?.pagination
+  
+  const dynamicTitle = getDynamicTitle('Projects', statusFilter)
+  const dynamicDescription = getDynamicDescription('Projects', statusFilter)
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-          <p className="text-gray-600 mt-1">Manage your projects and track progress</p>
+          <h1 className="text-3xl font-bold text-gray-900">{dynamicTitle}</h1>
+          <p className="text-gray-600 mt-1">{dynamicDescription}</p>
         </div>
         <Link href="/dashboard/projects/new">
           <Button>New Project</Button>

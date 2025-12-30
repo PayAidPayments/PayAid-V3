@@ -48,9 +48,10 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
       // Thermal printer width: 80mm = ~226 points (at 72 DPI)
+      // Using large height (1000 points) to accommodate variable content
       const doc = new PDFDocument({ 
         margin: 20, 
-        size: [226, 'auto'], // 80mm width, auto height
+        size: [226, 1000], // 80mm width, large height for variable content
         autoFirstPage: true,
       })
       const buffers: Buffer[] = []

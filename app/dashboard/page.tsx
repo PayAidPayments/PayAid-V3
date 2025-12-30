@@ -47,18 +47,18 @@ function HealthScoreWidget({ getDashboardLink }: { getDashboardLink: (path: stri
 
   return (
     <Link href={getDashboardLink('/analytics')} className="block">
-      <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Business Health</CardTitle>
-          <span className="text-2xl">💚</span>
+      <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
+          <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Business Health</CardTitle>
+          <span className="text-xl sm:text-2xl shrink-0 ml-1">💚</span>
         </CardHeader>
-        <CardContent>
-          <div className={`text-3xl font-bold ${getScoreColor(score)}`}>{score}/100</div>
-          <CardDescription>{getScoreLabel(score)} - Click to see details</CardDescription>
+        <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+          <div className={`text-2xl sm:text-3xl font-bold truncate ${getScoreColor(score)}`}>{score}/100</div>
+          <CardDescription className="text-xs truncate">{getScoreLabel(score)} - Click to see details</CardDescription>
           {healthScore?.factors && (
-            <div className="mt-3 space-y-1">
+            <div className="mt-2 sm:mt-3 space-y-1">
               {healthScore.factors.slice(0, 3).map((factor: any, idx: number) => (
-                <div key={idx} className="text-xs text-gray-600">
+                <div key={idx} className="text-xs text-gray-600 truncate">
                   • {factor.name}: {factor.score}/100
                 </div>
               ))}
@@ -184,88 +184,88 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #F8F7F3 0%, #FFFFFF 100%)' }}>
-      <div className="space-y-6 p-6">
+      <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold" style={{ color: PAYAID_PURPLE }}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold truncate" style={{ color: PAYAID_PURPLE }}>
               Welcome back, {user?.name || user?.email}!
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">
               Here&apos;s what&apos;s happening with your business today.
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>#{PAYAID_PURPLE.replace('#', '')}</span>
-            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-              <span className="text-sm font-medium">{user?.name?.charAt(0) || 'U'}</span>
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            <span className="text-xs sm:text-sm font-medium hidden sm:inline" style={{ color: PAYAID_PURPLE }}>#{PAYAID_PURPLE.replace('#', '')}</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 flex items-center justify-center">
+              <span className="text-xs sm:text-sm font-medium">{user?.name?.charAt(0) || 'U'}</span>
             </div>
           </div>
         </div>
 
         {/* Stats Grid - Modern Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
           <Link href={getDashboardLink('/contacts')} className="block">
-            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Contacts</CardTitle>
-                <span className="text-2xl">👥</span>
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
+                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Contacts</CardTitle>
+                <span className="text-xl sm:text-2xl shrink-0 ml-1">👥</span>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" style={{ color: PAYAID_PURPLE }}>{stats.contacts}</div>
-                <CardDescription>Total contacts</CardDescription>
+              <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                <div className="text-xl sm:text-2xl font-bold truncate" style={{ color: PAYAID_PURPLE }}>{stats.contacts}</div>
+                <CardDescription className="text-xs truncate">Total contacts</CardDescription>
               </CardContent>
             </Card>
           </Link>
 
           <Link href={getDashboardLink('/deals')} className="block">
-            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_GOLD }}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Deals</CardTitle>
-                <span className="text-2xl">💼</span>
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_GOLD }}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
+                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Deals</CardTitle>
+                <span className="text-xl sm:text-2xl shrink-0 ml-1">💼</span>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" style={{ color: PAYAID_GOLD }}>{stats.deals}</div>
-                <CardDescription>Active deals</CardDescription>
+              <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                <div className="text-xl sm:text-2xl font-bold truncate" style={{ color: PAYAID_GOLD }}>{stats.deals}</div>
+                <CardDescription className="text-xs truncate">Active deals</CardDescription>
               </CardContent>
             </Card>
           </Link>
 
           <Link href={getDashboardLink('/orders')} className="block">
-            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Orders</CardTitle>
-                <span className="text-2xl">🛒</span>
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
+                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Orders</CardTitle>
+                <span className="text-xl sm:text-2xl shrink-0 ml-1">🛒</span>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" style={{ color: PAYAID_PURPLE }}>{stats.orders}</div>
-                <CardDescription>Total orders</CardDescription>
+              <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                <div className="text-xl sm:text-2xl font-bold truncate" style={{ color: PAYAID_PURPLE }}>{stats.orders}</div>
+                <CardDescription className="text-xs truncate">Total orders</CardDescription>
               </CardContent>
             </Card>
           </Link>
 
           <Link href={getDashboardLink('/invoices')} className="block">
-            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_GOLD }}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Invoices</CardTitle>
-                <span className="text-2xl">🧾</span>
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_GOLD }}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
+                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Invoices</CardTitle>
+                <span className="text-xl sm:text-2xl shrink-0 ml-1">🧾</span>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" style={{ color: PAYAID_GOLD }}>{stats.invoices}</div>
-                <CardDescription>Total invoices</CardDescription>
+              <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                <div className="text-xl sm:text-2xl font-bold truncate" style={{ color: PAYAID_GOLD }}>{stats.invoices}</div>
+                <CardDescription className="text-xs truncate">Total invoices</CardDescription>
               </CardContent>
             </Card>
           </Link>
 
           <Link href={getDashboardLink('/tasks')} className="block">
-            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Tasks</CardTitle>
-                <span className="text-2xl">✅</span>
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
+                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Tasks</CardTitle>
+                <span className="text-xl sm:text-2xl shrink-0 ml-1">✅</span>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" style={{ color: PAYAID_PURPLE }}>{stats.tasks}</div>
-                <CardDescription>Total tasks</CardDescription>
+              <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                <div className="text-xl sm:text-2xl font-bold truncate" style={{ color: PAYAID_PURPLE }}>{stats.tasks}</div>
+                <CardDescription className="text-xs truncate">Total tasks</CardDescription>
               </CardContent>
             </Card>
           </Link>
@@ -375,108 +375,166 @@ export default function DashboardPage() {
         )}
 
         {/* Charts Row 1 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Sales Performance Line Chart */}
           <Link href={getDashboardLink('/deals')} className="block">
-            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02]" style={{ borderColor: PAYAID_PURPLE }}>
-              <CardHeader>
-                <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Sales Performance</CardTitle>
-                <CardDescription>Sales trends over time - Click to see deals</CardDescription>
+            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02] overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Sales Performance</CardTitle>
+                <CardDescription className="text-xs sm:text-sm line-clamp-2">Sales trends over time - Click to see deals</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <AreaChart data={salesTrendData}>
-                    <defs>
-                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={PAYAID_PURPLE} stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor={PAYAID_PURPLE} stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E8E7E3" />
-                    <XAxis dataKey="name" stroke={PAYAID_PURPLE} />
-                    <YAxis stroke={PAYAID_PURPLE} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#fff', 
-                        border: `1px solid ${PAYAID_PURPLE}`,
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke={PAYAID_PURPLE} 
-                      fillOpacity={1} 
-                      fill="url(#colorValue)" 
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+              <CardContent className="overflow-visible">
+                <div className="w-full" style={{ minHeight: '200px', height: '200px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={salesTrendData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                      <defs>
+                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={PAYAID_PURPLE} stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor={PAYAID_PURPLE} stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E8E7E3" />
+                      <XAxis 
+                        dataKey="name" 
+                        stroke={PAYAID_PURPLE} 
+                        tick={{ fontSize: 11 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        interval={0}
+                      />
+                      <YAxis 
+                        stroke={PAYAID_PURPLE} 
+                        tick={{ fontSize: 11 }}
+                        width={60}
+                        tickFormatter={(value) => {
+                          if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`
+                          if (value >= 1000) return `${(value / 1000).toFixed(0)}K`
+                          return value.toString()
+                        }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#fff', 
+                          border: `1px solid ${PAYAID_PURPLE}`,
+                          borderRadius: '8px',
+                          fontSize: '12px'
+                        }}
+                        formatter={(value: any) => `₹${Number(value).toLocaleString('en-IN')}`}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="value" 
+                        stroke={PAYAID_PURPLE} 
+                        fillOpacity={1} 
+                        fill="url(#colorValue)" 
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           </Link>
 
           {/* Market Share Donut Chart */}
           <Link href={getDashboardLink('/stats/pipeline')} className="block">
-            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02]" style={{ borderColor: PAYAID_GOLD }}>
-              <CardHeader>
-                <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Market Share Distribution</CardTitle>
-                <CardDescription>Deal stage distribution - Click to see pipeline details</CardDescription>
+            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02] overflow-hidden" style={{ borderColor: PAYAID_GOLD }}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Market Share Distribution</CardTitle>
+                <CardDescription className="text-xs sm:text-sm line-clamp-2">Deal stage distribution - Click to see pipeline details</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={marketShareData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {marketShareData.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#fff', 
-                        border: `1px solid ${PAYAID_PURPLE}`,
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+              <CardContent className="overflow-visible">
+                <div className="w-full" style={{ minHeight: '200px', height: '200px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={marketShareData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={70}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        labelLine={false}
+                      >
+                        {marketShareData.map((entry: any, index: number) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#fff', 
+                          border: `1px solid ${PAYAID_PURPLE}`,
+                          borderRadius: '8px',
+                          fontSize: '12px'
+                        }}
+                        formatter={(value: any, name: any) => [`${value} (${((value / marketShareData.reduce((sum: number, item: any) => sum + item.value, 0)) * 100).toFixed(1)}%)`, name]}
+                      />
+                      <Legend 
+                        wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+                        iconSize={10}
+                        verticalAlign="bottom"
+                        height={36}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           </Link>
 
           {/* Revenue Trend Bar Chart */}
           <Link href={getDashboardLink('/accounting/reports/revenue')} className="block">
-            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02]" style={{ borderColor: PAYAID_PURPLE }}>
-              <CardHeader>
-                <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Revenue Trend</CardTitle>
-                <CardDescription>Monthly revenue comparison - Click to see revenue dashboard</CardDescription>
+            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02] overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Revenue Trend</CardTitle>
+                <CardDescription className="text-xs sm:text-sm line-clamp-2">Monthly revenue comparison - Click to see revenue dashboard</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={revenueData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E8E7E3" />
-                    <XAxis dataKey="month" stroke={PAYAID_PURPLE} />
-                    <YAxis stroke={PAYAID_PURPLE} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#fff', 
-                        border: `1px solid ${PAYAID_PURPLE}`,
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Legend />
-                    <Bar dataKey="revenue" fill={PAYAID_PURPLE} radius={[8, 8, 0, 0]} />
-                    <Bar dataKey="expenses" fill={PAYAID_GOLD} radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+              <CardContent className="overflow-visible">
+                <div className="w-full" style={{ minHeight: '200px', height: '200px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E8E7E3" />
+                      <XAxis 
+                        dataKey="month" 
+                        stroke={PAYAID_PURPLE} 
+                        tick={{ fontSize: 11 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        interval={0}
+                      />
+                      <YAxis 
+                        stroke={PAYAID_PURPLE} 
+                        tick={{ fontSize: 11 }}
+                        width={60}
+                        tickFormatter={(value) => {
+                          if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`
+                          if (value >= 1000) return `${(value / 1000).toFixed(0)}K`
+                          return value.toString()
+                        }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#fff', 
+                          border: `1px solid ${PAYAID_PURPLE}`,
+                          borderRadius: '8px',
+                          fontSize: '12px'
+                        }}
+                        formatter={(value: any) => `₹${Number(value).toLocaleString('en-IN')}`}
+                      />
+                      <Legend 
+                        wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+                        iconSize={10}
+                        verticalAlign="bottom"
+                        height={36}
+                      />
+                      <Bar dataKey="revenue" fill={PAYAID_PURPLE} radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="expenses" fill={PAYAID_GOLD} radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           </Link>
@@ -484,55 +542,55 @@ export default function DashboardPage() {
 
         {/* Revenue & Pipeline Row */}
         {dashboardStats && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <Link href={getDashboardLink('/stats/revenue')} className="block">
-              <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Revenue (30 Days)</CardTitle>
-                  <span className="text-2xl">💰</span>
+              <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Revenue (30 Days)</CardTitle>
+                  <span className="text-xl sm:text-2xl shrink-0 ml-1">💰</span>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: PAYAID_PURPLE }}>
-                    ₹{dashboardStats.revenue?.last30Days?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
+                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                  <div className="text-xl sm:text-2xl font-bold truncate" style={{ color: PAYAID_PURPLE }}>
+                    ₹{dashboardStats.revenue?.last30Days?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                   </div>
-                  <CardDescription>Last 30 days revenue - Click to see breakdown</CardDescription>
+                  <CardDescription className="text-xs truncate">Last 30 days revenue - Click to see breakdown</CardDescription>
                 </CardContent>
               </Card>
             </Link>
 
             <Link href={getDashboardLink('/stats/pipeline')} className="block">
-              <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_GOLD }}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Pipeline Value</CardTitle>
-                  <span className="text-2xl">📈</span>
+              <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_GOLD }}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Pipeline Value</CardTitle>
+                  <span className="text-xl sm:text-2xl shrink-0 ml-1">📈</span>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: PAYAID_GOLD }}>
-                    ₹{dashboardStats.pipeline?.value?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
+                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                  <div className="text-xl sm:text-2xl font-bold truncate" style={{ color: PAYAID_GOLD }}>
+                    ₹{dashboardStats.pipeline?.value?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                   </div>
-                  <CardDescription>{dashboardStats.pipeline?.activeDeals || 0} active deals - Click to see details</CardDescription>
+                  <CardDescription className="text-xs truncate">{dashboardStats.pipeline?.activeDeals || 0} active deals - Click to see details</CardDescription>
                 </CardContent>
               </Card>
             </Link>
 
             <Link href={getDashboardLink('/stats/alerts')} className="block">
-              <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium" style={{ color: PAYAID_PURPLE }}>Alerts</CardTitle>
-                  <span className="text-2xl">⚠️</span>
+              <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Alerts</CardTitle>
+                  <span className="text-xl sm:text-2xl shrink-0 ml-1">⚠️</span>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Overdue Invoices</span>
-                      <span className="text-lg font-bold text-red-600">{dashboardStats.alerts?.overdueInvoices || 0}</span>
+                      <span className="text-xs sm:text-sm truncate flex-1">Overdue Invoices</span>
+                      <span className="text-base sm:text-lg font-bold text-red-600 shrink-0 ml-2">{dashboardStats.alerts?.overdueInvoices || 0}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Pending Tasks</span>
-                      <span className="text-lg font-bold text-yellow-600">{dashboardStats.alerts?.pendingTasks || 0}</span>
+                      <span className="text-xs sm:text-sm truncate flex-1">Pending Tasks</span>
+                      <span className="text-base sm:text-lg font-bold text-yellow-600 shrink-0 ml-2">{dashboardStats.alerts?.pendingTasks || 0}</span>
                     </div>
                   </div>
-                  <CardDescription className="mt-2">Click to see all alerts</CardDescription>
+                  <CardDescription className="mt-2 text-xs truncate">Click to see all alerts</CardDescription>
                 </CardContent>
               </Card>
             </Link>
@@ -540,22 +598,22 @@ export default function DashboardPage() {
         )}
 
         {/* KPI Metrics Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           <Link href={getDashboardLink('/accounting/reports/revenue')} className="block">
-            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
-              <CardHeader>
-                <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Monthly KPI Metrics</CardTitle>
-                <CardDescription>Click to see revenue dashboard with KPIs</CardDescription>
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader className="px-3 sm:px-6">
+                <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Monthly KPI Metrics</CardTitle>
+                <CardDescription className="text-xs sm:text-sm truncate">Click to see revenue dashboard with KPIs</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                <div className="space-y-3 sm:space-y-4">
                 {kpiData.map((kpi: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: '#F8F7F3' }}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">✓</span>
-                      <span className="font-medium">{kpi.name}</span>
+                  <div key={idx} className="flex items-center justify-between p-2 sm:p-3 rounded-lg" style={{ backgroundColor: '#F8F7F3' }}>
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                      <span className="text-lg sm:text-xl shrink-0">✓</span>
+                      <span className="font-medium text-xs sm:text-sm truncate">{kpi.name}</span>
                     </div>
-                    <span className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>
+                    <span className="text-base sm:text-lg font-bold shrink-0 ml-2" style={{ color: PAYAID_PURPLE }}>
                       {kpi.value}{kpi.unit}
                     </span>
                   </div>
@@ -567,15 +625,15 @@ export default function DashboardPage() {
 
           {/* Customer Engagement */}
           <Link href={getDashboardLink('/contacts')} className="block">
-            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_GOLD }}>
-              <CardHeader>
-                <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Customer Engagement</CardTitle>
-                <CardDescription>Click to see all contacts</CardDescription>
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_GOLD }}>
+              <CardHeader className="px-3 sm:px-6">
+                <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Customer Engagement</CardTitle>
+                <CardDescription className="text-xs sm:text-sm truncate">Click to see all contacts</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <div className="text-3xl font-bold mb-2" style={{ color: PAYAID_GOLD }}>+15%</div>
-                  <CardDescription className="text-base">Customer Growth QoQ</CardDescription>
+              <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                <div className="text-center py-6 sm:py-8">
+                  <div className="text-2xl sm:text-3xl font-bold mb-2 truncate" style={{ color: PAYAID_GOLD }}>+15%</div>
+                  <CardDescription className="text-sm sm:text-base truncate">Customer Growth QoQ</CardDescription>
                 </div>
               </CardContent>
             </Card>
@@ -583,15 +641,15 @@ export default function DashboardPage() {
 
           {/* Active Users */}
           <Link href={getDashboardLink('/contacts')} className="block">
-            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
-              <CardHeader>
-                <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Active Users</CardTitle>
-                <CardDescription>Click to see all contacts</CardDescription>
+            <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader className="px-3 sm:px-6">
+                <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Active Users</CardTitle>
+                <CardDescription className="text-xs sm:text-sm truncate">Click to see all contacts</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <div className="text-3xl font-bold mb-2" style={{ color: PAYAID_PURPLE }}>45,000</div>
-                  <CardDescription className="text-base">Active Users</CardDescription>
+              <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                <div className="text-center py-6 sm:py-8">
+                  <div className="text-2xl sm:text-3xl font-bold mb-2 truncate" style={{ color: PAYAID_PURPLE }}>45,000</div>
+                  <CardDescription className="text-sm sm:text-base truncate">Active Users</CardDescription>
                 </div>
               </CardContent>
             </Card>
@@ -600,20 +658,20 @@ export default function DashboardPage() {
 
         {/* Recent Activity */}
         {dashboardStats?.recentActivity && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {dashboardStats.recentActivity.contacts && dashboardStats.recentActivity.contacts.length > 0 && (
               <Link href={getDashboardLink('/contacts')} className="block">
-                <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
-                  <CardHeader>
-                    <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Recent Contacts</CardTitle>
-                    <CardDescription>Click to see all contacts</CardDescription>
+                <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
+                  <CardHeader className="px-3 sm:px-6">
+                    <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Recent Contacts</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm truncate">Click to see all contacts</CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                     <div className="space-y-2">
                       {dashboardStats.recentActivity.contacts.slice(0, 5).map((contact: any, idx: number) => (
                         <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50">
-                          <span className="text-sm">{contact.name || contact.email}</span>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs sm:text-sm truncate flex-1 min-w-0">{contact.name || contact.email}</span>
+                          <span className="text-xs text-gray-500 shrink-0 ml-2">
                             {format(new Date(contact.createdAt), 'MMM dd')}
                           </span>
                         </div>
@@ -626,17 +684,17 @@ export default function DashboardPage() {
 
             {dashboardStats.recentActivity.deals && dashboardStats.recentActivity.deals.length > 0 && (
               <Link href={getDashboardLink('/deals')} className="block">
-                <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_GOLD }}>
-                  <CardHeader>
-                    <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Recent Deals</CardTitle>
-                    <CardDescription>Click to see all deals</CardDescription>
+                <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_GOLD }}>
+                  <CardHeader className="px-3 sm:px-6">
+                    <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Recent Deals</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm truncate">Click to see all deals</CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                     <div className="space-y-2">
                       {dashboardStats.recentActivity.deals.slice(0, 5).map((deal: any, idx: number) => (
                         <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50">
-                          <span className="text-sm">{deal.name}</span>
-                          <span className="text-sm font-bold" style={{ color: PAYAID_GOLD }}>
+                          <span className="text-xs sm:text-sm truncate flex-1 min-w-0">{deal.name}</span>
+                          <span className="text-xs sm:text-sm font-bold shrink-0 ml-2" style={{ color: PAYAID_GOLD }}>
                             ₹{deal.value?.toLocaleString('en-IN') || '0'}
                           </span>
                         </div>
@@ -649,17 +707,17 @@ export default function DashboardPage() {
 
             {dashboardStats.recentActivity.orders && dashboardStats.recentActivity.orders.length > 0 && (
               <Link href={getDashboardLink('/orders')} className="block">
-                <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105" style={{ borderColor: PAYAID_PURPLE }}>
-                  <CardHeader>
-                    <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Recent Orders</CardTitle>
-                    <CardDescription>Click to see all orders</CardDescription>
+                <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
+                  <CardHeader className="px-3 sm:px-6">
+                    <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Recent Orders</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm truncate">Click to see all orders</CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                     <div className="space-y-2">
                       {dashboardStats.recentActivity.orders.slice(0, 5).map((order: any, idx: number) => (
                         <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50">
-                          <span className="text-sm">{order.orderNumber || `Order #${order.id}`}</span>
-                          <span className="text-sm font-bold" style={{ color: PAYAID_PURPLE }}>
+                          <span className="text-xs sm:text-sm truncate flex-1 min-w-0">{order.orderNumber || `Order #${order.id}`}</span>
+                          <span className="text-xs sm:text-sm font-bold shrink-0 ml-2" style={{ color: PAYAID_PURPLE }}>
                             ₹{order.total?.toLocaleString('en-IN') || '0'}
                           </span>
                         </div>

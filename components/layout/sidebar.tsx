@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils/cn'
 import { useState, useMemo } from 'react'
 import { getModuleLink, requiresSSO } from '@/lib/navigation/module-navigation'
 import { useDashboardUrl } from '@/lib/utils/dashboard-url'
+import { XIcon } from 'lucide-react'
 
 // Main navigation items (most frequently used)
 // Map to module IDs for license checking (V2 - 8 Module Structure)
@@ -24,38 +25,45 @@ const mainNavigation = [
 // Map items to module IDs for license checking
 const navigationSections = [
   {
-    name: 'Sales',
-    icon: '💼',
+    name: 'Sales & CRM',
+    icon: '💰',
     items: [
       { name: 'Landing Pages', href: '/dashboard/landing-pages', icon: '📄', module: 'sales' },
       { name: 'Checkout Pages', href: '/dashboard/checkout-pages', icon: '💳', module: 'sales' },
       { name: 'Orders', href: '/dashboard/orders', icon: '🛒', module: 'sales' }, // Ecommerce orders
+      { name: 'Projects', href: '/dashboard/projects', icon: '📁', module: 'crm' },
+      { name: 'Tasks', href: '/dashboard/tasks', icon: '✅', module: 'crm' },
     ],
   },
   {
-    name: 'Sales & Operations',
+    name: 'Operations & Finance',
     icon: '💼',
     items: [
-      { name: 'Projects', href: '/dashboard/projects', icon: '📁', module: 'crm' }, // NEW: Project Management
-      { name: 'Tasks', href: '/dashboard/tasks', icon: '✅', module: 'crm' },
-      { name: 'Accounting', href: '/dashboard/accounting', icon: '💰', module: 'finance' }, // Updated: accounting → finance
-      { name: 'Purchase Orders', href: '/dashboard/purchases/orders', icon: '🛒', module: 'finance' }, // NEW: Purchase Orders
-      { name: 'Vendors', href: '/dashboard/purchases/vendors', icon: '🏢', module: 'finance' }, // NEW: Vendor Management
+      { name: 'Accounting', href: '/dashboard/accounting', icon: '💰', module: 'finance' },
+      { name: 'Expenses', href: '/dashboard/accounting/expenses', icon: '💸', module: 'finance' },
+      { name: 'Revenue Dashboard', href: '/dashboard/accounting/reports/revenue', icon: '📊', module: 'finance' },
+      { name: 'Expense Dashboard', href: '/dashboard/accounting/reports/expenses', icon: '📉', module: 'finance' },
+      { name: 'Accounting Reports', href: '/dashboard/accounting/reports', icon: '📋', module: 'finance' },
+      { name: 'Purchase Orders', href: '/dashboard/purchases/orders', icon: '🛒', module: 'finance' },
+      { name: 'Vendors', href: '/dashboard/purchases/vendors', icon: '🏢', module: 'finance' },
       { name: 'Analytics', href: '/dashboard/analytics', icon: '📈', module: 'analytics' },
+      { name: 'Billing', href: '/dashboard/billing', icon: '💳', module: null },
     ],
   },
   {
     name: 'Marketing',
     icon: '📢',
     items: [
-      { name: 'Campaigns', href: '/dashboard/marketing/campaigns', icon: '📢', module: 'marketing' }, // Updated: crm → marketing
-      { name: 'Social Media', href: '/dashboard/marketing/social', icon: '📱', module: 'marketing' }, // Updated: crm → marketing
-      { name: 'Email Templates', href: '/dashboard/email-templates', icon: '✉️', module: 'marketing' }, // Updated: crm → marketing
-      { name: 'Events', href: '/dashboard/events', icon: '🎉', module: 'marketing' }, // Updated: crm → marketing
-      { name: 'Setup WhatsApp', href: '/dashboard/whatsapp/setup', icon: '⚡', module: 'marketing' }, // Updated: whatsapp → marketing
-      { name: 'WhatsApp Accounts', href: '/dashboard/whatsapp/accounts', icon: '📱', module: 'marketing' }, // Updated: whatsapp → marketing
-      { name: 'WhatsApp Inbox', href: '/dashboard/whatsapp/inbox', icon: '📥', module: 'marketing' }, // Updated: whatsapp → marketing
-      { name: 'WhatsApp Sessions', href: '/dashboard/whatsapp/sessions', icon: '🔗', module: 'marketing' }, // Updated: whatsapp → marketing
+      { name: 'Campaigns', href: '/dashboard/marketing/campaigns', icon: '📢', module: 'marketing' },
+      { name: 'Marketing Analytics', href: '/dashboard/marketing/analytics', icon: '📊', module: 'marketing' },
+      { name: 'Segments', href: '/dashboard/marketing/segments', icon: '🎯', module: 'marketing' },
+      { name: 'Social Media', href: '/dashboard/marketing/social', icon: '📱', module: 'marketing' },
+      { name: 'Email Templates', href: '/dashboard/email-templates', icon: '✉️', module: 'marketing' },
+      { name: 'Events', href: '/dashboard/events', icon: '🎉', module: 'marketing' },
+      { name: 'Setup WhatsApp', href: '/dashboard/whatsapp/setup', icon: '⚡', module: 'marketing' },
+      { name: 'WhatsApp Accounts', href: '/dashboard/whatsapp/accounts', icon: '📱', module: 'marketing' },
+      { name: 'WhatsApp Inbox', href: '/dashboard/whatsapp/inbox', icon: '📥', module: 'marketing' },
+      { name: 'WhatsApp Sessions', href: '/dashboard/whatsapp/sessions', icon: '🔗', module: 'marketing' },
     ],
   },
   {
@@ -71,11 +79,14 @@ const navigationSections = [
     name: 'AI Studio',
     icon: '🤖',
     items: [
-      { name: 'Websites', href: '/dashboard/websites', icon: '🌐', module: 'ai-studio' }, // Updated: crm → ai-studio
-      { name: 'Logo Generator', href: '/dashboard/logos', icon: '🎨', module: 'ai-studio' }, // Updated: crm → ai-studio
-      { name: 'AI Chat', href: '/dashboard/ai/chat', icon: '💬', module: 'ai-studio' }, // Updated: analytics → ai-studio
-      { name: 'Knowledge & RAG AI', href: '/dashboard/knowledge', icon: '📚', module: 'ai-studio' }, // NEW: Knowledge & RAG AI
-      { name: 'AI Calling Bot', href: '/dashboard/calls', icon: '📞', module: 'ai-studio' }, // Updated: analytics → ai-studio
+      { name: 'AI Co-founder', href: '/dashboard/cofounder', icon: '🤖', module: 'ai-studio' }, // AI Co-founder with 17 specialist agents
+      { name: 'AI Insights', href: '/dashboard/ai/insights', icon: '💡', module: 'ai-studio' },
+      { name: 'AI Chat', href: '/dashboard/ai/chat', icon: '💬', module: 'ai-studio' },
+      { name: 'AI Test', href: '/dashboard/ai/test', icon: '🧪', module: 'ai-studio' },
+      { name: 'Websites', href: '/dashboard/websites', icon: '🌐', module: 'ai-studio' },
+      { name: 'Logo Generator', href: '/dashboard/logos', icon: '🎨', module: 'ai-studio' },
+      { name: 'Knowledge & RAG AI', href: '/dashboard/knowledge', icon: '📚', module: 'ai-studio' },
+      { name: 'AI Calling Bot', href: '/dashboard/calls', icon: '📞', module: 'ai-studio' },
     ],
   },
   {
@@ -83,28 +94,58 @@ const navigationSections = [
     icon: '👔',
     items: [
       { name: 'Employees', href: '/dashboard/hr/employees', icon: '👔', module: 'hr' },
+      { name: 'Attendance', href: '/dashboard/hr/attendance/calendar', icon: '📅', module: 'hr' },
+      { name: 'Check-in/Check-out', href: '/dashboard/hr/attendance/check-in', icon: '✅', module: 'hr' },
+      { name: 'Leave Management', href: '/dashboard/hr/leave/requests', icon: '🏖️', module: 'hr' },
+      { name: 'Leave Balances', href: '/dashboard/hr/leave/balances', icon: '📊', module: 'hr' },
+      { name: 'Apply Leave', href: '/dashboard/hr/leave/apply', icon: '📝', module: 'hr' },
       { name: 'Hiring', href: '/dashboard/hr/hiring/job-requisitions', icon: '📝', module: 'hr' },
+      { name: 'Candidates', href: '/dashboard/hr/hiring/candidates', icon: '👤', module: 'hr' },
+      { name: 'Interviews', href: '/dashboard/hr/hiring/interviews', icon: '💼', module: 'hr' },
+      { name: 'Offers', href: '/dashboard/hr/hiring/offers', icon: '📄', module: 'hr' },
+      { name: 'Onboarding', href: '/dashboard/hr/onboarding/instances', icon: '🚀', module: 'hr' },
+      { name: 'Onboarding Templates', href: '/dashboard/hr/onboarding/templates', icon: '📋', module: 'hr' },
       { name: 'Payroll', href: '/dashboard/hr/payroll/cycles', icon: '💰', module: 'hr' },
-      { name: 'Reports', href: '/dashboard/hr/payroll/reports', icon: '📈', module: 'hr' },
+      { name: 'Salary Structures', href: '/dashboard/hr/payroll/salary-structures', icon: '💵', module: 'hr' },
+      { name: 'Tax Declarations', href: '/dashboard/hr/tax-declarations', icon: '📑', module: 'hr' },
+      { name: 'Payroll Reports', href: '/dashboard/hr/payroll/reports', icon: '📈', module: 'hr' },
     ],
   },
   {
     name: 'Reports & Tools',
     icon: '📊',
     items: [
-      { name: 'GST Reports', href: '/dashboard/gst/gstr-1', icon: '📋', module: 'finance' }, // Updated: accounting → finance
-      { name: 'Custom Reports', href: '/dashboard/reports', icon: '📈', module: 'analytics' }, // NEW: Advanced Reporting
+      { name: 'Advanced Reporting', href: '/dashboard/reports', icon: '📈', module: 'analytics' }, // Custom Report Builder
       { name: 'Custom Dashboards', href: '/dashboard/dashboards/custom', icon: '📊', module: 'analytics' },
+      { name: 'GST Reports', href: '/dashboard/gst/gstr-1', icon: '📋', module: 'finance' },
+      { name: 'GSTR-3B', href: '/dashboard/gst/gstr-3b', icon: '📄', module: 'finance' },
+      { name: 'GST Hub', href: '/dashboard/gst', icon: '🏛️', module: 'finance' },
+    ],
+  },
+  {
+    name: 'Industries',
+    icon: '🏭',
+    items: [
+      { name: 'Industries Hub', href: '/dashboard/industries', icon: '🏭', module: null },
+      { name: 'Industry Setup', href: '/dashboard/setup/industry', icon: '⚙️', module: null },
+      { name: 'Restaurant - Orders', href: '/dashboard/industries/restaurant/orders', icon: '📋', module: null },
+      { name: 'Restaurant - Menu', href: '/dashboard/industries/restaurant/menu', icon: '🍽️', module: null },
+      { name: 'Restaurant - Kitchen', href: '/dashboard/industries/restaurant/kitchen', icon: '👨‍🍳', module: null },
+      { name: 'Restaurant - Tables', href: '/dashboard/industries/restaurant/tables', icon: '🪑', module: null },
+      { name: 'Restaurant - Reservations', href: '/dashboard/industries/restaurant/reservations', icon: '📅', module: null },
+      { name: 'Retail - Products', href: '/dashboard/industries/retail/products', icon: '🛒', module: null },
     ],
   },
 ]
 
 function NavItem({ 
   item, 
-  isActive
+  isActive,
+  onLinkClick
 }: { 
   item: { name: string; href: string; icon: string; module?: string | null }
   isActive: boolean
+  onLinkClick?: () => void
 }) {
   const dashboardUrl = useDashboardUrl(item.href || '/dashboard')
   
@@ -123,11 +164,18 @@ function NavItem({
   
   // CRITICAL: Only render if licensed (filtered at parent level)
   // No locked badges - items are completely hidden if not licensed
+  const handleClick = () => {
+    if (onLinkClick && window.innerWidth < 1024) {
+      onLinkClick()
+    }
+  }
+
   return (
     <Link
       href={finalUrl}
+      onClick={handleClick}
       className={cn(
-        'flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
+        'flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors min-h-[44px]',
         isActive
           ? 'bg-blue-50 text-blue-700'
           : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
@@ -139,7 +187,8 @@ function NavItem({
   )
 }
 
-function NavSection({ section, pathname }: { section: typeof navigationSections[0]; pathname: string }) {
+
+function NavSection({ section, pathname, onLinkClick }: { section: typeof navigationSections[0]; pathname: string; onLinkClick?: () => void }) {
   const { tenant } = useAuthStore()
   const { hasModule, licensedModules } = usePayAidAuth()
   const tenantId = tenant?.id
@@ -211,6 +260,7 @@ function NavSection({ section, pathname }: { section: typeof navigationSections[
                 key={item.href} 
                 item={item} 
                 isActive={isActive}
+                onLinkClick={onLinkClick}
               />
             )
           })}
@@ -220,7 +270,7 @@ function NavSection({ section, pathname }: { section: typeof navigationSections[
   )
 }
 
-export function Sidebar() {
+export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) {
   const pathname = usePathname()
   const { user, tenant, logout } = useAuthStore()
   const { hasModule, licensedModules } = usePayAidAuth()
@@ -255,10 +305,18 @@ export function Sidebar() {
   const hasAllModules = licensedModules.length >= totalModules
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200 w-64">
+    <div className="flex flex-col h-full bg-white border-r border-gray-200 w-64 overflow-y-auto">
       {/* Logo */}
-      <div className="flex items-center h-16 px-6 border-b border-gray-200">
+      <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
         <h1 className="text-xl font-bold text-blue-600">PayAid V3</h1>
+        {/* Close button for mobile */}
+        <button
+          onClick={onClose}
+          className="lg:hidden p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] min-w-[44px]"
+          aria-label="Close sidebar"
+        >
+          <XIcon className="h-6 w-6 text-gray-600" />
+        </button>
       </div>
 
       {/* Navigation */}
@@ -273,6 +331,7 @@ export function Sidebar() {
                   key={item.href} 
                   item={item} 
                   isActive={isActive}
+                  onLinkClick={onClose}
                 />
               )
             })}
@@ -287,7 +346,7 @@ export function Sidebar() {
         {/* Grouped Sections - Automatically filtered by NavSection */}
         <div className="space-y-1">
           {navigationSections.map((section) => (
-            <NavSection key={section.name} section={section} pathname={pathname} />
+            <NavSection key={section.name} section={section} pathname={pathname} onLinkClick={onClose} />
           ))}
         </div>
 
@@ -297,11 +356,13 @@ export function Sidebar() {
             <NavItem
               item={{ name: 'Module Management', href: '/dashboard/admin/modules', icon: '🔧', module: null }}
               isActive={isPathActive('/dashboard/admin/modules')}
+              onLinkClick={onClose}
             />
           )}
           <NavItem
             item={{ name: 'Settings', href: '/dashboard/settings', icon: '⚙️', module: null }}
             isActive={isPathActive('/dashboard/settings')}
+            onLinkClick={onClose}
           />
         </div>
 
