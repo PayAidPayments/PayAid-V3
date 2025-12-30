@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth/jwt'
 import { prisma } from '@/lib/db/prisma'
+import { prismaWithRetry } from '@/lib/db/connection-retry'
 
 /**
  * GET /api/news
@@ -48,11 +49,13 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20', 10)
     const unreadOnly = searchParams.get('unreadOnly') === 'true'
 
-    // Get tenant's industry for filtering
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: { industry: true },
-    })
+    // Get tenant's industry for filtering (with retry)
+    const tenant = await prismaWithRetry(() =>
+      prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { industry: true },
+      })
+    )
 
     // Build where clause
     const where: any = {
@@ -80,15 +83,17 @@ export async function GET(request: NextRequest) {
       where.isRead = false
     }
 
-    // Get news items
-    const newsItems = await prisma.newsItem.findMany({
-      where,
-      orderBy: [
-        { urgency: 'asc' }, // critical first
-        { createdAt: 'desc' }, // newest first
-      ],
-      take: limit,
-    })
+    // Get news items (with retry)
+    const newsItems = await prismaWithRetry(() =>
+      prisma.newsItem.findMany({
+        where,
+        orderBy: [
+          { urgency: 'asc' }, // critical first
+          { createdAt: 'desc' }, // newest first
+        ],
+        take: limit,
+      })
+    )
 
     // Group by urgency for easier frontend rendering
     const grouped = {
@@ -100,13 +105,15 @@ export async function GET(request: NextRequest) {
       growth: newsItems.filter((n) => n.urgency === 'growth'),
     }
 
-    // Count unread items
-    const unreadCount = await prisma.newsItem.count({
-      where: {
-        ...where,
-        isRead: false,
-      },
-    })
+    // Count unread items (with retry)
+    const unreadCount = await prismaWithRetry(() =>
+      prisma.newsItem.count({
+        where: {
+          ...where,
+          isRead: false,
+        },
+      })
+    )
 
     return NextResponse.json({
       newsItems,
