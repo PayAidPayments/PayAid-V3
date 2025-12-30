@@ -121,6 +121,7 @@ export function NewsSidebar() {
   })
   
   const [isOpen, setIsOpen] = useState(false) // Always start closed, user must open it
+  const [isMounted, setIsMounted] = useState(false) // Track if component is mounted
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const queryClient = useQueryClient()
@@ -244,20 +245,31 @@ export function NewsSidebar() {
 
   const unreadCount = data?.unreadCount || 0
 
+  // Always render the collapsed button, even before mount (prevents flicker)
+  // The button will be visible once mounted
   if (isCollapsed) {
     return (
       <div 
         className="fixed right-0 top-1/2 -translate-y-1/2 pointer-events-auto"
-        style={{ zIndex: 9999 }}
+        style={{ 
+          zIndex: 99999,
+          position: 'fixed',
+          right: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+        }}
       >
         <button
           onClick={() => {
             setIsCollapsed(false)
             setIsOpen(true)
           }}
-          className="bg-[#53328A] text-white p-2 sm:p-3 rounded-l-lg shadow-xl hover:bg-[#6B42A3] active:bg-[#5A2A7A] transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center border-2 border-white"
+          className="bg-[#53328A] text-white p-2 sm:p-3 rounded-l-lg shadow-2xl hover:bg-[#6B42A3] active:bg-[#5A2A7A] transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center border-2 border-white"
           aria-label="Open news sidebar"
-          style={{ zIndex: 9999 }}
+          style={{ 
+            zIndex: 99999,
+            position: 'relative',
+          }}
         >
           <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           {unreadCount > 0 && (
