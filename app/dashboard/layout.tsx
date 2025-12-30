@@ -194,9 +194,13 @@ export default function DashboardLayout({
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden w-full relative">
+        <div className={cn(
+          "flex-1 flex flex-col overflow-hidden relative transition-all duration-300",
+          // Apply margin on desktop when sidebar is open
+          sidebarOpen ? "lg:ml-64" : "lg:ml-0"
+        )}>
           <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-          <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 transition-all duration-300">
+          <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
             {children}
           </main>
           

@@ -27,43 +27,11 @@ html {
 }
 
 /* Main Sidebar Layout Adjustments */
-main.main-sidebar-open {
-  padding-left: 0; /* No padding needed when sidebar is visible (it's fixed) */
-}
-
+/* Margin is now applied via Tailwind classes in the layout component */
+/* CSS classes kept for backward compatibility but margin is handled by Tailwind */
+main.main-sidebar-open,
 main.main-sidebar-closed {
-  padding-left: 0; /* No padding needed when sidebar is hidden */
-}
-
-/* Desktop and Tablet Landscape: Adjust main content margin when sidebar is open */
-@media (min-width: 1024px) {
-  main.main-sidebar-open {
-    margin-left: 16rem; /* 256px = w-64 */
-  }
-
-  main.main-sidebar-closed {
-    margin-left: 0;
-  }
-}
-
-/* Tablet Landscape (768px - 1023px): Allow sidebar with margin */
-@media (min-width: 768px) and (max-width: 1023px) and (orientation: landscape) {
-  main.main-sidebar-open {
-    margin-left: 16rem; /* 256px = w-64 */
-  }
-
-  main.main-sidebar-closed {
-    margin-left: 0;
-  }
-}
-
-/* Tablet Portrait and Mobile: No margin adjustment (sidebar is overlay) */
-@media (max-width: 1023px) and (orientation: portrait),
-       (max-width: 767px) {
-  main.main-sidebar-open,
-  main.main-sidebar-closed {
-    margin-left: 0;
-  }
+  /* No CSS margin needed - handled by Tailwind ml-64 class on parent */
 }
 
 /* News Sidebar Layout Adjustments */
