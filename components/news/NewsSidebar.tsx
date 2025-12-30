@@ -433,7 +433,8 @@ export function NewsSidebar() {
           </>
         )}
       </div>
-    </div>
+      </div>
+    </>
   )
 }
 
