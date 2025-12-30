@@ -125,12 +125,45 @@ export function NewsSidebar() {
   const [showFilters, setShowFilters] = useState(false)
   const queryClient = useQueryClient()
   
+  // Handle responsive behavior for mobile/tablet
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.innerWidth < 768
+  })
+  const [isTablet, setIsTablet] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const width = window.innerWidth
+    return width >= 768 && width < 1024
+  })
+  
   // Persist collapsed state to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('newsSidebarCollapsed', String(isCollapsed))
     }
   }, [isCollapsed])
+  
+  // Handle responsive behavior for mobile/tablet
+  useEffect(() => {
+    const checkScreenSize = () => {
+      if (typeof window === 'undefined') return
+      const width = window.innerWidth
+      setIsMobile(width < 768)
+      setIsTablet(width >= 768 && width < 1024)
+    }
+    
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+    const handleOrientationChange = () => {
+      setTimeout(checkScreenSize, 200) // Delay to allow browser to update dimensions
+    }
+    window.addEventListener('orientationchange', handleOrientationChange)
+    
+    return () => {
+      window.removeEventListener('resize', checkScreenSize)
+      window.removeEventListener('orientationchange', handleOrientationChange)
+    }
+  }, [])
   
   // News sidebar is now an overlay - no need to modify main content classes
   // Removed CSS class manipulation since news sidebar doesn't affect main content layout
@@ -219,13 +252,13 @@ export function NewsSidebar() {
             setIsCollapsed(false)
             setIsOpen(true)
           }}
-          className="bg-[#53328A] text-white p-3 rounded-l-lg shadow-lg hover:bg-[#6B42A3] transition-colors relative"
+          className="bg-[#53328A] text-white p-2 sm:p-3 rounded-l-lg shadow-lg hover:bg-[#6B42A3] active:bg-[#5A2A7A] transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label="Open news sidebar"
           style={{ zIndex: 60 }}
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -left-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            <span className="absolute -top-1 -left-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -236,8 +269,8 @@ export function NewsSidebar() {
 
   return (
     <>
-      {/* Overlay when news sidebar is open */}
-      {isOpen && (
+      {/* Overlay when news sidebar is open - Only on mobile/tablet portrait */}
+      {isOpen && (isMobile || (isTablet && typeof window !== 'undefined' && window.innerWidth < window.innerHeight)) && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={() => {
@@ -248,7 +281,9 @@ export function NewsSidebar() {
       )}
       <div
         className={cn(
-          'fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-xl z-50 flex flex-col transition-transform duration-300',
+          'fixed right-0 top-0 h-full bg-white border-l border-gray-200 shadow-xl z-50 flex flex-col transition-transform duration-300',
+          // Responsive width: full width on mobile, 320px on tablet, 320px on desktop
+          isMobile ? 'w-full sm:w-80' : 'w-80',
           isOpen ? 'translate-x-0' : 'translate-x-full'
         )}
       >
@@ -286,16 +321,19 @@ export function NewsSidebar() {
             >
               <ChevronRight className="h-4 w-4" />
             </button>
-            <button
-              onClick={() => {
-                setIsOpen(false)
-                setIsCollapsed(true)
-              }}
-              className="p-1 hover:bg-gray-200 rounded transition-colors lg:hidden"
-              aria-label="Close sidebar"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            {/* Close button - Show on mobile and tablet portrait */}
+            {(isMobile || (isTablet && typeof window !== 'undefined' && window.innerWidth < window.innerHeight)) && (
+              <button
+                onClick={() => {
+                  setIsOpen(false)
+                  setIsCollapsed(true)
+                }}
+                className="p-2 hover:bg-gray-200 rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label="Close sidebar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
           </div>
         </div>
         

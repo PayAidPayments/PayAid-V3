@@ -87,18 +87,22 @@ export default function DashboardLayout({
 
     // Listen for both resize and orientation change events
     window.addEventListener('resize', handleResize)
-    window.addEventListener('orientationchange', handleResize)
     
-    // Also handle the orientationchange event with a slight delay
-    // as some browsers need time to update dimensions
+    // Handle orientation change with delay to allow browser to update dimensions
     const handleOrientationChange = () => {
-      setTimeout(handleResize, 100)
+      // Use a longer delay for orientation changes as browsers need time to update
+      setTimeout(() => {
+        const shouldOpen = shouldSidebarBeOpen()
+        if (!shouldOpen && sidebarOpen) {
+          setSidebarOpen(false)
+        }
+      }, 200)
     }
+    
     window.addEventListener('orientationchange', handleOrientationChange)
 
     return () => {
       window.removeEventListener('resize', handleResize)
-      window.removeEventListener('orientationchange', handleResize)
       window.removeEventListener('orientationchange', handleOrientationChange)
     }
   }, [sidebarOpen])
@@ -171,24 +175,39 @@ export default function DashboardLayout({
   return (
     <ProtectedRoute>
       <div className="flex h-screen bg-gray-50">
-        {/* Mobile/Tablet Portrait Overlay */}
-        {sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+        {/* Mobile/Tablet Portrait Overlay - Only show on mobile and tablet portrait */}
+        {sidebarOpen && (() => {
+          if (typeof window === 'undefined') return null
+          const width = window.innerWidth
+          const height = window.innerHeight
+          const isLandscape = width > height
+          // Show overlay on mobile (< 768px) or tablet portrait (< 1024px and portrait)
+          const shouldShowOverlay = width < 768 || (width < 1024 && !isLandscape)
+          if (!shouldShowOverlay) return null
+          
+          return (
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 z-40"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )
+        })()}
         
         {/* Sidebar */}
         <div className={cn(
           'sidebar-container',
-          'fixed lg:fixed',
+          'fixed',
           'inset-y-0 left-0',
           'z-50',
           'w-64',
           'transform',
           'transition-transform duration-300 ease-in-out',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          // On desktop (>= 1024px), sidebar is always visible (no transform needed)
+          // On tablet landscape (768-1023px, landscape), sidebar is always visible when open
+          // On mobile/tablet portrait, sidebar slides in/out
+          sidebarOpen 
+            ? 'translate-x-0' 
+            : '-translate-x-full lg:translate-x-0' // Desktop always shows, mobile/tablet slides
         )}>
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         </div>
@@ -196,8 +215,11 @@ export default function DashboardLayout({
         {/* Main Content */}
         <div className={cn(
           "flex-1 flex flex-col overflow-hidden relative transition-all duration-300",
-          // Apply margin on desktop when sidebar is open
-          sidebarOpen ? "lg:ml-64" : "lg:ml-0"
+          // Apply margin on desktop/tablet landscape when sidebar is open
+          // On mobile/tablet portrait, sidebar is overlay so no margin needed
+          sidebarOpen 
+            ? "lg:ml-64 md:ml-64" // Desktop and tablet landscape
+            : "lg:ml-0 md:ml-0"   // Mobile and tablet portrait (overlay mode)
         )}>
           <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
           <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
