@@ -23,13 +23,50 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔐 Resetting password for ${email}...`)
 
+    // Test database connection first
+    try {
+      await prisma.$queryRaw`SELECT 1`
+    } catch (dbError: any) {
+      console.error('Database connection error:', dbError)
+      return NextResponse.json(
+        {
+          error: 'Database connection failed',
+          message: dbError?.message || 'Unable to connect to database',
+          code: dbError?.code,
+          troubleshooting: {
+            message: 'The database connection pool may be exhausted or the database is unavailable.',
+            steps: [
+              'Wait 1-2 minutes and try again',
+              'Check if Supabase project is paused',
+              'Verify DATABASE_URL is configured correctly in Vercel',
+              'Try using a direct connection URL instead of pooler',
+            ],
+          },
+        },
+        { status: 503 }
+      )
+    }
+
     // Hash the new password
     const hashedPassword = await hashPassword(password)
 
     // Find the user (normalize email for lookup)
-    const user = await prisma.user.findUnique({
-      where: { email },
-    })
+    let user
+    try {
+      user = await prisma.user.findUnique({
+        where: { email },
+      })
+    } catch (dbError: any) {
+      console.error('Database query error:', dbError)
+      return NextResponse.json(
+        {
+          error: 'Database query failed',
+          message: dbError?.message || 'Unable to query database',
+          code: dbError?.code,
+        },
+        { status: 503 }
+      )
+    }
 
     if (!user) {
       // Create user if doesn't exist
