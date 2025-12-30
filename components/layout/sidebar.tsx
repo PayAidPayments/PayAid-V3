@@ -305,7 +305,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
   const hasAllModules = licensedModules.length >= totalModules
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200 w-64 overflow-y-auto">
+    <div className="flex flex-col h-full bg-white border-r border-gray-200 w-64 overflow-y-auto relative">
       {/* Logo */}
       <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
         <h1 className="text-xl font-bold text-blue-600">PayAid V3</h1>
