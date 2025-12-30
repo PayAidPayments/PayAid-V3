@@ -49,41 +49,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Test database connection first
-    try {
-      await prisma.$queryRaw`SELECT 1`
-    } catch (dbError: any) {
-      console.error('Database connection error:', {
-        code: dbError?.code,
-        message: dbError?.message,
-        hasDatabaseUrl: !!process.env.DATABASE_URL,
-        databaseUrlPreview: process.env.DATABASE_URL ? `${process.env.DATABASE_URL.substring(0, 30)}...` : 'NOT SET',
-      })
-      
-      // Provide more specific error messages based on error code
-      let errorMessage = 'Database connection failed'
-      if (dbError?.code === 'P1001') {
-        errorMessage = 'Database connection timeout. The database server may be down or unreachable.'
-      } else if (dbError?.code === 'P1000') {
-        errorMessage = 'Database authentication failed. Please check your DATABASE_URL credentials.'
-      } else if (dbError?.code === 'P1002') {
-        errorMessage = 'Database connection timeout. Try using a direct connection instead of a pooler.'
-      } else if (dbError?.message?.includes('ENOTFOUND')) {
-        errorMessage = 'Database hostname not found. The database server may be paused or the hostname is incorrect.'
-      } else if (dbError?.message?.includes('ECONNREFUSED')) {
-        errorMessage = 'Database connection refused. The database server may be down or not accepting connections.'
-      }
-      
-      return NextResponse.json(
-        { 
-          error: errorMessage,
-          code: dbError?.code,
-          details: process.env.NODE_ENV === 'development' ? dbError.message : undefined,
-          hasDatabaseUrl: !!process.env.DATABASE_URL,
-        },
-        { status: 503 }
-      )
-    }
+    // Skip connection test - go directly to queries
+    // Connection tests can fail due to pool exhaustion even when database is working
+    // The actual queries will succeed or fail, which is more reliable
 
     // Check cache first (2 minute TTL for dashboard stats)
     // Gracefully handle Redis errors - continue without cache if Redis is unavailable
