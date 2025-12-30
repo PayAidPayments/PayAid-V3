@@ -37,62 +37,89 @@ export async function GET(request: NextRequest) {
 
     const tenantId = payload.tenantId
 
-    // Test database connection first (with timeout to avoid hanging)
-    try {
-      await Promise.race([
-        prisma.$queryRaw`SELECT 1`,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database connection timeout')), 5000)
-        )
-      ])
-    } catch (dbError: any) {
-      console.error('Database connection error:', {
-        code: dbError?.code,
-        message: dbError?.message,
-        hasDatabaseUrl: !!process.env.DATABASE_URL,
-      })
-      
-      // Check if it's a pool exhaustion error - if so, continue anyway as database might be working
-      if (dbError?.message?.includes('MaxClientsInSessionMode') || 
-          dbError?.message?.includes('max clients reached')) {
-        console.warn('Database pool exhausted, but continuing with query - database may still be accessible')
-        // Continue with the query - the pool might recover or we might get through
-      } else {
-        // Provide more specific error messages based on error code
-        let errorMessage = 'Database connection failed'
-        if (dbError?.code === 'P1001') {
-          errorMessage = 'Database connection timeout. The database server may be down or unreachable.'
-        } else if (dbError?.code === 'P1000') {
-          errorMessage = 'Database authentication failed. Please check your DATABASE_URL credentials.'
-        } else if (dbError?.code === 'P1002') {
-          errorMessage = 'Database connection timeout. Try using a direct connection instead of a pooler.'
-        } else if (dbError?.message?.includes('ENOTFOUND')) {
-          errorMessage = 'Database hostname not found. The database server may be paused or the hostname is incorrect.'
-        } else if (dbError?.message?.includes('ECONNREFUSED')) {
-          errorMessage = 'Database connection refused. The database server may be down or not accepting connections.'
-        }
+    // Test database connection first (with timeout and retry logic for pool exhaustion)
+    let dbConnectionTested = false
+    let dbError: any = null
+    
+    // Try connection test up to 3 times with exponential backoff
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await Promise.race([
+          prisma.$queryRaw`SELECT 1`,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Database connection timeout')), 3000)
+          )
+        ])
+        dbConnectionTested = true
+        break // Success, exit retry loop
+      } catch (error: any) {
+        dbError = error
+        const isPoolExhausted = error?.message?.includes('MaxClientsInSessionMode') || 
+                                error?.message?.includes('max clients reached')
         
-        return NextResponse.json(
-          {
-            error: errorMessage,
-            code: dbError?.code,
-            details: process.env.NODE_ENV === 'development' ? dbError.message : undefined,
-            troubleshooting: {
-              message: 'Unable to connect to the database. Please check your database connection.',
-              steps: [
-                'Check if your database server is running',
-                'Verify DATABASE_URL is configured correctly in environment variables',
-                'If using Supabase, check if your project is paused (free tier auto-pauses after 7 days)',
-                'Resume your Supabase project from the dashboard if paused',
-                'Try using a direct connection URL instead of a pooler URL',
-                'Verify database migrations have been completed',
-                'Check firewall settings if using a remote database',
-              ],
-            },
-          },
-          { status: 503 }
-        )
+        if (isPoolExhausted && attempt < 2) {
+          // Pool exhausted - wait and retry
+          console.warn(`Database pool exhausted (attempt ${attempt + 1}/3), retrying...`)
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))) // Exponential backoff
+          continue
+        } else if (isPoolExhausted) {
+          // Pool exhausted but max retries reached - continue anyway as database might still work
+          console.warn('Database pool exhausted after retries, but continuing with query - database may still be accessible')
+          dbConnectionTested = true // Mark as tested so we continue
+          break
+        } else {
+          // Other error - log and check if we should continue
+          console.error('Database connection error:', {
+            code: error?.code,
+            message: error?.message,
+            hasDatabaseUrl: !!process.env.DATABASE_URL,
+            attempt: attempt + 1,
+          })
+          
+          // For non-pool errors, only fail on last attempt
+          if (attempt === 2) {
+            // Provide more specific error messages based on error code
+            let errorMessage = 'Database connection failed'
+            if (error?.code === 'P1001') {
+              errorMessage = 'Database connection timeout. The database server may be down or unreachable.'
+            } else if (error?.code === 'P1000') {
+              errorMessage = 'Database authentication failed. Please check your DATABASE_URL credentials.'
+            } else if (error?.code === 'P1002') {
+              errorMessage = 'Database connection timeout. Try using a direct connection instead of a pooler.'
+            } else if (error?.message?.includes('ENOTFOUND')) {
+              errorMessage = 'Database hostname not found. The database server may be paused or the hostname is incorrect.'
+            } else if (error?.message?.includes('ECONNREFUSED')) {
+              errorMessage = 'Database connection refused. The database server may be down or not accepting connections.'
+            }
+            
+            return NextResponse.json(
+              {
+                error: errorMessage,
+                code: error?.code,
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+                troubleshooting: {
+                  message: 'Unable to connect to the database. Please check your database connection.',
+                  steps: [
+                    'Check if your database server is running',
+                    'Verify DATABASE_URL is configured correctly in environment variables',
+                    'If using Supabase, check if your project is paused (free tier auto-pauses after 7 days)',
+                    'Resume your Supabase project from the dashboard if paused',
+                    'Try using a direct connection URL instead of a pooler URL',
+                    'Verify database migrations have been completed',
+                    'Check firewall settings if using a remote database',
+                  ],
+                },
+              },
+              { status: 503 }
+            )
+          }
+        }
       }
+    }
+    
+    // If connection test failed but we're continuing anyway (pool exhaustion), log it
+    if (!dbConnectionTested && dbError) {
+      console.warn('Continuing with query despite connection test failure - will attempt actual query')
     }
 
     const searchParams = request.nextUrl.searchParams
