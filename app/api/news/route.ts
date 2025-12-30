@@ -117,7 +117,29 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching news:', error)
     
-    // Handle Prisma database connection errors
+    // Handle Prisma database connection errors - but don't fail on pool exhaustion
+    const isPoolExhausted = error?.message?.includes('MaxClientsInSessionMode') || 
+                            error?.message?.includes('max clients reached')
+    
+    if (isPoolExhausted) {
+      // Pool exhausted - return empty results instead of error
+      console.warn('Database pool exhausted for news API, returning empty results')
+      return NextResponse.json({
+        newsItems: [],
+        grouped: {
+          critical: [],
+          important: [],
+          informational: [],
+          opportunity: [],
+          warning: [],
+          growth: [],
+        },
+        unreadCount: 0,
+        total: 0,
+      })
+    }
+    
+    // Handle other Prisma database connection errors
     if (error?.code?.startsWith('P1') || error?.message?.includes('connection')) {
       return NextResponse.json(
         {

@@ -384,8 +384,8 @@ export default function DashboardPage() {
                 <CardDescription className="text-xs sm:text-sm line-clamp-2">Sales trends over time - Click to see deals</CardDescription>
               </CardHeader>
               <CardContent className="overflow-visible">
-                <div className="w-full" style={{ minHeight: '200px', height: '200px' }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="w-full" style={{ minHeight: '200px', height: '200px', minWidth: '0' }}>
+                  <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                     <AreaChart data={salesTrendData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                       <defs>
                         <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -444,8 +444,8 @@ export default function DashboardPage() {
                 <CardDescription className="text-xs sm:text-sm line-clamp-2">Deal stage distribution - Click to see pipeline details</CardDescription>
               </CardHeader>
               <CardContent className="overflow-visible">
-                <div className="w-full" style={{ minHeight: '200px', height: '200px' }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="w-full" style={{ minHeight: '200px', height: '200px', minWidth: '0' }}>
+                  <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                     <PieChart>
                       <Pie
                         data={marketShareData}
@@ -492,8 +492,8 @@ export default function DashboardPage() {
                 <CardDescription className="text-xs sm:text-sm line-clamp-2">Monthly revenue comparison - Click to see revenue dashboard</CardDescription>
               </CardHeader>
               <CardContent className="overflow-visible">
-                <div className="w-full" style={{ minHeight: '200px', height: '200px' }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="w-full" style={{ minHeight: '200px', height: '200px', minWidth: '0' }}>
+                  <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                     <BarChart data={revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E8E7E3" />
                       <XAxis 
