@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
+import { prismaWithRetry } from '@/lib/db/connection-retry'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { cache } from '@/lib/redis/client'
 
@@ -72,6 +73,7 @@ export async function GET(request: NextRequest) {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
     // Execute all queries in parallel to reduce total query time
+    // Wrap all database operations with retry logic for connection stability
     const [
       contacts,
       deals,
@@ -87,13 +89,13 @@ export async function GET(request: NextRequest) {
       overdueInvoices,
       pendingTasks,
     ] = await Promise.all([
-      prisma.contact.count({ where: { tenantId: tenantId } }).catch(() => 0),
-      prisma.deal.count({ where: { tenantId: tenantId } }).catch(() => 0),
-      prisma.order.count({ where: { tenantId: tenantId } }).catch(() => 0),
-      prisma.invoice.count({ where: { tenantId: tenantId } }).catch(() => 0),
-      prisma.task.count({ where: { tenantId: tenantId } }).catch(() => 0),
+      prismaWithRetry(() => prisma.contact.count({ where: { tenantId: tenantId } })).catch(() => 0),
+      prismaWithRetry(() => prisma.deal.count({ where: { tenantId: tenantId } })).catch(() => 0),
+      prismaWithRetry(() => prisma.order.count({ where: { tenantId: tenantId } })).catch(() => 0),
+      prismaWithRetry(() => prisma.invoice.count({ where: { tenantId: tenantId } })).catch(() => 0),
+      prismaWithRetry(() => prisma.task.count({ where: { tenantId: tenantId } })).catch(() => 0),
       // Revenue data (last 30 days)
-      prisma.order.findMany({
+      prismaWithRetry(() => prisma.order.findMany({
         where: {
           tenantId: tenantId,
           createdAt: { gte: thirtyDaysAgo },
@@ -103,8 +105,8 @@ export async function GET(request: NextRequest) {
           total: true,
           createdAt: true,
         },
-      }),
-      prisma.invoice.findMany({
+      })).catch(() => []),
+      prismaWithRetry(() => prisma.invoice.findMany({
         where: {
           tenantId: tenantId,
           createdAt: { gte: thirtyDaysAgo },
@@ -114,9 +116,9 @@ export async function GET(request: NextRequest) {
           total: true,
           createdAt: true,
         },
-      }),
+      })).catch(() => []),
       // Active deals value
-      prisma.deal.findMany({
+      prismaWithRetry(() => prisma.deal.findMany({
         where: {
           tenantId: tenantId,
           stage: { not: 'lost' },
@@ -124,9 +126,9 @@ export async function GET(request: NextRequest) {
         select: {
           value: true,
         },
-      }).catch(() => []),
+      })).catch(() => []),
       // Recent activity
-      prisma.contact.findMany({
+      prismaWithRetry(() => prisma.contact.findMany({
         where: { tenantId: tenantId },
         take: 5,
         orderBy: { createdAt: 'desc' },
@@ -136,8 +138,8 @@ export async function GET(request: NextRequest) {
           type: true,
           createdAt: true,
         },
-      }),
-      prisma.deal.findMany({
+      })).catch(() => []),
+      prismaWithRetry(() => prisma.deal.findMany({
         where: { tenantId: tenantId },
         take: 5,
         orderBy: { updatedAt: 'desc' },
@@ -148,8 +150,8 @@ export async function GET(request: NextRequest) {
           value: true,
           updatedAt: true,
         },
-      }),
-      prisma.order.findMany({
+      })).catch(() => []),
+      prismaWithRetry(() => prisma.order.findMany({
         where: { tenantId: tenantId },
         take: 5,
         orderBy: { createdAt: 'desc' },
@@ -160,21 +162,21 @@ export async function GET(request: NextRequest) {
           status: true,
           createdAt: true,
         },
-      }),
+      })).catch(() => []),
       // Overdue invoices
-      prisma.invoice.count({
+      prismaWithRetry(() => prisma.invoice.count({
         where: {
           tenantId: tenantId,
           status: 'overdue',
         },
-      }).catch(() => 0),
+      })).catch(() => 0),
       // Pending tasks
-      prisma.task.count({
+      prismaWithRetry(() => prisma.task.count({
         where: {
           tenantId: tenantId,
           status: { in: ['pending', 'in_progress'] },
         },
-      }).catch(() => 0),
+      })).catch(() => 0),
     ])
 
     const totalRevenue = [...recentOrders, ...recentInvoices].reduce(
@@ -191,36 +193,36 @@ export async function GET(request: NextRequest) {
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
 
     const [revenueLast7Days, revenueLast90Days, revenueAllTime] = await Promise.all([
-      prisma.invoice.aggregate({
+      prismaWithRetry(() => prisma.invoice.aggregate({
         where: {
           tenantId: tenantId,
           status: 'paid',
           paidAt: { gte: sevenDaysAgo },
         },
         _sum: { total: true },
-      }).catch(() => ({ _sum: { total: 0 } })),
-      prisma.invoice.aggregate({
+      })).catch(() => ({ _sum: { total: 0 } })),
+      prismaWithRetry(() => prisma.invoice.aggregate({
         where: {
           tenantId: tenantId,
           status: 'paid',
           paidAt: { gte: ninetyDaysAgo },
         },
         _sum: { total: true },
-      }).catch(() => ({ _sum: { total: 0 } })),
-      prisma.invoice.aggregate({
+      })).catch(() => ({ _sum: { total: 0 } })),
+      prismaWithRetry(() => prisma.invoice.aggregate({
         where: {
           tenantId: tenantId,
           status: 'paid',
         },
         _sum: { total: true },
-      }).catch(() => ({ _sum: { total: 0 } })),
+      })).catch(() => ({ _sum: { total: 0 } })),
     ])
 
     // Calculate monthly revenue trends (last 6 months)
     const sixMonthsAgo = new Date()
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
     
-    const monthlyInvoices = await prisma.invoice.findMany({
+    const monthlyInvoices = await prismaWithRetry(() => prisma.invoice.findMany({
       where: {
         tenantId: tenantId,
         status: 'paid',
@@ -230,9 +232,9 @@ export async function GET(request: NextRequest) {
         total: true,
         paidAt: true,
       },
-    }).catch(() => [])
+    })).catch(() => [])
 
-    const monthlyOrders = await prisma.order.findMany({
+    const monthlyOrders = await prismaWithRetry(() => prisma.order.findMany({
       where: {
         tenantId: tenantId,
         status: { in: ['confirmed', 'shipped', 'delivered'] },
@@ -242,7 +244,7 @@ export async function GET(request: NextRequest) {
         total: true,
         createdAt: true,
       },
-    }).catch(() => [])
+    })).catch(() => [])
 
     // Group by month
     const monthlyRevenueMap = new Map<string, number>()
@@ -291,7 +293,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate market share from deals by stage
-    const dealsByStage = await prisma.deal.groupBy({
+    const dealsByStage = await prismaWithRetry(() => prisma.deal.groupBy({
       by: ['stage'],
       where: {
         tenantId: tenantId,
@@ -299,7 +301,7 @@ export async function GET(request: NextRequest) {
       _sum: {
         value: true,
       },
-    }).catch(() => [])
+    })).catch(() => [])
 
     const totalDealValue = dealsByStage.reduce((sum, d) => sum + (d._sum.value || 0), 0)
     const marketShareData = dealsByStage
@@ -329,12 +331,12 @@ export async function GET(request: NextRequest) {
     const avgRevenuePerUser = totalContacts > 0 ? Math.round((revenueAllTime._sum.total || 0) / totalContacts) : 0
     
     // Calculate churn rate (simplified: based on inactive deals)
-    const lostDeals = await prisma.deal.count({
+    const lostDeals = await prismaWithRetry(() => prisma.deal.count({
       where: {
         tenantId: tenantId,
         stage: 'lost',
       },
-    }).catch(() => 0)
+    })).catch(() => 0)
     const churnRate = totalDeals > 0 ? ((lostDeals / totalDeals) * 100).toFixed(1) : '0.0'
 
     const kpiData = [

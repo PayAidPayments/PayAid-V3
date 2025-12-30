@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch user with tenant - optimized with timeout
-    const userData = await Promise.race([
+    // Fetch user with tenant - using retry logic for connection stability
+    const userData = await prismaWithRetry(() =>
       prisma.user.findUnique({
         where: { id: payload.userId },
         select: {
@@ -60,11 +60,8 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-      }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database query timeout')), 2000) // Reduced to 2 seconds
-      ),
-    ]) as any
+      })
+    )
 
     if (!userData) {
       return NextResponse.json(
