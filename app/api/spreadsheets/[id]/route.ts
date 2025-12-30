@@ -8,7 +8,7 @@ import { prisma } from '@/lib/db/prisma'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -31,9 +31,10 @@ export async function GET(
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
     }
 
+    const { id } = await params
     const spreadsheet = await prisma.spreadsheet.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId: payload.tenantId,
       },
       include: {
@@ -78,7 +79,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -104,10 +105,12 @@ export async function PATCH(
     const body = await request.json()
     const { name, description, data, settings } = body
 
+    const { id } = await params
+    
     // Get current spreadsheet to create version
     const currentSpreadsheet = await prisma.spreadsheet.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId: payload.tenantId,
       },
     })
@@ -119,16 +122,16 @@ export async function PATCH(
     // Create version before updating
     await prisma.spreadsheetVersion.create({
       data: {
-        spreadsheetId: params.id,
+        spreadsheetId: id,
         version: currentSpreadsheet.version,
-        data: currentSpreadsheet.data,
+        data: currentSpreadsheet.data as any,
         createdById: payload.userId,
       },
     })
 
     // Update spreadsheet
     const updatedSpreadsheet = await prisma.spreadsheet.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name: name !== undefined ? name : currentSpreadsheet.name,
         description: description !== undefined ? description : currentSpreadsheet.description,
@@ -155,7 +158,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -178,9 +181,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
     }
 
+    const { id } = await params
     await prisma.spreadsheet.delete({
       where: {
-        id: params.id,
+        id,
         tenantId: payload.tenantId,
       },
     })

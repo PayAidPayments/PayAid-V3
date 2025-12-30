@@ -124,7 +124,7 @@ export async function PATCH(
       data: {
         documentId: id,
         version: currentDocument.version,
-        content: currentDocument.content,
+        content: currentDocument.content as any,
         htmlContent: currentDocument.htmlContent,
         createdById: payload.userId,
       },

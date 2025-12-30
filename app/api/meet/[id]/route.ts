@@ -8,7 +8,7 @@ import { prisma } from '@/lib/db/prisma'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -31,9 +31,10 @@ export async function GET(
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
     }
 
+    const { id } = await params
     const meeting = await prisma.meeting.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId: payload.tenantId,
       },
       include: {
@@ -67,7 +68,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -93,9 +94,10 @@ export async function PATCH(
     const body = await request.json()
     const { status, endTime, recordingUrl, transcript } = body
 
+    const { id } = await params
     const meeting = await prisma.meeting.update({
       where: {
-        id: params.id,
+        id,
         tenantId: payload.tenantId,
       },
       data: {

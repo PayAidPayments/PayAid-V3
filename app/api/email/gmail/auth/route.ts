@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
+import { decodeToken } from '@/lib/auth/jwt'
 
 /**
  * Gmail OAuth Integration
@@ -17,11 +18,22 @@ export async function GET(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'communication')
 
-    // TODO: Implement Gmail OAuth flow
-    // 1. Generate OAuth URL with Google
-    // 2. Redirect user to Google consent screen
-    // 3. Handle callback and store tokens
-    // 4. Initialize Gmail API client
+    // Get current user ID from request (needed for EmailAccount creation)
+    const authHeader = request.headers.get('authorization')
+    let userId = ''
+    
+    if (authHeader) {
+      try {
+        const token = authHeader.replace('Bearer ', '')
+        const payload = decodeToken(token)
+        if (payload) userId = payload.userId
+      } catch (e) {
+        console.error('Error getting user from token:', e)
+      }
+    }
+
+    // Pass tenantId:userId in state for callback
+    const state = `${tenantId}:${userId}`
 
     const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
       client_id: process.env.GOOGLE_CLIENT_ID || '',
@@ -30,7 +42,7 @@ export async function GET(request: NextRequest) {
       scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send',
       access_type: 'offline',
       prompt: 'consent',
-      state: tenantId, // Pass tenantId in state for callback
+      state, // Pass tenantId:userId in state for callback
     })}`
 
     return NextResponse.json({

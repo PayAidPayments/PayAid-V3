@@ -41,10 +41,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TODO: Upload file to storage (S3, Cloudinary, etc.)
-    // For now, we'll store a placeholder URL
-    // In production, upload to your storage service and get the URL
-    const fileUrl = `placeholder://${file.name}` // Replace with actual storage URL
+    // Upload file to storage (S3, R2, etc.)
+    const { uploadFile } = await import('@/lib/storage/file-storage')
+    const uploadResult = await uploadFile({
+      file,
+      fileName: file.name,
+      folder: `knowledge/${tenantId}`,
+      contentType: file.type,
+      makePublic: false, // Keep files private, use signed URLs for access
+    })
+    const fileUrl = uploadResult.url
 
     // Determine file type
     const fileTypeMap: Record<string, string> = {
@@ -69,7 +75,7 @@ export async function POST(request: NextRequest) {
         tags,
         fileUrl,
         fileName: file.name,
-        fileSize: file.size,
+        fileSize: uploadResult.size,
         fileType,
         mimeType: file.type,
         extractedText: extractedText || undefined,
@@ -77,11 +83,18 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // TODO: Queue document processing job
-    // - Extract text if not provided
-    // - Chunk text
-    // - Generate embeddings
-    // - Update isIndexed = true
+    // Queue document processing job
+    const { mediumPriorityQueue } = await import('@/lib/queue/bull')
+    await mediumPriorityQueue.add('process-knowledge-document', {
+      documentId: document.id,
+      tenantId,
+    }, {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 5000,
+      },
+    })
 
     return NextResponse.json({
       success: true,

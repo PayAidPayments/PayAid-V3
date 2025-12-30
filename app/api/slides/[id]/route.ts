@@ -8,7 +8,7 @@ import { prisma } from '@/lib/db/prisma'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -31,9 +31,10 @@ export async function GET(
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
     }
 
+    const { id } = await params
     const presentation = await prisma.presentation.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId: payload.tenantId,
       },
       include: {
@@ -67,7 +68,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -93,10 +94,12 @@ export async function PATCH(
     const body = await request.json()
     const { name, description, slides, theme, settings } = body
 
+    const { id } = await params
+    
     // Get current presentation to create version
     const currentPresentation = await prisma.presentation.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId: payload.tenantId,
       },
     })
@@ -108,16 +111,16 @@ export async function PATCH(
     // Create version before updating
     await prisma.presentationVersion.create({
       data: {
-        presentationId: params.id,
+        presentationId: id,
         version: currentPresentation.version,
-        slides: currentPresentation.slides as any,
+        slides: (currentPresentation.slides as any),
         createdById: payload.userId,
       },
     })
 
     // Update presentation
     const updatedPresentation = await prisma.presentation.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name: name !== undefined ? name : currentPresentation.name,
         description: description !== undefined ? description : currentPresentation.description,
@@ -145,7 +148,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -168,9 +171,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
     }
 
+    const { id } = await params
     await prisma.presentation.delete({
       where: {
-        id: params.id,
+        id,
         tenantId: payload.tenantId,
       },
     })
