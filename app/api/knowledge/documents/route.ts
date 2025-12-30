@@ -78,8 +78,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // TODO: Queue document processing job (extract text, chunk, create embeddings)
-    // For now, return the document
+    // Note: Document processing is handled via the upload endpoint
+    // This endpoint is for creating documents with pre-provided URLs
+    // If you need processing, use the upload endpoint instead
 
     return NextResponse.json(document, { status: 201 })
   } catch (error: any) {

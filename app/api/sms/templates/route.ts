@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         content: validated.content,
         description: validated.description,
         type: validated.type,
-        variables: validated.variables || extractedVariables.length > 0 ? extractedVariables : null,
+        variables: validated.variables || extractedVariables.length > 0 ? extractedVariables : undefined,
       },
     })
 

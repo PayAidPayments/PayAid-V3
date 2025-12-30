@@ -67,15 +67,15 @@ export async function POST(
     }
     messages.push(newMessage)
 
-    // TODO: Use AI to generate response
-    // For now, check FAQ knowledge base
+    // Generate AI response
     let aiResponse = 'I apologize, but I need more information to help you. Could you please provide more details?'
 
+    // First, check FAQ knowledge base for quick answers
     if (chatbot.faqEnabled && chatbot.knowledgeBase) {
       const kb = chatbot.knowledgeBase as Record<string, string>
       const userMessage = validated.message.toLowerCase()
 
-      // Simple keyword matching (in production, use NLP)
+      // Simple keyword matching
       for (const [question, answer] of Object.entries(kb)) {
         if (userMessage.includes(question.toLowerCase()) || 
             question.toLowerCase().includes(userMessage)) {
@@ -85,12 +85,72 @@ export async function POST(
       }
     }
 
-    // TODO: Use AI chat API for better responses
-    // const aiResponse = await generateAIResponse({
-    //   messages: messages.map(m => ({ role: m.role, content: m.content })),
-    //   context: chatbot.knowledgeBase,
-    //   model: chatbot.aiModel,
-    // })
+    // If no FAQ match, use AI to generate response
+    if (aiResponse === 'I apologize, but I need more information to help you. Could you please provide more details?') {
+      try {
+        // Build context from knowledge base
+        const context = chatbot.knowledgeBase 
+          ? `Knowledge Base:\n${JSON.stringify(chatbot.knowledgeBase, null, 2)}\n\n`
+          : ''
+
+        // Build system prompt
+        const systemPrompt = `You are a helpful customer service chatbot for ${chatbot.website?.name || 'this business'}.
+${context}
+Be friendly, concise, and helpful. If you don't know the answer, politely ask for more information or offer to connect them with a human agent.`
+
+        // Try AI providers in order: Groq -> Ollama -> Hugging Face
+        try {
+          const { getGroqClient } = await import('@/lib/ai/groq')
+          const groq = getGroqClient()
+          
+          // Build message history with proper types
+          const chatMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+            { role: 'system', content: systemPrompt },
+          ]
+          
+          // Add recent message history
+          for (const m of messages.slice(-5)) {
+            const role = m.role === 'user' ? 'user' as const : 'assistant' as const
+            chatMessages.push({ role, content: m.content })
+          }
+          
+          // Add current user message
+          chatMessages.push({ role: 'user', content: validated.message })
+          
+          const response = await groq.chat(chatMessages)
+          aiResponse = response.message || aiResponse
+        } catch (groqError) {
+          console.error('Groq error, trying Ollama:', groqError)
+          try {
+            const { getOllamaClient } = await import('@/lib/ai/ollama')
+            const ollama = getOllamaClient()
+            
+            // Build message history with proper types
+            const chatMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+              { role: 'system', content: systemPrompt },
+            ]
+            
+            // Add recent message history
+            for (const m of messages.slice(-5)) {
+              const role = m.role === 'user' ? 'user' as const : 'assistant' as const
+              chatMessages.push({ role, content: m.content })
+            }
+            
+            // Add current user message
+            chatMessages.push({ role: 'user', content: validated.message })
+            
+            const response = await ollama.chat(chatMessages)
+            aiResponse = response.message || aiResponse
+          } catch (ollamaError) {
+            console.error('Ollama error:', ollamaError)
+            // Keep default response if all AI providers fail
+          }
+        }
+      } catch (aiError) {
+        console.error('AI response generation error:', aiError)
+        // Keep default response if AI fails
+      }
+    }
 
     const botMessage = {
       role: 'assistant',

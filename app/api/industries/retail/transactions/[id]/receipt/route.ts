@@ -25,7 +25,7 @@ export async function GET(
       )
     }
 
-    // Fetch transaction with items and customer
+    // Fetch transaction with items
     const transaction = await prisma.retailTransaction.findUnique({
       where: {
         id,
@@ -39,6 +39,21 @@ export async function GET(
         },
       },
     })
+
+    // Fetch customer if customerId exists
+    let customerName = 'Walk-in Customer'
+    let customerPhone: string | undefined = undefined
+
+    if (transaction?.customerId) {
+      const customer = await prisma.contact.findUnique({
+        where: { id: transaction.customerId },
+        select: { name: true, phone: true },
+      })
+      if (customer) {
+        customerName = customer.name
+        customerPhone = customer.phone || undefined
+      }
+    }
 
     if (!transaction) {
       return NextResponse.json(
@@ -58,8 +73,8 @@ export async function GET(
       businessPostalCode: tenant.postalCode || undefined,
       businessGSTIN: tenant.gstin || undefined,
       businessPhone: tenant.phone || undefined,
-      customerName: 'Walk-in Customer', // TODO: Fetch customer from customerId if needed
-      customerPhone: undefined,
+      customerName,
+      customerPhone,
       items: transaction.items.map((item) => ({
         name: item.product.name,
         quantity: item.quantity,
