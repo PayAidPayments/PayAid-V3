@@ -266,7 +266,20 @@ async function seedNewsItems() {
       })
       console.log(`   ✅ Created general news: ${news.title}`)
     } else {
-      console.log(`   ⏭️  Skipped (already exists): ${news.title}`)
+      // Update existing news item to ensure category is correct
+      await prisma.newsItem.updateMany({
+        where: {
+          tenantId: null,
+          title: news.title,
+        },
+        data: {
+          category: news.category,
+          urgency: news.urgency,
+          icon: news.icon,
+          industry: news.industry,
+        },
+      })
+      console.log(`   🔄 Updated general news: ${news.title}`)
     }
   }
 
