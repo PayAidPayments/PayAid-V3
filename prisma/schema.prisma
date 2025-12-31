@@ -196,6 +196,7 @@ model TenantPaymentSettings {
 model Subscription {
   id                String    @id @default(cuid())
   tenantId          String    @unique
+  planId            String?
   modules           String[]
   tier              String
   monthlyPrice      Decimal   @default(0)
@@ -203,10 +204,106 @@ model Subscription {
   billingCycleEnd   DateTime
   status            String    @default("active")
   trialEndsAt       DateTime?
+  cancelledAt       DateTime?
+  cancellationReason String?
+  paymentMethodId   String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan              SubscriptionPlan? @relation(fields: [planId], references: [id])
+  paymentMethod     PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  invoices          SubscriptionInvoice[]
+  dunningAttempts   DunningAttempt[]
 
+  @@index([tenantId])
+  @@index([status])
+  @@index([planId])
+}
+
+model SubscriptionPlan {
+  id                String   @id @default(cuid())
+  name              String
+  description       String?
+  tier              String   // starter, professional, enterprise
+  monthlyPrice      Decimal
+  annualPrice       Decimal?
+  modules           String[] // Included modules
+  features          Json?    // Plan features
+  maxUsers          Int?
+  maxStorage        Int?     // in MB
+  isActive          Boolean  @default(true)
+  isSystem          Boolean  @default(false) // System plans vs custom
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  subscriptions     Subscription[]
+
+  @@index([tier])
+  @@index([isActive])
+}
+
+model SubscriptionInvoice {
+  id                String   @id @default(cuid())
+  subscriptionId    String
+  tenantId          String
+  invoiceNumber     String   @unique
+  amount            Decimal
+  taxAmount         Decimal  @default(0)
+  totalAmount       Decimal
+  currency          String   @default("INR")
+  status            String   @default("pending") // pending, paid, failed, refunded
+  dueDate           DateTime
+  paidAt            DateTime?
+  paymentMethodId   String?
+  invoiceUrl        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  subscription      Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  paymentMethod     PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+
+  @@index([subscriptionId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model PaymentMethod {
+  id                String   @id @default(cuid())
+  tenantId          String
+  type              String   // card, bank_account, upi, wallet
+  provider          String   // payaid, stripe, razorpay
+  token             String?  // Encrypted payment token
+  last4             String?  // Last 4 digits
+  expiryMonth       Int?
+  expiryYear        Int?
+  isDefault         Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  subscriptions     Subscription[]
+  invoices          SubscriptionInvoice[]
+  dunningAttempts   DunningAttempt[]
+
+  @@index([tenantId])
+  @@index([tenantId, isDefault])
+}
+
+model DunningAttempt {
+  id                String   @id @default(cuid())
+  subscriptionId    String
+  invoiceId         String?
+  tenantId          String
+  attemptNumber     Int
+  status            String   // pending, success, failed
+  amount            Decimal
+  errorMessage      String?
+  attemptedAt       DateTime @default(now())
+  succeededAt       DateTime?
+  paymentMethodId   String?
+  createdAt         DateTime @default(now())
+  subscription      Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  paymentMethod     PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+
+  @@index([subscriptionId])
   @@index([tenantId])
   @@index([status])
 }
