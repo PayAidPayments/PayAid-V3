@@ -444,22 +444,18 @@ export default function DashboardPage() {
                 <CardDescription className="text-xs sm:text-sm line-clamp-2">Deal stage distribution - Click to see pipeline details</CardDescription>
               </CardHeader>
               <CardContent className="overflow-visible">
-                <div className="w-full" style={{ minHeight: '200px', height: '200px', minWidth: '0' }}>
-                  <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                    <PieChart margin={{ top: 10, right: 10, bottom: 50, left: 10 }}>
+                <div className="w-full" style={{ minHeight: '220px', height: '220px', minWidth: '0' }}>
+                  <ResponsiveContainer width="100%" height="100%" minHeight={220}>
+                    <PieChart margin={{ top: 5, right: 5, bottom: 60, left: 5 }}>
                       <Pie
                         data={marketShareData}
                         cx="50%"
-                        cy="45%"
-                        innerRadius={35}
-                        outerRadius={65}
+                        cy="40%"
+                        innerRadius={40}
+                        outerRadius={70}
                         paddingAngle={5}
                         dataKey="value"
-                        label={({ name, percent }: any) => {
-                          // Shorten long names to prevent cutoff
-                          const shortName = name.length > 12 ? name.substring(0, 10) + '...' : name
-                          return `${shortName}: ${(percent * 100).toFixed(0)}%`
-                        }}
+                        label={false}
                         labelLine={false}
                       >
                         {marketShareData.map((entry: any, index: number) => (
@@ -471,18 +467,31 @@ export default function DashboardPage() {
                           backgroundColor: '#fff', 
                           border: `1px solid ${PAYAID_PURPLE}`,
                           borderRadius: '8px',
-                          fontSize: '12px'
+                          fontSize: '12px',
+                          padding: '8px'
                         }}
-                        formatter={(value: any, name: any) => [`${value} (${((value / marketShareData.reduce((sum: number, item: any) => sum + item.value, 0)) * 100).toFixed(1)}%)`, name]}
+                        formatter={(value: any, name: any, props: any) => {
+                          const total = marketShareData.reduce((sum: number, item: any) => sum + item.value, 0)
+                          const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0'
+                          return [`${percentage}%`, name]
+                        }}
+                        labelFormatter={(label) => `Stage: ${label}`}
                       />
                       <Legend 
-                        wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}
-                        iconSize={8}
+                        wrapperStyle={{ fontSize: '11px', paddingTop: '15px' }}
+                        iconSize={10}
                         verticalAlign="bottom"
-                        height={50}
-                        formatter={(value: string) => {
-                          // Truncate legend labels if too long
-                          return value.length > 15 ? value.substring(0, 13) + '...' : value
+                        height={60}
+                        formatter={(value: string, entry: any) => {
+                          // Find the matching data entry to get the percentage
+                          const dataEntry = marketShareData.find((item: any) => item.name === value)
+                          const total = marketShareData.reduce((sum: number, item: any) => sum + item.value, 0)
+                          const percentage = dataEntry && total > 0 
+                            ? ((dataEntry.value / total) * 100).toFixed(0) 
+                            : '0'
+                          // Capitalize first letter and show percentage
+                          const capitalized = value.charAt(0).toUpperCase() + value.slice(1)
+                          return `${capitalized}: ${percentage}%`
                         }}
                       />
                     </PieChart>
