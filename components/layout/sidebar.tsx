@@ -10,33 +10,41 @@ import { getModuleLink, requiresSSO } from '@/lib/navigation/module-navigation'
 import { useDashboardUrl } from '@/lib/utils/dashboard-url'
 import { XIcon } from 'lucide-react'
 
-// Main navigation items (most frequently used)
-// Map to module IDs for license checking (V2 - 8 Module Structure)
+// Core Navigation - Always visible, single-click access (like Zoho/Freshworks top nav)
 const mainNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: '📊', module: null }, // Always accessible
   { name: 'Contacts', href: '/dashboard/contacts', icon: '👥', module: 'crm' },
   { name: 'Deals', href: '/dashboard/deals', icon: '💼', module: 'crm' },
-  { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾', module: 'finance' }, // Updated: invoicing → finance
-  { name: 'Products', href: '/dashboard/products', icon: '📦', module: 'crm' }, // Shared with Sales
-  { name: 'Orders', href: '/dashboard/orders', icon: '🛒', module: 'crm' }, // Shared with Sales
+  { name: 'Products', href: '/dashboard/products', icon: '📦', module: 'crm' }, // CRM/Sales shared
+  { name: 'Orders', href: '/dashboard/orders', icon: '🛒', module: 'crm' }, // CRM/Sales shared
+  { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾', module: 'finance' }, // Finance
 ]
 
-// Grouped navigation sections (V2 - 8 Module Structure)
-// Map items to module IDs for license checking
+// 9 Logical Modules - Collapsible sections
 const navigationSections = [
   {
-    name: 'Sales & CRM',
+    name: 'CRM Module',
+    icon: '👥',
+    items: [
+      { name: 'Contacts', href: '/dashboard/contacts', icon: '👥', module: 'crm' },
+      { name: 'Deals', href: '/dashboard/deals', icon: '💼', module: 'crm' },
+      { name: 'Products', href: '/dashboard/products', icon: '📦', module: 'crm' },
+      { name: 'Orders', href: '/dashboard/orders', icon: '🛒', module: 'crm' },
+      { name: 'Tasks', href: '/dashboard/tasks', icon: '✅', module: 'crm' },
+      { name: 'Projects', href: '/dashboard/projects', icon: '📁', module: 'crm' },
+    ],
+  },
+  {
+    name: 'Sales & Ecommerce',
     icon: '💰',
     items: [
       { name: 'Landing Pages', href: '/dashboard/landing-pages', icon: '📄', module: 'sales' },
       { name: 'Checkout Pages', href: '/dashboard/checkout-pages', icon: '💳', module: 'sales' },
       { name: 'Orders', href: '/dashboard/orders', icon: '🛒', module: 'sales' }, // Ecommerce orders
-      { name: 'Projects', href: '/dashboard/projects', icon: '📁', module: 'crm' },
-      { name: 'Tasks', href: '/dashboard/tasks', icon: '✅', module: 'crm' },
     ],
   },
   {
-    name: 'Operations & Finance',
+    name: 'Finance & Accounting',
     icon: '💼',
     items: [
       { name: 'Accounting', href: '/dashboard/accounting', icon: '💰', module: 'finance' },
@@ -46,8 +54,8 @@ const navigationSections = [
       { name: 'Accounting Reports', href: '/dashboard/accounting/reports', icon: '📋', module: 'finance' },
       { name: 'Purchase Orders', href: '/dashboard/purchases/orders', icon: '🛒', module: 'finance' },
       { name: 'Vendors', href: '/dashboard/purchases/vendors', icon: '🏢', module: 'finance' },
-      { name: 'Analytics', href: '/dashboard/analytics', icon: '📈', module: 'analytics' },
       { name: 'Billing', href: '/dashboard/billing', icon: '💳', module: null },
+      { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾', module: 'finance' }, // Cross-linked
     ],
   },
   {
@@ -60,29 +68,28 @@ const navigationSections = [
       { name: 'Social Media', href: '/dashboard/marketing/social', icon: '📱', module: 'marketing' },
       { name: 'Email Templates', href: '/dashboard/email-templates', icon: '✉️', module: 'marketing' },
       { name: 'Events', href: '/dashboard/events', icon: '🎉', module: 'marketing' },
-      { name: 'Setup WhatsApp', href: '/dashboard/whatsapp/setup', icon: '⚡', module: 'marketing' },
-      { name: 'WhatsApp Accounts', href: '/dashboard/whatsapp/accounts', icon: '📱', module: 'marketing' },
-      { name: 'WhatsApp Inbox', href: '/dashboard/whatsapp/inbox', icon: '📥', module: 'marketing' },
-      { name: 'WhatsApp Sessions', href: '/dashboard/whatsapp/sessions', icon: '🔗', module: 'marketing' },
     ],
   },
   {
     name: 'Communication',
     icon: '💬',
     items: [
-      { name: 'Email Accounts', href: '/dashboard/email/accounts', icon: '📧', module: 'communication' }, // Updated: crm → communication
-      { name: 'Webmail', href: '/dashboard/email/webmail', icon: '✉️', module: 'communication' }, // Updated: crm → communication
-      { name: 'Team Chat', href: '/dashboard/chat', icon: '💬', module: 'communication' }, // Updated: crm → communication
+      { name: 'WhatsApp Setup', href: '/dashboard/whatsapp/setup', icon: '⚡', module: 'communication' },
+      { name: 'WhatsApp Accounts', href: '/dashboard/whatsapp/accounts', icon: '📱', module: 'communication' },
+      { name: 'WhatsApp Inbox', href: '/dashboard/whatsapp/inbox', icon: '📥', module: 'communication' },
+      { name: 'WhatsApp Sessions', href: '/dashboard/whatsapp/sessions', icon: '🔗', module: 'communication' },
+      { name: 'Email Accounts', href: '/dashboard/email/accounts', icon: '📧', module: 'communication' },
+      { name: 'Webmail', href: '/dashboard/email/webmail', icon: '✉️', module: 'communication' },
+      { name: 'Team Chat', href: '/dashboard/chat', icon: '💬', module: 'communication' },
     ],
   },
   {
     name: 'AI Studio',
     icon: '🤖',
     items: [
-      { name: 'AI Co-founder', href: '/dashboard/cofounder', icon: '🤖', module: 'ai-studio' }, // AI Co-founder with 17 specialist agents
+      { name: 'AI Co-founder', href: '/dashboard/cofounder', icon: '🤖', module: 'ai-studio' },
       { name: 'AI Insights', href: '/dashboard/ai/insights', icon: '💡', module: 'ai-studio' },
       { name: 'AI Chat', href: '/dashboard/ai/chat', icon: '💬', module: 'ai-studio' },
-      { name: 'AI Test', href: '/dashboard/ai/test', icon: '🧪', module: 'ai-studio' },
       { name: 'Websites', href: '/dashboard/websites', icon: '🌐', module: 'ai-studio' },
       { name: 'Logo Generator', href: '/dashboard/logos', icon: '🎨', module: 'ai-studio' },
       { name: 'Knowledge & RAG AI', href: '/dashboard/knowledge', icon: '📚', module: 'ai-studio' },
@@ -107,16 +114,17 @@ const navigationSections = [
       { name: 'Onboarding Templates', href: '/dashboard/hr/onboarding/templates', icon: '📋', module: 'hr' },
       { name: 'Payroll', href: '/dashboard/hr/payroll/cycles', icon: '💰', module: 'hr' },
       { name: 'Salary Structures', href: '/dashboard/hr/payroll/salary-structures', icon: '💵', module: 'hr' },
-      { name: 'Tax Declarations', href: '/dashboard/hr/tax-declarations', icon: '📑', module: 'hr' },
       { name: 'Payroll Reports', href: '/dashboard/hr/payroll/reports', icon: '📈', module: 'hr' },
+      { name: 'Tax Declarations', href: '/dashboard/hr/tax-declarations', icon: '📑', module: 'hr' },
     ],
   },
   {
-    name: 'Reports & Tools',
+    name: 'Reports & Analytics',
     icon: '📊',
     items: [
-      { name: 'Advanced Reporting', href: '/dashboard/reports', icon: '📈', module: 'analytics' }, // Custom Report Builder
+      { name: 'Advanced Reporting', href: '/dashboard/reports', icon: '📈', module: 'analytics' },
       { name: 'Custom Dashboards', href: '/dashboard/dashboards/custom', icon: '📊', module: 'analytics' },
+      { name: 'Analytics', href: '/dashboard/analytics', icon: '📈', module: 'analytics' },
       { name: 'GST Reports', href: '/dashboard/gst/gstr-1', icon: '📋', module: 'finance' },
       { name: 'GSTR-3B', href: '/dashboard/gst/gstr-3b', icon: '📄', module: 'finance' },
       { name: 'GST Hub', href: '/dashboard/gst', icon: '🏛️', module: 'finance' },
