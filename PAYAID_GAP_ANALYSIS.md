@@ -17,13 +17,13 @@ PayAid V3 in **current state** is **85% complete** vs competitors. But **15% gap
 ```
 PayAid Payments processes via: 
 ├─ Credit/Debit cards (Visa, Mastercard, Rupay)
-├─ UPI (PhonePe, Google Pay, PayTM)
+├─ UPI (all major UPI providers)
 ├─ Net Banking (all 50+ banks)
-├─ Wallets (Paytm, AmazonPay, MobiKwik)
+├─ Wallets (all major digital wallets)
 ├─ EMI (buy now pay later)
 └─ International (120+ currencies)
 
-Stripe/PayPal: Similar (but weak in India)
+International payment gateways: Similar (but weak in India)
 
 PayAid V3 Current:
 ├─ PayAid Payments only
@@ -40,9 +40,8 @@ PayAid V3 Current:
 **Build Path (2 weeks):**
 ```
 ├─ PayAid Payments integration complete (built-in)
-├─ Integrate PhonePe API (3 days)
-├─ Integrate Google Pay (2 days)
-├─ Integrate Paytm (3 days)
+├─ Integrate additional UPI providers (3 days)
+├─ Integrate wallet providers (2 days)
 ├─ Dashboard reconciliation (3 days)
 └─ Live: Full payment stack
 
@@ -121,7 +120,7 @@ PayAid V3 Current:
 - Restaurant chains: Need per-location PL
 - Retail chains: Need consolidated view
 - Manufacturer with warehouses: Need per-location inventory
-- **Without this: Forces ₹12.5k Zoho alternative**
+- **Without this: Forces expensive alternative platforms**
 
 **Build Path (3 weeks):**
 ```
@@ -289,7 +288,7 @@ ONDC (Open Network for Digital Commerce):
 ├─ Shiprocket, Zoho integrating
 
 PayAid V3 Current:
-├─ Shopify/WooCommerce integration planned
+├─ E-commerce platform integration planned
 ├─ ❌ NO: ONDC integration
 └─ ❌ NO: Tier-2/3 seller support
 ```
