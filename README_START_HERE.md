@@ -49,7 +49,7 @@
 - GTM timeline (soft launch → scale)
 - Marketing channels breakdown
 - Sales playbooks (self-serve, assisted, enterprise)
-- Payment gateway recommendation (Razorpay)
+- Payment gateway: PayAid Payments (integrated, no third-party gateways)
 - KPIs to track
 - 30-day launch playbook
 
@@ -126,7 +126,7 @@
   - Styling with Tailwind
   - Backend API integration
 - Week 12: Checkout & Payment
-  - Razorpay integration
+  - PayAid Payments integration (all payments processed through PayAid Payments)
   - Cart system
   - Payment flow (create order → verify → activate license)
   - Confirmation page
@@ -225,7 +225,7 @@
 │   - Bundle options                                 │
 │   - Comparison tables                              │
 │   - Feature highlights                             │
-│ • Integrate Razorpay payment:                      │
+│ • PayAid Payments integration (built-in):          │
 │   - Cart system                                    │
 │   - Checkout flow                                  │
 │   - Invoice generation                             │

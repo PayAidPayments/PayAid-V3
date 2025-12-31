@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-PayAid V3 is an all-in-one business operating system designed specifically for Indian startups and SMBs. It consolidates 15-20 separate SaaS tools into one integrated platform, replacing fragmented solutions like Zoho, Freshworks, Razorpay, Tally, and others with a unified, India-compliant system.
+PayAid V3 is an all-in-one business operating system designed specifically for Indian startups and SMBs. It consolidates 15-20 separate SaaS tools into one integrated platform, replacing fragmented solutions like Zoho, Freshworks, Tally, and others with a unified, India-compliant system. All payments are processed exclusively through PayAid Payments.
 
 **Key Differentiators:**
 - **India-First Design:** Built for Indian tax compliance (GST, TDS, Professional Tax)
@@ -895,7 +895,7 @@ PayAid V3 is an all-in-one business operating system designed specifically for I
 | **Setup Time** | 2-3 hours | 5 minutes | ✅ PayAid |
 | **India Compliance** | Generic | GST, TDS, PT built-in | ✅ PayAid |
 | **AI Features** | Basic | Advanced (Chat, Insights, Image Gen) | ✅ PayAid |
-| **Payment Gateway** | Razorpay (separate) | PayAid Payments (integrated) | ✅ PayAid |
+| **Payment Gateway** | Third-party gateways (separate) | PayAid Payments (integrated) | ✅ PayAid |
 | **Multi-Tenant** | Enterprise only | Built-in | ✅ PayAid |
 | **E-commerce** | Separate product | Integrated | ✅ PayAid |
 | **Accounting** | Zoho Books (separate) | Integrated | ✅ PayAid |
