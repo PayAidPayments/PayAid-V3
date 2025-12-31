@@ -14,7 +14,9 @@ import { validateAPIKey } from '../security/api-keys'
 export async function applyRateLimit(request: NextRequest): Promise<NextResponse | null> {
   try {
     // Try Upstash Redis first (works in Edge Runtime)
-    const upstashResult = await applyUpstashRateLimit(request as any)
+    const upstashResult = await applyUpstashRateLimit({
+      headers: request.headers,
+    })
     
     if (!upstashResult.allowed) {
       return NextResponse.json(
@@ -113,7 +115,9 @@ export async function applyAuthRateLimit(
 ): Promise<NextResponse | null> {
   try {
     // Try Upstash Redis first (works in Edge Runtime)
-    const upstashResult = await applyUpstashAuthRateLimit(request as any, identifier)
+    const upstashResult = await applyUpstashAuthRateLimit({
+      headers: request.headers,
+    }, identifier)
     
     if (!upstashResult.allowed) {
       return NextResponse.json(
