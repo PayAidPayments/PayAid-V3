@@ -14,7 +14,7 @@ export default function ProductsPage() {
   const { data, isLoading } = useProducts({ page, limit: 20, search })
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>
+    return <div className="flex items-center justify-center h-64 text-gray-900 dark:text-gray-100">Loading...</div>
   }
 
   const products = data?.products || []
@@ -24,8 +24,8 @@ export default function ProductsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Products</h1>
-          <p className="mt-2 text-gray-600">Manage your product catalog</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Products</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your product catalog</p>
         </div>
         <Link href="/dashboard/products/new">
           <Button>Add Product</Button>
@@ -54,7 +54,7 @@ export default function ProductsPage() {
         </CardHeader>
         <CardContent>
           {products.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <p className="mb-4">No products found</p>
               <Link href="/dashboard/products/new">
                 <Button variant="outline">Add your first product</Button>
@@ -79,7 +79,7 @@ export default function ProductsPage() {
                       <TableCell className="font-medium">
                         <Link
                           href={`/dashboard/products/${product.id}`}
-                          className="text-blue-600 hover:underline"
+                          className="text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           {product.name}
                         </Link>
@@ -87,20 +87,20 @@ export default function ProductsPage() {
                       <TableCell className="font-mono text-sm">{product.sku}</TableCell>
                       <TableCell>₹{product.salePrice.toLocaleString('en-IN')}</TableCell>
                       <TableCell>
-                        <span className={product.quantity <= product.reorderLevel ? 'text-red-600 font-semibold' : ''}>
+                        <span className={product.quantity <= product.reorderLevel ? 'text-red-600 dark:text-red-400 font-semibold' : ''}>
                           {product.quantity}
                         </span>
                         {product.quantity <= product.reorderLevel && (
-                          <span className="ml-2 text-xs text-red-600">(Low Stock)</span>
+                          <span className="ml-2 text-xs text-red-600 dark:text-red-400">(Low Stock)</span>
                         )}
                       </TableCell>
                       <TableCell>
                         {product.quantity > 0 ? (
-                          <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                          <span className="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
                             In Stock
                           </span>
                         ) : (
-                          <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                          <span className="px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
                             Out of Stock
                           </span>
                         )}
@@ -118,7 +118,7 @@ export default function ProductsPage() {
               {/* Pagination */}
               {pagination && pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
                     Page {pagination.page} of {pagination.totalPages}
                   </div>
                   <div className="flex gap-2">
