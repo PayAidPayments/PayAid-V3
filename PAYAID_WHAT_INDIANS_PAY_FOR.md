@@ -11,14 +11,14 @@
 CURRENT MONTHLY SPENDING:
 
 SOFTWARE & SUBSCRIPTIONS:
-├─ Zoho One: ₹12,500 (CRM, Accounting, HR)
+├─ Business Suite: ₹12,500 (CRM, Accounting, HR)
 ├─ Payment Gateway: ₹0 (PayAid Payments integrated - no separate cost)
-├─ Swiggy/Zomato: ₹3,000-8,000 (commission on orders)
-├─ Google Workspace: ₹1,200 (email, drive, docs)
-├─ Zoom: ₹500 (video calls)
-├─ Slack: ₹500 (team chat)
-├─ Dropbox: ₹500 (file storage)
-└─ POS System (Square/Shopify): ₹2,000-5,000
+├─ Food delivery platforms: ₹3,000-8,000 (commission on orders)
+├─ Productivity suite: ₹1,200 (email, drive, docs)
+├─ Video conferencing: ₹500 (video calls)
+├─ Team chat: ₹500 (team chat)
+├─ File storage: ₹500 (file storage)
+└─ POS System: ₹2,000-5,000
    SUBTOTAL: ₹23,200-33,200
 
 OPERATIONAL COSTS:
@@ -134,7 +134,7 @@ Total: ₹20k-100k/month
 - Users need **real-time rate comparison**
 
 **PayAid Opportunity:**
-✅ **Integrate all courier APIs** (Shiprocket, Delhivery, etc.)
+✅ **Integrate all courier APIs** (shipping providers, logistics providers, etc.)
 ✅ Auto-select cheapest courier for each shipment
 ✅ **Negotiate bulk rates** with couriers (PayAid gets commission)
 ✅ Auto-print labels + manifests

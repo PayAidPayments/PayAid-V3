@@ -457,7 +457,7 @@ model Order {
   shippingCountry String
   
   // Fulfillment
-  shiprocketOrderId String? // Link to Shiprocket
+  shippingOrderId String? // Link to shipping provider
   trackingUrl String?
   
   // Dates
@@ -559,7 +559,7 @@ export async function createOrder(
     order.shiprocketOrderId = shiprocketOrder.shiprocket_id;
     await db.order.update({
       where: { id: order.id },
-      data: { shiprocketOrderId: shiprocketOrder.shiprocket_id },
+      data: { shippingOrderId: shippingOrder.id },
     });
   }
   
