@@ -10,6 +10,29 @@ import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts'
 
+// Hook to detect dark mode
+function useDarkMode() {
+  const [isDark, setIsDark] = useState(false)
+  
+  useEffect(() => {
+    const checkDarkMode = () => {
+      const root = document.documentElement
+      setIsDark(root.classList.contains('dark'))
+    }
+    
+    checkDarkMode()
+    const observer = new MutationObserver(checkDarkMode)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    })
+    
+    return () => observer.disconnect()
+  }, [])
+  
+  return isDark
+}
+
 // PayAid brand colors
 const PAYAID_PURPLE = '#53328A'
 const PAYAID_GOLD = '#F5C700'
@@ -81,6 +104,7 @@ function getAuthHeaders() {
 export default function DashboardPage() {
   const params = useParams()
   const { user, tenant, token } = useAuthStore()
+  const isDark = useDarkMode()
   const [stats, setStats] = useState({
     contacts: 0,
     deals: 0,
@@ -388,28 +412,28 @@ export default function DashboardPage() {
                 <CardDescription className="text-xs sm:text-sm line-clamp-2">Sales trends over time - Click to see deals</CardDescription>
               </CardHeader>
               <CardContent className="overflow-visible">
-                <div className="w-full" style={{ minHeight: '200px', height: '200px', minWidth: '0' }}>
-                  <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                    <AreaChart data={salesTrendData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                <div className="w-full" style={{ minHeight: '240px', height: '240px', minWidth: '0' }}>
+                  <ResponsiveContainer width="100%" height="100%" minHeight={240}>
+                    <AreaChart data={salesTrendData} margin={{ top: 10, right: 10, left: 10, bottom: 70 }}>
                       <defs>
                         <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor={PAYAID_PURPLE} stopOpacity={0.3}/>
                           <stop offset="95%" stopColor={PAYAID_PURPLE} stopOpacity={0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E8E7E3" />
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E8E7E3'} />
                       <XAxis 
                         dataKey="name" 
-                        stroke={PAYAID_PURPLE} 
-                        tick={{ fontSize: 11 }}
+                        stroke={isDark ? '#D1D5DB' : '#53328A'}
+                        tick={{ fontSize: 10, fill: isDark ? '#D1D5DB' : '#53328A' }}
                         angle={-45}
                         textAnchor="end"
-                        height={60}
+                        height={70}
                         interval={0}
                       />
                       <YAxis 
-                        stroke={PAYAID_PURPLE} 
-                        tick={{ fontSize: 11 }}
+                        stroke={isDark ? '#D1D5DB' : '#53328A'}
+                        tick={{ fontSize: 10, fill: isDark ? '#D1D5DB' : '#53328A' }}
                         width={60}
                         tickFormatter={(value) => {
                           if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`
@@ -419,7 +443,8 @@ export default function DashboardPage() {
                       />
                       <Tooltip 
                         contentStyle={{ 
-                          backgroundColor: '#fff', 
+                          backgroundColor: isDark ? 'rgb(31, 41, 55)' : 'rgb(255, 255, 255)',
+                          color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
                           border: `1px solid ${PAYAID_PURPLE}`,
                           borderRadius: '8px',
                           fontSize: '12px'
@@ -468,7 +493,8 @@ export default function DashboardPage() {
                       </Pie>
                       <Tooltip 
                         contentStyle={{ 
-                          backgroundColor: '#fff', 
+                          backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
+                          color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
                           border: `1px solid ${PAYAID_PURPLE}`,
                           borderRadius: '8px',
                           fontSize: '12px',
@@ -482,7 +508,11 @@ export default function DashboardPage() {
                         labelFormatter={(label) => `Stage: ${label}`}
                       />
                       <Legend 
-                        wrapperStyle={{ fontSize: '11px', paddingTop: '15px' }}
+                        wrapperStyle={{ 
+                          fontSize: '11px', 
+                          paddingTop: '15px',
+                          color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)'
+                        }}
                         iconSize={10}
                         verticalAlign="bottom"
                         height={60}
@@ -513,22 +543,22 @@ export default function DashboardPage() {
                 <CardDescription className="text-xs sm:text-sm line-clamp-2">Monthly revenue comparison - Click to see revenue dashboard</CardDescription>
               </CardHeader>
               <CardContent className="overflow-visible">
-                <div className="w-full" style={{ minHeight: '200px', height: '200px', minWidth: '0' }}>
-                  <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                    <BarChart data={revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E8E7E3" />
+                <div className="w-full" style={{ minHeight: '240px', height: '240px', minWidth: '0' }}>
+                  <ResponsiveContainer width="100%" height="100%" minHeight={240}>
+                    <BarChart data={revenueData} margin={{ top: 10, right: 10, left: 10, bottom: 70 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E8E7E3'} />
                       <XAxis 
                         dataKey="month" 
-                        stroke={PAYAID_PURPLE} 
-                        tick={{ fontSize: 11 }}
+                        stroke={isDark ? '#D1D5DB' : '#53328A'}
+                        tick={{ fontSize: 10, fill: isDark ? '#D1D5DB' : '#53328A' }}
                         angle={-45}
                         textAnchor="end"
-                        height={60}
+                        height={70}
                         interval={0}
                       />
                       <YAxis 
-                        stroke={PAYAID_PURPLE} 
-                        tick={{ fontSize: 11 }}
+                        stroke={isDark ? '#D1D5DB' : '#53328A'}
+                        tick={{ fontSize: 10, fill: isDark ? '#D1D5DB' : '#53328A' }}
                         width={60}
                         tickFormatter={(value) => {
                           if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`
@@ -538,7 +568,8 @@ export default function DashboardPage() {
                       />
                       <Tooltip 
                         contentStyle={{ 
-                          backgroundColor: '#fff', 
+                          backgroundColor: isDark ? 'rgb(31, 41, 55)' : 'rgb(255, 255, 255)',
+                          color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
                           border: `1px solid ${PAYAID_PURPLE}`,
                           borderRadius: '8px',
                           fontSize: '12px'
@@ -546,7 +577,11 @@ export default function DashboardPage() {
                         formatter={(value: any) => `₹${Number(value).toLocaleString('en-IN')}`}
                       />
                       <Legend 
-                        wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+                        wrapperStyle={{ 
+                          fontSize: '11px', 
+                          paddingTop: '10px', 
+                          color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)' 
+                        }}
                         iconSize={10}
                         verticalAlign="bottom"
                         height={36}

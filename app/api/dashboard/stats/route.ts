@@ -267,26 +267,32 @@ export async function GET(request: NextRequest) {
     // Generate last 6 months data
     const salesTrendData = []
     const revenueData = []
-    const monthNames = []
+    const monthNames = new Set<string>()
     
     for (let i = 5; i >= 0; i--) {
       const date = new Date()
       date.setMonth(date.getMonth() - i)
       const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
       const monthName = date.toLocaleDateString('en-US', { month: 'short' })
-      monthNames.push(monthName)
+      
+      // Ensure unique month names - if duplicate, include year
+      let displayName = monthName
+      if (monthNames.has(monthName)) {
+        displayName = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+      }
+      monthNames.add(monthName)
       
       const revenue = monthlyRevenueMap.get(monthKey) || 0
       const sales = monthlySalesMap.get(monthKey) || 0
       
       salesTrendData.push({
-        name: monthName,
+        name: displayName,
         value: Math.round(sales),
         target: Math.round(sales * 1.2), // 20% growth target
       })
       
       revenueData.push({
-        month: monthName,
+        month: displayName,
         revenue: Math.round(revenue),
         expenses: Math.round(revenue * 0.7), // Estimate expenses as 70% of revenue
       })

@@ -56,11 +56,11 @@ function ContactsPageContent() {
   }
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>
+    return <div className="flex items-center justify-center h-64 text-gray-900 dark:text-gray-100">Loading...</div>
   }
 
   if (error) {
-    return <div className="text-red-600">Error loading contacts</div>
+    return <div className="text-red-600 dark:text-red-400">Error loading contacts</div>
   }
 
   let contacts = data?.contacts || []
@@ -90,8 +90,8 @@ function ContactsPageContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Contacts</h1>
-          <p className="mt-2 text-gray-600">Manage your customers, leads, and vendors</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Contacts</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your customers, leads, and vendors</p>
         </div>
         <div className="flex gap-3">
           {typeFilter === 'lead' && (
@@ -130,7 +130,7 @@ function ContactsPageContent() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="h-10 rounded-md border border-gray-300 px-3"
+              className="h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3"
             >
               <option value="">All Types</option>
               <option value="customer">Customer</option>
@@ -142,7 +142,7 @@ function ContactsPageContent() {
               <select
                 value={scoreFilter}
                 onChange={(e) => setScoreFilter(e.target.value)}
-                className="h-10 rounded-md border border-gray-300 px-3"
+                className="h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3"
               >
                 <option value="">All Scores</option>
                 <option value="hot">🔥 Hot (70+)</option>

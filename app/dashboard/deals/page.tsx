@@ -9,12 +9,12 @@ import { format } from 'date-fns'
 import { ModuleGate } from '@/components/modules/ModuleGate'
 
 const stages = [
-  { id: 'lead', name: 'Lead', color: 'bg-gray-100 text-gray-800' },
-  { id: 'qualified', name: 'Qualified', color: 'bg-blue-100 text-blue-800' },
-  { id: 'proposal', name: 'Proposal', color: 'bg-yellow-100 text-yellow-800' },
-  { id: 'negotiation', name: 'Negotiation', color: 'bg-orange-100 text-orange-800' },
-  { id: 'won', name: 'Won', color: 'bg-green-100 text-green-800' },
-  { id: 'lost', name: 'Lost', color: 'bg-red-100 text-red-800' },
+  { id: 'lead', name: 'Lead', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200' },
+  { id: 'qualified', name: 'Qualified', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' },
+  { id: 'proposal', name: 'Proposal', color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' },
+  { id: 'negotiation', name: 'Negotiation', color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300' },
+  { id: 'won', name: 'Won', color: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' },
+  { id: 'lost', name: 'Lost', color: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' },
 ]
 
 function DealsPageContent() {
@@ -58,15 +58,15 @@ function DealsPageContent() {
   }
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>
+    return <div className="flex items-center justify-center h-64 text-gray-900 dark:text-gray-100">Loading...</div>
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Deals Pipeline</h1>
-          <p className="mt-2 text-gray-600">Manage your sales pipeline</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Deals Pipeline</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your sales pipeline</p>
         </div>
         <Link href="/dashboard/deals/new">
           <Button>New Deal</Button>
@@ -82,10 +82,10 @@ function DealsPageContent() {
             <Card key={stage.id}>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold">{count}</div>
-                  <div className="text-sm text-gray-600">{stage.name}</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{count}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">{stage.name}</div>
                   {total > 0 && (
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       ₹{total.toLocaleString('en-IN')}
                     </div>
                   )}
@@ -101,13 +101,13 @@ function DealsPageContent() {
         {stages.map((stage) => (
           <div
             key={stage.id}
-            className="bg-gray-50 rounded-lg p-4 min-h-[500px]"
+            className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 min-h-[500px]"
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, stage.id)}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">{stage.name}</h3>
-              <span className="text-sm text-gray-500">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">{stage.name}</h3>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
                 {getDealsByStage(stage.id).length}
               </span>
             </div>
@@ -124,21 +124,21 @@ function DealsPageContent() {
                     onDragStart={() => handleDragStart(deal.id)}
                   >
                     <CardContent className="p-4">
-                      <div className="font-medium text-sm mb-2">{deal.name}</div>
-                      <div className="text-lg font-bold text-blue-600 mb-1">
+                      <div className="font-medium text-sm mb-2 text-gray-900 dark:text-gray-100">{deal.name}</div>
+                      <div className="text-lg font-bold text-blue-600 dark:text-blue-400 mb-1">
                         ₹{deal.value.toLocaleString('en-IN')}
                       </div>
                       {deal.contact && (
-                        <div className="text-xs text-gray-500 mb-2">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                           {deal.contact.name}
                         </div>
                       )}
                       <div className="flex items-center justify-between">
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
                           {deal.probability}% probability
                         </div>
                         {deal.expectedCloseDate && (
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
                             {format(new Date(deal.expectedCloseDate), 'MMM dd')}
                           </div>
                         )}
@@ -149,7 +149,7 @@ function DealsPageContent() {
               ))}
 
               {getDealsByStage(stage.id).length === 0 && (
-                <div className="text-center text-sm text-gray-400 py-8">
+                <div className="text-center text-sm text-gray-400 dark:text-gray-500 py-8">
                   No deals
                 </div>
               )}

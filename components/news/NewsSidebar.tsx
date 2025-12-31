@@ -48,37 +48,37 @@ interface NewsResponse {
 const URGENCY_CONFIG = {
   critical: {
     label: 'CRITICAL',
-    color: 'bg-red-50 border-red-200 text-red-800',
+    color: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300',
     icon: '🔴',
     badgeColor: 'bg-red-500',
   },
   important: {
     label: 'IMPORTANT',
-    color: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+    color: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300',
     icon: '🟡',
     badgeColor: 'bg-yellow-500',
   },
   informational: {
     label: 'INFORMATIONAL',
-    color: 'bg-blue-50 border-blue-200 text-blue-800',
+    color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300',
     icon: '🟢',
     badgeColor: 'bg-blue-500',
   },
   opportunity: {
     label: 'OPPORTUNITY',
-    color: 'bg-purple-50 border-purple-200 text-purple-800',
+    color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-800 dark:text-purple-300',
     icon: '💡',
     badgeColor: 'bg-purple-500',
   },
   warning: {
     label: 'WARNING',
-    color: 'bg-orange-50 border-orange-200 text-orange-800',
+    color: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-300',
     icon: '⚠️',
     badgeColor: 'bg-orange-500',
   },
   growth: {
     label: 'GROWTH',
-    color: 'bg-green-50 border-green-200 text-green-800',
+    color: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300',
     icon: '📈',
     badgeColor: 'bg-green-500',
   },
