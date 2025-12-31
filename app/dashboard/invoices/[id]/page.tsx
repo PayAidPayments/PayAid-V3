@@ -235,7 +235,7 @@ export default function InvoiceDetailPage() {
                   <div className="text-sm space-y-1">
                     <div className="font-medium">{invoice.tenant?.name || 'Business Name'}</div>
                     {invoice.tenant?.address && (
-                      <div className="text-gray-600">{invoice.tenant.address}</div>
+                      <div className="text-gray-600 dark:text-gray-400">{invoice.tenant.address}</div>
                     )}
                     {(invoice.tenant?.city || invoice.tenant?.state) && (
                       <div className="text-gray-600">

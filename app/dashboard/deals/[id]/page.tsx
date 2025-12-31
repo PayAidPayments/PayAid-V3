@@ -24,7 +24,7 @@ export default function DealDetailPage() {
   if (!deal) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600 mb-4">Deal not found</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">Deal not found</p>
         <Link href="/dashboard/deals">
           <Button>Back to Deals</Button>
         </Link>
@@ -36,8 +36,8 @@ export default function DealDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{deal.name}</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{deal.name}</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
             {deal.contact?.name || 'No contact'}
           </p>
         </div>

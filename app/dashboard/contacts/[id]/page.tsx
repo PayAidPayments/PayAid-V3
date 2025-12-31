@@ -53,9 +53,9 @@ export default function ContactDetailPage() {
   if (!contact) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600 mb-4">Contact not found</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">Contact not found</p>
         <Link href="/dashboard/contacts">
-          <Button>Back to Contacts</Button>
+          <Button className="dark:text-gray-100">Back to Contacts</Button>
         </Link>
       </div>
     )
@@ -65,8 +65,8 @@ export default function ContactDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{contact.name}</h1>
-          <p className="mt-2 text-gray-600">{contact.company || 'No company'}</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{contact.name}</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">{contact.company || 'No company'}</p>
         </div>
         <div className="flex gap-2">
           {contact.type === 'lead' && (

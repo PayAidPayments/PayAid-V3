@@ -145,14 +145,14 @@ export default function StatDrillDownPage() {
 
   if (!statInfo) {
     return (
-      <div className="min-h-screen p-6">
-        <Card>
+      <div className="min-h-screen p-6 dark:bg-gray-900">
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Stat Not Found</CardTitle>
+            <CardTitle className="dark:text-gray-100">Stat Not Found</CardTitle>
           </CardHeader>
           <CardContent>
-            <p>The requested stat type &quot;{statType}&quot; is not available.</p>
-            <Button onClick={goBack} className="mt-4">
+            <p className="dark:text-gray-300">The requested stat type &quot;{statType}&quot; is not available.</p>
+            <Button onClick={goBack} className="mt-4 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
             </Button>
@@ -163,80 +163,80 @@ export default function StatDrillDownPage() {
   }
 
   return (
-    <div className="min-h-screen p-6" style={{ background: 'linear-gradient(135deg, #F8F7F3 0%, #FFFFFF 100%)' }}>
+    <div className="min-h-screen p-6 dark:bg-gray-900" style={{ background: 'linear-gradient(135deg, #F8F7F3 0%, #FFFFFF 100%)' }}>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={goBack} style={{ borderColor: PAYAID_PURPLE }}>
+            <Button variant="outline" onClick={goBack} style={{ borderColor: PAYAID_PURPLE }} className="dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-800">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
             <div>
-              <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: PAYAID_PURPLE }}>
+              <h1 className="text-3xl font-bold flex items-center gap-3 dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>
                 <Icon className="w-8 h-8" />
                 {statInfo.title}
               </h1>
-              <p className="mt-2 text-gray-600">{statInfo.description}</p>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">{statInfo.description}</p>
             </div>
           </div>
         </div>
 
         {/* Main Stat Card */}
-        <Card className="border-2" style={{ borderColor: PAYAID_PURPLE }}>
+        <Card className="border-2 dark:bg-gray-800 dark:border-gray-700" style={{ borderColor: PAYAID_PURPLE }}>
           <CardHeader>
-            <CardTitle className="text-2xl font-bold" style={{ color: PAYAID_PURPLE }}>
+            <CardTitle className="text-2xl font-bold dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>
               Current Value
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-5xl font-bold mb-4" style={{ color: PAYAID_PURPLE }}>
+            <div className="text-5xl font-bold mb-4 dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>
               {typeof statInfo.data === 'number'
                 ? `₹${statInfo.data.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
                 : statInfo.data}
             </div>
-            <CardDescription className="text-base">{statInfo.description}</CardDescription>
+            <CardDescription className="text-base dark:text-gray-400">{statInfo.description}</CardDescription>
           </CardContent>
         </Card>
 
         {/* Calculation Explanation */}
-        <Card className="border-2" style={{ borderColor: PAYAID_GOLD }}>
+        <Card className="border-2 dark:bg-gray-800 dark:border-gray-700" style={{ borderColor: PAYAID_GOLD }}>
           <CardHeader>
-            <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>
+            <CardTitle className="text-lg font-bold dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>
               How This Number is Calculated
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="p-4 rounded-lg" style={{ backgroundColor: '#F8F7F3' }}>
-                <p className="text-gray-700 font-medium">{statInfo.calculation}</p>
+              <div className="p-4 rounded-lg dark:bg-gray-700" style={{ backgroundColor: '#F8F7F3' }}>
+                <p className="text-gray-700 dark:text-gray-300 font-medium">{statInfo.calculation}</p>
               </div>
               
               {statType === 'revenue' && dashboardStats?.revenue && (
                 <div className="space-y-2">
-                  <h4 className="font-semibold" style={{ color: PAYAID_PURPLE }}>Breakdown:</h4>
+                  <h4 className="font-semibold dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Breakdown:</h4>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded border">
-                      <div className="text-sm text-gray-600">Last 7 Days</div>
-                      <div className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>
+                    <div className="p-3 rounded border dark:border-gray-600 dark:bg-gray-700">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Last 7 Days</div>
+                      <div className="text-lg font-bold dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>
                         ₹{dashboardStats.revenue.last7Days?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
                       </div>
                     </div>
-                    <div className="p-3 rounded border">
-                      <div className="text-sm text-gray-600">Last 30 Days</div>
-                      <div className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>
+                    <div className="p-3 rounded border dark:border-gray-600 dark:bg-gray-700">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Last 30 Days</div>
+                      <div className="text-lg font-bold dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>
                         ₹{dashboardStats.revenue.last30Days?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
                       </div>
                     </div>
-                    <div className="p-3 rounded border">
-                      <div className="text-sm text-gray-600">Last 90 Days</div>
-                      <div className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>
+                    <div className="p-3 rounded border dark:border-gray-600 dark:bg-gray-700">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Last 90 Days</div>
+                      <div className="text-lg font-bold dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>
                         ₹{dashboardStats.revenue.last90Days?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
                       </div>
                     </div>
-                    <div className="p-3 rounded border">
-                      <div className="text-sm text-gray-600">All Time</div>
-                      <div className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>
+                    <div className="p-3 rounded border dark:border-gray-600 dark:bg-gray-700">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">All Time</div>
+                      <div className="text-lg font-bold dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>
                         ₹{dashboardStats.revenue.allTime?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
                       </div>
                     </div>
@@ -246,16 +246,16 @@ export default function StatDrillDownPage() {
 
               {statType === 'pipeline' && dashboardStats?.pipeline && (
                 <div className="space-y-2">
-                  <h4 className="font-semibold" style={{ color: PAYAID_PURPLE }}>Breakdown:</h4>
-                  <div className="p-3 rounded border">
-                    <div className="text-sm text-gray-600">Active Deals</div>
-                    <div className="text-lg font-bold" style={{ color: PAYAID_GOLD }}>
+                  <h4 className="font-semibold dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Breakdown:</h4>
+                  <div className="p-3 rounded border dark:border-gray-600 dark:bg-gray-700">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Active Deals</div>
+                    <div className="text-lg font-bold dark:text-gray-100" style={{ color: PAYAID_GOLD }}>
                       {dashboardStats.pipeline.activeDeals || 0}
                     </div>
                   </div>
-                  <div className="p-3 rounded border">
-                    <div className="text-sm text-gray-600">Total Pipeline Value</div>
-                    <div className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>
+                  <div className="p-3 rounded border dark:border-gray-600 dark:bg-gray-700">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Total Pipeline Value</div>
+                    <div className="text-lg font-bold dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>
                       ₹{dashboardStats.pipeline.value?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
                     </div>
                   </div>
@@ -264,17 +264,17 @@ export default function StatDrillDownPage() {
 
               {statType === 'alerts' && dashboardStats?.alerts && (
                 <div className="space-y-2">
-                  <h4 className="font-semibold" style={{ color: PAYAID_PURPLE }}>Breakdown:</h4>
+                  <h4 className="font-semibold dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Breakdown:</h4>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded border border-red-200 bg-red-50">
-                      <div className="text-sm text-red-700">Overdue Invoices</div>
-                      <div className="text-lg font-bold text-red-600">
+                    <div className="p-3 rounded border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
+                      <div className="text-sm text-red-700 dark:text-red-400">Overdue Invoices</div>
+                      <div className="text-lg font-bold text-red-600 dark:text-red-400">
                         {dashboardStats.alerts.overdueInvoices || 0}
                       </div>
                     </div>
-                    <div className="p-3 rounded border border-yellow-200 bg-yellow-50">
-                      <div className="text-sm text-yellow-700">Pending Tasks</div>
-                      <div className="text-lg font-bold text-yellow-600">
+                    <div className="p-3 rounded border border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
+                      <div className="text-sm text-yellow-700 dark:text-yellow-400">Pending Tasks</div>
+                      <div className="text-lg font-bold text-yellow-600 dark:text-yellow-400">
                         {dashboardStats.alerts.pendingTasks || 0}
                       </div>
                     </div>
@@ -287,31 +287,31 @@ export default function StatDrillDownPage() {
 
         {/* Recent Items */}
         {detailedData && Array.isArray(detailedData) && detailedData.length > 0 && (
-          <Card className="border-2" style={{ borderColor: PAYAID_PURPLE }}>
+          <Card className="border-2 dark:bg-gray-800 dark:border-gray-700" style={{ borderColor: PAYAID_PURPLE }}>
             <CardHeader>
-              <CardTitle className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>
+              <CardTitle className="text-lg font-bold dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>
                 Recent {statInfo.title}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 {detailedData.slice(0, 10).map((item: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between p-3 rounded hover:bg-gray-50 border">
+                  <div key={idx} className="flex items-center justify-between p-3 rounded hover:bg-gray-50 dark:hover:bg-gray-700 border dark:border-gray-600">
                     <div>
-                      <div className="font-medium">{item.name || item.title || item.orderNumber || `#${item.id}`}</div>
+                      <div className="font-medium dark:text-gray-100">{item.name || item.title || item.orderNumber || `#${item.id}`}</div>
                       {item.createdAt && (
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           {format(new Date(item.createdAt), 'MMM dd, yyyy')}
                         </div>
                       )}
                     </div>
                     {item.value && (
-                      <div className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>
+                      <div className="text-lg font-bold dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>
                         ₹{item.value.toLocaleString('en-IN')}
                       </div>
                     )}
                     {item.total && (
-                      <div className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>
+                      <div className="text-lg font-bold dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>
                         ₹{item.total.toLocaleString('en-IN')}
                       </div>
                     )}
@@ -324,9 +324,9 @@ export default function StatDrillDownPage() {
 
         {/* Loading State */}
         {(isLoading || isLoadingDetails) && (
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardContent className="py-8">
-              <div className="text-center text-gray-500">Loading details...</div>
+              <div className="text-center text-gray-500 dark:text-gray-400">Loading details...</div>
             </CardContent>
           </Card>
         )}
