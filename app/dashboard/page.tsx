@@ -58,7 +58,7 @@ function HealthScoreWidget({ getDashboardLink }: { getDashboardLink: (path: stri
           {healthScore?.factors && (
             <div className="mt-2 sm:mt-3 space-y-1">
               {healthScore.factors.slice(0, 3).map((factor: any, idx: number) => (
-                <div key={idx} className="text-xs text-gray-600 truncate">
+                <div key={idx} className="text-xs text-gray-600 dark:text-gray-400 truncate">
                   • {factor.name}: {factor.score}/100
                 </div>
               ))}
@@ -183,15 +183,15 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #F8F7F3 0%, #FFFFFF 100%)' }}>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors">
       <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold truncate" style={{ color: PAYAID_PURPLE }}>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold truncate text-gray-900 dark:text-gray-100" style={{ color: 'inherit' }}>
               Welcome back, {user?.name || user?.email}!
             </h1>
-            <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">
+            <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
               Here&apos;s what&apos;s happening with your business today.
             </p>
           </div>
@@ -603,12 +603,12 @@ export default function DashboardPage() {
                 <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm truncate flex-1">Overdue Invoices</span>
-                      <span className="text-base sm:text-lg font-bold text-red-600 shrink-0 ml-2">{dashboardStats.alerts?.overdueInvoices || 0}</span>
+                      <span className="text-xs sm:text-sm truncate flex-1 text-gray-900 dark:text-gray-100">Overdue Invoices</span>
+                      <span className="text-base sm:text-lg font-bold text-red-600 dark:text-red-400 shrink-0 ml-2">{dashboardStats.alerts?.overdueInvoices || 0}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm truncate flex-1">Pending Tasks</span>
-                      <span className="text-base sm:text-lg font-bold text-yellow-600 shrink-0 ml-2">{dashboardStats.alerts?.pendingTasks || 0}</span>
+                      <span className="text-xs sm:text-sm truncate flex-1 text-gray-900 dark:text-gray-100">Pending Tasks</span>
+                      <span className="text-base sm:text-lg font-bold text-yellow-600 dark:text-yellow-400 shrink-0 ml-2">{dashboardStats.alerts?.pendingTasks || 0}</span>
                     </div>
                   </div>
                   <CardDescription className="mt-2 text-xs truncate">Click to see all alerts</CardDescription>
@@ -629,12 +629,12 @@ export default function DashboardPage() {
               <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                 <div className="space-y-3 sm:space-y-4">
                 {kpiData.map((kpi: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between p-2 sm:p-3 rounded-lg" style={{ backgroundColor: '#F8F7F3' }}>
+                  <div key={idx} className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-gray-100 dark:bg-gray-700">
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                      <span className="text-lg sm:text-xl shrink-0">✓</span>
-                      <span className="font-medium text-xs sm:text-sm truncate">{kpi.name}</span>
+                      <span className="text-lg sm:text-xl shrink-0 text-gray-700 dark:text-gray-300">✓</span>
+                      <span className="font-medium text-xs sm:text-sm truncate text-gray-900 dark:text-gray-100">{kpi.name}</span>
                     </div>
-                    <span className="text-base sm:text-lg font-bold shrink-0 ml-2" style={{ color: PAYAID_PURPLE }}>
+                    <span className="text-base sm:text-lg font-bold shrink-0 ml-2 text-purple-700 dark:text-purple-400">
                       {kpi.value}{kpi.unit}
                     </span>
                   </div>
@@ -690,9 +690,9 @@ export default function DashboardPage() {
                   <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                     <div className="space-y-2">
                       {dashboardStats.recentActivity.contacts.slice(0, 5).map((contact: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50">
-                          <span className="text-xs sm:text-sm truncate flex-1 min-w-0">{contact.name || contact.email}</span>
-                          <span className="text-xs text-gray-500 shrink-0 ml-2">
+                        <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                          <span className="text-xs sm:text-sm truncate flex-1 min-w-0 text-gray-900 dark:text-gray-100">{contact.name || contact.email}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0 ml-2">
                             {format(new Date(contact.createdAt), 'MMM dd')}
                           </span>
                         </div>
@@ -713,8 +713,8 @@ export default function DashboardPage() {
                   <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                     <div className="space-y-2">
                       {dashboardStats.recentActivity.deals.slice(0, 5).map((deal: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50">
-                          <span className="text-xs sm:text-sm truncate flex-1 min-w-0">{deal.name}</span>
+                        <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                          <span className="text-xs sm:text-sm truncate flex-1 min-w-0 text-gray-900 dark:text-gray-100">{deal.name}</span>
                           <span className="text-xs sm:text-sm font-bold shrink-0 ml-2" style={{ color: PAYAID_GOLD }}>
                             ₹{deal.value?.toLocaleString('en-IN') || '0'}
                           </span>
@@ -736,8 +736,8 @@ export default function DashboardPage() {
                   <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                     <div className="space-y-2">
                       {dashboardStats.recentActivity.orders.slice(0, 5).map((order: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50">
-                          <span className="text-xs sm:text-sm truncate flex-1 min-w-0">{order.orderNumber || `Order #${order.id}`}</span>
+                        <div key={idx} className="flex items-center justify-between p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                          <span className="text-xs sm:text-sm truncate flex-1 min-w-0 text-gray-900 dark:text-gray-100">{order.orderNumber || `Order #${order.id}`}</span>
                           <span className="text-xs sm:text-sm font-bold shrink-0 ml-2" style={{ color: PAYAID_PURPLE }}>
                             ₹{order.total?.toLocaleString('en-IN') || '0'}
                           </span>
