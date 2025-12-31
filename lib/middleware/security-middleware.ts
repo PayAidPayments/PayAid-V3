@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { ipRateLimiter } from '../middleware/rate-limit'
+import { applyUpstashRateLimit, applyUpstashAuthRateLimit } from '../middleware/upstash-rate-limit'
 import { validateAPIKey } from '../security/api-keys'
 
 /**
@@ -12,45 +13,66 @@ import { validateAPIKey } from '../security/api-keys'
  */
 export async function applyRateLimit(request: NextRequest): Promise<NextResponse | null> {
   try {
-    // Skip rate limiting in Edge Runtime (ioredis doesn't work there)
-    // Rate limiting will be handled at API route level if needed
-    if (typeof EdgeRuntime !== 'undefined' || 
-        (typeof process !== 'undefined' && process.env.NEXT_RUNTIME === 'edge')) {
-      return null
-    }
-
-    const clientIP = 
-      request.headers.get('cf-connecting-ip') || 
-      request.headers.get('x-forwarded-for')?.split(',')[0] || 
-      'unknown'
+    // Try Upstash Redis first (works in Edge Runtime)
+    const upstashResult = await applyUpstashRateLimit(request as any)
     
-    const result = await ipRateLimiter.check({
-      ip: clientIP,
-      headers: Object.fromEntries(request.headers.entries()),
-    })
-    
-    if (!result.allowed) {
+    if (!upstashResult.allowed) {
       return NextResponse.json(
         { 
           error: 'Too many requests',
-          retryAfter: Math.ceil((result.resetTime - Date.now()) / 1000)
+          retryAfter: Math.ceil((upstashResult.resetTime - Date.now()) / 1000)
         },
         { 
           status: 429,
           headers: {
-            'Retry-After': Math.ceil((result.resetTime - Date.now()) / 1000).toString(),
+            'Retry-After': Math.ceil((upstashResult.resetTime - Date.now()) / 1000).toString(),
             'X-RateLimit-Limit': '1000',
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': result.resetTime.toString(),
+            'X-RateLimit-Remaining': upstashResult.remaining.toString(),
+            'X-RateLimit-Reset': upstashResult.resetTime.toString(),
           }
         }
       )
     }
+
+    // If Upstash is not configured, try fallback to ioredis (Node.js only)
+    if (typeof EdgeRuntime === 'undefined' && 
+        (!process.env.NEXT_RUNTIME || process.env.NEXT_RUNTIME !== 'edge')) {
+      const clientIP = 
+        request.headers.get('cf-connecting-ip') || 
+        request.headers.get('x-forwarded-for')?.split(',')[0] || 
+        'unknown'
+      
+      try {
+        const result = await ipRateLimiter.check({
+          ip: clientIP,
+          headers: Object.fromEntries(request.headers.entries()),
+        })
+        
+        if (!result.allowed) {
+          return NextResponse.json(
+            { 
+              error: 'Too many requests',
+              retryAfter: Math.ceil((result.resetTime - Date.now()) / 1000)
+            },
+            { 
+              status: 429,
+              headers: {
+                'Retry-After': Math.ceil((result.resetTime - Date.now()) / 1000).toString(),
+                'X-RateLimit-Limit': '1000',
+                'X-RateLimit-Remaining': '0',
+                'X-RateLimit-Reset': result.resetTime.toString(),
+              }
+            }
+          )
+        }
+      } catch (error) {
+        // Fallback rate limiting failed - allow request
+      }
+    }
     
     return null
   } catch (error) {
-    // Rate limiting failed (e.g., Redis not available) - allow request (fail open)
-    // This prevents middleware from crashing the entire application
+    // Rate limiting failed - allow request (fail open)
     return null
   }
 }
@@ -90,44 +112,62 @@ export async function applyAuthRateLimit(
   identifier: string
 ): Promise<NextResponse | null> {
   try {
-    // Skip rate limiting in Edge Runtime (ioredis doesn't work there)
-    // Rate limiting will be handled at API route level if needed
-    if (typeof EdgeRuntime !== 'undefined' || 
-        (typeof process !== 'undefined' && process.env.NEXT_RUNTIME === 'edge')) {
-      return null
-    }
-
-    // Use stricter limits for auth endpoints
-    const authLimiter = new (await import('../middleware/rate-limit')).RateLimiter({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 5, // 5 attempts per 15 minutes
-      keyGenerator: () => `auth:${identifier}`,
-    })
+    // Try Upstash Redis first (works in Edge Runtime)
+    const upstashResult = await applyUpstashAuthRateLimit(request as any, identifier)
     
-    const result = await authLimiter.check({
-      ip: identifier,
-      headers: Object.fromEntries(request.headers.entries()),
-    })
-    
-    if (!result.allowed) {
+    if (!upstashResult.allowed) {
       return NextResponse.json(
         { 
           error: 'Too many login attempts. Please try again in 15 minutes.',
-          retryAfter: Math.ceil((result.resetTime - Date.now()) / 1000)
+          retryAfter: Math.ceil((upstashResult.resetTime - Date.now()) / 1000)
         },
         { 
           status: 429,
           headers: {
-            'Retry-After': Math.ceil((result.resetTime - Date.now()) / 1000).toString(),
+            'Retry-After': Math.ceil((upstashResult.resetTime - Date.now()) / 1000).toString(),
+            'X-RateLimit-Remaining': upstashResult.remaining.toString(),
           }
         }
       )
+    }
+
+    // If Upstash is not configured, try fallback to ioredis (Node.js only)
+    if (typeof EdgeRuntime === 'undefined' && 
+        (!process.env.NEXT_RUNTIME || process.env.NEXT_RUNTIME !== 'edge')) {
+      try {
+        const authLimiter = new (await import('../middleware/rate-limit')).RateLimiter({
+          windowMs: 15 * 60 * 1000, // 15 minutes
+          max: 5, // 5 attempts per 15 minutes
+          keyGenerator: () => `auth:${identifier}`,
+        })
+        
+        const result = await authLimiter.check({
+          ip: identifier,
+          headers: Object.fromEntries(request.headers.entries()),
+        })
+        
+        if (!result.allowed) {
+          return NextResponse.json(
+            { 
+              error: 'Too many login attempts. Please try again in 15 minutes.',
+              retryAfter: Math.ceil((result.resetTime - Date.now()) / 1000)
+            },
+            { 
+              status: 429,
+              headers: {
+                'Retry-After': Math.ceil((result.resetTime - Date.now()) / 1000).toString(),
+              }
+            }
+          )
+        }
+      } catch (error) {
+        // Fallback rate limiting failed - allow request
+      }
     }
     
     return null
   } catch (error) {
     // Rate limiting failed - allow request (fail open)
-    // This prevents middleware from crashing the entire application
     return null
   }
 }
