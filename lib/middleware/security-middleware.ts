@@ -12,6 +12,13 @@ import { validateAPIKey } from '../security/api-keys'
  */
 export async function applyRateLimit(request: NextRequest): Promise<NextResponse | null> {
   try {
+    // Skip rate limiting in Edge Runtime (ioredis doesn't work there)
+    // Rate limiting will be handled at API route level if needed
+    if (typeof EdgeRuntime !== 'undefined' || 
+        (typeof process !== 'undefined' && process.env.NEXT_RUNTIME === 'edge')) {
+      return null
+    }
+
     const clientIP = 
       request.headers.get('cf-connecting-ip') || 
       request.headers.get('x-forwarded-for')?.split(',')[0] || 
@@ -44,7 +51,6 @@ export async function applyRateLimit(request: NextRequest): Promise<NextResponse
   } catch (error) {
     // Rate limiting failed (e.g., Redis not available) - allow request (fail open)
     // This prevents middleware from crashing the entire application
-    console.warn('Rate limiting error (allowing request):', error)
     return null
   }
 }
@@ -84,6 +90,13 @@ export async function applyAuthRateLimit(
   identifier: string
 ): Promise<NextResponse | null> {
   try {
+    // Skip rate limiting in Edge Runtime (ioredis doesn't work there)
+    // Rate limiting will be handled at API route level if needed
+    if (typeof EdgeRuntime !== 'undefined' || 
+        (typeof process !== 'undefined' && process.env.NEXT_RUNTIME === 'edge')) {
+      return null
+    }
+
     // Use stricter limits for auth endpoints
     const authLimiter = new (await import('../middleware/rate-limit')).RateLimiter({
       windowMs: 15 * 60 * 1000, // 15 minutes
@@ -115,7 +128,6 @@ export async function applyAuthRateLimit(
   } catch (error) {
     // Rate limiting failed - allow request (fail open)
     // This prevents middleware from crashing the entire application
-    console.warn('Auth rate limiting error (allowing request):', error)
     return null
   }
 }
