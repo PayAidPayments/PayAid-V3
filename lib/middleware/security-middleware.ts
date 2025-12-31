@@ -4,9 +4,31 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { ipRateLimiter } from '../middleware/rate-limit'
 import { applyUpstashRateLimit, applyUpstashAuthRateLimit } from '../middleware/upstash-rate-limit'
-import { validateAPIKey } from '../security/api-keys'
+
+// Lazy import for Node.js-only modules (not used in Edge Runtime middleware)
+let ipRateLimiter: any = null
+let validateAPIKey: any = null
+
+async function getNodeModules() {
+  if (ipRateLimiter && validateAPIKey) return { ipRateLimiter, validateAPIKey }
+  
+  // Only import in Node.js runtime, not Edge Runtime
+  if (typeof EdgeRuntime !== 'undefined' || 
+      (typeof process !== 'undefined' && process.env.NEXT_RUNTIME === 'edge')) {
+    return { ipRateLimiter: null, validateAPIKey: null }
+  }
+  
+  try {
+    const rateLimitModule = await import('../middleware/rate-limit')
+    const apiKeysModule = await import('../security/api-keys')
+    ipRateLimiter = rateLimitModule.ipRateLimiter
+    validateAPIKey = apiKeysModule.validateAPIKey
+    return { ipRateLimiter, validateAPIKey }
+  } catch (error) {
+    return { ipRateLimiter: null, validateAPIKey: null }
+  }
+}
 
 /**
  * Apply rate limiting to requests
@@ -43,15 +65,15 @@ export async function applyRateLimit(request: NextRequest): Promise<NextResponse
     }
 
     // If Upstash is not configured, try fallback to ioredis (Node.js only)
-    if (typeof EdgeRuntime === 'undefined' && 
-        (!process.env.NEXT_RUNTIME || process.env.NEXT_RUNTIME !== 'edge')) {
+    const nodeModules = await getNodeModules()
+    if (nodeModules.ipRateLimiter) {
       const clientIP = 
         request.headers.get('cf-connecting-ip') || 
         request.headers.get('x-forwarded-for')?.split(',')[0] || 
         'unknown'
       
       try {
-        const result = await ipRateLimiter.check({
+        const result = await nodeModules.ipRateLimiter.check({
           ip: clientIP,
           headers: Object.fromEntries(request.headers.entries()),
         })
@@ -91,25 +113,48 @@ export async function applyRateLimit(request: NextRequest): Promise<NextResponse
 export async function validateAPIKeyMiddleware(
   request: NextRequest
 ): Promise<{ valid: true; orgId: string; scopes: string[] } | { valid: false; response: NextResponse }> {
+  // API key validation uses Node.js modules - skip in Edge Runtime
+  const nodeModules = await getNodeModules()
+  if (!nodeModules.validateAPIKey) {
+    // In Edge Runtime, return invalid (API key validation not available)
+    return {
+      valid: false,
+      response: NextResponse.json(
+        { error: 'API key validation not available in Edge Runtime' },
+        { status: 401 }
+      )
+    }
+  }
+  
   const authHeader = request.headers.get('authorization')
   const clientIP = 
     request.headers.get('cf-connecting-ip') || 
     request.headers.get('x-forwarded-for')?.split(',')[0] || 
     'unknown'
   
-  const result = await validateAPIKey(authHeader, clientIP)
-  
-  if (!result.valid) {
+  try {
+    const result = await nodeModules.validateAPIKey(authHeader, clientIP)
+    
+    if (!result.valid) {
+      return {
+        valid: false,
+        response: NextResponse.json(
+          { error: 'Invalid or missing API key' },
+          { status: 401 }
+        )
+      }
+    }
+    
+    return result
+  } catch (error) {
     return {
       valid: false,
       response: NextResponse.json(
-        { error: 'Invalid or missing API key' },
+        { error: 'API key validation failed' },
         { status: 401 }
       )
     }
   }
-  
-  return result
 }
 
 /**
@@ -148,10 +193,11 @@ export async function applyAuthRateLimit(
     }
 
     // If Upstash is not configured, try fallback to ioredis (Node.js only)
-    if (typeof EdgeRuntime === 'undefined' && 
-        (!process.env.NEXT_RUNTIME || process.env.NEXT_RUNTIME !== 'edge')) {
+    const nodeModules = await getNodeModules()
+    if (nodeModules.ipRateLimiter) {
       try {
-        const authLimiter = new (await import('../middleware/rate-limit')).RateLimiter({
+        const RateLimiter = (await import('../middleware/rate-limit')).RateLimiter
+        const authLimiter = new RateLimiter({
           windowMs: 15 * 60 * 1000, // 15 minutes
           max: 5, // 5 attempts per 15 minutes
           keyGenerator: () => `auth:${identifier}`,
