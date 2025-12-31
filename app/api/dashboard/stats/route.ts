@@ -398,56 +398,84 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(stats)
   } catch (error: any) {
+    // Log the full error for debugging
+    console.error('Dashboard stats error:', {
+      message: error?.message,
+      code: error?.code,
+      stack: error?.stack,
+      name: error?.name,
+      type: typeof error,
+    })
+    
     // Handle license errors
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }
     
+    // Handle JWT/token errors
+    const errorMessage = error?.message || String(error || 'Unknown error')
+    if (errorMessage.includes('Invalid or expired token') || 
+        errorMessage.includes('jwt') || 
+        errorMessage.includes('token')) {
+      return NextResponse.json(
+        { 
+          error: 'Authentication failed. Please log out and log back in.',
+          code: 'INVALID_TOKEN',
+        },
+        { status: 401 }
+      )
+    }
+    
     // Handle database errors - catch all Prisma error codes
     const prismaErrorCodes = ['P1000', 'P1001', 'P1002', 'P1003', 'P1008', 'P1009', 'P1010', 'P1011', 'P1012', 'P1013', 'P1014', 'P1015', 'P1016', 'P1017']
     const isDatabaseError = prismaErrorCodes.includes(error?.code) || 
-                           error?.message?.toLowerCase().includes('connect') ||
-                           error?.message?.toLowerCase().includes('database') ||
-                           error?.message?.toLowerCase().includes('prisma') ||
-                           error?.message?.toLowerCase().includes('enotfound') ||
-                           error?.message?.toLowerCase().includes('econnrefused')
+                           error?.code?.startsWith('P1') ||
+                           errorMessage.toLowerCase().includes('connect') ||
+                           errorMessage.toLowerCase().includes('database') ||
+                           errorMessage.toLowerCase().includes('prisma') ||
+                           errorMessage.toLowerCase().includes('enotfound') ||
+                           errorMessage.toLowerCase().includes('econnrefused') ||
+                           errorMessage.toLowerCase().includes('pool') ||
+                           errorMessage.toLowerCase().includes('timeout')
     
     if (isDatabaseError) {
       console.error('Database connection error:', {
         code: error?.code,
-        message: error?.message,
+        message: errorMessage,
         hasDatabaseUrl: !!process.env.DATABASE_URL,
       })
       
-      let errorMessage = 'Database connection failed. Please check your DATABASE_URL configuration.'
+      let dbErrorMessage = 'Database connection failed. Please check your DATABASE_URL configuration.'
       if (error?.code === 'P1001') {
-        errorMessage = 'Database connection timeout. The database server may be down, paused, or unreachable.'
+        dbErrorMessage = 'Database connection timeout. The database server may be down, paused, or unreachable.'
       } else if (error?.code === 'P1000') {
-        errorMessage = 'Database authentication failed. Please check your DATABASE_URL credentials.'
+        dbErrorMessage = 'Database authentication failed. Please check your DATABASE_URL credentials.'
       } else if (error?.code === 'P1002') {
-        errorMessage = 'Database connection timeout. Try using a direct connection instead of a pooler.'
-      } else if (error?.message?.includes('ENOTFOUND')) {
-        errorMessage = 'Database hostname not found. The database server may be paused (Supabase free tier) or the hostname is incorrect.'
-      } else if (error?.message?.includes('ECONNREFUSED')) {
-        errorMessage = 'Database connection refused. The database server may be down or not accepting connections.'
+        dbErrorMessage = 'Database connection timeout. Try using a direct connection instead of a pooler.'
+      } else if (errorMessage.includes('ENOTFOUND')) {
+        dbErrorMessage = 'Database hostname not found. The database server may be paused (Supabase free tier) or the hostname is incorrect.'
+      } else if (errorMessage.includes('ECONNREFUSED')) {
+        dbErrorMessage = 'Database connection refused. The database server may be down or not accepting connections.'
       }
       
       return NextResponse.json(
         { 
-          error: errorMessage,
+          error: dbErrorMessage,
           code: error?.code,
-          details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
           hasDatabaseUrl: !!process.env.DATABASE_URL,
         },
         { status: 503 }
       )
     }
     
-    console.error('Get dashboard stats error:', error)
+    // Handle all other errors gracefully
     return NextResponse.json(
       { 
         error: 'Failed to get dashboard stats',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        message: errorMessage,
+        code: error?.code,
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
       },
       { status: 500 }
     )

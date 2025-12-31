@@ -1,5 +1,6 @@
 // Check if we're in Edge Runtime (where ioredis doesn't work)
-const isEdgeRuntime = typeof EdgeRuntime !== 'undefined' || 
+// @ts-ignore - EdgeRuntime is a global in Edge Runtime environments
+const isEdgeRuntime = typeof (globalThis as any).EdgeRuntime !== 'undefined' ||
   (typeof process !== 'undefined' && process.env.NEXT_RUNTIME === 'edge')
 
 // Only import cache if not in Edge Runtime
@@ -52,8 +53,8 @@ export class RateLimiter {
       let windowStart = Date.now()
       
       try {
-        current = (await cache.get<number>(key)) || 0
-        windowStart = (await cache.get<number>(windowKey)) || Date.now()
+        current = (await cache.get(key)) || 0
+        windowStart = (await cache.get(windowKey)) || Date.now()
       } catch (error) {
         // Redis not available - allow request (fail open)
         return {

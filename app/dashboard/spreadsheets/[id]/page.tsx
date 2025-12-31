@@ -8,8 +8,8 @@ import dynamic from 'next/dynamic'
 import { useAuthStore } from '@/lib/stores/auth'
 
 // Dynamically import Handsontable to avoid SSR issues
-const HotTable = dynamic(() => import('@handsontable/react').then(mod => mod.HotTable), { ssr: false })
-const HotColumn = dynamic(() => import('@handsontable/react').then(mod => mod.HotColumn), { ssr: false })
+const HotTable = dynamic(() => import('@handsontable/react-wrapper').then(mod => mod.HotTable), { ssr: false })
+const HotColumn = dynamic(() => import('@handsontable/react-wrapper').then(mod => mod.HotColumn), { ssr: false })
 
 export default function SpreadsheetEditorPage() {
   const params = useParams()

@@ -19,6 +19,23 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  // Ensure we always return JSON, even for unexpected errors
+  try {
+    return await handleLogin(request)
+  } catch (unexpectedError) {
+    // Catch any errors that occur outside the main try-catch
+    console.error('[LOGIN] Unexpected error outside handler:', unexpectedError)
+    return NextResponse.json(
+      { 
+        error: 'Login failed',
+        message: unexpectedError instanceof Error ? unexpectedError.message : 'An unexpected error occurred',
+      },
+      { status: 500 }
+    )
+  }
+}
+
+async function handleLogin(request: NextRequest) {
   const startTime = Date.now()
   let step = 'initialization'
   
