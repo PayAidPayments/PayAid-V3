@@ -130,8 +130,10 @@
 - **Completed:**
   - ✅ Added `ApiKey` model to Prisma schema
   - ✅ Added relation to Tenant model
-  - ✅ Created migration guide
-  - **Next:** Run `npx prisma generate` and `npx prisma migrate dev`
+  - ✅ Created migration SQL file (`prisma/migrations/add_api_key_model.sql`)
+  - ✅ Generated Prisma Client (`npx prisma generate`)
+  - ✅ Migration file created with RLS policies
+  - **Next:** Apply migration in Supabase SQL Editor
 
 ---
 
@@ -199,9 +201,14 @@ Run `prisma/migrations/fix_function_search_path.sql` in Supabase SQL Editor.
 
 1. ✅ **Install Dependencies** - Completed
 2. ⏳ **Add Environment Variables** - See `ENVIRONMENT_VARIABLES_SETUP.md`
-3. ⏳ **Generate Prisma Client** - Run `npx prisma generate`
-4. ⏳ **Run Database Migration** - Run `npx prisma migrate dev --name add_api_key_model`
+   - `ENCRYPTION_KEY` (64 hex characters)
+   - `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
+   - `SENTRY_DSN` (for Week 3-4)
+3. ✅ **Generate Prisma Client** - Completed (`npx prisma generate`)
+4. ✅ **Create Database Migration** - Completed (`prisma/migrations/add_api_key_model.sql`)
+   - **Next:** Apply migration in Supabase SQL Editor
 5. ⏳ **Apply Database Security Fixes** - See `DATABASE_SECURITY_FIXES_APPLY.md`
+   - Run `prisma/migrations/fix_function_search_path.sql` in Supabase
 6. ✅ **Integrate Rate Limiting** - Completed in `middleware.ts`
 7. ⏳ **Enable MFA** - Configure Clerk TOTP
 8. ⏳ **Set Up Sentry** - Configure error tracking (Week 3-4)
@@ -213,13 +220,13 @@ Run `prisma/migrations/fix_function_search_path.sql` in Supabase SQL Editor.
 
 | Category | Completed | In Progress | Pending | Total |
 |----------|-----------|-------------|---------|-------|
-| **Week 1-2 (Critical)** | 9 | 1 | 0 | 10 |
+| **Week 1-2 (Critical)** | 10 | 1 | 0 | 11 |
 | **Week 3-4 (High)** | 0 | 0 | 4 | 4 |
 | **Week 5-6 (Medium)** | 0 | 0 | 4 | 4 |
 | **Week 7-8 (Ongoing)** | 0 | 0 | 4 | 4 |
-| **TOTAL** | **7** | **3** | **12** | **22** |
+| **TOTAL** | **10** | **1** | **12** | **23** |
 
-**Completion:** 40.9% (9/22 items)
+**Completion:** 43.5% (10/23 items)
 
 ---
 
