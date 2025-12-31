@@ -742,7 +742,7 @@ export async function autoReconcileBank(
 **Bank Integration APIs:**
 - ✅ ICICI Bank Open Banking API
 - ✅ YES Bank Open Banking API
-- ✅ RazorpayX (bank reconciliation)
+- ✅ PayAid Payments (bank reconciliation integrated)
 - ✅ Plaid (international banks)
 
 ---
