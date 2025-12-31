@@ -56,7 +56,7 @@ Cost: ₹0 (APIs free, take commission)
 
 **What's Missing:**
 ```
-Shopify/Odoo/Zoho include:
+Market-leading platforms include:
 ├─ Real-time stock levels
 ├─ Multi-location inventory
 ├─ Stock alerts (low stock warnings)
@@ -100,7 +100,7 @@ Cost: ₹0 (built-in)
 
 **What's Missing:**
 ```
-Zoho/Shopify/Odoo:
+Market-leading platforms:
 ├─ Multi-store setup (HQ + franchisees)
 ├─ Each branch has own CRM, accounting
 ├─ HQ can view all branches consolidated
@@ -143,7 +143,7 @@ Cost: ₹0 (built-in)
 
 **What's Missing:**
 ```
-Shopify/Squarespace/Odoo:
+Market-leading e-commerce platforms:
 ├─ In-store checkout terminal
 ├─ Barcode scanning at counter
 ├─ Touchscreen menu/items
@@ -160,9 +160,9 @@ PayAid V3 Current:
 ```
 
 **Why Critical:**
-- 80% restaurants use POS (Square, Zoho, proprietary)
+- 80% restaurants use POS (various providers, proprietary)
 - Retail stores: POS is essential
-- Without POS: They buy Zoho/Shopify separately (+₹5k/month)
+- Without POS: They buy separate platforms (+₹5k/month)
 - **Revenue leak: ₹25L/month (8-10% SMBs)**
 
 **Build Path (4 weeks):**
@@ -190,9 +190,9 @@ Cost: ₹0-5L (thermal printer integration)
 
 **What's Missing:**
 ```
-Zoho: 500+ resellers in India
-Shopify: 10K+ agencies
-HubSpot: 5K+ partners
+Market-leading platforms: 500+ resellers in India
+E-commerce platforms: 10K+ agencies
+CRM platforms: 5K+ partners
 Sintra: Unknown
 
 PayAid V3 Current:
@@ -234,7 +234,7 @@ Expected Impact:
 
 **What's Missing:**
 ```
-Zoho/HubSpot/Shopify:
+Market-leading platforms:
 ├─ Sales dashboard (pipeline, conversion, forecast)
 ├─ Customer analytics (LTV, churn, CAC)
 ├─ Financial analytics (P&L, cashflow forecast, variance)
@@ -285,7 +285,7 @@ ONDC (Open Network for Digital Commerce):
 ├─ Government platform (like UPI, but for e-commerce)
 ├─ 100+ sellers, 1000+ buyers
 ├─ Tier-2/3 city SMBs use it
-├─ Shiprocket, Zoho integrating
+├─ Shipping providers integrating
 
 PayAid V3 Current:
 ├─ E-commerce platform integration planned
@@ -318,7 +318,7 @@ Cost: ₹0 (ONDC APIs free)
 
 **What's Missing:**
 ```
-HubSpot/Stripe/Chargebee:
+Market-leading billing platforms:
 ├─ Recurring invoices (auto-bill)
 ├─ Subscription management (pause, upgrade, downgrade)
 ├─ Dunning (retry failed payments)
@@ -360,9 +360,9 @@ Cost: ₹0 (built-in)
 
 **What's Missing:**
 ```
-Zoho CRM: Field sales app
-Shopify: Mobile POS
-Paytm: Mobile checkout
+CRM platforms: Field sales app
+E-commerce platforms: Mobile POS
+Payment platforms: Mobile checkout
 
 PayAid V3 Current:
 ├─ Web-based only
@@ -396,7 +396,7 @@ Cost: ₹5-10L (React Native developer)
 
 **What's Missing:**
 ```
-Zoho Enterprise/Odoo:
+Enterprise platforms:
 ├─ SSO (Single Sign-On)
 ├─ 2FA/MFA (Multi-factor authentication)
 ├─ Audit logs (comprehensive)
@@ -441,9 +441,9 @@ Cost: ₹5-10L (security audit + certification)
 
 **What's Missing:**
 ```
-Zoho: 500+ pre-built integrations
-Shopify: App Store with 8K apps
-HubSpot: Marketplace
+Market-leading platforms: 500+ pre-built integrations
+E-commerce platforms: App Store with 8K apps
+CRM platforms: Marketplace
 
 PayAid V3 Current:
 ├─ N8N integrations planned
@@ -452,7 +452,7 @@ PayAid V3 Current:
 ├─ ❌ NO: Third-party app store
 ```
 
-**Impact:** Can add pre-built connectors (Shopify, Wix, Amazon, etc.)
+**Impact:** Can add pre-built connectors (e-commerce platforms, website builders, marketplaces, etc.)
 
 **Build Timeline:** Weeks 23-26
 
@@ -553,8 +553,8 @@ PAYAID V3 COMPLETE (Day 169):
 ├─ ✅ API ecosystem (developer platform)
 └─ ✅ AI co-founder (17+ agents, execution, analytics)
 
-RESULT: 100% FEATURE PARITY WITH ZOHO ONE + extras
-PRICING: ₹6,998/month (vs Zoho ₹12,500+)
+RESULT: 100% FEATURE PARITY WITH MARKET LEADERS + extras
+PRICING: ₹6,998/month (vs market standard ₹12,500+)
 MARKET: Dominates Indian SMB market (3-5L customers Y1)
 ```
 
