@@ -208,4 +208,4 @@ The invoice now displays in proper Indian format:
 
 **Status:** ✅ Invoice system updated to Indian GST standards!
 
-**Reference:** [Razorpay Tax Invoice Guide](https://razorpay.com/blog/tax-invoice/)
+**Reference:** Indian GST Act and industry best practices for tax invoices
