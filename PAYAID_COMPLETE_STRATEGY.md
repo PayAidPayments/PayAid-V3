@@ -232,7 +232,7 @@ NATIVE INTEGRATIONS
 ├─ WhatsApp (WAHA + native implementation)
 ├─ Email (SendGrid + Gmail API)
 ├─ SMS (Twilio + Exotel for India)
-├─ Payments (PayAid Payments + Razorpay)
+├─ Payments (PayAid Payments only - integrated)
 ├─ Accounting (GST portal data)
 ├─ HR (Attendance systems, payroll)
 ├─ Inventory (Barcode systems, scanners)

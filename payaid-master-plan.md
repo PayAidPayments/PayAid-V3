@@ -519,7 +519,7 @@ Median Exit: ₹10,000-12,000 Crore (Unicorn)
 | **AI/LLM** | ₹50L |
 | | Ollama costs (self-hosted) or OpenAI API |
 | **Third-party APIs** | ₹20l |
-| | SendGrid, WATI, Shiprocket, Razorpay |
+| | SendGrid, WATI, Shiprocket, PayAid Payments (integrated) |
 | **Team Salaries** | ₹100L |
 | | 12 engineers + support |
 | **Marketing** | ₹50L |
@@ -577,7 +577,7 @@ Gross Profit: ₹10Cr (80% margin)
 - Website builder (20 templates)
 - Product catalog (CSV import)
 - Shopping cart
-- Razorpay checkout
+- PayAid Payments checkout
 - Order management
 - Invoice generation (GST-compliant)
 - Email marketing (10 templates)
@@ -713,7 +713,7 @@ Gross Profit: ₹10Cr (80% margin)
 - Bank reconciliation (auto)
 - ICICI Open Banking
 - YES Bank API
-- RazorpayX integration
+- PayAid Payments integration (complete)
 - Transaction categorization (AI)
 - Payment automation
 - Cash flow forecasting
@@ -887,7 +887,7 @@ model Contact {
 - ✅ Mobile-responsive (auto)
 - ✅ SEO editor (meta tags, alt text)
 - ✅ Built-in forms (email capture)
-- ✅ Payment integration (Razorpay)
+- ✅ Payment integration (PayAid Payments - complete)
 - ✅ Analytics (page views, bounce rate)
 - ✅ Auto-deployed to Vercel
 - ✅ SSL certificate auto-renewed
@@ -904,7 +904,7 @@ model Contact {
 
 **Checkout:**
 - Shopping cart
-- Razorpay payment
+- PayAid Payments (integrated)
 - Order confirmation emails
 - COD (Cash on Delivery)
 - Track order status

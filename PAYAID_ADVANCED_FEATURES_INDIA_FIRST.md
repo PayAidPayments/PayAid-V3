@@ -890,7 +890,7 @@ EPROCUREMENT
 ### Payment Gateways
 
 ```
-RAZORPAY
+PAYAID_PAYMENTS
 ├─ Invoice payment links
 ├─ Subscription management
 ├─ Route optimization (UPI, Card, Netbanking)
@@ -1195,7 +1195,7 @@ WHAT NOBODY ELSE HAS (even Zoho + Sintra):
     └─ Never miss a GST filing, tax deadline, audit
 
 11. PAYMENT GATEWAY NEUTRALITY
-    └─ Razorpay, Instamojo, UPI, NEFT—all supported
+    └─ PayAid Payments (UPI, Cards, Wallets, NEFT—all supported)
 
 12. DEEP INTEGRATION WITH INDIAN GOVT SYSTEMS
     └─ GST portal, ITR filing, MCA, e-way bill, GeM

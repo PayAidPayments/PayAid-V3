@@ -12,7 +12,7 @@ CURRENT MONTHLY SPENDING:
 
 SOFTWARE & SUBSCRIPTIONS:
 ├─ Zoho One: ₹12,500 (CRM, Accounting, HR)
-├─ Razorpay: ₹3,000-5,000 (payments)
+├─ Payment Gateway: ₹0 (PayAid Payments integrated - no separate cost)
 ├─ Swiggy/Zomato: ₹3,000-8,000 (commission on orders)
 ├─ Google Workspace: ₹1,200 (email, drive, docs)
 ├─ Zoom: ₹500 (video calls)
@@ -50,7 +50,7 @@ SOFTWARE PORTION: ₹23,200-33,200 (8-12% of total)
 **What They Use:**
 ```
 Primary:
-├─ Razorpay (₹2-3% commission on payments)
+├─ PayAid Payments (integrated, competitive rates)
 ├─ Paytm (2-3% + gateway fees)
 ├─ PhonePe (2-2.5% + fees)
 ├─ PayU (2-3% + gateway fees)
@@ -64,13 +64,13 @@ Plus:
 Cost: ₹3k-15k/month (varies by volume)
 ```
 
-**Why PayAid Struggles:**
-- Razorpay is **specialized payment company** (not SaaS)
-- PhonePe/Paytm: Government backed, they won't leave
-- **Users want options** (Razorpay + PhonePe simultaneously)
+**Why PayAid Succeeds:**
+- PayAid Payments is **integrated payment solution** (built into platform)
+- Supports UPI, cards, wallets through PayAid Payments
+- **Users get integrated solution** (PayAid Payments handles all payment methods)
 
-**PayAid Opportunity:**
-✅ **Become Razorpay agent** (white-label their APIs)
+**PayAid Advantage:**
+✅ **PayAid Payments integrated** (no third-party gateway needed)
 ✅ Offer merchant settlement in 2 hours (vs 1-2 days)
 ✅ Offer 0.5% lower rates to PayAid users
 ✅ Add BNPL financing (buy now, pay later)
@@ -513,7 +513,7 @@ Total: ₹5k-50k/month (varies widely)
 
 | Category | Current | PayAid Can Offer | Potential Capture |
 |----------|---------|------------------|-------------------|
-| Payments | ₹3-15k | Razorpay integration | ₹1-5k/month |
+| Payments | ₹0 | PayAid Payments (integrated) | Built-in |
 | Loans | ₹500-10k | Loan finder + referral | ₹500-1.5k commission |
 | Logistics | ₹20-100k | Courier aggregation | ₹500-1.5k/month |
 | Marketing | ₹5-50k | WhatsApp + Email | ₹2-8k/month |
@@ -539,13 +539,13 @@ Included:
 ├─ CRM + Invoicing + Accounting + HR (Tier 1)
 ├─ Productivity Suite (Sheets, Docs, Slides, etc.)
 ├─ Industry Intelligence (news sidebar)
-└─ Basic integrations (Razorpay, Google Workspace, Shopify)
+└─ Basic integrations (PayAid Payments integrated, Google Workspace, Shopify)
 ```
 
 ### **PayAid Marketplace (Monetization)**
 ```
 Built into PayAid dashboard:
-├─ Razorpay payment processing (commission)
+├─ PayAid Payments processing (integrated, no separate commission)
 ├─ Shiprocket logistics (commission)
 ├─ Cleartax filing assistance (referral)
 ├─ Lendingkart loans (referral fee ₹5-15k per loan)
@@ -571,7 +571,7 @@ Revenue mix:
 ```
 PHASE 1 (Weeks 1-12): MUST HAVE
 ├─ [ ] Inventory module (+₹5k potential)
-├─ [ ] Razorpay integration (+₹2k potential)
+├─ [x] PayAid Payments integration complete (built-in)
 ├─ [ ] Payment settlement acceleration
 └─ Revenue: ₹5-10k additional per user
 

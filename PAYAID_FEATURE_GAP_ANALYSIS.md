@@ -423,7 +423,7 @@ WEBHOOKS
 
 INTEGRATION
 ├─ PayAid Payments integration (auto-charge)
-├─ Razorpay (auto-recurring)
+├─ PayAid Payments (auto-recurring, integrated)
 └─ Stripe (test with free tier)
 ```
 

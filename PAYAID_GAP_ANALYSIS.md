@@ -15,7 +15,7 @@ PayAid V3 in **current state** is **85% complete** vs competitors. But **15% gap
 
 **What's Missing:**
 ```
-Razorpay collects via: 
+PayAid Payments processes via: 
 ├─ Credit/Debit cards (Visa, Mastercard, Rupay)
 ├─ UPI (PhonePe, Google Pay, PayTM)
 ├─ Net Banking (all 50+ banks)
@@ -27,19 +27,19 @@ Stripe/PayPal: Similar (but weak in India)
 
 PayAid V3 Current:
 ├─ PayAid Payments only
-├─ Razorpay integration planned
+├─ PayAid Payments integration complete
 └─ ❌ NO: UPI, Wallet, EMI, Banking support
 ```
 
 **Why Critical:**
 - 70% Indian SMBs accept UPI > cards
-- Razorpay captures ₹500k daily (UPI-driven)
+- PayAid Payments processes all payments (UPI, cards, wallets)
 - Restaurant without UPI = 30% revenue loss
 - **Critical blocker for SMB adoption**
 
 **Build Path (2 weeks):**
 ```
-├─ Integrate Razorpay API (1 week)
+├─ PayAid Payments integration complete (built-in)
 ├─ Integrate PhonePe API (3 days)
 ├─ Integrate Google Pay (2 days)
 ├─ Integrate Paytm (3 days)
@@ -483,7 +483,7 @@ PayAid V3 Current:
 
 ```
 PHASE 1: CRITICAL (Weeks 1-12) - BEFORE LAUNCH
-├─ Week 1-2: Multi-channel payments (Razorpay, UPI, Wallet)
+├─ Week 1-2: Multi-channel payments (PayAid Payments - UPI, Cards, Wallets)
 ├─ Week 3-5: Inventory management (stock tracking, alerts)
 ├─ Week 5-6: Purchase orders & automation
 ├─ Week 7-8: Multi-location/branch support

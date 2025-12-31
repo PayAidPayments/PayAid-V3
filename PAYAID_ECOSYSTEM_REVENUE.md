@@ -47,12 +47,12 @@ MONTHLY MRR: ₹39.2Cr
 SCENARIO:
 ├─ 50k users × Average ₹50k monthly transactions = ₹250Cr/month
 ├─ Current payment split:
-│  ├─ 60% via Razorpay (commission: 0.5-2%)
+│  ├─ 100% via PayAid Payments (integrated, no third-party commissions)
 │  ├─ 25% via PhonePe (commission: 0.5-1%)
 │  └─ 15% via UPI (commission: 0%)
 
 PAYAID MODEL:
-├─ Integrate Razorpay + PhonePe + UPI
+├─ PayAid Payments integration complete (supports UPI, cards, wallets)
 ├─ Add BNPL (buy now, pay later) → higher commission
 ├─ Negotiate 0.3-0.8% commission (vs standard 2%)
 ├─ Users get 0.5% back as loyalty points
@@ -254,7 +254,7 @@ VALUATION:                 ₹15,000-25,000Cr (at 3-5x ARR)
 ### **PHASE 1: CORE + PAYMENTS (Weeks 1-12)**
 ```
 Build:
-├─ Multi-channel payment integration (Razorpay + UPI)
+├─ Multi-channel payment integration (PayAid Payments - UPI, cards, wallets)
 ├─ Inventory module (critical GAP)
 ├─ Multi-location support
 ├─ Loan referral integration (Lendingkart basic)

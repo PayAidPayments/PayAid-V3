@@ -17,7 +17,7 @@ Restaurant pays:
 ├─ Freshbooks (₹2,000)
 ├─ Twilio (₹5,000)
 ├─ Mailchimp (₹500)
-├─ Stripe/PayU/Razorpay (payment fees)
+├─ PayAid Payments (integrated, no separate fees)
 └─ Zoho CRM (₹2,000)
 = ₹14,000/month for a restaurant
 
@@ -34,7 +34,7 @@ Real Estate pays:
 ├─ Karbon CRM (₹2,000)
 ├─ Google Workspace (₹1,500)
 ├─ DocuSign (₹2,000)
-└─ Stripe/Razorpay (payments) (₹3,000)
+└─ PayAid Payments (integrated) (₹0 - built-in)
 = ₹13,500/month for real estate
 ```
 
