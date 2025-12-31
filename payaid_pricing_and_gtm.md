@@ -233,7 +233,7 @@ For Manufacturing:
 ### Recommended Gateway
 
 ```
-Razorpay (RECOMMENDED for India)
+PayAid Payments (Integrated - All payment methods supported)
 ├─ India-based
 ├─ Supports UPI, Cards, NetBanking
 ├─ 2% fees

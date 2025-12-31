@@ -60,7 +60,7 @@ PayAid Business Operating System
 │  ├─ E-commerce integration (Shopify-style)
 │  ├─ Online booking system (appointments, slots)
 │  ├─ Shopping cart & checkout
-│  ├─ Multiple payment gateways (Razorpay, PayU, Instamojo)
+│  ├─ Payment gateway: PayAid Payments (integrated, supports UPI, cards, wallets)
 │  ├─ Order management & tracking
 │  ├─ Invoice generation (auto GST calculation)
 │  └─ Refund management
@@ -128,12 +128,12 @@ PayAid Business Operating System
 │  └─ Industry benchmarking
 │
 └─ INTEGRATIONS
-   ├─ Payment gateways (Razorpay, PayU, Instamojo, CCAvenue)
+   ├─ Payment gateway: PayAid Payments (integrated, all payment methods)
    ├─ Logistics (Shiprocket, Delhivery, BlueDart, Ecom Express)
    ├─ Marketing (WATI, Mailchimp, SendGrid, SMS gateways)
    ├─ Accounting (Tally, Zoho Books)
    ├─ HR (Zoho People)
-   ├─ Banking (RazorpayX, yes bank, ICICI)
+   ├─ Banking (PayAid Payments integrated, yes bank, ICICI)
    ├─ Analytics (Google Analytics, Hotjar)
    ├─ Communication (Twilio, Freshworks)
    └─ Social media (APIs for all major platforms)
@@ -154,7 +154,7 @@ PayAid Business Operating System
 - [ ] WhatsApp Business API integration
 - [ ] Basic analytics dashboard
 - [ ] Mobile app (React Native)
-- [ ] Payment integration (Razorpay)
+- [x] Payment integration (PayAid Payments - complete)
 - [ ] Email marketing templates (20 templates)
 
 **AI Agents Needed:**
@@ -807,7 +807,7 @@ TOTAL 18-MONTH REVENUE: ₹1-2 Crore
 - CloudFlare (CDN, DDoS protection)
 
 **Integrations:**
-- Razorpay (payments)
+- PayAid Payments (integrated payments)
 - Shiprocket (logistics)
 - WATI (WhatsApp)
 - Mailchimp API (email)

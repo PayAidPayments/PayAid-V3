@@ -41,7 +41,7 @@ Goal:
 ```
 Task: Multi-channel payment integration
 ├─ [ ] Design payment gateway abstraction layer
-├─ [ ] Integrate Razorpay API (primary)
+├─ [x] PayAid Payments integration complete (all payments)
 ├─ [ ] Add UPI/PhonePe integration
 ├─ [ ] Settlement tracking + reconciliation
 ├─ [ ] Dashboard for payment analytics
@@ -50,7 +50,7 @@ Task: Multi-channel payment integration
 
 Effort: 80 hours × 2 devs = 160 dev-hours
 Complexity: Medium (API integration)
-Risk: Low (Razorpay docs good)
+Risk: Low (PayAid Payments integrated)
 ```
 
 **Inventory Team (2 devs):**

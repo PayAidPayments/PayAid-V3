@@ -322,7 +322,7 @@ All new modules follow the same patterns:
 ### 3. PayAid Payments Only
 
 - ✅ All payment processing via PayAid Payments
-- ❌ No Razorpay or other gateways
+- ✅ PayAid Payments integrated (no third-party gateways needed)
 - ✅ Invoice payments
 - ✅ Subscription billing
 - ✅ Payment links

@@ -30,7 +30,7 @@ Workflow:
 1. User enters desired domain name
 2. Check availability (Namecheap API)
 3. Show 5 alternatives if taken
-4. Purchase via Razorpay
+4. Purchase via PayAid Payments
 5. Auto-setup DNS records
 6. Verify ownership
 ```
@@ -43,7 +43,7 @@ Workflow:
 
 **Integrations:**
 - Namecheap API (registration, pricing)
-- Razorpay (payment)
+- PayAid Payments (integrated)
 - AWS Route 53 (DNS)
 
 ---
@@ -95,7 +95,7 @@ interface PageBuilder {
 - SEO editor (meta tags, alt text)
 - Built-in analytics (page views, bounce rate)
 - Form builder (email capture)
-- Payment integration (Razorpay embedded)
+- Payment integration (PayAid Payments embedded)
 
 **Technology:**
 - Frontend: React + TailwindCSS
@@ -487,7 +487,7 @@ export async function createOrder(
   customerId: string,
   cartItems: CartItem[],
   shippingAddress: Address,
-  paymentMethod: 'razorpay' | 'cod' // COD = Cash on Delivery
+  paymentMethod: 'payaid' | 'cod' // COD = Cash on Delivery, payaid = PayAid Payments
 ) {
   // Calculate totals
   const subtotal = cartItems.reduce((sum, item) => sum + item.total, 0);
@@ -520,9 +520,9 @@ export async function createOrder(
     },
   });
   
-  // If Razorpay: Create payment link
-  if (paymentMethod === 'razorpay') {
-    const paymentLink = await razorpay.paymentLink.create({
+  // If PayAid Payments: Create payment link
+  if (paymentMethod === 'payaid') {
+    const paymentLink = await payaid.getPaymentRequestUrl({
       amount: total * 100, // In paise
       currency: 'INR',
       reference_id: order.id,
@@ -1081,7 +1081,7 @@ async function createPaymentLink(order: Order) {
 export async function handlePaymentWebhook(payload: any) {
   const payment = payload.payment;
   const order = await db.order.findUnique({
-    where: { razorpayPaymentId: payment.id },
+    where: { payaidPaymentId: payment.id },
   });
   
   if (payment.status === 'captured') {

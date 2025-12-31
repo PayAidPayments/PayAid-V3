@@ -96,7 +96,7 @@ A typical Indian SMB uses:
 | **Event Management** | Eventbrite/Airmeet | ₹2,000-10,000/mo | ✅ Built-in (NEW) |
 | **Email Marketing** | Mailchimp | ₹500-2,000/mo | ✅ Built-in |
 | **Accounting** | Zoho Books | ₹500-2,000/mo | ✅ Built-in |
-| **Invoicing** | Razorpay X/Bill.com | ₹1,000-3,000/mo | ✅ Built-in |
+| **Invoicing** | Third-party invoicing tools | ₹1,000-3,000/mo | ✅ Built-in (PayAid Payments) |
 
 **TOTAL MARKET REPLACED: ₹18,000-32,000/month**  
 **PayAid All-In: ₹999/month (98% savings)**
@@ -319,7 +319,7 @@ Heatmaps: Integrate Clarity (Microsoft) OR build custom
 **What Exists:**
 - Shopify checkout: Pre-built, customizable
 - Stripe payment forms: Basic
-- Razorpay payment pages: India-focused
+- PayAid Payments pages: India-focused (integrated)
 - Gumroad: Digital products
 - Lemonsqueezy: Creator economy
 
