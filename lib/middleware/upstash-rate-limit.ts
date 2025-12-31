@@ -25,9 +25,9 @@ async function ensureUpstashImports() {
 }
 
 // Lazy initialization to avoid Edge Runtime issues
-let redis: Redis | null = null
-let globalLimiter: Ratelimit | null = null
-let authLimiter: Ratelimit | null = null
+let redis: any = null
+let globalLimiter: any = null
+let authLimiter: any = null
 let initAttempted = false
 
 async function getRedisClient(): Promise<any> {
