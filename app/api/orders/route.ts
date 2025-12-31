@@ -213,8 +213,8 @@ export async function POST(request: NextRequest) {
         data: { status: 'confirmed' },
       })
 
-      // Create Shiprocket order (async)
-      mediumPriorityQueue.add('create-shiprocket-order', {
+      // Create shipping order (async)
+      mediumPriorityQueue.add('create-shipping-order', {
         orderId: order.id,
         orderData: {
           orderNumber,

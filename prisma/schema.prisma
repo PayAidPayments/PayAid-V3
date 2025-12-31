@@ -584,7 +584,7 @@ model Order {
   shippingCity      String
   shippingPostal    String
   shippingCountry   String      @default("India")
-  shiprocketOrderId String?
+  shippingOrderId String?
   trackingUrl       String?
   createdAt         DateTime    @default(now())
   paidAt            DateTime?
