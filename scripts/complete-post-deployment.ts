@@ -9,10 +9,21 @@
  * 
  * Usage:
  *   npx tsx scripts/complete-post-deployment.ts
+ * 
+ * Note: Make sure to pull env vars first:
+ *   vercel env pull .env.local
  */
 
 import { PrismaClient } from '@prisma/client'
 import { execSync } from 'child_process'
+import { config } from 'dotenv'
+import { resolve } from 'path'
+
+// Load environment variables from .env.local or .env.production
+const envFile = process.env.ENV_FILE || '.env.production'
+config({ path: resolve(process.cwd(), envFile) })
+// Also try .env.local as fallback
+config({ path: resolve(process.cwd(), '.env.local') })
 
 const prisma = new PrismaClient()
 
@@ -37,6 +48,10 @@ function logResult(step: string, status: 'success' | 'error' | 'warning' | 'skip
 async function step1_VerifyEnvironment() {
   console.log('\n📋 Step 1: Verifying Environment Variables\n')
   
+  // Reload env vars to ensure they're available
+  config({ path: resolve(process.cwd(), '.env.production'), override: true })
+  config({ path: resolve(process.cwd(), '.env.local'), override: false })
+  
   const required = [
     'DATABASE_URL',
     'CRON_SECRET',
@@ -49,9 +64,12 @@ async function step1_VerifyEnvironment() {
   const present: string[] = []
 
   for (const varName of required) {
-    if (process.env[varName]) {
+    const value = process.env[varName]
+    if (value && value.trim()) {
       present.push(varName)
-      logResult(varName, 'success', 'Set')
+      // Show partial value for verification (first 4 chars)
+      const preview = value.length > 4 ? value.substring(0, 4) + '...' : '***'
+      logResult(varName, 'success', `Set (${value.length} chars: ${preview})`)
     } else {
       missing.push(varName)
       logResult(varName, 'error', 'Missing')
