@@ -308,8 +308,8 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
   // Check if user is admin/owner (admins have access to module management panel)
   const isAdmin = user?.role === 'owner' || user?.role === 'admin'
   
-  // Total available modules (8 in V2 structure)
-  const totalModules = 8
+  // Total available modules (9 logical modules in new structure)
+  const totalModules = 9
   const hasAllModules = licensedModules.length >= totalModules
 
   return (
