@@ -699,7 +699,7 @@ npx tsx scripts/seed-modules.ts
 - [ ] **RLS Policies** - Verify all tables have RLS enabled (migration exists)
 
 #### **Week 3-4 (HIGH) - Pending**
-- [ ] **PCI Tokenized Payments** - Razorpay integration (no card storage)
+- [ ] **PCI Tokenized Payments** - PayAid Payments integration (no card storage)
 - [ ] **Database Encryption** - pgcrypto extension for sensitive fields
 - [ ] **Error Tracking** - Sentry integration
 - [ ] **API Key Database Model** - Add ApiKey model to Prisma schema

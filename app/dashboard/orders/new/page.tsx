@@ -33,7 +33,7 @@ export default function NewOrderPage() {
     shippingCity: '',
     shippingPostal: '',
     shippingCountry: 'India',
-    paymentMethod: 'razorpay' as 'razorpay' | 'cod',
+    paymentMethod: 'payaid' as 'payaid' | 'cod',
   })
   const [items, setItems] = useState<OrderItem[]>([])
   const [selectedProductId, setSelectedProductId] = useState('')
@@ -462,7 +462,7 @@ export default function NewOrderPage() {
                   className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                   disabled={isSubmitting}
                 >
-                  <option value="razorpay">Online Payment (PayAid Payments)</option>
+                  <option value="payaid">Online Payment (PayAid Payments)</option>
                   <option value="cod">Cash on Delivery (COD)</option>
                 </select>
               </CardContent>

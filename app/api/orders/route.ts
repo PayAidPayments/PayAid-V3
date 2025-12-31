@@ -23,7 +23,7 @@ const createOrderSchema = z.object({
   shippingCity: z.string().min(1),
   shippingPostal: z.string().min(1),
   shippingCountry: z.string().default('India'),
-  paymentMethod: z.enum(['razorpay', 'cod']).default('razorpay'),
+  paymentMethod: z.enum(['payaid', 'cod']).default('payaid'),
   discountCode: z.string().optional(),
   discountAmount: z.number().optional(),
 })
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Handle payment based on method
-    if (validated.paymentMethod === 'razorpay') {
+    if (validated.paymentMethod === 'payaid') {
       // Create PayAid Payments request (Two Step Integration - recommended for mobile apps)
       const payaid = getPayAidPayments()
       const paymentUrlData = await payaid.getPaymentRequestUrl({

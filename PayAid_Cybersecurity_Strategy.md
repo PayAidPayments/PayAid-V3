@@ -8,7 +8,7 @@
 
 ## EXECUTIVE SUMMARY
 
-PayAid V3 handles sensitive financial data (payments, invoices, employee records, GST filings). This document outlines **12 security layers** that protect against 99%+ of known attack vectors, matching industry standards of Razorpay, ICICI Bank APIs, and Zoho Enterprise.
+PayAid V3 handles sensitive financial data (payments, invoices, employee records, GST filings). This document outlines **12 security layers** that protect against 99%+ of known attack vectors, matching industry standards of PayAid Payments, ICICI Bank APIs, and Zoho Enterprise.
 
 **Security Tiers:**
 - **🔴 CRITICAL (Week 1):** Authentication, Multi-tenant isolation, Rate limiting
@@ -327,64 +327,54 @@ app.post('/pay', async (req) => {
   });
 });
 
-// ✅ CORRECT - Tokenization via Razorpay/Stripe
-import Razorpay from 'razorpay';
+// ✅ CORRECT - Tokenization via PayAid Payments
+import { getPayAidPayments } from '@/lib/payments/payaid';
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY,
-  key_secret: process.env.RAZORPAY_SECRET
-});
+const payaid = getPayAidPayments();
 
 // Client-side (Next.js component)
 function CheckoutForm() {
   const handlePayment = async () => {
-    // Razorpay.js tokenizes card on frontend
+    // PayAid Payments tokenizes card on frontend
     // Card details NEVER reach your server
-    const options = {
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY,
+    const paymentUrlData = await payaid.getPaymentRequestUrl({
+      order_id: orderId,
       amount: 50000, // ₹500
-      currency: "INR",
-      name: "PayAid",
+      currency: 'INR',
+      description: 'Payment for order',
+      name: user.name,
       email: user.email,
-      handler: async (response) => {
-        // Server receives ONLY token
-        await fetch('/api/verify-payment', {
-          method: 'POST',
-          body: JSON.stringify({
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_signature: response.razorpay_signature
-          })
-        });
-      }
-    };
+      return_url: `${process.env.APP_URL}/payment/callback?status=success`,
+      return_url_failure: `${process.env.APP_URL}/payment/callback?status=failure`,
+      mode: process.env.NODE_ENV === 'production' ? 'LIVE' : 'TEST',
+    });
     
-    const razorpayInstance = new window.Razorpay(options);
-    razorpayInstance.open();
+    // Redirect to PayAid Payments checkout page
+    window.location.href = paymentUrlData.url;
   };
   
   return <button onClick={handlePayment}>Pay ₹500</button>;
 }
 
-// Server-side (verify signature only)
+// Server-side (verify payment callback)
 export async function POST(req: Request) {
-  const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = await req.json();
+  const { payment_id, order_id, signature } = await req.json();
   
   // 1. Verify signature (ensures payment is legit)
-  const crypto = require('crypto');
-  const generated_signature = crypto
-    .createHmac('sha256', process.env.RAZORPAY_SECRET)
-    .update(razorpay_order_id + "|" + razorpay_payment_id)
-    .digest('hex');
+  const isValid = await payaid.verifyPaymentSignature({
+    payment_id,
+    order_id,
+    signature,
+  });
   
-  if (generated_signature !== razorpay_signature) {
+  if (!isValid) {
     return Response.json({ error: "Invalid signature" }, { status: 400 });
   }
   
   // 2. Store ONLY token + metadata (never store card details)
   await db.payments.create({
     org_id: tenantId,
-    razorpay_payment_id, // token, not card
+    payaid_payment_id, // token, not card
     amount: 50000,
     status: 'success',
     created_at: new Date()
@@ -397,20 +387,16 @@ export async function POST(req: Request) {
 ### Payment Gateway Configuration
 ```bash
 # .env.production
-RAZORPAY_KEY=rzp_live_xxxxxxxxxxxxx
-RAZORPAY_SECRET=xxxxxxxxxxxxxxxxxxxxx
-NEXT_PUBLIC_RAZORPAY_KEY=rzp_live_xxxxxxxxxxxxx  # Public, safe to expose
+# All payments processed through PayAid Payments only
+# No third-party payment gateway credentials required
+# Payment API credentials managed through PayAid Payments dashboard
 
-# Stripe alternative
-STRIPE_SECRET_KEY=sk_live_xxxxxxx
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxxx
-
-# Enable 3D Secure for high-value txns
-RAZORPAY_3DS_ENABLED=true
+# Enable 3D Secure for high-value txns (handled by PayAid Payments)
+PAYAID_3DS_ENABLED=true
 ```
 
 ### Compliance Checklist
-- [ ] Razorpay/Stripe handles card tokenization (not your servers)
+- [ ] PayAid Payments handles card tokenization (not your servers)
 - [ ] Annual PCI DSS audit certificate uploaded to RBI
 - [ ] SSL/TLS 1.3 on all payment endpoints
 - [ ] No card data in logs, backups, or analytics
@@ -745,7 +731,7 @@ const securityHeaders = [
   },
   {
     key: 'Content-Security-Policy',
-    value: "default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.razorpay.com"
+    value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'"
   },
   {
     key: 'Referrer-Policy',
@@ -773,11 +759,11 @@ module.exports = {
 ```typescript
 // Prevent XSS attacks
 const csp = "default-src 'self'; " +
-  "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://cdn.jsdelivr.net; " +
+  "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
   "style-src 'self' 'unsafe-inline'; " +
   "img-src 'self' data: https:; " +
   "font-src 'self' https://fonts.googleapis.com; " +
-  "connect-src 'self' https://api.razorpay.com https://api.supabase.co;";
+  "connect-src 'self' https://api.supabase.co;";
 
 // Add to response headers
 response.headers.set('Content-Security-Policy', csp);
@@ -1003,7 +989,7 @@ async function generateDPA(orgId: string) {
     data_processors: [
       { name: 'Supabase', location: 'US', certifications: ['SOC2', 'ISO27001'] },
       { name: 'Vercel', location: 'US', certifications: ['SOC2', 'ISO27001'] },
-      { name: 'Razorpay', location: 'India', certifications: ['PCI-DSS', 'ISO27001'] }
+      { name: 'PayAid Payments', location: 'India', certifications: ['PCI-DSS', 'ISO27001'] }
     ],
     data_transfers: auditLog.map(log => ({
       action: log.action,
@@ -1278,7 +1264,7 @@ Benefits:
 - [ ] Set security headers (next.config.js)
 
 ### Week 3-4 (HIGH)
-- [ ] PCI tokenized payments (Razorpay)
+- [ ] PCI tokenized payments (PayAid Payments)
 - [ ] Database encryption (pgcrypto)
 - [ ] Audit logging (immutable)
 - [ ] Error tracking (Sentry)
@@ -1315,7 +1301,7 @@ Benefits:
 - [ ] Data retention policy enforced (3 years)
 
 **Payment Security:**
-- [ ] Zero card data storage (Razorpay tokenized)
+- [ ] Zero card data storage (PayAid Payments tokenized)
 - [ ] PCI DSS Level 1 compliance (gateway responsibility)
 - [ ] Payment signature verification on every transaction
 - [ ] 3D Secure enabled for high-value payments
