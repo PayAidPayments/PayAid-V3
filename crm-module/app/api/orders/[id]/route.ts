@@ -6,7 +6,7 @@ import { z } from 'zod'
 const updateOrderSchema = z.object({
   status: z.enum(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'refunded']).optional(),
   trackingUrl: z.string().url().optional(),
-  shiprocketOrderId: z.string().optional(),
+  shippingOrderId: z.string().optional(),
 })
 
 // GET /api/orders/[id] - Get a single order
@@ -91,7 +91,7 @@ export async function PATCH(
       }
     }
     if (validated.trackingUrl) updateData.trackingUrl = validated.trackingUrl
-    if (validated.shiprocketOrderId) updateData.shiprocketOrderId = validated.shiprocketOrderId
+    if (validated.shippingOrderId) updateData.shippingOrderId = validated.shippingOrderId
 
     const order = await prisma.order.update({
       where: { id: params.id },

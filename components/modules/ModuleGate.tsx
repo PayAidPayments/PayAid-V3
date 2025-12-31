@@ -16,7 +16,7 @@ interface ModuleGateProps {
 /**
  * ModuleGate Component
  * 
- * CRITICAL: Follows Zoho-like architecture - redirects to app-store/modules page
+ * CRITICAL: Redirects to app-store/modules page when module is not licensed
  * if module is not licensed. Does NOT show locked badges - completely hides content.
  * 
  * @example

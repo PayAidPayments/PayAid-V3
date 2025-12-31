@@ -10,7 +10,7 @@ import { getModuleLink, requiresSSO } from '@/lib/navigation/module-navigation'
 import { useDashboardUrl } from '@/lib/utils/dashboard-url'
 import { XIcon } from 'lucide-react'
 
-// Core Navigation - Always visible, single-click access (like Zoho/Freshworks top nav)
+// Core Navigation - Always visible, single-click access
 const mainNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: '📊', module: null }, // Always accessible
   { name: 'Contacts', href: '/dashboard/contacts', icon: '👥', module: 'crm' },
@@ -299,7 +299,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
   }
 
   // CRITICAL: Filter main navigation to show ONLY licensed items (or items without module requirement)
-  // Following Zoho-like architecture: Sidebar shows ONLY licensed modules (no locked badges)
+  // Sidebar shows ONLY licensed modules (no locked badges)
   // Admin users can manage modules through admin panel, but sidebar still shows only licensed ones
   const licensedMainNav = mainNavigation.filter(item => 
     !item.module || hasModule(item.module)

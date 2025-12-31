@@ -8,14 +8,14 @@
 ### Document 1: `payaid_modular_strategy.md`
 **High-level strategic blueprint**
 - Why modularization is critical
-- Zoho's model (why it works)
+- Modular architecture model
 - Your competitive advantages
 - SSO architecture options (OAuth2 vs JWT)
 - Database design for modules
 - 3-phase overview (non-detailed)
 - Pricing strategy overview
 - Revenue projections
-- How you'll beat Zoho
+- Competitive advantages
 
 **Use this for:** Strategy discussions, board presentations, understanding the "why"
 
@@ -59,12 +59,12 @@
 
 ### Document 4: `payaid_vs_zoho_analysis.md`
 **Competitive intelligence**
-- Zoho's model (strengths & weaknesses)
-- Why PayAid wins (9/13 critical dimensions)
+- Market positioning analysis
+- Competitive advantages (9/13 critical dimensions)
 - Market opportunity analysis
-- How to position against Zoho
-- How Zoho might respond + your counter-strategy
-- Your unfair competitive advantages
+- Competitive positioning strategy
+- Market response strategies
+- Key competitive advantages
 - Market size & TAM analysis
 - Competitive positioning matrix
 
@@ -220,7 +220,7 @@
 │ Target: Beautiful app store with public pricing    │
 │ ─────────────────────────────────────────────────── │
 │ What happens:                                       │
-│ • Build Zoho-style app store UI:                   │
+│ • Build app store UI:                   │
 │   - Module grid with pricing                       │
 │   - Bundle options                                 │
 │   - Comparison tables                              │
@@ -297,7 +297,7 @@
 
 ### FOR SALES/MARKETING:
 1. Read: `payaid_pricing_and_gtm.md`
-2. Read: `payaid_vs_zoho_analysis.md`
+2. Read competitive analysis documents
 3. Create sales narratives
 4. Plan marketing campaigns
 
