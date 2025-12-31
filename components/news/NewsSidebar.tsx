@@ -785,7 +785,7 @@ function NewsSection({
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <span className="text-lg">{config.icon}</span>
-        <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-300">{title}</h3>
+        <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-100">{title}</h3>
         <span className="text-xs text-gray-500 dark:text-gray-400">({items.length})</span>
       </div>
       <div className="space-y-2">
@@ -837,7 +837,7 @@ function NewsCard({
             <span className="text-sm mt-0.5">{item.icon || config.icon}</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-start gap-2">
-                <h4 className="font-medium text-sm leading-tight flex-1 dark:text-gray-200">{item.title}</h4>
+                <h4 className="font-medium text-sm leading-tight flex-1 text-gray-900 dark:text-gray-100">{item.title}</h4>
                 {item.category && CATEGORY_CONFIG[item.category as keyof typeof CATEGORY_CONFIG] && (
                   <span className={cn(
                     "text-xs px-1.5 py-0.5 rounded flex-shrink-0",

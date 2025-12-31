@@ -3,12 +3,17 @@
 import { useAuthStore } from '@/lib/stores/auth'
 import { NotificationBell } from '@/components/NotificationBell'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { Newspaper } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { Newspaper, User, Settings, LogOut, ChevronDown } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
-  const { tenant, token } = useAuthStore()
+  const { tenant, token, user, logout } = useAuthStore()
   const [newsUnreadCount, setNewsUnreadCount] = useState(0)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const profileMenuRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
   // Fetch news unread count
   useEffect(() => {
@@ -55,6 +60,35 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     }
   }
 
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false)
+      }
+    }
+
+    if (profileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [profileMenuOpen])
+
+  const handleLogout = async () => {
+    await logout()
+    router.push('/login')
+  }
+
+  const getProfileUrl = () => {
+    if (tenant?.id) {
+      return `/dashboard/${tenant.id}/settings/profile`
+    }
+    return '/dashboard/settings/profile'
+  }
+
   return (
     <header className="h-16 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-30 transition-colors">
       <div className="flex items-center justify-between h-full px-4 sm:px-6">
@@ -96,6 +130,62 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
             )}
           </button>
           <NotificationBell />
+          
+          {/* Profile Dropdown */}
+          <div className="relative" ref={profileMenuRef}>
+            <button
+              onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+              className="flex items-center gap-2 p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              aria-label="User menu"
+            >
+              <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
+                {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
+              </div>
+              <ChevronDown className={`w-4 h-4 transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {profileMenuOpen && (
+              <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-700 z-50">
+                <div className="py-1" role="menu">
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {user?.name || 'User'}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {user?.email}
+                    </p>
+                  </div>
+                  <Link
+                    href={getProfileUrl()}
+                    onClick={() => setProfileMenuOpen(false)}
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    role="menuitem"
+                  >
+                    <User className="w-4 h-4 mr-3" />
+                    Profile Settings
+                  </Link>
+                  <Link
+                    href={getProfileUrl()}
+                    onClick={() => setProfileMenuOpen(false)}
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    role="menuitem"
+                  >
+                    <Settings className="w-4 h-4 mr-3" />
+                    Settings
+                  </Link>
+                  <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    role="menuitem"
+                  >
+                    <LogOut className="w-4 h-4 mr-3" />
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

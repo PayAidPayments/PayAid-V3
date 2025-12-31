@@ -196,9 +196,13 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            <span className="text-xs sm:text-sm font-medium hidden sm:inline" style={{ color: PAYAID_PURPLE }}>#{PAYAID_PURPLE.replace('#', '')}</span>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 flex items-center justify-center">
-              <span className="text-xs sm:text-sm font-medium">{user?.name?.charAt(0) || 'U'}</span>
+            <div className="hidden sm:flex flex-col items-end">
+              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+                {user?.name || user?.email || 'User'}
+              </span>
+            </div>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">{user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}</span>
             </div>
           </div>
         </div>
