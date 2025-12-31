@@ -600,7 +600,7 @@ PayAid shouldn't try to **replace all these services**.
 
 Instead, PayAid should become the **command center** that:
 1. Bundles the most critical (CRM, Invoicing, Accounting, HR)
-2. Integrates easily with existing tools they love (Razorpay, Shopify)
+2. Integrates easily with existing tools they love (PayAid Payments integrated, Shopify)
 3. Becomes the **distribution channel** for financial services (loans, insurance)
 4. **Captures commission** from every transaction/referral that flows through it
 
@@ -631,7 +631,7 @@ By Year 1: Paying ₹7k, earning ₹50-100k from referrals/commissions
 **"What else do Indian businesses require that they go and pay out of PayAid V3?"**
 
 ### The 12 Categories:
-1. **Payments**: ₹3-15k/month (Razorpay, PhonePe)
+1. **Payments**: ₹0/month (PayAid Payments integrated - no separate cost)
 2. **Loans**: ₹500-10k/month interest (Banks, NBFCs)
 3. **Logistics**: ₹20-100k/month (Shiprocket, Delhivery)
 4. **Marketing**: ₹5-50k/month (Google Ads, Facebook Ads)
@@ -648,7 +648,7 @@ By Year 1: Paying ₹7k, earning ₹50-100k from referrals/commissions
 
 ### PayAid's Best Play:
 - **Don't replace them** (regulatory, expertise barriers)
-- **Integrate them** (Razorpay, Shiprocket, Shopify)
+- **Integrate them** (PayAid Payments already integrated, Shiprocket, Shopify)
 - **Become the distribution channel** (loan finder, insurance aggregator)
 - **Take commission** (0.5-2% of transactions, 5-20% of referrals)
 - **Capture ₹12-25k additional revenue** per customer (beyond ₹7k subscription)
