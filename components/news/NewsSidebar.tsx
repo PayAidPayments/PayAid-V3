@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, ChevronLeft, ChevronRight, ExternalLink, Filter } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
@@ -125,6 +125,7 @@ export function NewsSidebar() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const queryClient = useQueryClient()
+  const sidebarRef = useRef<HTMLDivElement>(null) // Ref for the sidebar container
   
   // Handle responsive behavior for mobile/tablet
   const [isMobile, setIsMobile] = useState(() => {
@@ -201,11 +202,184 @@ export function NewsSidebar() {
       window.removeEventListener('orientationchange', handleOrientationChange)
     }
   }, [])
+
+  // Handle click outside to close sidebar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Only close if sidebar is open and not collapsed
+      if (!isOpen || isCollapsed || !sidebarRef.current) {
+        return
+      }
+
+      const target = event.target as Node
+      
+      // Check if click is outside the sidebar
+      if (!sidebarRef.current.contains(target)) {
+        // Also check if click is not on the collapsed button
+        const collapsedButton = document.querySelector('[aria-label="Open Industry Intelligence sidebar"]')
+        if (!collapsedButton || !collapsedButton.contains(target)) {
+          // Prevent event propagation and close sidebar
+          event.stopPropagation()
+          setIsOpen(false)
+          setIsCollapsed(true)
+        }
+      }
+    }
+
+    // Add event listener when sidebar is open
+    if (isOpen && !isCollapsed) {
+      // Use capture phase to catch clicks earlier
+      document.addEventListener('mousedown', handleClickOutside, true)
+      // Also listen for clicks on the document
+      document.addEventListener('click', handleClickOutside, true)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside, true)
+      document.removeEventListener('click', handleClickOutside, true)
+    }
+  }, [isOpen, isCollapsed])
   
   // News sidebar is now an overlay - no need to modify main content classes
   // Removed CSS class manipulation since news sidebar doesn't affect main content layout
 
-  const { token } = useAuthStore()
+  const { token, tenant } = useAuthStore()
+
+  // Sample news data for demo business (hardcoded, separate from API)
+  const getSampleNewsForDemo = (): NewsResponse => {
+    const sampleNews: NewsItem[] = [
+      {
+        id: 'demo-1',
+        title: 'New Government Tax Incentive Program Launched',
+        summary: 'Government announces new tax incentives for small and medium businesses in the technology sector.',
+        description: 'The government has launched a new tax incentive program specifically designed for technology companies. This program offers up to 30% tax reduction for qualifying businesses.',
+        urgency: 'opportunity',
+        icon: '🏛️',
+        category: 'government-alerts',
+        source: 'Government Portal',
+        sourceName: 'Ministry of Finance',
+        businessImpact: {
+          impact: 'This could reduce your annual tax burden by up to ₹2,00,000 if you qualify. Consider reviewing eligibility criteria immediately.',
+        },
+        recommendedActions: [
+          { action: 'Review eligibility criteria on the government portal' },
+          { action: 'Consult with your tax advisor about application process' },
+          { action: 'Prepare necessary documentation for application' },
+        ],
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'demo-2',
+        title: 'Major Competitor Launches New Product Line',
+        summary: 'TechCorp Inc. announces expansion into your market segment with competitive pricing.',
+        description: 'TechCorp Inc., a major competitor, has launched a new product line that directly competes with your offerings. They are offering aggressive pricing and extended warranties.',
+        urgency: 'important',
+        icon: '🔍',
+        category: 'competitor-tracking',
+        source: 'Industry News',
+        sourceName: 'Business Weekly',
+        businessImpact: {
+          impact: 'This competitive move may impact your market share. Monitor customer feedback and consider strategic pricing adjustments.',
+        },
+        recommendedActions: [
+          { action: 'Analyze competitor pricing and features' },
+          { action: 'Review your value proposition and differentiators' },
+          { action: 'Consider customer retention strategies' },
+        ],
+        isRead: false,
+        createdAt: new Date(Date.now() - 86400000).toISOString(),
+      },
+      {
+        id: 'demo-3',
+        title: 'Market Trends: Digital Transformation Accelerating',
+        summary: 'Industry report shows 45% increase in digital transformation investments.',
+        description: 'A recent industry report indicates that businesses are accelerating their digital transformation initiatives, with a 45% year-over-year increase in investments.',
+        urgency: 'growth',
+        icon: '📈',
+        category: 'market-trends',
+        source: 'Industry Report',
+        sourceName: 'Tech Research Institute',
+        businessImpact: {
+          impact: 'This trend presents opportunities for growth. Consider expanding your digital service offerings to capture market demand.',
+        },
+        recommendedActions: [
+          { action: 'Evaluate your digital service portfolio' },
+          { action: 'Identify growth opportunities in digital services' },
+          { action: 'Develop a digital transformation roadmap' },
+        ],
+        isRead: false,
+        createdAt: new Date(Date.now() - 172800000).toISOString(),
+      },
+      {
+        id: 'demo-4',
+        title: 'Key Supplier Announces Price Increase',
+        summary: 'Primary supplier notifies 8% price increase effective next quarter.',
+        description: 'Your primary supplier has notified you of an 8% price increase that will take effect in the next quarter. This may impact your profit margins.',
+        urgency: 'warning',
+        icon: '🚚',
+        category: 'supplier-intelligence',
+        source: 'Supplier Notification',
+        sourceName: 'Supply Chain Alert',
+        businessImpact: {
+          impact: 'This price increase could reduce your profit margins by approximately 3-5%. Consider negotiating or exploring alternative suppliers.',
+        },
+        recommendedActions: [
+          { action: 'Negotiate with current supplier for better terms' },
+          { action: 'Research alternative suppliers and compare pricing' },
+          { action: 'Review your pricing strategy to maintain margins' },
+        ],
+        isRead: false,
+        createdAt: new Date(Date.now() - 259200000).toISOString(),
+      },
+      {
+        id: 'demo-5',
+        title: 'New AI Technology Trends in Business Automation',
+        summary: 'Latest AI tools can automate up to 60% of routine business processes.',
+        description: 'Recent developments in AI technology have made it possible to automate a significant portion of routine business processes, potentially reducing operational costs.',
+        urgency: 'informational',
+        icon: '💻',
+        category: 'technology-trends',
+        source: 'Tech News',
+        sourceName: 'Tech Innovation Daily',
+        businessImpact: {
+          impact: 'Adopting AI automation could reduce operational costs by 20-30% while improving efficiency.',
+        },
+        recommendedActions: [
+          { action: 'Research AI automation tools relevant to your business' },
+          { action: 'Identify processes that could benefit from automation' },
+          { action: 'Consider pilot programs for AI implementation' },
+        ],
+        isRead: false,
+        createdAt: new Date(Date.now() - 345600000).toISOString(),
+      },
+    ]
+
+    // Filter by category if selected
+    const filteredNews = selectedCategory
+      ? sampleNews.filter(item => item.category === selectedCategory)
+      : sampleNews
+
+    // Group by urgency
+    const grouped = {
+      critical: filteredNews.filter(item => item.urgency === 'critical'),
+      important: filteredNews.filter(item => item.urgency === 'important'),
+      informational: filteredNews.filter(item => item.urgency === 'informational'),
+      opportunity: filteredNews.filter(item => item.urgency === 'opportunity'),
+      warning: filteredNews.filter(item => item.urgency === 'warning'),
+      growth: filteredNews.filter(item => item.urgency === 'growth'),
+    }
+
+    return {
+      newsItems: filteredNews,
+      grouped,
+      unreadCount: filteredNews.filter(item => !item.isRead).length,
+      total: filteredNews.length,
+    }
+  }
+
+  // Check if this is demo business
+  const isDemoBusiness = tenant?.subdomain === 'demo' || tenant?.name === 'Demo Business Pvt Ltd'
 
   // Fetch news items with category filter
   const { data, isLoading, error: fetchError } = useQuery<NewsResponse>({
@@ -224,7 +398,14 @@ export function NewsSidebar() {
         const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.error || 'Failed to fetch news')
       }
-      return response.json()
+      const apiData = await response.json()
+      
+      // If API returns no data and this is demo business, use sample news
+      if (isDemoBusiness && apiData.total === 0) {
+        return getSampleNewsForDemo()
+      }
+      
+      return apiData
     },
     enabled: !!token,
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
@@ -263,14 +444,71 @@ export function NewsSidebar() {
   })
 
   const handleMarkAsRead = (id: string) => {
-    markAsReadMutation.mutate(id)
+    // For sample news (demo business), just update local state
+    if (id.startsWith('demo-')) {
+      // Update the sample news item to mark as read
+      // This is a local-only operation for demo purposes
+      queryClient.setQueryData<NewsResponse>(['news', token, selectedCategory], (oldData) => {
+        if (!oldData) return oldData
+        const updatedItems = oldData.newsItems.map(item => 
+          item.id === id ? { ...item, isRead: true } : item
+        )
+        // Recalculate grouped and unreadCount
+        const grouped = {
+          critical: updatedItems.filter(item => item.urgency === 'critical'),
+          important: updatedItems.filter(item => item.urgency === 'important'),
+          informational: updatedItems.filter(item => item.urgency === 'informational'),
+          opportunity: updatedItems.filter(item => item.urgency === 'opportunity'),
+          warning: updatedItems.filter(item => item.urgency === 'warning'),
+          growth: updatedItems.filter(item => item.urgency === 'growth'),
+        }
+        return {
+          ...oldData,
+          newsItems: updatedItems,
+          grouped,
+          unreadCount: updatedItems.filter(item => !item.isRead).length,
+        }
+      })
+    } else {
+      markAsReadMutation.mutate(id)
+    }
   }
 
   const handleDismiss = (id: string) => {
-    dismissMutation.mutate(id)
+    // For sample news (demo business), just update local state
+    if (id.startsWith('demo-')) {
+      // Remove the item from the list
+      queryClient.setQueryData<NewsResponse>(['news', token, selectedCategory], (oldData) => {
+        if (!oldData) return oldData
+        const updatedItems = oldData.newsItems.filter(item => item.id !== id)
+        // Recalculate grouped and unreadCount
+        const grouped = {
+          critical: updatedItems.filter(item => item.urgency === 'critical'),
+          important: updatedItems.filter(item => item.urgency === 'important'),
+          informational: updatedItems.filter(item => item.urgency === 'informational'),
+          opportunity: updatedItems.filter(item => item.urgency === 'opportunity'),
+          warning: updatedItems.filter(item => item.urgency === 'warning'),
+          growth: updatedItems.filter(item => item.urgency === 'growth'),
+        }
+        return {
+          ...oldData,
+          newsItems: updatedItems,
+          grouped,
+          unreadCount: updatedItems.filter(item => !item.isRead).length,
+          total: updatedItems.length,
+        }
+      })
+    } else {
+      dismissMutation.mutate(id)
+    }
   }
 
-  const grouped = data?.grouped || {
+  // Use sample news for demo business if API returns no data
+  const finalData = isDemoBusiness && (!data || data.total === 0) 
+    ? getSampleNewsForDemo() 
+    : data
+
+  const grouped = finalData?.grouped || {
     critical: [],
     important: [],
     informational: [],
@@ -279,7 +517,7 @@ export function NewsSidebar() {
     growth: [],
   }
 
-  const unreadCount = data?.unreadCount || 0
+  const unreadCount = finalData?.unreadCount || 0
 
   // Always render the collapsed button when collapsed
   if (isCollapsed) {
@@ -320,30 +558,32 @@ export function NewsSidebar() {
 
   return (
     <>
-      {/* Overlay when news sidebar is open - Only on mobile/tablet portrait */}
-      {isOpen && (isMobile || (isTablet && typeof window !== 'undefined' && window.innerWidth < window.innerHeight)) && (
+      {/* Overlay when news sidebar is open - Show on all devices for better UX */}
+      {isOpen && !isCollapsed && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="fixed inset-0 bg-black bg-opacity-30 z-40"
           onClick={() => {
             setIsOpen(false)
             setIsCollapsed(true)
           }}
+          style={{ pointerEvents: 'auto' }}
         />
       )}
       <div
+        ref={sidebarRef}
         className={cn(
-          'fixed right-0 top-0 h-full bg-white border-l border-gray-200 shadow-xl z-50 flex flex-col transition-transform duration-300',
+          'fixed right-0 top-0 h-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-xl z-50 flex flex-col transition-transform duration-300',
           // Responsive width: full width on mobile, 320px on tablet, 320px on desktop
           isMobile ? 'w-full sm:w-80' : 'w-80',
           isOpen ? 'translate-x-0' : 'translate-x-full'
         )}
       >
       {/* Header */}
-      <div className="border-b border-gray-200 bg-gray-50">
+      <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-2">
             <span className="text-xl">📰</span>
-            <h2 className="font-semibold text-gray-900">Industry Intelligence</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-gray-100">Industry Intelligence</h2>
             {unreadCount > 0 && (
               <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
                 {unreadCount} new
@@ -354,8 +594,8 @@ export function NewsSidebar() {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={cn(
-                "p-1 hover:bg-gray-200 rounded transition-colors",
-                selectedCategory && "bg-blue-100 text-blue-700"
+                "p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors",
+                selectedCategory && "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
               )}
               aria-label="Filter news"
               title="Filter by category"
@@ -367,7 +607,7 @@ export function NewsSidebar() {
                 setIsCollapsed(true)
                 setIsOpen(false)
               }}
-              className="p-1 hover:bg-gray-200 rounded transition-colors"
+              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
               aria-label="Collapse sidebar"
             >
               <ChevronRight className="h-4 w-4" />
@@ -379,7 +619,7 @@ export function NewsSidebar() {
                   setIsOpen(false)
                   setIsCollapsed(true)
                 }}
-                className="p-2 hover:bg-gray-200 rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                 aria-label="Close sidebar"
               >
                 <X className="h-5 w-5" />
@@ -391,7 +631,7 @@ export function NewsSidebar() {
         {/* Category Filters */}
         {showFilters && (
           <div className="px-4 pb-3 space-y-2">
-            <div className="text-xs font-medium text-gray-600 mb-2">Filter by Category:</div>
+            <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Filter by Category:</div>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setSelectedCategory(null)}
@@ -399,7 +639,7 @@ export function NewsSidebar() {
                   "px-2 py-1 text-xs rounded-md transition-colors",
                   !selectedCategory 
                     ? "bg-[#53328A] text-white" 
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
                 )}
               >
                 All
@@ -412,7 +652,7 @@ export function NewsSidebar() {
                     "px-2 py-1 text-xs rounded-md transition-colors flex items-center gap-1",
                     selectedCategory === key
                       ? "bg-[#53328A] text-white"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
                   )}
                 >
                   <span>{config.icon}</span>
@@ -427,15 +667,15 @@ export function NewsSidebar() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {isLoading ? (
-          <div className="text-center text-gray-500 py-8">Loading news...</div>
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8">Loading news...</div>
         ) : fetchError ? (
           <div className="text-center py-8 px-4">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h3 className="font-semibold text-red-800 mb-2">Database Connection Error</h3>
-              <p className="text-sm text-red-700 mb-3">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <h3 className="font-semibold text-red-800 dark:text-red-300 mb-2">Database Connection Error</h3>
+              <p className="text-sm text-red-700 dark:text-red-400 mb-3">
                 {fetchError instanceof Error ? fetchError.message : 'Failed to fetch news items'}
               </p>
-              <div className="text-xs text-red-600 space-y-1 text-left">
+              <div className="text-xs text-red-600 dark:text-red-400 space-y-1 text-left">
                 <p className="font-semibold">Troubleshooting steps:</p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>Check if your database server is running</li>
@@ -449,8 +689,8 @@ export function NewsSidebar() {
               </div>
             </div>
           </div>
-        ) : data?.total === 0 ? (
-          <div className="text-center text-gray-500 py-8">
+        ) : finalData?.total === 0 ? (
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
             No news items at the moment
           </div>
         ) : (
@@ -545,8 +785,8 @@ function NewsSection({
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <span className="text-lg">{config.icon}</span>
-        <h3 className="font-semibold text-sm text-gray-700">{title}</h3>
-        <span className="text-xs text-gray-500">({items.length})</span>
+        <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-300">{title}</h3>
+        <span className="text-xs text-gray-500 dark:text-gray-400">({items.length})</span>
       </div>
       <div className="space-y-2">
         {items.map((item) => (
@@ -597,7 +837,7 @@ function NewsCard({
             <span className="text-sm mt-0.5">{item.icon || config.icon}</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-start gap-2">
-                <h4 className="font-medium text-sm leading-tight flex-1">{item.title}</h4>
+                <h4 className="font-medium text-sm leading-tight flex-1 dark:text-gray-200">{item.title}</h4>
                 {item.category && CATEGORY_CONFIG[item.category as keyof typeof CATEGORY_CONFIG] && (
                   <span className={cn(
                     "text-xs px-1.5 py-0.5 rounded flex-shrink-0",
@@ -608,7 +848,7 @@ function NewsCard({
                 )}
               </div>
               {item.summary && (
-                <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
                   {item.summary}
                 </p>
               )}
@@ -616,7 +856,7 @@ function NewsCard({
                 <div className="mt-1">
                   <span className={cn(
                     "text-xs px-2 py-0.5 rounded",
-                    CATEGORY_CONFIG[item.category as keyof typeof CATEGORY_CONFIG]?.color || "bg-gray-100 text-gray-700"
+                    CATEGORY_CONFIG[item.category as keyof typeof CATEGORY_CONFIG]?.color || "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                   )}>
                     {CATEGORY_CONFIG[item.category as keyof typeof CATEGORY_CONFIG]?.label || item.category}
                   </span>
@@ -628,20 +868,20 @@ function NewsCard({
           {isExpanded && (
             <div className="mt-2 space-y-2 text-xs">
               {item.description && (
-                <p className="text-gray-700">{item.description}</p>
+                <p className="text-gray-700 dark:text-gray-300">{item.description}</p>
               )}
 
               {item.businessImpact && (
-                <div className="bg-white/50 rounded p-2">
-                  <p className="font-semibold mb-1">Business Impact:</p>
-                  <p className="text-gray-700">{item.businessImpact.impact}</p>
+                <div className="bg-white/50 dark:bg-gray-700/50 rounded p-2">
+                  <p className="font-semibold mb-1 dark:text-gray-200">Business Impact:</p>
+                  <p className="text-gray-700 dark:text-gray-300">{item.businessImpact.impact}</p>
                 </div>
               )}
 
               {item.recommendedActions && item.recommendedActions.length > 0 && (
-                <div className="bg-white/50 rounded p-2">
-                  <p className="font-semibold mb-1">Recommended Actions:</p>
-                  <ul className="list-disc list-inside space-y-1 text-gray-700">
+                <div className="bg-white/50 dark:bg-gray-700/50 rounded p-2">
+                  <p className="font-semibold mb-1 dark:text-gray-200">Recommended Actions:</p>
+                  <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
                     {item.recommendedActions.map((action: any, idx: number) => (
                       <li key={idx}>{action.action}</li>
                     ))}
@@ -655,7 +895,7 @@ function NewsCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                  className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                 >
                   <span>Read more</span>
                   <ExternalLink className="h-3 w-3" />
@@ -664,7 +904,7 @@ function NewsCard({
             </div>
           )}
 
-          <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+          <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
             {item.sourceName && <span>{item.sourceName}</span>}
             <span>•</span>
             <span>{new Date(item.createdAt).toLocaleDateString()}</span>
@@ -687,7 +927,7 @@ function NewsCard({
             e.stopPropagation()
             onDismiss(item.id)
           }}
-          className="text-xs text-gray-500 hover:text-gray-700"
+          className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
         >
           Dismiss
         </button>

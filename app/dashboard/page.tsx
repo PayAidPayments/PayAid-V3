@@ -446,16 +446,20 @@ export default function DashboardPage() {
               <CardContent className="overflow-visible">
                 <div className="w-full" style={{ minHeight: '200px', height: '200px', minWidth: '0' }}>
                   <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                    <PieChart>
+                    <PieChart margin={{ top: 10, right: 10, bottom: 50, left: 10 }}>
                       <Pie
                         data={marketShareData}
                         cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={70}
+                        cy="45%"
+                        innerRadius={35}
+                        outerRadius={65}
                         paddingAngle={5}
                         dataKey="value"
-                        label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }: any) => {
+                          // Shorten long names to prevent cutoff
+                          const shortName = name.length > 12 ? name.substring(0, 10) + '...' : name
+                          return `${shortName}: ${(percent * 100).toFixed(0)}%`
+                        }}
                         labelLine={false}
                       >
                         {marketShareData.map((entry: any, index: number) => (
@@ -472,10 +476,14 @@ export default function DashboardPage() {
                         formatter={(value: any, name: any) => [`${value} (${((value / marketShareData.reduce((sum: number, item: any) => sum + item.value, 0)) * 100).toFixed(1)}%)`, name]}
                       />
                       <Legend 
-                        wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
-                        iconSize={10}
+                        wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}
+                        iconSize={8}
                         verticalAlign="bottom"
-                        height={36}
+                        height={50}
+                        formatter={(value: string) => {
+                          // Truncate legend labels if too long
+                          return value.length > 15 ? value.substring(0, 13) + '...' : value
+                        }}
                       />
                     </PieChart>
                   </ResponsiveContainer>

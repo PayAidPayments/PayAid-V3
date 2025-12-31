@@ -177,8 +177,8 @@ function NavItem({
       className={cn(
         'flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors min-h-[44px]',
         isActive
-          ? 'bg-blue-50 text-blue-700'
-          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
       )}
     >
       <span className="mr-3 text-lg">{item.icon}</span>
@@ -231,8 +231,8 @@ function NavSection({ section, pathname, onLinkClick }: { section: typeof naviga
         className={cn(
           'w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-colors min-h-[44px]',
           hasActiveItem
-            ? 'bg-blue-50 text-blue-700'
-            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
         )}
       >
         <div className="flex items-center flex-1 min-w-0">
@@ -305,17 +305,17 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
   const hasAllModules = licensedModules.length >= totalModules
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200 w-64 overflow-y-auto relative">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 w-64 overflow-y-auto relative transition-colors">
       {/* Logo */}
-      <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-blue-600">PayAid V3</h1>
+      <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
+        <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">PayAid V3</h1>
         {/* Close button for mobile */}
         <button
           onClick={onClose}
-          className="lg:hidden p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] min-w-[44px]"
+          className="lg:hidden p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] min-w-[44px] transition-colors"
           aria-label="Close sidebar"
         >
-          <XIcon className="h-6 w-6 text-gray-600" />
+          <XIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
         </button>
       </div>
 
@@ -340,7 +340,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
 
         {/* Divider */}
         {licensedMainNav.length > 0 && (
-          <div className="border-t border-gray-200 my-2"></div>
+          <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
         )}
 
         {/* Grouped Sections - Automatically filtered by NavSection */}
@@ -351,7 +351,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
         </div>
 
         {/* Admin & Settings */}
-        <div className="pt-2 border-t border-gray-200 mt-2 space-y-1">
+        <div className="pt-2 border-t border-gray-200 dark:border-gray-700 mt-2 space-y-1">
           {isAdmin && (
             <NavItem
               item={{ name: 'Module Management', href: '/dashboard/admin/modules', icon: '🔧', module: null }}
@@ -368,7 +368,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
 
         {/* CRITICAL: Add Modules Button - Only show if user doesn't have all modules */}
         {!hasAllModules && (
-          <div className="pt-2 border-t border-gray-200 mt-2">
+          <div className="pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
             <Link
               href="/dashboard/admin/modules"
               className={cn(
@@ -384,8 +384,8 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
 
         {/* Show badge if user has all modules */}
         {hasAllModules && (
-          <div className="pt-2 border-t border-gray-200 mt-2">
-            <div className="px-3 py-2 text-xs text-center text-gray-500 bg-green-50 rounded-md">
+          <div className="pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
+            <div className="px-3 py-2 text-xs text-center text-gray-500 dark:text-gray-400 bg-green-50 dark:bg-green-900/20 rounded-md">
               ✓ All Modules Active
             </div>
           </div>
@@ -393,28 +393,41 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
       </nav>
 
       {/* User Info */}
-      <div className="border-t border-gray-200 p-4">
+      <div className="border-t border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center mb-3">
           <div className="flex-shrink-0">
-            <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
+            <div className="h-10 w-10 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-semibold">
               {user?.name?.[0]?.toUpperCase() || user?.email[0]?.toUpperCase()}
             </div>
           </div>
           <div className="ml-3 flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
               {user?.name || user?.email}
             </p>
-            <p className="text-xs text-gray-500 truncate">
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
               {tenant?.name}
             </p>
           </div>
         </div>
-        <button
-          onClick={logout}
-          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
-        >
-          Sign out
-        </button>
+        <div className="space-y-1">
+          <Link
+            href={tenantId ? `/dashboard/${tenantId}/settings/profile` : '/dashboard/settings/profile'}
+            onClick={() => {
+              if (onClose && window.innerWidth < 1024) {
+                onClose()
+              }
+            }}
+            className="w-full block text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors"
+          >
+            Profile Settings
+          </Link>
+          <button
+            onClick={logout}
+            className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
     </div>
   )
