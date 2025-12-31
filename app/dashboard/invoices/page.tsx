@@ -40,8 +40,8 @@ function InvoicesPageContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
-          <p className="mt-2 text-gray-600">Manage your invoices and billing</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Invoices</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your invoices and billing</p>
         </div>
         <Link href="/dashboard/invoices/new">
           <Button>Create Invoice</Button>
@@ -49,12 +49,12 @@ function InvoicesPageContent() {
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardContent className="pt-6">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-10 rounded-md border border-gray-300 px-3"
+            className="h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-3"
           >
             <option value="">All Status</option>
             <option value="draft">Draft</option>
@@ -67,16 +67,16 @@ function InvoicesPageContent() {
       </Card>
 
       {/* Invoices Table */}
-      <Card>
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>{dynamicTitle}</CardTitle>
-          <CardDescription>
+          <CardTitle className="dark:text-gray-100">{dynamicTitle}</CardTitle>
+          <CardDescription className="dark:text-gray-400">
             {dynamicDescription} ({pagination?.total || 0} total)
           </CardDescription>
         </CardHeader>
         <CardContent>
           {invoices.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <p className="mb-4">No invoices found</p>
               <Link href="/dashboard/invoices/new">
                 <Button variant="outline">Create your first invoice</Button>
@@ -142,7 +142,7 @@ function InvoicesPageContent() {
               {/* Pagination */}
               {pagination && pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
                     Page {pagination.page} of {pagination.totalPages}
                   </div>
                   <div className="flex gap-2">
@@ -151,12 +151,14 @@ function InvoicesPageContent() {
                       size="sm"
                       onClick={() => setPage(p => Math.max(1, p - 1))}
                       disabled={page === 1}
+                      className="dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
                     >
                       Previous
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
+                      className="dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
                       onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
                       disabled={page === pagination.totalPages}
                     >

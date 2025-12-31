@@ -52,7 +52,7 @@ export default function RevenueDashboardPage() {
   })
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>
+    return <div className="flex items-center justify-center h-64 dark:text-gray-400">Loading...</div>
   }
 
   const revenue = dashboardStats?.revenue || {}
@@ -65,8 +65,8 @@ export default function RevenueDashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Revenue Dashboard</h1>
-          <p className="mt-2 text-gray-600">Track revenue trends and performance</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Revenue Dashboard</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Track revenue trends and performance</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -102,60 +102,60 @@ export default function RevenueDashboardPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-gray-600">Revenue (30 Days)</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Revenue (30 Days)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold" style={{ color: PAYAID_PURPLE }}>
+            <div className="text-3xl font-bold dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>
               ₹{((revenue.last30Days || 0) / 1000).toFixed(1)}K
             </div>
-            <CardDescription>Last 30 days</CardDescription>
+            <CardDescription className="dark:text-gray-400">Last 30 days</CardDescription>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-gray-600">Total Expenses</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Expenses</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-600">
+            <div className="text-3xl font-bold text-red-600 dark:text-red-400">
               ₹{((expenses.grandTotalWithGst || 0) / 1000).toFixed(1)}K
             </div>
-            <CardDescription>Including GST</CardDescription>
+            <CardDescription className="dark:text-gray-400">Including GST</CardDescription>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-gray-600">Net Profit</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Net Profit</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-3xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-3xl font-bold ${netProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               ₹{(netProfit / 1000).toFixed(1)}K
             </div>
-            <CardDescription>Revenue - Expenses</CardDescription>
+            <CardDescription className="dark:text-gray-400">Revenue - Expenses</CardDescription>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-gray-600">Profit Margin</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Profit Margin</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold" style={{ color: PAYAID_GOLD }}>
+            <div className="text-3xl font-bold dark:text-gray-100" style={{ color: PAYAID_GOLD }}>
               {revenue.last30Days > 0
                 ? ((netProfit / revenue.last30Days) * 100).toFixed(1)
                 : 0}%
             </div>
-            <CardDescription>Profit percentage</CardDescription>
+            <CardDescription className="dark:text-gray-400">Profit percentage</CardDescription>
           </CardContent>
         </Card>
       </div>
 
       {/* Revenue Trend Chart */}
       {revenueData.length > 0 && (
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Revenue Trend</CardTitle>
-            <CardDescription>Monthly revenue over the last 6 months</CardDescription>
+            <CardTitle className="dark:text-gray-100">Revenue Trend</CardTitle>
+            <CardDescription className="dark:text-gray-400">Monthly revenue over the last 6 months</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -189,10 +189,10 @@ export default function RevenueDashboardPage() {
 
       {/* Sales Performance Chart */}
       {salesTrendData.length > 0 && (
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Sales Performance</CardTitle>
-            <CardDescription>Actual vs Target sales</CardDescription>
+            <CardTitle className="dark:text-gray-100">Sales Performance</CardTitle>
+            <CardDescription className="dark:text-gray-400">Actual vs Target sales</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -212,49 +212,49 @@ export default function RevenueDashboardPage() {
 
       {/* Revenue Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Revenue Breakdown</CardTitle>
+            <CardTitle className="dark:text-gray-100">Revenue Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-gray-600">Last 7 Days</span>
-                <span className="font-bold">₹{((revenue.last7Days || 0) / 1000).toFixed(1)}K</span>
+                <span className="text-gray-600 dark:text-gray-400">Last 7 Days</span>
+                <span className="font-bold dark:text-gray-100">₹{((revenue.last7Days || 0) / 1000).toFixed(1)}K</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Last 30 Days</span>
-                <span className="font-bold">₹{((revenue.last30Days || 0) / 1000).toFixed(1)}K</span>
+                <span className="text-gray-600 dark:text-gray-400">Last 30 Days</span>
+                <span className="font-bold dark:text-gray-100">₹{((revenue.last30Days || 0) / 1000).toFixed(1)}K</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Last 90 Days</span>
-                <span className="font-bold">₹{((revenue.last90Days || 0) / 1000).toFixed(1)}K</span>
+                <span className="text-gray-600 dark:text-gray-400">Last 90 Days</span>
+                <span className="font-bold dark:text-gray-100">₹{((revenue.last90Days || 0) / 1000).toFixed(1)}K</span>
               </div>
-              <div className="flex justify-between border-t pt-2">
-                <span className="font-semibold">All Time</span>
-                <span className="font-bold text-lg">₹{((revenue.allTime || 0) / 1000).toFixed(1)}K</span>
+              <div className="flex justify-between border-t dark:border-gray-700 pt-2">
+                <span className="font-semibold dark:text-gray-100">All Time</span>
+                <span className="font-bold text-lg dark:text-gray-100">₹{((revenue.allTime || 0) / 1000).toFixed(1)}K</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Expense Breakdown</CardTitle>
+            <CardTitle className="dark:text-gray-100">Expense Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-gray-600">Total Expenses</span>
-                <span className="font-bold text-red-600">₹{((expenses.grandTotal || 0) / 1000).toFixed(1)}K</span>
+                <span className="text-gray-600 dark:text-gray-400">Total Expenses</span>
+                <span className="font-bold text-red-600 dark:text-red-400">₹{((expenses.grandTotal || 0) / 1000).toFixed(1)}K</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">GST Amount</span>
-                <span className="font-bold">₹{((expenses.grandGstTotal || 0) / 1000).toFixed(1)}K</span>
+                <span className="text-gray-600 dark:text-gray-400">GST Amount</span>
+                <span className="font-bold dark:text-gray-100">₹{((expenses.grandGstTotal || 0) / 1000).toFixed(1)}K</span>
               </div>
-              <div className="flex justify-between border-t pt-2">
-                <span className="font-semibold">Total with GST</span>
-                <span className="font-bold text-lg text-red-600">
+              <div className="flex justify-between border-t dark:border-gray-700 pt-2">
+                <span className="font-semibold dark:text-gray-100">Total with GST</span>
+                <span className="font-bold text-lg text-red-600 dark:text-red-400">
                   ₹{((expenses.grandTotalWithGst || 0) / 1000).toFixed(1)}K
                 </span>
               </div>
