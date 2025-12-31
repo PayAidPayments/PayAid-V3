@@ -1,0 +1,15 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/process-scheduled-reports",
+      "schedule": "0 * * * *",
+      "description": "Process scheduled reports every hour"
+    },
+    {
+      "path": "/api/cron/process-subscription-renewals",
+      "schedule": "0 0 * * *",
+      "description": "Process subscription renewals daily at midnight"
+    }
+  ]
+}
+
