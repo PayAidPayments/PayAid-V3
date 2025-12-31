@@ -507,7 +507,7 @@ export default function Home() {
 
         /* ===== HERO SECTION ===== */
         .hero {
-            margin-top: 70px;
+            margin-top: 0;
             min-height: 100vh;
             background: linear-gradient(135deg, var(--white) 0%, var(--bg-light) 100%);
             position: relative;
@@ -798,8 +798,11 @@ export default function Home() {
 
         /* ===== STATS SECTION ===== */
         .stats {
-            padding: 4rem 2rem;
+            padding: 2rem 2rem 3rem 2rem;
             background: linear-gradient(135deg, var(--bg-light) 0%, var(--white) 100%);
+            margin-top: 80px; /* Account for fixed header */
+            position: relative;
+            z-index: 1;
         }
 
         .stats-grid {
@@ -1415,9 +1418,25 @@ export default function Home() {
                 min-height: 44px;
             }
 
+            /* Stats Section */
+            .stats {
+                margin-top: 70px;
+                padding: 1.5rem 1rem 2rem 1rem;
+            }
+
+            .stats-grid {
+                gap: 1rem;
+            }
+
+            .stat-label {
+                font-size: 0.8rem;
+                white-space: normal;
+                line-height: 1.3;
+            }
+
             /* Hero Section */
             .hero {
-                margin-top: 60px;
+                margin-top: 0;
                 padding: 2rem 1rem;
                 min-height: auto;
             }
@@ -1512,12 +1531,13 @@ export default function Home() {
 
             /* Stats Section */
             .stats {
-                padding: 3rem 1rem;
+                padding: 1.5rem 1rem 2rem 1rem;
+                margin-top: 70px; /* Account for fixed header on mobile */
             }
 
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 1.5rem;
+                gap: 1rem;
             }
 
             .stat-number {
@@ -1525,8 +1545,9 @@ export default function Home() {
             }
 
             .stat-label {
-                font-size: 0.8rem;
-                white-space: nowrap;
+                font-size: 0.75rem;
+                white-space: normal;
+                line-height: 1.3;
             }
 
             /* Features Section */
@@ -1727,8 +1748,19 @@ export default function Home() {
 
         /* Additional mobile optimizations for smaller screens */
         @media (max-width: 480px) {
+            .stats {
+                margin-top: 70px;
+                padding: 1rem 1rem 1.5rem 1rem;
+            }
+            
             .stats-grid {
                 grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .stat-label {
+                font-size: 0.7rem;
+                white-space: normal;
             }
 
             .hero h1 {

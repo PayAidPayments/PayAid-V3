@@ -22,7 +22,13 @@ function createPrismaClient(): PrismaClient {
   const databaseUrl = process.env.DATABASE_URL
   
   if (!databaseUrl) {
-    throw new Error('DATABASE_URL environment variable is not set')
+    // In development, provide a helpful error message
+    if (process.env.NODE_ENV === 'development') {
+      console.error('⚠️  DATABASE_URL environment variable is not set')
+      console.error('Please set DATABASE_URL in your .env file')
+    }
+    // In production, throw error but with better message
+    throw new Error('DATABASE_URL environment variable is not set. Please configure it in your environment variables.')
   }
 
   // Parse and enhance DATABASE_URL with connection pool parameters

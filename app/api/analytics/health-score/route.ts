@@ -9,51 +9,43 @@ export async function GET(request: NextRequest) {
     const { tenantId } = await requireModuleAccess(request, 'analytics')
 
     // Get business metrics in parallel for better performance
-    // Use counts and limited queries instead of fetching all records
-    const [contacts, deals, orders, invoices, tasks, paidInvoicesCount] = await Promise.all([
+    // Use aggregation queries for accurate, deterministic results
+    const [contacts, deals, revenueResult, totalInvoices, paidInvoicesCount, tasks] = await Promise.all([
       prisma.contact.count({ where: { tenantId: tenantId } }).catch(() => 0),
       prisma.deal.count({ where: { tenantId: tenantId } }).catch(() => 0),
-      // Only fetch orders for revenue calculation (limited)
-      prisma.order.findMany({ 
+      // Use aggregation to get total revenue (all orders, not just recent 100)
+      prisma.order.aggregate({
         where: { tenantId: tenantId },
-        select: { total: true },
-        take: 100, // Limit to recent orders for performance
-        orderBy: { createdAt: 'desc' },
-      }).catch(() => []),
-      // Only fetch invoices for collection calculation (limited)
-      prisma.invoice.findMany({ 
+        _sum: { total: true },
+      }).catch(() => ({ _sum: { total: null } })),
+      // Get total invoice count (all invoices, not just recent 100)
+      prisma.invoice.count({
         where: { tenantId: tenantId },
-        select: { status: true },
-        take: 100, // Limit to recent invoices for performance
-        orderBy: { createdAt: 'desc' },
-      }).catch(() => []),
-      prisma.task.count({
-        where: {
-          tenantId: tenantId,
-          status: { not: 'completed' },
-        },
       }).catch(() => 0),
+      // Get paid invoice count
       prisma.invoice.count({
         where: {
           tenantId: tenantId,
           status: 'paid',
         },
       }).catch(() => 0),
+      prisma.task.count({
+        where: {
+          tenantId: tenantId,
+          status: { not: 'completed' },
+        },
+      }).catch(() => 0),
     ])
 
     // Calculate health score components (0-100 each)
-    // Handle Decimal types from Prisma
-    const totalRevenue = orders.reduce((sum, o) => {
-      const orderTotal = o.total
-      // Handle Decimal type from Prisma
-      const numTotal = typeof orderTotal === 'number' 
-        ? orderTotal 
-        : (typeof orderTotal === 'object' && orderTotal !== null && 'toNumber' in orderTotal)
-        ? (orderTotal as any).toNumber()
-        : parseFloat(String(orderTotal || 0))
-      return sum + numTotal
-    }, 0)
-    const totalInvoices = invoices.length
+    // Handle Decimal types from Prisma aggregation result
+    const totalRevenue = revenueResult._sum.total
+      ? (typeof revenueResult._sum.total === 'number' 
+          ? revenueResult._sum.total 
+          : (typeof revenueResult._sum.total === 'object' && revenueResult._sum.total !== null && 'toNumber' in revenueResult._sum.total)
+          ? (revenueResult._sum.total as any).toNumber()
+          : parseFloat(String(revenueResult._sum.total || 0)))
+      : 0
 
     const salesScore = Math.min(100, Math.max(0, (deals / 10) * 100)) // Target: 10+ deals
     const revenueScore = Math.min(100, Math.max(0, (totalRevenue / 100000) * 100)) // Target: ₹1L+
@@ -84,7 +76,7 @@ export async function GET(request: NextRequest) {
       metrics: {
         totalContacts: contacts,
         totalDeals: deals,
-        totalOrders: orders.length,
+        totalOrders: 0, // We don't need order count for health score
         totalRevenue: totalRevenue,
         pendingTasks: tasks,
       },

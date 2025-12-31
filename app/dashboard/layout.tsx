@@ -174,7 +174,7 @@ export default function DashboardLayout({
 
   return (
     <ProtectedRoute>
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
         {/* Mobile/Tablet Portrait Overlay - Only show on mobile and tablet portrait */}
         {sidebarOpen && (() => {
           if (typeof window === 'undefined') return null
@@ -222,7 +222,7 @@ export default function DashboardLayout({
             : "lg:ml-0 md:ml-0"   // Mobile and tablet portrait (overlay mode)
         )}>
           <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-          <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
+          <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 bg-gray-50 dark:bg-gray-900 transition-colors">
             {children}
           </main>
           

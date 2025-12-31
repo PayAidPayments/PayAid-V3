@@ -43,3 +43,6 @@ next-env.d.ts
 
 # separate module repositories (already in their own repos)
 /repositories
+
+.vercel
+.env*.local

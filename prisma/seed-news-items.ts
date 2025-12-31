@@ -193,7 +193,7 @@ async function seedNewsItems() {
         summary: 'E-commerce parcel volume has increased by 25% year-over-year',
         description: 'E-commerce parcel volume has increased by 25% year-over-year, indicating strong growth in online shopping. This presents opportunities for businesses to expand online.',
         source: 'market',
-        category: 'market_trends',
+        category: 'market-trends',
         urgency: 'informational',
         icon: '🟢',
         industry: 'all',

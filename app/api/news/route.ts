@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     const where: any = {
       OR: [
         { tenantId }, // Tenant-specific news
-        { tenantId: null, industry: tenant?.industry || null }, // Industry-specific news
+        ...(tenant?.industry ? [{ tenantId: null, industry: tenant.industry }] : []), // Industry-specific news (only if tenant has industry)
         { tenantId: null, industry: 'all' }, // General news
       ],
       isDismissed: false,

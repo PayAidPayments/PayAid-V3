@@ -3,9 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/stores/auth'
+import { useTheme } from '@/lib/contexts/theme-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { Moon, Sun } from 'lucide-react'
 
 function getAuthHeaders() {
   const { token } = useAuthStore.getState()
@@ -18,6 +21,7 @@ function getAuthHeaders() {
 export default function ProfileSettingsPage() {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
+  const { theme, setTheme } = useTheme()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -130,36 +134,89 @@ export default function ProfileSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Profile Settings</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">
           Manage your personal information and account settings
         </p>
       </div>
 
-      <Card>
+      {/* Theme Settings */}
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>Personal Information</CardTitle>
-          <CardDescription>
+          <CardTitle className="dark:text-gray-100">Appearance</CardTitle>
+          <CardDescription className="dark:text-gray-400">
+            Choose your preferred theme
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {theme === 'light' ? (
+                <Sun className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              ) : (
+                <Moon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              )}
+              <div>
+                <div className="font-medium text-gray-900 dark:text-gray-100">
+                  {theme === 'light' ? 'Light Mode' : 'Dark Mode'}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {theme === 'light' 
+                    ? 'Use light theme for better visibility during the day'
+                    : 'Use dark theme to reduce eye strain in low light'}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setTheme('light')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  theme === 'light'
+                    ? 'bg-[#53328A] text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                Light
+              </button>
+              <button
+                onClick={() => setTheme('dark')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  theme === 'dark'
+                    ? 'bg-[#53328A] text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                Dark
+              </button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <CardHeader>
+          <CardTitle className="dark:text-gray-100">Personal Information</CardTitle>
+          <CardDescription className="dark:text-gray-400">
             Update your name, email, and profile picture
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+              <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-md">
+              <div className="p-3 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
                 {success}
               </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium">
+                <label htmlFor="name" className="text-sm font-medium dark:text-gray-300">
                   Full Name *
                 </label>
                 <Input
@@ -173,7 +230,7 @@ export default function ProfileSettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">
+                <label htmlFor="email" className="text-sm font-medium dark:text-gray-300">
                   Email Address *
                 </label>
                 <Input
@@ -188,7 +245,7 @@ export default function ProfileSettingsPage() {
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <label htmlFor="avatar" className="text-sm font-medium">
+                <label htmlFor="avatar" className="text-sm font-medium dark:text-gray-300">
                   Profile Picture
                 </label>
                 <div className="flex items-center gap-4">
@@ -211,7 +268,7 @@ export default function ProfileSettingsPage() {
                       placeholder="Enter image URL or upload file"
                       disabled={updateProfile.isPending}
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Enter a URL to your profile picture, or use a service like imgur.com to upload
                     </p>
                   </div>
@@ -228,10 +285,10 @@ export default function ProfileSettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>Change Password</CardTitle>
-          <CardDescription>
+          <CardTitle className="dark:text-gray-100">Change Password</CardTitle>
+          <CardDescription className="dark:text-gray-400">
             Update your account password
           </CardDescription>
         </CardHeader>
@@ -239,7 +296,7 @@ export default function ProfileSettingsPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">
+                <label htmlFor="password" className="text-sm font-medium dark:text-gray-300">
                   New Password
                 </label>
                 <Input
@@ -251,13 +308,13 @@ export default function ProfileSettingsPage() {
                   placeholder="Leave blank to keep current password"
                   disabled={updateProfile.isPending}
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Minimum 8 characters
                 </p>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="confirmPassword" className="text-sm font-medium">
+                <label htmlFor="confirmPassword" className="text-sm font-medium dark:text-gray-300">
                   Confirm Password
                 </label>
                 <Input
@@ -282,37 +339,37 @@ export default function ProfileSettingsPage() {
       </Card>
 
       {profile && (
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Account Information</CardTitle>
+            <CardTitle className="dark:text-gray-100">Account Information</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <div className="text-sm text-gray-500">Role</div>
-                <div className="font-medium capitalize">{profile.role || 'Member'}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Role</div>
+                <div className="font-medium capitalize dark:text-gray-100">{profile.role || 'Member'}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Email Verified</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Email Verified</div>
                 <div className="font-medium">
                   {profile.emailVerified ? (
-                    <span className="text-green-600">Verified</span>
+                    <span className="text-green-600 dark:text-green-400">Verified</span>
                   ) : (
-                    <span className="text-yellow-600">Not Verified</span>
+                    <span className="text-yellow-600 dark:text-yellow-400">Not Verified</span>
                   )}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Member Since</div>
-                <div className="font-medium">
+                <div className="text-sm text-gray-500 dark:text-gray-400">Member Since</div>
+                <div className="font-medium dark:text-gray-100">
                   {profile.createdAt
                     ? new Date(profile.createdAt).toLocaleDateString()
                     : '-'}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Last Login</div>
-                <div className="font-medium">
+                <div className="text-sm text-gray-500 dark:text-gray-400">Last Login</div>
+                <div className="font-medium dark:text-gray-100">
                   {profile.lastLoginAt
                     ? new Date(profile.lastLoginAt).toLocaleDateString()
                     : 'Never'}
