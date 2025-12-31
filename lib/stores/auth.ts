@@ -93,18 +93,45 @@ export const useAuthStore = create<AuthState>()(
             body: JSON.stringify({ email, password }),
           })
 
+          // Check content type before parsing
+          const contentType = response.headers.get('content-type') || ''
+          const isJson = contentType.includes('application/json')
+
           if (!response.ok) {
             let errorMessage = 'Login failed'
             try {
-              const error = await response.json()
-              errorMessage = error.error || error.message || `Login failed (${response.status})`
-              console.error('[AUTH] Login error response:', error)
+              if (isJson) {
+                const error = await response.json()
+                errorMessage = error.error || error.message || `Login failed (${response.status})`
+                console.error('[AUTH] Login error response:', error)
+              } else {
+                // Server returned HTML or other non-JSON error page
+                const text = await response.text()
+                console.error('[AUTH] Server returned non-JSON error:', {
+                  status: response.status,
+                  statusText: response.statusText,
+                  contentType,
+                  preview: text.substring(0, 200),
+                })
+                errorMessage = `Login failed: ${response.statusText || 'Internal Server Error'}`
+              }
             } catch (parseError) {
-              // If JSON parsing fails, use status text
+              // If parsing fails, use status text
               errorMessage = `Login failed: ${response.statusText || response.status}`
               console.error('[AUTH] Failed to parse error response:', parseError)
             }
             throw new Error(errorMessage)
+          }
+
+          // Ensure response is JSON before parsing
+          if (!isJson) {
+            const text = await response.text()
+            console.error('[AUTH] Server returned non-JSON response:', {
+              status: response.status,
+              contentType,
+              preview: text.substring(0, 200),
+            })
+            throw new Error('Server returned invalid response format')
           }
 
           const data = await response.json()
@@ -202,9 +229,13 @@ export const useAuthStore = create<AuthState>()(
 
         set({ isLoading: true })
         try {
-          // Add timeout to prevent hanging - reduced to 2 seconds for faster failure
+          // Add timeout to prevent hanging - use 5 seconds for better reliability
           const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 2000) // 2 second timeout
+          const timeoutId = setTimeout(() => {
+            if (!controller.signal.aborted) {
+              controller.abort()
+            }
+          }, 5000) // 5 second timeout
 
           const response = await fetch('/api/auth/me', {
             headers: {

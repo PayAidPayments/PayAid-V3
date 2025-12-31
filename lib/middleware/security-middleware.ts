@@ -14,7 +14,8 @@ async function getNodeModules() {
   if (ipRateLimiter && validateAPIKey) return { ipRateLimiter, validateAPIKey }
   
   // Only import in Node.js runtime, not Edge Runtime
-  if (typeof EdgeRuntime !== 'undefined' || 
+  // @ts-ignore - EdgeRuntime is a global in Edge Runtime environments
+  if (typeof (globalThis as any).EdgeRuntime !== 'undefined' || 
       (typeof process !== 'undefined' && process.env.NEXT_RUNTIME === 'edge')) {
     return { ipRateLimiter: null, validateAPIKey: null }
   }

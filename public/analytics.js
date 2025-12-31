@@ -90,19 +90,30 @@
     });
   }, true);
 
-  // Track scroll depth
+  // Track scroll depth with throttling to reduce forced reflows
   let maxScroll = 0;
+  let rafId = null;
+  
   window.addEventListener('scroll', function() {
-    const scrollPercent = Math.round(
-      ((window.scrollY + window.innerHeight) / document.documentElement.scrollHeight) * 100
-    );
-    if (scrollPercent > maxScroll) {
-      maxScroll = scrollPercent;
-      if (scrollPercent === 25 || scrollPercent === 50 || scrollPercent === 75 || scrollPercent === 100) {
-        trackEvent('scroll', `scroll_${scrollPercent}`, null, { scrollPercent });
-      }
+    // Cancel any pending requestAnimationFrame
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
     }
-  });
+    
+    // Use requestAnimationFrame to batch layout reads and avoid forced reflows
+    rafId = requestAnimationFrame(function() {
+      const scrollPercent = Math.round(
+        ((window.scrollY + window.innerHeight) / document.documentElement.scrollHeight) * 100
+      );
+      if (scrollPercent > maxScroll) {
+        maxScroll = scrollPercent;
+        if (scrollPercent === 25 || scrollPercent === 50 || scrollPercent === 75 || scrollPercent === 100) {
+          trackEvent('scroll', `scroll_${scrollPercent}`, null, { scrollPercent });
+        }
+      }
+      rafId = null;
+    });
+  }, { passive: true }); // Mark as passive to improve scroll performance
 
   // Track time on page
   let startTime = Date.now();

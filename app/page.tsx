@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import Script from 'next/script'
+import { throttle } from '@/lib/utils/performance'
 
 export default function Home() {
   const router = useRouter()
@@ -26,181 +27,228 @@ export default function Home() {
         router.push('/dashboard')
       }
     } else if (token && !isAuthenticated) {
-      fetchUser().catch(() => {})
+      // Defer fetchUser to avoid blocking initial render
+      // Use requestIdleCallback if available, otherwise setTimeout
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          fetchUser().catch(() => {})
+        }, { timeout: 1000 })
+      } else {
+        setTimeout(() => {
+          fetchUser().catch(() => {})
+        }, 0)
+      }
     }
   }, [mounted, isAuthenticated, isLoading, token, router, fetchUser])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    // Header scroll effect
-    const header = document.querySelector('header')
-    const handleScroll = () => {
-      if (window.scrollY > 50) {
-        header?.classList.add('scrolled')
-      } else {
-        header?.classList.remove('scrolled')
+    // Defer DOM operations to avoid blocking initial render
+    // Use requestIdleCallback if available for better performance
+    // Store handlers for cleanup
+    let scrollHandler: (() => void) | null = null
+    
+    const initDOMOperations = () => {
+      // Header scroll effect - use throttling to reduce forced reflows
+      const header = document.querySelector('header')
+      scrollHandler = throttle(() => {
+        // Use requestAnimationFrame to batch DOM writes
+        requestAnimationFrame(() => {
+          if (window.scrollY > 50) {
+            header?.classList.add('scrolled')
+          } else {
+            header?.classList.remove('scrolled')
+          }
+        })
+      }, 100) // Throttle to max once per 100ms
+      window.addEventListener('scroll', scrollHandler, { passive: true })
+
+      // Scroll reveal animations - defer to avoid blocking
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -100px 0px'
+      }
+
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible')
+          }
+        })
+      }, observerOptions)
+
+      // Use requestAnimationFrame to defer DOM queries
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.scroll-reveal').forEach(el => {
+          observer.observe(el)
+        })
+      })
+
+      // Smooth scroll
+      requestAnimationFrame(() => {
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+          anchor.addEventListener('click', (e) => {
+            e.preventDefault()
+            const href = anchor.getAttribute('href')
+            if (href) {
+              const target = document.querySelector(href)
+              if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            }
+          })
+        })
+      })
+    }
+
+    // Defer initialization using requestIdleCallback or setTimeout
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(initDOMOperations, { timeout: 500 })
+    } else {
+      setTimeout(initDOMOperations, 0)
+    }
+
+    // Mobile menu toggle - defer initialization
+    const initMobileMenu = () => {
+      const menuToggle = document.querySelector('.menu-toggle')
+      const mobileMenu = document.querySelector('.mobile-menu')
+      const navLinks = document.querySelector('.nav-links')
+
+      if (menuToggle && mobileMenu) {
+        // Ensure menu starts closed
+        mobileMenu.classList.remove('active')
+        menuToggle.textContent = '☰'
+
+        menuToggle.addEventListener('click', (e) => {
+          e.stopPropagation()
+          mobileMenu.classList.toggle('active')
+          // Toggle hamburger icon
+          if (mobileMenu.classList.contains('active')) {
+            menuToggle.textContent = '✕'
+          } else {
+            menuToggle.textContent = '☰'
+          }
+        })
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+          if (mobileMenu.classList.contains('active') && 
+              !mobileMenu.contains(e.target as Node) && 
+              !menuToggle.contains(e.target as Node)) {
+            mobileMenu.classList.remove('active')
+            menuToggle.textContent = '☰'
+          }
+        })
+
+        // Close menu when clicking on a link
+        mobileMenu.querySelectorAll('a').forEach(link => {
+          link.addEventListener('click', () => {
+            mobileMenu.classList.remove('active')
+            menuToggle.textContent = '☰'
+          })
+        })
       }
     }
-    window.addEventListener('scroll', handleScroll)
 
-    // Scroll reveal animations
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -100px 0px'
-    }
-
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible')
-        }
-      })
-    }, observerOptions)
-
-    document.querySelectorAll('.scroll-reveal').forEach(el => {
-      observer.observe(el)
-    })
-
-    // Smooth scroll
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', (e) => {
-        e.preventDefault()
-        const href = anchor.getAttribute('href')
-        if (href) {
-          const target = document.querySelector(href)
-          if (target) {
-            target.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          }
-        }
-      })
-    })
-
-    // Mobile menu toggle
-    const menuToggle = document.querySelector('.menu-toggle')
-    const mobileMenu = document.querySelector('.mobile-menu')
-    const navLinks = document.querySelector('.nav-links')
-
-    if (menuToggle && mobileMenu) {
-      // Ensure menu starts closed
-      mobileMenu.classList.remove('active')
-      menuToggle.textContent = '☰'
-
-      menuToggle.addEventListener('click', (e) => {
-        e.stopPropagation()
-        mobileMenu.classList.toggle('active')
-        // Toggle hamburger icon
-        if (mobileMenu.classList.contains('active')) {
-          menuToggle.textContent = '✕'
-        } else {
-          menuToggle.textContent = '☰'
-        }
-      })
-
-      // Close menu when clicking outside
-      document.addEventListener('click', (e) => {
-        if (mobileMenu.classList.contains('active') && 
-            !mobileMenu.contains(e.target as Node) && 
-            !menuToggle.contains(e.target as Node)) {
-          mobileMenu.classList.remove('active')
-          menuToggle.textContent = '☰'
-        }
-      })
-
-      // Close menu when clicking on a link
-      mobileMenu.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-          mobileMenu.classList.remove('active')
-          menuToggle.textContent = '☰'
-        })
-      })
-
-      // Close menu when clicking a link
-      mobileMenu.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-          mobileMenu.classList.remove('active')
-          menuToggle.textContent = '☰'
-        })
-      })
+    // Defer mobile menu initialization
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(initMobileMenu, { timeout: 500 })
+    } else {
+      setTimeout(initMobileMenu, 0)
     }
 
     // Tab functionality - DYNAMIC IMAGE SWITCHING with AUTO-SCROLL
-    const tabButtons = document.querySelectorAll('.tab-btn')
-    const showcaseImages = document.querySelectorAll('.showcase-image img')
-    const showcaseSection = document.querySelector('.dashboard-showcase')
-    const tabs = ['crm', 'invoicing', 'inventory', 'analytics']
-    let currentTabIndex = 0
+    // Defer tab initialization to avoid blocking initial render
     let autoScrollInterval: NodeJS.Timeout | null = null
-    let isPaused = false
+    
+    const initTabFunctionality = () => {
+      const tabButtons = document.querySelectorAll('.tab-btn')
+      const showcaseImages = document.querySelectorAll('.showcase-image img')
+      const showcaseSection = document.querySelector('.dashboard-showcase')
+      const tabs = ['crm', 'invoicing', 'inventory', 'analytics']
+      let currentTabIndex = 0
+      let isPaused = false
 
-    // Function to switch to a specific tab
-    const switchTab = (tabName: string) => {
-      // Update active button
-      tabButtons.forEach(b => {
-        if (b.getAttribute('data-tab') === tabName) {
-          b.classList.add('active')
-        } else {
-          b.classList.remove('active')
-        }
-      })
-      
-      // Hide all images and show selected one with smooth transition
-      showcaseImages.forEach(img => {
-        img.classList.add('hidden')
-      })
-      const targetImg = document.getElementById(tabName)
-      if (targetImg) {
-        targetImg.classList.remove('hidden')
-      }
-    }
-
-    // Function to switch to next tab
-    const switchToNextTab = () => {
-      if (!isPaused) {
-        currentTabIndex = (currentTabIndex + 1) % tabs.length
-        switchTab(tabs[currentTabIndex])
-      }
-    }
-
-    // Manual tab click handler
-    tabButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const tabName = btn.getAttribute('data-tab')
-        if (tabName) {
-          currentTabIndex = tabs.indexOf(tabName)
-          switchTab(tabName)
-          // Reset auto-scroll timer when manually clicked
-          if (autoScrollInterval) {
-            clearInterval(autoScrollInterval)
+      // Function to switch to a specific tab
+      const switchTab = (tabName: string) => {
+        // Update active button
+        tabButtons.forEach(b => {
+          if (b.getAttribute('data-tab') === tabName) {
+            b.classList.add('active')
+          } else {
+            b.classList.remove('active')
           }
-          startAutoScroll()
+        })
+        
+        // Hide all images and show selected one with smooth transition
+        showcaseImages.forEach(img => {
+          img.classList.add('hidden')
+        })
+        const targetImg = document.getElementById(tabName)
+        if (targetImg) {
+          targetImg.classList.remove('hidden')
         }
-      })
-    })
-
-    // Start auto-scroll
-    const startAutoScroll = () => {
-      if (autoScrollInterval) {
-        clearInterval(autoScrollInterval)
       }
-      autoScrollInterval = setInterval(switchToNextTab, 5000) // 5 seconds
+
+      // Function to switch to next tab
+      const switchToNextTab = () => {
+        if (!isPaused) {
+          currentTabIndex = (currentTabIndex + 1) % tabs.length
+          switchTab(tabs[currentTabIndex])
+        }
+      }
+
+      // Manual tab click handler
+      tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabName = btn.getAttribute('data-tab')
+          if (tabName) {
+            currentTabIndex = tabs.indexOf(tabName)
+            switchTab(tabName)
+            // Reset auto-scroll timer when manually clicked
+            if (autoScrollInterval) {
+              clearInterval(autoScrollInterval)
+            }
+            startAutoScroll()
+          }
+        })
+      })
+
+      // Start auto-scroll
+      const startAutoScroll = () => {
+        if (autoScrollInterval) {
+          clearInterval(autoScrollInterval)
+        }
+        autoScrollInterval = setInterval(switchToNextTab, 5000) // 5 seconds
+      }
+
+      // Pause on hover, resume on mouse leave
+      if (showcaseSection) {
+        showcaseSection.addEventListener('mouseenter', () => {
+          isPaused = true
+        })
+        showcaseSection.addEventListener('mouseleave', () => {
+          isPaused = false
+        })
+      }
+
+      // Start auto-scroll on page load
+      startAutoScroll()
     }
 
-    // Pause on hover, resume on mouse leave
-    if (showcaseSection) {
-      showcaseSection.addEventListener('mouseenter', () => {
-        isPaused = true
-      })
-      showcaseSection.addEventListener('mouseleave', () => {
-        isPaused = false
-      })
+    // Defer tab functionality initialization
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(initTabFunctionality, { timeout: 1000 })
+    } else {
+      setTimeout(initTabFunctionality, 100)
     }
 
-    // Start auto-scroll on page load
-    startAutoScroll()
-
+    // Cleanup function
     return () => {
-      window.removeEventListener('scroll', handleScroll)
+      if (scrollHandler) {
+        window.removeEventListener('scroll', scrollHandler)
+      }
       if (autoScrollInterval) {
         clearInterval(autoScrollInterval)
       }

@@ -407,14 +407,14 @@ export default function DashboardPage() {
           {/* Sales Performance Line Chart */}
           <Link href={getDashboardLink('/deals')} className="block">
             <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02] overflow-hidden h-full flex flex-col" style={{ borderColor: PAYAID_PURPLE }}>
-              <CardHeader className="pb-3 flex-shrink-0">
+              <CardHeader className="pb-2 flex-shrink-0 border-b">
                 <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Sales Performance</CardTitle>
                 <CardDescription className="text-xs sm:text-sm line-clamp-2 dark:text-gray-400">Sales trends over time - Click to see deals</CardDescription>
               </CardHeader>
-              <CardContent className="overflow-visible flex-1 flex flex-col justify-end pb-2">
-                <div className="w-full" style={{ minHeight: '240px', height: '240px', minWidth: '0' }}>
-                  <ResponsiveContainer width="100%" height="100%" minHeight={240}>
-                    <AreaChart data={salesTrendData} margin={{ top: 10, right: 10, left: 10, bottom: 70 }}>
+              <CardContent className="overflow-visible flex-1 flex flex-col items-center justify-center pb-4 pt-4">
+                <div className="w-full flex items-center justify-center" style={{ minHeight: '260px', height: '260px', minWidth: '0' }}>
+                  <ResponsiveContainer width="100%" height="100%" minHeight={260}>
+                    <AreaChart data={salesTrendData} margin={{ top: 20, right: 10, left: 10, bottom: 70 }}>
                       <defs>
                         <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor={PAYAID_PURPLE} stopOpacity={0.3}/>
@@ -468,20 +468,20 @@ export default function DashboardPage() {
           {/* Market Share Donut Chart */}
           <Link href={getDashboardLink('/stats/pipeline')} className="block">
             <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02] overflow-hidden h-full flex flex-col" style={{ borderColor: PAYAID_GOLD }}>
-              <CardHeader className="pb-3 flex-shrink-0">
+              <CardHeader className="pb-2 flex-shrink-0 border-b">
                 <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Market Share Distribution</CardTitle>
                 <CardDescription className="text-xs sm:text-sm line-clamp-2 dark:text-gray-400">Deal stage distribution - Click to see pipeline details</CardDescription>
               </CardHeader>
-              <CardContent className="overflow-visible flex-1 flex flex-col justify-end pb-2">
-                <div className="w-full" style={{ minHeight: '240px', height: '240px', minWidth: '0' }}>
-                  <ResponsiveContainer width="100%" height="100%" minHeight={240}>
-                    <PieChart margin={{ top: 5, right: 5, bottom: 60, left: 5 }}>
+              <CardContent className="overflow-visible flex-1 flex flex-col items-center justify-center pb-4 pt-4">
+                <div className="w-full flex items-center justify-center" style={{ minHeight: '260px', height: '260px', minWidth: '0' }}>
+                  <ResponsiveContainer width="100%" height="100%" minHeight={260}>
+                    <PieChart margin={{ top: 10, right: 10, bottom: 60, left: 10 }}>
                       <Pie
                         data={marketShareData}
                         cx="50%"
-                        cy="40%"
-                        innerRadius={40}
-                        outerRadius={70}
+                        cy="45%"
+                        innerRadius={50}
+                        outerRadius={80}
                         paddingAngle={5}
                         dataKey="value"
                         label={false}
@@ -509,13 +509,14 @@ export default function DashboardPage() {
                       />
                       <Legend 
                         wrapperStyle={{ 
-                          fontSize: '11px', 
-                          paddingTop: '15px',
+                          fontSize: '12px', 
+                          paddingTop: '20px',
                           color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)'
                         }}
-                        iconSize={10}
+                        iconSize={12}
                         verticalAlign="bottom"
-                        height={60}
+                        height={50}
+                        align="center"
                         formatter={(value: string, entry: any) => {
                           // Find the matching data entry to get the percentage
                           const dataEntry = marketShareData.find((item: any) => item.name === value)
@@ -538,14 +539,14 @@ export default function DashboardPage() {
           {/* Revenue Trend Bar Chart */}
           <Link href={getDashboardLink('/accounting/reports/revenue')} className="block">
             <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02] overflow-hidden h-full flex flex-col" style={{ borderColor: PAYAID_PURPLE }}>
-              <CardHeader className="pb-3 flex-shrink-0">
+              <CardHeader className="pb-2 flex-shrink-0 border-b">
                 <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Revenue Trend</CardTitle>
                 <CardDescription className="text-xs sm:text-sm line-clamp-2 dark:text-gray-400">Monthly revenue comparison - Click to see revenue dashboard</CardDescription>
               </CardHeader>
-              <CardContent className="overflow-visible flex-1 flex flex-col justify-end pb-2">
-                <div className="w-full" style={{ minHeight: '240px', height: '240px', minWidth: '0' }}>
-                  <ResponsiveContainer width="100%" height="100%" minHeight={240}>
-                    <BarChart data={revenueData} margin={{ top: 10, right: 10, left: 10, bottom: 70 }}>
+              <CardContent className="overflow-visible flex-1 flex flex-col items-center justify-center pb-4 pt-4">
+                <div className="w-full flex items-center justify-center" style={{ minHeight: '260px', height: '260px', minWidth: '0' }}>
+                  <ResponsiveContainer width="100%" height="100%" minHeight={260}>
+                    <BarChart data={revenueData} margin={{ top: 20, right: 10, left: 10, bottom: 70 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E8E7E3'} />
                       <XAxis 
                         dataKey="month" 
@@ -578,13 +579,14 @@ export default function DashboardPage() {
                       />
                       <Legend 
                         wrapperStyle={{ 
-                          fontSize: '11px', 
-                          paddingTop: '10px', 
+                          fontSize: '12px', 
+                          paddingTop: '15px', 
                           color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)' 
                         }}
-                        iconSize={10}
+                        iconSize={12}
                         verticalAlign="bottom"
-                        height={36}
+                        height={40}
+                        align="center"
                       />
                       <Bar dataKey="revenue" fill={PAYAID_PURPLE} radius={[8, 8, 0, 0]} />
                       <Bar dataKey="expenses" fill={PAYAID_GOLD} radius={[8, 8, 0, 0]} />
