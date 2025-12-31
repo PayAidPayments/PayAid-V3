@@ -8,19 +8,24 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 
-// Initialize Upstash Redis client (works in Edge Runtime)
+// Lazy initialization to avoid Edge Runtime issues
 let redis: Redis | null = null
 let globalLimiter: Ratelimit | null = null
 let authLimiter: Ratelimit | null = null
+let initAttempted = false
 
 function getRedisClient(): Redis | null {
+  // Return cached client if available
   if (redis) return redis
+
+  // Check if we've already attempted initialization and failed
+  if (initAttempted && !redis) return null
 
   const url = process.env.UPSTASH_REDIS_REST_URL
   const token = process.env.UPSTASH_REDIS_REST_TOKEN
 
   if (!url || !token) {
-    // Upstash Redis not configured - rate limiting disabled
+    initAttempted = true
     return null
   }
 
@@ -29,9 +34,14 @@ function getRedisClient(): Redis | null {
       url,
       token,
     })
+    initAttempted = true
     return redis
   } catch (error) {
-    console.warn('Failed to initialize Upstash Redis:', error)
+    initAttempted = true
+    // Don't log in Edge Runtime to avoid errors
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('Failed to initialize Upstash Redis:', error)
+    }
     return null
   }
 }
@@ -50,7 +60,10 @@ function getGlobalLimiter(): Ratelimit | null {
     })
     return globalLimiter
   } catch (error) {
-    console.warn('Failed to initialize global rate limiter:', error)
+    // Don't log in Edge Runtime to avoid errors
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('Failed to initialize global rate limiter:', error)
+    }
     return null
   }
 }
@@ -69,7 +82,10 @@ function getAuthLimiter(): Ratelimit | null {
     })
     return authLimiter
   } catch (error) {
-    console.warn('Failed to initialize auth rate limiter:', error)
+    // Don't log in Edge Runtime to avoid errors
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('Failed to initialize auth rate limiter:', error)
+    }
     return null
   }
 }
@@ -78,32 +94,24 @@ function getAuthLimiter(): Ratelimit | null {
  * Apply global rate limiting (all routes)
  */
 export async function applyUpstashRateLimit(
-  request: { headers: Headers | { get: (key: string) => string | null } }
+  request: { headers: { get: (key: string) => string | null } }
 ): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
-  const limiter = getGlobalLimiter()
-  
-  if (!limiter) {
-    // Upstash not configured - allow request
-    return {
-      allowed: true,
-      remaining: 1000,
-      resetTime: Date.now() + 3600000, // 1 hour
-    }
-  }
-
   try {
-    // Extract IP from headers
-    const headers = request.headers
-    const getHeader = (key: string) => {
-      if ('get' in headers) {
-        return headers.get(key)
-      }
-      return null
-    }
+    const limiter = getGlobalLimiter()
     
+    if (!limiter) {
+      // Upstash not configured - allow request
+      return {
+        allowed: true,
+        remaining: 1000,
+        resetTime: Date.now() + 3600000, // 1 hour
+      }
+    }
+
+    // Extract IP from headers
     const ip = 
-      getHeader('cf-connecting-ip') ||
-      getHeader('x-forwarded-for')?.split(',')[0] ||
+      request.headers.get('cf-connecting-ip') ||
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       'unknown'
 
     const result = await limiter.limit(ip)
@@ -115,7 +123,10 @@ export async function applyUpstashRateLimit(
     }
   } catch (error) {
     // Rate limiting failed - allow request (fail open)
-    console.warn('Upstash rate limiting error (allowing request):', error)
+    // Don't log in Edge Runtime to avoid errors
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('Upstash rate limiting error (allowing request):', error)
+    }
     return {
       allowed: true,
       remaining: 1000,
@@ -128,21 +139,21 @@ export async function applyUpstashRateLimit(
  * Apply stricter rate limiting for auth endpoints
  */
 export async function applyUpstashAuthRateLimit(
-  request: { headers: Headers | { get: (key: string) => string | null } },
+  request: { headers: { get: (key: string) => string | null } },
   identifier: string
 ): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
-  const limiter = getAuthLimiter()
-  
-  if (!limiter) {
-    // Upstash not configured - allow request
-    return {
-      allowed: true,
-      remaining: 5,
-      resetTime: Date.now() + 900000, // 15 minutes
-    }
-  }
-
   try {
+    const limiter = getAuthLimiter()
+    
+    if (!limiter) {
+      // Upstash not configured - allow request
+      return {
+        allowed: true,
+        remaining: 5,
+        resetTime: Date.now() + 900000, // 15 minutes
+      }
+    }
+
     const result = await limiter.limit(`auth:${identifier}`)
 
     return {
@@ -152,7 +163,10 @@ export async function applyUpstashAuthRateLimit(
     }
   } catch (error) {
     // Rate limiting failed - allow request (fail open)
-    console.warn('Upstash auth rate limiting error (allowing request):', error)
+    // Don't log in Edge Runtime to avoid errors
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('Upstash auth rate limiting error (allowing request):', error)
+    }
     return {
       allowed: true,
       remaining: 5,
