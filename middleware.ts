@@ -1,13 +1,34 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { verifyToken, JWTPayload } from './lib/auth/jwt'
+import { applyRateLimit, applyAuthRateLimit } from './lib/middleware/security-middleware'
 
 // Note: Next.js may show a deprecation warning about "middleware" file convention,
 // but this is the correct and supported way to implement middleware in Next.js 16.
 // The "proxy" suggestion in the warning is for a different use case.
 // This middleware file is correct and should not be changed.
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Apply global rate limiting (all routes)
+  const rateLimitResponse = await applyRateLimit(request)
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
+  // Stricter rate limiting for auth endpoints
+  if (pathname.startsWith('/api/auth/login') || pathname.startsWith('/api/auth/register')) {
+    const clientIP = 
+      request.headers.get('cf-connecting-ip') || 
+      request.headers.get('x-forwarded-for')?.split(',')[0] || 
+      request.ip || 
+      'unknown'
+    
+    const authRateLimitResponse = await applyAuthRateLimit(request, clientIP)
+    if (authRateLimitResponse) {
+      return authRateLimitResponse
+    }
+  }
 
   // Only handle dashboard routes
   if (!pathname.startsWith('/dashboard')) {

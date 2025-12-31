@@ -80,12 +80,13 @@
 ## 🟡 **IN PROGRESS**
 
 ### 8. Rate Limiting Enhancement
-- **Status:** 🟡 Needs Upstash Redis integration
-- **Current:** Basic rate limiter exists in `lib/middleware/rate-limit.ts`
-- **Needed:**
-  - Install `@upstash/ratelimit` and `@upstash/redis`
-  - Configure Upstash Redis
-  - Integrate with middleware
+- **Status:** ✅ Completed
+- **Completed:**
+  - ✅ Installed `@upstash/ratelimit` and `@upstash/redis`
+  - ✅ Integrated rate limiting into `middleware.ts`
+  - ✅ Added global rate limiting (1000 req/hour)
+  - ✅ Added auth-specific rate limiting (5 req/15min)
+  - **Next:** Configure Upstash Redis environment variables
 
 ### 9. MFA Implementation
 - **Status:** 🟡 Needs Clerk TOTP integration
@@ -125,25 +126,23 @@
   - Error capture and alerting
 
 ### 14. API Key Database Model
-- **Status:** ❌ Not started
-- **Needed:**
-  - Add `ApiKey` model to Prisma schema
-  - Run migration
-  - Update API key service
+- **Status:** ✅ Completed
+- **Completed:**
+  - ✅ Added `ApiKey` model to Prisma schema
+  - ✅ Added relation to Tenant model
+  - ✅ Created migration guide
+  - **Next:** Run `npx prisma generate` and `npx prisma migrate dev`
 
 ---
 
 ## 📋 **DEPENDENCIES TO INSTALL**
 
 ```bash
-# Input validation
-npm install isomorphic-dompurify
+# ✅ COMPLETED - All dependencies installed
+npm install isomorphic-dompurify @upstash/ratelimit @upstash/redis
 
-# Rate limiting
-npm install @upstash/ratelimit @upstash/redis
-
-# Error tracking
-npm install @sentry/nextjs
+# Still needed:
+npm install @sentry/nextjs  # Error tracking (Week 3-4)
 ```
 
 ---
@@ -198,14 +197,15 @@ Run `prisma/migrations/fix_function_search_path.sql` in Supabase SQL Editor.
 
 ## 🎯 **NEXT STEPS**
 
-1. **Install Dependencies** - Run npm install commands above
-2. **Add Environment Variables** - Configure in Vercel
-3. **Add APIKey Model** - Update Prisma schema and migrate
-4. **Integrate Rate Limiting** - Update middleware.ts
-5. **Enable MFA** - Configure Clerk TOTP
-6. **Apply Database Fixes** - Run security fix migration
-7. **Set Up Sentry** - Configure error tracking
-8. **Test Security** - Verify all security layers work
+1. ✅ **Install Dependencies** - Completed
+2. ⏳ **Add Environment Variables** - See `ENVIRONMENT_VARIABLES_SETUP.md`
+3. ⏳ **Generate Prisma Client** - Run `npx prisma generate`
+4. ⏳ **Run Database Migration** - Run `npx prisma migrate dev --name add_api_key_model`
+5. ⏳ **Apply Database Security Fixes** - See `DATABASE_SECURITY_FIXES_APPLY.md`
+6. ✅ **Integrate Rate Limiting** - Completed in `middleware.ts`
+7. ⏳ **Enable MFA** - Configure Clerk TOTP
+8. ⏳ **Set Up Sentry** - Configure error tracking (Week 3-4)
+9. ⏳ **Test Security** - Verify all security layers work
 
 ---
 
@@ -213,13 +213,13 @@ Run `prisma/migrations/fix_function_search_path.sql` in Supabase SQL Editor.
 
 | Category | Completed | In Progress | Pending | Total |
 |----------|-----------|-------------|---------|-------|
-| **Week 1-2 (Critical)** | 7 | 3 | 0 | 10 |
+| **Week 1-2 (Critical)** | 9 | 1 | 0 | 10 |
 | **Week 3-4 (High)** | 0 | 0 | 4 | 4 |
 | **Week 5-6 (Medium)** | 0 | 0 | 4 | 4 |
 | **Week 7-8 (Ongoing)** | 0 | 0 | 4 | 4 |
 | **TOTAL** | **7** | **3** | **12** | **22** |
 
-**Completion:** 31.8% (7/22 items)
+**Completion:** 40.9% (9/22 items)
 
 ---
 
