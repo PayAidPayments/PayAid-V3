@@ -14,11 +14,17 @@ import { validateAPIKey } from '../security/api-keys'
 export async function applyRateLimit(request: NextRequest): Promise<NextResponse | null> {
   try {
     // Try Upstash Redis first (works in Edge Runtime)
-    const upstashResult = await applyUpstashRateLimit({
-      headers: request.headers,
-    })
+    let upstashResult
+    try {
+      upstashResult = await applyUpstashRateLimit({
+        headers: request.headers,
+      })
+    } catch (error) {
+      // Upstash rate limiting failed - skip it and continue
+      upstashResult = { allowed: true, remaining: 1000, resetTime: Date.now() + 3600000 }
+    }
     
-    if (!upstashResult.allowed) {
+    if (upstashResult && !upstashResult.allowed) {
       return NextResponse.json(
         { 
           error: 'Too many requests',
@@ -115,11 +121,17 @@ export async function applyAuthRateLimit(
 ): Promise<NextResponse | null> {
   try {
     // Try Upstash Redis first (works in Edge Runtime)
-    const upstashResult = await applyUpstashAuthRateLimit({
-      headers: request.headers,
-    }, identifier)
+    let upstashResult
+    try {
+      upstashResult = await applyUpstashAuthRateLimit({
+        headers: request.headers,
+      }, identifier)
+    } catch (error) {
+      // Upstash auth rate limiting failed - skip it and continue
+      upstashResult = { allowed: true, remaining: 5, resetTime: Date.now() + 900000 }
+    }
     
-    if (!upstashResult.allowed) {
+    if (upstashResult && !upstashResult.allowed) {
       return NextResponse.json(
         { 
           error: 'Too many login attempts. Please try again in 15 minutes.',
