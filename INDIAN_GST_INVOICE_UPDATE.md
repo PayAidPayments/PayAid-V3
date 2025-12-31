@@ -2,7 +2,7 @@
 
 ## 🎉 Invoice System Updated to Indian GST Standards
 
-Based on [Razorpay's Tax Invoice Guide](https://razorpay.com/blog/tax-invoice/), the invoice system has been updated to comply with Indian GST requirements.
+Based on Indian GST requirements and industry best practices, the invoice system has been updated to comply with Indian GST requirements.
 
 ---
 

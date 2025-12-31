@@ -107,7 +107,7 @@
 ### 11. PCI Tokenized Payments
 - **Status:** ❌ Not started
 - **Needed:**
-  - Razorpay integration
+  - PayAid Payments integration
   - Payment signature verification
   - No card data storage
 
@@ -163,10 +163,9 @@ UPSTASH_REDIS_REST_TOKEN=<your-upstash-token>
 SENTRY_DSN=<your-sentry-dsn>
 NEXT_PUBLIC_SENTRY_DSN=<your-sentry-dsn>
 
-# Payment Gateway
-RAZORPAY_KEY=<your-razorpay-key>
-RAZORPAY_SECRET=<your-razorpay-secret>
-NEXT_PUBLIC_RAZORPAY_KEY=<your-public-key>
+# Payment Gateway (PayAid Payments)
+# All payments processed through PayAid Payments only
+# No third-party payment gateways required
 ```
 
 ---

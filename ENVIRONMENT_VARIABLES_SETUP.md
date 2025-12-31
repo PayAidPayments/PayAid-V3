@@ -79,25 +79,16 @@ NEXT_PUBLIC_SENTRY_DSN=https://your-key@sentry.io/your-project-id
 
 ---
 
-### 4. Payment Gateway (Razorpay) - For Payment Security
+### 4. Payment Gateway (PayAid Payments) - For Payment Security
 
-**Variables:**
-- `RAZORPAY_KEY` (secret key)
-- `RAZORPAY_SECRET` (secret key)
-- `NEXT_PUBLIC_RAZORPAY_KEY` (public key - safe to expose)
+**Note:** All payments are processed exclusively through PayAid Payments. No third-party payment gateways (like Razorpay) are used.
 
-**Purpose:** PCI-compliant payment processing
+**Purpose:** PCI-compliant payment processing via PayAid Payments
 
-**How to Get:**
-1. Sign up at [https://razorpay.com](https://razorpay.com)
-2. Get API keys from Dashboard → Settings → API Keys
-
-**Example:**
-```
-RAZORPAY_KEY=rzp_live_xxxxxxxxxxxxx
-RAZORPAY_SECRET=your-secret-key
-NEXT_PUBLIC_RAZORPAY_KEY=rzp_live_xxxxxxxxxxxxx
-```
+**Configuration:**
+- PayAid Payments is integrated directly into the platform
+- No additional environment variables required for payment processing
+- Payment API credentials are managed through PayAid Payments dashboard
 
 ---
 
@@ -117,10 +108,9 @@ UPSTASH_REDIS_REST_TOKEN=<your-upstash-token>
 SENTRY_DSN=<your-sentry-dsn>
 NEXT_PUBLIC_SENTRY_DSN=<your-sentry-dsn>
 
-# Payment Gateway (REQUIRED for payments)
-RAZORPAY_KEY=<your-razorpay-key>
-RAZORPAY_SECRET=<your-razorpay-secret>
-NEXT_PUBLIC_RAZORPAY_KEY=<your-public-key>
+# Payment Gateway (PayAid Payments)
+# All payments processed through PayAid Payments only
+# No additional environment variables required
 
 # Database (Already configured)
 DATABASE_URL=<your-database-url>

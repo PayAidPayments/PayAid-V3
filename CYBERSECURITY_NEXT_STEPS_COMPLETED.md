@@ -93,7 +93,7 @@ if (pathname.startsWith('/api/auth/login') || pathname.startsWith('/api/auth/reg
 - Encryption key generation instructions
 - Upstash Redis setup
 - Sentry configuration
-- Razorpay payment gateway setup
+- PayAid Payments integration (all payments processed through PayAid Payments only)
 - Vercel deployment instructions
 - Security best practices
 
@@ -103,7 +103,7 @@ if (pathname.startsWith('/api/auth/login') || pathname.startsWith('/api/auth/reg
 - `UPSTASH_REDIS_REST_TOKEN`
 - `SENTRY_DSN` (optional)
 - `NEXT_PUBLIC_SENTRY_DSN` (optional)
-- `RAZORPAY_KEY`, `RAZORPAY_SECRET`, `NEXT_PUBLIC_RAZORPAY_KEY` (for payments)
+- PayAid Payments credentials (managed through PayAid Payments dashboard)
 
 ---
 
