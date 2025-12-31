@@ -21,7 +21,6 @@ export async function middleware(request: NextRequest) {
     const clientIP = 
       request.headers.get('cf-connecting-ip') || 
       request.headers.get('x-forwarded-for')?.split(',')[0] || 
-      request.ip || 
       'unknown'
     
     const authRateLimitResponse = await applyAuthRateLimit(request, clientIP)

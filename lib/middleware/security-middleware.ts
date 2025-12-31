@@ -14,7 +14,6 @@ export async function applyRateLimit(request: NextRequest): Promise<NextResponse
   const clientIP = 
     request.headers.get('cf-connecting-ip') || 
     request.headers.get('x-forwarded-for')?.split(',')[0] || 
-    request.ip || 
     'unknown'
   
   const result = await ipRateLimiter.check({
