@@ -72,12 +72,12 @@ function HealthScoreWidget({ getDashboardLink }: { getDashboardLink: (path: stri
     <Link href={getDashboardLink('/analytics')} className="block">
       <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
-          <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Business Health</CardTitle>
+          <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1 dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Business Health</CardTitle>
           <span className="text-xl sm:text-2xl shrink-0 ml-1">💚</span>
         </CardHeader>
         <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
           <div className={`text-2xl sm:text-3xl font-bold truncate ${getScoreColor(score)}`}>{score}/100</div>
-          <CardDescription className="text-xs truncate">{getScoreLabel(score)} - Click to see details</CardDescription>
+          <CardDescription className="text-xs truncate dark:text-gray-400">{getScoreLabel(score)} - Click to see details</CardDescription>
           {healthScore?.factors && (
             <div className="mt-2 sm:mt-3 space-y-1">
               {healthScore.factors.slice(0, 3).map((factor: any, idx: number) => (
@@ -236,12 +236,12 @@ export default function DashboardPage() {
           <Link href={getDashboardLink('/contacts')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
-                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Contacts</CardTitle>
+                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1 dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Contacts</CardTitle>
                 <span className="text-xl sm:text-2xl shrink-0 ml-1">👥</span>
               </CardHeader>
               <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                 <div className="text-xl sm:text-2xl font-bold truncate" style={{ color: PAYAID_PURPLE }}>{stats.contacts}</div>
-                <CardDescription className="text-xs truncate">Total contacts</CardDescription>
+                <CardDescription className="text-xs truncate dark:text-gray-400">Total contacts</CardDescription>
               </CardContent>
             </Card>
           </Link>
@@ -249,12 +249,12 @@ export default function DashboardPage() {
           <Link href={getDashboardLink('/deals')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_GOLD }}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
-                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Deals</CardTitle>
+                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1 dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Deals</CardTitle>
                 <span className="text-xl sm:text-2xl shrink-0 ml-1">💼</span>
               </CardHeader>
               <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                 <div className="text-xl sm:text-2xl font-bold truncate" style={{ color: PAYAID_GOLD }}>{stats.deals}</div>
-                <CardDescription className="text-xs truncate">Active deals</CardDescription>
+                <CardDescription className="text-xs truncate dark:text-gray-400">Active deals</CardDescription>
               </CardContent>
             </Card>
           </Link>
@@ -262,12 +262,12 @@ export default function DashboardPage() {
           <Link href={getDashboardLink('/orders')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
-                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Orders</CardTitle>
+                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1 dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Orders</CardTitle>
                 <span className="text-xl sm:text-2xl shrink-0 ml-1">🛒</span>
               </CardHeader>
               <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                 <div className="text-xl sm:text-2xl font-bold truncate" style={{ color: PAYAID_PURPLE }}>{stats.orders}</div>
-                <CardDescription className="text-xs truncate">Total orders</CardDescription>
+                <CardDescription className="text-xs truncate dark:text-gray-400">Total orders</CardDescription>
               </CardContent>
             </Card>
           </Link>
@@ -275,12 +275,12 @@ export default function DashboardPage() {
           <Link href={getDashboardLink('/invoices')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_GOLD }}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
-                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Invoices</CardTitle>
+                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1 dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Invoices</CardTitle>
                 <span className="text-xl sm:text-2xl shrink-0 ml-1">🧾</span>
               </CardHeader>
               <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                 <div className="text-xl sm:text-2xl font-bold truncate" style={{ color: PAYAID_GOLD }}>{stats.invoices}</div>
-                <CardDescription className="text-xs truncate">Total invoices</CardDescription>
+                <CardDescription className="text-xs truncate dark:text-gray-400">Total invoices</CardDescription>
               </CardContent>
             </Card>
           </Link>
@@ -288,12 +288,12 @@ export default function DashboardPage() {
           <Link href={getDashboardLink('/tasks')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
-                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Tasks</CardTitle>
+                <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1 dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Tasks</CardTitle>
                 <span className="text-xl sm:text-2xl shrink-0 ml-1">✅</span>
               </CardHeader>
               <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                 <div className="text-xl sm:text-2xl font-bold truncate" style={{ color: PAYAID_PURPLE }}>{stats.tasks}</div>
-                <CardDescription className="text-xs truncate">Total tasks</CardDescription>
+                <CardDescription className="text-xs truncate dark:text-gray-400">Total tasks</CardDescription>
               </CardContent>
             </Card>
           </Link>
@@ -406,12 +406,12 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Sales Performance Line Chart */}
           <Link href={getDashboardLink('/deals')} className="block">
-            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02] overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Sales Performance</CardTitle>
-                <CardDescription className="text-xs sm:text-sm line-clamp-2">Sales trends over time - Click to see deals</CardDescription>
+            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02] overflow-hidden h-full flex flex-col" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader className="pb-3 flex-shrink-0">
+                <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Sales Performance</CardTitle>
+                <CardDescription className="text-xs sm:text-sm line-clamp-2 dark:text-gray-400">Sales trends over time - Click to see deals</CardDescription>
               </CardHeader>
-              <CardContent className="overflow-visible">
+              <CardContent className="overflow-visible flex-1 flex flex-col justify-end pb-2">
                 <div className="w-full" style={{ minHeight: '240px', height: '240px', minWidth: '0' }}>
                   <ResponsiveContainer width="100%" height="100%" minHeight={240}>
                     <AreaChart data={salesTrendData} margin={{ top: 10, right: 10, left: 10, bottom: 70 }}>
@@ -467,14 +467,14 @@ export default function DashboardPage() {
 
           {/* Market Share Donut Chart */}
           <Link href={getDashboardLink('/stats/pipeline')} className="block">
-            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02] overflow-hidden" style={{ borderColor: PAYAID_GOLD }}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Market Share Distribution</CardTitle>
-                <CardDescription className="text-xs sm:text-sm line-clamp-2">Deal stage distribution - Click to see pipeline details</CardDescription>
+            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02] overflow-hidden h-full flex flex-col" style={{ borderColor: PAYAID_GOLD }}>
+              <CardHeader className="pb-3 flex-shrink-0">
+                <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Market Share Distribution</CardTitle>
+                <CardDescription className="text-xs sm:text-sm line-clamp-2 dark:text-gray-400">Deal stage distribution - Click to see pipeline details</CardDescription>
               </CardHeader>
-              <CardContent className="overflow-visible">
-                <div className="w-full" style={{ minHeight: '220px', height: '220px', minWidth: '0' }}>
-                  <ResponsiveContainer width="100%" height="100%" minHeight={220}>
+              <CardContent className="overflow-visible flex-1 flex flex-col justify-end pb-2">
+                <div className="w-full" style={{ minHeight: '240px', height: '240px', minWidth: '0' }}>
+                  <ResponsiveContainer width="100%" height="100%" minHeight={240}>
                     <PieChart margin={{ top: 5, right: 5, bottom: 60, left: 5 }}>
                       <Pie
                         data={marketShareData}
@@ -537,12 +537,12 @@ export default function DashboardPage() {
 
           {/* Revenue Trend Bar Chart */}
           <Link href={getDashboardLink('/accounting/reports/revenue')} className="block">
-            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02] overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Revenue Trend</CardTitle>
-                <CardDescription className="text-xs sm:text-sm line-clamp-2">Monthly revenue comparison - Click to see revenue dashboard</CardDescription>
+            <Card className="border-2 hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02] overflow-hidden h-full flex flex-col" style={{ borderColor: PAYAID_PURPLE }}>
+              <CardHeader className="pb-3 flex-shrink-0">
+                <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Revenue Trend</CardTitle>
+                <CardDescription className="text-xs sm:text-sm line-clamp-2 dark:text-gray-400">Monthly revenue comparison - Click to see revenue dashboard</CardDescription>
               </CardHeader>
-              <CardContent className="overflow-visible">
+              <CardContent className="overflow-visible flex-1 flex flex-col justify-end pb-2">
                 <div className="w-full" style={{ minHeight: '240px', height: '240px', minWidth: '0' }}>
                   <ResponsiveContainer width="100%" height="100%" minHeight={240}>
                     <BarChart data={revenueData} margin={{ top: 10, right: 10, left: 10, bottom: 70 }}>
@@ -602,14 +602,14 @@ export default function DashboardPage() {
             <Link href={getDashboardLink('/stats/revenue')} className="block">
               <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Revenue (30 Days)</CardTitle>
+                  <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1 dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Revenue (30 Days)</CardTitle>
                   <span className="text-xl sm:text-2xl shrink-0 ml-1">💰</span>
                 </CardHeader>
                 <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                   <div className="text-xl sm:text-2xl font-bold truncate" style={{ color: PAYAID_PURPLE }}>
                     ₹{dashboardStats.revenue?.last30Days?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                   </div>
-                  <CardDescription className="text-xs truncate">Last 30 days revenue - Click to see breakdown</CardDescription>
+                  <CardDescription className="text-xs truncate dark:text-gray-400">Last 30 days revenue - Click to see breakdown</CardDescription>
                 </CardContent>
               </Card>
             </Link>
@@ -617,14 +617,14 @@ export default function DashboardPage() {
             <Link href={getDashboardLink('/stats/pipeline')} className="block">
               <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_GOLD }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Pipeline Value</CardTitle>
+                  <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1 dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Pipeline Value</CardTitle>
                   <span className="text-xl sm:text-2xl shrink-0 ml-1">📈</span>
                 </CardHeader>
                 <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                   <div className="text-xl sm:text-2xl font-bold truncate" style={{ color: PAYAID_GOLD }}>
                     ₹{dashboardStats.pipeline?.value?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                   </div>
-                  <CardDescription className="text-xs truncate">{dashboardStats.pipeline?.activeDeals || 0} active deals - Click to see details</CardDescription>
+                  <CardDescription className="text-xs truncate dark:text-gray-400">{dashboardStats.pipeline?.activeDeals || 0} active deals - Click to see details</CardDescription>
                 </CardContent>
               </Card>
             </Link>
@@ -632,7 +632,7 @@ export default function DashboardPage() {
             <Link href={getDashboardLink('/stats/alerts')} className="block">
               <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1" style={{ color: PAYAID_PURPLE }}>Alerts</CardTitle>
+                  <CardTitle className="text-xs sm:text-sm font-medium truncate flex-1 dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Alerts</CardTitle>
                   <span className="text-xl sm:text-2xl shrink-0 ml-1">⚠️</span>
                 </CardHeader>
                 <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
@@ -646,7 +646,7 @@ export default function DashboardPage() {
                       <span className="text-base sm:text-lg font-bold text-yellow-600 dark:text-yellow-400 shrink-0 ml-2">{dashboardStats.alerts?.pendingTasks || 0}</span>
                     </div>
                   </div>
-                  <CardDescription className="mt-2 text-xs truncate">Click to see all alerts</CardDescription>
+                  <CardDescription className="mt-2 text-xs truncate dark:text-gray-400">Click to see all alerts</CardDescription>
                 </CardContent>
               </Card>
             </Link>
@@ -658,8 +658,8 @@ export default function DashboardPage() {
           <Link href={getDashboardLink('/accounting/reports/revenue')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
               <CardHeader className="px-3 sm:px-6">
-                <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Monthly KPI Metrics</CardTitle>
-                <CardDescription className="text-xs sm:text-sm truncate">Click to see revenue dashboard with KPIs</CardDescription>
+                <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Monthly KPI Metrics</CardTitle>
+                <CardDescription className="text-xs sm:text-sm truncate dark:text-gray-400">Click to see revenue dashboard with KPIs</CardDescription>
               </CardHeader>
               <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                 <div className="space-y-3 sm:space-y-4">
@@ -683,13 +683,13 @@ export default function DashboardPage() {
           <Link href={getDashboardLink('/contacts')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_GOLD }}>
               <CardHeader className="px-3 sm:px-6">
-                <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Customer Engagement</CardTitle>
-                <CardDescription className="text-xs sm:text-sm truncate">Click to see all contacts</CardDescription>
+                <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Customer Engagement</CardTitle>
+                <CardDescription className="text-xs sm:text-sm truncate dark:text-gray-400">Click to see all contacts</CardDescription>
               </CardHeader>
               <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                 <div className="text-center py-6 sm:py-8">
                   <div className="text-2xl sm:text-3xl font-bold mb-2 truncate" style={{ color: PAYAID_GOLD }}>+15%</div>
-                  <CardDescription className="text-sm sm:text-base truncate">Customer Growth QoQ</CardDescription>
+                  <CardDescription className="text-sm sm:text-base truncate dark:text-gray-400">Customer Growth QoQ</CardDescription>
                 </div>
               </CardContent>
             </Card>
@@ -699,13 +699,13 @@ export default function DashboardPage() {
           <Link href={getDashboardLink('/contacts')} className="block">
             <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
               <CardHeader className="px-3 sm:px-6">
-                <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Active Users</CardTitle>
-                <CardDescription className="text-xs sm:text-sm truncate">Click to see all contacts</CardDescription>
+                <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Active Users</CardTitle>
+                <CardDescription className="text-xs sm:text-sm truncate dark:text-gray-400">Click to see all contacts</CardDescription>
               </CardHeader>
               <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                 <div className="text-center py-6 sm:py-8">
                   <div className="text-2xl sm:text-3xl font-bold mb-2 truncate" style={{ color: PAYAID_PURPLE }}>45,000</div>
-                  <CardDescription className="text-sm sm:text-base truncate">Active Users</CardDescription>
+                  <CardDescription className="text-sm sm:text-base truncate dark:text-gray-400">Active Users</CardDescription>
                 </div>
               </CardContent>
             </Card>
@@ -719,8 +719,8 @@ export default function DashboardPage() {
               <Link href={getDashboardLink('/contacts')} className="block">
                 <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
                   <CardHeader className="px-3 sm:px-6">
-                    <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Recent Contacts</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm truncate">Click to see all contacts</CardDescription>
+                    <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Recent Contacts</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm truncate dark:text-gray-400">Click to see all contacts</CardDescription>
                   </CardHeader>
                   <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                     <div className="space-y-2">
@@ -742,8 +742,8 @@ export default function DashboardPage() {
               <Link href={getDashboardLink('/deals')} className="block">
                 <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_GOLD }}>
                   <CardHeader className="px-3 sm:px-6">
-                    <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Recent Deals</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm truncate">Click to see all deals</CardDescription>
+                    <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Recent Deals</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm truncate dark:text-gray-400">Click to see all deals</CardDescription>
                   </CardHeader>
                   <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                     <div className="space-y-2">
@@ -765,8 +765,8 @@ export default function DashboardPage() {
               <Link href={getDashboardLink('/orders')} className="block">
                 <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover:scale-105 overflow-hidden" style={{ borderColor: PAYAID_PURPLE }}>
                   <CardHeader className="px-3 sm:px-6">
-                    <CardTitle className="text-base sm:text-lg font-bold truncate" style={{ color: PAYAID_PURPLE }}>Recent Orders</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm truncate">Click to see all orders</CardDescription>
+                    <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Recent Orders</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm truncate dark:text-gray-400">Click to see all orders</CardDescription>
                   </CardHeader>
                   <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                     <div className="space-y-2">
