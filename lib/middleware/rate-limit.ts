@@ -1,4 +1,17 @@
-import { cache } from '../redis/client'
+// Check if we're in Edge Runtime (where ioredis doesn't work)
+const isEdgeRuntime = typeof EdgeRuntime !== 'undefined' || 
+  (typeof process !== 'undefined' && process.env.NEXT_RUNTIME === 'edge')
+
+// Only import cache if not in Edge Runtime
+let cache: any = null
+if (!isEdgeRuntime) {
+  try {
+    cache = require('../redis/client').cache
+  } catch (error) {
+    // Redis client not available
+    cache = null
+  }
+}
 
 interface RateLimitOptions {
   windowMs: number // Time window in milliseconds
@@ -16,11 +29,20 @@ export class RateLimiter {
     this.max = options.max
     this.keyGenerator = options.keyGenerator || ((req) => {
       // Default: use IP address
-      return req.ip || req.headers['x-forwarded-for'] || 'unknown'
+      return req.ip || req.headers?.['x-forwarded-for'] || req.headers?.['cf-connecting-ip'] || 'unknown'
     })
   }
 
   async check(req: any): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
+    // In Edge Runtime or if Redis is not available, allow all requests
+    if (isEdgeRuntime || !cache) {
+      return {
+        allowed: true,
+        remaining: this.max,
+        resetTime: Date.now() + this.windowMs,
+      }
+    }
+
     try {
       const key = `rate-limit:${this.keyGenerator(req)}`
       const windowKey = `rate-limit-window:${key}`
