@@ -78,7 +78,7 @@ function getAuthLimiter(): Ratelimit | null {
  * Apply global rate limiting (all routes)
  */
 export async function applyUpstashRateLimit(
-  request: Request
+  request: { headers: Headers | { get: (key: string) => string | null } }
 ): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
   const limiter = getGlobalLimiter()
   
@@ -93,9 +93,17 @@ export async function applyUpstashRateLimit(
 
   try {
     // Extract IP from headers
+    const headers = request.headers
+    const getHeader = (key: string) => {
+      if ('get' in headers) {
+        return headers.get(key)
+      }
+      return null
+    }
+    
     const ip = 
-      (request as any).headers?.get('cf-connecting-ip') ||
-      (request as any).headers?.get('x-forwarded-for')?.split(',')[0] ||
+      getHeader('cf-connecting-ip') ||
+      getHeader('x-forwarded-for')?.split(',')[0] ||
       'unknown'
 
     const result = await limiter.limit(ip)
@@ -120,7 +128,7 @@ export async function applyUpstashRateLimit(
  * Apply stricter rate limiting for auth endpoints
  */
 export async function applyUpstashAuthRateLimit(
-  request: Request,
+  request: { headers: Headers | { get: (key: string) => string | null } },
   identifier: string
 ): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
   const limiter = getAuthLimiter()
