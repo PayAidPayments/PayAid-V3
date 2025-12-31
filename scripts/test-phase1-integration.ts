@@ -21,7 +21,7 @@ const TEST_USERS = {
   fullAccess: {
     email: 'test-full@example.com',
     password: 'Test@1234',
-    licensedModules: ['crm', 'invoicing', 'accounting', 'hr', 'whatsapp', 'analytics'],
+    licensedModules: ['crm', 'sales', 'marketing', 'finance', 'hr', 'communication', 'ai-studio', 'analytics'],
     subscriptionTier: 'professional',
   },
   crmOnly: {
@@ -336,13 +336,13 @@ async function testDatabaseSchema() {
   // Test 3.1: ModuleDefinition table exists and has data
   try {
     const modules = await prisma.moduleDefinition.findMany()
-    const expectedModules = ['crm', 'invoicing', 'accounting', 'hr', 'whatsapp', 'analytics']
+    const expectedModules = ['crm', 'sales', 'marketing', 'finance', 'hr', 'communication', 'ai-studio', 'analytics', 'invoicing', 'accounting', 'whatsapp']
     const moduleIds = modules.map(m => m.moduleId)
 
     const allModulesExist = expectedModules.every(id => moduleIds.includes(id))
 
     logTest(
-      'ModuleDefinition table has all 6 modules',
+      'ModuleDefinition table has all 11 modules (8 main + 3 legacy)',
       allModulesExist,
       allModulesExist ? undefined : 'Missing modules in database',
       { found: moduleIds, expected: expectedModules }
