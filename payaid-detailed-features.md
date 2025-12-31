@@ -1058,23 +1058,27 @@ export async function generateProductImages(
 
 ### Payment Integrations
 
-**Razorpay:**
+**PayAid Payments:**
 ```typescript
-// lib/payments/razorpay.ts
-interface RazorpayConfig {
-  keyId: string;
-  keySecret: string;
+// lib/payments/payaid.ts
+interface PayAidPaymentsConfig {
+  apiKey: string;
+  apiSecret: string;
 }
 
 // Accept payments
 async function createPaymentLink(order: Order) {
-  const link = await razorpay.paymentLink.create({
-    amount: order.total * 100,
+  const payaid = getPayAidPayments();
+  const link = await payaid.getPaymentRequestUrl({
+    order_id: order.id,
+    amount: order.total,
     currency: 'INR',
-    customer: { name: order.customer.name, email: order.customer.email },
-    notify: { sms: true, email: true },
+    name: order.customer.name,
+    email: order.customer.email,
+    return_url: `${process.env.APP_URL}/payment/callback?status=success`,
+    mode: process.env.NODE_ENV === 'production' ? 'LIVE' : 'TEST',
   });
-  return link.short_url;
+  return link.url;
 }
 
 // Handle webhook
