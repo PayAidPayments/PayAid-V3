@@ -163,11 +163,29 @@ export async function updateCRMFromDocument(
 
   // Create deals from amounts (if significant)
   if (reviewResult.extractedData.amounts) {
+    // Get or create a default contact for document-extracted deals
+    let defaultContact = await prisma.contact.findFirst({
+      where: { tenantId, type: 'lead' },
+    })
+    
+    if (!defaultContact) {
+      defaultContact = await prisma.contact.create({
+        data: {
+          tenantId,
+          name: 'Document Review Contact',
+          email: 'document-review@example.com',
+          type: 'lead',
+          status: 'active',
+        },
+      })
+    }
+    
     for (const amount of reviewResult.extractedData.amounts) {
       if (amount > 10000) { // Only create deals for significant amounts
         const deal = await prisma.deal.create({
           data: {
             tenantId,
+            contactId: defaultContact.id,
             name: `Deal from document - ₹${amount.toLocaleString('en-IN')}`,
             value: amount,
             stage: 'prospecting',

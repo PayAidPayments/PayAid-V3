@@ -96,7 +96,7 @@ export async function getLocationAnalytics(
           select: {
             id: true,
             name: true,
-            price: true,
+            salePrice: true,
           },
         },
       },
@@ -108,7 +108,7 @@ export async function getLocationAnalytics(
     ).length
     const outOfStockProducts = inventory.filter((il) => il.quantity === 0).length
     const totalValue = inventory.reduce(
-      (sum, il) => sum + Number(il.product.price) * il.quantity,
+      (sum, il) => sum + Number(il.product.salePrice) * il.quantity,
       0
     )
 

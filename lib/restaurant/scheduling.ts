@@ -108,13 +108,12 @@ export async function optimizeRestaurantScheduling(
       tenantId,
       status: 'ACTIVE',
     },
-    include: {
-      user: {
-        select: {
-          name: true,
-          email: true,
-        },
-      },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      officialEmail: true,
+      mobileNumber: true,
     },
   })
 
