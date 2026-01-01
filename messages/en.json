@@ -1,0 +1,83 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "dashboard": "Dashboard",
+    "contacts": "Contacts",
+    "deals": "Deals",
+    "projects": "Projects",
+    "tasks": "Tasks",
+    "invoices": "Invoices",
+    "reports": "Reports",
+    "settings": "Settings",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "noData": "No data found"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "overview": "Overview",
+    "recentActivity": "Recent Activity",
+    "quickStats": "Quick Stats"
+  },
+  "contacts": {
+    "title": "Contacts",
+    "createContact": "Create Contact",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "company": "Company",
+    "type": "Type",
+    "status": "Status"
+  },
+  "deals": {
+    "title": "Deals",
+    "createDeal": "Create Deal",
+    "value": "Value",
+    "stage": "Stage",
+    "probability": "Probability"
+  },
+  "projects": {
+    "title": "Projects",
+    "createProject": "Create Project",
+    "progress": "Progress",
+    "status": "Status",
+    "ganttView": "Gantt View",
+    "kanbanView": "Kanban View"
+  },
+  "tasks": {
+    "title": "Tasks",
+    "createTask": "Create Task",
+    "priority": "Priority",
+    "dueDate": "Due Date",
+    "assignedTo": "Assigned To"
+  },
+  "invoices": {
+    "title": "Invoices",
+    "createInvoice": "Create Invoice",
+    "amount": "Amount",
+    "status": "Status",
+    "dueDate": "Due Date"
+  },
+  "reports": {
+    "title": "Reports",
+    "createReport": "Create Report",
+    "reportBuilder": "Report Builder",
+    "customReports": "Custom Reports"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "account": "Account",
+    "preferences": "Preferences",
+    "language": "Language"
+  }
+}
+

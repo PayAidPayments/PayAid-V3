@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { getAuthHeaders } from '@/lib/api/client'
 import { getDynamicTitle, getDynamicDescription } from '@/lib/utils/status-labels'
+import { Calendar, Columns } from 'lucide-react'
 
 interface Project {
   id: string
@@ -110,9 +111,23 @@ export default function ProjectsPage() {
           <h1 className="text-3xl font-bold text-gray-900">{dynamicTitle}</h1>
           <p className="text-gray-600 mt-1">{dynamicDescription}</p>
         </div>
-        <Link href="/dashboard/projects/new">
-          <Button>New Project</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/dashboard/projects/gantt">
+            <Button variant="outline">
+              <Calendar className="h-4 w-4 mr-2" />
+              Gantt View
+            </Button>
+          </Link>
+          <Link href="/dashboard/projects/kanban">
+            <Button variant="outline">
+              <Columns className="h-4 w-4 mr-2" />
+              Kanban View
+            </Button>
+          </Link>
+          <Link href="/dashboard/projects/new">
+            <Button>New Project</Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}

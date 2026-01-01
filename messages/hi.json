@@ -1,0 +1,83 @@
+{
+  "common": {
+    "welcome": "स्वागत है",
+    "dashboard": "डैशबोर्ड",
+    "contacts": "संपर्क",
+    "deals": "डील",
+    "projects": "प्रोजेक्ट",
+    "tasks": "कार्य",
+    "invoices": "चालान",
+    "reports": "रिपोर्ट",
+    "settings": "सेटिंग्स",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "delete": "हटाएं",
+    "edit": "संपादित करें",
+    "create": "बनाएं",
+    "search": "खोजें",
+    "filter": "फ़िल्टर",
+    "loading": "लोड हो रहा है...",
+    "error": "त्रुटि",
+    "success": "सफल",
+    "noData": "कोई डेटा नहीं मिला"
+  },
+  "dashboard": {
+    "title": "डैशबोर्ड",
+    "overview": "अवलोकन",
+    "recentActivity": "हाल की गतिविधि",
+    "quickStats": "त्वरित आंकड़े"
+  },
+  "contacts": {
+    "title": "संपर्क",
+    "createContact": "संपर्क बनाएं",
+    "name": "नाम",
+    "email": "ईमेल",
+    "phone": "फोन",
+    "company": "कंपनी",
+    "type": "प्रकार",
+    "status": "स्थिति"
+  },
+  "deals": {
+    "title": "डील",
+    "createDeal": "डील बनाएं",
+    "value": "मूल्य",
+    "stage": "चरण",
+    "probability": "संभावना"
+  },
+  "projects": {
+    "title": "प्रोजेक्ट",
+    "createProject": "प्रोजेक्ट बनाएं",
+    "progress": "प्रगति",
+    "status": "स्थिति",
+    "ganttView": "गैंट दृश्य",
+    "kanbanView": "कानबान दृश्य"
+  },
+  "tasks": {
+    "title": "कार्य",
+    "createTask": "कार्य बनाएं",
+    "priority": "प्राथमिकता",
+    "dueDate": "नियत तारीख",
+    "assignedTo": "असाइन किया गया"
+  },
+  "invoices": {
+    "title": "चालान",
+    "createInvoice": "चालान बनाएं",
+    "amount": "राशि",
+    "status": "स्थिति",
+    "dueDate": "नियत तारीख"
+  },
+  "reports": {
+    "title": "रिपोर्ट",
+    "createReport": "रिपोर्ट बनाएं",
+    "reportBuilder": "रिपोर्ट बिल्डर",
+    "customReports": "कस्टम रिपोर्ट"
+  },
+  "settings": {
+    "title": "सेटिंग्स",
+    "profile": "प्रोफ़ाइल",
+    "account": "खाता",
+    "preferences": "प्राथमिकताएं",
+    "language": "भाषा"
+  }
+}
+

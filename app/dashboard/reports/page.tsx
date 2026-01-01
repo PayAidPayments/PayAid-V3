@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { getAuthHeaders } from '@/lib/api/client'
+import { Plus } from 'lucide-react'
 
 interface Report {
   id: string
@@ -84,9 +85,17 @@ export default function ReportsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
           <p className="text-gray-600 mt-1">Create and manage custom reports</p>
         </div>
-        <Link href="/dashboard/reports/new">
-          <Button>New Report</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/dashboard/reports/builder">
+            <Button variant="outline">
+              <Plus className="h-4 w-4 mr-2" />
+              Report Builder
+            </Button>
+          </Link>
+          <Link href="/dashboard/reports/new">
+            <Button>New Report</Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
