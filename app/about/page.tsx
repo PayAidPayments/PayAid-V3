@@ -85,10 +85,10 @@ export default function AboutPage() {
                 Founder and CEO
               </p>
               <p className="text-gray-700 leading-relaxed">
-                Alka Mehta, our Founder and CEO, comes with over 31 years of experience in sales and customer service. Alka has worked in the banking industry with the largest Private Sector bank in India, having handled multiple roles in the Payment Business. Her expertise lies in Merchant Acquiring, Payment Solutions, relationship handling, strategic sales planning, driving sales teams and servicing client's requirements to ensure client satisfaction.
+                Alka Mehta, our Founder and CEO, comes with over 31 years of experience in sales and customer service. Alka has worked in the banking industry with the largest Private Sector bank in India, having handled multiple roles in the Payment Business. Her expertise lies in Merchant Acquiring, Payment Solutions, relationship handling, strategic sales planning, driving sales teams and servicing client&apos;s requirements to ensure client satisfaction.
               </p>
               <p className="text-gray-700 leading-relaxed mt-4">
-                Alka is known in the Merchant Acquiring industry as a person with excellent relationship skills and the onus to customize and deliver products to suit Customers' requirements, while prioritizing and ensuring the long-term sustainability and profitability of the business over short-term "quick fixes", much as any business owner-manager would.
+                Alka is known in the Merchant Acquiring industry as a person with excellent relationship skills and the onus to customize and deliver products to suit Customers&apos; requirements, while prioritizing and ensuring the long-term sustainability and profitability of the business over short-term &quot;quick fixes&quot;, much as any business owner-manager would.
               </p>
               <p className="text-gray-700 leading-relaxed mt-4">
                 Alka brings to the table, her expertise on Payment Solutions in B2B and B2C segments on both issuance and acquiring.

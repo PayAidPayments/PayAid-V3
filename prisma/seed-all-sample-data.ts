@@ -3220,11 +3220,12 @@ async function seedCustomDashboards(tenantId: string) {
   await prisma.customDashboard.deleteMany({ where: { tenantId } })
 
   for (const dashboard of dashboards) {
+    const { layout, ...dashboardData } = dashboard
     await prisma.customDashboard.create({
       data: {
         tenantId,
-        ...dashboard,
-        layoutJson: dashboard.layout ? JSON.parse(dashboard.layout) : {},
+        ...dashboardData,
+        layoutJson: layout ? JSON.parse(layout) : {},
         widgets: [],
       },
     })
@@ -3285,11 +3286,17 @@ async function seedCustomReports(tenantId: string) {
   await prisma.customReport.deleteMany({ where: { tenantId } })
 
   for (const report of reports) {
+    const { type, schedule, lastGeneratedAt, ...reportData } = report
     await prisma.customReport.create({
       data: {
         tenantId,
-        ...report,
-        reportType: report.type,
+        name: reportData.name,
+        description: reportData.description,
+        reportType: type,
+        filters: typeof reportData.filters === 'string' ? JSON.parse(reportData.filters) : reportData.filters,
+        columns: typeof reportData.columns === 'string' ? JSON.parse(reportData.columns) : reportData.columns,
+        scheduleEnabled: schedule ? true : false,
+        scheduleFrequency: schedule || null,
       },
     })
   }
@@ -3317,6 +3324,9 @@ async function seedWhatsAppData(tenantId: string, contactIds: string[]) {
     })
   }
 
+  // Delete existing sessions first
+  await prisma.whatsappSession.deleteMany({ where: { accountId: whatsappAccount.id } })
+  
   // Create sessions
   const sessions = []
   for (let i = 0; i < 2; i++) {
@@ -3353,8 +3363,11 @@ async function seedWhatsAppData(tenantId: string, contactIds: string[]) {
           },
         })
 
-        // Create conversations
-        const conversation = await prisma.whatsappConversation.create({
+  // Delete existing conversations first
+  await prisma.whatsappConversation.deleteMany({ where: { accountId: whatsappAccount.id } })
+  
+  // Create conversations
+  const conversation = await prisma.whatsappConversation.create({
           data: {
             accountId: whatsappAccount.id,
             contactId: contactIds[i],
@@ -4102,16 +4115,30 @@ async function seedProjects(tenantId: string, contactIds: string[], userIds: str
       })
     }
 
-    // Add project members
-    const memberCount = Math.floor(Math.random() * 3) + 1
+    // Delete existing members first
+    await prisma.projectMember.deleteMany({ where: { projectId: project.id } })
+    
+    // Add project members (avoid duplicates)
+    const memberCount = Math.min(Math.floor(Math.random() * 3) + 1, userIds.length)
+    const usedUserIds = new Set<string>()
     for (let i = 0; i < memberCount; i++) {
-      await prisma.projectMember.create({
-        data: {
-          projectId: project.id,
-          userId: userIds[Math.floor(Math.random() * userIds.length)],
-          role: ['PROJECT_MANAGER', 'DEVELOPER', 'DESIGNER'][Math.floor(Math.random() * 3)],
-        },
-      })
+      let userId = userIds[i % userIds.length]
+      // Find a user that hasn't been added yet
+      let attempts = 0
+      while (usedUserIds.has(userId) && attempts < userIds.length) {
+        userId = userIds[(i + attempts + 1) % userIds.length]
+        attempts++
+      }
+      if (!usedUserIds.has(userId)) {
+        usedUserIds.add(userId)
+        await prisma.projectMember.create({
+          data: {
+            projectId: project.id,
+            userId: userId,
+            role: i === 0 ? 'PROJECT_MANAGER' : ['DEVELOPER', 'DESIGNER'][Math.floor(Math.random() * 2)],
+          },
+        })
+      }
     }
   }
 }
@@ -4205,9 +4232,10 @@ async function seedVendors(tenantId: string) {
   ]
 
   for (const vendorData of vendors) {
+    const { category, ...vendorFields } = vendorData
     await prisma.vendor.create({
       data: {
-        ...vendorData,
+        ...vendorFields,
         tenantId,
         status: 'ACTIVE',
       },
@@ -4406,6 +4434,9 @@ async function seedLeaveManagement(tenantId: string, userIds: string[]) {
 
 // ===== RESTAURANT DATA =====
 async function seedRestaurantData(tenantId: string) {
+  // Delete existing tables first
+  await prisma.restaurantTable.deleteMany({ where: { tenantId } })
+  
   // Create restaurant tables
   const tables = []
   for (let i = 1; i <= 8; i++) {
@@ -4538,6 +4569,11 @@ async function seedRetailData(tenantId: string, contacts: any[]) {
     { name: 'Bluetooth Speaker', sku: 'RT-012', price: 3499, stockQuantity: 12, category: 'Electronics' },
   ]
 
+  // Delete existing retail transactions and products first (in order due to foreign keys)
+  await prisma.retailTransactionItem.deleteMany({ where: { transaction: { tenantId } } })
+  await prisma.retailTransaction.deleteMany({ where: { tenantId } })
+  await prisma.retailProduct.deleteMany({ where: { tenantId } })
+  
   for (const productData of retailProducts) {
     await prisma.retailProduct.create({
       data: {

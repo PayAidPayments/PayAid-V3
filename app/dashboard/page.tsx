@@ -113,26 +113,20 @@ export default function DashboardPage() {
     tasks: 0,
   })
 
-  // Get tenantId from URL params (if accessed via /dashboard/[tenantId]) or from auth store
-  const tenantIdFromUrl = params?.tenantId as string | undefined
-  
-  // ALWAYS prioritize tenant ID from URL if present - this ensures consistency
-  // Only fall back to auth store if URL doesn't have tenant ID
-  const currentTenantId = tenantIdFromUrl || tenant?.id || null
-
   // Helper function to generate tenant-aware dashboard URLs
+  // Uses the same logic as useDashboardUrl hook for consistency with sidebar
   const getDashboardLink = (path: string) => {
-    // If we have a tenant ID in the URL, ALWAYS use it (don't fall back to auth store)
-    // This ensures all links maintain the same tenant ID as the current URL
-    const tenantIdToUse = tenantIdFromUrl || currentTenantId
+    // Get tenant ID from auth store (same as sidebar does)
+    const tenantId = tenant?.id
     
-    if (!tenantIdToUse) {
-      // Fallback to generic path (for demo/admin access)
+    if (!tenantId) {
+      // Fallback to path without tenantId (middleware will handle it)
       return `/dashboard${path.startsWith('/') ? path : '/' + path}`
     }
+    
     // Remove leading /dashboard if present
     const cleanPath = path.replace(/^\/dashboard\/?/, '')
-    return `/dashboard/${tenantIdToUse}${cleanPath ? '/' + cleanPath : ''}`
+    return `/dashboard/${tenantId}${cleanPath ? '/' + cleanPath : ''}`
   }
 
   // Fetch dashboard stats
@@ -171,8 +165,8 @@ export default function DashboardPage() {
     },
     enabled: !!token,
     retry: false,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes - stats don't change frequently
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   })
 
   useEffect(() => {

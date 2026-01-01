@@ -35,7 +35,7 @@ export default function CareersPage() {
             Coming Soon
           </p>
           <p className="text-lg text-gray-600 mb-8">
-            We're building an amazing team to transform how Indian businesses operate. 
+            We&apos;re building an amazing team to transform how Indian businesses operate. 
             Check back soon for exciting career opportunities!
           </p>
         </div>

@@ -191,6 +191,9 @@ export default function CoFounderPage() {
     'tech-advisor': '#6366F1', // Indigo
     'design': '#EC4899', // Pink
     'documentation': '#64748B', // Slate
+    'email-parser': '#10B981', // Green
+    'form-filler': '#3B82F6', // Blue
+    'document-reviewer': '#8B5CF6', // Purple
   }
 
   return (

@@ -25,10 +25,10 @@ function ConfirmationContent() {
           clearCart()
         })
         .catch(() => {
-          setLoading(false)
+          setTimeout(() => setLoading(false), 0)
         })
     } else {
-      setLoading(false)
+      setTimeout(() => setLoading(false), 0)
     }
   }, [orderId, clearCart])
 

@@ -173,10 +173,10 @@ export const features: Feature[] = [
     slug: 'ai-cofounder',
     title: 'AI Co-founder',
     category: 'ai-service',
-    description: 'Your strategic business partner with 22 specialist agents. Get business insights, recommendations, and execute actions automatically. From idea to IPO, guided by AI.',
-    longDescription: 'The AI Co-founder is your strategic business partner powered by 22 specialist AI agents. Each agent is an expert in their domain—finance, sales, marketing, operations, legal, and more. Get strategic insights, actionable recommendations, and automated execution. Whether you\'re starting out or scaling up, your AI Co-founder guides you every step of the way.',
+    description: 'Your strategic business partner with 9 specialist agents. Get business insights, recommendations, and execute actions automatically. From idea to IPO, guided by AI.',
+    longDescription: 'The AI Co-founder is your strategic business partner powered by 9 specialist AI agents. Each agent is an expert in their domain—finance, sales, marketing, HR, operations, and more. Get strategic insights, actionable recommendations, and automated execution. Whether you\'re starting out or scaling up, your AI Co-founder guides you every step of the way.',
     benefits: [
-      '22 specialist AI agents at your service',
+      '9 specialist AI agents at your service',
       'Strategic business insights',
       'Automated action execution',
       'Data-driven recommendations',
