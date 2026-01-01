@@ -45,7 +45,6 @@ export async function mapFormFields(
       postalCode: true,
       country: true,
       gstin: true,
-      pan: true,
     },
   })
 
@@ -154,9 +153,9 @@ Map the data to form fields and return JSON.`
       continue
     }
 
-    // PAN
+    // PAN (not available in Tenant model, skip)
     if (fieldLower.includes('pan') || labelLower.includes('pan')) {
-      filledForm[field.name] = tenant?.pan || ''
+      filledForm[field.name] = ''
       continue
     }
 
