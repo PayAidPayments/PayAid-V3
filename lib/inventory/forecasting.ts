@@ -136,7 +136,7 @@ export async function performABCAnalysis(tenantId: string): Promise<ABCAnalysis[
         },
         select: {
           quantity: true,
-          unitPrice: true,
+          price: true,
         },
       },
     },
@@ -145,7 +145,7 @@ export async function performABCAnalysis(tenantId: string): Promise<ABCAnalysis[
   // Calculate annual value for each product
   const productValues = products.map((product) => {
     const annualValue = product.orderItems.reduce(
-      (sum, item) => sum + item.quantity * Number(item.unitPrice),
+      (sum, item) => sum + item.quantity * Number(item.price),
       0
     )
     return {

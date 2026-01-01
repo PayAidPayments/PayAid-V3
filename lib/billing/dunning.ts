@@ -95,7 +95,6 @@ export async function processDunningAttempt(attemptId: string) {
           paymentMethod: true,
         },
       },
-      invoice: true,
     },
   })
 
@@ -185,7 +184,6 @@ export async function getDunningAttempts(subscriptionId: string) {
     where: { subscriptionId },
     orderBy: { attemptNumber: 'asc' },
     include: {
-      invoice: true,
       paymentMethod: true,
     },
   })

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 
 // Dynamically import SwaggerUI to avoid SSR issues
+// @ts-ignore - swagger-ui-react doesn't have type definitions
 const SwaggerUI = dynamic(() => import('swagger-ui-react'), { ssr: false })
 import 'swagger-ui-react/swagger-ui.css'
 
@@ -49,6 +50,7 @@ export default function APIDocsPage() {
         </p>
       </div>
       <div className="border rounded-lg overflow-hidden">
+        {/* @ts-ignore - swagger-ui-react doesn't have proper type definitions */}
         <SwaggerUI spec={spec} />
       </div>
     </div>

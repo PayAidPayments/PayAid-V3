@@ -411,10 +411,10 @@ export default function DashboardPage() {
                 <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Sales Performance</CardTitle>
                 <CardDescription className="text-xs sm:text-sm line-clamp-2 dark:text-gray-400">Sales trends over time - Click to see deals</CardDescription>
               </CardHeader>
-              <CardContent className="overflow-visible flex-1 flex flex-col items-center justify-center pb-4 pt-4">
-                <div className="w-full flex items-center justify-center" style={{ minHeight: '260px', height: '260px', minWidth: '0' }}>
+              <CardContent className="overflow-visible flex-1 flex flex-col items-center justify-end pb-[5px] pt-2">
+                <div className="w-full flex items-end justify-center" style={{ minHeight: '260px', height: '260px', minWidth: '0' }}>
                   <ResponsiveContainer width="100%" height="100%" minHeight={260}>
-                    <AreaChart data={salesTrendData} margin={{ top: 20, right: 10, left: 10, bottom: 70 }}>
+                    <AreaChart data={salesTrendData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
                       <defs>
                         <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor={PAYAID_PURPLE} stopOpacity={0.3}/>
@@ -472,14 +472,14 @@ export default function DashboardPage() {
                 <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Market Share Distribution</CardTitle>
                 <CardDescription className="text-xs sm:text-sm line-clamp-2 dark:text-gray-400">Deal stage distribution - Click to see pipeline details</CardDescription>
               </CardHeader>
-              <CardContent className="overflow-visible flex-1 flex flex-col items-center justify-center pb-4 pt-4">
-                <div className="w-full flex items-center justify-center" style={{ minHeight: '260px', height: '260px', minWidth: '0' }}>
+              <CardContent className="overflow-visible flex-1 flex flex-col items-center justify-end pb-[5px] pt-2">
+                <div className="w-full flex items-end justify-center" style={{ minHeight: '260px', height: '260px', minWidth: '0' }}>
                   <ResponsiveContainer width="100%" height="100%" minHeight={260}>
-                    <PieChart margin={{ top: 10, right: 10, bottom: 60, left: 10 }}>
+                    <PieChart margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
                       <Pie
                         data={marketShareData}
                         cx="50%"
-                        cy="45%"
+                        cy="40%"
                         innerRadius={50}
                         outerRadius={80}
                         paddingAngle={5}
@@ -543,10 +543,10 @@ export default function DashboardPage() {
                 <CardTitle className="text-base sm:text-lg font-bold truncate dark:text-gray-100" style={{ color: PAYAID_PURPLE }}>Revenue Trend</CardTitle>
                 <CardDescription className="text-xs sm:text-sm line-clamp-2 dark:text-gray-400">Monthly revenue comparison - Click to see revenue dashboard</CardDescription>
               </CardHeader>
-              <CardContent className="overflow-visible flex-1 flex flex-col items-center justify-center pb-4 pt-4">
-                <div className="w-full flex items-center justify-center" style={{ minHeight: '260px', height: '260px', minWidth: '0' }}>
+              <CardContent className="overflow-visible flex-1 flex flex-col items-center justify-end pb-[5px] pt-2">
+                <div className="w-full flex items-end justify-center" style={{ minHeight: '260px', height: '260px', minWidth: '0' }}>
                   <ResponsiveContainer width="100%" height="100%" minHeight={260}>
-                    <BarChart data={revenueData} margin={{ top: 20, right: 10, left: 10, bottom: 70 }}>
+                    <BarChart data={revenueData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E8E7E3'} />
                       <XAxis 
                         dataKey="month" 

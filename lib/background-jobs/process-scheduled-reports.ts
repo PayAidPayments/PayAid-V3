@@ -4,7 +4,7 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
-import { sendEmail } from '@/lib/email/sendgrid'
+import sendGridClient from '@/lib/email/sendgrid'
 
 /**
  * Process all scheduled reports that are due to run
@@ -241,7 +241,7 @@ async function sendScheduledReportEmail(
     `
 
     for (const recipient of recipients) {
-      await sendEmail({
+      await sendGridClient.sendEmail({
         to: recipient,
         subject,
         html,
