@@ -19,7 +19,7 @@ interface Article {
 
 export default function PublicHelpCenterPage() {
   const params = useParams()
-  const tenantSlug = params.tenantSlug as string
+  const tenantSlug = (params.tenantSlug as string) || ''
   const [articles, setArticles] = useState<Article[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('')
@@ -91,7 +91,7 @@ export default function PublicHelpCenterPage() {
               <Button
                 key={cat}
                 variant={selectedCategory === cat ? 'default' : 'outline'}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => setSelectedCategory(cat || '')}
               >
                 {cat}
               </Button>

@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
           .slice(0, 10)
           .map((po) => ({
             id: po.id,
-            orderNumber: po.orderNumber,
+            orderNumber: po.poNumber,
             orderDate: po.orderDate,
             total: Number(po.total || 0),
             status: po.status,

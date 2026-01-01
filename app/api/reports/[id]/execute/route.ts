@@ -130,7 +130,7 @@ export async function POST(
       const headers = columns || Object.keys(data[0] || {})
       const csvRows = [
         headers.join(','),
-        ...data.map(row => headers.map(h => JSON.stringify(row[h] || '')).join(','))
+        ...data.map(row => headers.map((h: string) => JSON.stringify(row[h] || '')).join(','))
       ]
       const csv = csvRows.join('\n')
       

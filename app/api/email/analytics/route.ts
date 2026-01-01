@@ -35,20 +35,8 @@ export async function GET(request: NextRequest) {
             }
           : {}),
       },
-      include: {
-        scheduledEmails: {
-          where: {
-            ...(startDate || endDate
-              ? {
-                  createdAt: {
-                    ...(startDate ? { gte: new Date(startDate) } : {}),
-                    ...(endDate ? { lte: new Date(endDate) } : {}),
-                  },
-                }
-              : {}),
-          },
-        },
-      },
+      // Note: Campaign doesn't have a direct relation to ScheduledEmail
+      // ScheduledEmail is related to Tenant and Contact, not Campaign
     })
 
     // Calculate aggregate metrics
