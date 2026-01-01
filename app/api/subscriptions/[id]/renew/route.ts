@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { generateSubscriptionInvoice } from '@/lib/billing/subscription-invoice'
+import { createDunningAttempt } from '@/lib/billing/dunning'
 
 // POST /api/subscriptions/[id]/renew - Renew subscription
 export async function POST(
@@ -113,20 +114,13 @@ export async function POST(
 }
 
 async function triggerDunning(subscription: any, invoice: any) {
-  // Create dunning attempt
-  await prisma.dunningAttempt.create({
-    data: {
-      subscriptionId: subscription.id,
-      invoiceId: invoice.id,
-      tenantId: subscription.tenantId,
-      attemptNumber: 1,
-      status: 'pending',
-      amount: invoice.totalAmount,
-      paymentMethodId: subscription.paymentMethodId,
-    },
-  })
-
-  // TODO: Send email notification
-  // TODO: Schedule retry attempts
+  // Use dunning service
+  await createDunningAttempt(
+    subscription.id,
+    invoice.id,
+    subscription.tenantId,
+    invoice.totalAmount,
+    subscription.paymentMethodId || undefined
+  )
 }
 

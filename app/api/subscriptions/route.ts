@@ -181,7 +181,33 @@ export async function PATCH(request: NextRequest) {
       }
 
       // Calculate proration if needed
-      // TODO: Implement proration logic
+      const { calculateProration } = await import('@/lib/billing/proration')
+      const proration = calculateProration(
+        subscription.monthlyPrice,
+        newPlan.monthlyPrice,
+        subscription.billingCycleStart,
+        subscription.billingCycleEnd
+      )
+
+      // If upgrade (charge > 0), create prorated invoice
+      if (proration.chargeAmount.greaterThan(0)) {
+        const { generateSubscriptionInvoice } = await import('@/lib/billing/subscription-invoice')
+        const proratedInvoice = await prisma.subscriptionInvoice.create({
+          data: {
+            subscriptionId: subscription.id,
+            tenantId: subscription.tenantId,
+            invoiceNumber: `INV-PRORATE-${subscription.tenantId.substring(0, 8).toUpperCase()}-${Date.now()}`,
+            amount: proration.chargeAmount,
+            taxAmount: proration.chargeAmount.mul(0.18), // 18% GST
+            totalAmount: proration.chargeAmount.mul(1.18),
+            currency: 'INR',
+            status: 'pending',
+            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+            paymentMethodId: subscription.paymentMethodId,
+          },
+        })
+        // TODO: Process payment for prorated invoice
+      }
 
       // Update subscription with new plan
       await prisma.subscription.update({
