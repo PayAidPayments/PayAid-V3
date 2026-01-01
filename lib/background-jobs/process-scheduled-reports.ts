@@ -242,6 +242,7 @@ async function sendScheduledReportEmail(
 
     for (const recipient of recipients) {
       await sendGridClient.sendEmail({
+        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@payaid.com',
         to: recipient,
         subject,
         html,

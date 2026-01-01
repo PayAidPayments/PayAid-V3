@@ -38,7 +38,7 @@ export async function executeWorkflow(
   })
 
   try {
-    const steps = workflow.steps as WorkflowStep[]
+    const steps = (workflow.steps as unknown) as WorkflowStep[]
     const result = await executeSteps(workflow.tenantId, steps, triggerData || {})
 
     // Update execution as completed
