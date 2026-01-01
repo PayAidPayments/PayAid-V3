@@ -5,11 +5,11 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/licens
 // POST /api/reports/[id]/execute - Execute a report and return data
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'analytics')
-    const resolvedParams = await Promise.resolve(params)
+    const resolvedParams = await params
     const reportId = resolvedParams.id
 
     const { searchParams } = new URL(request.url)
