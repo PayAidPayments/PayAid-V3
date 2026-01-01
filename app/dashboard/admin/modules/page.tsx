@@ -19,6 +19,18 @@ const MODULE_ICONS: Record<string, string> = {
   invoicing: '🧾',
   accounting: '📊',
   whatsapp: '💬',
+  // Advanced Features
+  projects: '📁',
+  workflows: '⚙️',
+  contracts: '📝',
+  productivity: '💼',
+  'field-service': '🔧',
+  inventory: '📦',
+  assets: '🏢',
+  manufacturing: '🏭',
+  fssai: '🛡️',
+  ondc: '🛍️',
+  'help-center': '❓',
 }
 
 interface ModuleDefinition {
