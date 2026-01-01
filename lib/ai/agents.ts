@@ -26,6 +26,9 @@ export type AgentId =
   | 'tech-advisor'
   | 'design'
   | 'documentation'
+  | 'email-parser'
+  | 'form-filler'
+  | 'document-reviewer'
 
 export interface AgentConfig {
   id: AgentId
@@ -873,6 +876,128 @@ Current business context will include:
     dataScopes: ['documentation', 'knowledge-base', 'content', 'processes'],
     allowedActions: ['create_docs', 'organize_kb', 'suggest_improvements', 'optimize_content'],
     keywords: ['documentation', 'knowledge base', 'docs', 'document', 'training', 'content', 'kb']
+  },
+
+  'email-parser': {
+    id: 'email-parser',
+    name: 'Email Parser Agent',
+    description: 'Automated email parsing - extract data, create contacts, deals, tasks',
+    systemPrompt: `You are the Email Parser AI agent. You specialize in parsing emails and extracting structured data to automate business workflows.
+
+Your expertise:
+- Email content analysis and extraction
+- Contact information extraction (name, email, phone, company)
+- Deal/opportunity identification from emails
+- Task creation from email content
+- Email categorization and routing
+- Lead qualification from email content
+
+You can:
+- Parse email content and extract structured data
+- Identify contacts and create/update CRM records
+- Detect sales opportunities and create deals
+- Extract action items and create tasks
+- Categorize emails (inquiry, support, sales, etc.)
+- Route emails to appropriate team members
+
+Always:
+- Extract accurate information from email content
+- Create structured data (contacts, deals, tasks)
+- Preserve email context and metadata
+- Handle multiple languages (English, Hindi, regional)
+- Identify urgency and priority
+
+Current business context will include:
+- Email content and metadata
+- Existing contacts and deals
+- Task templates
+- Email routing rules`,
+    dataScopes: ['emails', 'contacts', 'deals', 'tasks'],
+    allowedActions: ['parse_email', 'extract_contact', 'create_deal', 'create_task', 'categorize_email'],
+    keywords: ['email', 'parse', 'extract', 'inbox', 'mail', 'message', 'email parsing', 'email automation']
+  },
+
+  'form-filler': {
+    id: 'form-filler',
+    name: 'Form Filler Agent',
+    description: 'Automated form filling from CRM data',
+    systemPrompt: `You are the Form Filler AI agent. You specialize in automatically filling forms using CRM and business data.
+
+Your expertise:
+- Form field identification and mapping
+- Data extraction from CRM (contacts, deals, invoices)
+- Auto-filling forms with business data
+- Form validation and error handling
+- Multi-form support (government, vendor, customer forms)
+- Data formatting and transformation
+
+You can:
+- Identify form fields and their types
+- Map CRM data to form fields
+- Auto-fill forms with accurate data
+- Validate filled data
+- Handle complex forms (multi-step, conditional)
+- Submit forms automatically (when authorized)
+
+Always:
+- Use accurate and up-to-date CRM data
+- Match form fields correctly
+- Format data according to form requirements
+- Validate before submission
+- Preserve data privacy and security
+- Handle errors gracefully
+
+Current business context will include:
+- Form templates and structures
+- CRM contact data
+- Deal and invoice information
+- Business details (GST, PAN, address)
+- Form submission history`,
+    dataScopes: ['contacts', 'deals', 'invoices', 'forms', 'business-data'],
+    allowedActions: ['identify_fields', 'map_data', 'fill_form', 'validate_form', 'submit_form'],
+    keywords: ['form', 'fill', 'auto-fill', 'form filling', 'form automation', 'form submission', 'form data']
+  },
+
+  'document-reviewer': {
+    id: 'document-reviewer',
+    name: 'Document Reviewer Agent',
+    description: 'Automated document review - contracts, invoices, extract data',
+    systemPrompt: `You are the Document Reviewer AI agent. You specialize in reviewing documents and extracting structured data.
+
+Your expertise:
+- Document analysis (contracts, invoices, proposals, agreements)
+- Data extraction from documents
+- Document review and validation
+- Risk identification in contracts
+- Compliance checking
+- Document summarization
+
+You can:
+- Review documents and extract key information
+- Identify important clauses and terms
+- Extract structured data (dates, amounts, parties)
+- Flag potential risks or issues
+- Check compliance with business rules
+- Summarize document content
+- Update CRM with extracted data
+
+Always:
+- Extract accurate information from documents
+- Identify all relevant data points
+- Flag potential risks or issues
+- Preserve document context
+- Handle multiple document formats (PDF, DOCX, images)
+- Maintain data accuracy
+
+Current business context will include:
+- Document content and metadata
+- Business rules and compliance requirements
+- CRM data for validation
+- Document templates
+- Review history`,
+    dataScopes: ['documents', 'contracts', 'invoices', 'compliance', 'crm'],
+    allowedActions: ['review_document', 'extract_data', 'identify_risks', 'check_compliance', 'summarize', 'update_crm'],
+    keywords: ['document', 'review', 'contract', 'invoice', 'extract', 'analyze', 'document review', 'document analysis']
   }
 }
 
@@ -910,7 +1035,10 @@ export function routeToAgent(message: string, selectedAgentId?: AgentId): AgentI
     'scaling': 0,
     'tech-advisor': 0,
     'design': 0,
-    'documentation': 0
+    'documentation': 0,
+    'email-parser': 0,
+    'form-filler': 0,
+    'document-reviewer': 0
   }
 
   // Count keyword matches for each agent

@@ -50,10 +50,10 @@ export default function ContactPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: '#53328A' }}>
-              We're here to Help you.
+              We&apos;re here to Help you.
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Can't find the answers you're looking for? Drop us a message and we'll get back to you.
+              Can&apos;t find the answers you&apos;re looking for? Drop us a message and we&apos;ll get back to you.
             </p>
           </div>
         </div>

@@ -116,7 +116,9 @@ export default function ChatPage() {
   // Auto-select first channel
   useEffect(() => {
     if (channels.length > 0 && !selectedChannelId) {
-      setSelectedChannelId(channels[0].id)
+      setTimeout(() => {
+        setSelectedChannelId(channels[0].id)
+      }, 0)
     }
   }, [channels, selectedChannelId])
 

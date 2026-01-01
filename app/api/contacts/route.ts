@@ -25,6 +25,23 @@ const createContactSchema = z.object({
 // GET /api/contacts - List all contacts
 export async function GET(request: NextRequest) {
   try {
+    // Check if DATABASE_URL is set before proceeding
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json(
+        {
+          error: 'Database configuration error',
+          message: 'DATABASE_URL environment variable is not set. Please configure it in your environment variables.',
+          troubleshooting: [
+            'Check if DATABASE_URL is set in Vercel environment variables',
+            'Verify the database connection string is correct',
+            'If using Supabase, check if your project is paused',
+            'Ensure environment variables are set for Production environment',
+          ],
+        },
+        { status: 503 }
+      )
+    }
+
     // Check CRM module license
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
@@ -208,6 +225,23 @@ export async function GET(request: NextRequest) {
     const errorCode = error?.code || error?.meta?.code
     const errorStack = error instanceof Error ? error.stack : undefined
     
+    // Check for DATABASE_URL error specifically
+    if (errorMessage?.includes('DATABASE_URL')) {
+      return NextResponse.json(
+        {
+          error: 'Database configuration error',
+          message: errorMessage,
+          troubleshooting: [
+            'Check if DATABASE_URL is set in Vercel environment variables',
+            'Verify the database connection string is correct',
+            'If using Supabase, check if your project is paused',
+            'Ensure environment variables are set for Production environment',
+          ],
+        },
+        { status: 503 }
+      )
+    }
+    
     // Log full error details
     console.error('Full error details:', {
       message: errorMessage,
@@ -265,6 +299,23 @@ export async function GET(request: NextRequest) {
 // POST /api/contacts - Create a new contact
 export async function POST(request: NextRequest) {
   try {
+    // Check if DATABASE_URL is set before proceeding
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json(
+        {
+          error: 'Database configuration error',
+          message: 'DATABASE_URL environment variable is not set. Please configure it in your environment variables.',
+          troubleshooting: [
+            'Check if DATABASE_URL is set in Vercel environment variables',
+            'Verify the database connection string is correct',
+            'If using Supabase, check if your project is paused',
+            'Ensure environment variables are set for Production environment',
+          ],
+        },
+        { status: 503 }
+      )
+    }
+
     // Check CRM module license
     const { tenantId } = await requireModuleAccess(request, 'crm')
 

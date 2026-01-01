@@ -26,6 +26,23 @@ const contactRowSchema = z.object({
 // POST /api/contacts/import - Import contacts from CSV/XLSX file
 export async function POST(request: NextRequest) {
   try {
+    // Check if DATABASE_URL is set before proceeding
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json(
+        {
+          error: 'Database configuration error',
+          message: 'DATABASE_URL environment variable is not set. Please configure it in your environment variables.',
+          troubleshooting: [
+            'Check if DATABASE_URL is set in Vercel environment variables',
+            'Verify the database connection string is correct',
+            'If using Supabase, check if your project is paused',
+            'Ensure environment variables are set for Production environment',
+          ],
+        },
+        { status: 503 }
+      )
+    }
+
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 

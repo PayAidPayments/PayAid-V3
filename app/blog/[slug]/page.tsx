@@ -13,7 +13,10 @@ export default function BlogPostPage() {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
+    // Use setTimeout to avoid synchronous setState in effect
+    setTimeout(() => {
+      setMounted(true)
+    }, 0)
   }, [])
 
   if (!mounted) {

@@ -2046,7 +2046,7 @@ export default function Home() {
               <img src="/AI-Co-founder.png" alt="AI Co-founder" />
             </div>
             <h3>AI Co-founder</h3>
-            <p>Your strategic business partner with 22 specialist agents. Get business insights, recommendations, and execute actions automatically. From idea to IPO, guided by AI.</p>
+            <p>Your strategic business partner with 9 specialist agents. Get business insights, recommendations, and execute actions automatically. From idea to IPO, guided by AI.</p>
           </Link>
           <Link href="/features/ai-website-builder" className="feature-card scroll-reveal">
             <div className="feature-icon">

@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.vercel
+*.log
+docker-secrets-engine
+AppData
+.vscode
+.idea
+*.md
+!README.md
+!DEPLOYMENT_INSTRUCTIONS.md
+!PRODUCTION_DEPLOYMENT_READY.md
+
