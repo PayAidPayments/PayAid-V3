@@ -72,6 +72,7 @@ const nextConfig = {
       }
       
       // Ignore problematic modules in client bundle
+      // Preserve existing aliases (especially @ alias)
       config.resolve.alias = {
         ...config.resolve.alias,
         'dockerode': false,
@@ -81,6 +82,11 @@ const nextConfig = {
         'pdfkit': false,
         'jpeg-exif': false,
         'png-js': false,
+      }
+      
+      // Ensure @ alias is still set (in case it was lost)
+      if (!config.resolve.alias['@']) {
+        config.resolve.alias['@'] = require('path').resolve(__dirname)
       }
     }
     
@@ -114,9 +120,15 @@ const nextConfig = {
       }
       
       // Ensure pdf-lib is properly resolved (it's a server-side only module)
+      // Preserve existing aliases (especially @ alias)
       config.resolve.alias = {
         ...config.resolve.alias,
         'pdf-lib': require('path').resolve(__dirname, 'node_modules/pdf-lib'),
+      }
+      
+      // Ensure @ alias is still set (in case it was lost)
+      if (!config.resolve.alias['@']) {
+        config.resolve.alias['@'] = require('path').resolve(__dirname)
       }
     }
     
