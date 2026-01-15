@@ -1,5 +1,5 @@
 {
-  "buildCommand": "prisma generate && prisma db push --skip-generate --accept-data-loss || true && npm run build",
+  "buildCommand": "prisma generate && npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install --legacy-peer-deps",
   "framework": "nextjs",
@@ -13,6 +13,10 @@
     },
     {
       "path": "/api/cron/process-subscription-renewals",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/monitor-competitors",
       "schedule": "0 0 * * *"
     }
   ]
