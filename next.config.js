@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Enable standalone output for Docker production builds
+  output: 'standalone',
+  // Enable response compression (gzip/brotli) for better performance
+  compress: true,
   // Add empty turbopack config to silence error, but we'll use webpack for better compatibility
   turbopack: {},
   
@@ -28,7 +32,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://*.vercel.app;"
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws://localhost:3001 wss://localhost:3001 ws://127.0.0.1:3001 wss://127.0.0.1:3001 https://*.supabase.co https://*.vercel.app;"
           },
           {
             key: 'Referrer-Policy',
@@ -36,7 +40,7 @@ const nextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'geolocation=(), microphone=(), camera=()'
+            value: 'geolocation=(), microphone=(self), camera=()'
           }
         ],
       },
@@ -72,6 +76,7 @@ const nextConfig = {
             'docker-modem': 'commonjs docker-modem',
             'bull': 'commonjs bull',
             'pdfkit': 'commonjs pdfkit',
+            'node-statsd': 'commonjs node-statsd',
           }
         )
       } else {
@@ -83,8 +88,15 @@ const nextConfig = {
             'docker-modem': 'commonjs docker-modem',
             'bull': 'commonjs bull',
             'pdfkit': 'commonjs pdfkit',
+            'node-statsd': 'commonjs node-statsd',
           }
         ]
+      }
+      
+      // Ensure pdf-lib is properly resolved (it's a server-side only module)
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'pdf-lib': require('path').resolve(__dirname, 'node_modules/pdf-lib'),
       }
     }
     
