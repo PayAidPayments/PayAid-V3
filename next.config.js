@@ -47,6 +47,14 @@ const nextConfig = {
     ]
   },
   webpack: (config, { isServer }) => {
+    // Ensure path aliases are set first for both server and client
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': require('path').resolve(__dirname),
+      '@payaid/db': require('path').resolve(__dirname, 'lib/db/prisma'),
+      'lucide-react': require('path').resolve(__dirname, 'node_modules/lucide-react'),
+    }
+    
     // Fix for Windows path issues
     if (!isServer) {
       config.resolve.fallback = {
@@ -61,6 +69,18 @@ const nextConfig = {
         net: false,
         tls: false,
         child_process: false,
+      }
+      
+      // Ignore problematic modules in client bundle
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'dockerode': false,
+        'ssh2': false,
+        'docker-modem': false,
+        'bull': false,
+        'pdfkit': false,
+        'jpeg-exif': false,
+        'png-js': false,
       }
     }
     
@@ -100,27 +120,6 @@ const nextConfig = {
       }
     }
     
-    // Ignore problematic modules in client bundle
-    if (!isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        'dockerode': false,
-        'ssh2': false,
-        'docker-modem': false,
-        'bull': false,
-        'pdfkit': false,
-        'jpeg-exif': false,
-        'png-js': false,
-      }
-    }
-    
-    // Add aliases for path resolution
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': require('path').resolve(__dirname),
-      '@payaid/db': require('path').resolve(__dirname, 'lib/db/prisma'),
-      'lucide-react': require('path').resolve(__dirname, 'node_modules/lucide-react'),
-    }
     return config
   },
   images: {
