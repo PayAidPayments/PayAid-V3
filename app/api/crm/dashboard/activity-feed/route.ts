@@ -70,7 +70,9 @@ export async function GET(request: NextRequest) {
       prismaWithRetry(() =>
         prisma.interaction.findMany({
           where: {
-            tenantId,
+            contact: {
+              tenantId,
+            },
             ...(type ? { type } : {}),
             ...(user?.userId && userRole !== 'owner' && userRole !== 'admin' && userRole !== 'manager'
               ? { createdByRepId: user.userId }
