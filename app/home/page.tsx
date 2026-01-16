@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { Header } from './components/Header';
-import { ModuleGrid } from './components/ModuleGrid';
+import { Header } from './components/Header'
+import { ModuleGrid } from './components/ModuleGrid'
 import { DashboardLoading } from '@/components/ui/loading';
 import { NewsSidebar } from '@/components/news/NewsSidebar';
 import Link from 'next/link';
