@@ -58,13 +58,11 @@ export async function GET(request: NextRequest) {
       'Lead Source': contact.source || '',
       'Lead Score': contact.leadScore || 0,
       'Contact Owner': contact.assignedTo?.user?.name || contact.assignedTo?.user?.email || '',
-      'Industry': contact.industry || '',
       'City': contact.city || '',
       'State': contact.state || '',
       'Country': contact.country || '',
       'Postal Code': contact.postalCode || '',
       'Address': contact.address || '',
-      'Website': contact.website || '',
       'Created Date': contact.createdAt ? new Date(contact.createdAt).toLocaleDateString('en-IN') : '',
       'Last Contacted': contact.lastContactedAt ? new Date(contact.lastContactedAt).toLocaleDateString('en-IN') : '',
       'Next Follow Up': contact.nextFollowUp ? new Date(contact.nextFollowUp).toLocaleDateString('en-IN') : '',
@@ -111,13 +109,11 @@ export async function GET(request: NextRequest) {
       { wch: 20 }, // Lead Source
       { wch: 12 }, // Lead Score
       { wch: 25 }, // Contact Owner
-      { wch: 20 }, // Industry
       { wch: 15 }, // City
       { wch: 15 }, // State
       { wch: 15 }, // Country
       { wch: 12 }, // Postal Code
       { wch: 40 }, // Address
-      { wch: 30 }, // Website
       { wch: 12 }, // Created Date
       { wch: 12 }, // Last Contacted
       { wch: 12 }, // Next Follow Up
