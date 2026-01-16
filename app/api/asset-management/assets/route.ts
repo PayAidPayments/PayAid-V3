@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         maintenanceRecords: {
-          where: { status: 'SCHEDULED' },
+          where: { completedDate: null },
           orderBy: { scheduledDate: 'asc' },
           take: 1,
         },
