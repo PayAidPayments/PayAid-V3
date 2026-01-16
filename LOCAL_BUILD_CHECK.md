@@ -10,15 +10,26 @@ Next.js includes TypeScript checking in its build process. This is what Vercel u
 npm run build:typecheck
 ```
 
-This runs the same type checking that Vercel will run, but without linting.
+**Note:** This may run out of memory on large projects. If it does, you can:
+- Close other applications to free up memory
+- Use Vercel's preview deployments instead (recommended)
+- Use Option 2 below
 
-### Option 2: TypeScript Direct Check
+### Option 2: TypeScript Direct Check (May Run Out of Memory)
 Before pushing, run:
 ```bash
 npm run type-check:quick
 ```
 
-This will check for TypeScript errors without checking library types (faster, but may run out of memory on large projects).
+This will check for TypeScript errors without checking library types (faster, but may still run out of memory on very large projects).
+
+### Option 3: Check Changed Files Only (Lightweight)
+If you only want to check files you've modified:
+```bash
+npm run check-changed
+```
+
+This is the most memory-efficient option.
 
 ## Full Type Check
 
@@ -56,36 +67,67 @@ Or manually run before pushing:
 npm run check-before-push
 ```
 
-## Workflow
+## Recommended Workflow
 
+### For Small Changes:
 1. **Before committing:**
    ```bash
-   npm run type-check:quick
+   npm run check-changed
    ```
 
 2. **If errors found:**
    - Fix the errors
-   - Run `npm run type-check:quick` again
+   - Run `npm run check-changed` again
    - Repeat until no errors
 
-3. **Before pushing:**
-   ```bash
-   npm run check-before-push
-   ```
-
-4. **If all checks pass:**
+3. **Commit and push:**
    ```bash
    git add .
    git commit -m "Your message"
    git push origin main
    ```
 
+### For Large Changes or When Memory is Available:
+1. **Before committing:**
+   ```bash
+   npm run build:typecheck
+   ```
+
+2. **If errors found:**
+   - Fix the errors
+   - Run `npm run build:typecheck` again
+   - Repeat until no errors
+
+3. **Commit and push:**
+   ```bash
+   git add .
+   git commit -m "Your message"
+   git push origin main
+   ```
+
+### Alternative: Use Vercel Preview Deployments
+If local builds are too resource-intensive:
+1. Push to a feature branch
+2. Vercel will create a preview deployment
+3. Check the build logs for TypeScript errors
+4. Fix errors and push again
+5. Once preview build passes, merge to main
+
 ## Memory Issues
 
 If you encounter "heap out of memory" errors:
-- Close other applications
-- Use `type-check:quick` instead of `type-check`
-- The scripts use `--max-old-space-size=4096` (4GB) by default
+- **Recommended:** Use `npm run check-changed` to check only modified files
+- Close other applications to free up memory
+- Use Vercel preview deployments instead (they have more resources)
+- The TypeScript scripts use `--max-old-space-size=4096` (4GB) by default, but Next.js build may still need more
+
+## Best Practice
+
+For large projects like this one:
+1. **Use `npm run check-changed`** for quick local checks
+2. **Rely on Vercel preview deployments** for comprehensive type checking
+3. **Monitor Vercel build logs** - they will catch all TypeScript errors
+4. **Fix errors immediately** when Vercel reports them
 
 ## Note
 
