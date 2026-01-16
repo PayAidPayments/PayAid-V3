@@ -22,7 +22,7 @@ interface ModuleCardProps {
     category: string;
     color: string;
   };
-  icon?: any; // Pre-loaded icon component
+  icon?: React.ComponentType<React.SVGProps<SVGSVGElement> & { className?: string; style?: React.CSSProperties }> | null; // Pre-loaded icon component
 }
 
 function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {

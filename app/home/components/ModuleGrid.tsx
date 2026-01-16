@@ -19,7 +19,7 @@ export function ModuleGrid() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [modules, setModules] = useState<any[]>([]);
-  const [categorizedModules, setCategorizedModules] = useState({ core: [], productivity: [], ai: [] });
+  const [categorizedModules, setCategorizedModules] = useState<{ core: any[]; productivity: any[]; ai: any[] }>({ core: [], productivity: [], ai: [] });
   const [iconMap, setIconMap] = useState<Record<string, any>>({});
   const [iconsLoading, setIconsLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
@@ -45,7 +45,8 @@ export function ModuleGrid() {
       
       getModulesConfig().then(async config => {
         setModules(config.modules);
-        setCategorizedModules(config.getModulesByCategory());
+        const categorized = config.getModulesByCategory();
+        setCategorizedModules(categorized);
         
         // Pre-load all icons at once
         const icons: Record<string, any> = {};
