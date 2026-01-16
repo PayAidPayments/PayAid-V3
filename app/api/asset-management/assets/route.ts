@@ -39,14 +39,14 @@ export async function GET(request: NextRequest) {
 
     const where: any = { tenantId }
     if (status) where.status = status
-    if (category) where.category = category
-    if (location) where.location = location
+    if (category) where.assetType = category
+    if (location) where.locationId = location
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { assetNumber: { contains: search, mode: 'insensitive' } },
+        { assetTag: { contains: search, mode: 'insensitive' } },
         { serialNumber: { contains: search, mode: 'insensitive' } },
-        { barcode: { contains: search, mode: 'insensitive' } },
+        { brand: { contains: search, mode: 'insensitive' } },
+        { model: { contains: search, mode: 'insensitive' } },
       ]
     }
 
@@ -94,24 +94,20 @@ export async function POST(request: NextRequest) {
     const asset = await prisma.asset.create({
       data: {
         tenantId,
-        assetNumber,
-        name: validated.name,
-        category: validated.category,
-        subCategory: validated.subCategory,
+        assetTag: assetNumber,
+        assetType: validated.category || 'OTHER',
         brand: validated.brand,
         model: validated.model,
         serialNumber: validated.serialNumber,
-        barcode: validated.barcode,
         purchaseDate: validated.purchaseDate ? new Date(validated.purchaseDate) : null,
-        purchasePrice: validated.purchasePrice,
-        currentValue: validated.currentValue || validated.purchasePrice,
+        purchaseCostInr: validated.purchasePrice ? validated.purchasePrice : null,
+        currentValue: validated.currentValue || validated.purchasePrice || null,
         depreciationMethod: validated.depreciationMethod,
-        usefulLife: validated.usefulLife,
-        location: validated.location,
-        assignedTo: validated.assignedTo,
-        warrantyExpiry: validated.warrantyExpiry ? new Date(validated.warrantyExpiry) : null,
+        usefulLifeYears: validated.usefulLife,
+        locationId: validated.location || null,
+        warrantyExpiryDate: validated.warrantyExpiry ? new Date(validated.warrantyExpiry) : null,
         notes: validated.notes,
-        status: 'ACTIVE',
+        status: 'AVAILABLE',
       },
     })
 
