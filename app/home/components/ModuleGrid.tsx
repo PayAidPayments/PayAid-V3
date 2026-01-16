@@ -19,7 +19,7 @@ export function ModuleGrid() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [modules, setModules] = useState<any[]>([]);
-  const [categorizedModules, setCategorizedModules] = useState({ core: [], productivity: [], industry: [], ai: [] });
+  const [categorizedModules, setCategorizedModules] = useState({ core: [], productivity: [], ai: [] });
   const [iconMap, setIconMap] = useState<Record<string, any>>({});
   const [iconsLoading, setIconsLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
