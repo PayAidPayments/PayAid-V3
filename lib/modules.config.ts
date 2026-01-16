@@ -604,7 +604,11 @@ export const getModuleIcon = async (iconName: string): Promise<any> => {
   return lucideReact.Users;
 };
 
-export const getModulesByCategory = () => {
+export const getModulesByCategory = (): {
+  core: typeof modules;
+  productivity: typeof modules;
+  ai: typeof modules;
+} => {
   return {
     core: modules.filter(m => m.category === "core"),
     productivity: modules.filter(m => m.category === "productivity"),
