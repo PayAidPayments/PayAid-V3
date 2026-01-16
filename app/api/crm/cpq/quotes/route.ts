@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
     // For now, return empty array - in production, create Quote model
-    const quotes = []
+    const quotes: any[] = []
 
     return NextResponse.json({ quotes })
   } catch (error: any) {
