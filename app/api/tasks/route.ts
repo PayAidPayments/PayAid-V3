@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
+import { prismaRead } from '@/lib/db/prisma-read'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { multiLayerCache } from '@/lib/cache/multi-layer'
 import { z } from 'zod'
 
 const createTaskSchema = z.object({
@@ -26,6 +28,15 @@ export async function GET(request: NextRequest) {
     const assignedToId = searchParams.get('assignedToId')
     const contactId = searchParams.get('contactId')
 
+    // Build cache key
+    const cacheKey = `tasks:${tenantId}:${page}:${limit}:${status || 'all'}:${assignedToId || 'all'}:${contactId || 'all'}`
+
+    // Check cache (multi-layer: L1 memory -> L2 Redis)
+    const cached = await multiLayerCache.get(cacheKey)
+    if (cached) {
+      return NextResponse.json(cached)
+    }
+
     const where: any = {
       tenantId: tenantId,
     }
@@ -34,8 +45,9 @@ export async function GET(request: NextRequest) {
     if (assignedToId) where.assignedToId = assignedToId
     if (contactId) where.contactId = contactId
 
+    // Use read replica for GET requests
     const [tasks, total] = await Promise.all([
-      prisma.task.findMany({
+      prismaRead.task.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
@@ -60,10 +72,10 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prisma.task.count({ where }),
+      prismaRead.task.count({ where }),
     ])
 
-    return NextResponse.json({
+    const result = {
       tasks,
       pagination: {
         page,
@@ -71,7 +83,14 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
       },
+    }
+
+    // Cache for 3 minutes (multi-layer: L1 + L2)
+    await multiLayerCache.set(cacheKey, result, 180).catch(() => {
+      // Ignore cache errors - not critical
     })
+
+    return NextResponse.json(result)
   } catch (error) {
     // Handle license errors
     if (error && typeof error === 'object' && 'moduleId' in error) {
@@ -153,6 +172,11 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+    })
+
+    // Invalidate cache after creating task
+    await multiLayerCache.deletePattern(`tasks:${tenantId}:*`).catch(() => {
+      // Ignore cache errors - not critical
     })
 
     return NextResponse.json(task, { status: 201 })

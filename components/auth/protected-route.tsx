@@ -86,10 +86,27 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
       const finalToken = currentToken || tokenFromStorage
 
-      // If no token after rehydration, redirect to login
+      // If no token after rehydration, redirect to login with return URL
       if (!finalToken) {
         console.log('[AUTH] No token found after rehydration, redirecting to login')
-        router.push('/login')
+        // Preserve the intended destination
+        const currentPath = window.location.pathname
+        
+        // Check if we're in a module-specific route
+        if (currentPath.startsWith('/crm/')) {
+          // Redirect to CRM-specific login
+          router.push('/crm/login')
+        } else if (currentPath.startsWith('/finance/')) {
+          // Redirect to Finance-specific login (future)
+          router.push('/login?redirect=' + encodeURIComponent(currentPath))
+        } else if (currentPath.startsWith('/sales/')) {
+          // Redirect to Sales-specific login (future)
+          router.push('/login?redirect=' + encodeURIComponent(currentPath))
+        } else {
+          // Default: main login with redirect
+          const returnUrl = currentPath !== '/login' ? currentPath : '/dashboard'
+          router.push(`/login?redirect=${encodeURIComponent(returnUrl)}`)
+        }
         return
       }
 
@@ -144,7 +161,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // Show loading while mounting, rehydrating, or loading auth state
   if (!mounted || !rehydrated || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" style={{ position: 'relative', zIndex: 1 }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
@@ -166,7 +183,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // If we have a token but not authenticated yet, show loading (fetchUser is in progress)
   if (currentToken && !currentIsAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" style={{ position: 'relative', zIndex: 1 }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Verifying authentication...</p>

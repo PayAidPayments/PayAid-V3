@@ -1,128 +1,248 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db/prisma'
-import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { z } from 'zod'
-import { Decimal } from '@prisma/client/runtime/library'
+import { NextRequest, NextResponse } from 'next/server';
+import { getSessionToken } from '@/packages/auth-sdk/client';
+import { publishEvent, getEventHistory, verifyRedisConnection } from '@/lib/redis/events';
+import { requireModuleAccess } from '@/lib/middleware/license';
 
-const createEventSchema = z.object({
-  title: z.string().min(1),
-  slug: z.string().min(1),
-  description: z.string().optional(),
-  startDate: z.string(), // ISO string
-  endDate: z.string(), // ISO string
-  timezone: z.string().optional(),
-  locationType: z.enum(['PHYSICAL', 'VIRTUAL', 'HYBRID']).optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  virtualUrl: z.string().optional(),
-  registrationEnabled: z.boolean().optional(),
-  maxAttendees: z.number().optional(),
-  registrationDeadline: z.string().optional(), // ISO string
-  priceInr: z.number().optional(),
-  streamingEnabled: z.boolean().optional(),
-  streamingUrl: z.string().optional(),
-})
+/**
+ * API Gateway - Event Handler
+ * 
+ * This endpoint handles inter-module communication events.
+ * Modules can post events here, and other modules can subscribe to them.
+ * 
+ * Events supported:
+ * - CRM: contact.created, deal.won, order.created
+ * - Finance: invoice.created, payment.received
+ * - Sales: lead.created, page_viewed
+ */
 
-// GET /api/events - List all events
-export async function GET(request: NextRequest) {
+// In-memory event store (fallback if Redis is not available)
+const eventQueue: Array<{
+  event: string;
+  data: any;
+  timestamp: Date;
+  module: string;
+}> = [];
+
+// Event subscribers (fallback if Redis is not available)
+const subscribers: Map<string, Array<(data: any) => Promise<void>>> = new Map();
+
+export async function POST(request: NextRequest) {
   try {
-    // Check crm module license
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
-
-    const searchParams = request.nextUrl.searchParams
-    const status = searchParams.get('status')
-    const upcoming = searchParams.get('upcoming') === 'true'
-
-    const where: any = {
-      tenantId: tenantId,
+    // Verify authentication
+    const token = await getSessionToken(request);
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
-    if (status) where.status = status
-    if (upcoming) {
-      where.startDate = { gte: new Date() }
+    // Get tenant info for event (optional)
+    let tenantId: string | undefined;
+    let userId: string | undefined;
+    
+    // Try to extract from token or request headers
+    try {
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader) {
+        // Token is available, but we don't need to verify module access for events
+        // Events can come from any module
+      }
+    } catch {
+      // Continue without tenant/user info
     }
 
-    const events = await prisma.event.findMany({
-      where,
-      include: {
-        _count: {
-          select: { registrations: true },
-        },
-      },
-      orderBy: { startDate: 'asc' },
-    })
+    const body = await request.json();
+    const { event, data, module } = body;
 
-    return NextResponse.json({ events })
+    if (!event || !data) {
+      return NextResponse.json(
+        { error: 'Missing event or data' },
+        { status: 400 }
+      );
+    }
+
+    // Log event
+    console.log(`[API Gateway] Event received: ${event}`, {
+      module: module || 'unknown',
+      timestamp: new Date().toISOString(),
+    });
+
+    // Try to publish to Redis first
+    const redisPublished = await publishEvent({
+      event,
+      data,
+      module: module || 'unknown',
+      tenantId,
+      userId,
+    });
+
+    // Fallback to in-memory queue if Redis is not available
+    if (!redisPublished) {
+      eventQueue.push({
+        event,
+        data,
+        timestamp: new Date(),
+        module: module || 'unknown',
+      });
+
+      // Notify in-memory subscribers
+      const eventSubscribers = subscribers.get(event) || [];
+      for (const subscriber of eventSubscribers) {
+        try {
+          await subscriber(data);
+        } catch (error) {
+          console.error(`[API Gateway] Error in subscriber for ${event}:`, error);
+        }
+      }
+    }
+
+    // Handle specific events synchronously
+    await handleEvent(event, data);
+
+    return NextResponse.json({
+      success: true,
+      message: `Event ${event} processed`,
+      redisPublished,
+    });
   } catch (error) {
-    console.error('Get events error:', error)
+    console.error('[API Gateway] Error processing event:', error);
     return NextResponse.json(
-      { error: 'Failed to get events' },
+      { error: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
 }
 
-// POST /api/events - Create event
-export async function POST(request: NextRequest) {
-  try {
-    // Check crm module license
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+/**
+ * Handle specific events
+ */
+async function handleEvent(event: string, data: any) {
+  switch (event) {
+    case 'order.created':
+      // When CRM creates order, notify Finance to create invoice
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/finance/invoices/auto-create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Service-Key': process.env.API_GATEWAY_KEY || 'internal-service-key',
+          },
+          body: JSON.stringify({
+            order_id: data.id,
+            customer_id: data.customer_id,
+            amount: data.total,
+            order_data: data,
+          }),
+        });
+      } catch (error) {
+        console.error('[API Gateway] Error creating invoice from order:', error);
+      }
+      break;
 
-    const body = await request.json()
-    const validated = createEventSchema.parse(body)
+    case 'contact.created':
+      // When CRM creates contact, notify Sales module
+      console.log('[API Gateway] Contact created, notifying Sales module');
+      break;
 
-    // Check if slug exists
-    const existing = await prisma.event.findUnique({
-      where: { slug: validated.slug },
-    })
+    case 'deal.won':
+      // When deal is won, notify Finance and Sales
+      console.log('[API Gateway] Deal won, notifying Finance and Sales modules');
+      break;
 
-    if (existing) {
-      return NextResponse.json(
-        { error: 'Slug already taken' },
-        { status: 400 }
-      )
-    }
+    case 'invoice.created':
+      // When Finance creates invoice, notify CRM
+      console.log('[API Gateway] Invoice created, notifying CRM module');
+      break;
 
-    const event = await prisma.event.create({
-      data: {
-        title: validated.title,
-        slug: validated.slug,
-        description: validated.description,
-        startDate: new Date(validated.startDate),
-        endDate: new Date(validated.endDate),
-        timezone: validated.timezone || 'Asia/Kolkata',
-        locationType: validated.locationType || 'PHYSICAL',
-        address: validated.address,
-        city: validated.city,
-        state: validated.state,
-        virtualUrl: validated.virtualUrl,
-        registrationEnabled: validated.registrationEnabled ?? true,
-        maxAttendees: validated.maxAttendees,
-        registrationDeadline: validated.registrationDeadline
-          ? new Date(validated.registrationDeadline)
-          : null,
-        priceInr: validated.priceInr ? new Decimal(validated.priceInr.toString()) : null,
-        streamingEnabled: validated.streamingEnabled ?? false,
-        streamingUrl: validated.streamingUrl,
-        status: 'DRAFT',
-        tenantId: tenantId,
-      },
-    })
+    case 'payment.received':
+      // When payment is received, notify CRM and Finance
+      console.log('[API Gateway] Payment received, notifying CRM and Finance modules');
+      break;
 
-    return NextResponse.json(event, { status: 201 })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    console.error('Create event error:', error)
-    return NextResponse.json(
-      { error: 'Failed to create event' },
-      { status: 500 }
-    )
+    default:
+      console.log(`[API Gateway] Unhandled event: ${event}`);
   }
+}
+
+/**
+ * GET endpoint to get event history or verify Redis connection
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const event = searchParams.get('event');
+    const since = searchParams.get('since');
+    const action = searchParams.get('action'); // 'history' or 'verify'
+
+    // Verify Redis connection
+    if (action === 'verify') {
+      const status = await verifyRedisConnection();
+      return NextResponse.json({
+        redis: status,
+        inMemoryFallback: eventQueue.length > 0,
+      });
+    }
+
+    // Get event history
+    try {
+      // Try Redis first
+      const redisEvents = await getEventHistory(event || undefined, 100);
+      
+      if (redisEvents.length > 0) {
+        // Filter by timestamp if specified
+        if (since) {
+          const sinceDate = new Date(since);
+          const filtered = redisEvents.filter(
+            (e) => new Date(e.timestamp || 0) >= sinceDate
+          );
+          return NextResponse.json({
+            events: filtered,
+            count: filtered.length,
+            source: 'redis',
+          });
+        }
+
+        return NextResponse.json({
+          events: redisEvents,
+          count: redisEvents.length,
+          source: 'redis',
+        });
+      }
+    } catch (error) {
+      console.warn('[API Gateway] Redis history not available, using in-memory fallback');
+    }
+
+    // Fallback to in-memory queue
+    const sinceDate = since ? new Date(since) : new Date(0);
+    const filteredEvents = eventQueue.filter(
+      (e) => (!event || e.event === event) && e.timestamp >= sinceDate
+    );
+
+    return NextResponse.json({
+      events: filteredEvents,
+      count: filteredEvents.length,
+      source: 'memory',
+    });
+  } catch (error) {
+    console.error('[API Gateway] Error fetching events:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Subscribe to an event (for modules to register handlers)
+ * In production, this would use Redis pub/sub
+ */
+export function subscribeToEvent(
+  event: string,
+  handler: (data: any) => Promise<void>
+) {
+  if (!subscribers.has(event)) {
+    subscribers.set(event, []);
+  }
+  subscribers.get(event)!.push(handler);
 }

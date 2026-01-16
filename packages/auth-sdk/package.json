@@ -1,0 +1,13 @@
+{
+  "name": "@payaid/auth-sdk",
+  "version": "1.0.0",
+  "description": "PayAid Authentication SDK for cross-module SSO",
+  "main": "index.ts",
+  "types": "index.ts",
+  "private": true,
+  "dependencies": {
+    "react": "^19.0.0",
+    "next": "^16.1.0"
+  }
+}
+

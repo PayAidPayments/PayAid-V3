@@ -1,6 +1,14 @@
 import { PrismaClient } from '@prisma/client'
 import { isDevelopment, isProduction } from '@/lib/utils/env'
 
+// Prevent Prisma from being imported in client-side code
+if (typeof window !== 'undefined') {
+  throw new Error(
+    'Prisma Client cannot be used in client-side code. ' +
+    'It should only be imported in server-side code (API routes, server components, server actions).'
+  )
+}
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
@@ -19,7 +27,10 @@ const globalForPrisma = globalThis as unknown as {
  * - Connection limit should match Supabase pooler limits
  */
 function createPrismaClient(): PrismaClient {
-  const databaseUrl = process.env.DATABASE_URL
+  // Use direct connection for migrations, pooler for queries
+  // DATABASE_DIRECT_URL is used for migrations (bypasses pooler)
+  // DATABASE_URL is used for queries (uses pooler)
+  const databaseUrl = process.env.DATABASE_DIRECT_URL || process.env.DATABASE_URL
   
   if (!databaseUrl) {
     // In development, provide a helpful error message
@@ -38,10 +49,11 @@ function createPrismaClient(): PrismaClient {
   // These parameters are passed to the underlying PostgreSQL driver
   if (!url.searchParams.has('connection_limit')) {
     // For serverless (Vercel), use smaller pool (10 connections)
-    // For long-running processes, use larger pool (20+ connections)
+    // For long-running processes, use smaller pool to avoid Supabase limits (5-10 connections)
+    // Supabase free tier has limited connections, so we use conservative limits
     const connectionLimit = process.env.DATABASE_CONNECTION_LIMIT 
       ? parseInt(process.env.DATABASE_CONNECTION_LIMIT, 10)
-      : (isProduction() ? 10 : 20)
+      : (isProduction() ? 10 : 5) // Reduced from 20 to 5 for development to avoid pool exhaustion
     url.searchParams.set('connection_limit', connectionLimit.toString())
   }
   

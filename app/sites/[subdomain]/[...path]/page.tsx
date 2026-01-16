@@ -127,7 +127,7 @@ export default async function PublicWebsitePage({
       switch (section.type) {
         case 'hero':
           return (
-            <div key={index} className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20 px-6 text-center">
+            <div key={index} className="bg-gradient-to-r from-[#53328A] to-[#F5C700] text-white py-20 px-6 text-center">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">{section.title || 'Welcome'}</h1>
               {section.subtitle && (
                 <p className="text-xl md:text-2xl mb-8 text-blue-100">{section.subtitle}</p>

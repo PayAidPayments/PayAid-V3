@@ -12,22 +12,24 @@ export default function ModuleGrid({ modules }: ModuleGridProps) {
   const [filter, setFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Filter modules based on category and search
-  const filteredModules = modules.filter((module) => {
-    const matchesFilter = filter === 'all' || module.moduleId === filter
-    const matchesSearch = 
-      module.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      module.description.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesFilter && matchesSearch
-  })
+  // Filter modules based on category and search, excluding deprecated modules
+  const deprecatedModules = ['invoicing', 'accounting']
+  const filteredModules = modules
+    .filter((module) => !deprecatedModules.includes(module.moduleId))
+    .filter((module) => {
+      const matchesFilter = filter === 'all' || module.moduleId === filter
+      const matchesSearch = 
+        module.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        module.description.toLowerCase().includes(searchQuery.toLowerCase())
+      return matchesFilter && matchesSearch
+    })
 
   const categories = [
     { id: 'all', label: 'All' },
     { id: 'crm', label: 'CRM' },
-    { id: 'invoicing', label: 'Finance' },
-    { id: 'accounting', label: 'Accounting' },
+    { id: 'finance', label: 'Finance' },
     { id: 'hr', label: 'HR' },
-    { id: 'whatsapp', label: 'Communication' },
+    { id: 'communication', label: 'Communication' },
     { id: 'analytics', label: 'Analytics' },
   ]
 

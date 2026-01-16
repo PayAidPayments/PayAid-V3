@@ -218,6 +218,9 @@ export async function updateLeadScore(
  * Get score category (Hot, Warm, Cold)
  * @param score - Lead score (0-100)
  * @returns Category and color
+ * 
+ * NOTE: This function is also exported from lead-scoring-client.ts for client-side use
+ * This export is kept for backward compatibility with server-side code
  */
 export function getScoreCategory(score: number): {
   category: 'hot' | 'warm' | 'cold'

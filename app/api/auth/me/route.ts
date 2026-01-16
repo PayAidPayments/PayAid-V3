@@ -58,6 +58,17 @@ export async function GET(request: NextRequest) {
               maxInvoices: true,
               maxUsers: true,
               maxStorage: true,
+              industry: true,
+              industrySubType: true,
+              industrySettings: true,
+              onboardingCompleted: true,
+              subscription: {
+                select: {
+                  id: true,
+                  trialEndsAt: true,
+                  status: true,
+                },
+              },
             },
           },
         },

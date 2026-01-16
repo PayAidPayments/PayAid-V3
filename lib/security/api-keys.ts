@@ -57,12 +57,35 @@ export async function generateAPIKey(data: APIKeyData) {
 }
 
 /**
+ * Check API key rate limit
+ */
+async function checkAPIKeyRateLimit(
+  apiKeyId: string,
+  rateLimit: number
+): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
+  // Count requests in the last hour
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+  const requestCount = await prisma.apiUsageLog.count({
+    where: {
+      apiKeyId,
+      timestamp: { gte: oneHourAgo },
+    },
+  })
+
+  const remaining = Math.max(0, rateLimit - requestCount)
+  const allowed = requestCount < rateLimit
+  const resetTime = Date.now() + 60 * 60 * 1000 // 1 hour from now
+
+  return { allowed, remaining, resetTime }
+}
+
+/**
  * Validate API key from Authorization header
  */
 export async function validateAPIKey(
   authHeader: string | null,
   clientIP: string
-): Promise<{ valid: true; orgId: string; scopes: string[] } | { valid: false }> {
+): Promise<{ valid: true; orgId: string; scopes: string[]; apiKeyId: string } | { valid: false }> {
   if (!authHeader?.startsWith('Bearer ')) {
     return { valid: false }
   }
@@ -96,13 +119,17 @@ export async function validateAPIKey(
         }
       }
       
-      // Check rate limit (implement with Redis)
-      // TODO: Implement rate limiting per API key
+      // Check rate limit
+      const rateLimitResult = await checkAPIKeyRateLimit(apiKey.id, apiKey.rateLimit)
+      if (!rateLimitResult.allowed) {
+        return { valid: false }
+      }
       
       return {
         valid: true,
         orgId: apiKey.orgId,
         scopes: apiKey.scopes,
+        apiKeyId: apiKey.id,
       }
     }
   }

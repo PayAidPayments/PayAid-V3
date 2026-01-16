@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
+import { prismaRead } from '@/lib/db/prisma-read'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { checkTenantLimits } from '@/lib/middleware/tenant'
 import { calculateGST, getGSTRate, getHSNCode } from '@/lib/invoicing/gst'
 import { determineGSTType } from '@/lib/invoicing/gst-state'
 import { generateInvoicePDF } from '@/lib/invoicing/pdf'
+import { multiLayerCache } from '@/lib/cache/multi-layer'
 import { z } from 'zod'
 import { mediumPriorityQueue } from '@/lib/queue/bull'
 
@@ -81,10 +83,10 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prisma.invoice.count({ where }),
+      prismaRead.invoice.count({ where }),
     ])
 
-    return NextResponse.json({
+    const result = {
       invoices,
       pagination: {
         page,
@@ -92,7 +94,14 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
       },
+    }
+
+    // Cache for 3 minutes (multi-layer: L1 + L2)
+    await multiLayerCache.set(cacheKey, result, 180).catch(() => {
+      // Ignore cache errors - not critical
     })
+
+    return NextResponse.json(result)
   } catch (error) {
     // Handle license errors
     if (error && typeof error === 'object' && 'moduleId' in error) {
@@ -323,6 +332,14 @@ export async function POST(request: NextRequest) {
         invoiceNumber,
       })
     }
+
+    // Invalidate cache after creating invoice
+    await multiLayerCache.deletePattern(`invoices:${tenantId}:*`).catch(() => {
+      // Ignore cache errors - not critical
+    })
+    await multiLayerCache.delete(`dashboard:stats:${tenantId}`).catch(() => {
+      // Ignore cache errors - not critical
+    })
 
     return NextResponse.json(invoice, { status: 201 })
   } catch (error: any) {

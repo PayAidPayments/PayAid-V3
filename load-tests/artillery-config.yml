@@ -1,0 +1,79 @@
+config:
+  target: "{{ $processEnvironment.BASE_URL || 'http://localhost:3000' }}"
+  phases:
+    # Warm up
+    - duration: 120
+      arrivalRate: 1
+      name: "Warm up"
+    
+    # Scenario 1: 1,000 users
+    - duration: 300
+      arrivalRate: 10
+      name: "Ramp to 10 req/s"
+    - duration: 300
+      arrivalRate: 50
+      name: "Ramp to 50 req/s"
+    - duration: 300
+      arrivalRate: 100
+      name: "Ramp to 100 req/s"
+    - duration: 300
+      arrivalRate: 100
+      name: "Sustained 100 req/s"
+    
+    # Scenario 2: 5,000 users (if needed)
+    # - duration: 600
+    #   arrivalRate: 200
+    #   name: "Ramp to 200 req/s"
+    # - duration: 600
+    #   arrivalRate: 500
+    #   name: "Ramp to 500 req/s"
+    # - duration: 600
+    #   arrivalRate: 500
+    #   name: "Sustained 500 req/s"
+  
+  defaults:
+    headers:
+      Authorization: "Bearer {{ $processEnvironment.API_TOKEN || '' }}"
+      Content-Type: "application/json"
+  
+  processor: "./artillery-processor.js"
+  
+  plugins:
+    expect: {}
+    metrics-by-endpoint:
+      stripQueryString: true
+
+scenarios:
+  - name: "API Load Test"
+    weight: 100
+    flow:
+      - get:
+          url: "/api/contacts"
+          expect:
+            - statusCode: 200
+            - contentType: json
+      - think: 1
+      
+      - get:
+          url: "/api/deals"
+          expect:
+            - statusCode: 200
+      - think: 1
+      
+      - get:
+          url: "/api/tasks"
+          expect:
+            - statusCode: 200
+      - think: 1
+      
+      - get:
+          url: "/api/invoices"
+          expect:
+            - statusCode: 200
+      - think: 1
+      
+      - get:
+          url: "/api/orders"
+          expect:
+            - statusCode: 200
+      - think: 2

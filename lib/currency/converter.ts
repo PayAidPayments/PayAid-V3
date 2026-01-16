@@ -57,21 +57,15 @@ export async function convertCurrency(
  */
 export function formatCurrency(
   amount: number,
-  currencyCode: string,
+  currencyCode: string = 'INR',
   locale: string = 'en-IN'
 ): string {
-  const currencyMap: Record<string, string> = {
-    INR: 'INR',
-    USD: 'USD',
-    EUR: 'EUR',
-    GBP: 'GBP',
-  }
-
-  const currency = currencyMap[currencyCode] || currencyCode
+  // Default to INR (Indian Rupee) for all currency formatting
+  const currency = currencyCode || 'INR'
 
   return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency,
+    currency: 'INR', // Always use INR
   }).format(amount)
 }
 

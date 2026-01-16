@@ -12,6 +12,7 @@ import ContactImportDialog from '@/components/contacts/contact-import-dialog'
 import { useQueryClient } from '@tanstack/react-query'
 import { LeadScoringBadge } from '@/components/LeadScoringBadge'
 import { ModuleGate } from '@/components/modules/ModuleGate'
+import { BackToApps } from '@/components/BackToApps'
 
 function ContactsPageContent() {
   const [page, setPage] = useState(1)
@@ -60,7 +61,21 @@ function ContactsPageContent() {
   }
 
   if (error) {
-    return <div className="text-red-600 dark:text-red-400">Error loading contacts</div>
+    const errorMessage = error instanceof Error ? error.message : 'Error loading contacts'
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+        <p className="font-semibold text-red-800 mb-2">❌ Error Loading Contacts</p>
+        <p className="text-red-700 mb-3">{errorMessage}</p>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="text-red-800 border-red-300 hover:bg-red-100"
+          onClick={() => window.location.reload()}
+        >
+          Refresh Page
+        </Button>
+      </div>
+    )
   }
 
   let contacts = data?.contacts || []
@@ -89,9 +104,12 @@ function ContactsPageContent() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Contacts</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your customers, leads, and vendors</p>
+        <div className="flex items-center gap-4">
+          <BackToApps />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Contacts</h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your customers, leads, and vendors</p>
+          </div>
         </div>
         <div className="flex gap-3">
           {typeFilter === 'lead' && (

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma'
 import { verifyPassword } from '@/lib/auth/password'
 import { signToken } from '@/lib/auth/jwt'
 import { isDevelopment } from '@/lib/utils/env'
+import { warmTenantCache } from '@/lib/cache/warmer'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -25,12 +26,21 @@ export async function POST(request: NextRequest) {
   } catch (unexpectedError) {
     // Catch any errors that occur outside the main try-catch
     console.error('[LOGIN] Unexpected error outside handler:', unexpectedError)
+    const errorMessage = unexpectedError instanceof Error ? unexpectedError.message : 'An unexpected error occurred'
+    const errorStack = unexpectedError instanceof Error ? unexpectedError.stack : undefined
+    
     return NextResponse.json(
       { 
         error: 'Login failed',
-        message: unexpectedError instanceof Error ? unexpectedError.message : 'An unexpected error occurred',
+        message: errorMessage,
+        ...(isDevelopment() && { stack: errorStack }),
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
     )
   }
 }
@@ -70,7 +80,10 @@ async function handleLogin(request: NextRequest) {
         })
         return NextResponse.json(
           { error: 'Validation error', details: validationError.errors },
-          { status: 400 }
+          { 
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          }
         )
       }
       throw validationError
@@ -140,7 +153,10 @@ async function handleLogin(request: NextRequest) {
       console.error('[LOGIN] User not found', { email: validated.email })
       return NextResponse.json(
         { error: 'Invalid email or password' },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        }
       )
     }
 
@@ -153,7 +169,10 @@ async function handleLogin(request: NextRequest) {
       })
       return NextResponse.json(
         { error: 'Invalid email or password' },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        }
       )
     }
 
@@ -176,7 +195,10 @@ async function handleLogin(request: NextRequest) {
       console.error('[LOGIN] Invalid password', { email: validated.email, userId: user.id })
       return NextResponse.json(
         { error: 'Invalid email or password' },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        }
       )
     }
 
@@ -226,9 +248,23 @@ async function handleLogin(request: NextRequest) {
       throw new Error(`Token generation error: ${tokenError instanceof Error ? tokenError.message : 'Unknown error'}`)
     }
 
-    // Step 9: Prepare response
+    // Step 9: Warm cache for tenant (async, non-blocking)
+    step = 'warm_cache'
+    if (user.tenantId) {
+      console.log('[LOGIN] Step 9: Warming cache for tenant...', { tenantId: user.tenantId })
+      // Warm cache asynchronously - don't block login response
+      warmTenantCache(user.tenantId).catch((cacheError) => {
+        // Non-critical error - log but don't fail login
+        console.warn('[LOGIN] Cache warming failed (non-critical):', {
+          error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+          tenantId: user.tenantId,
+        })
+      })
+    }
+
+    // Step 10: Prepare response
     step = 'prepare_response'
-    console.log('[LOGIN] Step 9: Preparing response...')
+    console.log('[LOGIN] Step 10: Preparing response...')
     const duration = Date.now() - startTime
     console.log('[LOGIN] ✅ Login successful', { 
       email: validated.email, 
@@ -254,6 +290,8 @@ async function handleLogin(request: NextRequest) {
         subscriptionTier: user.tenant.subscriptionTier || 'free',
       } : null,
       token,
+    }, {
+      headers: { 'Content-Type': 'application/json' }
     })
   } catch (error) {
     const duration = Date.now() - startTime
@@ -317,7 +355,12 @@ async function handleLogin(request: NextRequest) {
           stack: errorStack,
         }),
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
     )
   }
 }

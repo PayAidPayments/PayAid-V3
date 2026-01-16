@@ -11,12 +11,11 @@ import { useDashboardUrl } from '@/lib/utils/dashboard-url'
 import { XIcon } from 'lucide-react'
 
 // Core Navigation - Always visible, single-click access
+// NOTE: Products and Orders removed from CRM (moved to Sales/Inventory modules per decoupled architecture)
 const mainNavigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: '📊', module: null }, // Always accessible
+  // Dashboard link removed - using decoupled architecture (/home for module selection)
   { name: 'Contacts', href: '/dashboard/contacts', icon: '👥', module: 'crm' },
   { name: 'Deals', href: '/dashboard/deals', icon: '💼', module: 'crm' },
-  { name: 'Products', href: '/dashboard/products', icon: '📦', module: 'crm' }, // CRM/Sales shared
-  { name: 'Orders', href: '/dashboard/orders', icon: '🛒', module: 'crm' }, // CRM/Sales shared
   { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾', module: 'finance' }, // Finance
 ]
 
@@ -28,10 +27,8 @@ const navigationSections = [
     items: [
       { name: 'Contacts', href: '/dashboard/contacts', icon: '👥', module: 'crm' },
       { name: 'Deals', href: '/dashboard/deals', icon: '💼', module: 'crm' },
-      { name: 'Products', href: '/dashboard/products', icon: '📦', module: 'crm' },
-      { name: 'Orders', href: '/dashboard/orders', icon: '🛒', module: 'crm' },
       { name: 'Tasks', href: '/dashboard/tasks', icon: '✅', module: 'crm' },
-      { name: 'Projects', href: '/dashboard/projects', icon: '📁', module: 'crm' },
+      // NOTE: Products moved to Inventory module, Orders moved to Sales module, Projects moved to Projects module
     ],
   },
   {
@@ -66,6 +63,7 @@ const navigationSections = [
       { name: 'Marketing Analytics', href: '/dashboard/marketing/analytics', icon: '📊', module: 'marketing' },
       { name: 'Segments', href: '/dashboard/marketing/segments', icon: '🎯', module: 'marketing' },
       { name: 'Social Media', href: '/dashboard/marketing/social', icon: '📱', module: 'marketing' },
+      { name: 'Media Library', href: '/dashboard/media-library', icon: '🖼️', module: 'marketing' },
       { name: 'Email Templates', href: '/dashboard/email-templates', icon: '✉️', module: 'marketing' },
       { name: 'Events', href: '/dashboard/events', icon: '🎉', module: 'marketing' },
     ],
@@ -84,16 +82,28 @@ const navigationSections = [
     ],
   },
   {
-    name: 'AI Studio',
+    name: 'AI Features',
     icon: '🤖',
     items: [
-      { name: 'AI Co-founder', href: '/dashboard/cofounder', icon: '🤖', module: 'ai-studio' },
-      { name: 'AI Insights', href: '/dashboard/ai/insights', icon: '💡', module: 'ai-studio' },
-      { name: 'AI Chat', href: '/dashboard/ai/chat', icon: '💬', module: 'ai-studio' },
-      { name: 'Websites', href: '/dashboard/websites', icon: '🌐', module: 'ai-studio' },
-      { name: 'Logo Generator', href: '/dashboard/logos', icon: '🎨', module: 'ai-studio' },
-      { name: 'Knowledge & RAG AI', href: '/dashboard/knowledge', icon: '📚', module: 'ai-studio' },
-      { name: 'AI Calling Bot', href: '/dashboard/calls', icon: '📞', module: 'ai-studio' },
+      { name: 'AI Co-founder', href: '/ai-cofounder', icon: '🤖', module: 'ai-cofounder' },
+      { name: 'AI Chat', href: '/ai-chat', icon: '💬', module: 'ai-chat' },
+      { name: 'AI Insights', href: '/ai-insights', icon: '💡', module: 'ai-insights' },
+      { name: 'Website Builder', href: '/website-builder', icon: '🌐', module: 'website-builder' },
+      { name: 'Logo Generator', href: '/logo-generator', icon: '🎨', module: 'logo-generator' },
+      { name: 'Knowledge & RAG AI', href: '/knowledge-rag', icon: '📚', module: 'knowledge-rag' },
+      { name: 'AI Calling Bot', href: '/voice-agents', icon: '📞', module: 'voice-agents', comingSoon: true },
+    ],
+  },
+  {
+    name: 'Productivity Suite',
+    icon: '💼',
+    items: [
+      { name: 'Spreadsheets', href: '/dashboard/spreadsheets', icon: '📊', module: 'productivity' },
+      { name: 'Documents', href: '/dashboard/docs', icon: '📄', module: 'productivity' },
+      { name: 'Slides', href: '/dashboard/slides', icon: '📽️', module: 'productivity' },
+      { name: 'Drive', href: '/dashboard/drive', icon: '📁', module: 'productivity' },
+      { name: 'Meet', href: '/dashboard/meet', icon: '📹', module: 'productivity' },
+      { name: 'PDF Tools', href: '/dashboard/pdf', icon: '📑', module: 'productivity' },
     ],
   },
   {
@@ -136,12 +146,32 @@ const navigationSections = [
     items: [
       { name: 'Industries Hub', href: '/dashboard/industries', icon: '🏭', module: null },
       { name: 'Industry Setup', href: '/dashboard/setup/industry', icon: '⚙️', module: null },
+      { name: 'Business Units', href: '/dashboard/business-units', icon: '🏢', module: null },
+      // Existing Industries
       { name: 'Restaurant - Orders', href: '/dashboard/industries/restaurant/orders', icon: '📋', module: null },
       { name: 'Restaurant - Menu', href: '/dashboard/industries/restaurant/menu', icon: '🍽️', module: null },
       { name: 'Restaurant - Kitchen', href: '/dashboard/industries/restaurant/kitchen', icon: '👨‍🍳', module: null },
       { name: 'Restaurant - Tables', href: '/dashboard/industries/restaurant/tables', icon: '🪑', module: null },
       { name: 'Restaurant - Reservations', href: '/dashboard/industries/restaurant/reservations', icon: '📅', module: null },
       { name: 'Retail - Products', href: '/dashboard/industries/retail/products', icon: '🛒', module: null },
+      // Phase 1: Critical Gaps
+      { name: 'Healthcare - Prescriptions', href: '/dashboard/industries/healthcare/prescriptions', icon: '💊', module: null },
+      { name: 'Healthcare - Lab Tests', href: '/dashboard/industries/healthcare/lab-tests', icon: '🧪', module: null },
+      { name: 'Education - Students', href: '/dashboard/industries/education/students', icon: '🎓', module: null },
+      { name: 'Education - Courses', href: '/dashboard/industries/education/courses', icon: '📚', module: null },
+      { name: 'Real Estate - Leads', href: '/dashboard/industries/real-estate/leads', icon: '🏠', module: null },
+      { name: 'Logistics - Shipments', href: '/dashboard/industries/logistics/shipments', icon: '🚚', module: null },
+      // Phase 2: High Value
+      { name: 'Agriculture - Crops', href: '/dashboard/industries/agriculture/crops', icon: '🌾', module: null },
+      { name: 'Construction - Projects', href: '/dashboard/industries/construction/projects', icon: '🏗️', module: null },
+      { name: 'Beauty - Appointments', href: '/dashboard/industries/beauty/appointments', icon: '💅', module: null },
+      { name: 'Automotive - Job Cards', href: '/dashboard/industries/automotive/job-cards', icon: '🔧', module: null },
+      // Phase 3: Market Expansion
+      { name: 'Hospitality - Bookings', href: '/dashboard/industries/hospitality/bookings', icon: '🏨', module: null },
+      { name: 'Legal - Cases', href: '/dashboard/industries/legal/cases', icon: '⚖️', module: null },
+      { name: 'Financial - Tax Filings', href: '/dashboard/industries/financial/tax-filings', icon: '💰', module: null },
+      { name: 'Events - Management', href: '/dashboard/industries/events/events', icon: '🎉', module: null },
+      { name: 'Wholesale - Customers', href: '/dashboard/industries/wholesale/customers', icon: '📦', module: null },
     ],
   },
 ]
@@ -151,46 +181,90 @@ function NavItem({
   isActive,
   onLinkClick
 }: { 
-  item: { name: string; href: string; icon: string; module?: string | null }
+  item: { name: string; href: string; icon: string; module?: string | null; comingSoon?: boolean }
   isActive: boolean
   onLinkClick?: () => void
 }) {
-  const dashboardUrl = useDashboardUrl(item.href || '/dashboard')
+  const { tenant } = useAuthStore()
+  const tenantId = tenant?.id
   
-  // Use OAuth2 SSO navigation if module requires it
-  const needsSSO = item.module ? requiresSSO(item.module) : false
+  // Check if we're in production (not localhost)
+  const isProduction = typeof window !== 'undefined' && 
+    !window.location.hostname.includes('localhost') && 
+    !window.location.hostname.includes('127.0.0.1')
   
-  // If SSO is required, get module link (which may be external)
-  // Otherwise, always use tenant-aware dashboard URL
-  let finalUrl = dashboardUrl
-  if (needsSSO && item.module) {
-    const moduleLink = getModuleLink(item.module, item.href)
-    // If module link is external (starts with http), use it
-    // Otherwise, use tenant-aware URL
-    finalUrl = moduleLink.startsWith('http') ? moduleLink : dashboardUrl
+  // Handle decoupled module routes
+  let finalUrl = item.href
+  if (item.module === 'ai-studio' && tenantId) {
+    // AI Studio hub uses decoupled architecture: /ai-studio/[tenantId]/Home
+    finalUrl = `/ai-studio/${tenantId}/Home`
+  } else if (item.module === 'ai-cofounder' && tenantId) {
+    finalUrl = `/ai-studio/${tenantId}/Cofounder`
+  } else if (item.module === 'ai-chat' && tenantId) {
+    finalUrl = `/ai-studio/${tenantId}/Chat`
+  } else if (item.module === 'ai-insights' && tenantId) {
+    finalUrl = `/ai-studio/${tenantId}/Insights`
+  } else if (item.module === 'website-builder' && tenantId) {
+    finalUrl = `/ai-studio/${tenantId}/Websites`
+  } else if (item.module === 'logo-generator' && tenantId) {
+    finalUrl = `/ai-studio/${tenantId}/Logos`
+  } else if (item.module === 'knowledge-rag' && tenantId) {
+    finalUrl = `/ai-studio/${tenantId}/Knowledge`
+  } else if (item.module === 'voice-agents' && tenantId) {
+    // Voice Agents uses decoupled architecture: /voice-agents/[tenantId]/Home
+    finalUrl = `/voice-agents/${tenantId}/Home`
+  } else {
+    const dashboardUrl = useDashboardUrl(item.href || '/dashboard')
+    
+    // Use OAuth2 SSO navigation if module requires it
+    const needsSSO = item.module ? requiresSSO(item.module) : false
+    
+    // If SSO is required, get module link (which may be external)
+    // Otherwise, always use tenant-aware dashboard URL
+    finalUrl = dashboardUrl
+    if (needsSSO && item.module) {
+      const moduleLink = getModuleLink(item.module, item.href)
+      // If module link is external (starts with http), use it
+      // Otherwise, use tenant-aware URL
+      finalUrl = moduleLink.startsWith('http') ? moduleLink : dashboardUrl
+    }
   }
   
   // CRITICAL: Only render if licensed (filtered at parent level)
   // No locked badges - items are completely hidden if not licensed
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    // Disable clicks for "Coming Soon" items in production
+    if (item.comingSoon && isProduction) {
+      e.preventDefault()
+      return
+    }
+    
     if (onLinkClick && window.innerWidth < 1024) {
       onLinkClick()
     }
   }
 
+  const isComingSoon = item.comingSoon && isProduction
+
   return (
     <Link
-      href={finalUrl}
+      href={isComingSoon ? '#' : finalUrl}
       onClick={handleClick}
       className={cn(
-        'flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors min-h-[44px]',
+        'flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors min-h-[44px] relative',
         isActive
           ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
+          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100',
+        isComingSoon && 'opacity-60 cursor-not-allowed'
       )}
     >
       <span className="mr-3 text-lg">{item.icon}</span>
-      {item.name}
+      <span className="flex-1">{item.name}</span>
+      {isComingSoon && (
+        <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-0.5 rounded">
+          Coming Soon
+        </span>
+      )}
     </Link>
   )
 }
@@ -202,11 +276,38 @@ function NavSection({ section, pathname, onLinkClick }: { section: typeof naviga
   const tenantId = tenant?.id
   
   // Helper to check if path matches (accounting for tenantId in URL)
-  const isPathActive = (item: { name: string; href: string; icon: string; module?: string | null }) => {
+  const isPathActive = (item: { name: string; href: string; icon: string; module?: string | null; comingSoon?: boolean }) => {
     const href = item?.href
     if (!href || typeof href !== 'string') {
       return false
     }
+    
+    // Handle decoupled module routes
+    if (item.module === 'ai-studio' && tenantId) {
+      return pathname?.startsWith(`/ai-studio/${tenantId}`)
+    }
+    if (item.module === 'ai-cofounder' && tenantId) {
+      return pathname?.includes('/Cofounder')
+    }
+    if (item.module === 'ai-chat' && tenantId) {
+      return pathname?.includes('/Chat')
+    }
+    if (item.module === 'ai-insights' && tenantId) {
+      return pathname?.includes('/Insights')
+    }
+    if (item.module === 'website-builder' && tenantId) {
+      return pathname?.includes('/Websites')
+    }
+    if (item.module === 'logo-generator' && tenantId) {
+      return pathname?.includes('/Logos')
+    }
+    if (item.module === 'knowledge-rag' && tenantId) {
+      return pathname?.includes('/Knowledge')
+    }
+    if (item.module === 'voice-agents' && tenantId) {
+      return pathname?.startsWith(`/voice-agents/${tenantId}`)
+    }
+    
     if (!tenantId) {
       return pathname === href || pathname?.startsWith(href + '/')
     }

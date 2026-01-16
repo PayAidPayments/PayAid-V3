@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { prisma } from '@/lib/db/prisma'
+import { requireIndustryFeature } from '@/lib/industries/feature-flags'
 import { z } from 'zod'
 
 const createMenuItemSchema = z.object({

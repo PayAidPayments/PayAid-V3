@@ -106,10 +106,22 @@ export async function PATCH(
             id: true,
             name: true,
             email: true,
+            stage: true,
           },
         },
       },
     })
+
+    // Auto-promote Contact to "customer" when Deal is won
+    if (validated.stage === 'won' && deal.contactId && deal.contact) {
+      await prisma.contact.update({
+        where: { id: deal.contactId },
+        data: {
+          stage: 'customer', // Promote to customer
+          type: 'customer', // Also update type for backward compat
+        },
+      })
+    }
 
     return NextResponse.json(deal)
   } catch (error) {

@@ -2,13 +2,25 @@
 
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { Sidebar } from '@/components/layout/sidebar'
+import { CRMSidebar } from '@/components/layout/sidebars/CRMSidebar'
+import { FinanceSidebar } from '@/components/layout/sidebars/FinanceSidebar'
+import { SalesSidebar } from '@/components/layout/sidebars/SalesSidebar'
 import { Header } from '@/components/layout/header'
 import { NewsSidebar } from '@/components/news/NewsSidebar'
-import { useParams } from 'next/navigation'
+import { CRMTopBar } from '@/components/modules/CRMTopBar'
+import { FinanceTopBar } from '@/components/modules/FinanceTopBar'
+import { SalesTopBar } from '@/components/modules/SalesTopBar'
+import { HRTopBar } from '@/components/modules/HRTopBar'
+import { MarketingTopBar } from '@/components/modules/MarketingTopBar'
+import { ProjectsTopBar } from '@/components/modules/ProjectsTopBar'
+import { InventoryTopBar } from '@/components/modules/InventoryTopBar'
+import { useParams, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { cn } from '@/lib/utils/cn'
+import { detectModuleFromPath } from '@/lib/utils/module-detection'
+import { validateSSOTokenFromQuery } from '@/lib/sso/token-manager'
 
 export default function DashboardLayout({
   children,
@@ -16,8 +28,74 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const params = useParams()
+  const pathname = usePathname()
   const router = useRouter()
   const { tenant, token, fetchUser } = useAuthStore()
+  
+  // Validate SSO token from query (if coming from another module)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const ssoToken = validateSSOTokenFromQuery()
+      if (ssoToken) {
+        // Token validated and stored, continue with normal flow
+      }
+    }
+  }, [])
+
+  // Detect current module from pathname
+  const currentModule = detectModuleFromPath(pathname || '')
+  
+  // Get module-specific top bar
+  const getModuleTopBar = () => {
+    switch (currentModule) {
+      case 'crm':
+        return <CRMTopBar />
+      case 'finance':
+        return <FinanceTopBar />
+      case 'sales':
+        return <SalesTopBar />
+      case 'hr':
+        return <HRTopBar />
+      case 'marketing':
+        return <MarketingTopBar />
+      case 'projects':
+        return <ProjectsTopBar />
+      case 'inventory':
+        return <InventoryTopBar />
+      default:
+        return null // Use default header for dashboard
+    }
+  }
+  
+  const ModuleTopBar = getModuleTopBar()
+  
+  // Debug logging (remove in production)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Module Detection]', {
+        pathname,
+        currentModule,
+        hasTopBar: !!ModuleTopBar,
+        willShow: currentModule === 'crm' ? 'CRM Sidebar' : currentModule === 'finance' ? 'Finance Sidebar' : currentModule === 'sales' ? 'Sales Sidebar' : 'Default Sidebar'
+      })
+    }
+  }, [pathname, currentModule, ModuleTopBar])
+  
+  // Get the appropriate sidebar component
+  const getSidebarComponent = () => {
+    switch (currentModule) {
+      case 'crm':
+        return CRMSidebar
+      case 'finance':
+        return FinanceSidebar
+      case 'sales':
+        return SalesSidebar
+      default:
+        return Sidebar // Default sidebar for main dashboard and other modules
+    }
+  }
+  
+  const SidebarComponent = getSidebarComponent()
   
   // Helper function to determine if sidebar should be open based on viewport
   const shouldSidebarBeOpen = (): boolean => {
@@ -193,42 +271,44 @@ export default function DashboardLayout({
           )
         })()}
         
-        {/* Sidebar */}
-        <div className={cn(
-          'sidebar-container',
-          'fixed',
-          'inset-y-0 left-0',
-          'z-50',
-          'w-64',
-          'transform',
-          'transition-transform duration-300 ease-in-out',
-          // On desktop (>= 1024px), sidebar is always visible (no transform needed)
-          // On tablet landscape (768-1023px, landscape), sidebar is always visible when open
-          // On mobile/tablet portrait, sidebar slides in/out
-          sidebarOpen 
-            ? 'translate-x-0' 
-            : '-translate-x-full lg:translate-x-0' // Desktop always shows, mobile/tablet slides
-        )}>
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        </div>
+        {/* Sidebar - Hidden when module top bar is active (decoupled architecture) */}
+        {!ModuleTopBar && (
+          <div className={cn(
+            'sidebar-container',
+            'fixed',
+            'inset-y-0 left-0',
+            'z-50',
+            'w-64',
+            'transform',
+            'transition-transform duration-300 ease-in-out',
+            // On desktop (>= 1024px), sidebar is always visible (no transform needed)
+            // On tablet landscape (768-1023px, landscape), sidebar is always visible when open
+            // On mobile/tablet portrait, sidebar slides in/out
+            sidebarOpen 
+              ? 'translate-x-0' 
+              : '-translate-x-full lg:translate-x-0' // Desktop always shows, mobile/tablet slides
+          )}>
+            <SidebarComponent isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          </div>
+        )}
 
         {/* Main Content */}
         <div className={cn(
           "flex-1 flex flex-col overflow-hidden relative transition-all duration-300",
-          // Apply margin on desktop/tablet landscape when sidebar is open
-          // On mobile/tablet portrait, sidebar is overlay so no margin needed
-          sidebarOpen 
+          // Apply margin only if sidebar is shown (not when module top bar is active)
+          !ModuleTopBar && sidebarOpen 
             ? "lg:ml-64 md:ml-64" // Desktop and tablet landscape
-            : "lg:ml-0 md:ml-0"   // Mobile and tablet portrait (overlay mode)
+            : "lg:ml-0 md:ml-0"   // Mobile and tablet portrait (overlay mode) or module top bar active
         )}>
-          <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+          {/* Use module-specific top bar if available, otherwise use default header */}
+          {ModuleTopBar || <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />}
           <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 bg-gray-50 dark:bg-gray-900 transition-colors">
             {children}
           </main>
-          
-          {/* News Sidebar - Right side */}
-          <NewsSidebar />
         </div>
+        
+        {/* News Sidebar - Right Side */}
+        <NewsSidebar />
       </div>
     </ProtectedRoute>
   )

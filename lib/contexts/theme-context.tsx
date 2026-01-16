@@ -13,35 +13,42 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'light'
-    const saved = localStorage.getItem('theme') as Theme
-    return saved || 'light'
-  })
+  const [theme, setThemeState] = useState<Theme>('light')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-    const saved = localStorage.getItem('theme') as Theme
-    if (saved) {
-      setThemeState(saved)
+    
+    // Always default to light mode (script already set it)
+    if (typeof document !== 'undefined') {
+      // Ensure dark class is removed (script should have done this, but double-check)
+      document.documentElement.classList.remove('dark')
+      // Force light mode
+      setThemeState('light')
+      localStorage.setItem('theme', 'light')
     } else {
-      // Check system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      setThemeState(prefersDark ? 'dark' : 'light')
+      // SSR fallback - default to light
+      setThemeState('light')
     }
   }, [])
 
   useEffect(() => {
     if (!mounted) return
     
+    // Only update DOM if theme actually changed (prevents flash)
     const root = document.documentElement
-    if (theme === 'dark') {
+    const currentlyDark = root.classList.contains('dark')
+    
+    if (theme === 'dark' && !currentlyDark) {
       root.classList.add('dark')
-    } else {
+      localStorage.setItem('theme', 'dark')
+    } else if (theme === 'light' && currentlyDark) {
       root.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+    } else if (theme === 'light' && !currentlyDark) {
+      // Ensure localStorage is synced even if class is already correct
+      localStorage.setItem('theme', 'light')
     }
-    localStorage.setItem('theme', theme)
   }, [theme, mounted])
 
   const toggleTheme = () => {

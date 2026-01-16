@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PageLoading } from '@/components/ui/loading'
 import { useAuthStore } from '@/lib/stores/auth'
 
 // Invoice template options
@@ -117,12 +118,7 @@ export default function InvoiceSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Invoice Settings</h1>
-          <p className="mt-2 text-gray-600">Loading...</p>
-        </div>
-      </div>
+      <PageLoading message="Loading invoice settings..." fullScreen={false} />
     )
   }
 
@@ -312,6 +308,9 @@ export default function InvoiceSettingsPage() {
     </div>
   )
 }
+
+
+
 
 
 

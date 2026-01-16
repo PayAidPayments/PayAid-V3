@@ -16,8 +16,8 @@ export async function GET(
 ) {
   try {
   const resolvedParams = await params
-    // Check CRM module license (orders are part of sales/CRM)
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    // Check Sales module license (orders are part of Sales module)
+    const { tenantId } = await requireModuleAccess(request, 'sales')
 
     const order = await prisma.order.findFirst({
       where: {
@@ -62,8 +62,8 @@ export async function PATCH(
 ) {
   try {
     const resolvedParams = await params
-    // Check CRM module license (orders are part of sales/CRM)
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    // Check Sales module license (orders are part of Sales module)
+    const { tenantId } = await requireModuleAccess(request, 'sales')
 
     const body = await request.json()
     const validated = updateOrderSchema.parse(body)

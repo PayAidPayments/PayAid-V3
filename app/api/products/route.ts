@@ -26,8 +26,8 @@ const createProductSchema = z.object({
 // GET /api/products - List all products
 export async function GET(request: NextRequest) {
   try {
-    // Check CRM module license (products are part of sales/CRM)
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    // Check Inventory module license (products are part of Inventory module)
+    const { tenantId } = await requireModuleAccess(request, 'inventory')
 
     const searchParams = request.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')
@@ -121,8 +121,8 @@ export async function GET(request: NextRequest) {
 // POST /api/products - Create a new product
 export async function POST(request: NextRequest) {
   try {
-    // Check CRM module license (products are part of sales/CRM)
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    // Check Inventory module license (products are part of Inventory module)
+    const { tenantId } = await requireModuleAccess(request, 'inventory')
 
     const body = await request.json()
     const validated = createProductSchema.parse(body)

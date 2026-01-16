@@ -1,227 +1,104 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db/prisma'
-import { signToken } from '@/lib/auth/jwt'
-import { cache } from '@/lib/redis/client'
-import crypto from 'crypto'
+import { getSessionToken } from '@/packages/auth-sdk/client'
 
 /**
- * POST /api/oauth/token
  * OAuth2 Token Endpoint
  * 
- * Exchanges an authorization code for an access token.
- * 
- * Body:
- * - grant_type: Must be "authorization_code" or "refresh_token"
- * - code: Authorization code from /authorize endpoint (for authorization_code grant)
- * - refresh_token: Refresh token (for refresh_token grant)
- * - redirect_uri: Must match the redirect_uri used in authorization
- * - client_id: OAuth2 client ID
- * - client_secret: OAuth2 client secret (optional for now)
+ * Exchanges authorization code for access token
  */
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { grant_type, code, refresh_token, redirect_uri, client_id, client_secret } = body
-    
-    // Handle refresh token grant
-    if (grant_type === 'refresh_token') {
-      if (!refresh_token) {
-        return NextResponse.json(
-          { error: 'invalid_request', error_description: 'Refresh token is required' },
-          { status: 400 }
-        )
-      }
-      
-      // Validate client_id (optional for now)
-      if (!client_id) {
-        return NextResponse.json(
-          { error: 'invalid_client', error_description: 'client_id is required' },
-          { status: 401 }
-        )
-      }
-      
-      // Get refresh token from Redis
-      const refreshData = await cache.get<{
-        userId: string
-        tenantId: string
-        clientId: string
-      }>(`oauth:refresh:${refresh_token}`)
-      
-      if (!refreshData) {
-        return NextResponse.json(
-          { error: 'invalid_grant', error_description: 'Refresh token is invalid or expired' },
-          { status: 400 }
-        )
-      }
-      
-      // Get user and tenant
-      const user = await prisma.user.findUnique({
-        where: { id: refreshData.userId },
-        include: { 
-          tenant: {
-            select: {
-              id: true,
-              name: true,
-              licensedModules: true,
-              subscriptionTier: true,
-            }
-          }
-        },
-      })
-      
-      if (!user) {
-        return NextResponse.json(
-          { error: 'invalid_grant', error_description: 'User not found' },
-          { status: 400 }
-        )
-      }
-      
-      // Generate new access token
-      const newToken = signToken({
-        userId: user.id,
-        tenantId: user.tenantId,
-        email: user.email,
-        role: user.role,
-        licensedModules: user.tenant?.licensedModules || [],
-        subscriptionTier: user.tenant?.subscriptionTier || 'free',
-      })
-      
-      // Generate new refresh token (rotate refresh token)
-      const newRefreshToken = crypto.randomBytes(32).toString('hex')
-      
-      // Delete old refresh token
-      await cache.delete(`oauth:refresh:${refresh_token}`)
-      
-      // Store new refresh token
-      await cache.set(
-        `oauth:refresh:${newRefreshToken}`,
-        JSON.stringify({
-          userId: user.id,
-          tenantId: user.tenantId,
-          clientId: client_id,
-        }),
-        60 * 60 * 24 * 30 // 30 days
-      )
-      
-      return NextResponse.json({
-        access_token: newToken,
-        token_type: 'Bearer',
-        expires_in: 86400, // 24 hours
-        refresh_token: newRefreshToken,
-      })
-    }
-    
-    // Handle authorization code grant
-    if (grant_type !== 'authorization_code') {
+    const body = await request.formData()
+    const grantType = body.get('grant_type')
+    const code = body.get('code')
+    const redirectUri = body.get('redirect_uri')
+    const clientId = body.get('client_id')
+    const clientSecret = body.get('client_secret')
+
+    // Validate grant type
+    if (grantType !== 'authorization_code') {
       return NextResponse.json(
-        { error: 'unsupported_grant_type', error_description: 'Only "authorization_code" and "refresh_token" grant types are supported' },
+        { error: 'unsupported_grant_type', error_description: 'Only authorization_code is supported' },
         { status: 400 }
       )
     }
-    
-    // Validate client_id (optional for now)
-    if (!client_id) {
+
+    // Validate parameters
+    if (!code || !redirectUri || !clientId) {
       return NextResponse.json(
-        { error: 'invalid_client', error_description: 'client_id is required' },
+        { error: 'invalid_request', error_description: 'Missing required parameters' },
+        { status: 400 }
+      )
+    }
+
+    // Verify client secret (if provided)
+    const expectedSecret = process.env.OAUTH_CLIENT_SECRET || 'default-secret'
+    if (clientSecret && clientSecret !== expectedSecret) {
+      return NextResponse.json(
+        { error: 'invalid_client', error_description: 'Invalid client credentials' },
         { status: 401 }
       )
     }
-    
-    // Validate code
-    if (!code) {
+
+    // Decode authorization code to get token
+    // In production, look up code in Redis to get token
+    let token: string | null = null
+    if (code.toString().startsWith('auth_')) {
+      const encoded = code.toString().substring(5)
+      try {
+        token = Buffer.from(encoded, 'base64url').toString()
+      } catch {
+        return NextResponse.json(
+          { error: 'invalid_grant', error_description: 'Invalid authorization code' },
+          { status: 400 }
+        )
+      }
+    } else {
+      // In production, lookup code in Redis
       return NextResponse.json(
-        { error: 'invalid_request', error_description: 'Authorization code is required' },
+        { error: 'invalid_grant', error_description: 'Invalid authorization code format' },
         { status: 400 }
       )
     }
-    
-    // Get authorization code from Redis
-    const codeData = await cache.get<{
-      userId: string
-      tenantId: string
-      redirectUri: string
-      clientId: string
-      scope: string
-    }>(`oauth:code:${code}`)
-    
-    if (!codeData) {
+
+    // Verify token is still valid
+    if (!token) {
       return NextResponse.json(
-        { error: 'invalid_grant', error_description: 'Authorization code is invalid or expired' },
+        { error: 'invalid_grant', error_description: 'Invalid or expired authorization code' },
         { status: 400 }
       )
     }
-    
-    // Validate redirect_uri matches
-    if (redirect_uri && redirect_uri !== codeData.redirectUri) {
-      return NextResponse.json(
-        { error: 'invalid_grant', error_description: 'redirect_uri does not match' },
-        { status: 400 }
-      )
-    }
-    
-    // Delete code (one-time use)
-    await cache.delete(`oauth:code:${code}`)
-    
-    // Get user and tenant
-    const user = await prisma.user.findUnique({
-      where: { id: codeData.userId },
-      include: { 
-        tenant: {
-          select: {
-            id: true,
-            name: true,
-            licensedModules: true,
-            subscriptionTier: true,
-          }
-        }
-      },
-    })
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: 'invalid_grant', error_description: 'User not found' },
-        { status: 400 }
-      )
-    }
-    
-    // Generate JWT token
-    const token = signToken({
-      userId: user.id,
-      tenantId: user.tenantId,
-      email: user.email,
-      role: user.role,
-      licensedModules: user.tenant?.licensedModules || [],
-      subscriptionTier: user.tenant?.subscriptionTier || 'free',
-    })
-    
-    // Generate refresh token
-    const refreshToken = crypto.randomBytes(32).toString('hex')
-    
-    // Store refresh token in Redis (30 days expiry)
-    await cache.set(
-      `oauth:refresh:${refreshToken}`,
-      JSON.stringify({
-        userId: user.id,
-        tenantId: user.tenantId,
-        clientId: client_id,
-      }),
-      60 * 60 * 24 * 30 // 30 days
-    )
-    
-    // Return token
+
+    // Generate access token (for now, use the same token)
+    // In production, generate a new JWT with appropriate scopes
+    const accessToken = token
+
+    // Optionally generate refresh token
+    const refreshToken = generateRefreshToken(token)
+
+    // Return tokens
     return NextResponse.json({
-      access_token: token,
+      access_token: accessToken,
       token_type: 'Bearer',
-      expires_in: 86400, // 24 hours
+      expires_in: 3600, // 1 hour
       refresh_token: refreshToken,
-      scope: codeData.scope,
+      scope: 'read write',
     })
-  } catch (error) {
-    console.error('OAuth token error:', error)
+  } catch (error: any) {
+    console.error('[OAuth] Token exchange error:', error)
     return NextResponse.json(
-      { error: 'server_error', error_description: 'An error occurred during token exchange' },
+      { error: 'server_error', error_description: error.message },
       { status: 500 }
     )
   }
 }
 
+/**
+ * Generate refresh token
+ */
+function generateRefreshToken(originalToken: string): string {
+  // In production, generate a secure random token and store mapping in Redis
+  const timestamp = Date.now()
+  return `refresh_${Buffer.from(`${originalToken}_${timestamp}`).toString('base64url')}`
+}

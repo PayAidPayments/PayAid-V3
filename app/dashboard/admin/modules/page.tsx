@@ -241,10 +241,16 @@ export default function AdminModulesPage() {
 
       {/* All Modules */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {modules.map((module) => {
+        {modules
+          .filter((module) => {
+            // Filter out deprecated modules
+            const deprecatedModules = ['invoicing', 'accounting']
+            return !deprecatedModules.includes(module.moduleId)
+          })
+          .map((module) => {
           const isLicensed = hasModule(module.moduleId)
           const isUpdatingThis = isUpdating === module.moduleId
-          const isLegacy = ['invoicing', 'accounting', 'whatsapp'].includes(module.moduleId)
+          const isLegacy = ['whatsapp'].includes(module.moduleId)
 
           return (
             <Card 
@@ -268,7 +274,7 @@ export default function AdminModulesPage() {
                     </div>
                   </div>
                   {isLicensed && (
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                    <span className="text-xs bg-green-100 px-2 py-1 rounded" style={{ color: '#53328A' }}>
                       Licensed
                     </span>
                   )}

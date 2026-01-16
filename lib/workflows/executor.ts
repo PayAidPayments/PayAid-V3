@@ -1,6 +1,7 @@
 /**
  * Workflow Execution Engine
  * Executes workflow steps based on triggers
+ * Includes error handling and retry logic
  */
 
 import { prisma } from '@/lib/db/prisma'
@@ -10,10 +11,35 @@ export interface WorkflowStep {
   id: string
   type: string // 'condition', 'action', 'delay', 'webhook', 'email', 'sms', etc.
   config: any
+  retryConfig?: {
+    maxRetries?: number
+    retryDelay?: number // in milliseconds
+    retryable?: boolean // whether this step can be retried
+  }
+}
+
+interface StepExecutionResult {
+  stepId: string
+  success: boolean
+  result?: any
+  error?: string
+  retries?: number
+}
+
+const DEFAULT_MAX_RETRIES = 3
+const DEFAULT_RETRY_DELAY = 1000 // 1 second
+const MAX_RETRY_DELAY = 30000 // 30 seconds
+
+/**
+ * Calculate exponential backoff delay
+ */
+function calculateRetryDelay(attempt: number, baseDelay: number): number {
+  const delay = baseDelay * Math.pow(2, attempt - 1)
+  return Math.min(delay, MAX_RETRY_DELAY)
 }
 
 /**
- * Execute a workflow
+ * Execute a workflow with error handling and retry logic
  */
 export async function executeWorkflow(
   workflowId: string,
@@ -39,7 +65,12 @@ export async function executeWorkflow(
 
   try {
     const steps = (workflow.steps as unknown) as WorkflowStep[]
-    const result = await executeSteps(workflow.tenantId, steps, triggerData || {})
+    const result = await executeStepsWithRetry(
+      workflow.tenantId,
+      execution.id,
+      steps,
+      triggerData || {}
+    )
 
     // Update execution as completed
     await prisma.workflowExecution.update({
@@ -60,12 +91,131 @@ export async function executeWorkflow(
         completedAt: new Date(),
       },
     })
-    throw error
+    
+    // Log error for monitoring
+    console.error(`Workflow execution failed: ${execution.id}`, {
+      workflowId,
+      error: error.message,
+      stack: error.stack,
+    })
+    
+    // Don't throw - allow workflow to fail gracefully
+    // Callers can check execution status
   }
 }
 
 /**
- * Execute workflow steps
+ * Execute workflow steps with retry logic
+ */
+async function executeStepsWithRetry(
+  tenantId: string,
+  executionId: string,
+  steps: WorkflowStep[],
+  context: any
+): Promise<StepExecutionResult[]> {
+  const results: StepExecutionResult[] = []
+
+  for (const step of steps) {
+    const stepResult = await executeStepWithRetry(tenantId, executionId, step, context)
+    results.push(stepResult)
+
+    // If step failed and is not retryable, stop execution
+    if (!stepResult.success && !step.retryConfig?.retryable) {
+      throw new Error(`Step ${step.id} failed: ${stepResult.error}`)
+    }
+
+    // Update context with step result (only if successful)
+    if (stepResult.success && stepResult.result) {
+      context[step.id] = stepResult.result
+    }
+
+    // Handle conditional steps
+    if (step.type === 'condition') {
+      const conditionResult = evaluateCondition(step.config, context)
+      if (!conditionResult) {
+        // Skip remaining steps if condition is false
+        break
+      }
+    }
+  }
+
+  return results
+}
+
+/**
+ * Execute a single step with retry logic
+ */
+async function executeStepWithRetry(
+  tenantId: string,
+  executionId: string,
+  step: WorkflowStep,
+  context: any
+): Promise<StepExecutionResult> {
+  const maxRetries = step.retryConfig?.maxRetries ?? DEFAULT_MAX_RETRIES
+  const baseDelay = step.retryConfig?.retryDelay ?? DEFAULT_RETRY_DELAY
+  const isRetryable = step.retryConfig?.retryable ?? true
+
+  let lastError: Error | null = null
+  let attempt = 0
+
+  while (attempt <= maxRetries) {
+    try {
+      const result = await executeStep(tenantId, step, context)
+      
+      return {
+        stepId: step.id,
+        success: true,
+        result,
+        retries: attempt,
+      }
+    } catch (error: any) {
+      lastError = error
+      attempt++
+
+      // If not retryable or max retries reached, fail
+      if (!isRetryable || attempt > maxRetries) {
+        console.error(`Step ${step.id} failed after ${attempt} attempts:`, error)
+        
+        // Log step failure to execution
+        try {
+          await prisma.workflowExecution.update({
+            where: { id: executionId },
+            data: {
+              error: `Step ${step.id} failed: ${error.message}`,
+            },
+          })
+        } catch (dbError) {
+          console.error('Failed to update execution error:', dbError)
+        }
+
+        return {
+          stepId: step.id,
+          success: false,
+          error: error.message || 'Unknown error',
+          retries: attempt - 1,
+        }
+      }
+
+      // Calculate delay with exponential backoff
+      const delay = calculateRetryDelay(attempt, baseDelay)
+      console.log(`Step ${step.id} failed, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`)
+      
+      // Wait before retry
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+  }
+
+  // This should never be reached, but TypeScript needs it
+  return {
+    stepId: step.id,
+    success: false,
+    error: lastError?.message || 'Unknown error',
+    retries: attempt - 1,
+  }
+}
+
+/**
+ * Execute workflow steps (legacy - kept for backward compatibility)
  */
 async function executeSteps(
   tenantId: string,
@@ -96,46 +246,72 @@ async function executeSteps(
 
 /**
  * Execute a single workflow step
+ * Throws error on failure to enable retry logic
  */
 async function executeStep(
   tenantId: string,
   step: WorkflowStep,
   context: any
 ): Promise<any> {
-  switch (step.type) {
-    case 'delay':
-      await new Promise((resolve) => setTimeout(resolve, step.config.duration || 0))
-      return { type: 'delay', completed: true }
+  try {
+    switch (step.type) {
+      case 'delay':
+        await new Promise((resolve) => setTimeout(resolve, step.config.duration || 0))
+        return { type: 'delay', completed: true }
 
-    case 'webhook':
-      await dispatchWebhook(tenantId, step.config.event || 'workflow.triggered', {
-        step: step.id,
-        data: context,
-      })
-      return { type: 'webhook', completed: true }
+      case 'webhook':
+        try {
+          await dispatchWebhook(tenantId, step.config.event || 'workflow.triggered', {
+            step: step.id,
+            data: context,
+          })
+          return { type: 'webhook', completed: true }
+        } catch (error) {
+          throw new Error(`Webhook dispatch failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        }
 
-    case 'email':
-      // TODO: Implement email sending
-      return { type: 'email', completed: true }
+      case 'email':
+        // TODO: Implement email sending
+        // For now, simulate success
+        if (step.config.simulateError) {
+          throw new Error('Simulated email error')
+        }
+        return { type: 'email', completed: true }
 
-    case 'sms':
-      // TODO: Implement SMS sending
-      return { type: 'sms', completed: true }
+      case 'sms':
+        // TODO: Implement SMS sending
+        if (step.config.simulateError) {
+          throw new Error('Simulated SMS error')
+        }
+        return { type: 'sms', completed: true }
 
-    case 'create_contact':
-      // TODO: Implement contact creation
-      return { type: 'create_contact', completed: true }
+      case 'create_contact':
+        // TODO: Implement contact creation
+        if (step.config.simulateError) {
+          throw new Error('Simulated contact creation error')
+        }
+        return { type: 'create_contact', completed: true }
 
-    case 'update_contact':
-      // TODO: Implement contact update
-      return { type: 'update_contact', completed: true }
+      case 'update_contact':
+        // TODO: Implement contact update
+        if (step.config.simulateError) {
+          throw new Error('Simulated contact update error')
+        }
+        return { type: 'update_contact', completed: true }
 
-    case 'create_task':
-      // TODO: Implement task creation
-      return { type: 'create_task', completed: true }
+      case 'create_task':
+        // TODO: Implement task creation
+        if (step.config.simulateError) {
+          throw new Error('Simulated task creation error')
+        }
+        return { type: 'create_task', completed: true }
 
-    default:
-      return { type: step.type, completed: true, message: 'Step type not implemented' }
+      default:
+        return { type: step.type, completed: true, message: 'Step type not implemented' }
+    }
+  } catch (error) {
+    // Re-throw to allow retry logic to handle it
+    throw error
   }
 }
 

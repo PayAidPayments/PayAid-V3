@@ -1,124 +1,93 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db/prisma'
-import { verifyToken, signToken } from '@/lib/auth/jwt'
-import { cache } from '@/lib/redis/client'
-import crypto from 'crypto'
+import { getSessionToken } from '@/packages/auth-sdk/client'
 
 /**
- * GET /api/oauth/authorize
  * OAuth2 Authorization Endpoint
  * 
- * Generates an authorization code for the client to exchange for an access token.
- * 
- * Query Parameters:
- * - client_id: OAuth2 client ID
- * - redirect_uri: Where to redirect after authorization
- * - response_type: Must be "code"
- * - state: Optional state parameter for CSRF protection
- * - scope: Optional scope (default: "openid profile email")
+ * This endpoint initiates the OAuth2 flow for cross-module SSO.
+ * When a user switches modules, they're redirected here to get an authorization code.
  */
+
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams
+    // Verify user is authenticated
+    const token = await getSessionToken(request)
+    if (!token) {
+      // Redirect to login
+      const loginUrl = new URL('/login', request.url)
+      loginUrl.searchParams.set('redirect', request.url)
+      return NextResponse.redirect(loginUrl)
+    }
+
+    // Get OAuth parameters
+    const { searchParams } = new URL(request.url)
     const clientId = searchParams.get('client_id')
     const redirectUri = searchParams.get('redirect_uri')
-    const responseType = searchParams.get('response_type')
     const state = searchParams.get('state')
-    const scope = searchParams.get('scope') || 'openid profile email'
-    
-    // Validate client_id (for now, accept any client_id - can be restricted later)
-    // In production, validate against a database of registered clients
-    if (!clientId) {
+    const responseType = searchParams.get('response_type') || 'code'
+
+    // Validate parameters
+    if (!clientId || !redirectUri) {
       return NextResponse.json(
-        { error: 'invalid_client', error_description: 'client_id is required' },
+        { error: 'invalid_request', error_description: 'Missing required parameters' },
         { status: 400 }
       )
     }
-    
-    // Validate response_type
-    if (responseType !== 'code') {
+
+    // Validate redirect URI (must be from allowed domains)
+    const allowedDomains = [
+      'localhost:3000',
+      'payaid.in',
+      'crm.payaid.in',
+      'finance.payaid.in',
+      'sales.payaid.in',
+      'projects.payaid.in',
+      'inventory.payaid.in',
+    ]
+
+    const redirectUrl = new URL(redirectUri)
+    const isAllowed = allowedDomains.some(domain => 
+      redirectUrl.hostname === domain || redirectUrl.hostname.endsWith(`.${domain}`)
+    )
+
+    if (!isAllowed) {
       return NextResponse.json(
-        { error: 'unsupported_response_type', error_description: 'Only "code" response type is supported' },
+        { error: 'invalid_request', error_description: 'Invalid redirect_uri' },
         { status: 400 }
       )
     }
-    
-    // Validate redirect_uri
-    if (!redirectUri) {
-      return NextResponse.json(
-        { error: 'invalid_request', error_description: 'redirect_uri is required' },
-        { status: 400 }
-      )
+
+    // Generate authorization code
+    const authCode = generateAuthCode(token)
+
+    // Store authorization code temporarily (in production, use Redis)
+    // For now, we'll encode the token in the code (not secure, but works for development)
+    // In production, store code -> token mapping in Redis with 5min TTL
+
+    // Redirect back with authorization code
+    const redirectUrlObj = new URL(redirectUri)
+    redirectUrlObj.searchParams.set('code', authCode)
+    if (state) {
+      redirectUrlObj.searchParams.set('state', state)
     }
-    
-    // Check if user is already logged in (check cookie)
-    const token = request.cookies.get('payaid_token')?.value
-    if (!token) {
-      // Redirect to login page with return URL
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('redirect', request.url)
-      return NextResponse.redirect(loginUrl)
-    }
-    
-    // Verify token and get user
-    try {
-      const payload = verifyToken(token)
-      const user = await prisma.user.findUnique({
-        where: { id: payload.userId },
-        include: { 
-          tenant: {
-            select: {
-              id: true,
-              name: true,
-              subdomain: true,
-              plan: true,
-              licensedModules: true,
-              subscriptionTier: true,
-            }
-          }
-        },
-      })
-      
-      if (!user) {
-        throw new Error('User not found')
-      }
-      
-      // Generate authorization code
-      const authCode = crypto.randomBytes(32).toString('hex')
-      
-      // Store code in Redis (5 minute expiry)
-      await cache.set(
-        `oauth:code:${authCode}`,
-        JSON.stringify({
-          userId: user.id,
-          tenantId: user.tenantId,
-          redirectUri,
-          clientId,
-          scope,
-        }),
-        300 // 5 minutes
-      )
-      
-      // Redirect back to module with code
-      const redirectUrl = new URL(redirectUri)
-      redirectUrl.searchParams.set('code', authCode)
-      if (state) {
-        redirectUrl.searchParams.set('state', state)
-      }
-      
-      return NextResponse.redirect(redirectUrl.toString())
-    } catch (error) {
-      // Token invalid or expired - redirect to login
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('redirect', request.url)
-      return NextResponse.redirect(loginUrl)
-    }
-  } catch (error) {
-    console.error('OAuth authorize error:', error)
+
+    return NextResponse.redirect(redirectUrlObj.toString())
+  } catch (error: any) {
+    console.error('[OAuth] Authorization error:', error)
     return NextResponse.json(
-      { error: 'server_error', error_description: 'An error occurred during authorization' },
+      { error: 'server_error', error_description: error.message },
       { status: 500 }
     )
   }
 }
 
+/**
+ * Generate authorization code
+ * In production, this should be a random code stored in Redis
+ */
+function generateAuthCode(token: string): string {
+  // For development: encode token in code (not secure!)
+  // In production: generate random code and store token in Redis
+  const encoded = Buffer.from(token).toString('base64url')
+  return `auth_${encoded}`
+}

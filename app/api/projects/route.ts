@@ -39,7 +39,7 @@ const updateProjectSchema = z.object({
 // GET /api/projects - List all projects
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm') // Using CRM module for now
+    const { tenantId } = await requireModuleAccess(request, 'projects') // Projects module
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
 // POST /api/projects - Create a new project
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'projects')
 
     const body = await request.json()
     const validated = createProjectSchema.parse(body)

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
+import { prismaRead } from '@/lib/db/prisma-read'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { checkTenantLimits } from '@/lib/middleware/tenant'
 import { z } from 'zod'
-import { cache } from '@/lib/redis/client'
+import { multiLayerCache } from '@/lib/cache/multi-layer'
 
 const createContactSchema = z.object({
   name: z.string().min(1),
@@ -11,6 +12,7 @@ const createContactSchema = z.object({
   phone: z.string().optional(),
   company: z.string().optional(),
   type: z.enum(['customer', 'lead', 'vendor', 'employee']).default('lead'),
+  stage: z.enum(['prospect', 'contact', 'customer']).optional(), // New simplified stage
   status: z.enum(['active', 'inactive', 'lost']).default('active'),
   source: z.string().optional(),
   address: z.string().optional(),
@@ -49,18 +51,19 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
     const type = searchParams.get('type')
+    const stage = searchParams.get('stage') // New: stage filter (prospect, contact, customer)
     const status = searchParams.get('status')
     const search = searchParams.get('search')
 
     // Build cache key (only cache non-search queries)
     const cacheKey = search 
       ? null 
-      : `contacts:${tenantId}:${page}:${limit}:${type || 'all'}:${status || 'all'}`
+      : `contacts:${tenantId}:${page}:${limit}:${type || 'all'}:${stage || 'all'}:${status || 'all'}`
 
-    // Check cache for non-search queries (cache is optional, continue if it fails)
+    // Check cache for non-search queries (multi-layer cache: L1 memory -> L2 Redis)
     if (cacheKey) {
       try {
-        const cached = await cache.get(cacheKey)
+        const cached = await multiLayerCache.get(cacheKey)
         if (cached) {
           return NextResponse.json(cached)
         }
@@ -74,7 +77,16 @@ export async function GET(request: NextRequest) {
       tenantId: tenantId,
     }
 
-    if (type) where.type = type
+    // Support both type (backward compat) and stage (new simplified)
+    if (stage) {
+      where.stage = stage
+    } else if (type) {
+      where.type = type
+      // Also map type to stage for backward compatibility
+      if (type === 'lead') where.stage = 'prospect'
+      else if (type === 'contact') where.stage = 'contact'
+      else if (type === 'customer') where.stage = 'customer'
+    }
     if (status) where.status = status
     if (search) {
       where.OR = [
@@ -89,18 +101,22 @@ export async function GET(request: NextRequest) {
     // Using minimal fields to avoid schema mismatch errors
     let contacts
     try {
-      // Query with only the fields needed for invoice autofill
-      // These are the fields used in the invoice creation page
+      // First, try with all fields
       contacts = await prisma.contact.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
+        orderBy: { createdAt: 'desc' },
         select: {
           id: true,
           name: true,
           email: true,
           phone: true,
           company: true,
+          type: true,
+          stage: true, // Include stage field
+          status: true,
+          createdAt: true,
           address: true,
           city: true,
           state: true,
@@ -124,7 +140,7 @@ export async function GET(request: NextRequest) {
         
         // Try without gstin (might not exist in some schemas)
         try {
-          contacts = await prisma.contact.findMany({
+          contacts = await prismaRead.contact.findMany({
             where,
             skip: (page - 1) * limit,
             take: limit,
@@ -143,7 +159,7 @@ export async function GET(request: NextRequest) {
         } catch (error1: any) {
           // Try without postalCode
           try {
-            contacts = await prisma.contact.findMany({
+            contacts = await prismaRead.contact.findMany({
               where,
               skip: (page - 1) * limit,
               take: limit,
@@ -161,7 +177,7 @@ export async function GET(request: NextRequest) {
           } catch (error2: any) {
             // Last resort: absolute minimum
             try {
-              contacts = await prisma.contact.findMany({
+              contacts = await prismaRead.contact.findMany({
                 where,
                 skip: (page - 1) * limit,
                 take: limit,
@@ -206,10 +222,10 @@ export async function GET(request: NextRequest) {
       },
     }
 
-    // Cache non-search results for 3 minutes (cache is optional, continue if it fails)
+    // Cache non-search results for 3 minutes (multi-layer cache: L1 + L2)
     if (cacheKey) {
       try {
-        await cache.set(cacheKey, result, 180)
+        await multiLayerCache.set(cacheKey, result, 180)
       } catch (cacheError) {
         // Cache error is not critical, continue without cache
         console.warn('Cache set error (continuing):', cacheError)
@@ -348,15 +364,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Determine stage from type if not provided
+    const stage = validated.stage || (validated.type === 'lead' ? 'prospect' : validated.type === 'customer' ? 'customer' : 'contact')
+
     const contact = await prisma.contact.create({
       data: {
         ...validated,
+        stage: stage, // Set stage based on type or provided value
         tenantId: tenantId,
       },
     })
 
-    // Invalidate cache
-    await cache.deletePattern(`contacts:${tenantId}:*`)
+    // Invalidate cache (multi-layer: clears both L1 and L2)
+    await multiLayerCache.deletePattern(`contacts:${tenantId}:*`).catch(() => {
+      // Ignore cache errors - not critical
+    })
+    // Invalidate dashboard stats cache so the count updates immediately
+    await multiLayerCache.delete(`dashboard:stats:${tenantId}`).catch(() => {
+      // Ignore cache errors - not critical
+    })
 
     return NextResponse.json(contact, { status: 201 })
   } catch (error) {

@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getAuthHeaders } from '@/lib/hooks/use-api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageLoading } from '@/components/ui/loading'
 import Link from 'next/link'
 import { ArrowLeft, FileText, CheckCircle, Clock, Download, Send } from 'lucide-react'
 import { format } from 'date-fns'
@@ -43,7 +44,7 @@ export default function ContractDetailPage() {
   })
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>
+    return <PageLoading message="Loading contract..." fullScreen={false} />
   }
 
   const contract = data?.contract
@@ -81,9 +82,18 @@ export default function ContractDetailPage() {
             <Download className="h-4 w-4 mr-2" />
             Download
           </Button>
-          <Button variant="outline">
+          <Button 
+            variant="outline"
+            onClick={() => {
+              // Open e-signature modal
+              const modal = document.getElementById('esignature-modal')
+              if (modal) {
+                (modal as any).showModal()
+              }
+            }}
+          >
             <Send className="h-4 w-4 mr-2" />
-            Send for Signature
+            Send for E-Signature
           </Button>
         </div>
       </div>

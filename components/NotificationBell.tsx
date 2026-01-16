@@ -3,20 +3,24 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/stores/auth'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Bell } from 'lucide-react'
+import { cn } from '@/lib/utils/cn'
 
-interface Alert {
+interface Notification {
   id: string
   type: string
+  module: string
   title: string
   message: string
-  leadId?: string
-  dealId?: string
-  taskId?: string
   priority: 'LOW' | 'MEDIUM' | 'HIGH'
   isRead: boolean
   createdAt: string
+  actionUrl?: string
+  metadata?: any
 }
 
 function getAuthHeaders() {
@@ -29,89 +33,85 @@ function getAuthHeaders() {
 
 export function NotificationBell() {
   const queryClient = useQueryClient()
+  const router = useRouter()
   const [showDropdown, setShowDropdown] = useState(false)
 
-  // Fetch alerts
-  const { data, isLoading } = useQuery<{ alerts: Alert[]; unreadCount: number }>({
-    queryKey: ['alerts'],
+  // Fetch notifications from all modules
+  const { data, isLoading } = useQuery<{ notifications: Notification[]; unreadCount: number; total: number }>({
+    queryKey: ['notifications'],
     queryFn: async () => {
-      const response = await fetch('/api/alerts?unreadOnly=false&limit=20', {
+      const response = await fetch('/api/notifications?limit=50', {
         headers: getAuthHeaders(),
       })
       if (!response.ok) {
-        if (response.status === 401) {
-          // Silently fail for unauthorized - user might not be logged in yet
-          return { alerts: [], unreadCount: 0 }
+        if (response.status === 401 || response.status === 503) {
+          // Silently fail for unauthorized or service unavailable
+          return { notifications: [], unreadCount: 0, total: 0 }
         }
-        throw new Error('Failed to fetch alerts')
+        throw new Error('Failed to fetch notifications')
       }
       return response.json()
     },
     refetchInterval: 30000, // Refresh every 30 seconds
-    retry: false, // Don't retry on 401 errors
+    retry: false, // Don't retry on 401/503 errors
   })
 
-  // Mark as read mutation
-  const markAsRead = useMutation({
-    mutationFn: async (alertId: string) => {
-      const response = await fetch(`/api/alerts/${alertId}/read`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-      })
-      if (!response.ok) throw new Error('Failed to mark as read')
-      return response.json()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alerts'] })
-    },
-  })
-
-  // Mark all as read mutation
-  const markAllAsRead = useMutation({
-    mutationFn: async () => {
-      const response = await fetch('/api/alerts/mark-all-read', {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-      })
-      if (!response.ok) throw new Error('Failed to mark all as read')
-      return response.json()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alerts'] })
-    },
-  })
-
-  const alerts = data?.alerts || []
+  const notifications = data?.notifications || []
   const unreadCount = data?.unreadCount || 0
-  const unreadAlerts = alerts.filter((a) => !a.isRead)
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'HIGH':
-        return 'border-red-500 bg-red-50'
+        return 'border-l-red-500 bg-red-50 dark:bg-red-900/20'
       case 'MEDIUM':
-        return 'border-yellow-500 bg-yellow-50'
+        return 'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
       default:
-        return 'border-gray-500 bg-gray-50'
+        return 'border-l-gray-500 bg-gray-50 dark:bg-gray-800'
     }
   }
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'NEW_LEAD_ASSIGNED':
-        return '👤'
-      case 'FOLLOW_UP_DUE':
-        return '📅'
-      case 'HOT_LEAD':
-        return '🔥'
-      case 'DEAL_WON':
-        return '🎉'
-      case 'DEAL_LOST':
-        return '❌'
-      case 'TASK_DUE':
+      case 'TASK_OVERDUE':
+      case 'TASK_DUE_TODAY':
         return '✅'
+      case 'DEAL_CLOSING':
+        return '💰'
+      case 'INVOICE_OVERDUE':
+      case 'BILL_DUE':
+        return '💳'
+      case 'LEAVE_PENDING':
+        return '📅'
+      case 'ATTENDANCE_MISSING':
+        return '⏰'
+      case 'PROJECT_TASK_DUE':
+        return '📋'
+      case 'STOCK_LOW':
+        return '📦'
+      case 'APPOINTMENT_TODAY':
+        return '📞'
       default:
         return '🔔'
+    }
+  }
+
+  const getModuleBadgeColor = (module: string) => {
+    const colors: Record<string, string> = {
+      crm: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+      finance: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+      hr: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
+      projects: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+      inventory: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+      appointments: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+      marketing: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+    }
+    return colors[module] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+  }
+
+  const handleNotificationClick = (notification: Notification) => {
+    setShowDropdown(false)
+    if (notification.actionUrl) {
+      router.push(notification.actionUrl)
     }
   }
 
@@ -121,11 +121,13 @@ export function NotificationBell() {
         variant="ghost"
         size="sm"
         onClick={() => setShowDropdown(!showDropdown)}
-        className="relative"
+        className="relative p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+        aria-label="Notifications"
+        title="Notifications"
       >
-        <span className="text-xl">🔔</span>
+        <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-semibold">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -137,62 +139,61 @@ export function NotificationBell() {
             className="fixed inset-0 z-40"
             onClick={() => setShowDropdown(false)}
           />
-          <Card className="absolute right-0 top-12 w-96 max-h-[500px] overflow-y-auto z-50 shadow-lg">
-            <CardHeader className="sticky top-0 bg-white border-b z-10">
+          <Card className="absolute right-0 top-12 w-96 max-h-[600px] overflow-y-auto z-50 shadow-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+            <CardHeader className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-10">
               <div className="flex items-center justify-between">
-                <CardTitle>Notifications</CardTitle>
+                <CardTitle className="text-gray-900 dark:text-gray-100">Notifications</CardTitle>
                 {unreadCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => markAllAsRead.mutate()}
-                    disabled={markAllAsRead.isPending}
-                  >
-                    Mark all read
-                  </Button>
+                  <Badge variant="secondary" className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                    {unreadCount} new
+                  </Badge>
                 )}
               </div>
             </CardHeader>
             <CardContent className="p-0">
               {isLoading ? (
-                <div className="p-4 text-center text-gray-500">Loading...</div>
-              ) : alerts.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">
+                <div className="p-4 text-center text-gray-500 dark:text-gray-400">Loading...</div>
+              ) : notifications.length === 0 ? (
+                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                   No notifications
                 </div>
               ) : (
-                <div className="divide-y">
-                  {alerts.map((alert) => (
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {notifications.map((notification) => (
                     <div
-                      key={alert.id}
-                      className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                        !alert.isRead ? getPriorityColor(alert.priority) : ''
-                      }`}
-                      onClick={() => {
-                        if (!alert.isRead) {
-                          markAsRead.mutate(alert.id)
-                        }
-                        setShowDropdown(false)
-                      }}
+                      key={notification.id}
+                      className={cn(
+                        'p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-l-4',
+                        !notification.isRead ? getPriorityColor(notification.priority) : 'border-l-transparent bg-white dark:bg-gray-800'
+                      )}
+                      onClick={() => handleNotificationClick(notification)}
                     >
                       <div className="flex items-start gap-3">
-                        <span className="text-2xl">{getTypeIcon(alert.type)}</span>
+                        <span className="text-2xl flex-shrink-0">{getTypeIcon(notification.type)}</span>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center justify-between mb-1 gap-2">
                             <p
-                              className={`text-sm font-medium ${
-                                !alert.isRead ? 'font-semibold' : ''
-                              }`}
+                              className={cn(
+                                'text-sm font-medium text-gray-900 dark:text-gray-100',
+                                !notification.isRead && 'font-semibold'
+                              )}
                             >
-                              {alert.title}
+                              {notification.title}
                             </p>
-                            {!alert.isRead && (
-                              <span className="h-2 w-2 rounded-full bg-blue-500" />
-                            )}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <Badge className={cn('text-xs', getModuleBadgeColor(notification.module))}>
+                                {notification.module.toUpperCase()}
+                              </Badge>
+                              {!notification.isRead && (
+                                <span className="h-2 w-2 rounded-full bg-blue-500 dark:bg-blue-400" />
+                              )}
+                            </div>
                           </div>
-                          <p className="text-xs text-gray-600">{alert.message}</p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {new Date(alert.createdAt).toLocaleString()}
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                            {notification.message}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">
+                            {new Date(notification.createdAt).toLocaleString()}
                           </p>
                         </div>
                       </div>

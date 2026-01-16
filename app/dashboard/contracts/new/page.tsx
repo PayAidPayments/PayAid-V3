@@ -233,10 +233,7 @@ export default function NewContractPage() {
                   onChange={handleChange}
                   className="w-full px-3 py-2 border rounded-md"
                 >
-                  <option value="INR">INR</option>
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
+                  <option value="INR">INR (₹)</option>
                 </select>
               </div>
             </div>

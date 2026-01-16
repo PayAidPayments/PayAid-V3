@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuthStore } from '@/lib/stores/auth'
-import { decodeToken, JWTPayload } from '@/lib/auth/jwt'
+import { decodeToken, JWTPayload } from '@/lib/auth/jwt-client'
 import { useMemo, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
