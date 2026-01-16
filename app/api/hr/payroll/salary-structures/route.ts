@@ -6,46 +6,51 @@ import { z } from 'zod'
 const createSalaryStructureSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  structureJson: z.record(z.any()), // JSON structure definition
   isDefault: z.boolean().default(false),
+  structureJson: z.object({
+    earnings: z.array(z.object({
+      name: z.string(),
+      type: z.enum(['fixed', 'variable', 'allowance']),
+      amount: z.number().optional(),
+      percentage: z.number().optional(),
+      formula: z.string().optional(),
+    })),
+    deductions: z.array(z.object({
+      name: z.string(),
+      type: z.enum(['statutory', 'voluntary', 'loan']),
+      amount: z.number().optional(),
+      percentage: z.number().optional(),
+      formula: z.string().optional(),
+    })),
+  }),
 })
 
 // GET /api/hr/payroll/salary-structures - List all salary structures
 export async function GET(request: NextRequest) {
   try {
-    // Check HR module license
     const { tenantId } = await requireModuleAccess(request, 'hr')
 
-    const searchParams = request.nextUrl.searchParams
-    const isDefault = searchParams.get('isDefault')
-
-    const where: any = {
-      tenantId: tenantId,
-    }
-
-    if (isDefault !== null) {
-      where.isDefault = isDefault === 'true'
-    }
-
     const structures = await prisma.salaryStructure.findMany({
-      where,
+      where: { tenantId },
       include: {
         _count: {
           select: { employeeSalaryStructures: true },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [
+        { isDefault: 'desc' },
+        { createdAt: 'desc' },
+      ],
     })
 
     return NextResponse.json({ structures })
-  } catch (error) {
-    // Handle license errors
+  } catch (error: any) {
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }
     console.error('Get salary structures error:', error)
     return NextResponse.json(
-      { error: 'Failed to get salary structures' },
+      { error: 'Failed to get salary structures', structures: [] },
       { status: 500 }
     )
   }
@@ -54,49 +59,40 @@ export async function GET(request: NextRequest) {
 // POST /api/hr/payroll/salary-structures - Create a new salary structure
 export async function POST(request: NextRequest) {
   try {
-    // Check HR module license
     const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const body = await request.json()
     const validated = createSalaryStructureSchema.parse(body)
 
-    // If setting as default, unset other defaults
+    // If this is set as default, unset other defaults
     if (validated.isDefault) {
       await prisma.salaryStructure.updateMany({
-        where: {
-          tenantId: tenantId,
-          isDefault: true,
-        },
-        data: {
-          isDefault: false,
-        },
+        where: { tenantId, isDefault: true },
+        data: { isDefault: false },
       })
     }
 
     const structure = await prisma.salaryStructure.create({
       data: {
+        tenantId,
         name: validated.name,
         description: validated.description,
-        structureJson: validated.structureJson,
         isDefault: validated.isDefault,
-        tenantId: tenantId,
+        structureJson: validated.structureJson,
       },
     })
 
-    return NextResponse.json(structure, { status: 201 })
-  } catch (error) {
-    // Handle license errors
-    if (error && typeof error === 'object' && 'moduleId' in error) {
-      return handleLicenseError(error)
-    }
-    
+    return NextResponse.json({ structure }, { status: 201 })
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation error', details: error.errors },
         { status: 400 }
       )
     }
-
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Create salary structure error:', error)
     return NextResponse.json(
       { error: 'Failed to create salary structure' },

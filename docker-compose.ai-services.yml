@@ -124,6 +124,27 @@ services:
       retries: 3
       start_period: 60s
 
+  # Chroma Vector Database (for Knowledge Base)
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: payaid-chroma
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSIST_DIRECTORY=/chroma/chroma
+      - ANONYMIZED_TELEMETRY=FALSE
+    restart: unless-stopped
+    networks:
+      - ai-services
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Redis for caching and rate limiting
   # Note: Using existing Redis from main docker-compose if available
   # If you need a separate Redis, uncomment below and change port
@@ -150,6 +171,8 @@ volumes:
   speech-to-text-models:
     driver: local
   image-to-text-models:
+    driver: local
+  chroma-data:
     driver: local
   # redis-ai-data:
   #   driver: local

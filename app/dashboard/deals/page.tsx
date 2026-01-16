@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { ModuleGate } from '@/components/modules/ModuleGate'
+import { BackToApps } from '@/components/BackToApps'
 
 const stages = [
   { id: 'lead', name: 'Lead', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200' },
@@ -64,9 +65,12 @@ function DealsPageContent() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Deals Pipeline</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your sales pipeline</p>
+        <div className="flex items-center gap-4">
+          <BackToApps />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Deals Pipeline</h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your sales pipeline</p>
+          </div>
         </div>
         <Link href="/dashboard/deals/new">
           <Button>New Deal</Button>

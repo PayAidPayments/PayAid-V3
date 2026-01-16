@@ -1,6 +1,7 @@
 'use client'
 
-import { getScoreCategory } from '@/lib/ai-helpers/lead-scoring'
+// Import from client-safe utility (doesn't import Prisma)
+import { getScoreCategory } from '@/lib/ai-helpers/lead-scoring-client'
 
 interface LeadScoringBadgeProps {
   score: number

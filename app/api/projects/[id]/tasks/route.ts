@@ -39,7 +39,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId } = await requireModuleAccess(request, 'projects')
 
     // Verify project exists and belongs to tenant
     const project = await prisma.project.findFirst({
@@ -136,7 +136,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId } = await requireModuleAccess(request, 'projects')
 
     // Verify project exists
     const project = await prisma.project.findFirst({

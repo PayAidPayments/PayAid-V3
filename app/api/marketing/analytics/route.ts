@@ -98,6 +98,94 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.openRate - a.openRate)
       .slice(0, 5)
 
+    // Time-series data for charts (last 6 months)
+    const now = new Date()
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
+    
+    const monthlyData: Record<string, {
+      month: string
+      sent: number
+      delivered: number
+      opened: number
+      clicked: number
+      campaigns: number
+    }> = {}
+
+    // Initialize all months
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      monthlyData[monthKey] = {
+        month: monthName,
+        sent: 0,
+        delivered: 0,
+        opened: 0,
+        clicked: 0,
+        campaigns: 0,
+      }
+    }
+
+    // Aggregate by month
+    campaigns.forEach(campaign => {
+      const campaignDate = new Date(campaign.createdAt)
+      if (campaignDate >= sixMonthsAgo) {
+        const monthKey = `${campaignDate.getFullYear()}-${String(campaignDate.getMonth() + 1).padStart(2, '0')}`
+        if (monthlyData[monthKey]) {
+          monthlyData[monthKey].sent += campaign.sent
+          monthlyData[monthKey].delivered += campaign.delivered
+          monthlyData[monthKey].opened += campaign.opened
+          monthlyData[monthKey].clicked += campaign.clicked
+          monthlyData[monthKey].campaigns += 1
+        }
+      }
+    })
+
+    const monthlyTrend = Object.values(monthlyData)
+
+    // Performance by day (last 30 days)
+    const thirtyDaysAgo = new Date(now)
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29)
+    
+    const dailyData: Record<string, {
+      date: string
+      sent: number
+      delivered: number
+      opened: number
+      clicked: number
+    }> = {}
+
+    // Initialize all days
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now)
+      date.setDate(date.getDate() - i)
+      const dateKey = date.toISOString().split('T')[0]
+      const dateName = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      dailyData[dateKey] = {
+        date: dateName,
+        sent: 0,
+        delivered: 0,
+        opened: 0,
+        clicked: 0,
+      }
+    }
+
+    // Aggregate by day (for campaigns sent in last 30 days)
+    campaigns.forEach(campaign => {
+      const campaignDate = new Date(campaign.createdAt)
+      if (campaignDate >= thirtyDaysAgo) {
+        const dateKey = campaignDate.toISOString().split('T')[0]
+        if (dailyData[dateKey]) {
+          dailyData[dateKey].sent += campaign.sent
+          dailyData[dateKey].delivered += campaign.delivered
+          dailyData[dateKey].opened += campaign.opened
+          dailyData[dateKey].clicked += campaign.clicked
+        }
+      }
+    })
+
+    const dailyTrend = Object.values(dailyData)
+
     return NextResponse.json({
       overview: {
         totalCampaigns,
@@ -116,6 +204,8 @@ export async function GET(request: NextRequest) {
       },
       byType: typeAnalytics,
       topCampaigns,
+      monthlyTrend,
+      dailyTrend,
     })
   } catch (error: any) {
     // Handle license errors first

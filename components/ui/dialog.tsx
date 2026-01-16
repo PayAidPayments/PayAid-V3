@@ -84,11 +84,12 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       throw new Error('DialogContent must be used within Dialog')
     }
 
-    if (!context.open) {
-      return null
-    }
-
+    // Always call useEffect (Rules of Hooks) - conditionally apply effects based on open state
     React.useEffect(() => {
+      if (!context.open) {
+        return
+      }
+
       const handleEscape = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
           context.onOpenChange(false)
@@ -100,7 +101,11 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
         document.removeEventListener('keydown', handleEscape)
         document.body.style.overflow = ''
       }
-    }, [context])
+    }, [context.open, context.onOpenChange])
+
+    if (!context.open) {
+      return null
+    }
 
     return (
       <>
@@ -164,6 +169,14 @@ const DialogDescription = React.forwardRef<
 ))
 DialogDescription.displayName = 'DialogDescription'
 
+const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)}
+    {...props}
+  />
+)
+DialogFooter.displayName = 'DialogFooter'
+
 export {
   Dialog,
   DialogTrigger,
@@ -171,5 +184,6 @@ export {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 }
 

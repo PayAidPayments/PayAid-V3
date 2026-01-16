@@ -14,7 +14,7 @@ const createTransferSchema = z.object({
 // GET /api/inventory/transfers - List stock transfers
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId } = await requireModuleAccess(request, 'inventory')
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
 // POST /api/inventory/transfers - Create stock transfer
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'inventory')
 
     const body = await request.json()
     const validated = createTransferSchema.parse(body)

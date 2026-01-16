@@ -12,7 +12,14 @@ async function main() {
   // Create Test Tenant 1 - Demo Business
   const tenant1 = await prisma.tenant.upsert({
     where: { subdomain: 'demo' },
-    update: {},
+    update: {
+      industry: 'service-business',
+      industrySubType: null,
+      industrySettings: { 
+        setForDemo: true,
+        setAt: new Date().toISOString(),
+      },
+    },
     create: {
       name: 'Demo Business Pvt Ltd',
       subdomain: 'demo',
@@ -32,6 +39,13 @@ async function main() {
       phone: '+91-80-12345678',
       email: 'contact@demobusiness.com',
       website: 'https://demobusiness.com',
+      // Industry Configuration
+      industry: 'service-business',
+      industrySubType: null,
+      industrySettings: { 
+        setForDemo: true,
+        setAt: new Date().toISOString(),
+      },
     },
   })
 
@@ -1338,16 +1352,19 @@ async function main() {
   console.log(`  - ${socialPosts.length} Social Media Posts`)
   console.log(`  - ${scheduledPosts.length} Scheduled Posts`)
 
-  // 12. Multi-Industry Modules - Restaurant
-  console.log('🍽️ Creating Restaurant Industry Data...')
+  // 12. Multi-Industry Modules - Service Business
+  console.log('💼 Setting Demo Business as Service Business Industry...')
   
-  // Set tenant1 as restaurant industry
+  // Set tenant1 as service-business industry
   await prisma.tenant.update({
     where: { id: tenant1.id },
     data: {
-      industry: 'restaurant',
-      industrySubType: 'restaurant',
-      industrySettings: { cookingTime: 15, terminals: 2, maxTables: 20 },
+      industry: 'service-business',
+      industrySubType: null,
+      industrySettings: { 
+        setForDemo: true,
+        setAt: new Date().toISOString(),
+      },
     },
   })
 

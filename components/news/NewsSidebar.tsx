@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, ChevronLeft, ChevronRight, ExternalLink, Filter } from 'lucide-react'
+import { X, ChevronRight, ExternalLink, Filter } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { useAuthStore } from '@/lib/stores/auth'
 
@@ -145,18 +145,25 @@ export function NewsSidebar() {
     }
   }, [isCollapsed])
 
-  // Listen for custom event from Header button
+  // Listen for custom event from Header button (top bar news icon)
   useEffect(() => {
-    const handleOpenNewsSidebar = () => {
-      setIsCollapsed(false)
-      setIsOpen(true)
+    const handleToggleNewsSidebar = () => {
+      if (isOpen) {
+        // If open, close it
+        setIsOpen(false)
+        setIsCollapsed(true)
+      } else {
+        // If closed, open it
+        setIsCollapsed(false)
+        setIsOpen(true)
+      }
     }
 
-    window.addEventListener('openNewsSidebar', handleOpenNewsSidebar)
+    window.addEventListener('toggle-news-sidebar', handleToggleNewsSidebar)
     return () => {
-      window.removeEventListener('openNewsSidebar', handleOpenNewsSidebar)
+      window.removeEventListener('toggle-news-sidebar', handleToggleNewsSidebar)
     }
-  }, [])
+  }, [isOpen])
 
   // Listen for storage events (when localStorage changes from other tabs/components)
   useEffect(() => {
@@ -215,14 +222,10 @@ export function NewsSidebar() {
       
       // Check if click is outside the sidebar
       if (!sidebarRef.current.contains(target)) {
-        // Also check if click is not on the collapsed button
-        const collapsedButton = document.querySelector('[aria-label="Open Industry Intelligence sidebar"]')
-        if (!collapsedButton || !collapsedButton.contains(target)) {
-          // Prevent event propagation and close sidebar
-          event.stopPropagation()
-          setIsOpen(false)
-          setIsCollapsed(true)
-        }
+        // Prevent event propagation and close sidebar
+        event.stopPropagation()
+        setIsOpen(false)
+        setIsCollapsed(true)
       }
     }
 
@@ -519,41 +522,9 @@ export function NewsSidebar() {
 
   const unreadCount = finalData?.unreadCount || 0
 
-  // Always render the collapsed button when collapsed
-  if (isCollapsed) {
-    return (
-      <div 
-        className="fixed right-0 top-1/2 -translate-y-1/2 pointer-events-auto"
-        style={{ 
-          zIndex: 10000,
-          position: 'fixed',
-          right: 0,
-          top: '50%',
-          transform: 'translateY(-50%)',
-        }}
-      >
-        <button
-          onClick={() => {
-            setIsCollapsed(false)
-            setIsOpen(true)
-          }}
-          className="bg-[#53328A] text-white p-2 sm:p-3 rounded-l-lg shadow-2xl hover:bg-[#6B42A3] active:bg-[#5A2A7A] transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center border-2 border-white"
-          aria-label="Open Industry Intelligence sidebar"
-          title="Industry Intelligence"
-          style={{ 
-            zIndex: 10000,
-            position: 'relative',
-          }}
-        >
-          <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -left-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold z-10">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </button>
-      </div>
-    )
+  // Don't render anything when collapsed - sidebar is opened via top bar news icon only
+  if (isCollapsed || !isOpen) {
+    return null
   }
 
   return (

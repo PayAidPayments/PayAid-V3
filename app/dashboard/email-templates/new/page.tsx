@@ -7,6 +7,8 @@ import { useMutation } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { EmailTemplateEditor } from '@/components/email-templates/EmailTemplateEditor'
+import { PREBUILT_TEMPLATES, type PrebuiltTemplate } from '@/lib/email-templates/prebuilt-templates'
 
 export default function NewEmailTemplatePage() {
   const router = useRouter()
@@ -19,8 +21,8 @@ export default function NewEmailTemplatePage() {
     variables: [] as string[],
     isDefault: false,
   })
-  const [newVariable, setNewVariable] = useState('')
   const [error, setError] = useState('')
+  const [showTemplates, setShowTemplates] = useState(false)
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -54,14 +56,17 @@ export default function NewEmailTemplatePage() {
     createMutation.mutate(formData)
   }
 
-  const addVariable = () => {
-    if (newVariable.trim() && !formData.variables.includes(newVariable.trim())) {
-      setFormData({
-        ...formData,
-        variables: [...formData.variables, newVariable.trim()],
-      })
-      setNewVariable('')
-    }
+  const loadTemplate = (template: PrebuiltTemplate) => {
+    setFormData({
+      name: template.name,
+      category: template.category,
+      subject: template.subject,
+      htmlContent: template.htmlContent,
+      textContent: template.textContent,
+      variables: template.variables,
+      isDefault: false,
+    })
+    setShowTemplates(false)
   }
 
   return (
@@ -71,10 +76,47 @@ export default function NewEmailTemplatePage() {
           <h1 className="text-3xl font-bold text-gray-900">New Email Template</h1>
           <p className="mt-2 text-gray-600">Create a reusable email template</p>
         </div>
-        <Link href="/dashboard/email-templates">
-          <Button variant="outline">Cancel</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowTemplates(!showTemplates)}>
+            {showTemplates ? 'Hide' : 'Browse'} Templates
+          </Button>
+          <Link href="/dashboard/email-templates">
+            <Button variant="outline">Cancel</Button>
+          </Link>
+        </div>
       </div>
+
+      {/* Pre-built Templates */}
+      {showTemplates && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pre-built Templates</CardTitle>
+            <CardDescription>Start with a professional template</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {PREBUILT_TEMPLATES.map((template) => (
+                <div
+                  key={template.id}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-purple-500 cursor-pointer transition-colors"
+                  onClick={() => loadTemplate(template)}
+                >
+                  <h3 className="font-semibold text-gray-900">{template.name}</h3>
+                  <p className="text-sm text-gray-600 mt-1">{template.description}</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                      {template.category}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {template.variables.length} variables
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -144,81 +186,31 @@ export default function NewEmailTemplatePage() {
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <label htmlFor="htmlContent" className="text-sm font-medium text-gray-700">
-                  HTML Content <span className="text-red-500">*</span>
+                <label htmlFor="subject" className="text-sm font-medium text-gray-700">
+                  Subject <span className="text-red-500">*</span>
                 </label>
-                <textarea
-                  id="htmlContent"
-                  name="htmlContent"
-                  value={formData.htmlContent}
-                  onChange={(e) => setFormData({ ...formData, htmlContent: e.target.value })}
+                <Input
+                  id="subject"
+                  name="subject"
+                  value={formData.subject}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   required
-                  rows={12}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm"
-                  placeholder="<html>...</html>"
+                  placeholder="e.g., Welcome to {{company}}!"
                 />
               </div>
 
-              <div className="space-y-2 md:col-span-2">
-                <label htmlFor="textContent" className="text-sm font-medium text-gray-700">
-                  Plain Text Content (optional)
-                </label>
-                <textarea
-                  id="textContent"
-                  name="textContent"
-                  value={formData.textContent}
-                  onChange={(e) => setFormData({ ...formData, textContent: e.target.value })}
-                  rows={6}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
-                  placeholder="Plain text version..."
+              {/* Enhanced Email Template Editor */}
+              <div className="md:col-span-2">
+                <EmailTemplateEditor
+                  htmlContent={formData.htmlContent}
+                  textContent={formData.textContent}
+                  subject={formData.subject}
+                  variables={formData.variables}
+                  onHtmlChange={(html) => setFormData({ ...formData, htmlContent: html })}
+                  onTextChange={(text) => setFormData({ ...formData, textContent: text })}
+                  onSubjectChange={(subject) => setFormData({ ...formData, subject })}
+                  onVariablesChange={(variables) => setFormData({ ...formData, variables })}
                 />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-medium text-gray-700">Available Variables</label>
-                <div className="flex gap-2 mb-2">
-                  <Input
-                    value={newVariable}
-                    onChange={(e) => setNewVariable(e.target.value)}
-                    placeholder="e.g., {{name}}, {{company}}"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        addVariable()
-                      }
-                    }}
-                  />
-                  <Button type="button" onClick={addVariable} variant="outline">
-                    Add
-                  </Button>
-                </div>
-                {formData.variables.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {formData.variables.map((variable, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm flex items-center gap-1"
-                      >
-                        {variable}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFormData({
-                              ...formData,
-                              variables: formData.variables.filter((_, i) => i !== idx),
-                            })
-                          }}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <p className="text-xs text-gray-500 mt-2">
-                  Variables can be used in the template like {'{{variableName}}'}
-                </p>
               </div>
             </div>
 

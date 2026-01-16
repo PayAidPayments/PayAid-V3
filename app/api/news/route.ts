@@ -57,14 +57,29 @@ export async function GET(request: NextRequest) {
       })
     )
 
-    // Build where clause
+    // Build where clause - STRICTLY filter by tenant's industry only
+    // This ensures "Industry Intelligence" shows only relevant news for the tenant's industry
     const where: any = {
-      OR: [
-        { tenantId }, // Tenant-specific news
-        ...(tenant?.industry ? [{ tenantId: null, industry: tenant.industry }] : []), // Industry-specific news (only if tenant has industry)
-        { tenantId: null, industry: 'all' }, // General news
-      ],
       isDismissed: false,
+    }
+    
+    // If tenant has an industry, only show news for that specific industry
+    // This prevents showing irrelevant news (e.g., restaurant news to software companies)
+    if (tenant?.industry) {
+      where.OR = [
+        { tenantId }, // Tenant-specific news (if any)
+        { 
+          AND: [
+            { tenantId: null }, // Global news
+            { industry: tenant.industry }, // Matching tenant's industry only
+          ]
+        }, // Industry-specific news matching tenant's industry only
+      ]
+      // Note: We explicitly do NOT include { tenantId: null, industry: 'all' } 
+      // to prevent showing general news that might be irrelevant
+    } else {
+      // If no industry set, only show tenant-specific news (no general news)
+      where.tenantId = tenantId
     }
 
     if (urgency) {

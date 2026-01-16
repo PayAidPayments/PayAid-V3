@@ -12,7 +12,7 @@ const updateInventorySchema = z.object({
 // GET /api/inventory/locations - Get inventory by location
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId } = await requireModuleAccess(request, 'inventory')
 
     const { searchParams } = new URL(request.url)
     const locationId = searchParams.get('locationId')
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 // POST /api/inventory/locations - Update inventory quantity
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'inventory')
 
     const body = await request.json()
     const validated = updateInventorySchema.parse(body)

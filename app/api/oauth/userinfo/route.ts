@@ -1,78 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth/jwt'
-import { prisma } from '@/lib/db/prisma'
+import { getSessionToken } from '@/packages/auth-sdk/client'
 
 /**
- * GET /api/oauth/userinfo
  * OAuth2 UserInfo Endpoint
  * 
- * Returns user information based on the access token.
- * 
- * Headers:
- * - Authorization: Bearer <access_token>
+ * Returns user information for the authenticated user
  */
+
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
-    
+    // Get token from Authorization header
+    const token = await getSessionToken(request)
     if (!token) {
       return NextResponse.json(
-        { error: 'unauthorized', error_description: 'Missing access token' },
+        { error: 'unauthorized', error_description: 'Missing or invalid token' },
         { status: 401 }
       )
     }
-    
-    try {
-      const payload = verifyToken(token)
-      
-      const user = await prisma.user.findUnique({
-        where: { id: payload.userId },
-        include: { 
-          tenant: {
-            select: {
-              id: true,
-              name: true,
-              subdomain: true,
-              plan: true,
-              licensedModules: true,
-              subscriptionTier: true,
-            }
-          }
-        },
-      })
-      
-      if (!user) {
-        return NextResponse.json(
-          { error: 'user_not_found', error_description: 'User not found' },
-          { status: 404 }
-        )
-      }
-      
-      return NextResponse.json({
-        sub: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        tenant_id: user.tenantId,
-        tenant_name: user.tenant?.name,
-        tenant_subdomain: user.tenant?.subdomain,
-        tenant_plan: user.tenant?.plan,
-        licensed_modules: user.tenant?.licensedModules || [],
-        subscription_tier: user.tenant?.subscriptionTier || 'free',
-      })
-    } catch (error) {
+
+    // Fetch user info from auth API
+    const apiUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const response = await fetch(`${apiUrl}/api/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
       return NextResponse.json(
-        { error: 'invalid_token', error_description: 'Invalid or expired access token' },
+        { error: 'unauthorized', error_description: 'Invalid token' },
         { status: 401 }
       )
     }
-  } catch (error) {
-    console.error('OAuth userinfo error:', error)
+
+    const data = await response.json()
+    const user = data.user
+
+    // Return OAuth2-compliant user info
+    return NextResponse.json({
+      sub: user.id, // Subject (user ID)
+      name: user.name,
+      email: user.email,
+      email_verified: user.emailVerified || false,
+      picture: user.avatar || user.picture,
+      tenant_id: user.tenantId,
+      // Additional PayAid-specific claims
+      tenant: data.tenant,
+      roles: user.roles || [],
+    })
+  } catch (error: any) {
+    console.error('[OAuth] UserInfo error:', error)
     return NextResponse.json(
-      { error: 'server_error', error_description: 'An error occurred while fetching user info' },
+      { error: 'server_error', error_description: error.message },
       { status: 500 }
     )
   }
 }
-

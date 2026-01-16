@@ -7,6 +7,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PageLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
 
 interface LandingPage {
@@ -81,7 +82,7 @@ export default function LandingPageDetailPage() {
   }
 
   if (!page) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>
+    return <PageLoading message="Loading landing page..." fullScreen={false} />
   }
 
   return (
@@ -263,7 +264,7 @@ export default function LandingPageDetailPage() {
                               }}
                             />
                           )}
-                          <div className={`${section.backgroundImage ? 'absolute inset-0 bg-black bg-opacity-40' : 'bg-gradient-to-r from-blue-600 to-purple-600'} flex items-center justify-center p-8`}>
+                          <div className={`${section.backgroundImage ? 'absolute inset-0 bg-black bg-opacity-40' : 'bg-gradient-to-r from-[#53328A] to-[#F5C700]'} flex items-center justify-center p-8`}>
                             <div className="text-center text-white">
                               <h2 className="text-3xl font-bold mb-2">{section.title}</h2>
                               {section.subtitle && <p className="text-xl mb-4">{section.subtitle}</p>}

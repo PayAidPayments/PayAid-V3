@@ -1,0 +1,225 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import Link from 'next/link'
+import { useDeal, useUpdateDeal, useContacts } from '@/lib/hooks/use-api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageLoading } from '@/components/ui/loading'
+
+export default function EditDealPage() {
+  const params = useParams()
+  const tenantId = params.tenantId as string
+  const id = params.id as string
+  const router = useRouter()
+  const { data: deal, isLoading } = useDeal(id)
+  const { data: contactsData } = useContacts()
+  const updateDeal = useUpdateDeal()
+  const contacts = contactsData?.contacts || []
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    value: '',
+    probability: '50',
+    stage: 'lead' as 'lead' | 'qualified' | 'proposal' | 'negotiation' | 'won' | 'lost',
+    contactId: '',
+    expectedCloseDate: '',
+  })
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (deal) {
+      setFormData({
+        name: deal.name || '',
+        value: deal.value?.toString() || '',
+        probability: deal.probability?.toString() || '50',
+        stage: deal.stage || 'lead',
+        contactId: deal.contactId || '',
+        expectedCloseDate: deal.expectedCloseDate ? new Date(deal.expectedCloseDate).toISOString().split('T')[0] : '',
+      })
+    }
+  }, [deal])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    try {
+      await updateDeal.mutateAsync({
+        id,
+        data: {
+          ...formData,
+          value: parseFloat(formData.value),
+          probability: parseFloat(formData.probability),
+          expectedCloseDate: formData.expectedCloseDate || undefined,
+        },
+      })
+      router.push(`/crm/${tenantId}/Deals/${id}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update deal')
+    }
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    })
+  }
+
+  if (isLoading) {
+    return <PageLoading message="Loading deal..." fullScreen={false} />
+  }
+
+  if (!deal) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-gray-600 dark:text-gray-400 mb-4">Deal not found</p>
+        <Link href={`/crm/${tenantId}/Deals`}>
+          <Button className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">Back to Deals</Button>
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Edit Deal</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Update deal information</p>
+        </div>
+        <Link href={`/crm/${tenantId}/Deals/${id}`}>
+          <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Cancel</Button>
+        </Link>
+      </div>
+
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <CardHeader>
+          <CardTitle className="dark:text-gray-100">Deal Information</CardTitle>
+          <CardDescription className="dark:text-gray-400">Update the deal details below</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-md">
+                {error}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2 md:col-span-2">
+                <label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">Deal Name *</label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  disabled={updateDeal.isPending}
+                  className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="value" className="text-sm font-medium text-gray-700 dark:text-gray-300">Deal Value (₹) *</label>
+                <Input
+                  id="value"
+                  name="value"
+                  type="number"
+                  step="0.01"
+                  value={formData.value}
+                  onChange={handleChange}
+                  required
+                  disabled={updateDeal.isPending}
+                  className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="probability" className="text-sm font-medium text-gray-700 dark:text-gray-300">Probability (%)</label>
+                <Input
+                  id="probability"
+                  name="probability"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.probability}
+                  onChange={handleChange}
+                  disabled={updateDeal.isPending}
+                  className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="stage" className="text-sm font-medium text-gray-700 dark:text-gray-300">Stage *</label>
+                <select
+                  id="stage"
+                  name="stage"
+                  value={formData.stage}
+                  onChange={handleChange}
+                  className="flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                  required
+                  disabled={updateDeal.isPending}
+                >
+                  <option value="lead">Lead</option>
+                  <option value="qualified">Qualified</option>
+                  <option value="proposal">Proposal</option>
+                  <option value="negotiation">Negotiation</option>
+                  <option value="won">Won</option>
+                  <option value="lost">Lost</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="contactId" className="text-sm font-medium text-gray-700 dark:text-gray-300">Contact *</label>
+                <select
+                  id="contactId"
+                  name="contactId"
+                  value={formData.contactId}
+                  onChange={handleChange}
+                  className="flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                  required
+                  disabled={updateDeal.isPending}
+                >
+                  <option value="">Select Contact</option>
+                  {contacts.map((contact: any) => (
+                    <option key={contact.id} value={contact.id}>
+                      {contact.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="expectedCloseDate" className="text-sm font-medium text-gray-700 dark:text-gray-300">Expected Close Date</label>
+                <Input
+                  id="expectedCloseDate"
+                  name="expectedCloseDate"
+                  type="date"
+                  value={formData.expectedCloseDate}
+                  onChange={handleChange}
+                  disabled={updateDeal.isPending}
+                  className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4">
+              <Link href={`/crm/${tenantId}/Deals/${id}`}>
+                <Button type="button" variant="outline" disabled={updateDeal.isPending} className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                  Cancel
+                </Button>
+              </Link>
+              <Button type="submit" disabled={updateDeal.isPending} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
+                {updateDeal.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

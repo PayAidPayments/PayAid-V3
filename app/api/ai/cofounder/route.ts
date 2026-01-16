@@ -3,6 +3,7 @@ import { requireModuleAccess } from '@/lib/middleware/license'
 import { routeToAgent, getAgent, getAllAgents, type AgentId } from '@/lib/ai/agents'
 import { getBusinessContext } from '@/lib/ai/business-context-builder'
 import { prisma } from '@/lib/db/prisma'
+import { getIndustryConfig } from '@/lib/industries/config'
 import { z } from 'zod'
 
 const cofounderSchema = z.object({
@@ -68,6 +69,25 @@ export async function POST(request: NextRequest) {
       involvedAgents: involvedAgents.length,
     })
 
+    // Get tenant industry for industry-specific prompts
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { industry: true, industrySubType: true },
+    })
+
+    // Get industry-specific AI prompts
+    let industryPrompts = ''
+    if (tenant?.industry) {
+      const industryConfig = getIndustryConfig(tenant.industry)
+      if (industryConfig?.aiPrompts && industryConfig.aiPrompts.length > 0) {
+        industryPrompts = `\n\nINDUSTRY-SPECIFIC CONTEXT (${industryConfig.name}):
+The following industry-specific prompts and insights are available:
+${industryConfig.aiPrompts.map((prompt, idx) => `${idx + 1}. ${prompt}`).join('\n')}
+
+Use these insights to provide more relevant, industry-specific advice.`
+      }
+    }
+
     // Get business context for this agent's data scopes
     let businessContext = ''
     try {
@@ -94,9 +114,11 @@ You should synthesize insights from multiple perspectives and provide comprehens
 
 Current business context:
 ${businessContext || 'No specific business context available.'}
+${industryPrompts}
 
 Tenant ID: ${tenantId}
-User ID: ${userId}`
+User ID: ${userId}
+${tenant?.industry ? `Industry: ${tenant.industry}${tenant.industrySubType ? ` (${tenant.industrySubType})` : ''}` : ''}`
 
     // Use the existing AI chat infrastructure
     // Import clients using the same pattern as chat route

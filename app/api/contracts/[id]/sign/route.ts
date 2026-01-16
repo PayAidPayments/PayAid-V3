@@ -4,82 +4,120 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/licens
 import { z } from 'zod'
 
 const signContractSchema = z.object({
-  signerName: z.string().min(1),
-  signerEmail: z.string().email(),
-  signerRole: z.enum(['PARTY', 'US', 'WITNESS']),
-  signatureMethod: z.enum(['MANUAL', 'DOCUSIGN', 'HELLOSIGN', 'E_MUDRA']).default('MANUAL'),
-  signatureUrl: z.string().optional(),
+  signatureId: z.string().optional(), // If signing on behalf of someone
+  signatureData: z.string().optional(), // Base64 signature image or data
   ipAddress: z.string().optional(),
   userAgent: z.string().optional(),
 })
 
-// POST /api/contracts/[id]/sign - Add signature to contract
+/**
+ * POST /api/contracts/[id]/sign
+ * Sign a contract (e-signature)
+ */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
-    const { id } = await params
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const contractId = params.id
 
-    const contract = await prisma.contract.findFirst({
-      where: {
-        id,
-        tenantId,
+    const body = await request.json()
+    const validated = signContractSchema.parse(body)
+
+    // Get contract
+    const contract = await prisma.contract.findUnique({
+      where: { id: contractId },
+      include: {
+        signatures: true,
       },
     })
 
-    if (!contract) {
+    if (!contract || contract.tenantId !== tenantId) {
       return NextResponse.json(
         { error: 'Contract not found' },
         { status: 404 }
       )
     }
 
-    const body = await request.json()
-    const validated = signContractSchema.parse(body)
-
-    // Create signature record
-    const signature = await prisma.contractSignature.create({
-      data: {
-        contractId: id,
-        signerName: validated.signerName,
-        signerEmail: validated.signerEmail,
-        signerRole: validated.signerRole,
-        signatureMethod: validated.signatureMethod,
-        signatureUrl: validated.signatureUrl,
-        signedAt: new Date(),
-        ipAddress: validated.ipAddress,
-        userAgent: validated.userAgent,
-      },
+    // Get user info
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
     })
 
-    // Update contract status based on signatures
-    const allSignatures = await prisma.contractSignature.findMany({
-      where: { contractId: id },
-    })
-
-    const hasPartySignature = allSignatures.some((s) => s.signerRole === 'PARTY')
-    const hasUsSignature = allSignatures.some((s) => s.signerRole === 'US')
-
-    let newStatus = contract.status
-    if (hasPartySignature && hasUsSignature) {
-      newStatus = 'ACTIVE'
-    } else if (hasPartySignature || hasUsSignature) {
-      newStatus = 'PENDING_SIGNATURE'
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
     }
 
-    await prisma.contract.update({
-      where: { id },
+    // Find or create signature
+    let signature = validated.signatureId
+      ? await prisma.contractSignature.findUnique({
+          where: { id: validated.signatureId },
+        })
+      : await prisma.contractSignature.findFirst({
+          where: {
+            contractId,
+            signerEmail: user.email,
+          },
+        })
+
+    if (!signature) {
+      // Create new signature for current user
+      signature = await prisma.contractSignature.create({
+        data: {
+          contractId,
+          signerName: user.name || user.email,
+          signerEmail: user.email,
+          signerRole: 'US',
+          signatureMethod: 'MANUAL',
+        },
+      })
+    }
+
+    if (signature.signedAt) {
+      return NextResponse.json(
+        { error: 'Contract already signed by this signer' },
+        { status: 400 }
+      )
+    }
+
+    // Update signature
+    const clientIp = request.headers.get('x-forwarded-for') || 
+                     request.headers.get('x-real-ip') || 
+                     'unknown'
+    const userAgent = request.headers.get('user-agent') || 'unknown'
+
+    await prisma.contractSignature.update({
+      where: { id: signature.id },
       data: {
-        status: newStatus,
-        signedByParty: hasPartySignature,
-        signedByUs: hasUsSignature,
-        signedAt: newStatus === 'ACTIVE' ? new Date() : contract.signedAt,
+        signedAt: new Date(),
+        ipAddress: validated.ipAddress || clientIp,
+        userAgent: validated.userAgent || userAgent,
+        signatureUrl: validated.signatureData ? `data:image/png;base64,${validated.signatureData}` : null,
       },
     })
 
-    return NextResponse.json({ signature })
+    // Check if all required signatures are collected
+    const allSignatures = await prisma.contractSignature.findMany({
+      where: { contractId },
+    })
+
+    const allSigned = allSignatures.every((sig) => sig.signedAt !== null)
+
+    if (allSigned && contract.status === 'PENDING_SIGNATURE') {
+      await prisma.contract.update({
+        where: { id: contractId },
+        data: { status: 'SIGNED' },
+      })
+    }
+
+    return NextResponse.json({
+      message: 'Contract signed successfully',
+      allSignaturesCollected: allSigned,
+    })
   } catch (error) {
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
@@ -98,4 +136,3 @@ export async function POST(
     )
   }
 }
-

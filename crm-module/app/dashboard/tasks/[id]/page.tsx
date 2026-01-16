@@ -173,12 +173,27 @@ export default function TaskDetailPage() {
                 <CardTitle>Related Contact</CardTitle>
               </CardHeader>
               <CardContent>
-                <Link
-                  href={`/dashboard/contacts/${task.contact.id}`}
-                  className="text-blue-600 hover:underline font-medium"
-                >
-                  {task.contact.name}
-                </Link>
+                {(() => {
+                  const contact = task.contact
+                  if (typeof contact === 'string') {
+                    return <span className="font-medium">{contact}</span>
+                  }
+                  if (typeof contact === 'object' && contact !== null) {
+                    const contactName = String(contact.name || contact.email || contact.id || 'Unknown')
+                    const contactId = contact.id
+                    return contactId ? (
+                      <Link
+                        href={`/dashboard/contacts/${contactId}`}
+                        className="text-blue-600 hover:underline font-medium"
+                      >
+                        {contactName}
+                      </Link>
+                    ) : (
+                      <span className="font-medium">{contactName}</span>
+                    )
+                  }
+                  return <span className="font-medium">{String(contact)}</span>
+                })()}
               </CardContent>
             </Card>
           )}
@@ -189,10 +204,23 @@ export default function TaskDetailPage() {
                 <CardTitle>Assigned To</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="font-medium">{task.assignedTo.name}</div>
-                {task.assignedTo.email && (
-                  <div className="text-sm text-gray-500">{task.assignedTo.email}</div>
-                )}
+                {(() => {
+                  const assignedTo = task.assignedTo
+                  if (typeof assignedTo === 'string') {
+                    return <div className="font-medium">{assignedTo}</div>
+                  }
+                  if (typeof assignedTo === 'object' && assignedTo !== null) {
+                    return (
+                      <>
+                        <div className="font-medium">{String(assignedTo.name || assignedTo.email || assignedTo.id || 'Unknown')}</div>
+                        {assignedTo.email && assignedTo.name && (
+                          <div className="text-sm text-gray-500">{String(assignedTo.email)}</div>
+                        )}
+                      </>
+                    )
+                  }
+                  return <div className="font-medium">{String(assignedTo)}</div>
+                })()}
               </CardContent>
             </Card>
           )}

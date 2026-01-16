@@ -46,29 +46,48 @@ export default function ChatPage() {
   const [newChannelName, setNewChannelName] = useState('')
 
   // Get workspace
-  const { data: workspaceData } = useQuery<{ workspace: any }>({
+  const { 
+    data: workspaceData, 
+    isLoading: isLoadingWorkspace, 
+    isError: isErrorWorkspace,
+    error: workspaceError 
+  } = useQuery<{ workspace: any }>({
     queryKey: ['chat-workspace'],
     queryFn: async () => {
       const response = await apiRequest('/api/chat/workspaces')
-      if (!response.ok) throw new Error('Failed to fetch workspace')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to fetch workspace')
+      }
       return response.json()
     },
+    retry: 2,
+    refetchInterval: 30000, // Refresh every 30 seconds
   })
 
   const workspace = workspaceData?.workspace
   const channels = workspace?.channels || []
 
   // Get messages for selected channel
-  const { data: messagesData } = useQuery<{ messages: ChatMessage[] }>({
+  const { 
+    data: messagesData, 
+    isLoading: isLoadingMessages,
+    isError: isErrorMessages,
+    error: messagesError 
+  } = useQuery<{ messages: ChatMessage[] }>({
     queryKey: ['chat-messages', selectedChannelId],
     queryFn: async () => {
       if (!selectedChannelId) return { messages: [] }
       const response = await apiRequest(`/api/chat/channels/${selectedChannelId}/messages`)
-      if (!response.ok) throw new Error('Failed to fetch messages')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to fetch messages')
+      }
       return response.json()
     },
     enabled: !!selectedChannelId,
     refetchInterval: 5000, // Refresh every 5 seconds
+    retry: 2,
   })
 
   const messages = messagesData?.messages || []
@@ -198,31 +217,59 @@ export default function ChatPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Channels</CardTitle>
-            <CardDescription>{channels.length} channels</CardDescription>
+            <CardDescription>
+              {isLoadingWorkspace ? 'Loading...' : `${channels.length} channels`}
+            </CardDescription>
           </CardHeader>
           <CardContent className="overflow-y-auto max-h-[calc(100vh-350px)]">
-            <div className="space-y-1">
-              {channels.map((channel: ChatChannel) => (
-                <button
-                  key={channel.id}
-                  onClick={() => setSelectedChannelId(channel.id)}
-                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                    selectedChannelId === channel.id
-                      ? 'bg-blue-100 text-blue-700 font-medium'
-                      : 'hover:bg-gray-100 text-gray-700'
-                  }`}
+            {isLoadingWorkspace ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>Loading channels...</p>
+              </div>
+            ) : isErrorWorkspace ? (
+              <div className="p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                <p className="font-medium mb-1">Failed to load channels</p>
+                <p className="text-xs">
+                  {workspaceError instanceof Error ? workspaceError.message : 'Unknown error'}
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ['chat-workspace'] })}
                 >
-                  <div className="flex items-center justify-between">
-                    <span>#{channel.name}</span>
-                    {channel._count?.messages !== undefined && (
-                      <span className="text-xs text-gray-500">
-                        {channel._count.messages}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
+                  Retry
+                </Button>
+              </div>
+            ) : channels.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No channels yet</p>
+                <p className="text-xs mt-1">Create a channel to get started</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {channels.map((channel: ChatChannel) => (
+                  <button
+                    key={channel.id}
+                    onClick={() => setSelectedChannelId(channel.id)}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                      selectedChannelId === channel.id
+                        ? 'bg-blue-100 text-blue-700 font-medium'
+                        : 'hover:bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>#{channel.name}</span>
+                      {channel._count?.messages !== undefined && (
+                        <span className="text-xs text-gray-500">
+                          {channel._count.messages}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -238,22 +285,46 @@ export default function ChatPage() {
                   )}
                 </CardHeader>
                 <CardContent className="flex-1 overflow-y-auto space-y-4">
-                  {messages.length === 0 ? (
+                  {isLoadingMessages ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <p>Loading messages...</p>
+                    </div>
+                  ) : isErrorMessages ? (
+                    <div className="p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                      <p className="font-medium mb-1">Failed to load messages</p>
+                      <p className="text-xs mb-2">
+                        {messagesError instanceof Error ? messagesError.message : 'Unknown error'}
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => queryClient.invalidateQueries({ queryKey: ['chat-messages'] })}
+                      >
+                        Retry
+                      </Button>
+                    </div>
+                  ) : messages.length === 0 ? (
                     <div className="text-center py-12 text-gray-500">
                       <p>No messages yet</p>
                       <p className="text-sm mt-2">Start the conversation!</p>
                     </div>
                   ) : (
-                    messages.map((message) => (
+                    messages.map((message) => {
+                      // Safely extract user display info
+                      const userName = message.sender.user?.name
+                      const userEmail = message.sender.user?.email
+                      const displayName = message.sender.displayName || userName || userEmail || 'Unknown User'
+                      const initial = (userName?.[0] || userEmail?.[0] || '?').toUpperCase()
+                      
+                      return (
                       <div key={message.id} className="flex gap-3">
                         <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium">
-                          {message.sender.user.name?.[0]?.toUpperCase() ||
-                            message.sender.user.email[0].toUpperCase()}
+                          {initial}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-medium text-sm">
-                              {message.sender.displayName || message.sender.user.name}
+                              {String(displayName)}
                             </span>
                             <span className="text-xs text-gray-500">
                               {new Date(message.createdAt).toLocaleTimeString()}
@@ -284,14 +355,15 @@ export default function ChatPage() {
                                   key={reaction.id}
                                   className="px-2 py-1 bg-gray-100 rounded text-xs"
                                 >
-                                  {reaction.emoji}
+                                  {String(reaction.emoji || '👍')}
                                 </span>
                               ))}
                             </div>
                           )}
                         </div>
                       </div>
-                    ))
+                      )
+                    })
                   )}
                 </CardContent>
               </Card>

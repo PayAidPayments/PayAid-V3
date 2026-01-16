@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
+import { prismaRead } from '@/lib/db/prisma-read'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { getPayAidPayments } from '@/lib/payments/payaid'
 import { calculateGST, getGSTRate } from '@/lib/invoicing/gst'
+import { multiLayerCache } from '@/lib/cache/multi-layer'
 import { z } from 'zod'
 import { mediumPriorityQueue } from '@/lib/queue/bull'
 import { getSendGridClient } from '@/lib/email/sendgrid'
@@ -31,14 +33,23 @@ const createOrderSchema = z.object({
 // GET /api/orders - List all orders
 export async function GET(request: NextRequest) {
   try {
-    // Check CRM module license (orders are part of sales/CRM)
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    // Check Sales module license (orders are part of Sales module)
+    const { tenantId } = await requireModuleAccess(request, 'sales')
 
     const searchParams = request.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
     const status = searchParams.get('status')
     const customerId = searchParams.get('customerId')
+
+    // Build cache key
+    const cacheKey = `orders:${tenantId}:${page}:${limit}:${status || 'all'}:${customerId || 'all'}`
+
+    // Check cache (multi-layer: L1 memory -> L2 Redis)
+    const cached = await multiLayerCache.get(cacheKey)
+    if (cached) {
+      return NextResponse.json(cached)
+    }
 
     const where: any = {
       tenantId: tenantId,
@@ -47,8 +58,9 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status
     if (customerId) where.customerId = customerId
 
+    // Use read replica for GET requests
     const [orders, total] = await Promise.all([
-      prisma.order.findMany({
+      prismaRead.order.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
@@ -74,10 +86,10 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prisma.order.count({ where }),
+      prismaRead.order.count({ where }),
     ])
 
-    return NextResponse.json({
+    const result = {
       orders,
       pagination: {
         page,
@@ -85,7 +97,14 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
       },
+    }
+
+    // Cache for 3 minutes (multi-layer: L1 + L2)
+    await multiLayerCache.set(cacheKey, result, 180).catch(() => {
+      // Ignore cache errors - not critical
     })
+
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Get orders error:', error)
     return NextResponse.json(
@@ -98,8 +117,8 @@ export async function GET(request: NextRequest) {
 // POST /api/orders - Create a new order
 export async function POST(request: NextRequest) {
   try {
-    // Check CRM module license (orders are part of sales/CRM)
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    // Check Sales module license (orders are part of Sales module)
+    const { tenantId } = await requireModuleAccess(request, 'sales')
 
     const body = await request.json()
     const validated = createOrderSchema.parse(body)
@@ -237,6 +256,14 @@ export async function POST(request: NextRequest) {
           total,
         })
       }
+
+      // Invalidate cache after creating order
+      await multiLayerCache.deletePattern(`orders:${tenantId}:*`).catch(() => {
+        // Ignore cache errors - not critical
+      })
+      await multiLayerCache.delete(`dashboard:stats:${tenantId}`).catch(() => {
+        // Ignore cache errors - not critical
+      })
 
       return NextResponse.json(order, { status: 201 })
     }

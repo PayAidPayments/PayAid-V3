@@ -23,6 +23,21 @@ export async function GET(request: NextRequest) {
       where: { tenantId: tenantId },
       include: {
         channels: {
+          where: {
+            OR: [
+              { isPrivate: false }, // Public channels
+              {
+                isPrivate: true,
+                members: {
+                  some: {
+                    member: {
+                      userId: userId,
+                    },
+                  },
+                },
+              }, // Private channels user is a member of
+            ],
+          },
           include: {
             members: {
               include: {
@@ -113,6 +128,21 @@ export async function GET(request: NextRequest) {
         where: { id: newWorkspace.id },
         include: {
           channels: {
+            where: {
+              OR: [
+                { isPrivate: false }, // Public channels
+                {
+                  isPrivate: true,
+                  members: {
+                    some: {
+                      member: {
+                        userId: userId,
+                      },
+                    },
+                  },
+                }, // Private channels user is a member of
+              ],
+            },
             include: {
               members: {
                 include: {

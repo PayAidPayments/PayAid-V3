@@ -133,6 +133,10 @@ export async function PATCH(
     // Invalidate cache
     await cache.deletePattern(`contacts:${tenantId}:*`)
     await cache.delete(`contact:${resolvedParams.id}`)
+    // Invalidate dashboard stats cache so the count updates immediately
+    await cache.delete(`dashboard:stats:${tenantId}`).catch(() => {
+      // Ignore cache errors - not critical
+    })
 
     return NextResponse.json(contact)
   } catch (error) {
@@ -183,6 +187,10 @@ export async function DELETE(
     // Invalidate cache
     await cache.deletePattern(`contacts:${tenantId}:*`)
     await cache.delete(`contact:${resolvedParams.id}`)
+    // Invalidate dashboard stats cache so the count updates immediately
+    await cache.delete(`dashboard:stats:${tenantId}`).catch(() => {
+      // Ignore cache errors - not critical
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

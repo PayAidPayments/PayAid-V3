@@ -3,6 +3,7 @@
 import { useAuthStore } from '@/lib/stores/auth'
 import { NotificationBell } from '@/components/NotificationBell'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { BusinessUnitSelector } from '@/components/business-units/BusinessUnitSelector'
 import { Newspaper, User, Settings, LogOut, ChevronDown } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -12,6 +13,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const { tenant, token, user, logout } = useAuthStore()
   const [newsUnreadCount, setNewsUnreadCount] = useState(0)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [selectedBusinessUnit, setSelectedBusinessUnit] = useState<string | null>(null)
   const profileMenuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
@@ -45,19 +47,9 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   }, [token])
 
   const handleNewsClick = () => {
-    // Trigger news sidebar to open
-    const event = new CustomEvent('openNewsSidebar')
+    // Toggle news sidebar
+    const event = new CustomEvent('toggle-news-sidebar')
     window.dispatchEvent(event)
-    
-    // Also try to update localStorage to ensure sidebar opens
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('newsSidebarCollapsed', 'false')
-      // Force a re-render by updating a state that NewsSidebar listens to
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'newsSidebarCollapsed',
-        newValue: 'false',
-      }))
-    }
   }
 
   // Close profile menu when clicking outside
@@ -103,13 +95,20 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <div>
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[200px] sm:max-w-none">
-              {tenant?.name || 'PayAid V3'}
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-              {tenant?.plan || 'Free'} Plan
-            </p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[200px] sm:max-w-none">
+                {tenant?.name || 'PayAid V3'}
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                {tenant?.plan || 'Free'} Plan
+              </p>
+            </div>
+            {/* Business Unit Selector - Only show if tenant has multiple units */}
+            <BusinessUnitSelector
+              currentUnitId={selectedBusinessUnit || undefined}
+              onUnitChange={setSelectedBusinessUnit}
+            />
           </div>
         </div>
         <div className="flex items-center space-x-2 sm:space-x-4">

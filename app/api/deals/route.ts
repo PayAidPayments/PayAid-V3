@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
+import { prismaRead } from '@/lib/db/prisma-read'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { cache } from '@/lib/redis/client'
+import { multiLayerCache } from '@/lib/cache/multi-layer'
 import { z } from 'zod'
 
 const createDealSchema = z.object({
@@ -9,7 +10,12 @@ const createDealSchema = z.object({
   value: z.number().positive('Deal value must be greater than 0'),
   probability: z.number().min(0).max(100).default(50),
   stage: z.enum(['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost']).default('lead'),
-  contactId: z.string().min(1, 'Please select a contact'),
+  // Contact can be provided by ID or by name/email/phone (for auto-creation)
+  contactId: z.string().optional(),
+  contactName: z.string().optional(),
+  contactEmail: z.string().email().optional().or(z.literal('')),
+  contactPhone: z.string().optional(),
+  contactCompany: z.string().optional(),
   expectedCloseDate: z.preprocess(
     (val) => {
       // Transform empty string, null, or undefined to undefined
@@ -35,7 +41,16 @@ const createDealSchema = z.object({
     },
     z.string().datetime().optional().or(z.undefined())
   ).optional(),
-})
+}).refine(
+  (data) => {
+    // Either contactId must be provided, OR contactName must be provided
+    return !!(data.contactId || data.contactName)
+  },
+  {
+    message: 'Either select an existing contact or provide contact name to create a new one',
+    path: ['contactId'],
+  }
+)
 
 // GET /api/deals - List all deals
 export async function GET(request: NextRequest) {
@@ -52,8 +67,8 @@ export async function GET(request: NextRequest) {
     // Build cache key
     const cacheKey = `deals:${tenantId}:${page}:${limit}:${stage || 'all'}:${contactId || 'all'}`
 
-    // Check cache
-    const cached = await cache.get(cacheKey)
+    // Check cache (multi-layer: L1 memory -> L2 Redis)
+    const cached = await multiLayerCache.get(cacheKey)
     if (cached) {
       return NextResponse.json(cached)
     }
@@ -65,8 +80,9 @@ export async function GET(request: NextRequest) {
     if (stage) where.stage = stage
     if (contactId) where.contactId = contactId
 
+    // Use read replica for GET requests
     const [deals, total, pipelineSummary] = await Promise.all([
-      prisma.deal.findMany({
+      prismaRead.deal.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
@@ -90,8 +106,8 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prisma.deal.count({ where }),
-      prisma.deal.groupBy({
+      prismaRead.deal.count({ where }),
+      prismaRead.deal.groupBy({
         by: ['stage'],
         where: { tenantId: tenantId },
         _sum: {
@@ -114,8 +130,8 @@ export async function GET(request: NextRequest) {
       pipelineSummary,
     }
 
-    // Cache for 3 minutes
-    await cache.set(cacheKey, result, 180)
+    // Cache for 3 minutes (multi-layer: L1 + L2)
+    await multiLayerCache.set(cacheKey, result, 180)
 
     return NextResponse.json(result)
   } catch (error) {
@@ -136,28 +152,75 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = createDealSchema.parse(body)
 
-    // Verify contact belongs to tenant
-    const contact = await prisma.contact.findFirst({
-      where: {
-        id: validated.contactId,
-        tenantId: tenantId,
-      },
-    })
+    let contactId: string | null = null
+    let createdContact = false
 
-    if (!contact) {
-      return NextResponse.json(
-        { error: 'Contact not found' },
-        { status: 404 }
-      )
+    // Handle Contact: either use existing or create new
+    if (validated.contactId) {
+      // Use existing contact
+      const contact = await prisma.contact.findFirst({
+        where: {
+          id: validated.contactId,
+          tenantId: tenantId,
+        },
+      })
+
+      if (!contact) {
+        return NextResponse.json(
+          { error: 'Contact not found' },
+          { status: 404 }
+        )
+      }
+
+      contactId = validated.contactId
+    } else if (validated.contactName) {
+      // Auto-create contact from deal information
+      // First, check if contact already exists by email or phone
+      const existingContact = await prisma.contact.findFirst({
+        where: {
+          tenantId: tenantId,
+          OR: [
+            ...(validated.contactEmail ? [{ email: validated.contactEmail }] : []),
+            ...(validated.contactPhone ? [{ phone: validated.contactPhone }] : []),
+          ],
+        },
+      })
+
+      if (existingContact) {
+        // Link to existing contact
+        contactId = existingContact.id
+      } else {
+        // Create new contact as prospect
+        const newContact = await prisma.contact.create({
+          data: {
+            name: validated.contactName,
+            email: validated.contactEmail || null,
+            phone: validated.contactPhone || null,
+            company: validated.contactCompany || null,
+            tenantId: tenantId,
+            type: 'lead', // Keep for backward compat
+            stage: 'prospect', // New simplified stage
+            status: 'active',
+            source: 'manual',
+          },
+        })
+        contactId = newContact.id
+        createdContact = true
+      }
     }
 
+    // Create deal
     const deal = await prisma.deal.create({
       data: {
         name: validated.name,
         value: validated.value,
         probability: validated.probability,
         stage: validated.stage,
-        contactId: validated.contactId,
+        contactId: contactId,
+        // Store contact info in Deal for reference (if created without Contact)
+        contactName: validated.contactName || null,
+        contactEmail: validated.contactEmail || null,
+        contactPhone: validated.contactPhone || null,
         tenantId: tenantId,
         expectedCloseDate: validated.expectedCloseDate
           ? new Date(validated.expectedCloseDate)
@@ -169,12 +232,27 @@ export async function POST(request: NextRequest) {
             id: true,
             name: true,
             email: true,
+            stage: true,
           },
         },
       },
     })
 
-    return NextResponse.json(deal, { status: 201 })
+    // Auto-promote Contact to "contact" stage if Deal is created
+    if (contactId && createdContact) {
+      await prisma.contact.update({
+        where: { id: contactId },
+        data: {
+          stage: 'contact', // Promote to contact when Deal is created
+          type: 'contact', // Also update type for backward compat
+        },
+      })
+    }
+
+    return NextResponse.json({
+      ...deal,
+      createdContact, // Indicate if a new contact was created
+    }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       // Create user-friendly error messages
@@ -217,4 +295,5 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
 

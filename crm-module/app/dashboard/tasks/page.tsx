@@ -122,17 +122,33 @@ function TasksPage() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        {task.assignedTo?.name || '-'}
+                        {(() => {
+                          const assignedTo = task.assignedTo
+                          if (!assignedTo) return '-'
+                          // Handle both object and string cases
+                          if (typeof assignedTo === 'string') return assignedTo
+                          if (typeof assignedTo === 'object') {
+                            return String(assignedTo.name || assignedTo.email || assignedTo.id || '-')
+                          }
+                          return String(assignedTo)
+                        })()}
                       </TableCell>
                       <TableCell>
-                        {task.contact?.name ? (
-                          <Link
-                            href={`/dashboard/contacts/${task.contact.id}`}
-                            className="text-blue-600 hover:underline"
-                          >
-                            {task.contact.name}
-                          </Link>
-                        ) : '-'}
+                        {(() => {
+                          const contact = task.contact
+                          if (!contact) return '-'
+                          const contactName = typeof contact === 'object' ? (contact.name || contact.email || contact.id) : contact
+                          if (!contactName) return '-'
+                          const contactId = typeof contact === 'object' ? contact.id : null
+                          return contactId ? (
+                            <Link
+                              href={`/dashboard/contacts/${contactId}`}
+                              className="text-blue-600 hover:underline"
+                            >
+                              {String(contactName)}
+                            </Link>
+                          ) : String(contactName)
+                        })()}
                       </TableCell>
                       <TableCell>
                         {task.dueDate ? format(new Date(task.dueDate), 'MMM dd, yyyy') : '-'}

@@ -1,15 +1,35 @@
 import Bull from 'bull'
 import { getRedisClient } from '../redis/client'
 
-// Queue configuration
-const redisClient = getRedisClient()
+/**
+ * Parse Redis URL to extract connection options
+ */
+function parseRedisUrl(redisUrl?: string): { host: string; port: number; password?: string } {
+  const url = redisUrl || process.env.REDIS_URL || 'redis://localhost:6379'
+  
+  try {
+    const parsed = new URL(url)
+    return {
+      host: parsed.hostname || 'localhost',
+      port: parsed.port ? parseInt(parsed.port, 10) : 6379,
+      password: parsed.password || undefined,
+    }
+  } catch {
+    // Fallback for simple format
+    const parts = url.replace('redis://', '').split(':')
+    return {
+      host: parts[0] || 'localhost',
+      port: parts[1] ? parseInt(parts[1], 10) : 6379,
+    }
+  }
+}
+
+// Parse Redis connection from environment
+const redisConfig = parseRedisUrl(process.env.REDIS_URL)
 
 // Create queues for different priority levels
 export const highPriorityQueue = new Bull('high-priority', {
-  redis: {
-    host: process.env.REDIS_URL?.replace('redis://', '').split(':')[0] || 'localhost',
-    port: parseInt(process.env.REDIS_URL?.split(':')[2] || '6379'),
-  },
+  redis: redisConfig,
   defaultJobOptions: {
     attempts: 3,
     backoff: {
@@ -22,10 +42,7 @@ export const highPriorityQueue = new Bull('high-priority', {
 })
 
 export const mediumPriorityQueue = new Bull('medium-priority', {
-  redis: {
-    host: process.env.REDIS_URL?.replace('redis://', '').split(':')[0] || 'localhost',
-    port: parseInt(process.env.REDIS_URL?.split(':')[2] || '6379'),
-  },
+  redis: redisConfig,
   defaultJobOptions: {
     attempts: 2,
     backoff: {
@@ -38,10 +55,7 @@ export const mediumPriorityQueue = new Bull('medium-priority', {
 })
 
 export const lowPriorityQueue = new Bull('low-priority', {
-  redis: {
-    host: process.env.REDIS_URL?.replace('redis://', '').split(':')[0] || 'localhost',
-    port: parseInt(process.env.REDIS_URL?.split(':')[2] || '6379'),
-  },
+  redis: redisConfig,
   defaultJobOptions: {
     attempts: 1,
     backoff: {

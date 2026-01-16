@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { format } from 'date-fns'
 import { useState } from 'react'
+import { PageLoading } from '@/components/ui/loading'
+import { EmailTemplateEditor } from '@/components/email-templates/EmailTemplateEditor'
 
 interface EmailTemplate {
   id: string
@@ -34,6 +36,7 @@ export default function EmailTemplateDetailPage() {
     subject: '',
     htmlContent: '',
     textContent: '',
+    variables: [] as string[],
     isDefault: false,
     isActive: true,
   })
@@ -50,6 +53,7 @@ export default function EmailTemplateDetailPage() {
         subject: data.subject,
         htmlContent: data.htmlContent,
         textContent: data.textContent || '',
+        variables: (data.variables as string[]) || [],
         isDefault: data.isDefault,
         isActive: data.isActive,
       })
@@ -66,6 +70,7 @@ export default function EmailTemplateDetailPage() {
           ...data,
           category: data.category || null,
           textContent: data.textContent || null,
+          variables: data.variables || [],
         }),
       })
       if (!response.ok) {
@@ -86,7 +91,7 @@ export default function EmailTemplateDetailPage() {
   }
 
   if (!template) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>
+    return <PageLoading message="Loading email template..." fullScreen={false} />
   }
 
   return (
@@ -154,43 +159,19 @@ export default function EmailTemplateDetailPage() {
                     <span className="text-sm font-medium text-gray-700">Set as Default</span>
                   </label>
                 </div>
-                <div className="space-y-2 md:col-span-2">
-                  <label htmlFor="subject" className="text-sm font-medium text-gray-700">
-                    Subject <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    id="subject"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <label htmlFor="htmlContent" className="text-sm font-medium text-gray-700">
-                    HTML Content <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    id="htmlContent"
-                    name="htmlContent"
-                    value={formData.htmlContent}
-                    onChange={(e) => setFormData({ ...formData, htmlContent: e.target.value })}
-                    required
-                    rows={12}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm"
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <label htmlFor="textContent" className="text-sm font-medium text-gray-700">
-                    Plain Text Content
-                  </label>
-                  <textarea
-                    id="textContent"
-                    name="textContent"
-                    value={formData.textContent}
-                    onChange={(e) => setFormData({ ...formData, textContent: e.target.value })}
-                    rows={6}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                {/* Enhanced Email Template Editor */}
+                <div className="md:col-span-2">
+                  <EmailTemplateEditor
+                    htmlContent={formData.htmlContent}
+                    textContent={formData.textContent}
+                    subject={formData.subject}
+                    variables={template.variables || []}
+                    onHtmlChange={(html) => setFormData({ ...formData, htmlContent: html })}
+                    onTextChange={(text) => setFormData({ ...formData, textContent: text })}
+                    onSubjectChange={(subject) => setFormData({ ...formData, subject })}
+                    onVariablesChange={(variables) => {
+                      setFormData({ ...formData, variables })
+                    }}
                   />
                 </div>
               </div>

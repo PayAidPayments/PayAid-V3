@@ -106,12 +106,21 @@ export const useAuthStore = create<AuthState>()(
                 console.error('[AUTH] Login error response:', error)
               } else {
                 // Server returned HTML or other non-JSON error page
-                const text = await response.text()
+                let text = ''
+                try {
+                  text = await response.text()
+                } catch (textError) {
+                  console.error('[AUTH] Failed to read response text:', textError)
+                  text = '[Unable to read response body]'
+                }
+                
                 console.error('[AUTH] Server returned non-JSON error:', {
                   status: response.status,
                   statusText: response.statusText,
                   contentType,
-                  preview: text.substring(0, 200),
+                  bodyLength: text.length,
+                  preview: text.substring(0, 500),
+                  url: response.url,
                 })
                 errorMessage = `Login failed: ${response.statusText || 'Internal Server Error'}`
               }
@@ -229,13 +238,13 @@ export const useAuthStore = create<AuthState>()(
 
         set({ isLoading: true })
         try {
-          // Add timeout to prevent hanging - use 5 seconds for better reliability
+          // Add timeout to prevent hanging - use 3 seconds for faster failure
           const controller = new AbortController()
           const timeoutId = setTimeout(() => {
             if (!controller.signal.aborted) {
               controller.abort()
             }
-          }, 5000) // 5 second timeout
+          }, 3000) // 3 second timeout for faster response
 
           const response = await fetch('/api/auth/me', {
             headers: {
@@ -258,7 +267,29 @@ export const useAuthStore = create<AuthState>()(
               })
               return
             }
+            // Check if response is JSON before parsing
+            const contentType = response.headers.get('content-type') || ''
+            if (!contentType.includes('application/json')) {
+              // Non-JSON response (likely HTML error page)
+              console.warn('[AUTH] /api/auth/me returned non-JSON response:', response.status, response.statusText)
+              set({
+                isAuthenticated: false,
+                isLoading: false,
+              })
+              return
+            }
             throw new Error('Failed to fetch user')
+          }
+
+          // Check content type before parsing
+          const contentType = response.headers.get('content-type') || ''
+          if (!contentType.includes('application/json')) {
+            console.warn('[AUTH] /api/auth/me returned non-JSON response')
+            set({
+              isAuthenticated: false,
+              isLoading: false,
+            })
+            return
           }
 
           const userData = await response.json()
@@ -309,7 +340,7 @@ export const useAuthStore = create<AuthState>()(
           
           // Handle abort/timeout errors
           if (error instanceof Error && error.name === 'AbortError') {
-            console.warn('User fetch timed out after 5 seconds')
+            console.warn('User fetch timed out after 3 seconds')
           }
           
           // Don't clear token on network errors, only on auth errors

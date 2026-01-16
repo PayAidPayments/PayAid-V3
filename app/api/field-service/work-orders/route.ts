@@ -2,27 +2,33 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { z } from 'zod'
-import { Decimal } from '@prisma/client/runtime/library'
 
 const createWorkOrderSchema = z.object({
   workOrderNumber: z.string().optional(),
   contactId: z.string().optional(),
+  customerName: z.string().min(1),
+  customerPhone: z.string().optional(),
+  customerEmail: z.string().email().optional(),
+  customerAddress: z.string().optional(),
   serviceType: z.string().min(1),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
   scheduledDate: z.string().datetime(),
-  scheduledTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
+  scheduledTime: z.string().optional(),
   estimatedDuration: z.number().int().positive().optional(),
-  technicianId: z.string().optional(),
+  description: z.string().optional(),
   location: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  customerNotes: z.string().optional(),
+  technicianId: z.string().optional(),
 })
 
-// GET /api/field-service/work-orders - List work orders
+/**
+ * GET /api/field-service/work-orders
+ * List work orders
+ */
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId } = await requireModuleAccess(request, 'field-service')
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
@@ -57,16 +63,9 @@ export async function GET(request: NextRequest) {
             email: true,
           },
         },
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        _count: {
-          select: {
-            serviceHistoryRecords: true,
-          },
+        serviceHistoryRecords: {
+          orderBy: { serviceDate: 'desc' },
+          take: 5,
         },
       },
       orderBy: { scheduledDate: 'asc' },
@@ -86,37 +85,20 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/field-service/work-orders - Create work order
+/**
+ * POST /api/field-service/work-orders
+ * Create work order
+ */
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'field-service')
 
     const body = await request.json()
     const validated = createWorkOrderSchema.parse(body)
 
     // Generate work order number if not provided
-    let workOrderNumber = validated.workOrderNumber
-    if (!workOrderNumber) {
-      const count = await prisma.workOrder.count({ where: { tenantId } })
-      workOrderNumber = `WO-${tenantId.substring(0, 8).toUpperCase()}-${String(count + 1).padStart(6, '0')}`
-    }
-
-    // Check uniqueness
-    const existing = await prisma.workOrder.findUnique({
-      where: {
-        tenantId_workOrderNumber: {
-          tenantId,
-          workOrderNumber,
-        },
-      },
-    })
-
-    if (existing) {
-      return NextResponse.json(
-        { error: 'Work order number already exists' },
-        { status: 400 }
-      )
-    }
+    const workOrderNumber = validated.workOrderNumber || 
+      `WO-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
     const workOrder = await prisma.workOrder.create({
       data: {
@@ -128,11 +110,12 @@ export async function POST(request: NextRequest) {
         scheduledDate: new Date(validated.scheduledDate),
         scheduledTime: validated.scheduledTime,
         estimatedDuration: validated.estimatedDuration,
-        technicianId: validated.technicianId,
+        description: validated.description,
         location: validated.location,
-        latitude: validated.latitude ? new Decimal(validated.latitude) : null,
-        longitude: validated.longitude ? new Decimal(validated.longitude) : null,
-        customerNotes: validated.customerNotes,
+        latitude: validated.latitude,
+        longitude: validated.longitude,
+        technicianId: validated.technicianId,
+        customerNotes: validated.description,
         createdById: userId,
       },
       include: {
@@ -160,4 +143,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db/prisma'
-import { prismaWithRetry } from '@/lib/db/connection-retry'
+import { prismaRead } from '@/lib/db/prisma-read'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
-import { cache } from '@/lib/redis/client'
+import { multiLayerCache } from '@/lib/cache/multi-layer'
 
 // Chart color constants
 const PAYAID_PURPLE = '#53328A'
@@ -55,16 +54,16 @@ export async function GET(request: NextRequest) {
     // The actual queries will succeed or fail, which is more reliable
 
     // Check cache first (5 minute TTL for dashboard stats - stats don't change frequently)
-    // Gracefully handle Redis errors - continue without cache if Redis is unavailable
+    // Multi-layer cache: L1 (memory) -> L2 (Redis) with automatic fallback
     let cached = null
     try {
       const cacheKey = `dashboard:stats:${tenantId}`
-      cached = await cache.get(cacheKey)
+      cached = await multiLayerCache.get(cacheKey)
       if (cached) {
         return NextResponse.json(cached)
       }
     } catch (cacheError) {
-      console.warn('Redis cache unavailable, continuing without cache:', cacheError)
+      console.warn('Cache unavailable, continuing without cache:', cacheError)
       // Continue without cache - not critical
     }
 
@@ -84,7 +83,7 @@ export async function GET(request: NextRequest) {
     // Simple count queries don't need retry logic - they're fast and failures are rare
     const [
       contacts,
-      deals,
+      allDealsCount,
       orders,
       invoices,
       tasks,
@@ -107,13 +106,15 @@ export async function GET(request: NextRequest) {
       monthlySalesRaw,
     ] = await Promise.all([
       // Basic counts (no retry needed - fast queries)
-      prisma.contact.count({ where: { tenantId } }).catch(() => 0),
-      prisma.deal.count({ where: { tenantId } }).catch(() => 0),
-      prisma.order.count({ where: { tenantId } }).catch(() => 0),
-      prisma.invoice.count({ where: { tenantId } }).catch(() => 0),
-      prisma.task.count({ where: { tenantId } }).catch(() => 0),
+      // Use read replica for GET requests
+      prismaRead.contact.count({ where: { tenantId } }).catch(() => 0),
+      // All deals count (matching deals page) - use count for consistency
+      prismaRead.deal.count({ where: { tenantId } }).catch(() => 0),
+      prismaRead.order.count({ where: { tenantId } }).catch(() => 0),
+      prismaRead.invoice.count({ where: { tenantId } }).catch(() => 0),
+      prismaRead.task.count({ where: { tenantId } }).catch(() => 0),
       // Revenue data (last 30 days) - use aggregate instead of findMany
-      prisma.order.aggregate({
+      prismaRead.order.aggregate({
         where: {
           tenantId,
           createdAt: { gte: thirtyDaysAgo },
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
         },
         _sum: { total: true },
       }).catch(() => ({ _sum: { total: 0 } })),
-      prisma.invoice.aggregate({
+      prismaRead.invoice.aggregate({
         where: {
           tenantId,
           createdAt: { gte: thirtyDaysAgo },
@@ -129,8 +130,8 @@ export async function GET(request: NextRequest) {
         },
         _sum: { total: true },
       }).catch(() => ({ _sum: { total: 0 } })),
-      // Active deals value and count - use aggregate
-      prisma.deal.aggregate({
+      // Active deals value (non-lost deals) - use aggregate for pipeline value
+      prismaRead.deal.aggregate({
         where: {
           tenantId,
           stage: { not: 'lost' },
@@ -139,7 +140,7 @@ export async function GET(request: NextRequest) {
         _count: { id: true },
       }).catch(() => ({ _sum: { value: 0 }, _count: { id: 0 } })),
       // Recent activity (limit to 5 records each)
-      prisma.contact.findMany({
+      prismaRead.contact.findMany({
         where: { tenantId },
         take: 5,
         orderBy: { createdAt: 'desc' },
@@ -151,7 +152,7 @@ export async function GET(request: NextRequest) {
           createdAt: true,
         },
       }).catch(() => []),
-      prisma.deal.findMany({
+      prismaRead.deal.findMany({
         where: { tenantId },
         take: 5,
         orderBy: { updatedAt: 'desc' },
@@ -163,7 +164,7 @@ export async function GET(request: NextRequest) {
           updatedAt: true,
         },
       }).catch(() => []),
-      prisma.order.findMany({
+      prismaRead.order.findMany({
         where: { tenantId },
         take: 5,
         orderBy: { createdAt: 'desc' },
@@ -176,21 +177,21 @@ export async function GET(request: NextRequest) {
         },
       }).catch(() => []),
       // Overdue invoices
-      prisma.invoice.count({
+      prismaRead.invoice.count({
         where: {
           tenantId,
           status: 'overdue',
         },
       }).catch(() => 0),
       // Pending tasks
-      prisma.task.count({
+      prismaRead.task.count({
         where: {
           tenantId,
           status: { in: ['pending', 'in_progress'] },
         },
       }).catch(() => 0),
       // Revenue breakdowns
-      prisma.invoice.aggregate({
+      prismaRead.invoice.aggregate({
         where: {
           tenantId,
           status: 'paid',
@@ -198,7 +199,7 @@ export async function GET(request: NextRequest) {
         },
         _sum: { total: true },
       }).catch(() => ({ _sum: { total: 0 } })),
-      prisma.invoice.aggregate({
+      prismaRead.invoice.aggregate({
         where: {
           tenantId,
           status: 'paid',
@@ -206,7 +207,7 @@ export async function GET(request: NextRequest) {
         },
         _sum: { total: true },
       }).catch(() => ({ _sum: { total: 0 } })),
-      prisma.invoice.aggregate({
+      prismaRead.invoice.aggregate({
         where: {
           tenantId,
           status: 'paid',
@@ -214,7 +215,7 @@ export async function GET(request: NextRequest) {
         _sum: { total: true },
       }).catch(() => ({ _sum: { total: 0 } })),
       // Revenue last 30 days (combined orders + invoices)
-      prisma.order.aggregate({
+      prismaRead.order.aggregate({
         where: {
           tenantId,
           createdAt: { gte: thirtyDaysAgo },
@@ -223,42 +224,52 @@ export async function GET(request: NextRequest) {
         _sum: { total: true },
       }).catch(() => ({ _sum: { total: 0 } })),
       // Lost deals for churn rate
-      prisma.deal.count({
+      prismaRead.deal.count({
         where: {
           tenantId,
           stage: 'lost',
         },
       }).catch(() => 0),
-      // Deals by stage for market share
-      prisma.deal.groupBy({
+      // Deals by stage for market share (include count for better distribution)
+      prismaRead.deal.groupBy({
         by: ['stage'],
         where: { tenantId },
         _sum: { value: true },
+        _count: { id: true },
       }).catch(() => []),
       // OPTIMIZED: Use raw SQL for monthly aggregation - 10x faster than fetching all records
       // Uses database-level GROUP BY instead of fetching thousands of records
-      prisma.$queryRaw<Array<{ month: string; revenue: number }>>`
+      // Use read replica for raw queries
+      prismaRead.$queryRaw<Array<{ month: string; revenue: number }>>`
         SELECT 
           TO_CHAR("paidAt", 'Mon YYYY') as month,
           COALESCE(SUM("total"), 0)::float as revenue
         FROM "Invoice"
         WHERE "tenantId" = ${tenantId}
           AND "status" = 'paid'
+          AND "paidAt" IS NOT NULL
           AND "paidAt" >= ${sixMonthsAgo}
         GROUP BY TO_CHAR("paidAt", 'Mon YYYY')
         ORDER BY MIN("paidAt") ASC
-      `.catch(() => []),
-      prisma.$queryRaw<Array<{ month: string; sales: number }>>`
+      `.catch((error) => {
+        console.warn('[Dashboard Stats] Revenue query error:', error)
+        return []
+      }),
+      prismaRead.$queryRaw<Array<{ month: string; sales: number }>>`
         SELECT 
           TO_CHAR("createdAt", 'Mon YYYY') as month,
           COALESCE(SUM("total"), 0)::float as sales
         FROM "Order"
         WHERE "tenantId" = ${tenantId}
           AND "status" IN ('confirmed', 'shipped', 'delivered')
+          AND "createdAt" IS NOT NULL
           AND "createdAt" >= ${sixMonthsAgo}
         GROUP BY TO_CHAR("createdAt", 'Mon YYYY')
         ORDER BY MIN("createdAt") ASC
-      `.catch(() => []),
+      `.catch((error) => {
+        console.warn('[Dashboard Stats] Sales query error:', error)
+        return []
+      }),
     ])
 
     // Calculate totals from aggregates
@@ -267,22 +278,32 @@ export async function GET(request: NextRequest) {
     const activeDealsCount = activeDeals._count.id || 0
 
     // Process monthly data from SQL results
+    // SQL returns format: "Jan 2024" (from TO_CHAR with 'Mon YYYY')
     const monthlyRevenueMap = new Map<string, number>()
     const monthlySalesMap = new Map<string, number>()
     
+    // Helper function to normalize month keys for matching
+    const normalizeMonthKey = (monthStr: string): string => {
+      // SQL TO_CHAR returns "Jan 2024" format, normalize it
+      return String(monthStr).trim().replace(/\s+/g, ' ')
+    }
+    
     monthlyRevenueRaw.forEach((row: any) => {
       if (row.month) {
-        monthlyRevenueMap.set(row.month, row.revenue || 0)
+        const normalizedKey = normalizeMonthKey(row.month)
+        monthlyRevenueMap.set(normalizedKey, Number(row.revenue) || 0)
       }
     })
 
     monthlySalesRaw.forEach((row: any) => {
       if (row.month) {
-        monthlySalesMap.set(row.month, row.sales || 0)
+        const normalizedKey = normalizeMonthKey(row.month)
+        monthlySalesMap.set(normalizedKey, Number(row.sales) || 0)
       }
     })
 
     // Generate last 6 months data
+    // Match SQL format: "Mon YYYY" (e.g., "Jan 2024")
     const salesTrendData = []
     const revenueData = []
     const monthNames = new Set<string>()
@@ -290,7 +311,13 @@ export async function GET(request: NextRequest) {
     for (let i = 5; i >= 0; i--) {
       const date = new Date(now)
       date.setMonth(date.getMonth() - i)
-      const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      
+      // Format to match SQL output: "Mon YYYY" (e.g., "Jan 2024")
+      // Use the same format as SQL TO_CHAR
+      const monthShort = date.toLocaleDateString('en-US', { month: 'short' })
+      const year = date.getFullYear()
+      const monthKey = `${monthShort} ${year}` // Match SQL format exactly
+      
       const monthName = date.toLocaleDateString('en-US', { month: 'short' })
       
       // Ensure unique month names - if duplicate, include year
@@ -300,9 +327,12 @@ export async function GET(request: NextRequest) {
       }
       monthNames.add(monthName)
       
-      const revenue = monthlyRevenueMap.get(monthKey) || 0
-      const sales = monthlySalesMap.get(monthKey) || 0
+      // Lookup revenue and sales - use the normalized monthKey format
+      const normalizedKey = normalizeMonthKey(monthKey)
+      const revenue = monthlyRevenueMap.get(normalizedKey) || 0
+      const sales = monthlySalesMap.get(normalizedKey) || 0
       
+      // Always push data, even if zero, so charts aren't empty
       salesTrendData.push({
         name: displayName,
         value: Math.round(sales),
@@ -317,30 +347,55 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate market share from deals by stage
+    // Show all deals by stage, even if value is 0 (count-based distribution)
     const totalDealValue = dealsByStage.reduce((sum, d) => sum + (d._sum.value || 0), 0)
-    const marketShareData = dealsByStage
-      .filter(d => d._sum.value && d._sum.value > 0)
-      .slice(0, 3)
-      .map((d, idx) => {
-        const percentage = totalDealValue > 0 ? Math.round((d._sum.value! / totalDealValue) * 100) : 0
-        const colors = [PAYAID_PURPLE, PAYAID_GOLD, PAYAID_LIGHT_PURPLE]
-        return {
-          name: d.stage || `Stage ${idx + 1}`,
-          value: percentage,
-          fill: colors[idx] || PAYAID_PURPLE,
-        }
-      })
-
-    // If no deals, use default data
+    const totalDealCount = dealsByStage.reduce((sum, d) => sum + (d._count?.id || 0), 0)
+    
+    // If we have deals, show them by count (not just value)
+    let marketShareData: Array<{ name: string; value: number; fill: string }> = []
+    if (dealsByStage.length > 0) {
+      // Use count if value is 0, otherwise use value
+      const totalForDistribution = totalDealValue > 0 ? totalDealValue : totalDealCount
+      
+      marketShareData = dealsByStage
+        .slice(0, 5) // Show up to 5 stages
+        .map((d, idx) => {
+          const dealValue = d._sum.value || 0
+          const dealCount = d._count?.id || 0
+          const amount = dealValue > 0 ? dealValue : dealCount
+          const percentage = totalForDistribution > 0 
+            ? Math.round((amount / totalForDistribution) * 100) 
+            : (totalDealCount > 0 ? Math.round((dealCount / totalDealCount) * 100) : 0)
+          
+          const colors = [PAYAID_PURPLE, PAYAID_GOLD, PAYAID_LIGHT_PURPLE, '#8B5CF6', '#EC4899']
+          const stageNames: Record<string, string> = {
+            'lead': 'Lead',
+            'qualified': 'Qualified',
+            'proposal': 'Proposal',
+            'negotiation': 'Negotiation',
+            'won': 'Won',
+            'lost': 'Lost',
+          }
+          
+          return {
+            name: stageNames[d.stage] || d.stage || `Stage ${idx + 1}`,
+            value: percentage,
+            fill: colors[idx % colors.length],
+          }
+        })
+        .filter(d => d.value > 0) // Only show stages with deals
+    }
+    
+    // If no deals or no valid data, use default placeholder
     if (marketShareData.length === 0) {
       marketShareData.push(
-        { name: 'Active Deals', value: 100, fill: PAYAID_PURPLE }
+        { name: 'No Active Deals', value: 100, fill: PAYAID_PURPLE }
       )
     }
 
     // Calculate KPIs from real data
     const totalContacts = contacts
-    const totalDeals = deals
+    const totalDeals = allDealsCount
     const conversionRate = totalContacts > 0 ? ((totalDeals / totalContacts) * 100).toFixed(1) : '0.0'
     const avgRevenuePerUser = totalContacts > 0 ? Math.round((revenueAllTime._sum.total || 0) / totalContacts) : 0
     const churnRate = totalDeals > 0 ? ((lostDeals / totalDeals) * 100).toFixed(1) : '0.0'
@@ -351,10 +406,20 @@ export async function GET(request: NextRequest) {
       { name: 'Avg Revenue/User', value: avgRevenuePerUser, unit: '₹' },
     ]
 
+    // Log chart data for debugging
+    console.log('[Dashboard Stats] Chart data:', {
+      salesTrendCount: salesTrendData.length,
+      revenueTrendCount: revenueData.length,
+      marketShareCount: marketShareData.length,
+      monthlyRevenueRawCount: monthlyRevenueRaw.length,
+      monthlySalesRawCount: monthlySalesRaw.length,
+      dealsByStageCount: dealsByStage.length,
+    })
+
     const stats = {
       counts: {
         contacts,
-        deals,
+        deals: allDealsCount, // Use all deals count to match deals page
         orders,
         invoices,
         tasks,
@@ -387,13 +452,13 @@ export async function GET(request: NextRequest) {
       },
     }
 
-    // Cache for 5 minutes (gracefully handle Redis errors)
+    // Cache for 5 minutes (multi-layer: L1 memory + L2 Redis)
     // Stats don't change frequently, so longer cache is acceptable
     try {
       const cacheKey = `dashboard:stats:${tenantId}`
-      await cache.set(cacheKey, stats, 300) // 5 minutes
+      await multiLayerCache.set(cacheKey, stats, 300) // 5 minutes
     } catch (cacheError) {
-      console.warn('Failed to cache dashboard stats (Redis unavailable):', cacheError)
+      console.warn('Failed to cache dashboard stats (cache unavailable):', cacheError)
       // Continue - caching is optional
     }
 

@@ -1,293 +1,236 @@
 'use client'
 
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getAuthHeaders } from '@/lib/hooks/use-api'
-import { Button } from '@/components/ui/button'
+import { useEffect, useState } from 'react'
+import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { CheckCircle, XCircle, Settings, Package, ShoppingCart } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { 
+  Package, 
+  RefreshCw,
+  Settings,
+  TrendingUp,
+  CheckCircle2,
+  Clock
+} from 'lucide-react'
+import { DashboardLoading } from '@/components/ui/loading'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
-function ONDCPageContent() {
-  const queryClient = useQueryClient()
-  const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState({
-    sellerId: '',
-    sellerAppId: '',
-    sellerAppKey: '',
-    networkId: 'ONDC:RETail',
-    isTestMode: true,
-  })
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['ondc-integration'],
-    queryFn: async () => {
-      const response = await fetch('/api/ondc/integration', {
-        headers: getAuthHeaders(),
-      })
-      if (!response.ok) throw new Error('Failed to fetch ONDC integration')
-      return response.json()
-    },
-  })
-
-  const updateIntegration = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch('/api/ondc/integration', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to update integration')
-      }
-      return response.json()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ondc-integration'] })
-      setIsEditing(false)
-    },
-  })
-
-  const syncProducts = useMutation({
-    mutationFn: async () => {
-      const response = await fetch('/api/ondc/products/sync', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-      })
-      if (!response.ok) throw new Error('Failed to sync products')
-      return response.json()
-    },
-  })
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>
-  }
-
-  const integration = data?.integration
-
-  if (!integration && !isEditing) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">ONDC Integration</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Connect your business to the Open Network for Digital Commerce
-          </p>
-        </div>
-
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">ONDC integration not configured</p>
-            <Button onClick={() => setIsEditing(true)}>
-              Configure Integration
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  const displayData = integration || formData
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">ONDC Integration</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage your ONDC seller account and product listings
-          </p>
-        </div>
-        {integration && !isEditing && (
-          <Button onClick={() => setIsEditing(true)} variant="outline">
-            <Settings className="h-4 w-4 mr-2" />
-            Edit Settings
-          </Button>
-        )}
-      </div>
-
-      {isEditing ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Integration Settings</CardTitle>
-            <CardDescription>Configure your ONDC seller credentials</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Seller ID *</label>
-              <Input
-                value={formData.sellerId}
-                onChange={(e) => setFormData({ ...formData, sellerId: e.target.value })}
-                placeholder="Your ONDC seller ID"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Seller App ID *</label>
-              <Input
-                value={formData.sellerAppId}
-                onChange={(e) => setFormData({ ...formData, sellerAppId: e.target.value })}
-                placeholder="Your seller app ID"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Seller App Key *</label>
-              <Input
-                type="password"
-                value={formData.sellerAppKey}
-                onChange={(e) => setFormData({ ...formData, sellerAppKey: e.target.value })}
-                placeholder="Your seller app key"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Network ID</label>
-              <Input
-                value={formData.networkId}
-                onChange={(e) => setFormData({ ...formData, networkId: e.target.value })}
-                placeholder="ONDC:RETail"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="testMode"
-                checked={formData.isTestMode}
-                onChange={(e) => setFormData({ ...formData, isTestMode: e.target.checked })}
-                className="rounded"
-              />
-              <label htmlFor="testMode" className="text-sm">
-                Test Mode
-              </label>
-            </div>
-            <div className="flex gap-4">
-              <Button
-                onClick={() => {
-                  updateIntegration.mutate(formData)
-                }}
-                disabled={updateIntegration.isPending}
-              >
-                {updateIntegration.isPending ? 'Saving...' : 'Save Settings'}
-              </Button>
-              {integration && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditing(false)
-                    setFormData({
-                      sellerId: integration.sellerId || '',
-                      sellerAppId: integration.sellerAppId || '',
-                      sellerAppKey: '',
-                      networkId: integration.networkId || 'ONDC:RETail',
-                      isTestMode: integration.isTestMode || false,
-                    })
-                  }}
-                >
-                  Cancel
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Integration Status</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-2">
-                  {integration ? (
-                    <>
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                      <span className="font-medium">Connected</span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="h-5 w-5 text-red-600" />
-                      <span className="font-medium">Not Connected</span>
-                    </>
-                  )}
-                </div>
-                {integration && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Seller ID</label>
-                      <div className="mt-1 font-mono text-sm">{integration.sellerId}</div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Network</label>
-                      <div className="mt-1">{integration.networkId}</div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Mode</label>
-                      <div className="mt-1">
-                        {integration.isTestMode ? 'Test Mode' : 'Production Mode'}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Statistics</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {integration && integration._count ? (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Package className="h-5 w-5 text-gray-400" />
-                        <span>Products Listed</span>
-                      </div>
-                      <span className="font-bold text-lg">{integration._count.products || 0}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <ShoppingCart className="h-5 w-5 text-gray-400" />
-                        <span>Orders Received</span>
-                      </div>
-                      <span className="font-bold text-lg">{integration._count.orders || 0}</span>
-                    </div>
-                    <Button
-                      onClick={() => syncProducts.mutate()}
-                      disabled={syncProducts.isPending}
-                      className="w-full mt-4"
-                    >
-                      {syncProducts.isPending ? 'Syncing...' : 'Sync Products'}
-                    </Button>
-                  </>
-                ) : (
-                  <p className="text-gray-500 text-sm">No statistics available</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Product Management</CardTitle>
-              <CardDescription>Manage your ONDC product listings</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-gray-500">
-                Product listing management will be available here. Use the API endpoints to manage products.
-              </div>
-            </CardContent>
-          </Card>
-        </>
-      )}
-    </div>
-  )
+interface ONDCOrder {
+  id: string
+  ondcOrderId: string
+  status: string
+  createdAt: string
+  orderData: any
 }
 
 export default function ONDCPage() {
-  return <ONDCPageContent />
-}
+  const { token } = useAuthStore()
+  const [loading, setLoading] = useState(true)
+  const [orders, setOrders] = useState<ONDCOrder[]>([])
+  const [isConnected, setIsConnected] = useState(false)
 
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch('/api/ondc/orders/sync', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setOrders(data.orders || [])
+        setIsConnected(data.orders && data.orders.length > 0)
+      }
+    } catch (error) {
+      console.error('Failed to fetch ONDC data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSync = async () => {
+    setLoading(true)
+    try {
+      // TODO: Trigger manual sync with ONDC API
+      alert('Sync functionality will be implemented with ONDC API integration')
+      await fetchData()
+    } catch (error) {
+      console.error('Sync error:', error)
+      alert('Failed to sync orders')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return <DashboardLoading message="Loading ONDC integration..." />
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">ONDC Integration</h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              Manage orders from Open Network for Digital Commerce
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Button
+              variant="outline"
+              onClick={handleSync}
+              disabled={loading}
+              className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Sync Orders
+            </Button>
+            <Button
+              variant="outline"
+              className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+          </div>
+        </div>
+
+        {/* Connection Status */}
+        <Card className="mb-8 dark:bg-gray-800 dark:border-gray-700">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {isConnected ? (
+                  <CheckCircle2 className="w-6 h-6 text-green-500" />
+                ) : (
+                  <Clock className="w-6 h-6 text-yellow-500" />
+                )}
+                <div>
+                  <div className="font-semibold text-gray-900 dark:text-gray-100">
+                    {isConnected ? 'Connected to ONDC' : 'Not Connected'}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {isConnected ? 'Orders are being synced automatically' : 'Configure ONDC credentials to start syncing'}
+                  </div>
+                </div>
+              </div>
+              <Badge
+                variant={isConnected ? 'default' : 'secondary'}
+                className={isConnected ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : ''}
+              >
+                {isConnected ? 'Active' : 'Inactive'}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Orders</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{orders.length}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                {orders.filter(o => o.status === 'PENDING').length}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Fulfilled</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {orders.filter(o => o.status === 'SHIPPED' || o.status === 'DELIVERED').length}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Orders List */}
+        {orders.length === 0 ? (
+          <Card className="text-center py-12 dark:bg-gray-800 dark:border-gray-700">
+            <CardContent>
+              <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">No ONDC Orders</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Orders from ONDC will appear here once integration is configured
+              </p>
+              <Button
+                variant="outline"
+                className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Configure Integration
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {orders.map((order) => (
+              <Card key={order.id} className="dark:bg-gray-800 dark:border-gray-700">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          Order #{order.ondcOrderId}
+                        </h3>
+                        <Badge
+                          variant={
+                            order.status === 'DELIVERED'
+                              ? 'default'
+                              : order.status === 'SHIPPED'
+                              ? 'default'
+                              : 'secondary'
+                          }
+                          className={
+                            order.status === 'DELIVERED'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : order.status === 'SHIPPED'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                              : ''
+                          }
+                        >
+                          {order.status}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Created: {new Date(order.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                      View Details
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

@@ -12,11 +12,12 @@ export function getAuthHeaders() {
 }
 
 // Contacts hooks
-export function useContacts(params?: { page?: number; limit?: number; type?: string; status?: string; search?: string }) {
+export function useContacts(params?: { page?: number; limit?: number; type?: string; stage?: string; status?: string; search?: string }) {
   const queryString = new URLSearchParams()
   if (params?.page) queryString.set('page', params.page.toString())
   if (params?.limit) queryString.set('limit', params.limit.toString())
   if (params?.type) queryString.set('type', params.type)
+  if (params?.stage) queryString.set('stage', params.stage) // New: stage parameter
   if (params?.status) queryString.set('status', params.status)
   if (params?.search) queryString.set('search', params.search)
 
@@ -237,6 +238,26 @@ export function useCreateDeal() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deals'] })
+    },
+  })
+}
+
+export function useDeleteDeal() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/deals/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      })
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete deal')
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deals'] })
+      queryClient.invalidateQueries({ queryKey: ['deal'] })
     },
   })
 }

@@ -19,7 +19,7 @@ export async function PATCH(
 ) {
   try {
     const { id, entryId } = await params
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'projects')
 
     // Verify project exists
     const project = await prisma.project.findFirst({
@@ -153,7 +153,7 @@ export async function DELETE(
 ) {
   try {
     const { id, entryId } = await params
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'projects')
 
     // Verify project exists
     const project = await prisma.project.findFirst({
