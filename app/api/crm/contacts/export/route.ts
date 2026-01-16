@@ -32,9 +32,13 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         assignedTo: {
-          select: {
-            name: true,
-            email: true,
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
           },
         },
       },
@@ -53,7 +57,7 @@ export async function GET(request: NextRequest) {
       'Status': contact.status || '',
       'Lead Source': contact.source || '',
       'Lead Score': contact.leadScore || 0,
-      'Contact Owner': contact.assignedTo?.name || contact.assignedTo?.email || '',
+      'Contact Owner': contact.assignedTo?.user?.name || contact.assignedTo?.user?.email || '',
       'Industry': contact.industry || '',
       'City': contact.city || '',
       'State': contact.state || '',
