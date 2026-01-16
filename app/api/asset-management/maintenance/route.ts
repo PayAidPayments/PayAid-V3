@@ -30,6 +30,12 @@ export async function GET(request: NextRequest) {
     const where: any = { tenantId }
     if (assetId) where.assetId = assetId
     if (maintenanceType) where.maintenanceType = maintenanceType
+    // Status filter: 'SCHEDULED' means completedDate is null, 'COMPLETED' means completedDate is not null
+    if (status === 'SCHEDULED') {
+      where.completedDate = null
+    } else if (status === 'COMPLETED') {
+      where.completedDate = { not: null }
+    }
 
     const records = await prisma.assetMaintenance.findMany({
       where,
@@ -96,7 +102,7 @@ export async function POST(request: NextRequest) {
         description: validated.description,
         notes: validated.notes,
         nextMaintenanceDate: validated.nextMaintenanceDate ? new Date(validated.nextMaintenanceDate) : null,
-        status: 'SCHEDULED',
+        completedDate: null, // New maintenance records are not completed yet
       },
       include: {
         asset: true,
