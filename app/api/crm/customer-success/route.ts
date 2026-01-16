@@ -124,6 +124,7 @@ export async function GET(request: NextRequest) {
     const customerHealth = customers.map(customer => {
       const dealsCount = customer.deals?.length || 0
       const totalValue = customer.deals?.reduce((sum, deal) => sum + (deal.value || 0), 0) || 0
+      const totalInvoiceValue = customer.invoices?.reduce((sum, inv) => sum + (Number(inv.total) || 0), 0) || 0
       const overdueInvoices = customer.invoices?.filter(
         inv => inv.status === 'unpaid' && inv.dueDate && new Date(inv.dueDate) < new Date()
       ).length || 0
