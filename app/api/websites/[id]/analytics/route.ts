@@ -35,15 +35,18 @@ export async function GET(
 
     // Calculate statistics
     const totalVisits = visits.length
-    const uniqueVisitors = new Set(visits.map((v) => v.visitorId)).size
+    // visitorId is on session, not visit
+    const uniqueVisitors = new Set(
+      sessions.map((s) => s.visitorId).filter((id): id is string => id !== null)
+    ).size
     const totalSessions = sessions.length
 
-    // Average session duration
+    // Average session duration (using endedAt instead of lastActivityAt)
     const sessionDurations = sessions
-      .filter((s) => s.lastActivityAt && s.startedAt)
+      .filter((s) => s.endedAt && s.startedAt)
       .map((s) => {
         const start = new Date(s.startedAt).getTime()
-        const end = new Date(s.lastActivityAt!).getTime()
+        const end = new Date(s.endedAt!).getTime()
         return end - start
       })
     const averageSessionDuration =
@@ -57,10 +60,19 @@ export async function GET(
     ).length
     const bounceRate = totalSessions > 0 ? (singleVisitSessions / totalSessions) * 100 : 0
 
-    // Top pages
+    // Top pages - need to get pages separately since path is on page, not visit
+    const pageIds = visits.map((v) => v.pageId).filter((id): id is string => id !== null)
+    const pages = await prisma.websitePage.findMany({
+      where: { id: { in: pageIds } },
+      select: { id: true, path: true },
+    })
+    const pageMap = new Map(pages.map((p) => [p.id, p.path]))
     const pageCounts: Record<string, number> = {}
     visits.forEach((v) => {
-      pageCounts[v.path] = (pageCounts[v.path] || 0) + 1
+      if (v.pageId) {
+        const path = pageMap.get(v.pageId) || 'Unknown'
+        pageCounts[path] = (pageCounts[path] || 0) + 1
+      }
     })
     const topPages = Object.entries(pageCounts)
       .map(([path, visits]) => ({ path, visits }))
@@ -79,9 +91,10 @@ export async function GET(
       .slice(0, 5)
 
     // Devices (from user agent - simplified)
+    // userAgent is on visit, not session
     const deviceCounts: Record<string, number> = { Desktop: 0, Mobile: 0, Tablet: 0 }
-    sessions.forEach((s) => {
-      const ua = s.userAgent || ''
+    visits.forEach((v) => {
+      const ua = v.userAgent || ''
       if (/mobile/i.test(ua)) deviceCounts.Mobile++
       else if (/tablet/i.test(ua)) deviceCounts.Tablet++
       else deviceCounts.Desktop++
@@ -104,7 +117,10 @@ export async function GET(
         dailyCounts[date] = { visits: 0, unique: new Set() }
       }
       dailyCounts[date].visits++
-      dailyCounts[date].unique.add(v.visitorId)
+      // visitorId is on session, get it from the included session
+      if (v.session?.visitorId) {
+        dailyCounts[date].unique.add(v.session.visitorId)
+      }
     })
     const dailyVisits = Object.entries(dailyCounts)
       .map(([date, data]) => ({
