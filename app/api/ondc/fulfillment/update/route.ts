@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
       },
       data: {
         status,
-        trackingUrl,
-        trackingNumber,
+        // Note: trackingUrl and trackingNumber are not in ONDCOrder model
+        // They can be stored in orderData JSON field if needed
         updatedAt: new Date(),
       },
     })
