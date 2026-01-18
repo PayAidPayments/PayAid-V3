@@ -2,63 +2,20 @@
 
 import { Header } from './components/Header'
 import { ModuleGrid } from './components/ModuleGrid'
-import { DashboardLoading } from '@/components/ui/loading';
 import { NewsSidebar } from '@/components/news/NewsSidebar';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/auth';
-import { decodeToken } from '@/lib/auth/jwt';
-
-// Module route mapping
-const MODULE_ROUTES: Record<string, string> = {
-  'crm': 'crm',
-  'sales': 'sales',
-  'marketing': 'marketing',
-  'finance': 'finance',
-  'hr': 'hr',
-  'projects': 'projects',
-  'inventory': 'inventory',
-  'ai-studio': 'ai-studio',
-  'voice-agents': 'voice-agents',
-};
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
-  const router = useRouter();
-  const { tenant, token, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Redirect authenticated users to their first module
-  useEffect(() => {
-    if (mounted && isAuthenticated && tenant?.id && token) {
-      try {
-        const payload = decodeToken(token);
-        const licensedModules = payload?.licensedModules || tenant?.licensedModules || [];
-        
-        // Find first available module
-        const firstModule = licensedModules.find((module: string) => MODULE_ROUTES[module]);
-        
-        if (firstModule && MODULE_ROUTES[firstModule]) {
-          setRedirecting(true);
-          const moduleRoute = MODULE_ROUTES[firstModule];
-          router.replace(`/${moduleRoute}/${tenant.id}/Home/`);
-          return;
-        }
-      } catch (error) {
-        console.warn('Failed to decode token or redirect:', error);
-      }
-    }
-  }, [mounted, isAuthenticated, tenant, token, router]);
-
-  // Return minimal HTML during SSR to avoid any evaluation
-  if (!mounted || redirecting) {
-    return <DashboardLoading message="Redirecting to your module..." />;
-  }
+  // Always show the module grid so users can choose which app to open
+  // This matches the localhost behavior where all apps are shown on a single page
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">

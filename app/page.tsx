@@ -24,10 +24,26 @@ import {
   MODULE_PRICING 
 } from '@/lib/pricing/config'
 import { CheckCircle2, Sparkles } from 'lucide-react'
+import { useAuthStore } from '@/lib/stores/auth'
 
 export default function LandingPage() {
   const router = useRouter()
+  const { isAuthenticated } = useAuthStore()
   const [selectedIndustry, setSelectedIndustry] = useState<string>('')
+  const [mounted, setMounted] = useState(false)
+
+  // Redirect authenticated users to /home (app selection page)
+  useEffect(() => {
+    setMounted(true)
+    if (isAuthenticated) {
+      router.replace('/home')
+    }
+  }, [isAuthenticated, router])
+
+  // Don't render landing page for authenticated users
+  if (!mounted || isAuthenticated) {
+    return null
+  }
   const [showModuleSelection, setShowModuleSelection] = useState(false)
   const [selectedModules, setSelectedModules] = useState<string[]>([])
   const [selectedTier, setSelectedTier] = useState<'starter' | 'professional'>('professional')

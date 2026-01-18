@@ -196,57 +196,9 @@ export default function LoginPage() {
         }
         
         router.push(finalUrl)
-      } else if (tenant?.id) {
-        // Decoupled architecture: Redirect to first available module
-        try {
-          const meResponse = await fetch('/api/auth/me', {
-            headers: {
-              'Authorization': `Bearer ${useAuthStore.getState().token}`,
-            },
-          })
-          if (meResponse.ok) {
-            const userData = await meResponse.json()
-            const licensedModules = userData?.tenant?.licensedModules || tenant?.licensedModules || []
-            
-            // Module route mapping for decoupled architecture
-            const MODULE_ROUTES: Record<string, string> = {
-              'crm': 'crm',
-              'sales': 'sales',
-              'marketing': 'marketing',
-              'finance': 'finance',
-              'hr': 'hr',
-              'projects': 'projects',
-              'inventory': 'inventory',
-              'ai-studio': 'ai-studio',
-              'voice-agents': 'voice-agents',
-            }
-            
-            // Find first available module
-            const firstModule = licensedModules.find((module: string) => MODULE_ROUTES[module])
-            
-            if (firstModule && MODULE_ROUTES[firstModule]) {
-              // Redirect to first module's home page (decoupled architecture)
-              router.push(`/${MODULE_ROUTES[firstModule]}/${tenant.id}/Home/`)
-              return
-            }
-            
-            // No modules available - check if industry is set
-            if (userData?.tenant?.industry) {
-              // Tenant has industry but no modules - go to /home to see module selection
-              router.push('/home')
-            } else {
-              // No industry set - redirect to landing page to select industry (onboarding)
-              router.push('/?onboarding=true')
-            }
-          } else {
-            // Fallback: go to /home (will redirect to first module if authenticated)
-            router.push('/home')
-          }
-        } catch (err) {
-          console.warn('Failed to check tenant data:', err)
-          // Fallback: go to /home (will redirect to first module if authenticated)
-          router.push('/home')
-        }
+      } else {
+        // Default: Always redirect to /home to show all apps
+        router.push('/home')
       } else {
         console.warn('No tenant ID found after login, redirecting to /home')
         // Fallback: redirect to /home
