@@ -949,7 +949,7 @@ export default function CRMDashboardPage() {
                           border: `1px solid ${PAYAID_PURPLE}`,
                           borderRadius: '8px',
                         }}
-                        formatter={(value: any, name: string) => {
+                        formatter={(value: any, name?: string) => {
                           if (name === 'revenue') return [`₹${value.toLocaleString('en-IN')}`, 'Revenue']
                           return [value, 'Deals Won']
                         }}
