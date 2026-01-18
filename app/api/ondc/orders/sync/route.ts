@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
       },
       create: {
         tenantId,
+        integrationId: ondcIntegration.id,
         ondcOrderId: orderId,
         status: orderData.status || 'PENDING',
         orderData: orderData as any,
