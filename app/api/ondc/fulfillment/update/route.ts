@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update ONDC order
-    const ondcOrder = await prisma.ondcOrder.updateMany({
+    const ondcOrder = await prisma.oNDCOrder.updateMany({
       where: {
         tenantId,
         ondcOrderId: orderId,

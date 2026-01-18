@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get or create ONDC integration
-    let ondcIntegration = await prisma.ondcIntegration.findFirst({
+    let ondcIntegration = await prisma.oNDCIntegration.findFirst({
       where: { tenantId },
     })
 
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create or update ONDC order
-    const ondcOrder = await prisma.ondcOrder.upsert({
+    const ondcOrder = await prisma.oNDCOrder.upsert({
       where: {
         tenantId_ondcOrderId: {
           tenantId,
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
       where.status = status
     }
 
-    const orders = await prisma.ondcOrder.findMany({
+    const orders = await prisma.oNDCOrder.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: 100,
