@@ -130,7 +130,6 @@ export async function POST(request: NextRequest) {
         attemptNumber: attemptCount + 1,
         status: 'pending',
         amount: invoice.total,
-        retryMethod: retryMethod || 'email',
       },
     })
 
@@ -138,6 +137,7 @@ export async function POST(request: NextRequest) {
     // - email: Send payment reminder email
     // - sms: Send payment reminder SMS
     // - auto: Automatically retry payment if payment method exists
+    // Note: retryMethod is used for logic but not stored in DunningAttempt model
 
     return NextResponse.json({ dunningAttempt }, { status: 201 })
   } catch (error) {
