@@ -131,6 +131,17 @@ export default function CRMDashboardPage() {
   
   const [currentView, setCurrentView] = useState<'manager' | 'custom' | 'sales' | 'pipeline' | 'activity' | 'tasks'>(getInitialView())
   
+  // Format period label based on timePeriod
+  const getPeriodLabel = () => {
+    switch (timePeriod) {
+      case 'month': return 'This month'
+      case 'quarter': return 'This quarter'
+      case 'financial-year': return 'This financial year'
+      case 'year': return 'This year'
+      default: return 'This month'
+    }
+  }
+  
   // Update view when URL query params change
   useEffect(() => {
     if (viewParam === 'custom' || viewParam === 'sales' || viewParam === 'activity') {
@@ -713,7 +724,7 @@ export default function CRMDashboardPage() {
                 </div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
                   <ArrowUpRight className="w-3 h-3 text-green-600 dark:text-green-400" />
-                  <span className="text-green-600 dark:text-green-400 font-medium">{stats?.periodLabel || 'This month'}</span>
+                  <span className="text-green-600 dark:text-green-400 font-medium">{getPeriodLabel()}</span>
                 </p>
               </CardContent>
             </Card>
@@ -733,7 +744,7 @@ export default function CRMDashboardPage() {
                 </div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
                   <ArrowUpRight className="w-3 h-3 text-green-600 dark:text-green-400" />
-                  <span className="text-green-600 dark:text-green-400 font-medium">{stats?.periodLabel || 'This month'}</span>
+                  <span className="text-green-600 dark:text-green-400 font-medium">{getPeriodLabel()}</span>
                 </p>
               </CardContent>
             </Card>
@@ -753,7 +764,7 @@ export default function CRMDashboardPage() {
                 </div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
                   <ArrowUpRight className="w-3 h-3 text-green-600 dark:text-green-400" />
-                  <span className="text-green-600 dark:text-green-400 font-medium">{stats?.periodLabel || 'This month'}</span>
+                  <span className="text-green-600 dark:text-green-400 font-medium">{getPeriodLabel()}</span>
                 </p>
               </CardContent>
             </Card>
