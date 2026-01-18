@@ -1299,9 +1299,9 @@ export default function CRMLeadsPage() {
                             </TableCell>
                             <TableCell className="text-sm text-gray-600 dark:text-gray-400">
                               {lead.lastContactedAt 
-                                ? format(new Date(lead.lastContactedAt), 'dd/MM/yyyy hh:mm a')
+                                ? formatDate(new Date(lead.lastContactedAt), 'dd/MM/yyyy hh:mm a')
                                 : lead.createdAt 
-                                ? format(new Date(lead.createdAt), 'dd/MM/yyyy hh:mm a')
+                                ? formatDate(new Date(lead.createdAt), 'dd/MM/yyyy hh:mm a')
                                 : '-'}
                             </TableCell>
                             <TableCell>
