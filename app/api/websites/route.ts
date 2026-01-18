@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       data: {
         name: validated.name,
         domain: validated.domain,
-        description: validated.description,
+        // description field doesn't exist in Website model
         tenantId,
         trackingCode: generateTrackingCode(),
       },

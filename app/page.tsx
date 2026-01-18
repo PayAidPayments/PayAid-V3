@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAllIndustries, getRecommendedModules, getIndustryConfig } from '@/lib/industries/config'
 import { Button } from '@/components/ui/button'
@@ -27,11 +27,12 @@ import { CheckCircle2, Sparkles } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
 
 // Deprecated modules to exclude (defined outside component to avoid scope issues)
-const deprecatedModules = ['invoicing', 'accounting'] as const
+const deprecatedModules: readonly string[] = ['invoicing', 'accounting']
 
 export default function LandingPage() {
   const router = useRouter()
-  const { isAuthenticated } = useAuthStore()
+  const authStore = useAuthStore()
+  const isAuthenticated = authStore?.isAuthenticated ?? false
   const [selectedIndustry, setSelectedIndustry] = useState<string>('')
   const [mounted, setMounted] = useState(false)
   // All hooks must be called before any conditional returns
@@ -40,7 +41,7 @@ export default function LandingPage() {
   const [selectedTier, setSelectedTier] = useState<'starter' | 'professional'>('professional')
   const [activeTab, setActiveTab] = useState<'crm' | 'invoicing' | 'inventory' | 'analytics'>('crm')
   const [isPaused, setIsPaused] = useState(false)
-  const industries = getAllIndustries()
+  const industries = useMemo(() => getAllIndustries(), [])
   const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Define tabs constant before hooks
@@ -181,7 +182,7 @@ export default function LandingPage() {
     setTimeout(() => setIsPaused(false), 5000)
   }
 
-    return (
+  return (
     <div className="min-h-screen bg-white">
       {/* Header with Logo */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-gray-200">

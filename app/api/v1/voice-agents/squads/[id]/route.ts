@@ -10,6 +10,7 @@ import { prisma } from '@/lib/db/prisma'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { getSquadRouter } from '@/lib/voice-agent/squad-router'
+import { Prisma } from '@prisma/client'
 
 const updateSquadSchema = z.object({
   name: z.string().min(1).max(255).optional(),
@@ -81,7 +82,9 @@ export async function PUT(
       data: {
         ...(validated.name && { name: validated.name }),
         ...(validated.description !== undefined && { description: validated.description }),
-        ...(validated.routingRules !== undefined && { routingRules: validated.routingRules }),
+        ...(validated.routingRules !== undefined && { 
+          routingRules: validated.routingRules ?? Prisma.JsonNull 
+        }),
       },
     })
 

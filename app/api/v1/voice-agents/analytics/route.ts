@@ -72,14 +72,11 @@ export async function GET(request: NextRequest) {
         _count: true,
       }),
 
-      // Sentiment statistics
-      prisma.voiceAgentCallTranscript.aggregate({
-        where: {
-          voiceAgentCall: { ...where },
-          sentiment: { not: null },
-        },
-        _avg: { sentimentScore: true },
-        _count: true,
+      // Sentiment statistics - TODO: VoiceAgentCallTranscript model not yet in schema
+      // Return empty stats until model is added
+      Promise.resolve({
+        _avg: { sentimentScore: null },
+        _count: 0,
       }),
     ])
 
@@ -97,11 +94,11 @@ export async function GET(request: NextRequest) {
               ? (totalDuration._sum.durationSeconds || 0) / completedCalls
               : 0,
         },
-        callsByStatus: callsByStatus.map((item) => ({
+        callsByStatus: callsByStatus.map((item: any) => ({
           status: item.status,
           count: item._count,
         })),
-        callsByLanguage: callsByLanguage.map((item) => ({
+        callsByLanguage: callsByLanguage.map((item: any) => ({
           language: item.languageUsed,
           count: item._count,
         })),

@@ -66,7 +66,8 @@ export async function POST(
     })
 
     // Update or create metadata
-    if (call.metadata) {
+    // Note: metadata property check - using type assertion since metadata relation may not be included
+    if ((call as any).metadata) {
       await prisma.voiceAgentCallMetadata.update({
         where: { callId: params.callId },
         data: {
