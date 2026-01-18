@@ -229,9 +229,11 @@ export async function GET(request: NextRequest) {
     }).catch(() => [])
 
     // Calculate profit (revenue - expenses)
-    const profit = (revenueThisMonth._sum.total || 0) - (expensesThisMonth._sum.amount || 0)
-    const profitMargin = (revenueThisMonth._sum.total || 0) > 0
-      ? (profit / (revenueThisMonth._sum.total || 0)) * 100
+    const revenueThisMonthValue = Number(revenueThisMonth._sum.total || 0)
+    const expensesThisMonthValue = Number(expensesThisMonth._sum.amount || 0)
+    const profit = revenueThisMonthValue - expensesThisMonthValue
+    const profitMargin = revenueThisMonthValue > 0
+      ? (profit / revenueThisMonthValue) * 100
       : 0
 
     return NextResponse.json({
