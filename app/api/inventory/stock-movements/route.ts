@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
         toLocationId: transfer.toLocationId,
         toLocationName: transfer.toLocation?.name || null,
         reason: transfer.notes || null,
-        referenceNumber: transfer.referenceNumber || null,
+        referenceNumber: transfer.transferNumber || null,
         createdBy: transfer.createdBy,
         date: transfer.createdAt,
         status: transfer.status,
