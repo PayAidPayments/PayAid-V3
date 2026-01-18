@@ -199,10 +199,6 @@ export default function LoginPage() {
       } else {
         // Default: Always redirect to /home to show all apps
         router.push('/home')
-      } else {
-        console.warn('No tenant ID found after login, redirecting to /home')
-        // Fallback: redirect to /home
-        router.push('/home')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
