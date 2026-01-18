@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { format } from 'date-fns'
+import { format as formatDate } from 'date-fns'
 import { LeadScoringBadge } from '@/components/LeadScoringBadge'
 import { StageBadge } from '@/components/crm/StageBadge'
 import { 
@@ -499,7 +499,7 @@ export default function CRMLeadsPage() {
           lead.stage || '',
           lead.leadScore?.toString() || '0',
           lead.assignedTo?.name || lead.assignedTo?.email || '',
-          lead.createdAt ? format(new Date(lead.createdAt), 'yyyy-MM-dd HH:mm:ss') : '',
+          lead.createdAt ? formatDate(new Date(lead.createdAt), 'yyyy-MM-dd HH:mm:ss') : '',
         ])
 
         const csvContent = [
