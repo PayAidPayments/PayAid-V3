@@ -87,7 +87,10 @@ export async function POST(request: NextRequest) {
   let status = 200
   
   try {
-    const { tenantId, userId, token } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    // Get token from request headers
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '') || ''
     
     // Get tenant tier for rate limiting
     const tier = await getTenantTier(tenantId)

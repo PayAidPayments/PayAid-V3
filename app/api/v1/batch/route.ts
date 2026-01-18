@@ -49,7 +49,10 @@ interface BatchResponse {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate request
-    const { tenantId, userId, token } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    // Get token from request headers
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '') || ''
 
     // Parse batch request
     const body = await request.json()
