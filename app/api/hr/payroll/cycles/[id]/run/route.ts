@@ -44,7 +44,7 @@ export async function POST(
           : { status: 'ACTIVE' }),
       },
       include: {
-        employeeSalaryStructures: {
+        salaryStructures: {
           where: {
             effectiveFrom: { lte: new Date(cycle.year, cycle.month - 1, 1) },
             OR: [
@@ -78,7 +78,7 @@ export async function POST(
         continue
       }
 
-      const salaryStructure = employee.employeeSalaryStructures[0]?.structure
+      const salaryStructure = employee.salaryStructures[0]?.structure
       if (!salaryStructure) {
         continue // Skip employees without salary structure
       }
@@ -107,17 +107,17 @@ export async function POST(
           cycleId: cycle.id,
           employeeId: employee.id,
           tenantId,
-          grossEarningsInr: payrollResult.grossEarnings,
-          grossDeductionsInr: payrollResult.grossDeductions,
-          tdsInr: payrollResult.tds,
-          pfEmployeeInr: payrollResult.pfEmployee,
-          pfEmployerInr: payrollResult.pfEmployer,
-          esiEmployeeInr: payrollResult.esiEmployee,
-          esiEmployerInr: payrollResult.esiEmployer,
-          ptInr: payrollResult.pt,
+          grossEarningsInr: payrollResult.grossEarningsInr,
+          grossDeductionsInr: payrollResult.grossDeductionsInr,
+          tdsInr: payrollResult.tdsInr,
+          pfEmployeeInr: payrollResult.pfEmployeeInr,
+          pfEmployerInr: payrollResult.pfEmployerInr,
+          esiEmployeeInr: payrollResult.esiEmployeeInr,
+          esiEmployerInr: payrollResult.esiEmployerInr,
+          ptInr: payrollResult.ptInr,
           lopDays: payrollResult.lopDays,
-          lopAmountInr: payrollResult.lopAmount,
-          netPayInr: payrollResult.netPay,
+          lopAmountInr: payrollResult.lopAmountInr,
+          netPayInr: payrollResult.netPayInr,
           daysPaid: payrollResult.daysPaid,
           payoutStatus: 'PENDING',
         },
