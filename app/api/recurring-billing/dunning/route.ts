@@ -25,20 +25,38 @@ export async function GET(request: NextRequest) {
 
     const dunningAttempts = await prisma.dunningAttempt.findMany({
       where,
-      include: {
-        invoice: {
+      orderBy: { createdAt: 'desc' },
+    })
+
+    // Fetch invoice data separately for attempts that have invoiceId
+    const invoiceIds = dunningAttempts
+      .map(attempt => attempt.invoiceId)
+      .filter((id): id is string => id !== null)
+
+    const invoices = invoiceIds.length > 0
+      ? await prisma.invoice.findMany({
+          where: {
+            id: { in: invoiceIds },
+            tenantId,
+          },
           select: {
             id: true,
             invoiceNumber: true,
             total: true,
             customerName: true,
           },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+        })
+      : []
 
-    return NextResponse.json({ dunningAttempts })
+    const invoiceMap = new Map(invoices.map(inv => [inv.id, inv]))
+
+    // Attach invoice data to attempts
+    const dunningAttemptsWithInvoices = dunningAttempts.map(attempt => ({
+      ...attempt,
+      invoice: attempt.invoiceId ? invoiceMap.get(attempt.invoiceId) || null : null,
+    }))
+
+    return NextResponse.json({ dunningAttempts: dunningAttemptsWithInvoices })
   } catch (error) {
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
