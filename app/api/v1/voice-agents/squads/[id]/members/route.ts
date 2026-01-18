@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 const addMemberSchema = z.object({
   agentId: z.string().min(1),
@@ -58,7 +59,7 @@ export async function POST(
         squadId: params.id,
         agentId: validated.agentId,
         priority: validated.priority,
-        conditions: validated.conditions || null,
+        conditions: validated.conditions ?? Prisma.JsonNull,
       },
       include: {
         agent: true,

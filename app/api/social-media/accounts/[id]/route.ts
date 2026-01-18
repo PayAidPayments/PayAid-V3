@@ -37,9 +37,9 @@ export async function DELETE(
       where: { id },
       data: {
         isConnected: false,
-        accessToken: null,
-        refreshToken: null,
-        expiresAt: null,
+        accessToken: undefined,
+        refreshToken: undefined,
+        expiresAt: undefined,
       },
     })
 

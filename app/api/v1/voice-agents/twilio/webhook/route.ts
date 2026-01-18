@@ -96,9 +96,10 @@ export async function POST(request: NextRequest) {
       ? `${agent.description.substring(0, 200)}`
       : `Hello, you've reached ${agent.name}. How can I help you?`;
     
+    const sayLanguage = agent.language === 'en' ? 'en-US' : (agent.language as any);
     twiml.say({
-      voice: agent.language === 'en' ? 'alice' : 'alice',
-      language: agent.language === 'en' ? 'en-US' : agent.language
+      voice: 'alice',
+      language: sayLanguage
     }, greeting);
 
     // Connect to WebSocket stream for real-time audio

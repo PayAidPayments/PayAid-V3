@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('[VoiceAgents] GET request - User:', {
-      userId: user.userId || user.id,
+      userId: (user as any).userId || (user as any).id,
       tenantId: user.tenantId,
       email: (user as any).email,
     })

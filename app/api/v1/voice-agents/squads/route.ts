@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 const createSquadSchema = z.object({
   name: z.string().min(1).max(255),
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
         tenantId: user.tenantId,
         name: validated.name,
         description: validated.description || null,
-        routingRules: validated.routingRules || null,
+        routingRules: validated.routingRules ?? Prisma.JsonNull,
       },
       include: {
         members: {
