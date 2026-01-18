@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
       // Generate buffer
       const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
 
-      return new NextResponse(buffer, {
+      return new NextResponse(new Uint8Array(buffer), {
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'Content-Disposition': `attachment; filename="GSTR-3B-${month}-${year}.xlsx"`,
