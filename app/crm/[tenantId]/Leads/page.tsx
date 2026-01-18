@@ -248,8 +248,8 @@ export default function CRMLeadsPage() {
   }
 
   // Get unique lead sources for filter
-  const leadSources = Array.from(new Set(filteredLeads.map((lead: any) => lead.source).filter(Boolean)))
-  const leadStatuses = Array.from(new Set(filteredLeads.map((lead: any) => lead.status || 'Active').filter(Boolean)))
+  const leadSources = Array.from(new Set(filteredLeads.map((lead: any) => lead.source).filter(Boolean))) as string[]
+  const leadStatuses = Array.from(new Set(filteredLeads.map((lead: any) => lead.status || 'Active').filter(Boolean))) as string[]
 
   if (isLoading) {
     return <PageLoading message="Loading leads..." fullScreen={false} />
