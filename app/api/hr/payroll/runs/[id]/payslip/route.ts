@@ -62,7 +62,7 @@ export async function GET(
     // Update payslip URL (in production, upload to S3/MinIO)
     // For now, we'll return the PDF directly
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="payslip-${payrollRun.employee.employeeCode}-${payrollRun.cycle.month}-${payrollRun.cycle.year}.pdf"`,
