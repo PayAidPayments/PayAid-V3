@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { prisma } from '@/lib/db/prisma'
+import { Prisma } from '@prisma/client'
 
 // POST /api/recurring-billing/generate - Generate invoices from recurring templates
 export async function POST(request: NextRequest) {
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
         tax: template.tax,
         total: template.total,
         gstRate: template.gstRate,
-        items: template.items,
+        items: template.items ?? Prisma.JsonNull,
         status: 'draft',
         notes: template.notes,
         terms: template.termsAndConditions,
