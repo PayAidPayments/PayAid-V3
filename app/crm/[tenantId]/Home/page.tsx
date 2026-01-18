@@ -251,6 +251,7 @@ export default function CRMDashboardPage() {
         ],
         pipelineByStage: [],
         monthlyLeadCreation: [],
+        topLeadSources: [],
       })
     } finally {
       setLoading(false)
