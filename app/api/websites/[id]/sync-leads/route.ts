@@ -49,9 +49,10 @@ export async function POST(
     })
 
     // Filter by session duration
+    // Use endedAt instead of lastActivityAt (which doesn't exist)
     const qualifyingSessions = sessions.filter((session) => {
-      if (!session.lastActivityAt || !session.startedAt) return false
-      const duration = new Date(session.lastActivityAt).getTime() - new Date(session.startedAt).getTime()
+      if (!session.endedAt || !session.startedAt) return false
+      const duration = new Date(session.endedAt).getTime() - new Date(session.startedAt).getTime()
       return duration >= validated.minSessionDuration
     })
 
@@ -102,7 +103,8 @@ export async function POST(
             sessionId: session.id,
             pageViews: session.pageViews,
             referrer: firstVisit.referrer,
-            userAgent: session.userAgent,
+            // userAgent is on visit, not session
+            userAgent: firstVisit.userAgent,
           } as any,
           attributionChannel: firstVisit.referrer ? 'organic' : 'direct',
         },
