@@ -90,7 +90,7 @@ export default function CRMContactsPage() {
   })
   const actionsMenuRef = useRef<HTMLDivElement>(null)
   const createMenuRef = useRef<HTMLDivElement>(null)
-  // Profile menu handled by ModuleTopBar in layout
+  const profileMenuRef = useRef<HTMLDivElement>(null)
 
   const { data, isLoading, error } = useContacts({ page, limit, search, type: typeFilter || undefined })
   
