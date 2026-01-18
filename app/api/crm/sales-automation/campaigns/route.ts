@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     // For now, return empty array - campaigns will be stored in a new model
     // In production, create SalesAutomationCampaign model
-    const campaigns = []
+    const campaigns: any[] = []
 
     return NextResponse.json({ campaigns })
   } catch (error: any) {

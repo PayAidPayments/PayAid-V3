@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
           'Overdue Task',
           `Task "${task.title}" is overdue`,
           'HIGH',
-          task.dueDate,
+          task.dueDate || now,
           `/crm/${user.tenantId}/Tasks?filter=overdue`
         )
       })
@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
           'DEAL_CLOSING',
           'crm',
           'Deal Closing Soon',
-          `Deal "${deal.name}" is closing on ${new Date(deal.expectedCloseDate).toLocaleDateString()}`,
+          `Deal "${deal.name}" is closing on ${deal.expectedCloseDate ? new Date(deal.expectedCloseDate).toLocaleDateString() : 'soon'}`,
           'MEDIUM',
           now,
           `/crm/${user.tenantId}/Deals`
@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
           'Overdue Invoice',
           `Invoice #${invoice.invoiceNumber} is overdue (₹${invoice.total.toLocaleString('en-IN')})`,
           'HIGH',
-          invoice.dueDate,
+          invoice.dueDate || now,
           `/finance/${user.tenantId}/Invoices`
         )
       })
@@ -234,7 +234,7 @@ export async function GET(request: NextRequest) {
           },
           include: {
             employee: {
-              select: { name: true },
+              select: { firstName: true, lastName: true },
             },
           },
           take: 10,
@@ -247,7 +247,7 @@ export async function GET(request: NextRequest) {
           'LEAVE_PENDING',
           'hr',
           'Leave Request Pending',
-          `${leave.employee.name} has a pending leave request`,
+          `${leave.employee.firstName} ${leave.employee.lastName} has a pending leave request`,
           'MEDIUM',
           leave.createdAt,
           `/hr/${user.tenantId}/Leave/requests`
@@ -281,7 +281,7 @@ export async function GET(request: NextRequest) {
             'ATTENDANCE_MISSING',
             'hr',
             'Missing Attendance',
-            `${emp.name} has not marked attendance today`,
+            `${emp.firstName} ${emp.lastName} has not marked attendance today`,
             'LOW',
             now,
             `/hr/${user.tenantId}/Attendance`
@@ -295,7 +295,9 @@ export async function GET(request: NextRequest) {
       const projectTasksDue = await prismaWithRetry(() =>
         prisma.projectTask.findMany({
           where: {
-            tenantId: user.tenantId,
+            project: {
+              tenantId: user.tenantId,
+            },
             assignedToId: user.userId,
             dueDate: { gte: now, lte: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000) },
             status: { not: 'completed' },
@@ -330,8 +332,7 @@ export async function GET(request: NextRequest) {
         prisma.product.findMany({
           where: {
             tenantId: user.tenantId,
-            stock: { lte: prisma.product.fields.reorderLevel },
-            isActive: true,
+            quantity: { lte: prisma.product.fields.reorderLevel },
           },
           take: 10,
         })
@@ -343,8 +344,8 @@ export async function GET(request: NextRequest) {
           'STOCK_LOW',
           'inventory',
           'Low Stock Alert',
-          `Product "${product.name}" is running low (${product.stock} units remaining)`,
-          product.stock === 0 ? 'HIGH' : 'MEDIUM',
+          `Product "${product.name}" is running low (${product.quantity} units remaining)`,
+          product.quantity === 0 ? 'HIGH' : 'MEDIUM',
           now,
           `/inventory/${user.tenantId}/Products`
         )

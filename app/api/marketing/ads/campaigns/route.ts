@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const { tenantId } = await requireModuleAccess(request, 'marketing')
 
     // For now, return empty array - in production, create AdCampaign model
-    const campaigns = []
+    const campaigns: any[] = []
 
     return NextResponse.json({ campaigns })
   } catch (error: any) {
