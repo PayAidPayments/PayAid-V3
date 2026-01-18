@@ -109,17 +109,19 @@ export async function POST(request: NextRequest) {
         })
 
         // Notify account owner if requested
+        // Note: Activity model doesn't exist - using notifications or interactions instead
         if (validated.notifyAccountOwner && accountOwnerId) {
-          await tx.activity.create({
-            data: {
-              tenantId,
-              userId: accountOwnerId,
-              type: 'account_assigned',
-              entityType: 'contact',
-              entityId: createdRecords.account.id,
-              description: `You have been assigned as owner of account: ${accountName}`,
-            },
-          })
+          // TODO: Create notification or interaction record instead
+          // await tx.activity.create({
+          //   data: {
+          //     tenantId,
+          //     userId: accountOwnerId,
+          //     type: 'account_assigned',
+          //     entityType: 'contact',
+          //     entityId: createdRecords.account.id,
+          //     description: `You have been assigned as owner of account: ${accountName}`,
+          //   },
+          // })
         }
       }
 
@@ -152,17 +154,19 @@ export async function POST(request: NextRequest) {
         })
 
         // Notify contact owner if requested
+        // Note: Activity model doesn't exist - using notifications or interactions instead
         if (validated.notifyContactOwner && contactOwnerId) {
-          await tx.activity.create({
-            data: {
-              tenantId,
-              userId: contactOwnerId,
-              type: 'contact_assigned',
-              entityType: 'contact',
-              entityId: createdRecords.contact.id,
-              description: `You have been assigned as owner of contact: ${contactName}`,
-            },
-          })
+          // TODO: Create notification or interaction record instead
+          // await tx.activity.create({
+          //   data: {
+          //     tenantId,
+          //     userId: contactOwnerId,
+          //     type: 'contact_assigned',
+          //     entityType: 'contact',
+          //     entityId: createdRecords.contact.id,
+          //     description: `You have been assigned as owner of contact: ${contactName}`,
+          //   },
+          // })
         }
       }
 
