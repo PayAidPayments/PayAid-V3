@@ -58,8 +58,16 @@ export async function GET(
     })
 
     // Calculate funnel steps
-    const totalVisitors = new Set(sessions.map((s) => s.visitorId)).size
-    const visitorsWithPageView = new Set(visits.map((v) => v.visitorId)).size
+    // visitorId is on session, filter out nulls
+    const totalVisitors = new Set(
+      sessions.map((s) => s.visitorId).filter((id): id is string => id !== null)
+    ).size
+    // visitorId is on session, not visit - get from included session
+    const visitorsWithPageView = new Set(
+      visits
+        .map((v) => v.session?.visitorId)
+        .filter((id): id is string => id !== null && id !== undefined)
+    ).size
     const visitorsWithMultiplePages = sessions.filter((s) => s.pageViews > 1).length
     const visitorsWithEvent = new Set(
       (
@@ -82,15 +90,24 @@ export async function GET(
     ).size
 
     // Get page-specific funnels
-    const pageFunnels: Record<string, { views: number; unique: number }> = {}
+    // Need to fetch pages since path is on page, not visit
+    const pageIds = visits.map((v) => v.pageId).filter((id): id is string => id !== null)
+    const pages = await prisma.websitePage.findMany({
+      where: { id: { in: pageIds } },
+      select: { id: true, path: true },
+    })
+    const pageMap = new Map(pages.map((p) => [p.id, p.path]))
+    
+    const pageFunnels: Record<string, { views: number; unique: Set<string> }> = {}
     visits.forEach((visit) => {
-      const path = visit.path
+      const path = visit.pageId ? (pageMap.get(visit.pageId) || 'Unknown') : 'Unknown'
       if (!pageFunnels[path]) {
         pageFunnels[path] = { views: 0, unique: new Set() }
       }
       pageFunnels[path].views++
-      if (visit.visitorId) {
-        pageFunnels[path].unique.add(visit.visitorId)
+      // visitorId is on session, not visit
+      if (visit.session?.visitorId) {
+        pageFunnels[path].unique.add(visit.session.visitorId)
       }
     })
 
