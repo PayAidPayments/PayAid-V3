@@ -21,7 +21,9 @@ export async function POST(request: NextRequest) {
     const interaction = await prisma.interaction.findFirst({
       where: {
         contactId: validated.contactId,
-        tenantId,
+        contact: {
+          tenantId,
+        },
         type: 'call',
       },
       orderBy: {
