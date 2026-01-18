@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const lockedCycles = cycles.filter((c) => c.status === 'locked').length
     const totalRuns = runs.length
     const totalPayroll = runs.reduce(
-      (sum, r) => sum + (parseFloat(r.totalPayrollInr.toString()) || 0),
+      (sum, r) => sum + (parseFloat(r.netPayInr.toString()) || 0),
       0
     )
 
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       month: `${cycle.month}/${cycle.year}`,
       payroll: runs
         .filter((r) => r.cycleId === cycle.id)
-        .reduce((sum, r) => sum + (parseFloat(r.totalPayrollInr.toString()) || 0), 0),
+        .reduce((sum, r) => sum + (parseFloat(r.netPayInr.toString()) || 0), 0),
       employees: runs.filter((r) => r.cycleId === cycle.id).length,
     }))
 
