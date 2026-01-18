@@ -158,8 +158,11 @@ export async function GET(request: NextRequest) {
       }).catch(() => 0),
       
       // GST reports (count of GST filings)
-      prisma.gstReport.count({
-        where: { tenantId },
+      prisma.report.count({
+        where: { 
+          tenantId,
+          type: 'gst',
+        },
       }).catch(() => 0),
       
       // Recent invoices (last 5)
@@ -183,7 +186,7 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
-          orderNumber: true,
+          poNumber: true,
           total: true,
           status: true,
           createdAt: true,
