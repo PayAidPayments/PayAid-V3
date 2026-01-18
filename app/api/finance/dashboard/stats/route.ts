@@ -199,9 +199,11 @@ export async function GET(request: NextRequest) {
       ? ((invoicesThisMonth - invoicesLastMonth) / invoicesLastMonth) * 100 
       : invoicesThisMonth > 0 ? 100 : 0
     
-    const revenueGrowth = (revenueLastMonth._sum.total || 0) > 0
-      ? ((revenueThisMonth._sum.total || 0) - (revenueLastMonth._sum.total || 0)) / (revenueLastMonth._sum.total || 0) * 100
-      : (revenueThisMonth._sum.total || 0) > 0 ? 100 : 0
+    const revenueThisMonthNum = Number(revenueThisMonth._sum.total || 0)
+    const revenueLastMonthNum = Number(revenueLastMonth._sum.total || 0)
+    const revenueGrowth = revenueLastMonthNum > 0
+      ? ((revenueThisMonthNum - revenueLastMonthNum) / revenueLastMonthNum) * 100
+      : revenueThisMonthNum > 0 ? 100 : 0
 
     // Monthly revenue trend (last 6 months)
     const sixMonthsAgo = new Date(now)
