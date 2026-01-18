@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(2)
 
     // Return compressed PDF
-    return new NextResponse(pdfBytes, {
+    return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',

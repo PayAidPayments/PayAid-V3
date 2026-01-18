@@ -95,7 +95,7 @@ export async function GET(
       data: { receiptPrinted: true },
     })
 
-    return new NextResponse(pdfBuffer as unknown as Blob, {
+    return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="receipt-${transaction.transactionNumber}.pdf"`,

@@ -26,24 +26,15 @@ import {
 import { CheckCircle2, Sparkles } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
 
+// Deprecated modules to exclude (defined outside component to avoid scope issues)
+const deprecatedModules = ['invoicing', 'accounting'] as const
+
 export default function LandingPage() {
   const router = useRouter()
   const { isAuthenticated } = useAuthStore()
   const [selectedIndustry, setSelectedIndustry] = useState<string>('')
   const [mounted, setMounted] = useState(false)
-
-  // Redirect authenticated users to /home (app selection page)
-  useEffect(() => {
-    setMounted(true)
-    if (isAuthenticated) {
-      router.replace('/home')
-    }
-  }, [isAuthenticated, router])
-
-  // Don't render landing page for authenticated users
-  if (!mounted || isAuthenticated) {
-    return null
-  }
+  // All hooks must be called before any conditional returns
   const [showModuleSelection, setShowModuleSelection] = useState(false)
   const [selectedModules, setSelectedModules] = useState<string[]>([])
   const [selectedTier, setSelectedTier] = useState<'starter' | 'professional'>('professional')
@@ -52,12 +43,21 @@ export default function LandingPage() {
   const industries = getAllIndustries()
   const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Define tabs constant before hooks
   const tabs = [
     { id: 'crm' as const, label: 'CRM' },
     { id: 'invoicing' as const, label: 'Invoicing' },
     { id: 'inventory' as const, label: 'Inventory' },
     { id: 'analytics' as const, label: 'Analytics' },
   ]
+
+  // Redirect authenticated users to /home (app selection page)
+  useEffect(() => {
+    setMounted(true)
+    if (isAuthenticated) {
+      router.replace('/home')
+    }
+  }, [isAuthenticated, router])
 
   // Auto-scroll through tabs with hover to pause
   useEffect(() => {
@@ -76,26 +76,8 @@ export default function LandingPage() {
         clearInterval(autoScrollIntervalRef.current)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPaused])
-
-  // All available modules for selection
-  const allAvailableModules = [
-    { id: 'crm', name: 'CRM', description: 'Manage contacts, leads, and customer relationships', icon: '👥' },
-    { id: 'sales', name: 'Sales', description: 'Track sales, deals, and revenue', icon: '💼' },
-    { id: 'marketing', name: 'Marketing', description: 'Run campaigns, email marketing, and social media', icon: '📢' },
-    { id: 'finance', name: 'Finance & Accounting', description: 'Accounting, invoicing, and financial management', icon: '💰' },
-    { id: 'hr', name: 'HR & Payroll', description: 'Employee management, payroll, and HR operations', icon: '👔' },
-    { id: 'communication', name: 'Communication', description: 'Email, SMS, WhatsApp, and team communication', icon: '💬' },
-    { id: 'inventory', name: 'Inventory', description: 'Stock management and tracking', icon: '📦' },
-    { id: 'projects', name: 'Projects', description: 'Project management, tasks, and time tracking', icon: '📁' },
-    { id: 'analytics', name: 'Analytics', description: 'Business intelligence and reporting', icon: '📊' },
-    { id: 'productivity', name: 'Productivity Suite', description: 'Docs, spreadsheets, presentations, and collaboration', icon: '📝' },
-    { id: 'workflow', name: 'Workflow Automation', description: 'Automate business processes and workflows', icon: '⚙️' },
-    { id: 'ai-studio', name: 'AI Studio', description: 'AI-powered automation and insights', icon: '✨' },
-  ]
-
-  // Deprecated modules to exclude
-  const deprecatedModules = ['invoicing', 'accounting']
 
   // Initialize selected modules when industry is selected
   useEffect(() => {
@@ -120,7 +102,29 @@ export default function LandingPage() {
         document.getElementById('module-selection')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }, 100)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIndustry])
+
+  // Don't render landing page for authenticated users
+  if (!mounted || isAuthenticated) {
+    return null
+  }
+
+  // All available modules for selection
+  const allAvailableModules = [
+    { id: 'crm', name: 'CRM', description: 'Manage contacts, leads, and customer relationships', icon: '👥' },
+    { id: 'sales', name: 'Sales', description: 'Track sales, deals, and revenue', icon: '💼' },
+    { id: 'marketing', name: 'Marketing', description: 'Run campaigns, email marketing, and social media', icon: '📢' },
+    { id: 'finance', name: 'Finance & Accounting', description: 'Accounting, invoicing, and financial management', icon: '💰' },
+    { id: 'hr', name: 'HR & Payroll', description: 'Employee management, payroll, and HR operations', icon: '👔' },
+    { id: 'communication', name: 'Communication', description: 'Email, SMS, WhatsApp, and team communication', icon: '💬' },
+    { id: 'inventory', name: 'Inventory', description: 'Stock management and tracking', icon: '📦' },
+    { id: 'projects', name: 'Projects', description: 'Project management, tasks, and time tracking', icon: '📁' },
+    { id: 'analytics', name: 'Analytics', description: 'Business intelligence and reporting', icon: '📊' },
+    { id: 'productivity', name: 'Productivity Suite', description: 'Docs, spreadsheets, presentations, and collaboration', icon: '📝' },
+    { id: 'workflow', name: 'Workflow Automation', description: 'Automate business processes and workflows', icon: '⚙️' },
+    { id: 'ai-studio', name: 'AI Studio', description: 'AI-powered automation and insights', icon: '✨' },
+  ]
 
   // Get recommended modules for display
   const recommendedModules = selectedIndustry 
