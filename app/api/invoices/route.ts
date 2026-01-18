@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Cache for 3 minutes (multi-layer: L1 + L2)
+    const cacheKey = `invoices:${tenantId}:${page}:${limit}:${status || 'all'}:${customerId || 'all'}`
     await multiLayerCache.set(cacheKey, result, 180).catch(() => {
       // Ignore cache errors - not critical
     })

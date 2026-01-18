@@ -58,13 +58,19 @@ export async function GET(request: NextRequest) {
       
       // Total tasks
       prisma.projectTask.count({
-        where: { tenantId },
+        where: { 
+          project: {
+            tenantId,
+          },
+        },
       }).catch(() => 0),
       
       // Completed tasks
       prisma.projectTask.count({
         where: {
-          tenantId,
+          project: {
+            tenantId,
+          },
           status: 'COMPLETED',
         },
       }).catch(() => 0),
@@ -72,14 +78,16 @@ export async function GET(request: NextRequest) {
       // Total time logged this month
       prisma.timeEntry.aggregate({
         where: {
-          tenantId,
+          project: {
+            tenantId,
+          },
           date: {
             gte: startOfMonth,
             lte: endOfMonth,
           },
         },
         _sum: { hours: true },
-      }).catch(() => ({ _sum: { hours: 0 } })),
+      }).catch(() => ({ _sum: { hours: null } })),
       
       // Projects by status
       prisma.project.groupBy({
@@ -130,7 +138,7 @@ export async function GET(request: NextRequest) {
       onHoldProjects,
       totalTasks,
       completedTasks,
-      totalTimeLogged: Number(totalTimeLogged._sum.hours) || 0,
+      totalTimeLogged: Number(totalTimeLogged._sum?.hours || 0) || 0,
       projectsByStatus: projectsByStatus.map((p: any) => ({
         status: p.status,
         count: p._count.id || 0,
