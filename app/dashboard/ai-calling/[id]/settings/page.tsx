@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageLoading } from '@/components/ui/loading'
 import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface FAQ {
   question: string
@@ -38,11 +38,14 @@ export default function AICallingBotSettingsPage() {
       if (!response.ok) throw new Error('Failed to fetch bot')
       return response.json()
     },
-    onSuccess: (data) => {
+  })
+
+  useEffect(() => {
+    if (data?.bot) {
       setGreeting(data.bot.greeting || '')
       setFaqs(Array.isArray(data.bot.faqKnowledgeBase) ? data.bot.faqKnowledgeBase : [])
-    },
-  })
+    }
+  }, [data])
 
   const updateMutation = useMutation({
     mutationFn: async (data: { greeting: string; faqs: FAQ[] }) => {
