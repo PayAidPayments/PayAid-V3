@@ -134,7 +134,7 @@ export async function GET(
       terms: invoice.termsAndConditions || invoice.terms || undefined,
     })
 
-    return new NextResponse(pdfBuffer as any, {
+    return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`,
