@@ -570,8 +570,8 @@ export default function FieldConfigurationPage() {
                 <Label>Column</Label>
                 <Select
                   value={selectedField.column || 'left'}
-                  onValueChange={(value: 'left' | 'right' | 'full') =>
-                    updateField(selectedField.id, { column: value })
+                  onValueChange={(value) =>
+                    updateField(selectedField.id, { column: value as 'left' | 'right' | 'full' })
                   }
                 >
                   <SelectTrigger className="mt-1">
