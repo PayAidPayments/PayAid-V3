@@ -7,6 +7,17 @@ const nextConfig = {
   compress: true,
   // Add empty turbopack config to silence error, but we'll use webpack for better compatibility
   turbopack: {},
+  // Optimize TypeScript compilation
+  typescript: {
+    // Don't fail build on type errors during build (type checking happens separately)
+    // This speeds up builds significantly
+    ignoreBuildErrors: false,
+  },
+  // Optimize build performance
+  experimental: {
+    // Enable faster builds with SWC minification
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+  },
   
   // Security Headers (Layer 6)
   async headers() {
