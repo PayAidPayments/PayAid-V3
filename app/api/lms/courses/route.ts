@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     if (isPublished !== null) where.isPublished = isPublished === 'true'
     if (category) where.category = category
 
-    const courses = await prisma.lmsCourse.findMany({
+    const courses = await prisma.lMSCourse.findMany({
       where,
       include: {
         _count: {
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = createCourseSchema.parse(body)
 
-    const course = await prisma.lmsCourse.create({
+    const course = await prisma.lMSCourse.create({
       data: {
         tenantId,
         title: validated.title,

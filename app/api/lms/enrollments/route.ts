@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const validated = enrollSchema.parse(body)
 
     // Verify course exists
-    const course = await prisma.lmsCourse.findFirst({
+    const course = await prisma.lMSCourse.findFirst({
       where: {
         id: validated.courseId,
         tenantId,
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if already enrolled
-    const existing = await prisma.lmsEnrollment.findUnique({
+    const existing = await prisma.lMSEnrollment.findUnique({
       where: {
         courseId_employeeId: {
           courseId: validated.courseId,
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const enrollment = await prisma.lmsEnrollment.create({
+    const enrollment = await prisma.lMSEnrollment.create({
       data: {
         courseId: validated.courseId,
         employeeId: validated.employeeId,
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
 
     // Filter by tenant through course
     if (courseId) {
-      const course = await prisma.lmsCourse.findFirst({
+      const course = await prisma.lMSCourse.findFirst({
         where: { id: courseId, tenantId },
       })
       if (!course) {
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const enrollments = await prisma.lmsEnrollment.findMany({
+    const enrollments = await prisma.lMSEnrollment.findMany({
       where,
       include: {
         course: {
