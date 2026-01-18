@@ -110,7 +110,6 @@ export async function POST(request: NextRequest) {
         scheduledDate: new Date(validated.scheduledDate),
         scheduledTime: validated.scheduledTime,
         estimatedDuration: validated.estimatedDuration,
-        description: validated.description,
         location: validated.location,
         latitude: validated.latitude,
         longitude: validated.longitude,
