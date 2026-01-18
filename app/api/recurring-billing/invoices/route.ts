@@ -111,7 +111,6 @@ export async function POST(request: NextRequest) {
         // Store recurring info in notes until schema is updated
         notes: `RECURRING_INVOICE_TEMPLATE|FREQUENCY:${recurringFrequency}|${notes || ''}`,
         items: items,
-        notes,
         terms: `This is a recurring invoice. Frequency: ${recurringFrequency}`,
       },
     })
