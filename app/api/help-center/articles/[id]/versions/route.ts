@@ -40,11 +40,16 @@ export async function GET(
       )
     }
 
+    // Calculate current version from versions array (highest version number)
+    const currentVersion = article.versions.length > 0 
+      ? Math.max(...article.versions.map(v => v.version))
+      : 0
+
     return NextResponse.json({
       article: {
         id: article.id,
         title: article.title,
-        version: article.version,
+        version: currentVersion,
       },
       versions: article.versions,
     })
@@ -77,6 +82,12 @@ export async function POST(
         id: params.id,
         tenantId,
       },
+      include: {
+        versions: {
+          orderBy: { version: 'desc' },
+          take: 1,
+        },
+      },
     })
 
     if (!article) {
@@ -89,24 +100,28 @@ export async function POST(
     const body = await request.json()
     const { title, content } = body
 
+    // Get current version number (highest version from versions array, or 0 if none)
+    const currentVersion = article.versions.length > 0 
+      ? article.versions[0].version 
+      : 0
+
     // Save current version to history
     await prisma.helpCenterArticleVersion.create({
       data: {
         articleId: article.id,
         title: article.title,
         content: article.content,
-        version: article.version,
+        version: currentVersion,
         authorId: article.authorId,
       },
     })
 
-    // Update article with new version
+    // Update article (no version field on the model)
     const updatedArticle = await prisma.helpCenterArticle.update({
       where: { id: article.id },
       data: {
         title: title || article.title,
         content: content || article.content,
-        version: article.version + 1,
         authorId: userId,
       },
     })
