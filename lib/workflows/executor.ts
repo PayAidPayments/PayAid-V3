@@ -77,7 +77,7 @@ export async function executeWorkflow(
       where: { id: execution.id },
       data: {
         status: 'COMPLETED',
-        result,
+        result: result as any, // Cast to any for Json field compatibility
         completedAt: new Date(),
       },
     })

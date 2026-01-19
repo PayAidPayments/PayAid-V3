@@ -24,7 +24,7 @@ export function setupEmailProcessor() {
     
     try {
       const sendGrid = getSendGridClient()
-      await sendGrid.send({
+      await sendGrid.sendEmail({
         to,
         from: from || process.env.SENDGRID_FROM_EMAIL || 'noreply@payaid.com',
         subject,

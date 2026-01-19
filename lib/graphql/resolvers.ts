@@ -522,8 +522,13 @@ export const resolvers = {
       })
     },
     async tasks(parent: any) {
+      // Note: Task model doesn't have dealId, only contactId
+      // If tasks need to be linked to deals, use contactId from the deal's contact
+      if (!parent.contactId) {
+        return []
+      }
       return prismaRead.task.findMany({
-        where: { dealId: parent.id, tenantId: parent.tenantId },
+        where: { contactId: parent.contactId, tenantId: parent.tenantId },
       })
     },
   },

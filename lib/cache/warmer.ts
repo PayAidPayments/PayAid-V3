@@ -124,7 +124,7 @@ async function warmActiveDeals(tenantId: string): Promise<void> {
       orderBy: { updatedAt: 'desc' },
       select: {
         id: true,
-        title: true,
+        name: true,
         value: true,
         stage: true,
         probability: true,

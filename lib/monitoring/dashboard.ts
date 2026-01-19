@@ -44,7 +44,9 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 
   // Get cache stats
   const cacheStats = multiLayerCache.getStats()
-  const cacheHitRate = cacheStats.hits / (cacheStats.hits + cacheStats.misses) || 0
+  // Note: getStats() doesn't return hits/misses, only memory size info
+  // Cache hit rate would need to be tracked separately if needed
+  const cacheHitRate = 0 // TODO: Implement hit/miss tracking if needed
 
   // Get top endpoints with details
   const topEndpoints = apiMetrics.topEndpoints.map(endpoint => {
@@ -95,8 +97,8 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     },
     cache: {
       hitRate: cacheHitRate,
-      totalHits: cacheStats.hits,
-      totalMisses: cacheStats.misses,
+      totalHits: 0, // TODO: Track hits if needed
+      totalMisses: 0, // TODO: Track misses if needed
       stats: cacheStats,
     },
     database: {

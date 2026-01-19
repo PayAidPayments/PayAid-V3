@@ -173,8 +173,14 @@ export function getClientIP(request: NextRequest): string {
     return cfConnectingIP
   }
 
-  // Fallback to request IP (may not be available in all environments)
-  return request.ip || 'unknown'
+  // Fallback - NextRequest doesn't have .ip property
+  // Try x-forwarded-for header as last resort
+  const forwardedFor = request.headers.get('x-forwarded-for')
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim()
+  }
+  
+  return 'unknown'
 }
 
 /**

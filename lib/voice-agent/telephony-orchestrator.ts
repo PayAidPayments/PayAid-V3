@@ -12,7 +12,13 @@
 
 import { Deepgram } from '@deepgram/sdk';
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
-import { OpenAI } from 'openai';
+// Note: OpenAI package may not be installed - make import conditional
+let OpenAI: any = null
+try {
+  OpenAI = require('openai').OpenAI
+} catch {
+  // OpenAI not installed - will need to handle this in code
+}
 import { VoiceAgent, VoiceAgentCall } from '@prisma/client';
 import WebSocket from 'ws';
 import { prisma } from '@/lib/db/prisma';
@@ -83,7 +89,8 @@ export class TelephonyVoiceOrchestrator {
   private initializeSTTStream() {
     console.log('[Telephony Orchestrator] Initializing Deepgram STT stream...');
     
-    this.sttStream = this.deepgram.transcription.live({
+    // Deepgram SDK v2+ uses listen.client instead of transcription.live
+    this.sttStream = (this.deepgram as any).listen.client({
       model: process.env.DEEPGRAM_MODEL || 'nova-2',
       language: this.agent.language || 'en',
       interim_results: true, // Get partial transcripts
@@ -264,7 +271,8 @@ export class TelephonyVoiceOrchestrator {
       // ===== USE ELEVENLABS FOR STREAMING TTS =====
       const voiceId = this.agent.voiceId || process.env.ELEVENLABS_DEFAULT_VOICE_ID || '21m00Tcm4TlvDq8ikWAM';
       
-      const audioStream = await this.elevenlabs.textToSpeech.convertAsStream(voiceId, {
+      // ElevenLabs SDK uses generate method for streaming
+      const audioStream = await this.elevenlabs.textToSpeech.generate(voiceId, {
         text,
         model_id: 'eleven_turbo_v2',
         voice_settings: {

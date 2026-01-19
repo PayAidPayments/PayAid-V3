@@ -57,7 +57,8 @@ export async function transcribeAudio(
     return {
       text: result.text || '',
       language: result.language || 'en',
-      confidence: result.confidence,
+      service: 'ai-gateway',
+      // Note: confidence may not be available from all STT services
       segments: result.segments?.map((seg: any) => ({
         start: seg.start || 0,
         end: seg.end || 0,

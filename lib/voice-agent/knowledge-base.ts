@@ -3,7 +3,7 @@
  * Uses Chroma vector database for RAG (Retrieval Augmented Generation)
  */
 
-interface KnowledgeBaseDocument {
+export interface KnowledgeBaseDocument {
   id: string
   content: string
   metadata?: Record<string, any>

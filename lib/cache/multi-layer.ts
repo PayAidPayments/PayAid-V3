@@ -247,7 +247,7 @@ export class MultiLayerCache {
   /**
    * Clean up expired entries from L1
    */
-  private cleanupMemoryCache(): void {
+  cleanupMemoryCache(): void {
     const now = Date.now()
     for (const [key, entry] of this.memoryCache.entries()) {
       if (now >= entry.expiry) {
