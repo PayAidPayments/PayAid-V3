@@ -77,9 +77,9 @@ export function SegmentBuilder({ criteria, onCriteriaChange }: SegmentBuilderPro
   }
 
   const addCriteria = () => {
-    const newCriteria = [
+    const newCriteria: SegmentCriteria[] = [
       ...localCriteria,
-      { field: '', operator: '', value: '', logicalOperator: 'AND' },
+      { field: '', operator: '', value: '', logicalOperator: 'AND' as 'AND' | 'OR' },
     ]
     setLocalCriteria(newCriteria)
     onCriteriaChange(newCriteria)
@@ -189,8 +189,8 @@ export function SegmentBuilder({ criteria, onCriteriaChange }: SegmentBuilderPro
                 {index > 0 && (
                   <Select
                     value={criterion.logicalOperator || 'AND'}
-                    onValueChange={(value: 'AND' | 'OR') =>
-                      updateCriteria(index, { logicalOperator: value })
+                    onValueChange={(value) =>
+                      updateCriteria(index, { logicalOperator: value as 'AND' | 'OR' })
                     }
                   >
                     <SelectTrigger className="w-20">

@@ -9,7 +9,7 @@ interface Module {
   id: string
   name: string
   url: string
-  icon: React.ComponentType<{ className?: string }> | ((props: { className?: string }) => JSX.Element)
+  icon: React.ComponentType<{ className?: string }> | ((props: { className?: string }) => React.ReactElement)
   description: string
 }
 

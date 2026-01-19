@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/lib/stores/auth'
+import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 import { RefreshCw } from 'lucide-react'
 // ModuleTopBar is now in layout.tsx
 
@@ -104,53 +105,7 @@ export default function SalesCheckoutPagesPage() {
               <RefreshCw className="w-5 h-5 text-gray-600" />
             </button>
             <ModuleSwitcher currentModule="sales" />
-            
-            {/* User Profile Dropdown */}
-            <div className="relative" ref={profileMenuRef}>
-              <button
-                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="User menu"
-              >
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm">
-                  {getUserInitials()}
-                </div>
-                <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
-                  <p className="text-xs text-gray-500">{user?.email}</p>
-                </div>
-                <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {profileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  <div className="py-1">
-                    <div className="px-4 py-3 border-b border-gray-200">
-                      <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
-                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        router.push(tenantId ? `/dashboard/${tenantId}/settings/profile` : '/dashboard/settings/profile')
-                        setProfileMenuOpen(false)
-                      }}
-                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
-                    >
-                      <Settings className="w-4 h-4 mr-3" />
-                      Profile Settings
-                    </button>
-                    <div className="border-t border-gray-200 my-1"></div>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
-                    >
-                      <LogOut className="w-4 h-4 mr-3" />
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Profile menu handled by ModuleTopBar in layout */}
           </div>
         </div>
       </div>

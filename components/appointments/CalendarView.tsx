@@ -172,14 +172,14 @@ export function CalendarView({ appointments, loading, token }: CalendarViewProps
               Month
             </Button>
             <Button
-              variant={view === 'week' ? 'default' : 'outline'}
+              variant={(view as string) === 'week' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setView('week')}
             >
               Week
             </Button>
             <Button
-              variant={view === 'day' ? 'default' : 'outline'}
+              variant={(view as string) === 'day' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setView('day')}
             >
