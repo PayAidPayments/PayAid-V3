@@ -123,7 +123,8 @@ const CustomSelectContent = React.forwardRef<HTMLDivElement, CustomSelectContent
         if (React.isValidElement(child)) {
           const childType = child.type as any
           if (childType?.displayName === 'CustomSelectItem') {
-            itemsMap.set(child.props.value, child.props.children)
+            const props = child.props as { value: string; children: React.ReactNode }
+            itemsMap.set(props.value, props.children)
           }
         }
       })
