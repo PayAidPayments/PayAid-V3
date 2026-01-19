@@ -828,7 +828,7 @@ export default function CRMDashboardPage() {
                               fontSize={12}
                               fontWeight={500}
                             >
-                              {`${name}: ${(percent * 100).toFixed(0)}%`}
+                              {`${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`}
                             </text>
                           )
                         }}

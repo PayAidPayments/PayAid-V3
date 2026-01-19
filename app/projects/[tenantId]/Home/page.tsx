@@ -296,7 +296,7 @@ export default function ProjectsDashboardPage() {
                         outerRadius={100}
                         paddingAngle={5}
                         dataKey="value"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }) => `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`}
                       >
                         {projectsByStatusData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
