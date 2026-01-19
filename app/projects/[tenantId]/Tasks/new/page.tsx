@@ -142,9 +142,8 @@ export default function NewTaskPage() {
                 <Select
                   value={formData.projectId}
                   onValueChange={(value) => setFormData({ ...formData, projectId: value, dependsOnTaskId: '' })}
-                  required
                 >
-                  <SelectTrigger className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
+                  <SelectTrigger required className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
                     <SelectValue placeholder="Select a project" />
                   </SelectTrigger>
                   <SelectContent className="dark:bg-gray-800 dark:border-gray-700">

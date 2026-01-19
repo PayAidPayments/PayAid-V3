@@ -15,6 +15,7 @@ import {
   Warehouse,
   ShoppingCart
 } from 'lucide-react'
+import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 // ModuleTopBar is now in layout.tsx
 import { 
   LineChart, 

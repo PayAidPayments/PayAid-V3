@@ -140,9 +140,8 @@ export default function NewStockMovementPage() {
                   <Select
                     value={formData.type}
                     onValueChange={(value) => setFormData({ ...formData, type: value as 'IN' | 'OUT' | 'ADJUSTMENT' })}
-                    required
                   >
-                    <SelectTrigger>
+                    <SelectTrigger required>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -158,9 +157,8 @@ export default function NewStockMovementPage() {
                   <Select
                     value={formData.productId}
                     onValueChange={(value) => setFormData({ ...formData, productId: value })}
-                    required
                   >
-                    <SelectTrigger>
+                    <SelectTrigger required>
                       <SelectValue placeholder="Select a product" />
                     </SelectTrigger>
                     <SelectContent>
@@ -178,9 +176,8 @@ export default function NewStockMovementPage() {
                   <Select
                     value={formData.locationId}
                     onValueChange={(value) => setFormData({ ...formData, locationId: value })}
-                    required
                   >
-                    <SelectTrigger>
+                    <SelectTrigger required>
                       <SelectValue placeholder="Select a warehouse" />
                     </SelectTrigger>
                     <SelectContent>

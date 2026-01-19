@@ -143,9 +143,8 @@ export default function NewTimeEntryPage() {
                   <Select
                     value={formData.projectId}
                     onValueChange={(value) => setFormData({ ...formData, projectId: value, taskId: '' })}
-                    required
                   >
-                    <SelectTrigger>
+                    <SelectTrigger required>
                       <SelectValue placeholder="Select a project" />
                     </SelectTrigger>
                     <SelectContent>

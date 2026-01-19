@@ -336,7 +336,7 @@ export default function SalesLandingPageDetailPage() {
                     <dt className="text-sm font-medium text-gray-500">Conversions</dt>
                     <dd className="mt-1 text-sm text-gray-900">{page.conversions.toLocaleString()}</dd>
                   </div>
-                  {page.conversionRate !== null && page.conversionRate > 0 && (
+                  {page.conversionRate != null && page.conversionRate > 0 && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Conversion Rate</dt>
                       <dd className="mt-1 text-sm text-gray-900 text-green-600 font-semibold">

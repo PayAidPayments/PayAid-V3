@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 // ModuleTopBar is now in layout.tsx
 import { useAuthStore } from '@/lib/stores/auth'
 import { PageLoading } from '@/components/ui/loading'
+import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 import { RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { format } from 'date-fns'
 

@@ -264,7 +264,7 @@ export default function InventoryReportsPage() {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ warehouseName, percent }) => `${warehouseName} ${(percent * 100).toFixed(0)}%`}
+                        label={(entry: any) => `${entry.warehouseName || entry.name || ''} ${entry.percent ? (entry.percent * 100).toFixed(0) : 0}%`}
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="stockValue"
