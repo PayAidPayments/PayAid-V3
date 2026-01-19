@@ -7,12 +7,11 @@ import { MODULE_PRICING, INDUSTRY_PACKAGE_PRICING } from '@/lib/pricing/config'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  CustomSelect,
+  CustomSelectContent,
+  CustomSelectItem,
+  CustomSelectTrigger,
+} from '@/components/ui/custom-select'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Logo } from '@/components/brand/Logo'
@@ -191,22 +190,24 @@ export default function LandingPage() {
                 <Label htmlFor="industry-select" className="text-base font-medium text-gray-700">
                   Select Your Industry
                 </Label>
-                <div className="relative w-full max-w-2xl mx-auto overflow-visible">
-                  <div className="w-full">
-                    <Select value={selectedIndustry} onValueChange={handleIndustrySelect}>
-                      <SelectTrigger id="industry-select" className="w-full h-12 text-base">
-                        <SelectValue placeholder="Choose your industry..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {industries.map((industry) => (
-                          <SelectItem key={industry.id} value={industry.id}>
-                            {industry.icon} {industry.name}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="others">➕ Others (Not Listed)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="relative w-full max-w-2xl mx-auto">
+                  <CustomSelect
+                    value={selectedIndustry}
+                    onValueChange={handleIndustrySelect}
+                    placeholder="Choose your industry..."
+                    id="industry-select"
+                    className="w-full"
+                  >
+                    <CustomSelectTrigger className="w-full h-12 text-base" />
+                    <CustomSelectContent>
+                      {industries.map((industry) => (
+                        <CustomSelectItem key={industry.id} value={industry.id}>
+                          {industry.icon} {industry.name}
+                        </CustomSelectItem>
+                      ))}
+                      <CustomSelectItem value="others">➕ Others (Not Listed)</CustomSelectItem>
+                    </CustomSelectContent>
+                  </CustomSelect>
                 </div>
               </div>
             </div>
