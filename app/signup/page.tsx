@@ -178,8 +178,13 @@ function SignupForm() {
 
       // After signup, check if industry was set
       if (industryId && authToken) {
-        // Industry was set during signup - redirect to /home to see modules
-        router.push('/home')
+        // Industry was set during signup - redirect to tenant home page to see modules
+        const { tenant } = useAuthStore.getState()
+        if (tenant?.id) {
+          router.push(`/home/${tenant.id}`)
+        } else {
+          router.push('/home')
+        }
       } else {
         // No industry set - redirect to landing page to select industry
         router.push('/?onboarding=true')
