@@ -45,7 +45,7 @@ interface LocationStats {
 export default function LocationDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { token } = useAuthStore()
+  const { token, tenant } = useAuthStore()
   const locationId = params?.id as string
   const [location, setLocation] = useState<Location | null>(null)
   const [stats, setStats] = useState<LocationStats | null>(null)
