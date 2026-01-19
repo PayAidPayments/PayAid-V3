@@ -66,23 +66,23 @@ export default function LandingPage() {
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Core Modules</h4>
                       <ul className="space-y-2">
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">CRM Management</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Invoicing & Billing</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Inventory Tracking</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Payment Processing</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">HR & Payroll</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Accounting & GST</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">CRM Management</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Invoicing & Billing</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Inventory Tracking</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Payment Processing</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">HR & Payroll</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Accounting & GST</Link></li>
                       </ul>
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Advanced Features</h4>
                       <ul className="space-y-2">
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Analytics & Reports</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">AI Co-founder</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Third-party Integrations</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Mobile Applications</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">API Access</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Enterprise Security</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Analytics & Reports</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">AI Co-founder</Link></li>
+                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Third-party Integrations</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Mobile Applications</Link></li>
+                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">API Access</Link></li>
+                        <li><Link href="/security" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Enterprise Security</Link></li>
                       </ul>
                     </div>
                   </div>
@@ -99,19 +99,19 @@ export default function LandingPage() {
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">By Industry</h4>
                       <ul className="space-y-2">
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Restaurants & Cafes</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Retail Stores</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Service Businesses</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Manufacturing</Link></li>
+                        <li><Link href="/industries/restaurant" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Restaurants & Cafes</Link></li>
+                        <li><Link href="/industries/retail" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Retail Stores</Link></li>
+                        <li><Link href="/industries/services" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Service Businesses</Link></li>
+                        <li><Link href="/industries/manufacturing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Manufacturing</Link></li>
                       </ul>
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Use Cases</h4>
                       <ul className="space-y-2">
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Multi-Location Management</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">E-Commerce Integration</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">GST Compliance</Link></li>
-                        <li><Link href="#" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Business Scaling</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Multi-Location Management</Link></li>
+                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">E-Commerce Integration</Link></li>
+                        <li><Link href="/compliance" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">GST Compliance</Link></li>
+                        <li><Link href="#pricing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Business Scaling</Link></li>
                       </ul>
                     </div>
                   </div>
@@ -437,8 +437,8 @@ export default function LandingPage() {
               <div key={index} className="bg-gradient-to-br from-purple-50 to-white rounded-xl p-6 border border-purple-100 hover:shadow-lg transition-all">
                 <h3 className="text-xl font-bold text-gray-900 mb-3">{useCase.title}</h3>
                 <p className="text-gray-600 mb-4">{useCase.desc}</p>
-                <Link href="#" className="text-[#53328A] font-semibold hover:underline">
-                  Learn more →
+                <Link href="/signup" className="text-[#53328A] font-semibold hover:underline">
+                  Get Started →
                 </Link>
               </div>
             ))}
