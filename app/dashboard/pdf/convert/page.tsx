@@ -93,7 +93,7 @@ export default function PDFConvertPage() {
               id="pdf-upload"
             />
             <label htmlFor="pdf-upload">
-              <Button as="span" variant="outline">
+              <Button type="button" variant="outline">
                 Select PDF File
               </Button>
             </label>
