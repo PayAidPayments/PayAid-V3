@@ -26,6 +26,7 @@ import {
   AreaChart
 } from 'recharts'
 import { format } from 'date-fns'
+import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 
 interface SalesDashboardStats {
   landingPages: number

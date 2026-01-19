@@ -18,6 +18,7 @@ import {
   UserPlus
 } from 'lucide-react'
 import { DashboardLoading } from '@/components/ui/loading'
+import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 // ModuleTopBar is now in layout.tsx
 import { 
   LineChart, 
@@ -285,7 +286,7 @@ export default function HRDashboardPage() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ department, percent }) => `${department} ${percent ? (percent * 100).toFixed(0) : 0}%`}
+                    label={(entry: any) => `${entry.department || entry.name || ''} ${entry.percent ? (entry.percent * 100).toFixed(0) : 0}%`}
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="count"

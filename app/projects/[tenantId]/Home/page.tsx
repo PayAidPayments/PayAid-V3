@@ -19,6 +19,7 @@ import {
   PauseCircle
 } from 'lucide-react'
 import { DashboardLoading } from '@/components/ui/loading'
+import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 // ModuleTopBar is now in layout.tsx
 import { 
   LineChart, 

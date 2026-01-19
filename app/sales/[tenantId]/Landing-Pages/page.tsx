@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -207,7 +207,7 @@ export default function SalesLandingPagesPage() {
                       <span className="text-gray-500">Conversions:</span>
                       <span className="font-semibold">{page.conversions.toLocaleString()}</span>
                     </div>
-                    {page.conversionRate !== null && page.conversionRate > 0 && (
+                    {page.conversionRate != null && page.conversionRate > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Conversion Rate:</span>
                         <span className="font-semibold text-green-600">
