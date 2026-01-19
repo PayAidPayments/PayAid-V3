@@ -152,12 +152,27 @@ export default function CRMDashboardPage() {
   }, [viewParam, user?.role])
 
   useEffect(() => {
-    fetchDashboardStats()
-    if (currentView === 'tasks') {
-      fetchTasksViewData()
-    } else if (currentView === 'activity') {
-      fetchActivityFeed()
+    // Sequence API calls to avoid connection pool exhaustion
+    const loadData = async () => {
+      try {
+        // Load stats first (most important)
+        await fetchDashboardStats()
+        
+        // Small delay to allow connection pool to recover
+        await new Promise(resolve => setTimeout(resolve, 200))
+        
+        // Load view-specific data sequentially
+        if (currentView === 'tasks') {
+          await fetchTasksViewData()
+        } else if (currentView === 'activity') {
+          await fetchActivityFeed()
+        }
+      } catch (error) {
+        console.error('Error loading dashboard data:', error)
+      }
     }
+    
+    loadData()
   }, [tenantId, currentView, timePeriod, activityFilter])
 
   const fetchTasksViewData = async () => {
@@ -210,7 +225,10 @@ export default function CRMDashboardPage() {
   }
 
 
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = async (retryCount = 0): Promise<void> => {
+    const MAX_RETRIES = 2
+    const RETRY_DELAY = 3000 // 3 seconds
+    
     try {
       setLoading(true)
       setError(null)
@@ -231,15 +249,36 @@ export default function CRMDashboardPage() {
       if (response.ok) {
         const data = await response.json()
         setStats(data)
+        setLoading(false)
       } else if (response.status === 503) {
         // Handle service unavailable (pool exhaustion)
         const errorData = await response.json().catch(() => ({}))
-        setError(errorData.message || 'Database temporarily unavailable. Please try again in a moment.')
-        // Auto-retry after suggested delay
-        if (errorData.retryAfter) {
-          setTimeout(() => {
-            fetchDashboardStats()
-          }, errorData.retryAfter * 1000)
+        const retryAfter = errorData.retryAfter || 5
+        
+        if (retryCount < MAX_RETRIES) {
+          setError(`Database busy. Retrying in ${retryAfter} seconds... (${retryCount + 1}/${MAX_RETRIES})`)
+          // Retry after delay
+          await new Promise(resolve => setTimeout(resolve, retryAfter * 1000))
+          return fetchDashboardStats(retryCount + 1)
+        } else {
+          setError(errorData.message || 'Database temporarily unavailable. Please refresh the page in a moment.')
+          setLoading(false)
+          // Set default stats to prevent blocking
+          setStats({
+            dealsCreatedThisMonth: 0,
+            revenueThisMonth: 0,
+            dealsClosingThisMonth: 0,
+            overdueTasks: 0,
+            quarterlyPerformance: [
+              { quarter: 'FY 2024-Q4', leadsCreated: 0, dealsCreated: 0, dealsWon: 0, revenue: 0 },
+              { quarter: 'FY 2025-Q1', leadsCreated: 0, dealsCreated: 0, dealsWon: 0, revenue: 0 },
+              { quarter: 'FY 2025-Q2', leadsCreated: 0, dealsCreated: 0, dealsWon: 0, revenue: 0 },
+              { quarter: 'FY 2025-Q3', leadsCreated: 0, dealsCreated: 0, dealsWon: 0, revenue: 0 },
+            ],
+            pipelineByStage: [],
+            monthlyLeadCreation: [],
+            topLeadSources: [],
+          })
         }
       } else {
         const errorData = await response.json()
@@ -247,7 +286,15 @@ export default function CRMDashboardPage() {
       }
     } catch (error: any) {
       console.error('Failed to fetch dashboard stats:', error)
+      
+      // Retry on network errors
+      if (retryCount < MAX_RETRIES && error.message?.includes('fetch')) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+        return fetchDashboardStats(retryCount + 1)
+      }
+      
       setError(error.message || 'An unexpected error occurred while fetching data.')
+      setLoading(false)
       // Set default stats to prevent blocking
       setStats({
         dealsCreatedThisMonth: 0,
@@ -264,8 +311,6 @@ export default function CRMDashboardPage() {
         monthlyLeadCreation: [],
         topLeadSources: [],
       })
-    } finally {
-      setLoading(false)
     }
   }
 
