@@ -27,9 +27,7 @@
     "enable-all-modules": "npx tsx scripts/enable-all-modules.ts",
     "type-check": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc --noEmit",
     "type-check:quick": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc --noEmit --skipLibCheck",
-    "build:check": "npm run type-check:quick && npm run build",
-    "pre-push": "npm run type-check:quick",
-    "check-before-push": "powershell -ExecutionPolicy Bypass -File scripts/pre-push-check.ps1",
+    "check-before-push": "powershell -ExecutionPolicy Bypass -File scripts/check-before-push.ps1",
     "check-changed": "powershell -ExecutionPolicy Bypass -File scripts/check-changed-files.ps1",
     "verify-env": "npx tsx scripts/verify-env.ts",
     "check-vercel-logs": "powershell -ExecutionPolicy Bypass -File scripts/check-vercel-logs.ps1",
@@ -46,9 +44,10 @@
     "setup:load-tests": "npx tsx scripts/load-test-setup.ts",
     "build:vercel": "powershell -ExecutionPolicy Bypass -File scripts/build-vercel-local.ps1",
     "build:local": "prisma generate && next build --webpack",
-    "build:check": "prisma generate && next build --webpack",
     "clean:build": "powershell -ExecutionPolicy Bypass -File scripts/clean-build.ps1",
-    "pre-push": "npm run build:check"
+    "pre-push": "powershell -ExecutionPolicy Bypass -File scripts/pre-push-check.ps1",
+    "prebuild": "prisma generate",
+    "build:vercel-check": "powershell -ExecutionPolicy Bypass -File scripts/pre-push-check.ps1"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.958.0",

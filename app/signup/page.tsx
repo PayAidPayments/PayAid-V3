@@ -20,7 +20,7 @@ export default function SignupPage() {
   const selectedModulesParam = searchParams.get('modules')
   const selectedTierParam = searchParams.get('tier') as 'starter' | 'professional' | null
   const industrySubTypeParam = searchParams.get('subtype')
-  const { register, isLoading } = useAuthStore()
+  const { register, isLoading, token } = useAuthStore()
   
   const [formData, setFormData] = useState({
     name: '',
@@ -79,10 +79,13 @@ export default function SignupPage() {
 
     try {
       // Register the user
-      const result = await register(formData)
+      await register(formData)
+      
+      // Get token from store after registration
+      const authToken = useAuthStore.getState().token
       
       // If industry is specified, configure modules after registration
-      if (industryId && result?.token) {
+      if (industryId && authToken) {
         try {
           // Parse selected modules from URL parameter
           const selectedModules = selectedModulesParam
@@ -125,7 +128,7 @@ export default function SignupPage() {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${result.token}`,
+                  'Authorization': `Bearer ${authToken}`,
                 },
                 body: JSON.stringify({
                   industryName: decodeURIComponent(customName),
@@ -142,7 +145,7 @@ export default function SignupPage() {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${result.token}`,
+                  'Authorization': `Bearer ${authToken}`,
                 },
                 body: JSON.stringify({
                   industries: [industryId],
@@ -157,7 +160,7 @@ export default function SignupPage() {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${result.token}`,
+                  'Authorization': `Bearer ${authToken}`,
                 },
                 body: JSON.stringify({
                   industries: [industryId],
@@ -174,7 +177,7 @@ export default function SignupPage() {
       }
 
       // After signup, check if industry was set
-      if (industryId && result?.token) {
+      if (industryId && authToken) {
         // Industry was set during signup - redirect to /home to see modules
         router.push('/home')
       } else {

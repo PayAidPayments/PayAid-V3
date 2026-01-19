@@ -282,7 +282,10 @@ export default function MarketingDashboardPage() {
             <CardContent>
               <div className="text-2xl font-bold">{stats?.emailSentThisMonth?.toLocaleString() || 0}</div>
               <p className={`text-xs flex items-center gap-1 mt-1 ${emailGrowthColor}`}>
-                {emailGrowthIcon && <emailGrowthIcon className="w-3 h-3" />}
+                {emailGrowthIcon && (() => {
+                  const Icon = emailGrowthIcon
+                  return <Icon className="w-3 h-3" />
+                })()}
                 {Math.abs(stats?.emailGrowth || 0).toFixed(1)}% from last month
               </p>
             </CardContent>

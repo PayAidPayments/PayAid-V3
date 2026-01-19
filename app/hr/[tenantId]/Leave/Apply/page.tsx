@@ -187,7 +187,7 @@ export default function HRLeaveApplyPage() {
                 {formData.isHalfDay && (
                   <Select
                     value={formData.halfDayType}
-                    onValueChange={(value: 'FIRST_HALF' | 'SECOND_HALF') => setFormData({ ...formData, halfDayType: value })}
+                    onValueChange={(value) => setFormData({ ...formData, halfDayType: value as 'FIRST_HALF' | 'SECOND_HALF' })}
                   >
                     <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
                       <SelectValue />

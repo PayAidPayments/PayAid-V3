@@ -147,8 +147,8 @@ export default function NewWarehousePage() {
                     >
                       <option value="">Select State</option>
                       {INDIAN_STATES.map((state) => (
-                        <option key={state} value={state}>
-                          {state}
+                        <option key={state.code} value={state.name}>
+                          {state.name}
                         </option>
                       ))}
                     </select>
