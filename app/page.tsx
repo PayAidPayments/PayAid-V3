@@ -189,19 +189,21 @@ export default function LandingPage() {
                 <Label htmlFor="industry-select" className="text-base font-medium text-gray-700">
                   Select Your Industry
                 </Label>
-                <Select value={selectedIndustry} onValueChange={handleIndustrySelect}>
-                  <SelectTrigger id="industry-select" className="w-full h-12 text-base">
-                    <SelectValue placeholder="Choose your industry..." />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px] overflow-y-auto z-50">
-                    {industries.map((industry) => (
-                      <SelectItem key={industry.id} value={industry.id} className="cursor-pointer">
-                        {industry.icon} {industry.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="others" className="cursor-pointer">➕ Others (Not Listed)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="relative w-full">
+                  <Select value={selectedIndustry} onValueChange={handleIndustrySelect}>
+                    <SelectTrigger id="industry-select" className="w-full h-12 text-base">
+                      <SelectValue placeholder="Choose your industry..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {industries.map((industry) => (
+                        <SelectItem key={industry.id} value={industry.id}>
+                          {industry.icon} {industry.name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="others">➕ Others (Not Listed)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </div>
