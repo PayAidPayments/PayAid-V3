@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ArrowLeft, Save, Trash2, Clock, User, Phone, Mail, MapPin, Video } from 'lucide-react'
 import Link from 'next/link'
+import { PageLoading } from '@/components/ui/loading'
 
 interface Appointment {
   id: string
