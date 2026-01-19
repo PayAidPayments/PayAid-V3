@@ -125,13 +125,17 @@ export default function LandingPage() {
               </Link>
             </div>
             <div className="flex items-center gap-4">
-              <Link href="/login">
-                <Button variant="ghost" size="sm">Sign In</Button>
+              <Link 
+                href="/login"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              >
+                Sign In
               </Link>
-              <Link href="/signup">
-                <Button size="sm" className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white">
-                  Get Started
-                </Button>
+              <Link 
+                href="/signup"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors"
+              >
+                Get Started
               </Link>
             </div>
           </div>
@@ -152,15 +156,17 @@ export default function LandingPage() {
                 Built specifically for Indian SMBs.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
-                <Link href="/signup">
-                  <Button size="lg" className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white px-8 py-6 text-lg">
-                    Start Free Trial
-                  </Button>
+                <Link 
+                  href="/signup"
+                  className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors"
+                >
+                  Start Free Trial
                 </Link>
-                <Link href="#dashboard-showcase">
-                  <Button size="lg" variant="outline" className="border-2 border-[#53328A] text-[#53328A] hover:bg-purple-50 px-8 py-6 text-lg">
-                    Watch Demo →
-                  </Button>
+                <Link 
+                  href="#dashboard-showcase"
+                  className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 border-2 border-[#53328A] text-[#53328A] hover:bg-purple-50 transition-colors"
+                >
+                  Watch Demo →
                 </Link>
               </div>
             </div>
