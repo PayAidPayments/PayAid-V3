@@ -193,13 +193,13 @@ export default function LandingPage() {
                   <SelectTrigger id="industry-select" className="w-full h-12 text-base">
                     <SelectValue placeholder="Choose your industry..." />
                   </SelectTrigger>
-                  <SelectContent className="max-h-[300px] overflow-y-auto">
+                  <SelectContent className="max-h-[300px] overflow-y-auto z-50">
                     {industries.map((industry) => (
-                      <SelectItem key={industry.id} value={industry.id}>
+                      <SelectItem key={industry.id} value={industry.id} className="cursor-pointer">
                         {industry.icon} {industry.name}
                       </SelectItem>
                     ))}
-                    <SelectItem value="others">➕ Others (Not Listed)</SelectItem>
+                    <SelectItem value="others" className="cursor-pointer">➕ Others (Not Listed)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
