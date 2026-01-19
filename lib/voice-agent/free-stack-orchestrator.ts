@@ -100,7 +100,7 @@ export class FreeStackVoiceOrchestrator {
 
       // ===== STEP 1: SPEECH-TO-TEXT (Whisper - FREE) =====
       console.log('[Free Stack] Transcribing audio with Whisper...');
-      const sttResult = await transcribeAudio(
+      const sttResult = await transcribeAudioFree(
         combinedAudio,
         this.agent.language || 'en'
       );
@@ -156,7 +156,7 @@ export class FreeStackVoiceOrchestrator {
       }
 
       // Generate response using Ollama
-      const response = await generateVoiceResponse(
+      const response = await generateVoiceResponseFree(
         systemPrompt,
         this.conversationHistory.slice(-10).map(msg => ({
           role: msg.role,

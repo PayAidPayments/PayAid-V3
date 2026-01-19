@@ -220,7 +220,11 @@ export function createHTTPTool(baseUrl?: string): Tool {
       },
       required: ['method', 'url'],
     },
-    async execute(params: { method: string; url: string; headers?: Record<string, string>; body?: any }) {
+    async execute(params: Record<string, any>) {
+      // Validate required params
+      if (!params.method || !params.url) {
+        throw new Error('method and url are required')
+      }
       const url = baseUrl ? `${baseUrl}${params.url}` : params.url
       const response = await fetch(url, {
         method: params.method,
@@ -270,7 +274,11 @@ export function createDatabaseQueryTool(prisma: any): Tool {
       },
       required: ['model', 'action'],
     },
-    async execute(params: { model: string; action: string; where?: any; select?: any }) {
+    async execute(params: Record<string, any>) {
+      // Validate required params
+      if (!params.model || !params.action) {
+        throw new Error('model and action are required')
+      }
       // Safety: Only allow read operations
       const allowedActions = ['findMany', 'findFirst', 'findUnique', 'count']
       if (!allowedActions.includes(params.action)) {

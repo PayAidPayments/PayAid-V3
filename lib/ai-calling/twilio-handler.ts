@@ -3,7 +3,8 @@
  * Handles incoming calls, intent recognition, and responses
  */
 
-import { OpenAI } from '@google/generative-ai'
+// OpenAI is referenced in comments but not actually imported/used
+// If OpenAI is needed, import from 'openai' package: import OpenAI from 'openai'
 
 interface CallContext {
   phoneNumber: string

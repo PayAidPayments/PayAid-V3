@@ -71,7 +71,8 @@ async function transcribeViaGateway(
   return {
     text: result.text || '',
     language: result.language || 'en',
-    confidence: result.confidence,
+    service: 'whisper-free',
+    // Note: confidence not available in free STT service
     segments: result.segments?.map((seg: any) => ({
       start: seg.start || 0,
       end: seg.end || 0,

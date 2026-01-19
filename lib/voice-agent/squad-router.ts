@@ -63,7 +63,7 @@ export class SquadRouter {
 
       // Evaluate conditions if any
       if (member.conditions) {
-        const conditions = member.conditions as RoutingCondition[]
+        const conditions = (member.conditions as unknown as RoutingCondition[]) || []
         if (this.evaluateConditions(conditions, context)) {
           console.log(`[SquadRouter] Routing to agent ${member.agentId} based on conditions`)
           return member.agentId

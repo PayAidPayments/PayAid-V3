@@ -38,23 +38,25 @@ export async function recordFeedback(
 ): Promise<void> {
   // Store feedback in database for learning
   // In production, this would be stored in an AIFeedback model
-  await prisma.interaction.create({
-    data: {
-      tenantId,
-      type: 'note',
-      subject: `AI Feedback: ${feedback.type}`,
-      notes: JSON.stringify({
-        context: feedback.context,
-        userInput: feedback.userInput,
-        aiResponse: feedback.aiResponse,
-        correctedResponse: feedback.correctedResponse,
-        metadata: feedback.metadata,
-        feedbackType: feedback.type,
-      }),
-      createdByRepId: userId,
-      createdAt: new Date(),
-    },
-  })
+  // Note: Interaction requires contactId, not tenantId directly
+  // For AI feedback, we might need a dummy contact or a separate AIFeedback model
+  // For now, this is a placeholder - actual implementation would need a contactId
+  // await prisma.interaction.create({
+  //   data: {
+  //     contactId: 'ai-feedback-contact-id', // Would need actual contact
+  //     type: 'note',
+  //     subject: `AI Feedback: ${feedback.type}`,
+  //     notes: JSON.stringify({
+  //       context: feedback.context,
+  //       userInput: feedback.userInput,
+  //       aiResponse: feedback.aiResponse,
+  //       correctedResponse: feedback.correctedResponse,
+  //       metadata: feedback.metadata,
+  //       feedbackType: feedback.type,
+  //     }),
+  //     createdByRepId: userId,
+  //   },
+  // })
 }
 
 /**
@@ -64,9 +66,12 @@ export async function analyzeFeedbackPatterns(
   tenantId: string
 ): Promise<LearningInsight[]> {
   // Fetch recent feedback interactions
+  // Note: Interaction doesn't have tenantId, need to filter via contact
   const feedbackInteractions = await prisma.interaction.findMany({
     where: {
-      tenantId,
+      contact: {
+        tenantId,
+      },
       type: 'note',
       notes: {
         contains: 'AI Feedback',
@@ -191,12 +196,14 @@ export async function updateModelPreferences(
   }
 ): Promise<void> {
   // Store preferences in tenant settings
-  // In production, this would update a TenantSettings model
+  // Note: Tenant model doesn't have metadata field, using industrySettings as storage
+  // In production, create a separate TenantSettings model for AI preferences
   await prisma.tenant.update({
     where: { id: tenantId },
     data: {
-      // Store in metadata or create separate settings model
-      metadata: {
+      // Store in industrySettings Json field (temporary solution)
+      industrySettings: {
+        ...((await prisma.tenant.findUnique({ where: { id: tenantId }, select: { industrySettings: true } }))?.industrySettings as any || {}),
         aiPreferences: preferences,
       },
     },

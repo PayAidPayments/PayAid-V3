@@ -22,10 +22,13 @@ export class SIPTelephony {
   async initialize(): Promise<void> {
     try {
       // Dynamic import of SIP.js (install: npm install sip.js)
-      const { UserAgent, Registerer } = await import('sip.js')
+      const { UserAgent, Registerer, URI } = await import('sip.js')
+
+      // Convert string URI to SIP.js URI object
+      const sipUri = URI.parse(this.config.uri)
 
       this.userAgent = new UserAgent({
-        uri: this.config.uri,
+        uri: sipUri,
         transportOptions: {
           server: this.config.wsServers,
         },
@@ -49,8 +52,10 @@ export class SIPTelephony {
       throw new Error('SIP not initialized')
     }
 
-    const { Inviter } = await import('sip.js')
-    const inviter = new Inviter(this.userAgent, targetUri)
+    const { Inviter, URI } = await import('sip.js')
+    // Convert string URI to SIP.js URI object
+    const targetSipUri = URI.parse(targetUri)
+    const inviter = new Inviter(this.userAgent, targetSipUri)
 
     await inviter.invite()
 

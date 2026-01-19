@@ -581,7 +581,6 @@ export const getModuleIcon = async (iconName: string): Promise<any> => {
      Calendar: 'Calendar',
      PackageSearch: 'PackageSearch',
      GitBranch: 'GitBranch',
-     BookOpen: 'BookOpen',
      Newspaper: 'Newspaper',
    };
 

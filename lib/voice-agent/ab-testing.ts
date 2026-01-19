@@ -50,7 +50,7 @@ export class ABTestingFramework {
       throw new Error(`Experiment ${experimentId} is not active`)
     }
 
-    const variants = experiment.variants as ExperimentVariant[]
+    const variants = (experiment.variants as unknown as ExperimentVariant[]) || []
     const trafficSplit = experiment.trafficSplit as Record<string, number>
 
     // Calculate variant based on traffic split
@@ -176,7 +176,7 @@ export class ABTestingFramework {
       throw new Error(`Experiment ${experimentId} not found`)
     }
 
-    const variants = experiment.variants as ExperimentVariant[]
+    const variants = (experiment.variants as unknown as ExperimentVariant[]) || []
     const results: Record<string, ExperimentMetrics> = {}
 
     // Calculate metrics per variant
@@ -191,8 +191,11 @@ export class ABTestingFramework {
         .map(c => c.durationSeconds || 0)
         .filter(d => d > 0)
       const sentiments = completedCalls
-        .map(c => c.metadata?.sentimentScore)
-        .filter(s => s !== null && s !== undefined) as number[]
+        .map(c => {
+          const score = c.metadata?.sentimentScore
+          return score ? Number(score) : null
+        })
+        .filter((s): s is number => s !== null && s !== undefined)
       const costs = completedCalls
         .map(c => Number(c.costRupees || 0))
         .filter(c => c > 0)
@@ -333,7 +336,7 @@ export class ABTestingFramework {
       data: {
         status: 'completed',
         endDate: new Date(),
-        metrics: results,
+        metrics: results as any, // Cast to any for Json field compatibility
       },
     })
 
