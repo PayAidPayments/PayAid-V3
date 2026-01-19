@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAllIndustries } from '@/lib/industries/config'
+import { MODULE_PRICING, INDUSTRY_PACKAGE_PRICING } from '@/lib/pricing/config'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -22,6 +23,7 @@ export default function LandingPage() {
   const [selectedIndustry, setSelectedIndustry] = useState<string>('')
   const [activeTab, setActiveTab] = useState<'crm' | 'invoicing' | 'inventory' | 'analytics'>('crm')
   const [isPaused, setIsPaused] = useState(false)
+  const [pricingTier, setPricingTier] = useState<'starter' | 'professional'>('starter')
   const industries = getAllIndustries()
 
   const handleIndustrySelect = (industryId: string) => {
@@ -449,48 +451,188 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">Simple, Transparent Pricing</h2>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto">No hidden charges. No surprise fees. Scale as you grow.</p>
+            <p className="text-xl text-white/80 max-w-2xl mx-auto mb-2">Pay per module, not per user. Choose what you need, scale as you grow.</p>
+            <p className="text-lg text-white/70 max-w-2xl mx-auto">Mix and match modules or choose an industry package for maximum savings.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { name: 'Starter', price: '₹3,999', period: 'per month', features: ['CRM & Invoicing', 'Up to 5 Users', 'Basic Analytics', 'Email Support', 'Mobile App'] },
-              { name: 'Professional', price: '₹7,999', period: 'per month', badge: 'Most Popular', features: ['All Modules Included', 'Unlimited Users', 'AI Co-founder', 'Advanced Analytics', 'Priority Support'] },
-              { name: 'Enterprise', price: 'Custom', period: 'per month', features: ['Everything Included', 'Custom Integrations', 'Dedicated Account Manager', 'White-label Options', 'SLA Guarantee'] },
-            ].map((plan, index) => (
-              <div
-                key={index}
-                className={`bg-white/10 backdrop-blur-lg rounded-2xl p-8 border ${
-                  plan.badge ? 'border-[#F5C700] bg-gradient-to-br from-[#F5C700]/20 to-[#53328A]/20 scale-105' : 'border-white/20'
-                } hover:shadow-2xl transition-all`}
+
+          {/* Tier Toggle */}
+          <div className="flex justify-center mb-12">
+            <div className="bg-white/10 backdrop-blur-lg rounded-lg p-1 inline-flex gap-2">
+              <button
+                onClick={() => setPricingTier('starter')}
+                className={`px-6 py-2 rounded-md font-semibold transition-all ${
+                  pricingTier === 'starter'
+                    ? 'bg-[#F5C700] text-gray-900'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                }`}
               >
-                {plan.badge && (
-                  <div className="absolute -top-4 right-6 bg-[#F5C700] text-gray-900 px-4 py-1 rounded-full text-sm font-bold">
-                    {plan.badge}
+                Starter
+              </button>
+              <button
+                onClick={() => setPricingTier('professional')}
+                className={`px-6 py-2 rounded-md font-semibold transition-all ${
+                  pricingTier === 'professional'
+                    ? 'bg-[#F5C700] text-gray-900'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                Professional
+              </button>
+            </div>
+          </div>
+
+          {/* Module Pricing Table */}
+          <div className="mb-16">
+            <h3 className="text-2xl font-bold mb-6 text-center">Individual Module Pricing</h3>
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-white/20">
+                    <th className="pb-4 text-white font-semibold">Module</th>
+                    <th className="pb-4 text-white font-semibold text-right">Starter</th>
+                    <th className="pb-4 text-white font-semibold text-right">Professional</th>
+                  </tr>
+                </thead>
+                <tbody className="space-y-2">
+                  {[
+                    { name: 'CRM', id: 'crm' },
+                    { name: 'Finance & Accounting', id: 'finance' },
+                    { name: 'Sales', id: 'sales' },
+                    { name: 'Inventory', id: 'inventory' },
+                    { name: 'HR & Payroll', id: 'hr' },
+                    { name: 'Marketing', id: 'marketing' },
+                    { name: 'Projects', id: 'projects' },
+                    { name: 'Analytics', id: 'analytics', note: 'Free with any module' },
+                    { name: 'AI Studio', id: 'ai-studio', note: 'Always Free' },
+                    { name: 'Communication', id: 'communication' },
+                    { name: 'Workflow Automation', id: 'workflow' },
+                    { name: 'Appointments', id: 'appointments' },
+                  ].map((module) => {
+                    const pricing = MODULE_PRICING[module.id]
+                    if (!pricing) return null
+                    return (
+                      <tr key={module.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                        <td className="py-3 text-white">
+                          {module.name}
+                          {module.note && <span className="text-xs text-[#F5C700] ml-2">({module.note})</span>}
+                        </td>
+                        <td className={`py-3 text-right text-white ${pricingTier === 'starter' ? 'font-bold text-[#F5C700]' : ''}`}>
+                          {pricing.starter === 0 ? (
+                            <span className="text-[#F5C700] font-bold">FREE</span>
+                          ) : (
+                            `₹${pricing.starter.toLocaleString('en-IN')}`
+                          )}
+                        </td>
+                        <td className={`py-3 text-right text-white ${pricingTier === 'professional' ? 'font-bold text-[#F5C700]' : ''}`}>
+                          {pricing.professional === 0 ? (
+                            <span className="text-[#F5C700] font-bold">FREE</span>
+                          ) : (
+                            `₹${pricing.professional.toLocaleString('en-IN')}`
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-center text-white/70 mt-4 text-sm">
+              * Starter: Up to 5 users per module | Professional: Unlimited users, advanced features
+            </p>
+          </div>
+
+          {/* Industry Packages */}
+          <div>
+            <h3 className="text-2xl font-bold mb-6 text-center">Industry Packages (Save 20-30%)</h3>
+            <p className="text-center text-white/70 mb-6 text-sm">Packages shown for {pricingTier === 'starter' ? 'Starter' : 'Professional'} tier. Switch tiers above to see different pricing.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Object.entries(INDUSTRY_PACKAGE_PRICING).map(([industryId, packageData]) => {
+                const industryNames: Record<string, string> = {
+                  'restaurant': 'Restaurant',
+                  'retail': 'Retail',
+                  'service-business': 'Service Business',
+                  'ecommerce': 'E-Commerce',
+                  'professional-services': 'Professional Services',
+                }
+                // Calculate pricing for selected tier
+                const individualPrice = packageData.modules.reduce((sum, moduleId) => {
+                  const modulePricing = MODULE_PRICING[moduleId]
+                  if (!modulePricing) return sum
+                  return sum + (pricingTier === 'starter' ? modulePricing.starter : modulePricing.professional)
+                }, 0)
+                const packagePrice = Math.round(individualPrice * (1 - packageData.savingsPercentage / 100))
+                const savings = individualPrice - packagePrice
+                
+                return (
+                  <div
+                    key={industryId}
+                    className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 hover:border-[#F5C700] transition-all"
+                  >
+                    <h4 className="text-xl font-bold mb-2">{industryNames[industryId] || industryId}</h4>
+                    <div className="mb-4">
+                      <div className="text-3xl font-bold text-[#F5C700] mb-1">
+                        ₹{packagePrice.toLocaleString('en-IN')}
+                        <span className="text-lg text-white/70 font-normal">/month</span>
+                      </div>
+                      <div className="text-sm text-white/70 line-through">
+                        ₹{individualPrice.toLocaleString('en-IN')}/month
+                      </div>
+                      <div className="text-sm text-[#F5C700] font-semibold mt-1">
+                        Save ₹{savings.toLocaleString('en-IN')} ({packageData.savingsPercentage}% off)
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <p className="text-sm text-white/80 mb-2">Includes:</p>
+                      <ul className="space-y-1 text-sm text-white/70">
+                        {packageData.modules.filter(m => m !== 'ai-studio').map((module) => {
+                          const moduleNames: Record<string, string> = {
+                            'crm': 'CRM',
+                            'finance': 'Finance & Accounting',
+                            'sales': 'Sales',
+                            'inventory': 'Inventory',
+                            'marketing': 'Marketing',
+                            'projects': 'Projects',
+                            'hr': 'HR & Payroll',
+                            'analytics': 'Analytics',
+                            'communication': 'Communication',
+                          }
+                          return (
+                            <li key={module} className="flex items-center gap-2">
+                              <span className="text-[#F5C700]">✓</span>
+                              <span>{moduleNames[module] || module}</span>
+                            </li>
+                          )
+                        })}
+                        <li className="flex items-center gap-2">
+                          <span className="text-[#F5C700]">✓</span>
+                          <span>AI Studio (Free)</span>
+                        </li>
+                      </ul>
+                    </div>
+                    <Button
+                      className="w-full bg-[#F5C700] text-gray-900 hover:bg-[#E0B200]"
+                      size="lg"
+                    >
+                      Start Free Trial
+                    </Button>
                   </div>
-                )}
-                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                <div className="text-4xl font-bold mb-1">{plan.price}</div>
-                <div className="text-white/70 mb-6">{plan.period}</div>
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2">
-                      <span className="text-[#F5C700]">✓</span>
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  className={`w-full ${
-                    plan.badge
-                      ? 'bg-[#F5C700] text-gray-900 hover:bg-[#E0B200]'
-                      : 'bg-white/20 text-white hover:bg-white/30'
-                  }`}
-                  size="lg"
-                >
-                  {plan.name === 'Enterprise' ? 'Contact Sales' : 'Start Free Trial'}
-                </Button>
-              </div>
-            ))}
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Enterprise CTA */}
+          <div className="mt-12 text-center">
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20 max-w-2xl mx-auto">
+              <h3 className="text-2xl font-bold mb-2">Enterprise Solutions</h3>
+              <p className="text-white/80 mb-6">Need custom modules, white-label options, or dedicated support? Let's build a solution tailored to your business.</p>
+              <Button
+                className="bg-white/20 text-white hover:bg-white/30"
+                size="lg"
+              >
+                Contact Sales
+              </Button>
+            </div>
           </div>
         </div>
       </section>
