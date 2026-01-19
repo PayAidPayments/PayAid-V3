@@ -147,8 +147,11 @@ const CustomSelectContent = React.forwardRef<HTMLDivElement, CustomSelectContent
       >
         <div className="p-1">
           {React.Children.map(children, (child: any) => {
-            if (React.isValidElement(child) && child.type?.displayName === 'CustomSelectItem') {
-              return child
+            if (React.isValidElement(child)) {
+              const childType = child.type as any
+              if (childType?.displayName === 'CustomSelectItem') {
+                return child
+              }
             }
             return null
           })}
