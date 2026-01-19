@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -13,7 +13,7 @@ import { Logo } from '@/components/brand/Logo'
 // Get subdomain domain from environment (defaults to payaid.com)
 const SUBDOMAIN_DOMAIN = process.env.NEXT_PUBLIC_SUBDOMAIN_DOMAIN || 'payaid.com'
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const industryId = searchParams.get('industry')
@@ -346,3 +346,23 @@ export default function SignupPage() {
   )
 }
 
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">
+              Create your account
+            </CardTitle>
+            <CardDescription className="text-center">
+              Loading...
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <SignupForm />
+    </Suspense>
+  )
+}

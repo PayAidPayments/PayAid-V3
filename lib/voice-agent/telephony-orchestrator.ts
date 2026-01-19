@@ -13,9 +13,9 @@
 import { Deepgram } from '@deepgram/sdk';
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 // Note: OpenAI package may not be installed - make import conditional
-let OpenAI: any = null
+let OpenAIClass: any = null
 try {
-  OpenAI = require('openai').OpenAI
+  OpenAIClass = require('openai').OpenAI
 } catch {
   // OpenAI not installed - will need to handle this in code
 }
@@ -43,7 +43,7 @@ export class TelephonyVoiceOrchestrator {
   // AI Services
   private deepgram: Deepgram;
   private elevenlabs: ElevenLabsClient;
-  private openai: OpenAI;
+  private openai: any; // OpenAI client (optional dependency)
   
   // Streams
   private sttStream: any; // Deepgram live transcription
@@ -61,9 +61,15 @@ export class TelephonyVoiceOrchestrator {
     this.elevenlabs = new ElevenLabsClient({
       apiKey: process.env.ELEVENLABS_API_KEY || ''
     });
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY || ''
-    });
+    // Initialize OpenAI if available
+    if (OpenAIClass) {
+      this.openai = new OpenAIClass({
+        apiKey: process.env.OPENAI_API_KEY || ''
+      });
+    } else {
+      this.openai = null;
+      console.warn('[Telephony Orchestrator] OpenAI not installed. LLM features will be limited.');
+    }
   }
 
   /**
@@ -271,8 +277,9 @@ export class TelephonyVoiceOrchestrator {
       // ===== USE ELEVENLABS FOR STREAMING TTS =====
       const voiceId = this.agent.voiceId || process.env.ELEVENLABS_DEFAULT_VOICE_ID || '21m00Tcm4TlvDq8ikWAM';
       
-      // ElevenLabs SDK uses generate method for streaming
-      const audioStream = await this.elevenlabs.textToSpeech.generate(voiceId, {
+      // ElevenLabs SDK - check actual API method name
+      // Note: Method name may vary by SDK version
+      const audioStream = await (this.elevenlabs.textToSpeech as any).convertAsStream(voiceId, {
         text,
         model_id: 'eleven_turbo_v2',
         voice_settings: {

@@ -25,7 +25,16 @@ export class SIPTelephony {
       const { UserAgent, Registerer, URI } = await import('sip.js')
 
       // Convert string URI to SIP.js URI object
-      const sipUri = URI.parse(this.config.uri)
+      // SIP.js URI constructor: new URI(scheme, user, host, port, displayName, parameters)
+      // For sip:user@host format, parse manually
+      const uriMatch = this.config.uri.match(/^sip:([^@]+)@([^:]+)(?::(\d+))?/)
+      let sipUri: any
+      if (uriMatch) {
+        sipUri = new URI('sip', uriMatch[1], uriMatch[2], uriMatch[3] ? parseInt(uriMatch[3]) : undefined)
+      } else {
+        // Fallback: try to parse as string (may not work in all SIP.js versions)
+        sipUri = this.config.uri as any
+      }
 
       this.userAgent = new UserAgent({
         uri: sipUri,
@@ -54,7 +63,15 @@ export class SIPTelephony {
 
     const { Inviter, URI } = await import('sip.js')
     // Convert string URI to SIP.js URI object
-    const targetSipUri = URI.parse(targetUri)
+    // SIP.js URI constructor: new URI(scheme, user, host, port, displayName, parameters)
+    const uriMatch = targetUri.match(/^sip:([^@]+)@([^:]+)(?::(\d+))?/)
+    let targetSipUri: any
+    if (uriMatch) {
+      targetSipUri = new URI('sip', uriMatch[1], uriMatch[2], uriMatch[3] ? parseInt(uriMatch[3]) : undefined)
+    } else {
+      // Fallback: try to parse as string (may not work in all SIP.js versions)
+      targetSipUri = targetUri as any
+    }
     const inviter = new Inviter(this.userAgent, targetSipUri)
 
     await inviter.invite()

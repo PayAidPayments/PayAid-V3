@@ -10,6 +10,7 @@ import { aiGateway } from '@/lib/ai/gateway'
 export interface STTResult {
   text: string
   language: string
+  service?: string
   confidence?: number
   segments?: Array<{
     start: number
