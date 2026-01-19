@@ -366,3 +366,6 @@ export default function SignupPage() {
     </Suspense>
   )
 }
+
+// Prevent static generation - this page uses useSearchParams which requires dynamic rendering
+export const dynamic = 'force-dynamic'
