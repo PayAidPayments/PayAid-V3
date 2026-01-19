@@ -56,11 +56,11 @@ export default function LandingPage() {
             <Logo href="/" />
             <div className="hidden md:flex items-center gap-8">
               {/* Products Dropdown */}
-              <div className="relative group">
+              <div className="relative group z-40">
                 <button className="flex items-center gap-1 text-gray-900 hover:text-[#53328A] font-medium transition-colors">
                   Products <ChevronDown className="h-4 w-4" />
                 </button>
-                <div className="absolute left-0 mt-2 w-96 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border border-gray-200 p-6">
+                <div className="absolute left-0 mt-2 w-96 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border border-gray-200 p-6 z-40">
                   <div className="grid grid-cols-2 gap-6">
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Core Modules</h4>
@@ -89,11 +89,11 @@ export default function LandingPage() {
               </div>
 
               {/* Solutions Dropdown */}
-              <div className="relative group">
+              <div className="relative group z-40">
                 <button className="flex items-center gap-1 text-gray-900 hover:text-[#53328A] font-medium transition-colors">
                   Solutions <ChevronDown className="h-4 w-4" />
                 </button>
-                <div className="absolute left-0 mt-2 w-96 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border border-gray-200 p-6">
+                <div className="absolute left-0 mt-2 w-96 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border border-gray-200 p-6 z-40">
                   <div className="grid grid-cols-2 gap-6">
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">By Industry</h4>
@@ -124,16 +124,18 @@ export default function LandingPage() {
                 Company
               </Link>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 relative z-50">
               <Link 
                 href="/login"
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer relative z-50"
+                style={{ pointerEvents: 'auto' }}
               >
                 Sign In
               </Link>
               <Link 
                 href="/signup"
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors cursor-pointer relative z-50"
+                style={{ pointerEvents: 'auto' }}
               >
                 Get Started
               </Link>
@@ -155,16 +157,18 @@ export default function LandingPage() {
                 Everything your business needs in one powerful platform. Manage CRM, Invoicing, Inventory, HR, Payments, Accounting, and more. 
                 Built specifically for Indian SMBs.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12 relative z-10">
                 <Link 
                   href="/signup"
-                  className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors"
+                  className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors cursor-pointer relative z-10"
+                  style={{ pointerEvents: 'auto' }}
                 >
                   Start Free Trial
                 </Link>
                 <Link 
                   href="#dashboard-showcase"
-                  className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 border-2 border-[#53328A] text-[#53328A] hover:bg-purple-50 transition-colors"
+                  className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 border-2 border-[#53328A] text-[#53328A] hover:bg-purple-50 transition-colors cursor-pointer relative z-10"
+                  style={{ pointerEvents: 'auto' }}
                 >
                   Watch Demo →
                 </Link>
