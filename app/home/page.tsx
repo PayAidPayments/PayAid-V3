@@ -27,6 +27,11 @@ export default function HomePage() {
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             All-in-One Business Platform
           </h1>
+          {mounted && tenant && (
+            <p className="text-xl text-gray-600 dark:text-gray-400 mb-2">
+              Welcome, {tenant.name || 'Demo Business Pvt Ltd'}
+            </p>
+          )}
           <p className="text-xl text-gray-600 dark:text-gray-400 mb-2">
             Trusted by 500+ Indian Businesses
           </p>

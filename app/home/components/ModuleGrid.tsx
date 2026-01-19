@@ -112,31 +112,34 @@ export function ModuleGrid() {
       ];
     }
     
-    const isInTrial = trialEndsAt ? new Date(trialEndsAt) > new Date() : false;
+    // If trialEndsAt is null/undefined, assume trial is active (new tenant)
+    const isInTrial = trialEndsAt ? new Date(trialEndsAt) > new Date() : true;
     
     // Calculate filtered modules for count (same logic as allAvailableModules)
     let filteredForCount = allNonIndustryModules;
     
-    if (!isInTrial && licensedModules.length > 0) {
-      const productivityModuleIds = ['spreadsheet', 'docs', 'drive', 'slides', 'meet'];
-      const hasProductivitySuite = licensedModules.includes('productivity');
-      
-      filteredForCount = allNonIndustryModules.filter((m: any) => {
-        // Always show AI Studio
-        if (m.id === 'ai-studio') return true;
+    if (!isInTrial && userData) {
+      if (licensedModules.length === 0) {
+        filteredForCount = [];
+      } else {
+        const productivityModuleIds = ['spreadsheet', 'docs', 'drive', 'slides', 'meet', 'pdf'];
+        const hasProductivitySuite = licensedModules.includes('productivity');
         
-        // If module is directly licensed
-        if (licensedModules.includes(m.id)) return true;
-        
-        // If productivity suite is licensed, include all individual productivity modules
-        if (hasProductivitySuite && productivityModuleIds.includes(m.id)) return true;
-        
-        return false;
-      });
-    } else if (!isInTrial && licensedModules.length === 0) {
-      filteredForCount = [];
+        filteredForCount = allNonIndustryModules.filter((m: any) => {
+          // Always show AI Studio
+          if (m.id === 'ai-studio') return true;
+          
+          // If module is directly licensed
+          if (licensedModules.includes(m.id)) return true;
+          
+          // If productivity suite is licensed, include all individual productivity modules
+          if (hasProductivitySuite && productivityModuleIds.includes(m.id)) return true;
+          
+          return false;
+        });
+      }
     }
-    // If in trial, show all modules (already set above)
+    // If in trial or userData not loaded, show all modules (already set above)
     
     return [
       { 
@@ -169,37 +172,40 @@ export function ModuleGrid() {
     );
     
     // Check if tenant is in trial period
-    const isInTrial = trialEndsAt ? new Date(trialEndsAt) > new Date() : false;
+    // If trialEndsAt is null/undefined, assume trial is active (new tenant)
+    const isInTrial = trialEndsAt ? new Date(trialEndsAt) > new Date() : true;
     
     // If not in trial, filter by licensed modules or assigned modules
-    if (!isInTrial && userData && licensedModules.length > 0) {
-      const isAdmin = userRole === 'owner' || userRole === 'admin';
-      
-      // For admin/owner: show all licensed modules
-      // For employees: show only assigned modules (from JWT token or user data)
-      const allowedModules = licensedModules; // For now, same for admin and employees
-      
-      // Handle productivity suite: if 'productivity' is licensed, show all individual productivity modules
-      const productivityModuleIds = ['spreadsheet', 'docs', 'drive', 'slides', 'meet'];
-      const hasProductivitySuite = allowedModules.includes('productivity');
-      
-      filteredModules = filteredModules.filter((m: any) => {
-        // Always show AI Studio
-        if (m.id === 'ai-studio') return true;
+    if (!isInTrial && userData) {
+      // If no licensed modules, show empty
+      if (licensedModules.length === 0) {
+        filteredModules = [];
+      } else {
+        const isAdmin = userRole === 'owner' || userRole === 'admin';
         
-        // If module is directly licensed
-        if (allowedModules.includes(m.id)) return true;
+        // For admin/owner: show all licensed modules
+        // For employees: show only assigned modules (from JWT token or user data)
+        const allowedModules = licensedModules; // For now, same for admin and employees
         
-        // If productivity suite is licensed, show all individual productivity modules
-        if (hasProductivitySuite && productivityModuleIds.includes(m.id)) return true;
+        // Handle productivity suite: if 'productivity' is licensed, show all individual productivity modules
+        const productivityModuleIds = ['spreadsheet', 'docs', 'drive', 'slides', 'meet', 'pdf'];
+        const hasProductivitySuite = allowedModules.includes('productivity');
         
-        return false;
-      });
-    } else if (!isInTrial && userData && licensedModules.length === 0) {
-      // No modules licensed - show empty
-      filteredModules = [];
+        filteredModules = filteredModules.filter((m: any) => {
+          // Always show AI Studio
+          if (m.id === 'ai-studio') return true;
+          
+          // If module is directly licensed
+          if (allowedModules.includes(m.id)) return true;
+          
+          // If productivity suite is licensed, show all individual productivity modules
+          if (hasProductivitySuite && productivityModuleIds.includes(m.id)) return true;
+          
+          return false;
+        });
+      }
     }
-    // If in trial, show all modules (already filtered to exclude industries)
+    // If in trial or userData not loaded yet, show all modules (already filtered to exclude industries)
     
     return filteredModules;
   }, [mounted, modules, licensedModules, userRole, trialEndsAt, userData]);
