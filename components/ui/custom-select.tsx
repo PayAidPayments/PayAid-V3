@@ -120,8 +120,11 @@ const CustomSelectContent = React.forwardRef<HTMLDivElement, CustomSelectContent
     React.useEffect(() => {
       const itemsMap = new Map<string, React.ReactNode>()
       React.Children.forEach(children, (child: any) => {
-        if (React.isValidElement(child) && child.type?.displayName === 'CustomSelectItem') {
-          itemsMap.set(child.props.value, child.props.children)
+        if (React.isValidElement(child)) {
+          const childType = child.type as any
+          if (childType?.displayName === 'CustomSelectItem') {
+            itemsMap.set(child.props.value, child.props.children)
+          }
         }
       })
       context.setItems(itemsMap)
