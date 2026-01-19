@@ -56,7 +56,7 @@ const SelectTrigger = React.forwardRef<HTMLSelectElement, SelectTriggerProps>(
     })
     
     return (
-      <div className="relative">
+      <div className="relative w-full">
         <select
           ref={ref}
           className={cn(

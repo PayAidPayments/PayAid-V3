@@ -5,11 +5,35 @@
 /* Ensure select options are visible with light purple background */
 select {
   background-color: rgba(83, 50, 138, 0.08) !important; /* lightest purple */
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 select option {
   color: rgb(17, 24, 39) !important; /* text-gray-900 */
   background-color: rgba(83, 50, 138, 0.08) !important; /* lightest purple */
+  padding: 8px 12px;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+/* Ensure select container doesn't overflow */
+select:focus {
+  outline: none;
+}
+
+/* For industry select specifically - ensure proper containment */
+#industry-select {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+#industry-select option {
+  padding: 10px 12px;
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 .dark select {
