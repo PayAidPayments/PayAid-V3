@@ -139,25 +139,41 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="mt-16 min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-purple-50 px-4 py-20">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6">
-            One App For Your Business
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Everything your business needs in one powerful platform. Manage CRM, Invoicing, Inventory, HR, Payments, Accounting, and more. 
-            Built specifically for Indian SMBs.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Link href="/signup">
-              <Button size="lg" className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white px-8 py-6 text-lg">
-                Start Free Trial
-              </Button>
-            </Link>
-            <Link href="#dashboard-showcase">
-              <Button size="lg" variant="outline" className="border-2 border-[#53328A] text-[#53328A] hover:bg-purple-50 px-8 py-6 text-lg">
-                Watch Demo →
-              </Button>
-            </Link>
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left Column - Text and CTA */}
+            <div className="text-center lg:text-left">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6">
+                One App For Your Business
+              </h1>
+              <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto lg:mx-0">
+                Everything your business needs in one powerful platform. Manage CRM, Invoicing, Inventory, HR, Payments, Accounting, and more. 
+                Built specifically for Indian SMBs.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
+                <Link href="/signup">
+                  <Button size="lg" className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white px-8 py-6 text-lg">
+                    Start Free Trial
+                  </Button>
+                </Link>
+                <Link href="#dashboard-showcase">
+                  <Button size="lg" variant="outline" className="border-2 border-[#53328A] text-[#53328A] hover:bg-purple-50 px-8 py-6 text-lg">
+                    Watch Demo →
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Column - Hero Image */}
+            <div className="relative w-full h-full min-h-[500px] lg:min-h-[600px]">
+              <Image
+                src="/hero-digital-specialists.png"
+                alt="Digital Specialists Ready to Transform Your Business"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
           </div>
 
           {/* Industry Selection - Right after Hero */}
@@ -177,7 +193,7 @@ export default function LandingPage() {
                   <SelectTrigger id="industry-select" className="w-full h-12 text-base">
                     <SelectValue placeholder="Choose your industry..." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[300px] overflow-y-auto">
                     {industries.map((industry) => (
                       <SelectItem key={industry.id} value={industry.id}>
                         {industry.icon} {industry.name}
