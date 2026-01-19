@@ -197,8 +197,12 @@ export default function LoginPage() {
         
         router.push(finalUrl)
       } else {
-        // Default: Always redirect to /home to show all apps
-        router.push('/home')
+        // Default: Always redirect to tenant home page to show all apps
+        if (tenant?.id) {
+          router.push(`/home/${tenant.id}`)
+        } else {
+          router.push('/home')
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')

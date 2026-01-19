@@ -25,8 +25,8 @@ export default function VoiceAgentsModulePage() {
       // Redirect to tenant-specific Voice Agents dashboard
       router.push(`/voice-agents/${tenant.id}/Home/`)
     } else {
-      // No tenant - redirect to home to set up tenant
-      router.push('/home')
+      // No tenant - redirect to login
+      router.push('/login')
     }
   }, [isAuthenticated, tenant?.id, router])
 

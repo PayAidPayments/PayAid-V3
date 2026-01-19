@@ -95,7 +95,7 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-4">
-            <Logo href="/home" />
+            <Logo href={tenant?.id ? `/home/${tenant.id}` : '/home'} />
             {mounted && tenant && (
               <div className="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-md bg-purple-50 dark:bg-gray-800 border border-purple-200 dark:border-gray-700">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">

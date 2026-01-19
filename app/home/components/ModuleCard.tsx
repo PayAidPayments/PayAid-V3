@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { clsx } from 'clsx';
 import { cn } from '@/lib/utils/cn';
 import { memo } from 'react';
+import { useParams } from 'next/navigation';
+import { useAuthStore } from '@/lib/stores/auth';
 
 // Custom Rupee Icon Component
 const RupeeIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
@@ -26,6 +28,32 @@ interface ModuleCardProps {
 }
 
 function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {
+  const params = useParams();
+  const { tenant } = useAuthStore();
+  const tenantId = (params?.tenantId as string) || tenant?.id;
+  
+  // Construct module URL with tenantId
+  const getModuleUrl = () => {
+    if (!tenantId) return module.url;
+    
+    // If URL already includes tenantId, return as is
+    if (module.url.includes(`/${tenantId}/`)) return module.url;
+    
+    // For module routes like /crm, /sales, etc., add tenantId
+    // Format: /module/[tenantId]/Home/
+    const modulePath = module.url.replace(/^\//, '').split('/')[0];
+    if (modulePath && !modulePath.includes('dashboard') && !modulePath.includes('http')) {
+      return `/${modulePath}/${tenantId}/Home/`;
+    }
+    
+    // For dashboard routes, add tenantId after /dashboard
+    if (module.url.startsWith('/dashboard/')) {
+      const pathAfterDashboard = module.url.replace('/dashboard/', '');
+      return `/dashboard/${tenantId}/${pathAfterDashboard}`;
+    }
+    
+    return module.url;
+  };
   
   const statusConfig = {
     active: { label: "Active", className: "bg-green-100 border-green-200", style: { color: '#53328A' } },
@@ -54,7 +82,7 @@ function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {
 
   return (
     <Link 
-      href={isComingSoon ? '#' : module.url}
+      href={isComingSoon ? '#' : getModuleUrl()}
       onClick={handleClick}
       className={cn(
         "group relative block p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg transition-all duration-200",
