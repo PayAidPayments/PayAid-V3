@@ -32,11 +32,16 @@ export default function LandingPage() {
     }
   }
 
-  // Helper function to handle navigation
+  // Helper function to handle navigation - use window.location for reliability
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
     e.preventDefault()
     e.stopPropagation()
-    router.push(path)
+    // Use window.location for absolute navigation to ensure it works
+    if (path.startsWith('http')) {
+      window.location.href = path
+    } else {
+      window.location.href = path
+    }
   }
 
   // Helper function to handle anchor scroll
@@ -110,14 +115,22 @@ export default function LandingPage() {
               </div>
 
               {/* Solutions Dropdown */}
-              <div className="relative group z-40">
+              <div className="relative group z-40" onMouseLeave={(e) => {
+                // Small delay to allow clicks to register before closing
+                setTimeout(() => {
+                  const dropdown = e.currentTarget.querySelector('.dropdown-menu')
+                  if (dropdown && !dropdown.matches(':hover')) {
+                    // Dropdown will close naturally via CSS
+                  }
+                }, 100)
+              }}>
                 <button 
                   type="button"
                   className="flex items-center gap-1 text-gray-900 hover:text-[#53328A] font-medium transition-colors"
                 >
                   Solutions <ChevronDown className="h-4 w-4" />
                 </button>
-                <div className="absolute left-0 mt-2 w-96 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border border-gray-200 p-6 z-50 pointer-events-auto">
+                <div className="dropdown-menu absolute left-0 mt-2 w-96 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border border-gray-200 p-6 z-50 pointer-events-auto" onMouseEnter={(e) => e.stopPropagation()}>
                   <div className="grid grid-cols-2 gap-6">
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">By Industry</h4>

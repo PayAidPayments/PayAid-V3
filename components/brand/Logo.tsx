@@ -25,8 +25,10 @@ export function Logo({
   const logoImageUrl = brandConfig.logo.imageUrl
   
   const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault()
     e.stopPropagation()
-    router.push(href)
+    // Use window.location for absolute navigation to ensure it works
+    window.location.href = href
   }
 
   // Use image if available
