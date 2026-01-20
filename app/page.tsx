@@ -80,12 +80,12 @@ export default function LandingPage() {
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Advanced Features</h4>
                       <ul className="space-y-2">
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Analytics & Reports</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">AI Co-founder</Link></li>
-                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Third-party Integrations</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Mobile Applications</Link></li>
-                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">API Access</Link></li>
-                        <li><Link href="/security" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Enterprise Security</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>Analytics & Reports</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>AI Co-founder</Link></li>
+                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); router.push('/app-store'); }}>Third-party Integrations</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>Mobile Applications</Link></li>
+                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); router.push('/app-store'); }}>API Access</Link></li>
+                        <li><Link href="/security" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); router.push('/security'); }}>Enterprise Security</Link></li>
                       </ul>
                     </div>
                   </div>
@@ -114,10 +114,10 @@ export default function LandingPage() {
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Use Cases</h4>
                       <ul className="space-y-2">
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Multi-Location Management</Link></li>
-                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">E-Commerce Integration</Link></li>
-                        <li><Link href="/compliance" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">GST Compliance</Link></li>
-                        <li><Link href="#pricing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Business Scaling</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>Multi-Location Management</Link></li>
+                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); router.push('/app-store'); }}>E-Commerce Integration</Link></li>
+                        <li><Link href="/compliance" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); router.push('/compliance'); }}>GST Compliance</Link></li>
+                        <li><Link href="#pricing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const el = document.getElementById('pricing'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>Business Scaling</Link></li>
                       </ul>
                     </div>
                   </div>
@@ -140,6 +140,10 @@ export default function LandingPage() {
               <Link 
                 href="/about" 
                 className="text-gray-900 hover:text-[#53328A] font-medium transition-colors cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  router.push('/about')
+                }}
               >
                 Company
               </Link>
@@ -148,14 +152,20 @@ export default function LandingPage() {
               <Link 
                 href="/login"
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer relative z-50"
-                style={{ pointerEvents: 'auto' }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  router.push('/login')
+                }}
               >
                 Sign In
               </Link>
               <Link 
                 href="/signup"
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors cursor-pointer relative z-50"
-                style={{ pointerEvents: 'auto' }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  router.push('/signup')
+                }}
               >
                 Get Started
               </Link>
