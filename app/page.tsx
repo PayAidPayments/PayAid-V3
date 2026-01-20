@@ -100,10 +100,10 @@ export default function LandingPage() {
                       <ul className="space-y-2">
                         <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Analytics & Reports</Link></li>
                         <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>AI Co-founder</Link></li>
-                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/app-store')}>Third-party Integrations</Link></li>
+                        <li><a href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/app-store'; }}>Third-party Integrations</a></li>
                         <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Mobile Applications</Link></li>
-                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/app-store')}>API Access</Link></li>
-                        <li><Link href="/security" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/security')}>Enterprise Security</Link></li>
+                        <li><a href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/app-store'; }}>API Access</a></li>
+                        <li><a href="/security" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/security'; }}>Enterprise Security</a></li>
                       </ul>
                     </div>
                   </div>
