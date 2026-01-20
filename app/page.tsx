@@ -32,6 +32,23 @@ export default function LandingPage() {
     }
   }
 
+  // Helper function to handle navigation
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    router.push(path)
+  }
+
+  // Helper function to handle anchor scroll
+  const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, anchorId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const element = document.getElementById(anchorId)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
   // Auto-scroll through tabs
   useEffect(() => {
     if (!isPaused) {
@@ -69,23 +86,23 @@ export default function LandingPage() {
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Core Modules</h4>
                       <ul className="space-y-2">
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">CRM Management</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Invoicing & Billing</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Inventory Tracking</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Payment Processing</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">HR & Payroll</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Accounting & GST</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>CRM Management</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Invoicing & Billing</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Inventory Tracking</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Payment Processing</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>HR & Payroll</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Accounting & GST</Link></li>
                       </ul>
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Advanced Features</h4>
                       <ul className="space-y-2">
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>Analytics & Reports</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>AI Co-founder</Link></li>
-                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); router.push('/app-store'); }}>Third-party Integrations</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>Mobile Applications</Link></li>
-                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); router.push('/app-store'); }}>API Access</Link></li>
-                        <li><Link href="/security" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); router.push('/security'); }}>Enterprise Security</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Analytics & Reports</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>AI Co-founder</Link></li>
+                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/app-store')}>Third-party Integrations</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Mobile Applications</Link></li>
+                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/app-store')}>API Access</Link></li>
+                        <li><Link href="/security" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/security')}>Enterprise Security</Link></li>
                       </ul>
                     </div>
                   </div>
@@ -105,19 +122,19 @@ export default function LandingPage() {
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">By Industry</h4>
                       <ul className="space-y-2">
-                        <li><Link href="/industries/restaurant" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Restaurants & Cafes</Link></li>
-                        <li><Link href="/industries/retail" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Retail Stores</Link></li>
-                        <li><Link href="/industries/services" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Service Businesses</Link></li>
-                        <li><Link href="/industries/manufacturing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Manufacturing</Link></li>
+                        <li><Link href="/industries/restaurant" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/industries/restaurant')}>Restaurants & Cafes</Link></li>
+                        <li><Link href="/industries/retail" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/industries/retail')}>Retail Stores</Link></li>
+                        <li><Link href="/industries/services" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/industries/services')}>Service Businesses</Link></li>
+                        <li><Link href="/industries/manufacturing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/industries/manufacturing')}>Manufacturing</Link></li>
                       </ul>
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Use Cases</h4>
                       <ul className="space-y-2">
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>Multi-Location Management</Link></li>
-                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); router.push('/app-store'); }}>E-Commerce Integration</Link></li>
-                        <li><Link href="/compliance" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); router.push('/compliance'); }}>GST Compliance</Link></li>
-                        <li><Link href="#pricing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const el = document.getElementById('pricing'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>Business Scaling</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Multi-Location Management</Link></li>
+                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/app-store')}>E-Commerce Integration</Link></li>
+                        <li><Link href="/compliance" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/compliance')}>GST Compliance</Link></li>
+                        <li><Link href="#pricing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'pricing')}>Business Scaling</Link></li>
                       </ul>
                     </div>
                   </div>
@@ -127,23 +144,14 @@ export default function LandingPage() {
               <Link 
                 href="#pricing" 
                 className="text-gray-900 hover:text-[#53328A] font-medium transition-colors cursor-pointer"
-                onClick={(e) => {
-                  e.preventDefault()
-                  const element = document.getElementById('pricing')
-                  if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                  }
-                }}
+                onClick={(e) => handleAnchorClick(e, 'pricing')}
               >
                 Pricing
               </Link>
               <Link 
                 href="/about" 
                 className="text-gray-900 hover:text-[#53328A] font-medium transition-colors cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  router.push('/about')
-                }}
+                onClick={(e) => handleNavClick(e, '/about')}
               >
                 Company
               </Link>
@@ -152,20 +160,14 @@ export default function LandingPage() {
               <Link 
                 href="/login"
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer relative z-50"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  router.push('/login')
-                }}
+                onClick={(e) => handleNavClick(e, '/login')}
               >
                 Sign In
               </Link>
               <Link 
                 href="/signup"
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors cursor-pointer relative z-50"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  router.push('/signup')
-                }}
+                onClick={(e) => handleNavClick(e, '/signup')}
               >
                 Get Started
               </Link>
