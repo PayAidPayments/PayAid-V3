@@ -194,6 +194,38 @@ export default function LandingPage() {
         </nav>
       </header>
 
+      {/* Stats Section - Top of Page */}
+      <section className="mt-16 py-12 bg-gray-50 border-y border-gray-200">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#53328A] to-[#F5C700] bg-clip-text text-transparent mb-2">
+                10x
+              </div>
+              <div className="text-sm md:text-base text-gray-600 font-medium">Faster Execution</div>
+            </div>
+            <div>
+              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#53328A] to-[#F5C700] bg-clip-text text-transparent mb-2">
+                50%
+              </div>
+              <div className="text-sm md:text-base text-gray-600 font-medium">Cost Savings</div>
+            </div>
+            <div>
+              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#53328A] to-[#F5C700] bg-clip-text text-transparent mb-2">
+                100%
+              </div>
+              <div className="text-sm md:text-base text-gray-600 font-medium">Business Visibility</div>
+            </div>
+            <div>
+              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#53328A] to-[#F5C700] bg-clip-text text-transparent mb-2">
+                0
+              </div>
+              <div className="text-sm md:text-base text-gray-600 font-medium">Tools to Switch</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Hero Section */}
       <section className="mt-16 min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-purple-50 px-4 py-20">
         <div className="max-w-7xl mx-auto">
@@ -306,7 +338,7 @@ export default function LandingPage() {
                         : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-[#53328A] hover:text-[#53328A]'
                     }`}
                   >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    {tab === 'crm' ? 'CRM' : tab.charAt(0).toUpperCase() + tab.slice(1)}
                   </button>
                 ))}
               </div>
@@ -353,37 +385,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-12 bg-gray-50 border-y border-gray-200">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#53328A] to-[#F5C700] bg-clip-text text-transparent mb-2">
-                30M+
-              </div>
-              <div className="text-sm md:text-base text-gray-600 font-medium">SMBs in India</div>
-            </div>
-            <div>
-              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#53328A] to-[#F5C700] bg-clip-text text-transparent mb-2">
-                50%
-              </div>
-              <div className="text-sm md:text-base text-gray-600 font-medium">Cost Savings</div>
-            </div>
-            <div>
-              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#53328A] to-[#F5C700] bg-clip-text text-transparent mb-2">
-                8
-              </div>
-              <div className="text-sm md:text-base text-gray-600 font-medium">Complete Modules</div>
-            </div>
-            <div>
-              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#53328A] to-[#F5C700] bg-clip-text text-transparent mb-2">
-                ₹7,999
-              </div>
-              <div className="text-sm md:text-base text-gray-600 font-medium">All-in-One Price</div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Core Features Section */}
       <section id="features" className="py-20 bg-white">
