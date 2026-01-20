@@ -57,31 +57,35 @@ export default function LandingPage() {
             <div className="hidden md:flex items-center gap-8">
               {/* Products Dropdown */}
               <div className="relative group z-40">
-                <button className="flex items-center gap-1 text-gray-900 hover:text-[#53328A] font-medium transition-colors">
+                <button 
+                  type="button"
+                  className="flex items-center gap-1 text-gray-900 hover:text-[#53328A] font-medium transition-colors"
+                  onMouseEnter={() => {}}
+                >
                   Products <ChevronDown className="h-4 w-4" />
                 </button>
-                <div className="absolute left-0 mt-2 w-96 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border border-gray-200 p-6 z-40">
+                <div className="absolute left-0 mt-2 w-96 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border border-gray-200 p-6 z-50 pointer-events-auto">
                   <div className="grid grid-cols-2 gap-6">
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Core Modules</h4>
                       <ul className="space-y-2">
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">CRM Management</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Invoicing & Billing</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Inventory Tracking</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Payment Processing</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">HR & Payroll</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Accounting & GST</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">CRM Management</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Invoicing & Billing</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Inventory Tracking</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Payment Processing</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">HR & Payroll</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Accounting & GST</Link></li>
                       </ul>
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Advanced Features</h4>
                       <ul className="space-y-2">
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Analytics & Reports</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">AI Co-founder</Link></li>
-                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Third-party Integrations</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Mobile Applications</Link></li>
-                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">API Access</Link></li>
-                        <li><Link href="/security" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Enterprise Security</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Analytics & Reports</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">AI Co-founder</Link></li>
+                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Third-party Integrations</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Mobile Applications</Link></li>
+                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">API Access</Link></li>
+                        <li><Link href="/security" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Enterprise Security</Link></li>
                       </ul>
                     </div>
                   </div>
@@ -90,37 +94,53 @@ export default function LandingPage() {
 
               {/* Solutions Dropdown */}
               <div className="relative group z-40">
-                <button className="flex items-center gap-1 text-gray-900 hover:text-[#53328A] font-medium transition-colors">
+                <button 
+                  type="button"
+                  className="flex items-center gap-1 text-gray-900 hover:text-[#53328A] font-medium transition-colors"
+                >
                   Solutions <ChevronDown className="h-4 w-4" />
                 </button>
-                <div className="absolute left-0 mt-2 w-96 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border border-gray-200 p-6 z-40">
+                <div className="absolute left-0 mt-2 w-96 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border border-gray-200 p-6 z-50 pointer-events-auto">
                   <div className="grid grid-cols-2 gap-6">
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">By Industry</h4>
                       <ul className="space-y-2">
-                        <li><Link href="/industries/restaurant" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Restaurants & Cafes</Link></li>
-                        <li><Link href="/industries/retail" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Retail Stores</Link></li>
-                        <li><Link href="/industries/services" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Service Businesses</Link></li>
-                        <li><Link href="/industries/manufacturing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Manufacturing</Link></li>
+                        <li><Link href="/industries/restaurant" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Restaurants & Cafes</Link></li>
+                        <li><Link href="/industries/retail" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Retail Stores</Link></li>
+                        <li><Link href="/industries/services" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Service Businesses</Link></li>
+                        <li><Link href="/industries/manufacturing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Manufacturing</Link></li>
                       </ul>
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Use Cases</h4>
                       <ul className="space-y-2">
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Multi-Location Management</Link></li>
-                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">E-Commerce Integration</Link></li>
-                        <li><Link href="/compliance" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">GST Compliance</Link></li>
-                        <li><Link href="#pricing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors">Business Scaling</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Multi-Location Management</Link></li>
+                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">E-Commerce Integration</Link></li>
+                        <li><Link href="/compliance" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">GST Compliance</Link></li>
+                        <li><Link href="#pricing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Business Scaling</Link></li>
                       </ul>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <Link href="#pricing" className="text-gray-900 hover:text-[#53328A] font-medium transition-colors">
+              <Link 
+                href="#pricing" 
+                className="text-gray-900 hover:text-[#53328A] font-medium transition-colors cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault()
+                  const element = document.getElementById('pricing')
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }
+                }}
+              >
                 Pricing
               </Link>
-              <Link href="/about" className="text-gray-900 hover:text-[#53328A] font-medium transition-colors">
+              <Link 
+                href="/about" 
+                className="text-gray-900 hover:text-[#53328A] font-medium transition-colors cursor-pointer"
+              >
                 Company
               </Link>
             </div>
