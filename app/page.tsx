@@ -100,10 +100,10 @@ export default function LandingPage() {
                       <ul className="space-y-2">
                         <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Analytics & Reports</Link></li>
                         <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>AI Co-founder</Link></li>
-                        <li><a href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/app-store'; }}>Third-party Integrations</a></li>
+                        <li><a href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>Third-party Integrations</a></li>
                         <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Mobile Applications</Link></li>
-                        <li><a href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/app-store'; }}>API Access</a></li>
-                        <li><a href="/security" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/security'; }}>Enterprise Security</a></li>
+                        <li><a href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>API Access</a></li>
+                        <li><a href="/security" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>Enterprise Security</a></li>
                       </ul>
                     </div>
                   </div>
@@ -131,18 +131,18 @@ export default function LandingPage() {
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">By Industry</h4>
                       <ul className="space-y-2">
-                        <li><a href="/industries/restaurant" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/industries/restaurant'; }}>Restaurants & Cafes</a></li>
-                        <li><a href="/industries/retail" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/industries/retail'; }}>Retail Stores</a></li>
-                        <li><a href="/industries/services" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/industries/services'; }}>Service Businesses</a></li>
-                        <li><a href="/industries/manufacturing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/industries/manufacturing'; }}>Manufacturing</a></li>
+                        <li><a href="/industries/restaurant" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>Restaurants & Cafes</a></li>
+                        <li><a href="/industries/retail" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>Retail Stores</a></li>
+                        <li><a href="/industries/services" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>Service Businesses</a></li>
+                        <li><a href="/industries/manufacturing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>Manufacturing</a></li>
                       </ul>
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Use Cases</h4>
                       <ul className="space-y-2">
                         <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Multi-Location Management</Link></li>
-                        <li><a href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/app-store'; }}>E-Commerce Integration</a></li>
-                        <li><a href="/compliance" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/compliance'; }}>GST Compliance</a></li>
+                        <li><a href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>E-Commerce Integration</a></li>
+                        <li><a href="/compliance" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>GST Compliance</a></li>
                         <li><Link href="#pricing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'pricing')}>Business Scaling</Link></li>
                       </ul>
                     </div>
@@ -161,9 +161,8 @@ export default function LandingPage() {
                 href="/about" 
                 className="text-gray-900 hover:text-[#53328A] font-medium transition-colors cursor-pointer"
                 onClick={(e) => {
-                  e.preventDefault()
                   e.stopPropagation()
-                  window.location.href = '/about'
+                  // Let the anchor tag navigate naturally
                 }}
               >
                 Company
@@ -174,9 +173,8 @@ export default function LandingPage() {
                 href="/login"
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer relative z-50"
                 onClick={(e) => {
-                  e.preventDefault()
                   e.stopPropagation()
-                  window.location.href = '/login'
+                  // Let the anchor tag navigate naturally - don't prevent default
                 }}
               >
                 Sign In
@@ -185,9 +183,8 @@ export default function LandingPage() {
                 href="/signup"
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors cursor-pointer relative z-50"
                 onClick={(e) => {
-                  e.preventDefault()
                   e.stopPropagation()
-                  window.location.href = '/signup'
+                  // Let the anchor tag navigate naturally - don't prevent default
                 }}
               >
                 Get Started
@@ -215,9 +212,8 @@ export default function LandingPage() {
                   href="/signup"
                   className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors cursor-pointer relative z-10"
                   onClick={(e) => {
-                    e.preventDefault()
                     e.stopPropagation()
-                    window.location.href = '/signup'
+                    // Let the anchor tag navigate naturally
                   }}
                 >
                   Start Free Trial
