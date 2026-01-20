@@ -193,14 +193,14 @@ export default function LandingPage() {
                 <Link 
                   href="/signup"
                   className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors cursor-pointer relative z-10"
-                  style={{ pointerEvents: 'auto' }}
+                  onClick={(e) => handleNavClick(e, '/signup')}
                 >
                   Start Free Trial
                 </Link>
                 <Link 
                   href="#dashboard-showcase"
                   className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 border-2 border-[#53328A] text-[#53328A] hover:bg-purple-50 transition-colors cursor-pointer relative z-10"
-                  style={{ pointerEvents: 'auto' }}
+                  onClick={(e) => handleAnchorClick(e, 'dashboard-showcase')}
                 >
                   Watch Demo →
                 </Link>
