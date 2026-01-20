@@ -1,7 +1,5 @@
 'use client'
 
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { PayAidLogo } from './PayAidLogo'
 import { brandConfig } from '@/lib/config/brand'
 
