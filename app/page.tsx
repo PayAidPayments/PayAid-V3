@@ -36,12 +36,8 @@ export default function LandingPage() {
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
     e.preventDefault()
     e.stopPropagation()
-    // Use window.location for absolute navigation to ensure it works
-    if (path.startsWith('http')) {
-      window.location.href = path
-    } else {
-      window.location.href = path
-    }
+    // Force navigation using window.location
+    window.location.href = path
   }
 
   // Helper function to handle anchor scroll
@@ -135,18 +131,18 @@ export default function LandingPage() {
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">By Industry</h4>
                       <ul className="space-y-2">
-                        <li><Link href="/industries/restaurant" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/industries/restaurant')}>Restaurants & Cafes</Link></li>
-                        <li><Link href="/industries/retail" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/industries/retail')}>Retail Stores</Link></li>
-                        <li><Link href="/industries/services" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/industries/services')}>Service Businesses</Link></li>
-                        <li><Link href="/industries/manufacturing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/industries/manufacturing')}>Manufacturing</Link></li>
+                        <li><a href="/industries/restaurant" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/industries/restaurant'; }}>Restaurants & Cafes</a></li>
+                        <li><a href="/industries/retail" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/industries/retail'; }}>Retail Stores</a></li>
+                        <li><a href="/industries/services" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/industries/services'; }}>Service Businesses</a></li>
+                        <li><a href="/industries/manufacturing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/industries/manufacturing'; }}>Manufacturing</a></li>
                       </ul>
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Use Cases</h4>
                       <ul className="space-y-2">
                         <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Multi-Location Management</Link></li>
-                        <li><Link href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/app-store')}>E-Commerce Integration</Link></li>
-                        <li><Link href="/compliance" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleNavClick(e, '/compliance')}>GST Compliance</Link></li>
+                        <li><a href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/app-store'; }}>E-Commerce Integration</a></li>
+                        <li><a href="/compliance" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = '/compliance'; }}>GST Compliance</a></li>
                         <li><Link href="#pricing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'pricing')}>Business Scaling</Link></li>
                       </ul>
                     </div>
@@ -161,13 +157,17 @@ export default function LandingPage() {
               >
                 Pricing
               </Link>
-              <Link 
+              <a 
                 href="/about" 
                 className="text-gray-900 hover:text-[#53328A] font-medium transition-colors cursor-pointer"
-                onClick={(e) => handleNavClick(e, '/about')}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  window.location.href = '/about'
+                }}
               >
                 Company
-              </Link>
+              </a>
             </div>
             <div className="flex items-center gap-4 relative z-50">
               <Link 
