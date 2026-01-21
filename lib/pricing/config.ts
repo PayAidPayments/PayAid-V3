@@ -18,45 +18,46 @@ export interface IndustryPackagePricing {
 }
 
 // Individual Module Pricing (per month)
+// Uniform pricing: ₹1999 for Starter, ₹3999 for Professional
 export const MODULE_PRICING: Record<string, ModulePricing> = {
   'crm': {
     starter: 1999,
-    professional: 4999,
+    professional: 3999,
   },
   'finance': {
-    starter: 2999, // Consolidated: Finance + Invoicing + Accounting
-    professional: 6999,
+    starter: 1999,
+    professional: 3999,
   },
   'sales': {
-    starter: 1499,
+    starter: 1999,
     professional: 3999,
   },
   'inventory': {
     starter: 1999,
-    professional: 4999,
+    professional: 3999,
   },
   'hr': {
-    starter: 1499,
+    starter: 1999,
     professional: 3999,
   },
   'marketing': {
     starter: 1999,
-    professional: 4999,
+    professional: 3999,
   },
   'projects': {
-    starter: 1499,
+    starter: 1999,
     professional: 3999,
   },
   'analytics': {
     starter: 0, // FREE with any module
-    professional: 999,
+    professional: 0, // FREE with any module
   },
   'ai-studio': {
-    starter: 0, // Always FREE
+    starter: 0, // Always FREE (AI Co-founder, AI Specialists)
     professional: 0, // Always FREE
   },
   'communication': {
-    starter: 1499,
+    starter: 1999,
     professional: 3999,
   },
   'invoicing': {
@@ -68,8 +69,8 @@ export const MODULE_PRICING: Record<string, ModulePricing> = {
     professional: 0,
   },
   'productivity': {
-    starter: 5999, // Combined price for all productivity tools (spreadsheet, docs, drive, slides, meet) + PDF features (reader, editor, merge, split, compress, convert)
-    professional: 11999,
+    starter: 1999, // Combined price for all productivity tools (spreadsheet, docs, drive, slides, meet) + PDF features
+    professional: 3999,
   },
   // Individual productivity modules (kept for backward compatibility, but should use 'productivity' instead)
   'spreadsheet': {
@@ -98,84 +99,92 @@ export const MODULE_PRICING: Record<string, ModulePricing> = {
   },
   'workflow': {
     starter: 1999,
-    professional: 4999,
+    professional: 3999,
   },
   'appointments': {
-    starter: 1499,
+    starter: 1999,
     professional: 3999,
   },
   'help-center': {
-    starter: 999,
-    professional: 2499,
+    starter: 1999,
+    professional: 3999,
   },
   'contracts': {
-    starter: 1499,
+    starter: 1999,
     professional: 3999,
   },
   // Phase 3: Industry-Specific Modules
   'field-service': {
     starter: 1999,
-    professional: 4999,
+    professional: 3999,
   },
   'manufacturing': {
-    starter: 2499,
-    professional: 5999,
+    starter: 1999,
+    professional: 3999,
   },
   'asset-management': {
-    starter: 1499,
+    starter: 1999,
     professional: 3999,
   },
   'ecommerce': {
-    starter: 2499,
-    professional: 5999,
+    starter: 1999,
+    professional: 3999,
   },
   // Phase 4: Advanced Features
   'compliance': {
-    starter: 1499,
+    starter: 1999,
     professional: 3999,
   },
   'lms': {
     starter: 1999,
-    professional: 4999,
+    professional: 3999,
   },
 }
 
-// Industry Package Pricing (20-30% discount)
+// Industry Package Pricing (20% discount)
+// Based on uniform pricing: ₹1999 Starter, ₹3999 Professional
 export const INDUSTRY_PACKAGE_PRICING: Record<string, IndustryPackagePricing> = {
   'restaurant': {
     modules: ['crm', 'finance', 'inventory', 'sales', 'ai-studio'],
-    individualPrice: 8996, // Sum of individual Professional prices
-    packagePrice: 6999,
-    savings: 1997,
-    savingsPercentage: 22,
+    individualPrice: 15996, // 4 modules × ₹3999 (Professional)
+    packagePrice: 12797, // 20% discount
+    savings: 3199,
+    savingsPercentage: 20,
   },
   'retail': {
     modules: ['crm', 'finance', 'inventory', 'sales', 'marketing', 'ai-studio'],
-    individualPrice: 10995,
-    packagePrice: 8499,
-    savings: 2496,
-    savingsPercentage: 23,
+    individualPrice: 19995, // 5 modules × ₹3999 (Professional)
+    packagePrice: 15996, // 20% discount
+    savings: 3999,
+    savingsPercentage: 20,
   },
   'service-business': {
     modules: ['crm', 'finance', 'projects', 'marketing', 'hr', 'ai-studio'],
-    individualPrice: 10495,
-    packagePrice: 7999,
-    savings: 2496,
-    savingsPercentage: 24,
+    individualPrice: 19995, // 5 modules × ₹3999 (Professional)
+    packagePrice: 15996, // 20% discount
+    savings: 3999,
+    savingsPercentage: 20,
   },
   'ecommerce': {
     modules: ['crm', 'finance', 'inventory', 'sales', 'marketing', 'analytics', 'ai-studio'],
-    individualPrice: 12494,
-    packagePrice: 9999,
-    savings: 2495,
+    individualPrice: 19995, // 5 paid modules × ₹3999 (analytics is free)
+    packagePrice: 15996, // 20% discount
+    savings: 3999,
     savingsPercentage: 20,
   },
   'professional-services': {
     modules: ['crm', 'finance', 'projects', 'hr', 'communication', 'ai-studio'],
-    individualPrice: 9495,
-    packagePrice: 7499,
-    savings: 1996,
-    savingsPercentage: 21,
+    individualPrice: 19995, // 5 modules × ₹3999 (Professional)
+    packagePrice: 15996, // 20% discount
+    savings: 3999,
+    savingsPercentage: 20,
+  },
+  'manufacturing': {
+    modules: ['crm', 'finance', 'inventory', 'projects', 'hr', 'ai-studio'],
+    individualPrice: 19995, // 5 modules × ₹3999 (Professional)
+    packagePrice: 15996, // 20% discount
+    savings: 3999,
+    savingsPercentage: 20,
   },
 }
 
