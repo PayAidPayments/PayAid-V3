@@ -2028,7 +2028,7 @@ export default function LandingPage() {
           <div className="mt-12 text-center">
             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20 max-w-2xl mx-auto">
               <h3 className="text-2xl font-bold mb-2">Enterprise Solutions</h3>
-              <p className="text-white/80 mb-6">Need custom modules, white-label options, or dedicated support? Let's build a solution tailored to your business.</p>
+              <p className="text-white/80 mb-6">Need custom modules, white-label options, or dedicated support? Let&apos;s build a solution tailored to your business.</p>
               <Button
                 className="bg-white/20 text-white hover:bg-white/30"
                 size="lg"
