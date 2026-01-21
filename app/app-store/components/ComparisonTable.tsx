@@ -12,21 +12,22 @@ interface Feature {
 
 const features: Feature[] = [
   { name: 'CRM Module', starter: true, professional: true, complete: true, enterprise: true },
-  { name: 'Invoicing Module', starter: true, professional: true, complete: true, enterprise: true },
-  { name: 'Accounting Module', starter: false, professional: true, complete: true, enterprise: true },
+  { name: 'Finance & Accounting', starter: true, professional: true, complete: true, enterprise: true },
   { name: 'HR Module', starter: false, professional: true, complete: true, enterprise: true },
-  { name: 'WhatsApp Module', starter: false, professional: true, complete: true, enterprise: true },
-  { name: 'Analytics Module', starter: false, professional: true, complete: true, enterprise: true },
-  { name: 'Max Contacts', starter: '500', professional: '5,000', complete: 'Unlimited', enterprise: 'Unlimited' },
-  { name: 'Max Users', starter: '3', professional: '10', complete: '50', enterprise: 'Unlimited' },
-  { name: 'Storage', starter: '5 GB', professional: '50 GB', complete: '500 GB', enterprise: 'Unlimited' },
-  { name: 'Support', starter: 'Email', professional: 'Email + Chat', complete: 'Priority', enterprise: 'Dedicated' },
+  { name: 'Communication Module', starter: false, professional: true, complete: true, enterprise: true },
+  { name: 'Inventory Module', starter: false, professional: true, complete: true, enterprise: true },
+  { name: 'Analytics Module', starter: true, professional: true, complete: true, enterprise: true },
+  { name: 'AI Studio (Free)', starter: true, professional: true, complete: true, enterprise: true },
+  { name: 'Marketing Module', starter: true, professional: true, complete: true, enterprise: true },
+  { name: 'Max Users', starter: '5', professional: 'Unlimited', complete: 'Unlimited', enterprise: 'Unlimited' },
+  { name: 'Billing', starter: 'Annual', professional: 'Annual', complete: 'Annual', enterprise: 'Custom' },
+  { name: 'Support', starter: 'Email (Mon-Sat)', professional: 'Email (Mon-Sat)', complete: 'Priority', enterprise: 'Dedicated' },
 ]
 
 const tiers = [
-  { id: 'starter', name: 'Starter', price: '₹2,999', popular: false },
-  { id: 'professional', name: 'Professional', price: '₹9,999', popular: true },
-  { id: 'complete', name: 'Complete', price: '₹19,999', popular: false },
+  { id: 'starter', name: 'Starter', price: '₹1,999', popular: false },
+  { id: 'professional', name: 'Professional', price: '₹3,999', popular: true },
+  { id: 'complete', name: 'Complete', price: 'Custom', popular: false },
   { id: 'enterprise', name: 'Enterprise', price: 'Custom', popular: false },
 ]
 
