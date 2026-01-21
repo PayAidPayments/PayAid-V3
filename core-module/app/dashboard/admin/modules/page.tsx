@@ -177,14 +177,14 @@ export default function AdminModulesPage() {
           ) : (
             <div className="flex flex-wrap gap-2">
               {licensedModules.map((moduleId) => {
-                const module = MODULES.find((m) => m.id === moduleId)
-                return module ? (
+                const moduleInfo = MODULES.find((m) => m.id === moduleId)
+                return moduleInfo ? (
                   <span
                     key={moduleId}
                     className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
                   >
-                    <span>{module.icon}</span>
-                    {module.name}
+                    <span>{moduleInfo.icon}</span>
+                    {moduleInfo.name}
                   </span>
                 ) : null
               })}

@@ -400,7 +400,7 @@ export default function CRMDashboardPage() {
               className="text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1.5 text-[#53328A] font-medium cursor-pointer"
               style={{ color: '#53328A' }}
             >
-              <option value="manager" className="text-[#53328A] bg-white">Manager's Home</option>
+              <option value="manager" className="text-[#53328A] bg-white">Manager&apos;s Home</option>
               <option value="tasks" className="text-[#53328A] bg-white">Tasks View</option>
               <option value="activity" className="text-[#53328A] bg-white">Activity Feed</option>
               <option value="pipeline" className="text-[#53328A] bg-white">Pipeline View</option>

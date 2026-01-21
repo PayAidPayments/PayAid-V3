@@ -273,7 +273,7 @@ export default function AIAgentsMarketplacePage() {
                       <ul className="space-y-1">
                         {agent.useCases.slice(0, 2).map((useCase, idx) => (
                           <li key={idx} className="text-xs text-gray-500 dark:text-gray-500 italic">
-                            "{useCase}"
+                            &quot;{useCase}&quot;
                           </li>
                         ))}
                       </ul>

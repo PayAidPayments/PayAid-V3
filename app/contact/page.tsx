@@ -336,7 +336,7 @@ export default function ContactPage() {
                 Is there a way to accept payments with you without using the API?
               </h3>
               <p className="text-gray-700">
-                Yes, you can use our Payment Dashboard to send out payment links or use our Hosted Payment Page and the pre-built code for it, so you won't even realize your using the API. You see, everything goes thru the API, but we make it easier for merchants who do not need a complex integration. Also you can sign up for our Invoicing Service to send invoices with online payment options.
+                Yes, you can use our Payment Dashboard to send out payment links or use our Hosted Payment Page and the pre-built code for it, so you won&apos;t even realize you&apos;re using the API. You see, everything goes thru the API, but we make it easier for merchants who do not need a complex integration. Also you can sign up for our Invoicing Service to send invoices with online payment options.
               </p>
             </div>
           </div>

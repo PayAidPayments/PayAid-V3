@@ -27,7 +27,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Restaurant',
     icon: '🍽️',
     description: 'Restaurant management, menu, orders, and kitchen display',
-    coreModules: ['crm', 'finance', 'inventory', 'sales', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'inventory', 'sales', 'pos', 'analytics', 'productivity'],
     industryFeatures: [
       'restaurant_menu',
       'restaurant_kitchen_display',
@@ -68,7 +68,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Retail',
     icon: '🛍️',
     description: 'Retail POS, inventory, and customer loyalty',
-    coreModules: ['crm', 'finance', 'inventory', 'sales', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'inventory', 'sales', 'pos', 'analytics', 'productivity'],
     industryFeatures: [
       'retail_pos',
       'retail_barcode',
@@ -107,7 +107,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Manufacturing',
     icon: '🏭',
     description: 'Production planning, BOM, and quality control',
-    coreModules: ['crm', 'finance', 'inventory', 'projects', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'inventory', 'projects', 'analytics', 'productivity'],
     industryFeatures: [
       'manufacturing_bom',
       'manufacturing_production_orders',
@@ -145,7 +145,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Healthcare',
     icon: '🏥',
     description: 'Patient management and appointments',
-    coreModules: ['crm', 'finance', 'hr', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'hr', 'communication', 'analytics', 'productivity'],
     industryFeatures: [
       'healthcare_patient_management',
       'healthcare_appointments',
@@ -173,7 +173,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Education',
     icon: '🎓',
     description: 'Student management and attendance',
-    coreModules: ['crm', 'finance', 'hr', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'hr', 'communication', 'analytics', 'productivity'],
     industryFeatures: [
       'education_student_management',
       'education_attendance',
@@ -201,7 +201,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Real Estate',
     icon: '🏠',
     description: 'Property and tenant management',
-    coreModules: ['crm', 'finance', 'projects', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'communication', 'analytics', 'productivity'],
     industryFeatures: [
       'real_estate_property_management',
       'real_estate_tenant_management',
@@ -229,7 +229,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Freelancer / Solo Consultant',
     icon: '👤',
     description: 'Individual consultant or freelancer managing clients and projects',
-    coreModules: ['crm', 'finance', 'communication', 'analytics', 'productivity', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'communication', 'analytics', 'productivity', 'time-tracking'],
     industryFeatures: [
       'service_project_management',
       'service_time_tracking',
@@ -254,10 +254,14 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
   },
   'service-business': {
     id: 'service-business',
+    name: 'Service Business',
+    icon: '💼',
+    description: 'Agency, consultancy, or service provider',
+    coreModules: ['crm', 'finance', 'marketing', 'hr', 'communication', 'analytics', 'productivity', 'time-tracking'],
     name: 'Service Businesses',
     icon: '💼',
     description: 'Agency, consultancy, or service provider',
-    coreModules: ['crm', 'finance', 'marketing', 'hr', 'communication', 'analytics', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'hr', 'communication', 'analytics', 'productivity', 'time-tracking'],
     industryFeatures: [
       'service_project_management',
       'service_time_tracking',
@@ -285,7 +289,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'E-Commerce',
     icon: '🛒',
     description: 'Online store or marketplace seller',
-    coreModules: ['crm', 'finance', 'inventory', 'sales', 'marketing', 'analytics', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'inventory', 'sales', 'analytics', 'productivity'],
     industryFeatures: [
       'ecommerce_multi_channel',
       'ecommerce_order_fulfillment',
@@ -313,7 +317,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Professional Services',
     icon: '⚖️',
     description: 'CA firm, law firm, consulting, or professional practice',
-    coreModules: ['crm', 'finance', 'hr', 'communication', 'analytics', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'hr', 'communication', 'analytics', 'productivity', 'time-tracking'],
     industryFeatures: [
       'professional_time_tracking',
       'professional_billing',
@@ -341,7 +345,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Logistics & Transportation',
     icon: '🚚',
     description: 'Shipment tracking, route management, and vehicle fleet',
-    coreModules: ['crm', 'finance', 'inventory', 'projects', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'inventory', 'projects', 'analytics', 'productivity'],
     industryFeatures: [
       'logistics_shipment_tracking',
       'logistics_route_optimization',
@@ -369,7 +373,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Agriculture & Farming',
     icon: '🌾',
     description: 'Crop management, inputs, mandi prices, and harvest tracking',
-    coreModules: ['crm', 'finance', 'inventory', 'projects', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'inventory', 'projects', 'analytics', 'productivity'],
     industryFeatures: [
       'agriculture_crop_management',
       'agriculture_input_tracking',
@@ -397,7 +401,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Construction & Contracting',
     icon: '🔨',
     description: 'Project management, materials, labor, and milestones',
-    coreModules: ['crm', 'finance', 'inventory', 'projects', 'hr', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'inventory', 'projects', 'hr', 'communication', 'analytics', 'productivity'],
     industryFeatures: [
       'construction_project_management',
       'construction_material_tracking',
@@ -425,7 +429,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Beauty & Wellness',
     icon: '💅',
     description: 'Appointment scheduling, services, and membership management',
-    coreModules: ['crm', 'finance', 'hr', 'marketing', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'hr', 'communication', 'analytics', 'productivity'],
     industryFeatures: [
       'beauty_appointment_scheduling',
       'beauty_service_management',
@@ -453,7 +457,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Automotive & Repair',
     icon: '🚗',
     description: 'Vehicle management, job cards, and service history',
-    coreModules: ['crm', 'finance', 'inventory', 'projects', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'inventory', 'projects', 'analytics', 'productivity'],
     industryFeatures: [
       'automotive_vehicle_management',
       'automotive_job_cards',
@@ -481,7 +485,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Hospitality & Hotels',
     icon: '🏨',
     description: 'Room management, bookings, check-in/out, and housekeeping',
-    coreModules: ['crm', 'finance', 'hr', 'marketing', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'hr', 'communication', 'analytics', 'productivity'],
     industryFeatures: [
       'hospitality_room_management',
       'hospitality_booking_management',
@@ -509,7 +513,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Legal Services',
     icon: '⚖️',
     description: 'Case management, court dates, documents, and billable hours',
-    coreModules: ['crm', 'finance', 'hr', 'communication', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'hr', 'communication', 'analytics', 'productivity', 'time-tracking'],
     industryFeatures: [
       'legal_case_management',
       'legal_court_date_tracking',
@@ -537,7 +541,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Financial Services',
     icon: '💹',
     description: 'Tax filings, compliance tracking, and advisory services',
-    coreModules: ['crm', 'finance', 'hr', 'communication', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'hr', 'communication', 'analytics', 'productivity', 'time-tracking'],
     industryFeatures: [
       'financial_tax_filings',
       'financial_compliance_tracking',
@@ -565,7 +569,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Event Management',
     icon: '🎉',
     description: 'Event planning, vendor management, and guest management',
-    coreModules: ['crm', 'finance', 'marketing', 'hr', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'hr', 'communication', 'analytics', 'productivity'],
     industryFeatures: [
       'events_event_planning',
       'events_vendor_management',
@@ -593,7 +597,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     name: 'Wholesale & Distribution',
     icon: '📦',
     description: 'Customer management, tiered pricing, and credit limits',
-    coreModules: ['crm', 'finance', 'inventory', 'sales', 'ai-studio'],
+    coreModules: ['crm', 'finance', 'marketing', 'inventory', 'sales', 'pos', 'analytics', 'productivity'],
     industryFeatures: [
       'wholesale_customer_management',
       'wholesale_tiered_pricing',
@@ -641,13 +645,13 @@ export function getRecommendedModules(industryId: string): {
 } {
   const config = getIndustryConfig(industryId)
   if (!config) {
-    return { coreModules: ['crm', 'finance', 'ai-studio'], industryPacks: [] }
+    return { coreModules: ['crm', 'finance', 'marketing', 'communication', 'analytics', 'productivity'], industryPacks: [] }
   }
 
-  // Ensure ai-studio is always included
-  const coreModules = config.coreModules.includes('ai-studio')
+  // Marketing is now base module, ensure it's included
+  const coreModules = config.coreModules.includes('marketing')
     ? config.coreModules
-    : [...config.coreModules, 'ai-studio']
+    : [...config.coreModules, 'marketing']
 
   return {
     coreModules,

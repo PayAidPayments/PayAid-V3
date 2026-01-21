@@ -129,7 +129,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         <CardHeader>
           <CardTitle>Welcome to PayAid V3</CardTitle>
           <CardDescription>
-            Let's set up your business. This will take just a few minutes.
+            Let&apos;s set up your business. This will take just a few minutes.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -296,7 +296,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold mb-2">Your Recommended Setup</h2>
-                <p className="text-sm text-gray-600 mb-4">Based on your selections, here's what we recommend</p>
+                <p className="text-sm text-gray-600 mb-4">Based on your selections, here&apos;s what we recommend</p>
               </div>
               <div className="space-y-4">
                 <Card>

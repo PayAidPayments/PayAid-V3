@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const unreadOnly = searchParams.get('unreadOnly') === 'true'
     const limit = parseInt(searchParams.get('limit') || '50')
-    const module = searchParams.get('module') // Optional: filter by module
+    const moduleFilter = searchParams.get('module') // Optional: filter by module
 
     // Get tenant with licensed modules
     const tenant = await prismaWithRetry(() =>
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       metadata?: any
     ) => {
       if (moduleName && !licensedModules.includes(moduleName)) return // Skip if module not licensed
-      if (module && moduleName !== module) return // Skip if module filter doesn't match
+      if (moduleFilter && moduleName !== moduleFilter) return // Skip if module filter doesn't match
       
       notifications.push({
         id,
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 1. CRM Module Notifications
-    if (licensedModules.includes('crm') && (!module || module === 'crm')) {
+    if (licensedModules.includes('crm') && (!moduleFilter || moduleFilter === 'crm')) {
       // Overdue tasks
       const overdueTasks = await prismaWithRetry(() =>
         prisma.task.findMany({
