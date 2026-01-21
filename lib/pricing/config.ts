@@ -41,8 +41,8 @@ export const MODULE_PRICING: Record<string, ModulePricing> = {
     professional: 3999,
   },
   'marketing': {
-    starter: 1999,
-    professional: 3999,
+    starter: 0, // NOW BASE MODULE - Included with all plans (2026 Revised Standards)
+    professional: 0, // NOW BASE MODULE - Included with all plans
   },
   'projects': {
     starter: 1999,

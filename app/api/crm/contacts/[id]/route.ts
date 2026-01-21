@@ -1,91 +1,108 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSessionToken } from '@/packages/auth-sdk/client';
-
 /**
- * CRM Module - Single Contact API
+ * CRM Contact Detail API Route
+ * GET /api/crm/contacts/[id] - Get single contact
+ * PATCH /api/crm/contacts/[id] - Update contact
+ * DELETE /api/crm/contacts/[id] - Archive contact
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/db/prisma'
+import { withErrorHandling, successResponse } from '@/lib/api/route-wrapper'
+import { ApiResponse, Contact } from '@/types/base-modules'
+import { UpdateContactSchema } from '@/modules/shared/crm/types'
 
-export async function GET(
+/**
+ * Get single contact
+ * GET /api/crm/contacts/[id]
+ */
+export const GET = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const token = await getSessionToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const { id } = await params
 
-    const response = await fetch(`${API_BASE_URL}/api/contacts/${params.id}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
+  const contact = await prisma.contact.findUnique({
+    where: { id },
+  })
+
+  if (!contact) {
+    return NextResponse.json(
+      {
+        success: false,
+        statusCode: 404,
+        error: {
+          code: 'CONTACT_NOT_FOUND',
+          message: 'Contact not found',
+        },
       },
-    });
-
-    const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
-  } catch (error) {
-    console.error('[CRM API] Error fetching contact:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+      { status: 404 }
+    )
   }
-}
 
-export async function PUT(
+  const response: ApiResponse<Contact> = {
+    success: true,
+    statusCode: 200,
+    data: contact as Contact,
+    meta: {
+      timestamp: new Date().toISOString(),
+    },
+  }
+
+  return NextResponse.json(response)
+})
+
+/**
+ * Update contact
+ * PATCH /api/crm/contacts/[id]
+ */
+export const PATCH = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const token = await getSessionToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const { id } = await params
+  const body = await request.json()
+  const validatedData = UpdateContactSchema.parse(body)
 
-    const body = await request.json();
+  const contact = await prisma.contact.update({
+    where: { id },
+    data: validatedData,
+  })
 
-    const response = await fetch(`${API_BASE_URL}/api/contacts/${params.id}`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-
-    const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
-  } catch (error) {
-    console.error('[CRM API] Error updating contact:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  const response: ApiResponse<Contact> = {
+    success: true,
+    statusCode: 200,
+    data: contact as Contact,
+    meta: {
+      timestamp: new Date().toISOString(),
+    },
   }
-}
 
-export async function DELETE(
+  return NextResponse.json(response)
+})
+
+/**
+ * Archive contact (soft delete)
+ * DELETE /api/crm/contacts/[id]
+ */
+export const DELETE = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const token = await getSessionToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const { id } = await params
 
-    const response = await fetch(`${API_BASE_URL}/api/contacts/${params.id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+  const contact = await prisma.contact.update({
+    where: { id },
+    data: { status: 'archived' },
+  })
 
-    if (response.ok) {
-      return NextResponse.json({ success: true }, { status: 200 });
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
-  } catch (error) {
-    console.error('[CRM API] Error deleting contact:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  const response: ApiResponse<Contact> = {
+    success: true,
+    statusCode: 200,
+    data: contact as Contact,
+    meta: {
+      timestamp: new Date().toISOString(),
+    },
   }
-}
 
+  return NextResponse.json(response)
+})

@@ -108,8 +108,16 @@ export async function autoConfigureIndustryModules(
     }
   }
 
-  // Always include base modules
-  const BASE_MODULES = ['crm', 'finance', 'communication', 'analytics']
+  // Always include base modules (2026 Revised Standards)
+  // Marketing & AI Content is now BASE, not premium
+  const BASE_MODULES = [
+    'crm',                    // Customer/client relationship foundation
+    'finance',                // Accounting, invoicing, GST compliance
+    'communication',          // WhatsApp, email, SMS across all sectors
+    'analytics',              // Data-driven decision-making
+    'marketing',              // Marketing & AI Content - NOW BASE (2026 standard)
+    'productivity',           // Basic task, project, and workflow management
+  ]
   BASE_MODULES.forEach(m => allCoreModules.add(m))
 
   // Enable modules via ModuleLicense

@@ -224,7 +224,7 @@ export default function LocationDetailPage() {
           <Card className="mb-8 dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
               <CardTitle className="text-gray-900 dark:text-gray-100">Profit & Loss Summary</CardTitle>
-              <CardDescription className="text-gray-600 dark:text-gray-400">This month's financial overview</CardDescription>
+              <CardDescription className="text-gray-600 dark:text-gray-400">This month&apos;s financial overview</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

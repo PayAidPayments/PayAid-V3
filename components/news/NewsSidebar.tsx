@@ -291,7 +291,7 @@ export function NewsSidebar() {
           { action: 'Consider customer retention strategies' },
         ],
         isRead: false,
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
+        createdAt: new Date('2025-01-09T00:00:00.000Z').toISOString(),
       },
       {
         id: 'demo-3',
@@ -312,7 +312,7 @@ export function NewsSidebar() {
           { action: 'Develop a digital transformation roadmap' },
         ],
         isRead: false,
-        createdAt: new Date(Date.now() - 172800000).toISOString(),
+        createdAt: new Date('2025-01-08T00:00:00.000Z').toISOString(),
       },
       {
         id: 'demo-4',
@@ -333,7 +333,7 @@ export function NewsSidebar() {
           { action: 'Review your pricing strategy to maintain margins' },
         ],
         isRead: false,
-        createdAt: new Date(Date.now() - 259200000).toISOString(),
+        createdAt: new Date('2025-01-07T00:00:00.000Z').toISOString(),
       },
       {
         id: 'demo-5',
@@ -354,7 +354,7 @@ export function NewsSidebar() {
           { action: 'Consider pilot programs for AI implementation' },
         ],
         isRead: false,
-        createdAt: new Date(Date.now() - 345600000).toISOString(),
+        createdAt: new Date('2025-01-06T00:00:00.000Z').toISOString(),
       },
     ]
 

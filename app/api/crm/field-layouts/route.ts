@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams
-    const module = searchParams.get('module') || 'crm'
+    const moduleKey = searchParams.get('module') || 'crm'
     const entityType = searchParams.get('entityType') || 'lead'
     const viewType = searchParams.get('viewType') || 'CREATE'
 
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       where: {
         tenantId_module_entityType_viewType: {
           tenantId,
-          module,
+          module: moduleKey,
           entityType,
           viewType,
         },

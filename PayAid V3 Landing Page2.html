@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayAid V3 - All-in-One Business OS for India</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6B3FA0;
+            --secondary: #FFD700;
+            --dark: #0F0F1E;
+            --light: #F5F5F5;
+            --text: #1A1A2E;
+            --text-light: #666;
+            --border: #E0E0E0;
+            --success: #10B981;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            color: var(--text);
+            line-height: 1.6;
+            background: #fff;
+        }
+
+        /* Navigation */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+        }
+
+        nav .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        nav .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        nav .nav-links a {
+            text-decoration: none;
+            color: var(--text);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        nav .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        nav .cta {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #5A2F8F 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(107, 63, 160, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, #F5F1FF 0%, #FFFEF0 100%);
+            text-align: center;
+        }
+
+        .hero .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            color: var(--dark);
+        }
+
+        .hero h1 .gradient-text {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero .subheader {
+            font-size: 1.3rem;
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .hero .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 2rem;
+            margin-top: 4rem;
+            padding-top: 3rem;
+            border-top: 1px solid rgba(107, 63, 160, 0.1);
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            margin-top: 0.5rem;
+        }
+
+        /* Highlights */
+        .highlights {
+            padding: 4rem 2rem;
+            background: white;
+        }
+
+        .highlights .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .highlight-card {
+            padding: 2rem;
+            border-radius: 1rem;
+            background: linear-gradient(135deg, #F5F1FF 0%, rgba(255, 215, 0, 0.05) 100%);
+            border: 1px solid var(--border);
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .highlight-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 15px 40px rgba(107, 63, 160, 0.1);
+        }
+
+        .highlight-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 0.75rem;
+            color: white;
+            font-size: 1.8rem;
+        }
+
+        .highlight-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.75rem;
+            color: var(--dark);
+        }
+
+        .highlight-card p {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        /* Modules Section */
+        .modules {
+            padding: 5rem 2rem;
+            background: linear-gradient(135deg, #F5F1FF 0%, white 100%);
+        }
+
+        .modules .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .section-header p {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Module Category */
+        .module-category {
+            margin-bottom: 3rem;
+        }
+
+        .category-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .category-badge {
+            display: inline-block;
+            background: var(--secondary);
+            color: var(--dark);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .module-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .module-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(107, 63, 160, 0.15);
+            transform: translateY(-3px);
+        }
+
+        .module-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .module-icon {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .module-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--dark);
+        }
+
+        .module-description {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .module-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .feature-tag {
+            background: var(--light);
+            color: var(--primary);
+            padding: 0.3rem 0.7rem;
+            border-radius: 0.3rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-top: 1rem;
+        }
+
+        /* AI Services Highlight */
+        .ai-services {
+            background: linear-gradient(135deg, var(--primary) 0%, #5A2F8F 100%);
+            color: white;
+            padding: 4rem 2rem;
+            border-radius: 1.5rem;
+            margin: 3rem 0;
+            text-align: center;
+        }
+
+        .ai-services h3 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .ai-services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .ai-service-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .ai-service-card h4 {
+            margin-bottom: 0.75rem;
+            color: var(--secondary);
+        }
+
+        .ai-service-card p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Pricing Section */
+        .pricing {
+            padding: 5rem 2rem;
+            background: white;
+        }
+
+        .pricing .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .pricing-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: all 0.3s;
+            padding: 0.5rem 1rem;
+            border-bottom: 2px solid transparent;
+        }
+
+        .toggle-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .pricing-tiers {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin-bottom: 4rem;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .tier-card {
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 1rem;
+            padding: 2.5rem;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tier-card.recommended {
+            border-color: var(--primary);
+            transform: scale(1.05);
+            box-shadow: 0 20px 50px rgba(107, 63, 160, 0.2);
+        }
+
+        .recommended-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .tier-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .tier-users {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tier-price {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 1.5rem 0;
+        }
+
+        .tier-price small {
+            font-size: 1rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .tier-description {
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .tier-features {
+            text-align: left;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tier-feature {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        .tier-feature svg {
+            width: 20px;
+            height: 20px;
+            color: var(--success);
+            flex-shrink: 0;
+        }
+
+        .tier-cta {
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        /* Industry Packages */
+        .industry-packages {
+            margin-top: 5rem;
+            padding-top: 5rem;
+            border-top: 2px solid var(--border);
+        }
+
+        .packages-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .package-card {
+            background: linear-gradient(135deg, #F5F1FF 0%, #FFFEF0 100%);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            transition: all 0.3s;
+        }
+
+        .package-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 15px 40px rgba(107, 63, 160, 0.1);
+        }
+
+        .package-industry {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 1rem;
+        }
+
+        .package-price-old {
+            color: var(--text-light);
+            text-decoration: line-through;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .package-pricing {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .package-price {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .package-savings {
+            background: var(--secondary);
+            color: var(--dark);
+            padding: 0.35rem 0.75rem;
+            border-radius: 0.35rem;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .package-includes {
+            text-align: left;
+            margin-bottom: 2rem;
+        }
+
+        .package-includes h5 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-light);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .package-modules {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .package-module {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        .package-module svg {
+            width: 18px;
+            height: 18px;
+            color: var(--success);
+            flex-shrink: 0;
+        }
+
+        .package-cta {
+            width: 100%;
+            margin-top: 1.5rem;
+        }
+
+        /* Enterprise */
+        .enterprise {
+            background: linear-gradient(135deg, var(--primary) 0%, #5A2F8F 100%);
+            color: white;
+            border-radius: 1rem;
+            padding: 3rem;
+            text-align: center;
+            margin-top: 3rem;
+        }
+
+        .enterprise h4 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .enterprise p {
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        /* Features Table */
+        .features-table {
+            overflow-x: auto;
+            margin-top: 3rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th {
+            background: var(--light);
+            padding: 1.5rem;
+            text-align: left;
+            font-weight: 700;
+            color: var(--dark);
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td:first-child {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        td:not(:first-child) {
+            text-align: center;
+            color: var(--text);
+        }
+
+        .check {
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .dash {
+            color: var(--text-light);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary) 0%, #5A2F8F 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            border-radius: 1.5rem;
+            margin: 4rem 0;
+        }
+
+        .cta-section h2 {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+            font-weight: 800;
+        }
+
+        .cta-section p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--dark);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        footer p {
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav .nav-links {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+
+            .section-header h2 {
+                font-size: 2rem;
+            }
+
+            .pricing-tiers {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .tier-card.recommended {
+                transform: scale(1);
+            }
+
+            .modules-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero .stats {
+                grid-template-columns: 1fr;
+            }
+
+            nav .logo {
+                font-size: 1.3rem;
+            }
+
+            .hero .hero-buttons {
+                flex-direction: column;
+            }
+
+            .hero .hero-buttons .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <div class="logo">PayAid V3</div>
+            <ul class="nav-links">
+                <li><a href="#modules">Features</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#industries">Industries</a></li>
+            </ul>
+            <div class="cta">
+                <button class="btn btn-secondary">Sign In</button>
+                <button class="btn btn-primary">Start Free Trial</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>The All-in-One <span class="gradient-text">Business OS</span> Built for India</h1>
+            <p class="subheader">60+ modules • Enterprise-grade features • AI-powered automation • Industry-specific solutions</p>
+            <div class="hero-buttons">
+                <button class="btn btn-primary">Get Started Free</button>
+                <button class="btn btn-secondary">Watch Demo</button>
+            </div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-number">60+</div>
+                    <div class="stat-label">Total Features</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">19</div>
+                    <div class="stat-label">Industry Modules</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">Productivity Tools</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">6</div>
+                    <div class="stat-label">AI Services</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Highlights -->
+    <section class="highlights">
+        <div class="container">
+            <div class="highlight-card">
+                <div class="highlight-icon">🤖</div>
+                <h3>AI Calling & Voice Agents</h3>
+                <p>Inbound/outbound AI-powered phone calls for customer support and lead generation</p>
+            </div>
+            <div class="highlight-card">
+                <div class="highlight-icon">📊</div>
+                <h3>Industry Intelligence</h3>
+                <p>AI-curated industry news and competitive insights delivered daily</p>
+            </div>
+            <div class="highlight-card">
+                <div class="highlight-icon">🎯</div>
+                <h3>Productivity Suite</h3>
+                <p>5 included tools (Spreadsheet, Docs, Slides, Drive, Meet) - your Office alternative</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modules Section -->
+    <section class="modules" id="modules">
+        <div class="container">
+            <div class="section-header">
+                <h2>Explore All Modules & Features</h2>
+                <p>Everything you need to run your entire business from one platform</p>
+            </div>
+
+            <!-- Core Business Modules -->
+            <div class="module-category">
+                <h3 class="category-title">
+                    🏢 Core Business Modules
+                    <span class="category-badge">11 Modules</span>
+                </h3>
+                <div class="modules-grid">
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">👥</div>
+                            <div class="module-title">CRM</div>
+                        </div>
+                        <p class="module-description">Manage customer relationships, track interactions, and build lasting connections</p>
+                        <div class="module-features">
+                            <span class="feature-tag">Contacts</span>
+                            <span class="feature-tag">Pipeline</span>
+                            <span class="feature-tag">AI Insights</span>
+                        </div>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">💰</div>
+                            <div class="module-title">Finance & Accounting</div>
+                        </div>
+                        <p class="module-description">Complete financial management with automated invoicing and expense tracking</p>
+                        <div class="module-features">
+                            <span class="feature-tag">Invoicing</span>
+                            <span class="feature-tag">GST Ready</span>
+                            <span class="feature-tag">Reports</span>
+                        </div>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">📈</div>
+                            <div class="module-title">Sales</div>
+                        </div>
+                        <p class="module-description">Sales pipeline management, quote generation, and deal tracking</p>
+                        <div class="module-features">
+                            <span class="feature-tag">Quotes</span>
+                            <span class="feature-tag">Pipeline</span>
+                            <span class="feature-tag">Forecasting</span>
+                        </div>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">📦</div>
+                            <div class="module-title">Inventory</div>
+                        </div>
+                        <p class="module-description">Real-time stock management, purchase orders, and warehouse control</p>
+                        <div class="module-features">
+                            <span class="feature-tag">Stock Tracking</span>
+                            <span class="feature-tag">Alerts</span>
+                            <span class="feature-tag">Reports</span>
+                        </div>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">👨‍💼</div>
+                            <div class="module-title">HR & Payroll</div>
+                        </div>
+                        <p class="module-description">Employee management, attendance, leave, and salary processing</p>
+                        <div class="module-features">
+                            <span class="feature-tag">Attendance</span>
+                            <span class="feature-tag">Payroll</span>
+                            <span class="feature-tag">Compliance</span>
+                        </div>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">📢</div>
+                            <div class="module-title">Marketing</div>
+                        </div>
+                        <p class="module-description">Campaign management, email marketing, and lead nurturing</p>
+                        <div class="module-features">
+                            <span class="feature-tag">Campaigns</span>
+                            <span class="feature-tag">Email</span>
+                            <span class="feature-tag">Analytics</span>
+                        </div>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">✅</div>
+                            <div class="module-title">Projects</div>
+                        </div>
+                        <p class="module-description">Project planning, task management, and team collaboration</p>
+                        <div class="module-features">
+                            <span class="feature-tag">Kanban</span>
+                            <span class="feature-tag">Gantt</span>
+                            <span class="feature-tag">Timeline</span>
+                        </div>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">💬</div>
+                            <div class="module-title">Communication</div>
+                        </div>
+                        <p class="module-description">Internal messaging, team chat, and integrated video calls</p>
+                        <div class="module-features">
+                            <span class="feature-tag">Chat</span>
+                            <span class="feature-tag">Video</span>
+                            <span class="feature-tag">Integration</span>
+                        </div>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">⚙️</div>
+                            <div class="module-title">Workflow Automation</div>
+                        </div>
+                        <p class="module-description">No-code workflow builder to automate repetitive tasks</p>
+                        <div class="module-features">
+                            <span class="feature-tag">Triggers</span>
+                            <span class="feature-tag">Actions</span>
+                            <span class="feature-tag">Conditions</span>
+                        </div>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">📅</div>
+                            <div class="module-title">Appointments</div>
+                        </div>
+                        <p class="module-description">Scheduling, booking calendar, and automated reminders</p>
+                        <div class="module-features">
+                            <span class="feature-tag">Calendar</span>
+                            <span class="feature-tag">Booking</span>
+                            <span class="feature-tag">Reminders</span>
+                        </div>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">📊</div>
+                            <div class="module-title">Analytics</div>
+                        </div>
+                        <p class="module-description">Real-time dashboards, custom reports, and data visualization</p>
+                        <div class="module-features">
+                            <span class="feature-tag">Dashboards</span>
+                            <span class="feature-tag">Reports</span>
+                            <span class="feature-tag">Charts</span>
+                        </div>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Productivity Suite -->
+            <div class="module-category">
+                <h3 class="category-title">
+                    🎯 Productivity Suite
+                    <span class="category-badge">5 Tools</span>
+                </h3>
+                <p style="color: var(--text-light); margin-bottom: 1.5rem;">Google Workspace & Microsoft Office alternatives included in every plan</p>
+                <div class="modules-grid">
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">📊</div>
+                            <div class="module-title">Spreadsheet</div>
+                        </div>
+                        <p class="module-description">Powerful spreadsheet tool with formulas, charts, and collaboration</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">📝</div>
+                            <div class="module-title">Docs</div>
+                        </div>
+                        <p class="module-description">Rich document editor with real-time collaboration and templates</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">🎨</div>
+                            <div class="module-title">Slides</div>
+                        </div>
+                        <p class="module-description">Presentation tool with themes, animations, and collaboration</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">☁️</div>
+                            <div class="module-title">Drive</div>
+                        </div>
+                        <p class="module-description">Secure cloud storage with file sharing and permission control</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">📞</div>
+                            <div class="module-title">Meet</div>
+                        </div>
+                        <p class="module-description">Video conferencing with screen sharing and recording</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Services -->
+            <div class="ai-services">
+                <h3>🚀 Advanced AI Services</h3>
+                <p style="opacity: 0.95;">6 Powerful AI Solutions Included</p>
+                <div class="ai-services-grid">
+                    <div class="ai-service-card">
+                        <h4>Conversational AI</h4>
+                        <p>Intelligent chatbots for customer support</p>
+                    </div>
+                    <div class="ai-service-card">
+                        <h4>Agentic Workflows</h4>
+                        <p>18+ AI specialist agents for automation</p>
+                    </div>
+                    <div class="ai-service-card">
+                        <h4>Knowledge & RAG</h4>
+                        <p>AI-powered document search and retrieval</p>
+                    </div>
+                    <div class="ai-service-card">
+                        <h4>AI Co-founder</h4>
+                        <p>Strategic business insights and planning</p>
+                    </div>
+                    <div class="ai-service-card">
+                        <h4>Website Builder</h4>
+                        <p>AI-powered no-code website creation</p>
+                    </div>
+                    <div class="ai-service-card">
+                        <h4>Powered Insights</h4>
+                        <p>Deep analytics and actionable intelligence</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Industry Modules Preview -->
+            <div class="module-category">
+                <h3 class="category-title">
+                    🏭 Industry-Specific Modules
+                    <span class="category-badge">19 Industries</span>
+                </h3>
+                <p style="color: var(--text-light); margin-bottom: 1.5rem;">Tailored solutions for your specific business needs</p>
+                <div class="modules-grid" style="font-size: 0.95rem;">
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">🍽️</div>
+                            <div class="module-title">Restaurant</div>
+                        </div>
+                        <p class="module-description">POS, table management, kitchen display systems</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">🛍️</div>
+                            <div class="module-title">Retail</div>
+                        </div>
+                        <p class="module-description">Point of sale, customer loyalty, multi-store management</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">🔧</div>
+                            <div class="module-title">Service Business</div>
+                        </div>
+                        <p class="module-description">Appointment scheduling, service tracking, billing</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">🛒</div>
+                            <div class="module-title">E-Commerce</div>
+                        </div>
+                        <p class="module-description">Online store, inventory sync, order management</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">🏭</div>
+                            <div class="module-title">Manufacturing</div>
+                        </div>
+                        <p class="module-description">Production planning, quality control, supplier management</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">💼</div>
+                            <div class="module-title">Professional Services</div>
+                        </div>
+                        <p class="module-description">Time tracking, project billing, resource planning</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">🏥</div>
+                            <div class="module-title">Healthcare</div>
+                        </div>
+                        <p class="module-description">Patient management, appointment scheduling, records</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">🎓</div>
+                            <div class="module-title">Education</div>
+                        </div>
+                        <p class="module-description">Student management, course delivery, grading</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">🏠</div>
+                            <div class="module-title">Real Estate</div>
+                        </div>
+                        <p class="module-description">Property listings, lead management, CRM</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Features -->
+            <div class="module-category">
+                <h3 class="category-title">
+                    ⚡ Advanced Features
+                    <span class="category-badge">19+</span>
+                </h3>
+                <div class="modules-grid" style="font-size: 0.95rem;">
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">☎️</div>
+                            <div class="module-title">AI Calling</div>
+                        </div>
+                        <p class="module-description">Voice agents for inbound/outbound phone automation</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">📰</div>
+                            <div class="module-title">Industry Intelligence</div>
+                        </div>
+                        <p class="module-description">AI-curated news and competitive insights</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">⚙️</div>
+                            <div class="module-title">Workflow Builder</div>
+                        </div>
+                        <p class="module-description">No-code automation and process management</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">📋</div>
+                            <div class="module-title">Contract Management</div>
+                        </div>
+                        <p class="module-description">E-signature, contract templates, and tracking</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">🚗</div>
+                            <div class="module-title">Field Service</div>
+                        </div>
+                        <p class="module-description">Mobile workforce management and tracking</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">✅</div>
+                            <div class="module-title">FSSAI Compliance</div>
+                        </div>
+                        <p class="module-description">Food safety compliance for restaurants and food business</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">🔗</div>
+                            <div class="module-title">ONDC Integration</div>
+                        </div>
+                        <p class="module-description">Open Network for Digital Commerce integration</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">👁️</div>
+                            <div class="module-title">Competitor Monitoring</div>
+                        </div>
+                        <p class="module-description">Track competitors and market intelligence</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                    <div class="module-card">
+                        <div class="module-header">
+                            <div class="module-icon">📄</div>
+                            <div class="module-title">PDF Tools</div>
+                        </div>
+                        <p class="module-description">PDF generation, editing, and management</p>
+                        <div class="status-badge">✓ 100% Ready</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="section-header">
+                <h2>Simple, Transparent Pricing</h2>
+                <p>Choose individual modules or industry packages. All plans include AI Studio for free.</p>
+            </div>
+
+            <div class="pricing-toggle" style="margin-bottom: 3rem; text-align: center;">
+                <span style="color: var(--text-light); font-weight: 600;">Individual Modules</span>
+            </div>
+
+            <!-- Individual Module Pricing -->
+            <div style="background: var(--light); padding: 2rem; border-radius: 1rem; overflow-x: auto; margin-bottom: 4rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Module</th>
+                            <th>Starter (5 users)</th>
+                            <th>Professional (Unlimited)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>CRM</td>
+                            <td>₹1,999/mo</td>
+                            <td>₹4,999/mo</td>
+                        </tr>
+                        <tr>
+                            <td>Finance & Accounting</td>
+                            <td>₹2,999/mo</td>
+                            <td>₹6,999/mo</td>
+                        </tr>
+                        <tr>
+                            <td>Sales</td>
+                            <td>₹1,499/mo</td>
+                            <td>₹3,999/mo</td>
+                        </tr>
+                        <tr>
+                            <td>Inventory</td>
+                            <td>₹1,999/mo</td>
+                            <td>₹4,999/mo</td>
+                        </tr>
+                        <tr>
+                            <td>HR & Payroll</td>
+                            <td>₹1,499/mo</td>
+                            <td>₹3,999/mo</td>
+                        </tr>
+                        <tr>
+                            <td>Marketing</td>
+                            <td>₹1,999/mo</td>
+                            <td>₹4,999/mo</td>
+                        </tr>
+                        <tr>
+                            <td>Projects</td>
+                            <td>₹1,499/mo</td>
+                            <td>₹3,999/mo</td>
+                        </tr>
+                        <tr>
+                            <td>Analytics</td>
+                            <td colspan="2" style="text-align: center;"><span class="success">Free with any module</span></td>
+                        </tr>
+                        <tr>
+                            <td>AI Studio</td>
+                            <td colspan="2" style="text-align: center;"><span class="success">Always Free</span></td>
+                        </tr>
+                        <tr>
+                            <td>Communication</td>
+                            <td>₹1,499/mo</td>
+                            <td>₹3,999/mo</td>
+                        </tr>
+                        <tr>
+                            <td>Workflow Automation</td>
+                            <td>₹1,999/mo</td>
+                            <td>₹4,999/mo</td>
+                        </tr>
+                        <tr>
+                            <td>Appointments</td>
+                            <td>₹1,499/mo</td>
+                            <td>₹3,999/mo</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 4rem;">
+                <p style="color: var(--text-light); font-size: 0.95rem;">💡 <strong>Tip:</strong> Industry packages offer 20-30% savings over purchasing individual modules</p>
+            </div>
+
+            <!-- Industry Packages -->
+            <div class="industry-packages">
+                <h2 style="text-align: center; margin-bottom: 3rem; font-size: 2rem;">Industry Packages</h2>
+                <div class="packages-grid">
+                    <!-- Restaurant -->
+                    <div class="package-card">
+                        <h3 class="package-industry">🍽️ Restaurant</h3>
+                        <div class="package-price-old">₹8,496/month</div>
+                        <div class="package-pricing">
+                            <span class="package-price">₹6,627</span>
+                            <span class="package-savings">Save 22%</span>
+                        </div>
+                        <div class="package-includes">
+                            <h5>Includes</h5>
+                            <div class="package-modules">
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    CRM
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Finance & Accounting
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Inventory
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Sales
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    AI Studio (Free)
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary package-cta">Start Free Trial</button>
+                    </div>
+
+                    <!-- Retail -->
+                    <div class="package-card">
+                        <h3 class="package-industry">🛍️ Retail</h3>
+                        <div class="package-price-old">₹10,495/month</div>
+                        <div class="package-pricing">
+                            <span class="package-price">₹8,081</span>
+                            <span class="package-savings">Save 23%</span>
+                        </div>
+                        <div class="package-includes">
+                            <h5>Includes</h5>
+                            <div class="package-modules">
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    CRM
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Finance & Accounting
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Inventory
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Sales
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Marketing
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    AI Studio (Free)
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary package-cta">Start Free Trial</button>
+                    </div>
+
+                    <!-- Service Business -->
+                    <div class="package-card">
+                        <h3 class="package-industry">🔧 Service Business</h3>
+                        <div class="package-price-old">₹9,995/month</div>
+                        <div class="package-pricing">
+                            <span class="package-price">₹7,596</span>
+                            <span class="package-savings">Save 24%</span>
+                        </div>
+                        <div class="package-includes">
+                            <h5>Includes</h5>
+                            <div class="package-modules">
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    CRM
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Finance & Accounting
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Projects
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Marketing
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    HR & Payroll
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    AI Studio (Free)
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary package-cta">Start Free Trial</button>
+                    </div>
+
+                    <!-- E-Commerce -->
+                    <div class="package-card">
+                        <h3 class="package-industry">🛒 E-Commerce</h3>
+                        <div class="package-price-old">₹10,495/month</div>
+                        <div class="package-pricing">
+                            <span class="package-price">₹8,396</span>
+                            <span class="package-savings">Save 20%</span>
+                        </div>
+                        <div class="package-includes">
+                            <h5>Includes</h5>
+                            <div class="package-modules">
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    CRM
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Finance & Accounting
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Inventory
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Sales
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Marketing
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Analytics
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    AI Studio (Free)
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary package-cta">Start Free Trial</button>
+                    </div>
+
+                    <!-- Professional Services -->
+                    <div class="package-card">
+                        <h3 class="package-industry">💼 Professional Services</h3>
+                        <div class="package-price-old">₹9,495/month</div>
+                        <div class="package-pricing">
+                            <span class="package-price">₹7,501</span>
+                            <span class="package-savings">Save 21%</span>
+                        </div>
+                        <div class="package-includes">
+                            <h5>Includes</h5>
+                            <div class="package-modules">
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    CRM
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Finance & Accounting
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Projects
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    HR & Payroll
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    Communication
+                                </div>
+                                <div class="package-module">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                    AI Studio (Free)
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary package-cta">Start Free Trial</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enterprise Section -->
+            <div class="enterprise">
+                <h4>🚀 Enterprise Solutions</h4>
+                <p>Need custom modules, white-label options, or dedicated support? Let's build a solution tailored to your business.</p>
+                <button class="btn btn-secondary">Contact Sales Team</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section" style="margin: 4rem 2rem; max-width: 1200px; margin-left: auto; margin-right: auto;">
+        <h2>Ready to Transform Your Business?</h2>
+        <p>Join thousands of Indian businesses already using PayAid V3</p>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <button class="btn btn-secondary" style="border-color: white; color: white;">Start Free Trial (14 days)</button>
+            <button class="btn btn-primary" style="background: white; color: var(--primary);">Schedule Demo</button>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2026 PayAid Payments Private Limited. All rights reserved.</p>
+        <p>Designed for Indian businesses. Built with ❤️ in Hyderabad.</p>
+    </footer>
+
+    <script>
+        // Smooth scroll for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Pricing tier toggle
+        const starterBtn = document.querySelector('.toggle-btn.active');
+        if (starterBtn) {
+            starterBtn.addEventListener('click', function() {
+                this.classList.add('active');
+            });
+        }
+    </script>
+</body>
+</html>

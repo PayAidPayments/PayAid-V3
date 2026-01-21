@@ -321,7 +321,7 @@ export default function NewAICampaignPage() {
         <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
             <CardTitle className="dark:text-gray-100">Step 2: Product Details</CardTitle>
-            <CardDescription className="dark:text-gray-400">Enter information about the product you're promoting</CardDescription>
+            <CardDescription className="dark:text-gray-400">Enter information about the product you&apos;re promoting</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>

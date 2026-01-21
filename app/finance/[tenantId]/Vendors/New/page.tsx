@@ -88,7 +88,7 @@ export default function FinanceVendorsNewPage() {
       <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
           <CardTitle className="dark:text-gray-100">Vendor Information</CardTitle>
-          <CardDescription className="dark:text-gray-400">Enter the vendor's basic information</CardDescription>
+          <CardDescription className="dark:text-gray-400">Enter the vendor&apos;s basic information</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
