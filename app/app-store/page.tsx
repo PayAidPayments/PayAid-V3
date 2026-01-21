@@ -30,36 +30,54 @@ async function getModules() {
 }
 
 async function getBundles() {
-  // Define bundles programmatically
+  // Define bundles programmatically based on current pricing
+  // Uniform pricing: ₹1,999 Starter, ₹3,999 Professional (annual billing)
+  // Note: Analytics and AI Studio are FREE
+  
+  // Starter Bundle: CRM + Finance (2 paid modules)
+  const starterModules = ['crm', 'finance']
+  const starterIndividualPrice = 2 * 1999 // 2 modules × ₹1,999
+  const starterBundlePrice = Math.round(starterIndividualPrice * 0.8) // 20% discount
+  
+  // Professional Bundle: CRM + Finance + HR + Communication + Inventory (5 paid modules)
+  const professionalModules = ['crm', 'finance', 'hr', 'communication', 'inventory']
+  const professionalIndividualPrice = 5 * 3999 // 5 modules × ₹3,999
+  const professionalBundlePrice = Math.round(professionalIndividualPrice * 0.8) // 20% discount
+  
+  // Complete Suite: All core modules (8 paid modules)
+  const completeModules = ['crm', 'finance', 'hr', 'communication', 'inventory', 'sales', 'projects', 'productivity']
+  const completeIndividualPrice = 8 * 3999 // 8 modules × ₹3,999
+  const completeBundlePrice = Math.round(completeIndividualPrice * 0.8) // 20% discount
+  
   const bundles = [
     {
       id: 'starter',
       name: 'Starter Bundle',
       description: 'Perfect for small businesses getting started',
-      modules: ['crm', 'invoicing'],
-      individualPrice: 0,
-      bundlePrice: 0,
-      savings: 0,
+      modules: starterModules,
+      individualPrice: starterIndividualPrice,
+      bundlePrice: starterBundlePrice,
+      savings: starterIndividualPrice - starterBundlePrice,
       mostPopular: false,
     },
     {
       id: 'professional',
       name: 'Professional Bundle',
       description: 'Complete solution for growing businesses',
-      modules: ['crm', 'invoicing', 'accounting', 'hr', 'whatsapp', 'analytics'],
-      individualPrice: 0,
-      bundlePrice: 0,
-      savings: 0,
+      modules: professionalModules,
+      individualPrice: professionalIndividualPrice,
+      bundlePrice: professionalBundlePrice,
+      savings: professionalIndividualPrice - professionalBundlePrice,
       mostPopular: true,
     },
     {
       id: 'complete',
       name: 'Complete Suite',
       description: 'Everything you need for enterprise operations',
-      modules: ['crm', 'invoicing', 'accounting', 'hr', 'whatsapp', 'analytics'],
-      individualPrice: 0,
-      bundlePrice: 0,
-      savings: 0,
+      modules: completeModules,
+      individualPrice: completeIndividualPrice,
+      bundlePrice: completeBundlePrice,
+      savings: completeIndividualPrice - completeBundlePrice,
       mostPopular: false,
     },
   ]

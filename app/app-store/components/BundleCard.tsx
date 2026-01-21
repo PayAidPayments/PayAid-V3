@@ -19,9 +19,15 @@ interface BundleCardProps {
 
 const moduleIcons: Record<string, string> = {
   crm: '👥',
+  finance: '💰',
   invoicing: '📄',
   accounting: '💰',
   hr: '👔',
+  communication: '💬',
+  inventory: '📦',
+  sales: '🛒',
+  projects: '📋',
+  productivity: '📄',
   whatsapp: '💬',
   analytics: '📊',
 }
@@ -77,15 +83,18 @@ export default function BundleCard({ bundle }: BundleCardProps) {
       <div className="mb-4">
         {bundle.individualPrice > 0 && (
           <div className="text-sm text-gray-500 mb-1">
-            Individual: <span className="line-through">₹{bundle.individualPrice.toLocaleString()}/month</span>
+            Individual: <span className="line-through">₹{bundle.individualPrice.toLocaleString()}/mo</span>
           </div>
         )}
         <div className="text-3xl font-bold text-gray-900">
           ₹{bundle.bundlePrice.toLocaleString()}
           <span className="text-lg font-normal text-gray-500">/month</span>
         </div>
+        <div className="text-xs text-gray-500 mt-1">
+          Billed annually (₹{Math.round(bundle.bundlePrice * 12 * 0.8).toLocaleString()}/year)
+        </div>
         {bundle.savings > 0 && (
-          <div className="text-red-600 font-semibold mt-1">
+          <div className="text-green-600 font-semibold mt-1">
             Save ₹{bundle.savings.toLocaleString()}/month
           </div>
         )}

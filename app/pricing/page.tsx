@@ -4,42 +4,37 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 export default function PricingLandingPage() {
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
-  const [selectedIndustry, setSelectedIndustry] = useState<string>('retail')
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
-  // Industry-specific pricing adjustments
-  const industryPricing: Record<string, { startup: number; professional: number; description: string }> = {
-    restaurant: { startup: 9999, professional: 18999, description: 'POS integration, inventory sync, staff scheduling, table management' },
-    retail: { startup: 7999, professional: 15999, description: 'Complete retail management with inventory, POS, and customer management' },
-    service: { startup: 5999, professional: 12999, description: 'CRM + invoicing. Simple setup, fewer integrations needed' },
-    healthcare: { startup: 12999, professional: 24999, description: 'Compliance-focused with patient management and secure records' },
-    education: { startup: 4999, professional: 9999, description: 'Volume-based pricing for schools and educational institutions' },
-    ecommerce: { startup: 8999, professional: 17999, description: 'E-commerce integration with order management and fulfillment' },
+  // Current pricing model: Pay-per-module with annual billing
+  // Uniform pricing: ₹1,999 Starter, ₹3,999 Professional per module/month
+  // Annual billing only with 20% discount
+  
+  const modulePricing = {
+    starter: 1999,
+    professional: 3999,
   }
 
-  const basePricing = {
-    startup: 7999,
-    professional: 15999,
+  // Calculate annual prices (20% discount)
+  const annualPricing = {
+    starter: Math.round(1999 * 12 * 0.8), // ₹19,190/year
+    professional: Math.round(3999 * 12 * 0.8), // ₹38,390/year
   }
 
-  const currentPricing = industryPricing[selectedIndustry] || { ...basePricing, description: '' }
-
-  const getAnnualPrice = (monthly: number) => {
-    return Math.round(monthly * 12 * 0.84) // 16% discount
+  // Example: Starter bundle (CRM + Finance)
+  const starterBundle = {
+    modules: 2,
+    monthlyPrice: 2 * modulePricing.starter, // ₹3,998/month
+    annualPrice: Math.round(2 * modulePricing.starter * 12 * 0.8), // ₹38,380/year
+    monthlyEquivalent: Math.round(2 * modulePricing.starter * 0.8), // ₹3,198/month equivalent
   }
 
-  const pricing = {
-    startup: {
-      monthly: currentPricing.startup,
-      annual: getAnnualPrice(currentPricing.startup),
-      savings: currentPricing.startup - Math.round(getAnnualPrice(currentPricing.startup) / 12),
-    },
-    professional: {
-      monthly: currentPricing.professional,
-      annual: getAnnualPrice(currentPricing.professional),
-      savings: currentPricing.professional - Math.round(getAnnualPrice(currentPricing.professional) / 12),
-    },
+  // Example: Professional bundle (5 modules)
+  const professionalBundle = {
+    modules: 5,
+    monthlyPrice: 5 * modulePricing.professional, // ₹19,995/month
+    annualPrice: Math.round(5 * modulePricing.professional * 12 * 0.8), // ₹95,976/year
+    monthlyEquivalent: Math.round(5 * modulePricing.professional * 0.8), // ₹15,996/month equivalent
   }
 
   useEffect(() => {
@@ -128,11 +123,11 @@ export default function PricingLandingPage() {
     },
     {
       q: "What happens if I add more team members?",
-      a: "Startup tier: Limited to 3. Upgrade to Professional for unlimited. Professional: Unlimited at no extra cost (same ₹15,999 regardless of team size).",
+      a: "Starter tier: Up to 5 users included. Professional tier: Unlimited users at no extra cost. You only pay per module, not per user.",
     },
     {
       q: "How much can I save with annual billing?",
-      a: "16% off = one month free. Startup: ₹79,999/year (save ₹1,333). Professional: ₹159,999/year (save ₹2,666).",
+      a: "20% discount on all modules with annual billing. For example, a module priced at ₹1,999/month costs ₹19,190/year (save ₹3,998/year). Professional tier modules at ₹3,999/month cost ₹38,390/year (save ₹7,998/year).",
     },
     {
       q: "Do you have a money-back guarantee?",
@@ -1184,22 +1179,18 @@ export default function PricingLandingPage() {
       {/* Hero Section */}
       <section className="pricing-hero">
         <h1>
-          Pricing That <span className="hero-highlight">Scales With You</span>
+          Transparent Pricing That <span className="hero-highlight">Scales With You</span>
         </h1>
         <p>
-          No surprises. No hidden fees. No lock-in contracts. Get all the marketing tools you need to manage and grow your business in one platform.
+          Pay only for what you need. Start with one module at ₹1,999/month (Starter) or ₹3,999/month (Professional). Add more modules as you grow. Annual billing saves you 20%.
         </p>
 
-        {/* Billing Toggle */}
+        {/* Billing Info */}
         <div className="billing-toggle">
-          <span className={billingCycle === 'monthly' ? 'active' : ''}>Monthly</span>
-          <div
-            className={`toggle-switch ${billingCycle === 'annual' ? 'active' : ''}`}
-            onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'annual' : 'monthly')}
-          />
-          <span className={billingCycle === 'annual' ? 'active' : ''}>
-            Annual <span style={{ color: 'var(--primary-gold)', fontSize: '0.85rem' }}>(Save 16%)</span>
-          </span>
+          <div className="text-center">
+            <span className="text-lg font-semibold text-gray-700">Annual Billing Only</span>
+            <p className="text-sm text-gray-500 mt-2">Save 20% with annual billing • All plans billed annually</p>
+          </div>
         </div>
       </section>
 
@@ -1225,26 +1216,15 @@ export default function PricingLandingPage() {
         </div>
       </section>
 
-      {/* Industry Selector */}
+      {/* Module Count */}
       <section className="industry-selector">
-        <h3>Select Your Industry</h3>
-        <p>Pricing adjusts based on industry complexity. Switch industries anytime with the same account.</p>
-        <div className="industry-tabs">
-          {Object.keys(industryPricing).map((industry) => (
-            <button
-              key={industry}
-              className={`industry-tab ${selectedIndustry === industry ? 'active' : ''}`}
-              onClick={() => setSelectedIndustry(industry)}
-            >
-              {industry.charAt(0).toUpperCase() + industry.slice(1)}
-            </button>
-          ))}
+        <h3>29+ Modules Available</h3>
+        <p>Choose from CRM, Finance, HR, Inventory, Sales, Projects, Communication, and more. Analytics, AI Studio, and Marketing are FREE with any plan.</p>
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+          <Link href="/app-store" className="cta-header" style={{ display: 'inline-block' }}>
+            Browse All Modules
+          </Link>
         </div>
-        {currentPricing.description && (
-          <p style={{ textAlign: 'center', color: 'var(--text-light)', marginTop: '1rem', fontSize: '0.9rem', fontStyle: 'italic' }}>
-            {currentPricing.description}
-          </p>
-        )}
       </section>
 
       {/* Core Features Section */}
@@ -1333,23 +1313,27 @@ export default function PricingLandingPage() {
               <h3>Startup</h3>
               <p className="subtitle">Everything to get started</p>
               <div className="price">
+                <div className="text-sm text-gray-500 mb-1 line-through">
+                  ₹{starterBundle.monthlyPrice.toLocaleString()}/month
+                </div>
                 <div className="price-amount">
-                  ₹{billingCycle === 'monthly' ? pricing.startup.monthly.toLocaleString() : Math.round(pricing.startup.annual / 12).toLocaleString()}
+                  ₹{starterBundle.monthlyEquivalent.toLocaleString()}
                 </div>
                 <div className="price-period">
-                  {billingCycle === 'monthly' ? '/month' : '/month (billed annually)'}
+                  /month (billed annually)
                 </div>
-                {billingCycle === 'annual' && (
-                  <div className="price-savings">Save ₹{pricing.startup.savings.toLocaleString()}/month</div>
-                )}
+                <div className="text-xs text-gray-500 mt-1">
+                  ₹{starterBundle.annualPrice.toLocaleString()}/year
+                </div>
+                <div className="price-savings">Save 20% with annual billing</div>
               </div>
               <ul className="features">
-                <li>3 team members</li>
-                <li>500 contacts</li>
-                <li>5 core modules (CRM, Basic Accounting, Communication, Inventory, Reports)</li>
-                <li>Basic AI co-founder (500 API calls/month)</li>
-                <li>Email + WhatsApp support (24-48 hours)</li>
-                <li>Industry templates (1 industry)</li>
+                <li>Up to 5 users</li>
+                <li>2 modules included (CRM + Finance)</li>
+                <li>Analytics & AI Studio (FREE)</li>
+                <li>Marketing module (FREE)</li>
+                <li>Email support (Mon-Sat, 09:30 AM - 06:30 PM IST)</li>
+                <li>Add more modules: ₹1,999/module/month</li>
               </ul>
               <Link href="/register" className="cta-button cta-secondary">Start Free Trial</Link>
             </div>
@@ -1359,25 +1343,28 @@ export default function PricingLandingPage() {
               <h3>Professional</h3>
               <p className="subtitle">Everything to scale</p>
               <div className="price">
+                <div className="text-sm text-gray-500 mb-1 line-through">
+                  ₹{professionalBundle.monthlyPrice.toLocaleString()}/month
+                </div>
                 <div className="price-amount">
-                  ₹{billingCycle === 'monthly' ? pricing.professional.monthly.toLocaleString() : Math.round(pricing.professional.annual / 12).toLocaleString()}
+                  ₹{professionalBundle.monthlyEquivalent.toLocaleString()}
                 </div>
                 <div className="price-period">
-                  {billingCycle === 'monthly' ? '/month' : '/month (billed annually)'}
+                  /month (billed annually)
                 </div>
-                {billingCycle === 'annual' && (
-                  <div className="price-savings">Save ₹{pricing.professional.savings.toLocaleString()}/month</div>
-                )}
+                <div className="text-xs text-gray-500 mt-1">
+                  ₹{professionalBundle.annualPrice.toLocaleString()}/year
+                </div>
+                <div className="price-savings">Save 20% with annual billing</div>
               </div>
               <ul className="features">
-                <li>Unlimited team members</li>
-                <li>Unlimited contacts</li>
-                <li>All 9 modules (everything)</li>
-                <li>Advanced AI co-founder (unlimited API calls)</li>
-                <li>Priority support (4-hour response)</li>
-                <li>All industry templates</li>
-                <li>Quarterly strategy calls</li>
-                <li>Unlimited integrations</li>
+                <li>Unlimited users</li>
+                <li>5 modules included (CRM, Finance, HR, Communication, Inventory)</li>
+                <li>Analytics & AI Studio (FREE)</li>
+                <li>Marketing module (FREE)</li>
+                <li>Email support (Mon-Sat, 09:30 AM - 06:30 PM IST)</li>
+                <li>Add more modules: ₹3,999/module/month</li>
+                <li>29+ modules available</li>
               </ul>
               <Link href="/register" className="cta-button cta-primary">Start Free Trial</Link>
             </div>
