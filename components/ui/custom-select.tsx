@@ -115,6 +115,7 @@ interface CustomSelectContentProps extends React.HTMLAttributes<HTMLDivElement> 
 const CustomSelectContent = React.forwardRef<HTMLDivElement, CustomSelectContentProps>(
   ({ className, children, ...props }, ref) => {
     const context = React.useContext(CustomSelectContext)
+    const { setItems } = context
 
     // Extract items from children and store them
     React.useEffect(() => {
@@ -128,8 +129,8 @@ const CustomSelectContent = React.forwardRef<HTMLDivElement, CustomSelectContent
           }
         }
       })
-      context.setItems(itemsMap)
-    }, [children, context])
+      setItems(itemsMap)
+    }, [children, setItems])
 
     if (!context.open) return null
 
