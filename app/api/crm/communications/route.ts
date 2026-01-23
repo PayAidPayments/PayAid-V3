@@ -6,7 +6,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
-import { withErrorHandling } from '@/lib/api/route-wrapper'
 import { ApiResponse, Communication } from '@/types/base-modules'
 import { z } from 'zod'
 
@@ -32,159 +31,187 @@ const CreateCommunicationSchema = z.object({
  * Get communications (unified inbox)
  * GET /api/crm/communications?organizationId=xxx&contactId=xxx&channel=email&page=1&pageSize=20
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const searchParams = request.nextUrl.searchParams
-  const organizationId = searchParams.get('organizationId')
-  const contactId = searchParams.get('contactId')
-  const channel = searchParams.get('channel') as Communication['channel'] | null
-  const page = parseInt(searchParams.get('page') || '1', 10)
-  const pageSize = parseInt(searchParams.get('pageSize') || '20', 10)
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const organizationId = searchParams.get('organizationId')
+    const contactId = searchParams.get('contactId')
+    const channel = searchParams.get('channel') as Communication['channel'] | null
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const pageSize = parseInt(searchParams.get('pageSize') || '20', 10)
 
-  if (!organizationId) {
-    return NextResponse.json(
-      {
-        success: false,
-        statusCode: 400,
-        error: {
-          code: 'MISSING_ORGANIZATION_ID',
-          message: 'organizationId is required',
-        },
-      },
-      { status: 400 }
-    )
-  }
-
-  const where: Record<string, unknown> = {
-    tenantId: organizationId,
-  }
-
-  if (contactId) {
-        where.OR = [
-          { senderContactId: contactId },
-          { recipientContactId: contactId },
-        ]
-  }
-
-  if (channel) {
-    where.channel = channel
-  }
-
-  // Get communications from interactions table (if it exists) or create a unified view
-  // For now, we'll use a simplified approach
-  const [communications, total] = await Promise.all([
-    prisma.interaction.findMany({
-      where,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        contact: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
+    if (!organizationId) {
+      return NextResponse.json(
+        {
+          success: false,
+          statusCode: 400,
+          error: {
+            code: 'MISSING_ORGANIZATION_ID',
+            message: 'organizationId is required',
           },
         },
-      },
-    }).catch(() => []),
-    prisma.interaction.count({ where }).catch(() => 0),
-  ])
+        { status: 400 }
+      )
+    }
 
-  const formattedCommunications: Communication[] = communications.map((interaction) => ({
-    id: interaction.id,
-    organizationId: interaction.tenantId,
-    channel: (interaction.channel || 'email') as Communication['channel'],
-    direction: (interaction.direction || 'outbound') as Communication['direction'],
-    senderContactId: interaction.contactId || '',
-    senderName: interaction.contact?.firstName
-      ? `${interaction.contact.firstName} ${interaction.contact.lastName}`
-      : interaction.contact?.email || 'Unknown',
-    senderAddress: interaction.contact?.email || interaction.contact?.phone || '',
-    recipientContactId: undefined,
-    subject: interaction.subject || undefined,
-    message: interaction.notes || interaction.description || '',
-    attachments: [],
-    status: (interaction.status || 'sent') as Communication['status'],
-    createdAt: interaction.createdAt,
-  }))
+    const where: Record<string, unknown> = {}
 
-  const response: ApiResponse<{
-    communications: Communication[]
-    total: number
-    page: number
-    pageSize: number
-  }> = {
-    success: true,
-    statusCode: 200,
-    data: {
-      communications: formattedCommunications,
-      total,
-      page,
-      pageSize,
-    },
-    meta: {
-      pagination: {
+    if (contactId) {
+      where.contactId = contactId
+    }
+
+    // NOTE: channel param currently isn't applied because interaction.type is used as the source.
+    // Keeping it parsed for forward compatibility.
+    void channel
+
+    // Get communications from interactions table
+    const [communications, total] = await Promise.all([
+      prisma.interaction
+        .findMany({
+          where,
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            contact: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                tenantId: true,
+              },
+            },
+          },
+        })
+        .catch(() => []),
+      prisma.interaction.count({ where }).catch(() => 0),
+    ])
+
+    // Filter by organizationId using contact's tenantId
+    const filteredCommunications = communications.filter(
+      (interaction) => interaction.contact?.tenantId === organizationId
+    )
+
+    const formattedCommunications: Communication[] = filteredCommunications.map((interaction) => ({
+      id: interaction.id,
+      organizationId: interaction.contact?.tenantId || organizationId,
+      channel: (interaction.type === 'email'
+        ? 'email'
+        : interaction.type === 'whatsapp'
+          ? 'whatsapp'
+          : interaction.type === 'sms'
+            ? 'sms'
+            : 'in_app') as Communication['channel'],
+      direction: 'outbound' as Communication['direction'],
+      senderContactId: interaction.contactId || '',
+      senderName: interaction.contact?.name || 'Unknown',
+      senderAddress: interaction.contact?.email || interaction.contact?.phone || '',
+      recipientContactId: undefined,
+      subject: interaction.subject || undefined,
+      message: interaction.notes || '',
+      attachments: [],
+      status: 'sent' as Communication['status'],
+      createdAt: interaction.createdAt,
+    }))
+
+    const response: ApiResponse<{
+      communications: Communication[]
+      total: number
+      page: number
+      pageSize: number
+    }> = {
+      success: true,
+      statusCode: 200,
+      data: {
+        communications: formattedCommunications,
+        total,
         page,
         pageSize,
-        total,
       },
-      timestamp: new Date().toISOString(),
-    },
-  }
+      meta: {
+        pagination: {
+          page,
+          pageSize,
+          total,
+        },
+        timestamp: new Date().toISOString(),
+      },
+    }
 
-  return NextResponse.json(response)
-})
+    return NextResponse.json(response)
+  } catch (error) {
+    console.error('Error in CRM communications GET route:', error)
+    return NextResponse.json(
+      { success: false, statusCode: 500, error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },
+      { status: 500 }
+    )
+  }
+}
 
 /**
  * Log a new communication
  * POST /api/crm/communications
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const body = await request.json()
-  const validatedData = CreateCommunicationSchema.parse(body)
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const validatedData = CreateCommunicationSchema.parse(body)
 
-  // Create interaction record
-  const interaction = await prisma.interaction.create({
-    data: {
-      tenantId: validatedData.organizationId,
-      contactId: validatedData.senderContactId,
-      type: validatedData.channel,
+    // Create interaction record
+    const interaction = await prisma.interaction.create({
+      data: {
+        contactId: validatedData.senderContactId,
+        type: validatedData.channel,
+        subject: validatedData.subject || null,
+        notes: validatedData.message,
+      },
+    })
+
+    // Get contact to get tenantId
+    const contact = await prisma.contact.findUnique({
+      where: { id: validatedData.senderContactId },
+      select: { tenantId: true },
+    })
+
+    const communication: Communication = {
+      id: interaction.id,
+      organizationId: contact?.tenantId || validatedData.organizationId,
       channel: validatedData.channel,
       direction: validatedData.direction,
+      senderContactId: validatedData.senderContactId,
+      senderName: validatedData.senderName,
+      senderAddress: validatedData.senderAddress,
+      recipientContactId: validatedData.recipientContactId,
       subject: validatedData.subject,
-      notes: validatedData.message,
-      description: validatedData.message,
+      message: validatedData.message,
+      attachments: [],
       status: 'sent',
-    },
-  })
+      linkedTo: validatedData.linkedTo,
+      createdAt: interaction.createdAt,
+    }
 
-  const communication: Communication = {
-    id: interaction.id,
-    organizationId: interaction.tenantId,
-    channel: validatedData.channel,
-    direction: validatedData.direction,
-    senderContactId: validatedData.senderContactId,
-    senderName: validatedData.senderName,
-    senderAddress: validatedData.senderAddress,
-    recipientContactId: validatedData.recipientContactId,
-    subject: validatedData.subject,
-    message: validatedData.message,
-    attachments: [],
-    status: 'sent',
-    linkedTo: validatedData.linkedTo,
-    createdAt: interaction.createdAt,
+    const response: ApiResponse<Communication> = {
+      success: true,
+      statusCode: 201,
+      data: communication,
+      meta: {
+        timestamp: new Date().toISOString(),
+      },
+    }
+
+    return NextResponse.json(response, { status: 201 })
+  } catch (error) {
+    console.error('Error in CRM communications POST route:', error)
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, statusCode: 400, error: { code: 'VALIDATION_ERROR', message: 'Invalid input data' } },
+        { status: 400 }
+      )
+    }
+    return NextResponse.json(
+      { success: false, statusCode: 500, error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },
+      { status: 500 }
+    )
   }
-
-  const response: ApiResponse<Communication> = {
-    success: true,
-    statusCode: 201,
-    data: communication,
-    meta: {
-      timestamp: new Date().toISOString(),
-    },
-  }
-
-  return NextResponse.json(response, { status: 201 })
-})
+}
