@@ -5,7 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { withErrorHandling } from '@/lib/api/route-wrapper'
-import { ApiResponse, DashboardWidget } from '@/types/base-modules'
+import type { ApiResponse } from '@/types/base-modules'
+import type { DashboardWidget } from '@/modules/shared/analytics/types'
 
 /**
  * Get dashboard
@@ -13,9 +14,13 @@ import { ApiResponse, DashboardWidget } from '@/types/base-modules'
  */
 export const GET = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context?: { params?: Promise<Record<string, string>> }
 ) => {
-  const { id } = await params
+  const params = await (context?.params || Promise.resolve({}))
+  const id = (params as Record<string, string>).id
+  if (!id) {
+    return NextResponse.json({ success: false, statusCode: 400, error: { code: 'MISSING_ID', message: 'ID is required' } }, { status: 400 })
+  }
   const searchParams = request.nextUrl.searchParams
   const organizationId = searchParams.get('organizationId')
 
