@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -100,6 +100,11 @@ export default function CRMDashboardPage() {
   const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
   // Profile menu and news handled by ModuleTopBar in layout
   const [isDark, setIsDark] = useState(false)
+  
+  // Refs to prevent duplicate API calls
+  const fetchingStatsRef = useRef(false)
+  const fetchingActivityRef = useRef(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // Detect dark mode
   useEffect(() => {
@@ -151,29 +156,105 @@ export default function CRMDashboardPage() {
     }
   }, [viewParam, user?.role])
 
+  // Main data loading effect - only for stats and view-specific data
   useEffect(() => {
+    // Cancel any in-flight requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController()
+    const signal = abortControllerRef.current.signal
+    
     // Sequence API calls to avoid connection pool exhaustion
     const loadData = async () => {
+      // Prevent duplicate calls
+      if (fetchingStatsRef.current) {
+        return
+      }
+      
       try {
+        fetchingStatsRef.current = true
+        
         // Load stats first (most important)
-        await fetchDashboardStats()
+        await fetchDashboardStats(signal)
         
         // Small delay to allow connection pool to recover
-        await new Promise(resolve => setTimeout(resolve, 200))
+        await new Promise(resolve => setTimeout(resolve, 300))
         
-        // Load view-specific data sequentially
-        if (currentView === 'tasks') {
-          await fetchTasksViewData()
-        } else if (currentView === 'activity') {
-          await fetchActivityFeed()
+        // Load view-specific data sequentially (only if not aborted)
+        if (!signal.aborted) {
+          if (currentView === 'tasks') {
+            await fetchTasksViewData()
+          } else if (currentView === 'activity') {
+            await fetchActivityFeed(signal)
+          }
         }
-      } catch (error) {
+      } catch (error: any) {
+        // Ignore abort errors
+        if (error?.name === 'AbortError') {
+          return
+        }
         console.error('Error loading dashboard data:', error)
+      } finally {
+        fetchingStatsRef.current = false
       }
     }
     
     loadData()
-  }, [tenantId, currentView, timePeriod, activityFilter])
+    
+    // Cleanup: abort on unmount or dependency change
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      fetchingStatsRef.current = false
+    }
+  }, [tenantId, currentView, timePeriod]) // Removed activityFilter - it has its own effect
+
+  // Separate effect for activity filter changes (only affects activity feed)
+  useEffect(() => {
+    // Only fetch if we're in activity view
+    if (currentView !== 'activity') {
+      return
+    }
+    
+    // Cancel any in-flight activity requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    
+    abortControllerRef.current = new AbortController()
+    const signal = abortControllerRef.current.signal
+    
+    const loadActivity = async () => {
+      if (fetchingActivityRef.current) {
+        return
+      }
+      
+      try {
+        fetchingActivityRef.current = true
+        await fetchActivityFeed(signal)
+      } catch (error: any) {
+        if (error?.name === 'AbortError') {
+          return
+        }
+        console.error('Error loading activity feed:', error)
+      } finally {
+        fetchingActivityRef.current = false
+      }
+    }
+    
+    loadActivity()
+    
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      fetchingActivityRef.current = false
+    }
+  }, [activityFilter, currentView])
 
   const fetchTasksViewData = async () => {
     try {
@@ -197,7 +278,7 @@ export default function CRMDashboardPage() {
     }
   }
 
-  const fetchActivityFeed = async () => {
+  const fetchActivityFeed = async (signal?: AbortSignal) => {
     try {
       const token = useAuthStore.getState().token
       if (!token) return
@@ -212,20 +293,25 @@ export default function CRMDashboardPage() {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
+        signal,
       })
 
       if (response.ok) {
         const data = await response.json()
         setActivityFeedData(data.activities || [])
       }
-    } catch (err) {
+    } catch (err: any) {
+      // Ignore abort errors
+      if (err?.name === 'AbortError') {
+        return
+      }
       console.error('Error fetching activity feed:', err)
       setActivityFeedData([])
     }
   }
 
 
-  const fetchDashboardStats = async (retryCount = 0): Promise<void> => {
+  const fetchDashboardStats = async (signal?: AbortSignal, retryCount = 0): Promise<void> => {
     const MAX_RETRIES = 2
     const RETRY_DELAY = 3000 // 3 seconds
     
@@ -244,6 +330,7 @@ export default function CRMDashboardPage() {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
+        signal, // Add abort signal
       })
 
       if (response.ok) {
@@ -255,11 +342,22 @@ export default function CRMDashboardPage() {
         const errorData = await response.json().catch(() => ({}))
         const retryAfter = errorData.retryAfter || 5
         
+        // Check if request was aborted before retrying
+        if (signal?.aborted) {
+          return
+        }
+        
         if (retryCount < MAX_RETRIES) {
           setError(`Database busy. Retrying in ${retryAfter} seconds... (${retryCount + 1}/${MAX_RETRIES})`)
           // Retry after delay
           await new Promise(resolve => setTimeout(resolve, retryAfter * 1000))
-          return fetchDashboardStats(retryCount + 1)
+          
+          // Check again if aborted before retrying
+          if (signal?.aborted) {
+            return
+          }
+          
+          return fetchDashboardStats(signal, retryCount + 1)
         } else {
           setError(errorData.message || 'Database temporarily unavailable. Please refresh the page in a moment.')
           setLoading(false)
@@ -285,12 +383,28 @@ export default function CRMDashboardPage() {
         throw new Error(errorData.message || 'Failed to fetch dashboard stats')
       }
     } catch (error: any) {
+      // Ignore abort errors
+      if (error?.name === 'AbortError' || signal?.aborted) {
+        return
+      }
+      
       console.error('Failed to fetch dashboard stats:', error)
+      
+      // Check if aborted before retrying
+      if (signal?.aborted) {
+        return
+      }
       
       // Retry on network errors
       if (retryCount < MAX_RETRIES && error.message?.includes('fetch')) {
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
-        return fetchDashboardStats(retryCount + 1)
+        
+        // Check again if aborted before retrying
+        if (signal?.aborted) {
+          return
+        }
+        
+        return fetchDashboardStats(signal, retryCount + 1)
       }
       
       setError(error.message || 'An unexpected error occurred while fetching data.')
