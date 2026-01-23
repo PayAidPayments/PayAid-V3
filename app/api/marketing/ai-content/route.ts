@@ -6,9 +6,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
-import { withErrorHandling } from '@/lib/api/route-wrapper'
-import { ApiResponse, AIContentRequest } from '@/types/base-modules'
-import { GenerateAIContentSchema } from '@/modules/shared/marketing/types'
+import { ApiResponse } from '@/types/base-modules'
+import { GenerateAIContentSchema, AIContentRequest } from '@/modules/shared/marketing/types'
+import { z } from 'zod'
 // AI content generation - using existing AI services
 async function generateAIContent(params: { prompt: string; model?: string; maxTokens?: number }): Promise<{ content: string }> {
   // Use Ollama or other AI service
@@ -35,7 +35,8 @@ async function generateAIContent(params: { prompt: string; model?: string; maxTo
  * Generate AI content
  * POST /api/marketing/ai-content
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export async function POST(request: NextRequest) {
+  try {
   const body = await request.json()
   const validatedData = GenerateAIContentSchema.parse(body)
 
@@ -97,14 +98,28 @@ User prompt: ${validatedData.prompt}`
     },
   }
 
-  return NextResponse.json(response, { status: 201 })
-})
+    return NextResponse.json(response, { status: 201 })
+  } catch (error) {
+    console.error('Error in POST ai-content route:', error)
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, statusCode: 400, error: { code: 'VALIDATION_ERROR', message: 'Invalid input data' } },
+        { status: 400 }
+      )
+    }
+    return NextResponse.json(
+      { success: false, statusCode: 500, error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },
+      { status: 500 }
+    )
+  }
+}
 
 /**
  * List AI content requests
  * GET /api/marketing/ai-content?organizationId=xxx&contentType=email&page=1&pageSize=20
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export async function GET(request: NextRequest) {
+  try {
   const searchParams = request.nextUrl.searchParams
   const organizationId = searchParams.get('organizationId')
   const contentType = searchParams.get('contentType')
@@ -182,5 +197,12 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     },
   }
 
-  return NextResponse.json(response)
-})
+    return NextResponse.json(response)
+  } catch (error) {
+    console.error('Error in GET ai-content route:', error)
+    return NextResponse.json(
+      { success: false, statusCode: 500, error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },
+      { status: 500 }
+    )
+  }
+}
