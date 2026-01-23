@@ -7,10 +7,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { ApiResponse } from '@/types/base-modules'
-import type { Expense } from '@/types/base-modules'
 import { CreateExpenseSchema } from '@/modules/shared/finance/types'
 import { formatINR } from '@/lib/currency'
 import { z } from 'zod'
+
+// Local Expense type matching the base-modules interface
+interface Expense {
+  id: string
+  organizationId: string
+  description: string
+  amountINR: number
+  category: 'office' | 'travel' | 'marketing' | 'utilities' | 'supplies' | 'other'
+  paymentMethod: 'cash' | 'bank_transfer' | 'card' | 'upi' | 'other'
+  vendor?: string
+  receiptAttachment?: string
+  isRecurring: boolean
+  allocationToInvoice?: string
+  date: Date
+  status: 'pending' | 'approved' | 'rejected' | 'paid'
+  createdAt: Date
+  updatedAt: Date
+}
 
 /**
  * Create a new expense
