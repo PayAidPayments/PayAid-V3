@@ -7,11 +7,45 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { ApiResponse } from '@/types/base-modules'
-import type { Invoice } from '@/types/base-modules'
 import { CreateInvoiceSchema } from '@/modules/shared/finance/types'
 import { calculateGST } from '@/lib/invoicing/gst'
 import { formatINR } from '@/lib/currency'
 import { z } from 'zod'
+
+// Local Invoice type matching the base-modules interface
+interface Invoice {
+  id: string
+  organizationId: string
+  invoiceNumber: string
+  customerId?: string
+  customerName?: string
+  customerEmail?: string
+  customerPhone?: string
+  lineItems: Array<{
+    id: string
+    description: string
+    quantity: number
+    unitPrice: number
+    taxRate: number
+    hsnCode?: string
+    amount: number
+    taxAmount: number
+  }>
+  subtotalINR: number
+  totalTax: number
+  discountINR: number
+  totalINR: number
+  taxBreakdown: Record<string, number>
+  paymentTerms?: string
+  invoiceDate: Date
+  dueDate?: Date
+  status: 'draft' | 'sent' | 'viewed' | 'paid' | 'overdue' | 'cancelled'
+  paymentLinkUrl?: string
+  isRecurring?: boolean
+  recurringInterval?: 'monthly' | 'quarterly' | 'yearly'
+  createdAt: Date
+  updatedAt: Date
+}
 
 /**
  * Create a new invoice
