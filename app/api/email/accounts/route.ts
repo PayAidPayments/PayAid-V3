@@ -34,21 +34,32 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
-    // Don't return passwords
-    const safeAccounts = accounts.map((account) => ({
-      id: account.id,
-      email: account.email,
-      displayName: account.displayName,
-      userId: account.userId,
-      user: account.user,
-      storageQuotaMB: account.storageQuotaMB,
-      storageUsedMB: account.storageUsedMB,
-      isActive: account.isActive,
-      isLocked: account.isLocked,
-      provider: account.provider,
-      lastLoginAt: account.lastLoginAt,
-      createdAt: account.createdAt,
-    }))
+    // Don't return passwords or encrypted tokens
+    const safeAccounts = accounts.map((account) => {
+      const isOAuth = account.provider === 'gmail' || account.provider === 'outlook'
+      const hasOAuthTokens = account.providerCredentials && 
+        typeof account.providerCredentials === 'object' &&
+        'accessToken' in account.providerCredentials
+
+      return {
+        id: account.id,
+        email: account.email,
+        displayName: account.displayName,
+        userId: account.userId,
+        user: account.user,
+        storageQuotaMB: account.storageQuotaMB,
+        storageUsedMB: account.storageUsedMB,
+        isActive: account.isActive,
+        isLocked: account.isLocked,
+        provider: account.provider,
+        providerAccountId: account.providerAccountId,
+        isOAuth: isOAuth,
+        oAuthConnected: hasOAuthTokens,
+        lastLoginAt: account.lastLoginAt,
+        lastSyncAt: account.lastSyncAt,
+        createdAt: account.createdAt,
+      }
+    })
 
     return NextResponse.json({ accounts: safeAccounts })
   } catch (error) {

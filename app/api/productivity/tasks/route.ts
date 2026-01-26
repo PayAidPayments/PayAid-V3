@@ -21,14 +21,13 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const task = await prisma.task.create({
     data: {
       tenantId: validatedData.organizationId,
-      projectId: validatedData.projectId,
       title: validatedData.title,
       description: validatedData.description || '',
       priority: validatedData.priority,
       status: 'todo',
-      assignedTo: validatedData.assignedTo,
+      assignedToId: validatedData.assignedTo?.[0] || null,
       dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
-      estimatedHours: validatedData.estimatedHours,
+      // Note: estimatedHours is only available for ProjectTask, not regular Task
     },
   })
 
@@ -38,14 +37,14 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     data: {
       id: task.id,
       organizationId: task.tenantId,
-      projectId: task.projectId || undefined,
+      projectId: undefined, // Task model doesn't have projectId, only ProjectTask does
       title: task.title,
-      description: task.description,
+      description: task.description || '',
       priority: task.priority as Task['priority'],
       status: task.status as Task['status'],
-      assignedTo: task.assignedTo as string[],
+      assignedTo: task.assignedToId ? [task.assignedToId] : [],
       dueDate: task.dueDate || undefined,
-      estimatedHours: task.estimatedHours || undefined,
+      estimatedHours: undefined, // Task model doesn't have estimatedHours
       subtasks: [],
       attachments: [],
       comments: [],

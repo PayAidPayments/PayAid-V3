@@ -1,11 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'next/navigation'
 import { apiRequest } from '@/lib/api/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { EmailConnectDialog } from '@/components/email/EmailConnectDialog'
+import { CheckCircle2, XCircle, Mail } from 'lucide-react'
 
 interface EmailAccount {
   id: string
@@ -15,7 +18,11 @@ interface EmailAccount {
   storageUsedMB: number
   isActive: boolean
   isLocked: boolean
+  provider?: string
+  isOAuth?: boolean
+  oAuthConnected?: boolean
   lastLoginAt?: string
+  lastSyncAt?: string
   user: {
     id: string
     name?: string
@@ -25,7 +32,9 @@ interface EmailAccount {
 
 export default function EmailAccountsPage() {
   const queryClient = useQueryClient()
+  const searchParams = useSearchParams()
   const [showAddForm, setShowAddForm] = useState(false)
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [formData, setFormData] = useState({
     userId: '',
     email: '',
@@ -33,6 +42,37 @@ export default function EmailAccountsPage() {
     password: '',
     storageQuotaMB: '25000',
   })
+
+  // Handle OAuth callback success/error messages
+  useEffect(() => {
+    const success = searchParams.get('success')
+    const error = searchParams.get('error')
+    const email = searchParams.get('email')
+
+    if (success) {
+      const provider = success.includes('gmail') ? 'Gmail' : 'Outlook'
+      setNotification({
+        type: 'success',
+        message: `${provider} account${email ? ` (${email})` : ''} connected successfully!`,
+      })
+      queryClient.invalidateQueries({ queryKey: ['email-accounts'] })
+      // Clear URL params
+      window.history.replaceState({}, '', '/dashboard/email/accounts')
+    } else if (error) {
+      setNotification({
+        type: 'error',
+        message: `Failed to connect email account: ${decodeURIComponent(error)}`,
+      })
+      // Clear URL params
+      window.history.replaceState({}, '', '/dashboard/email/accounts')
+    }
+
+    // Auto-dismiss notification after 5 seconds
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams, queryClient, notification])
 
   const { data, isLoading } = useQuery<{ accounts: EmailAccount[] }>({
     queryKey: ['email-accounts'],
@@ -95,10 +135,43 @@ export default function EmailAccountsPage() {
             Manage email accounts for your team
           </p>
         </div>
-        <Button onClick={() => setShowAddForm(!showAddForm)}>
-          {showAddForm ? 'Cancel' : 'Add Email Account'}
-        </Button>
+        <div className="flex gap-2">
+          <EmailConnectDialog
+            onConnected={() => {
+              queryClient.invalidateQueries({ queryKey: ['email-accounts'] })
+            }}
+          />
+          <Button variant="outline" onClick={() => setShowAddForm(!showAddForm)}>
+            {showAddForm ? 'Cancel' : 'Add Custom Account'}
+          </Button>
+        </div>
       </div>
+
+      {/* Notification Banner */}
+      {notification && (
+        <div
+          className={`p-4 rounded-md flex items-center gap-2 ${
+            notification.type === 'success'
+              ? 'bg-green-50 border border-green-200 text-green-800'
+              : 'bg-red-50 border border-red-200 text-red-800'
+          }`}
+        >
+          {notification.type === 'success' ? (
+            <CheckCircle2 className="h-5 w-5" />
+          ) : (
+            <XCircle className="h-5 w-5" />
+          )}
+          <span>{notification.message}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto"
+            onClick={() => setNotification(null)}
+          >
+            Dismiss
+          </Button>
+        </div>
+      )}
 
       {/* Add Email Account Form */}
       {showAddForm && (
@@ -214,6 +287,12 @@ export default function EmailAccountsPage() {
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
+                      {account.isOAuth && account.oAuthConnected && (
+                        <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 flex items-center gap-1">
+                          <Mail className="h-3 w-3" />
+                          {account.provider === 'gmail' ? 'Gmail' : 'Outlook'} OAuth
+                        </span>
+                      )}
                       <span
                         className={`px-3 py-1 rounded-full text-sm font-medium ${
                           account.isActive
@@ -254,18 +333,49 @@ export default function EmailAccountsPage() {
 
                     {/* Account Info */}
                     <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                      <div>
-                        <p className="text-sm text-gray-600">IMAP Server</p>
-                        <p className="text-sm font-medium">
-                          {process.env.NEXT_PUBLIC_EMAIL_IMAP_HOST || 'imap.payaid.io'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">SMTP Server</p>
-                        <p className="text-sm font-medium">
-                          {process.env.NEXT_PUBLIC_EMAIL_SMTP_HOST || 'smtp.payaid.io'}
-                        </p>
-                      </div>
+                      {account.isOAuth ? (
+                        <>
+                          <div>
+                            <p className="text-sm text-gray-600">Provider</p>
+                            <p className="text-sm font-medium capitalize">
+                              {account.provider || 'Custom'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">OAuth Status</p>
+                            <p className="text-sm font-medium">
+                              {account.oAuthConnected ? (
+                                <span className="text-green-600">Connected</span>
+                              ) : (
+                                <span className="text-yellow-600">Not Connected</span>
+                              )}
+                            </p>
+                          </div>
+                          {account.lastSyncAt && (
+                            <div>
+                              <p className="text-sm text-gray-600">Last Sync</p>
+                              <p className="text-sm font-medium">
+                                {new Date(account.lastSyncAt).toLocaleString()}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <div>
+                            <p className="text-sm text-gray-600">IMAP Server</p>
+                            <p className="text-sm font-medium">
+                              {process.env.NEXT_PUBLIC_EMAIL_IMAP_HOST || 'imap.payaid.io'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">SMTP Server</p>
+                            <p className="text-sm font-medium">
+                              {process.env.NEXT_PUBLIC_EMAIL_SMTP_HOST || 'smtp.payaid.io'}
+                            </p>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>

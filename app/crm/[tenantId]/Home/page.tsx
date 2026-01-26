@@ -21,6 +21,7 @@ import {
 import { format } from 'date-fns'
 import { DashboardLoading } from '@/components/ui/loading'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 // ModuleTopBar is now in layout.tsx
 import { 
   LineChart, 
@@ -79,11 +80,13 @@ interface TasksViewData {
   myDealsClosingThisMonth: any[]
 }
 
-// PayAid brand colors for charts
-const PAYAID_PURPLE = '#53328A'
-const PAYAID_GOLD = '#F5C700'
-const PAYAID_LIGHT_PURPLE = '#6B4BA1'
-const CHART_COLORS = [PAYAID_PURPLE, PAYAID_GOLD, PAYAID_LIGHT_PURPLE, '#8B5CF6', '#EC4899', '#10B981']
+// Design System Colors for charts (PayAid UI/UX Standards)
+const TEAL_PRIMARY = '#0F766E' // Deep Teal
+const BLUE_SECONDARY = '#0284C7' // Vibrant Blue
+const EMERALD_SUCCESS = '#059669' // Success
+const AMBER_ALERT = '#D97706' // Alert
+const GOLD_ACCENT = '#FBBF24' // Accent Gold
+const CHART_COLORS = [TEAL_PRIMARY, BLUE_SECONDARY, EMERALD_SUCCESS, GOLD_ACCENT, AMBER_ALERT, '#8B5CF6']
 
 export default function CRMDashboardPage() {
   const params = useParams()
@@ -455,8 +458,8 @@ export default function CRMDashboardPage() {
 
   return (
     <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative transition-colors">
-      {/* Welcome Banner - Enhanced */}
-      <div className="bg-gradient-to-r from-[#53328A] to-[#F5C700] text-white px-6 py-6 shadow-lg">
+      {/* Welcome Banner - Enhanced - Design System Colors */}
+      <div className="bg-gradient-to-r from-teal-primary to-blue-secondary text-white px-6 py-6 shadow-lg">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">
@@ -867,86 +870,110 @@ export default function CRMDashboardPage() {
         ) : (
           // Manager View (default for admin/manager)
           <>
-        {/* KPI Cards - Modern Design with Gradients - Clickable */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* KPI Cards - Design System Compliant with Animations */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Link href={`/crm/${tenantId}/Deals?filter=created&period=${timePeriod}`}>
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 hover:shadow-xl transition-all cursor-pointer hover:scale-105">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-200">Deals Created</CardTitle>
-                <div className="p-2 bg-blue-500/20 dark:bg-blue-500/30 rounded-lg">
-                  <Briefcase className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-                  {stats?.dealsCreatedThisMonth || 0}
-                </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                  <ArrowUpRight className="w-3 h-3 text-green-600 dark:text-green-400" />
-                  <span className="text-green-600 dark:text-green-400 font-medium">{getPeriodLabel()}</span>
-                </p>
-              </CardContent>
-            </Card>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0 * 0.1, duration: 0.3 }}
+            >
+              <Card className="border-0 shadow-sm bg-white hover:shadow-md transition-all duration-150 cursor-pointer">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Deals Created</CardTitle>
+                  <div className="w-12 h-12 bg-teal-primary/10 rounded-lg flex items-center justify-center">
+                    <Briefcase className="h-6 w-6 text-teal-primary" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-semibold text-gray-900 mb-1">
+                    {stats?.dealsCreatedThisMonth || 0}
+                  </div>
+                  <p className="text-sm text-emerald-success flex items-center gap-1">
+                    <ArrowUpRight className="w-3 h-3" />
+                    <span className="font-medium">{getPeriodLabel()}</span>
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
           </Link>
 
           <Link href={`/crm/${tenantId}/Deals?filter=won&period=${timePeriod}`}>
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 hover:shadow-xl transition-all cursor-pointer hover:scale-105">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-200">Revenue</CardTitle>
-                <div className="p-2 bg-green-500/20 dark:bg-green-500/30 rounded-lg">
-                  <span className="text-green-600 dark:text-green-400 font-bold text-lg">₹</span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-                  ₹{stats?.revenueThisMonth?.toLocaleString('en-IN') || '0'}
-                </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                  <ArrowUpRight className="w-3 h-3 text-green-600 dark:text-green-400" />
-                  <span className="text-green-600 dark:text-green-400 font-medium">{getPeriodLabel()}</span>
-                </p>
-              </CardContent>
-            </Card>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * 0.1, duration: 0.3 }}
+            >
+              <Card className="border-0 shadow-sm bg-white hover:shadow-md transition-all duration-150 cursor-pointer">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Revenue</CardTitle>
+                  <div className="w-12 h-12 bg-emerald-success/10 rounded-lg flex items-center justify-center">
+                    <span className="text-emerald-success font-bold text-lg">₹</span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-semibold text-gray-900 mb-1">
+                    ₹{stats?.revenueThisMonth?.toLocaleString('en-IN') || '0'}
+                  </div>
+                  <p className="text-sm text-emerald-success flex items-center gap-1">
+                    <ArrowUpRight className="w-3 h-3" />
+                    <span className="font-medium">{getPeriodLabel()}</span>
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
           </Link>
 
           <Link href={`/crm/${tenantId}/Deals?filter=closing&period=${timePeriod}`}>
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 hover:shadow-xl transition-all cursor-pointer hover:scale-105">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-200">Deals Closing</CardTitle>
-                <div className="p-2 bg-purple-500/20 dark:bg-purple-500/30 rounded-lg">
-                  <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-                  {stats?.dealsClosingThisMonth || 0}
-                </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                  <ArrowUpRight className="w-3 h-3 text-green-600 dark:text-green-400" />
-                  <span className="text-green-600 dark:text-green-400 font-medium">{getPeriodLabel()}</span>
-                </p>
-              </CardContent>
-            </Card>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 * 0.1, duration: 0.3 }}
+            >
+              <Card className="border-0 shadow-sm bg-white hover:shadow-md transition-all duration-150 cursor-pointer">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Deals Closing</CardTitle>
+                  <div className="w-12 h-12 bg-blue-secondary/10 rounded-lg flex items-center justify-center">
+                    <Calendar className="h-6 w-6 text-blue-secondary" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-semibold text-gray-900 mb-1">
+                    {stats?.dealsClosingThisMonth || 0}
+                  </div>
+                  <p className="text-sm text-emerald-success flex items-center gap-1">
+                    <ArrowUpRight className="w-3 h-3" />
+                    <span className="font-medium">{getPeriodLabel()}</span>
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
           </Link>
 
           <Link href={`/crm/${tenantId}/Tasks?filter=overdue`}>
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 hover:shadow-xl transition-all cursor-pointer hover:scale-105">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-200">Overdue Tasks</CardTitle>
-                <div className="p-2 bg-red-500/20 dark:bg-red-500/30 rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-                  {stats?.overdueTasks || 0}
-                </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                  <ArrowDownRight className="w-3 h-3 text-red-600 dark:text-red-400" />
-                  <span className="text-red-600 dark:text-red-400 font-medium">Requires attention</span>
-                </p>
-              </CardContent>
-            </Card>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 * 0.1, duration: 0.3 }}
+            >
+              <Card className="border-0 shadow-sm bg-white hover:shadow-md transition-all duration-150 cursor-pointer">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Overdue Tasks</CardTitle>
+                  <div className="w-12 h-12 bg-red-error/10 rounded-lg flex items-center justify-center">
+                    <AlertCircle className="h-6 w-6 text-red-error" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-semibold text-gray-900 mb-1">
+                    {stats?.overdueTasks || 0}
+                  </div>
+                  <p className="text-sm text-red-error flex items-center gap-1">
+                    <ArrowDownRight className="w-3 h-3" />
+                    <span className="font-medium">Requires attention</span>
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
           </Link>
         </div>
 
@@ -1002,7 +1029,7 @@ export default function CRMDashboardPage() {
                         contentStyle={{
                           backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
                           color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
-                          border: `1px solid ${PAYAID_PURPLE}`,
+                          border: `1px solid ${TEAL_PRIMARY}`,
                           borderRadius: '8px',
                         }}
                       />
@@ -1030,8 +1057,8 @@ export default function CRMDashboardPage() {
                     <AreaChart data={monthlyLeadData}>
                       <defs>
                         <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={PAYAID_PURPLE} stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor={PAYAID_PURPLE} stopOpacity={0}/>
+                          <stop offset="5%" stopColor={TEAL_PRIMARY} stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor={TEAL_PRIMARY} stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#f0f0f0'} />
@@ -1048,14 +1075,14 @@ export default function CRMDashboardPage() {
                         contentStyle={{
                           backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
                           color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
-                          border: `1px solid ${PAYAID_PURPLE}`,
+                          border: `1px solid ${TEAL_PRIMARY}`,
                           borderRadius: '8px',
                         }}
                       />
                       <Area 
                         type="monotone" 
                         dataKey="leads" 
-                        stroke={PAYAID_PURPLE} 
+                        stroke={TEAL_PRIMARY} 
                         fillOpacity={1} 
                         fill="url(#colorLeads)" 
                       />
@@ -1105,7 +1132,7 @@ export default function CRMDashboardPage() {
                         contentStyle={{
                           backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
                           color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
-                          border: `1px solid ${PAYAID_PURPLE}`,
+                          border: `1px solid ${TEAL_PRIMARY}`,
                           borderRadius: '8px',
                         }}
                         formatter={(value: any, name?: string) => {
@@ -1116,8 +1143,8 @@ export default function CRMDashboardPage() {
                       <Legend 
                         wrapperStyle={{ color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)' }}
                       />
-                      <Bar yAxisId="left" dataKey="revenue" fill={PAYAID_PURPLE} name="Revenue (₹)" radius={[8, 8, 0, 0]} />
-                      <Bar yAxisId="right" dataKey="deals" fill={PAYAID_GOLD} name="Deals Won" radius={[8, 8, 0, 0]} />
+                      <Bar yAxisId="left" dataKey="revenue" fill={TEAL_PRIMARY} name="Revenue (₹)" radius={[8, 8, 0, 0]} />
+                      <Bar yAxisId="right" dataKey="deals" fill={GOLD_ACCENT} name="Deals Won" radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1165,7 +1192,7 @@ export default function CRMDashboardPage() {
                         contentStyle={{
                           backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
                           color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
-                          border: `1px solid ${PAYAID_PURPLE}`,
+                          border: `1px solid ${TEAL_PRIMARY}`,
                           borderRadius: '8px',
                           fontSize: '12px',
                         }}
@@ -1220,8 +1247,8 @@ export default function CRMDashboardPage() {
                           color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
                         }}
                       />
-                      <Bar dataKey="leadsCount" fill={PAYAID_PURPLE} name="Leads" radius={[0, 8, 8, 0]} />
-                      <Bar dataKey="conversionsCount" fill={PAYAID_GOLD} name="Conversions" radius={[0, 8, 8, 0]} />
+                      <Bar dataKey="leadsCount" fill={TEAL_PRIMARY} name="Leads" radius={[0, 8, 8, 0]} />
+                      <Bar dataKey="conversionsCount" fill={GOLD_ACCENT} name="Conversions" radius={[0, 8, 8, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

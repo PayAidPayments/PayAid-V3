@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { verifyPassword } from '@/lib/auth/password'
-import { signToken } from '@/lib/auth/jwt'
+import { signToken, signRefreshToken } from '@/lib/auth/jwt'
 import { isDevelopment } from '@/lib/utils/env'
 import { warmTenantCache } from '@/lib/cache/warmer'
+import { getUserRoles, getUserPermissions } from '@/lib/rbac/permissions'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -220,25 +221,84 @@ async function handleLogin(request: NextRequest) {
       // Non-critical error, continue with login
     }
 
-    // Step 8: Generate JWT token
-    step = 'generate_token'
-    console.log('[LOGIN] Step 8: Generating JWT token...', { 
+    // Step 8: Get user roles and permissions (Phase 1: RBAC)
+    step = 'get_roles_permissions'
+    console.log('[LOGIN] Step 8: Fetching user roles and permissions...', { 
       userId: user.id,
       tenantId: user.tenantId || 'none',
+    })
+    
+    let roles: string[] = []
+    let permissions: string[] = []
+    
+    try {
+      if (user.tenantId) {
+        // Fetch roles and permissions from RBAC system
+        roles = await getUserRoles(user.id, user.tenantId)
+        permissions = await getUserPermissions(user.id, user.tenantId)
+        
+        // Fallback to legacy role if no RBAC roles found
+        if (roles.length === 0 && user.role) {
+          roles = [user.role]
+        }
+        
+        console.log('[LOGIN] Roles and permissions fetched', { 
+          rolesCount: roles.length,
+          permissionsCount: permissions.length,
+        })
+      }
+    } catch (rbacError) {
+      console.warn('[LOGIN] Failed to fetch RBAC data (using fallback):', {
+        error: rbacError instanceof Error ? rbacError.message : String(rbacError),
+      })
+      // Fallback to legacy role
+      if (user.role) {
+        roles = [user.role]
+      }
+    }
+
+    // Step 9: Generate JWT tokens (Phase 1: Enhanced JWT)
+    step = 'generate_token'
+    console.log('[LOGIN] Step 9: Generating JWT tokens...', { 
+      userId: user.id,
+      tenantId: user.tenantId || 'none',
+      rolesCount: roles.length,
+      permissionsCount: permissions.length,
       hasLicensedModules: !!(user.tenant?.licensedModules?.length),
     })
-    let token
+    
+    let token: string
+    let refreshToken: string
+    
     try {
+      // Generate access token with roles, permissions, and modules
       token = signToken({
+        sub: user.id,
+        email: user.email,
+        tenant_id: user.tenantId || '',
+        tenant_slug: user.tenant?.subdomain || undefined,
+        roles: roles,
+        permissions: permissions,
+        modules: user.tenant?.licensedModules || [],
+        // Legacy fields for backward compatibility
         userId: user.id,
         tenantId: user.tenantId || '',
-        email: user.email,
-        role: user.role,
-        // NEW: Include licensing info in token (Phase 1)
+        role: roles[0] || user.role || 'user',
         licensedModules: user.tenant?.licensedModules || [],
         subscriptionTier: user.tenant?.subscriptionTier || 'free',
       })
-      console.log('[LOGIN] Token generated successfully', { tokenLength: token.length })
+      
+      // Generate refresh token
+      refreshToken = signRefreshToken({
+        sub: user.id,
+        tenant_id: user.tenantId || '',
+        type: 'refresh',
+      })
+      
+      console.log('[LOGIN] Tokens generated successfully', { 
+        tokenLength: token.length,
+        refreshTokenLength: refreshToken.length,
+      })
     } catch (tokenError) {
       console.error('[LOGIN] Token generation failed:', {
         error: tokenError instanceof Error ? tokenError.message : String(tokenError),
@@ -248,7 +308,7 @@ async function handleLogin(request: NextRequest) {
       throw new Error(`Token generation error: ${tokenError instanceof Error ? tokenError.message : 'Unknown error'}`)
     }
 
-    // Step 9: Warm cache for tenant (async, non-blocking)
+    // Step 10: Warm cache for tenant (async, non-blocking)
     step = 'warm_cache'
     if (user.tenantId) {
       console.log('[LOGIN] Step 9: Warming cache for tenant...', { tenantId: user.tenantId })
@@ -262,7 +322,7 @@ async function handleLogin(request: NextRequest) {
       })
     }
 
-    // Step 10: Prepare response
+    // Step 11: Prepare response
     step = 'prepare_response'
     console.log('[LOGIN] Step 10: Preparing response...')
     const duration = Date.now() - startTime
@@ -278,7 +338,8 @@ async function handleLogin(request: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
+        role: roles[0] || user.role,
+        roles: roles,
         avatar: user.avatar,
       },
       tenant: user.tenant ? {
@@ -290,6 +351,9 @@ async function handleLogin(request: NextRequest) {
         subscriptionTier: user.tenant.subscriptionTier || 'free',
       } : null,
       token,
+      refreshToken,
+      permissions: permissions,
+      modules: user.tenant?.licensedModules || [],
     }, {
       headers: { 'Content-Type': 'application/json' }
     })

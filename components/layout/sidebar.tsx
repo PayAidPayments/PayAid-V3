@@ -520,7 +520,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
         </div>
         <div className="space-y-1">
           <Link
-            href={tenantId ? `/dashboard/${tenantId}/settings/profile` : '/dashboard/settings/profile'}
+            href={tenantId ? `/home/${tenantId}` : '/home'}
             onClick={() => {
               if (onClose && window.innerWidth < 1024) {
                 onClose()

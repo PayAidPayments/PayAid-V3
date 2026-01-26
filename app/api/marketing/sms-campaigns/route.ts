@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { withErrorHandling } from '@/lib/api/route-wrapper'
-import { ApiResponse, SMSCampaign } from '@/types/base-modules'
+import type { ApiResponse } from '@/types/base-modules'
+import type { SMSCampaign } from '@/modules/shared/marketing/types'
 import { CreateSMSCampaignSchema } from '@/modules/shared/marketing/types'
 
 /**
@@ -49,16 +50,22 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     }
   }
 
-  const campaign = await prisma.smsCampaign.create({
+  const campaign = await prisma.campaign.create({
     data: {
       tenantId: validatedData.organizationId,
       name: validatedData.name,
-      message: validatedData.message,
-      recipientSegments: validatedData.recipientSegments,
+      type: 'sms',
+      content: validatedData.message,
+      contactIds: [], // TODO: Map recipientSegments to contactIds
       recipientCount,
       status: validatedData.scheduledFor ? 'scheduled' : 'draft',
       scheduledFor: validatedData.scheduledFor ? new Date(validatedData.scheduledFor) : null,
-      deliveryRate: 0,
+      sent: 0,
+      delivered: 0,
+      opened: 0,
+      clicked: 0,
+      bounced: 0,
+      unsubscribed: 0,
     },
   })
 
@@ -69,13 +76,13 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       id: campaign.id,
       organizationId: campaign.tenantId,
       name: campaign.name,
-      message: campaign.message,
-      recipientSegments: campaign.recipientSegments as string[],
+      message: campaign.content,
+      recipientSegments: campaign.contactIds,
       recipientCount: campaign.recipientCount,
       status: campaign.status as SMSCampaign['status'],
       scheduledFor: campaign.scheduledFor || undefined,
       sentAt: campaign.sentAt || undefined,
-      deliveryRate: campaign.deliveryRate,
+      deliveryRate: campaign.recipientCount > 0 ? campaign.delivered / campaign.recipientCount : 0,
       createdAt: campaign.createdAt,
     },
     meta: {
@@ -113,6 +120,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   const where: Record<string, unknown> = {
     tenantId: organizationId,
+    type: 'sms',
   }
 
   if (status) {
@@ -120,26 +128,26 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
 
   const [campaigns, total] = await Promise.all([
-    prisma.smsCampaign.findMany({
+    prisma.campaign.findMany({
       where,
       skip: (page - 1) * pageSize,
       take: pageSize,
       orderBy: { createdAt: 'desc' },
     }),
-    prisma.smsCampaign.count({ where }),
+    prisma.campaign.count({ where }),
   ])
 
   const formattedCampaigns: SMSCampaign[] = campaigns.map((campaign) => ({
     id: campaign.id,
     organizationId: campaign.tenantId,
     name: campaign.name,
-    message: campaign.message,
-    recipientSegments: campaign.recipientSegments as string[],
-    recipientCount: campaign.recipientCount,
-    status: campaign.status as SMSCampaign['status'],
-    scheduledFor: campaign.scheduledFor || undefined,
-    sentAt: campaign.sentAt || undefined,
-    deliveryRate: campaign.deliveryRate,
+      message: campaign.content,
+      recipientSegments: campaign.contactIds,
+      recipientCount: campaign.recipientCount,
+      status: campaign.status as SMSCampaign['status'],
+      scheduledFor: campaign.scheduledFor || undefined,
+      sentAt: campaign.sentAt || undefined,
+      deliveryRate: campaign.recipientCount > 0 ? campaign.delivered / campaign.recipientCount : 0,
     createdAt: campaign.createdAt,
   }))
 

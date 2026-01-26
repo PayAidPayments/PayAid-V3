@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       // Use raw query to check table
       const result = await prisma.$queryRaw`SELECT COUNT(*) as count FROM "Campaign" WHERE "tenantId" = ${tenantId}`
       tableExists = true
-      rowCount = (result as any)[0]?.count || 0
+      rowCount = (result as Array<{ count: number }>)[0]?.count || 0
     } catch (dbError) {
       error = dbError instanceof Error ? dbError.message : String(dbError)
     }

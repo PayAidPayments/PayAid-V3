@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const type = searchParams.get('type')
 
-    const where: any = {
+    const where: Record<string, unknown> = {
       tenantId: tenantId,
     }
 

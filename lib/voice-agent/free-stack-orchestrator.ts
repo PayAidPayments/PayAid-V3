@@ -17,6 +17,29 @@ import { synthesizeSpeechFree } from './tts-free'; // Uses Coqui TTS (free)
 import { generateVoiceResponseFree } from './llm-free'; // Uses Ollama (free)
 import { searchKnowledgeBase } from './knowledge-base';
 
+/**
+ * Detect language from audio (simple heuristic - can be enhanced)
+ */
+async function detectLanguage(audioBuffer: Buffer): Promise<string | null> {
+  // For now, let Whisper auto-detect
+  // In future, can add language detection model
+  try {
+    const sttResult = await transcribeAudioFree(audioBuffer, undefined); // Auto-detect
+    return sttResult.language || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Detect if text contains Hindi or Hinglish
+ */
+function detectHindiOrHinglish(text: string): boolean {
+  // Hindi Unicode range: \u0900-\u097F
+  const hindiPattern = /[\u0900-\u097F]/;
+  return hindiPattern.test(text);
+}
+
 interface OrchestratorConfig {
   agent: VoiceAgent;
   call: VoiceAgentCall;
@@ -100,9 +123,14 @@ export class FreeStackVoiceOrchestrator {
 
       // ===== STEP 1: SPEECH-TO-TEXT (Whisper - FREE) =====
       console.log('[Free Stack] Transcribing audio with Whisper...');
+      // Auto-detect language for Hindi/Hinglish support
+      const detectedLanguage = await detectLanguage(combinedAudio);
+      const targetLanguage = detectedLanguage || this.agent.language || 'en';
+      console.log(`[Free Stack] Detected language: ${targetLanguage}`);
+      
       const sttResult = await transcribeAudioFree(
         combinedAudio,
-        this.agent.language || 'en'
+        targetLanguage === 'hi' || targetLanguage === 'hinglish' ? 'hi' : targetLanguage
       );
 
       const transcript = sttResult.text.trim();
@@ -149,20 +177,32 @@ export class FreeStackVoiceOrchestrator {
       // ===== STEP 3: GENERATE LLM RESPONSE (Ollama - FREE) =====
       console.log('[Free Stack] Generating response with Ollama...');
       
-      // Build system prompt with knowledge context
+      // Detect if transcript contains Hindi/Hinglish
+      const isHindiOrHinglish = detectHindiOrHinglish(transcript);
+      const responseLanguage = isHindiOrHinglish ? 'hi' : (targetLanguage || 'en');
+      
+      // Build system prompt with knowledge context and language support
       let systemPrompt = this.agent.systemPrompt;
+      
+      // Add Hindi/Hinglish support to system prompt
+      if (isHindiOrHinglish) {
+        systemPrompt += `\n\nIMPORTANT: The user is speaking in Hindi or Hinglish (Hindi-English mix). 
+        You MUST respond in the same language (Hindi or Hinglish) that the user used.
+        If the user mixes Hindi and English, you can respond in Hinglish.
+        Be natural and conversational in Hindi/Hinglish.`;
+      }
       if (knowledgeContext) {
         systemPrompt += `\n\nRelevant context:\n${knowledgeContext}`;
       }
 
-      // Generate response using Ollama
+      // Generate response using Ollama in detected language
       const response = await generateVoiceResponseFree(
         systemPrompt,
         this.conversationHistory.slice(-10).map(msg => ({
           role: msg.role,
           content: msg.content
         })),
-        this.agent.language || 'en'
+        responseLanguage
       );
 
       console.log('[Free Stack] Response:', response.substring(0, 100));
@@ -186,7 +226,9 @@ export class FreeStackVoiceOrchestrator {
 
       // ===== STEP 4: TEXT-TO-SPEECH (Coqui TTS - FREE) =====
       console.log('[Free Stack] Synthesizing speech with Coqui TTS...');
-      await this.synthesizeAndPlay(response);
+      // Use detected language for TTS
+      const ttsLanguage = responseLanguage === 'hi' || responseLanguage === 'hinglish' ? 'hi' : responseLanguage;
+      await this.synthesizeAndPlay(response, ttsLanguage);
 
     } catch (error) {
       console.error('[Free Stack Orchestrator] Error in processing:', error);
@@ -200,16 +242,17 @@ export class FreeStackVoiceOrchestrator {
   /**
    * Synthesize text to speech and stream to caller
    */
-  private async synthesizeAndPlay(text: string) {
+  private async synthesizeAndPlay(text: string, language?: string) {
     if (!text.trim()) return;
 
     try {
       console.log('[Free Stack] Synthesizing:', text.substring(0, 100));
 
       // ===== USE COQUI TTS (FREE) =====
+      const ttsLang = language || this.agent.language || 'en';
       const audioBuffer = await synthesizeSpeechFree(
         text,
-        this.agent.language || 'en',
+        ttsLang,
         this.agent.voiceId || undefined,
         1.0 // speed
       );

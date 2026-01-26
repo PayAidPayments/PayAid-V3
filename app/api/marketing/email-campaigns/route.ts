@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { withErrorHandling } from '@/lib/api/route-wrapper'
-import { ApiResponse, EmailCampaign } from '@/types/base-modules'
+import type { ApiResponse } from '@/types/base-modules'
+import type { EmailCampaign } from '@/modules/shared/marketing/types'
 import { CreateEmailCampaignSchema } from '@/modules/shared/marketing/types'
 
 /**
@@ -36,26 +37,23 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     }
   }
 
-  const campaign = await prisma.emailCampaign.create({
+  const campaign = await prisma.campaign.create({
     data: {
       tenantId: validatedData.organizationId,
       name: validatedData.name,
+      type: 'email',
       subject: validatedData.subject,
-      htmlContent: validatedData.htmlContent,
-      recipientSegments: validatedData.recipientSegments,
+      content: validatedData.htmlContent,
       recipientCount,
       status: validatedData.scheduledFor ? 'scheduled' : 'draft',
       scheduledFor: validatedData.scheduledFor ? new Date(validatedData.scheduledFor) : null,
-      openRate: 0,
-      clickRate: 0,
-      unsubscribeCount: 0,
-      metrics: {
-        totalSent: 0,
-        opened: 0,
-        clicked: 0,
-        bounced: 0,
-        unsubscribed: 0,
-      },
+      sent: 0,
+      delivered: 0,
+      opened: 0,
+      clicked: 0,
+      bounced: 0,
+      unsubscribed: 0,
+      contactIds: [], // TODO: Map recipientSegments to contactIds
     },
   })
 
@@ -66,18 +64,24 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       id: campaign.id,
       organizationId: campaign.tenantId,
       name: campaign.name,
-      subject: campaign.subject,
-      htmlContent: campaign.htmlContent,
-      recipientSegments: campaign.recipientSegments as string[],
+      subject: campaign.subject || '',
+      htmlContent: campaign.content,
+      recipientSegments: campaign.contactIds,
       recipientCount: campaign.recipientCount,
       status: campaign.status as EmailCampaign['status'],
       scheduledFor: campaign.scheduledFor || undefined,
       sentAt: campaign.sentAt || undefined,
-      openRate: campaign.openRate,
-      clickRate: campaign.clickRate,
-      conversionRate: campaign.conversionRate || undefined,
-      unsubscribeCount: campaign.unsubscribeCount,
-      metrics: campaign.metrics as EmailCampaign['metrics'],
+      openRate: campaign.recipientCount > 0 ? campaign.opened / campaign.recipientCount : 0,
+      clickRate: campaign.recipientCount > 0 ? campaign.clicked / campaign.recipientCount : 0,
+      conversionRate: undefined,
+      unsubscribeCount: campaign.unsubscribed,
+      metrics: {
+        totalSent: campaign.sent,
+        opened: campaign.opened,
+        clicked: campaign.clicked,
+        bounced: campaign.bounced,
+        unsubscribed: campaign.unsubscribed,
+      },
       createdAt: campaign.createdAt,
     },
     meta: {
@@ -122,31 +126,37 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
 
   const [campaigns, total] = await Promise.all([
-    prisma.emailCampaign.findMany({
+    prisma.campaign.findMany({
       where,
       skip: (page - 1) * pageSize,
       take: pageSize,
       orderBy: { createdAt: 'desc' },
     }),
-    prisma.emailCampaign.count({ where }),
+    prisma.campaign.count({ where }),
   ])
 
   const formattedCampaigns: EmailCampaign[] = campaigns.map((campaign) => ({
     id: campaign.id,
     organizationId: campaign.tenantId,
     name: campaign.name,
-    subject: campaign.subject,
-    htmlContent: campaign.htmlContent,
-    recipientSegments: campaign.recipientSegments as string[],
+    subject: campaign.subject || '',
+    htmlContent: campaign.content,
+    recipientSegments: campaign.contactIds,
     recipientCount: campaign.recipientCount,
     status: campaign.status as EmailCampaign['status'],
     scheduledFor: campaign.scheduledFor || undefined,
     sentAt: campaign.sentAt || undefined,
-    openRate: campaign.openRate,
-    clickRate: campaign.clickRate,
-    conversionRate: campaign.conversionRate || undefined,
-    unsubscribeCount: campaign.unsubscribeCount,
-    metrics: campaign.metrics as EmailCampaign['metrics'],
+    openRate: campaign.recipientCount > 0 ? campaign.opened / campaign.recipientCount : 0,
+    clickRate: campaign.recipientCount > 0 ? campaign.clicked / campaign.recipientCount : 0,
+    conversionRate: undefined,
+    unsubscribeCount: campaign.unsubscribed,
+    metrics: {
+      totalSent: campaign.sent,
+      opened: campaign.opened,
+      clicked: campaign.clicked,
+      bounced: campaign.bounced,
+      unsubscribed: campaign.unsubscribed,
+    },
     createdAt: campaign.createdAt,
   }))
 

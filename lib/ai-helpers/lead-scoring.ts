@@ -1,10 +1,12 @@
 /**
  * Lead Scoring System
  * Calculates a 0-100 score for leads based on engagement and activity
+ * Enhanced with demographic fit, behavioral signals, and historical patterns
  */
 
 import { prisma } from '@/lib/db/prisma'
 import type { Contact } from '@prisma/client'
+import { calculateEnhancedScore } from '@/lib/ai/lead-scoring/enhanced-scorer'
 
 interface ScoreComponents {
   emailOpens: number
@@ -45,9 +47,46 @@ const DEFAULT_CONFIG: ScoringConfig = {
  * Calculate lead score for a contact
  * @param contact - The contact to score
  * @param config - Optional scoring configuration
+ * @param useEnhanced - Use enhanced scoring algorithm (default: true)
  * @returns Object with score (0-100) and score components
  */
 export async function scoreLead(
+  contact: Contact,
+  config: Partial<ScoringConfig> = {},
+  useEnhanced: boolean = true
+): Promise<{ score: number; components: ScoreComponents | any }> {
+  // Use enhanced scoring if enabled
+  if (useEnhanced) {
+    try {
+      const enhanced = await calculateEnhancedScore(contact)
+      // Convert enhanced components to legacy format for backward compatibility
+      return {
+        score: enhanced.score,
+        components: {
+          emailOpens: enhanced.components.engagement.emailOpens,
+          websiteVisits: enhanced.components.engagement.websiteVisits,
+          interactions: enhanced.components.engagement.interactionCount,
+          deals: 0, // Will be calculated separately if needed
+          recency: 0, // Will be calculated separately if needed
+          total: enhanced.score,
+          // Include enhanced components
+          enhanced: enhanced.components,
+        },
+      }
+    } catch (error) {
+      console.error('Enhanced scoring failed, falling back to basic:', error)
+      // Fall through to basic scoring
+    }
+  }
+
+  // Basic scoring (legacy)
+  return scoreLeadBasic(contact, config)
+}
+
+/**
+ * Basic lead scoring (legacy method)
+ */
+async function scoreLeadBasic(
   contact: Contact,
   config: Partial<ScoringConfig> = {}
 ): Promise<{ score: number; components: ScoreComponents }> {

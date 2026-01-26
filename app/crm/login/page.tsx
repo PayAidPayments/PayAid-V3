@@ -49,8 +49,8 @@ export default function CRMLoginPage() {
       if (tenant?.id) {
         router.push(`/crm/${tenant.id}/Home/`)
       } else {
-        // No tenant - redirect to main dashboard
-        router.push('/dashboard')
+        // No tenant - redirect to home
+        router.push('/home')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')

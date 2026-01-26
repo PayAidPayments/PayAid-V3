@@ -1,40 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { processScheduledReports } from '@/lib/background-jobs/process-scheduled-reports'
-
 /**
- * Cron endpoint to process scheduled reports
- * Should be called periodically (e.g., every hour)
- * 
- * Protected by CRON_SECRET environment variable
+ * Scheduled Reports Cron Job
+ * POST /api/cron/process-scheduled-reports - Process scheduled reports
+ * This endpoint should be called by a cron job (e.g., Vercel Cron, external scheduler)
  */
+
+import { NextRequest, NextResponse } from 'next/server'
+import { ReportSchedulerService } from '@/lib/reporting/report-scheduler'
+
+// POST /api/cron/process-scheduled-reports - Process scheduled reports
 export async function POST(request: NextRequest) {
   try {
-    // Verify cron secret
+    // Verify cron secret (optional, for security)
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
 
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    // Process scheduled reports
-    const result = await processScheduledReports()
+    const result = await ReportSchedulerService.processScheduledReports()
 
     return NextResponse.json({
       success: true,
-      processed: result.total,
-      succeeded: result.success,
-      failed: result.failures,
+      data: result,
     })
   } catch (error) {
-    console.error('Cron job error:', error)
+    console.error('Process scheduled reports error:', error)
     return NextResponse.json(
-      { error: 'Failed to process scheduled reports' },
+      { error: error instanceof Error ? error.message : 'Failed to process scheduled reports' },
       { status: 500 }
     )
   }
 }
-
