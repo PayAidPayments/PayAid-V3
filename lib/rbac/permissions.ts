@@ -109,86 +109,126 @@ export async function checkPermissionDB(
 
 /**
  * Get all permissions for a user (from database)
+ * With error handling for missing tables
  */
 export async function getUserPermissions(
   userId: string,
   tenantId: string
 ): Promise<string[]> {
-  const permissions = new Set<string>()
+  try {
+    const permissions = new Set<string>()
 
-  // Get direct user permissions
-  const userPerms = await prisma.userPermission.findMany({
-    where: {
-      userId,
-      tenantId,
-      OR: [
-        { expiresAt: null },
-        { expiresAt: { gt: new Date() } },
-      ],
-    },
-    include: {
-      permission: true,
-    },
-  })
-
-  userPerms.forEach(up => {
-    permissions.add(up.permissionCode)
-  })
-
-  // Get role permissions
-  const userRoles = await prisma.userRole.findMany({
-    where: {
-      userId,
-      tenantId,
-      OR: [
-        { expiresAt: null },
-        { expiresAt: { gt: new Date() } },
-      ],
-    },
-    include: {
-      role: {
+    // Get direct user permissions
+    try {
+      const userPerms = await prisma.userPermission.findMany({
+        where: {
+          userId,
+          tenantId,
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: new Date() } },
+          ],
+        },
         include: {
-          rolePermissions: {
+          permission: true,
+        },
+      })
+
+      userPerms.forEach(up => {
+        permissions.add(up.permissionCode)
+      })
+    } catch (error: any) {
+      // Table doesn't exist - skip
+      if (error?.code === 'P2021' || error?.code === 'P2001' || error?.message?.includes('does not exist')) {
+        console.warn('[RBAC] UserPermission table does not exist, skipping')
+      } else {
+        throw error
+      }
+    }
+
+    // Get role permissions
+    try {
+      const userRoles = await prisma.userRole.findMany({
+        where: {
+          userId,
+          tenantId,
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: new Date() } },
+          ],
+        },
+        include: {
+          role: {
             include: {
-              permission: true,
+              rolePermissions: {
+                include: {
+                  permission: true,
+                },
+              },
             },
           },
         },
-      },
-    },
-  })
+      })
 
-  userRoles.forEach(userRole => {
-    userRole.role.rolePermissions.forEach(rp => {
-      permissions.add(rp.permission.permissionCode)
-    })
-  })
+      userRoles.forEach(userRole => {
+        userRole.role.rolePermissions.forEach(rp => {
+          permissions.add(rp.permission.permissionCode)
+        })
+      })
+    } catch (error: any) {
+      // Table doesn't exist - skip
+      if (error?.code === 'P2021' || error?.code === 'P2001' || error?.message?.includes('does not exist')) {
+        console.warn('[RBAC] RolePermission table does not exist, skipping')
+      } else {
+        throw error
+      }
+    }
 
-  return Array.from(permissions)
+    return Array.from(permissions)
+  } catch (error: any) {
+    // Handle case where RBAC tables don't exist yet
+    if (error?.code === 'P2021' || error?.code === 'P2001' || error?.message?.includes('does not exist')) {
+      console.warn('[RBAC] RBAC tables do not exist, returning empty array')
+      return []
+    }
+    // Re-throw other errors
+    throw error
+  }
 }
 
 /**
  * Get all roles for a user
+ * With error handling for missing tables
  */
 export async function getUserRoles(
   userId: string,
   tenantId: string
 ): Promise<string[]> {
-  const userRoles = await prisma.userRole.findMany({
-    where: {
-      userId,
-      tenantId,
-      OR: [
-        { expiresAt: null },
-        { expiresAt: { gt: new Date() } },
-      ],
-    },
-    include: {
-      role: true,
-    },
-  })
+  try {
+    const userRoles = await prisma.userRole.findMany({
+      where: {
+        userId,
+        tenantId,
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
+      },
+      include: {
+        role: true,
+      },
+    })
 
-  return userRoles.map(ur => ur.role.roleName)
+    return userRoles.map(ur => ur.role.roleName)
+  } catch (error: any) {
+    // Handle case where RBAC tables don't exist yet
+    if (error?.code === 'P2021' || error?.code === 'P2001' || error?.message?.includes('does not exist')) {
+      console.warn('[RBAC] UserRole table does not exist, returning empty array')
+      return []
+    }
+    // Re-throw other errors
+    throw error
+  }
 }
 
 /**

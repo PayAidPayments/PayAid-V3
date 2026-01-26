@@ -87,11 +87,18 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true })
         try {
+          // Add timeout to prevent hanging (10 seconds max)
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+          
           const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
+            signal: controller.signal,
           })
+          
+          clearTimeout(timeoutId)
 
           // Check content type before parsing
           const contentType = response.headers.get('content-type') || ''
@@ -182,6 +189,12 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('[AUTH] Login error:', error)
           set({ isLoading: false })
+          
+          // Handle timeout specifically
+          if (error instanceof Error && error.name === 'AbortError') {
+            throw new Error('Login request timed out. Please try again.')
+          }
+          
           throw error
         }
       },
