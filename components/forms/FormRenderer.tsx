@@ -37,7 +37,7 @@ export function FormRenderer({ slug, onSubmit }: FormRendererProps) {
 
   useEffect(() => {
     // Fetch form data
-    fetch(`/api/forms/${slug}/render`)
+    fetch(`/api/forms/public/${slug}/render`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -57,7 +57,7 @@ export function FormRenderer({ slug, onSubmit }: FormRendererProps) {
     setSubmitting(true)
 
     try {
-      const response = await fetch(`/api/forms/${slug}/submit`, {
+      const response = await fetch(`/api/forms/public/${slug}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: formData }),
