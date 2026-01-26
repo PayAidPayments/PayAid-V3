@@ -23,27 +23,21 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   // Server-side timeout wrapper (Vercel has 10s timeout on Hobby, 60s on Pro)
   const SERVER_TIMEOUT = 25000 // 25 seconds (leave buffer for Vercel)
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => {
-    controller.abort()
-    console.error('[LOGIN] Server-side timeout after 25 seconds')
-  }, SERVER_TIMEOUT)
-
+  
   try {
     // Ensure we always return JSON, even for unexpected errors
     const result = await Promise.race([
       handleLogin(request),
       new Promise<NextResponse>((_, reject) => {
-        controller.signal.addEventListener('abort', () => {
+        setTimeout(() => {
+          console.error('[LOGIN] Server-side timeout after 25 seconds')
           reject(new Error('Server timeout: Request took too long to process'))
-        })
+        }, SERVER_TIMEOUT)
       }),
     ])
     
-    clearTimeout(timeoutId)
     return result
   } catch (unexpectedError) {
-    clearTimeout(timeoutId)
     
     // Catch any errors that occur outside the main try-catch
     console.error('[LOGIN] Unexpected error outside handler:', unexpectedError)
