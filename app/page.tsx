@@ -532,26 +532,18 @@ export default function LandingPage() {
               </a>
             </div>
             <div className="flex items-center gap-4 relative z-50">
-              <a 
+              <Link 
                 href="/login"
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer relative z-50"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  // Let the anchor tag navigate naturally - don't prevent default
-                }}
               >
                 Sign In
-              </a>
-              <a 
+              </Link>
+              <Link 
                 href="/signup"
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors cursor-pointer relative z-50"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  // Let the anchor tag navigate naturally - don't prevent default
-                }}
               >
                 Get Started
-              </a>
+              </Link>
             </div>
           </div>
         </nav>
@@ -629,16 +621,12 @@ export default function LandingPage() {
                 Built specifically for Indian SMBs.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12 relative z-10">
-                <a 
+                <Link 
                   href="/signup"
                   className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors cursor-pointer relative z-10"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    // Let the anchor tag navigate naturally
-                  }}
                 >
                   Start Free Trial
-                </a>
+                </Link>
                 <Link 
                   href="#dashboard-showcase"
                   className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 border-2 border-[#53328A] text-[#53328A] hover:bg-purple-50 transition-colors cursor-pointer relative z-10"

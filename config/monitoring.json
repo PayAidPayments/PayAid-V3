@@ -1,0 +1,52 @@
+{
+  "prometheus": {
+    "enabled": true,
+    "port": 9090,
+    "path": "/metrics",
+    "scrapeInterval": "15s"
+  },
+  "healthChecks": {
+    "database": {
+      "endpoint": "/api/health/database",
+      "interval": 30,
+      "timeout": 5
+    },
+    "redis": {
+      "endpoint": "/api/health/redis",
+      "interval": 30,
+      "timeout": 5
+    },
+    "api": {
+      "endpoint": "/api/health",
+      "interval": 10,
+      "timeout": 3
+    }
+  },
+  "alerts": {
+    "apiResponseTime": {
+      "warning": 500,
+      "critical": 1000
+    },
+    "errorRate": {
+      "warning": 0.05,
+      "critical": 0.1
+    },
+    "databaseConnections": {
+      "warning": 80,
+      "critical": 90
+    }
+  },
+  "logging": {
+    "level": "debug",
+    "format": "json",
+    "destinations": [
+      "console",
+      "file"
+    ],
+    "file": {
+      "path": "./logs/app.log",
+      "maxSize": "10MB",
+      "maxFiles": 5
+    }
+  }
+}

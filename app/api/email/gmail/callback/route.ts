@@ -110,10 +110,16 @@ export async function GET(request: NextRequest) {
       ? new Date(Date.now() + expires_in * 1000).toISOString()
       : new Date(Date.now() + 3600 * 1000).toISOString() // Default 1 hour
 
-    // Store tokens in providerCredentials JSON field
+    // Encrypt tokens before storing
+    const { getEncryptionService } = await import('@/lib/security/encryption')
+    const encryptionService = getEncryptionService()
+    const encryptedAccessToken = encryptionService.encrypt(access_token)
+    const encryptedRefreshToken = refresh_token ? encryptionService.encrypt(refresh_token) : null
+
+    // Store tokens in providerCredentials JSON field (encrypted)
     const providerCredentials = {
-      accessToken: access_token,
-      refreshToken: refresh_token || null,
+      accessToken: encryptedAccessToken, // Encrypted
+      refreshToken: encryptedRefreshToken, // Encrypted
       expiresAt,
       tokenType: 'Bearer',
       scope: tokens.scope || 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send',

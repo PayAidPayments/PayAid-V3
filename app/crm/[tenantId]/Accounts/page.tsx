@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
 import { StageBadge } from '@/components/crm/StageBadge'
+import { AccountHealthWidget } from '@/components/crm/AccountHealthWidget'
 
 export default function CRMAccountsPage() {
   const params = useParams()
@@ -39,6 +40,9 @@ export default function CRMAccountsPage() {
               <Link href={`/crm/${tenantId}/Accounts`} className="text-blue-600 font-medium border-b-2 border-blue-600 pb-2">Accounts</Link>
               <Link href={`/crm/${tenantId}/Deals`} className="text-gray-600 hover:text-gray-900">Deals</Link>
               <Link href={`/crm/${tenantId}/Tasks`} className="text-gray-600 hover:text-gray-900">Tasks</Link>
+              <Link href={`/crm/${tenantId}/Forms`} className="text-gray-600 hover:text-gray-900">Forms</Link>
+              <Link href={`/crm/${tenantId}/Territories`} className="text-gray-600 hover:text-gray-900">Territories</Link>
+              <Link href={`/crm/${tenantId}/Quotes`} className="text-gray-600 hover:text-gray-900">Quotes</Link>
               <Link href={`/crm/${tenantId}/Reports`} className="text-gray-600 hover:text-gray-900">Reports</Link>
             </nav>
           </div>

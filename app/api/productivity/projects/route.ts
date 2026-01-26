@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { withErrorHandling } from '@/lib/api/route-wrapper'
-import { ApiResponse, Project } from '@/types/base-modules'
+import type { ApiResponse } from '@/types/base-modules'
+import type { Project } from '@/modules/shared/productivity/types'
 import { CreateProjectSchema } from '@/modules/shared/productivity/types'
 import { formatINR } from '@/lib/currency'
 
@@ -29,8 +30,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       startDate: new Date(validatedData.startDate),
       endDate: validatedData.endDate ? new Date(validatedData.endDate) : null,
       budget: validatedData.budgetINR,
-      team: validatedData.team,
-      visibility: validatedData.visibility,
+      // TODO: Add team members via ProjectMember relation after project creation
+      // TODO: Handle visibility if needed
     },
   })
 
@@ -41,17 +42,17 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       id: project.id,
       organizationId: project.tenantId,
       name: project.name,
-      description: project.description,
+      description: project.description || '',
       status: project.status as Project['status'],
       clientId: project.clientId || undefined,
-      startDate: project.startDate,
+      startDate: project.startDate || new Date(),
       endDate: project.endDate || undefined,
       budgetINR: project.budget ? Number(project.budget) : undefined,
-      actualCostINR: undefined,
+      actualCostINR: project.actualCost ? Number(project.actualCost) : undefined,
       tasks: [],
       milestones: [],
-      team: project.team as string[],
-      visibility: project.visibility as Project['visibility'],
+      team: [],
+      visibility: 'team' as const,
       createdAt: project.createdAt,
     },
     meta: {
@@ -114,17 +115,17 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     id: project.id,
     organizationId: project.tenantId,
     name: project.name,
-    description: project.description,
+    description: project.description || '',
     status: project.status as Project['status'],
     clientId: project.clientId || undefined,
-    startDate: project.startDate,
+    startDate: project.startDate || new Date(),
     endDate: project.endDate || undefined,
     budgetINR: project.budget ? Number(project.budget) : undefined,
-    actualCostINR: undefined,
+    actualCostINR: project.actualCost ? Number(project.actualCost) : undefined,
     tasks: [],
     milestones: [],
-    team: project.team as string[],
-    visibility: project.visibility as Project['visibility'],
+    team: [],
+    visibility: 'team' as const,
     createdAt: project.createdAt,
   }))
 

@@ -1,252 +1,288 @@
-# Vercel Deployment Guide - PayAid V3
+# Vercel Deployment Guide - Financial Dashboard Module
 
-## 🚀 Quick Start
-
-1. **Import Repository** → `PayAidPayments/PayAid-V3`
-2. **Configure Environment Variables** (see below)
-3. **Deploy**
+**Date:** January 2026  
+**Status:** ✅ **Ready for Deployment**
 
 ---
 
-## Step-by-Step Deployment
+## 🚀 **QUICK DEPLOYMENT**
 
-### Step 1: Import Repository to Vercel
+### **Option 1: Automated Script (Recommended)**
 
-1. Go to [https://vercel.com/dashboard](https://vercel.com/dashboard)
-2. Click **"Add New..."** → **"Project"**
-3. Click **"Import Git Repository"**
-4. Search for or enter: `PayAidPayments/PayAid-V3`
-5. Click **"Import"**
-
-### Step 2: Configure Project Settings
-
-Vercel should auto-detect Next.js. Verify these settings:
-
-- **Framework Preset:** `Next.js`
-- **Root Directory:** `/` (leave as default)
-- **Build Command:** `npm run build` (auto-detected)
-- **Output Directory:** `.next` (auto-detected)
-- **Install Command:** `npm install` (auto-detected)
-
-**Note:** The `vercel.json` file already contains these settings, so Vercel will use them automatically.
-
-### Step 3: Configure Environment Variables
-
-**Before deploying**, you must add environment variables. Click **"Environment Variables"** and add the following:
-
-#### 🔴 **REQUIRED - Core Application**
-
-```env
-# Database (REQUIRED)
-DATABASE_URL="postgresql://user:password@host:5432/database?schema=public"
-
-# JWT Authentication (REQUIRED)
-JWT_SECRET="your-secret-key-change-in-production"
-JWT_EXPIRES_IN="24h"
-
-# NextAuth (REQUIRED)
-NEXTAUTH_URL="https://your-app.vercel.app"
-NEXTAUTH_SECRET="your-nextauth-secret-change-in-production"
-
-# App Configuration (REQUIRED)
-NODE_ENV="production"
-APP_URL="https://your-app.vercel.app"
-NEXT_PUBLIC_APP_URL="https://your-app.vercel.app"
-NEXT_PUBLIC_SUBDOMAIN_DOMAIN="payaid.com"
-
-# Encryption Key (REQUIRED - for API keys at rest)
-ENCRYPTION_KEY="64-character-hex-string-generate-with-node-crypto"
+**Windows (PowerShell):**
+```powershell
+.\scripts\vercel-deploy-financial-dashboard.ps1
 ```
 
-**Generate Encryption Key:**
+**Linux/Mac (Bash):**
 ```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+chmod +x scripts/vercel-deploy-financial-dashboard.sh
+./scripts/vercel-deploy-financial-dashboard.sh
 ```
 
-#### 🟡 **REQUIRED - PayAid Payments (Platform Payments)**
+### **Option 2: Manual Steps**
 
-```env
-# PayAid Payments - Admin Credentials (Platform Payments Only)
-PAYAID_ADMIN_API_KEY="your-36-digit-merchant-key"
-PAYAID_ADMIN_SALT="your-salt-key-KEEP-SECRET"
-PAYAID_PAYMENTS_PG_API_URL="https://your-pg-api-url.com"
-# Alternative name (both work):
-PAYAID_PAYMENTS_BASE_URL="https://your-pg-api-url.com"
-```
+Follow the steps below for manual deployment.
 
-#### 🟢 **OPTIONAL - AI Services (At least one recommended for chat)**
+---
 
-```env
-# AI - Groq (Fast Inference API - Primary Chat Service)
-GROQ_API_KEY="gsk_..."
-GROQ_MODEL="llama-3.1-8b-instant"
+## 📋 **STEP-BY-STEP DEPLOYMENT**
 
-# AI - Hugging Face (Cloud-based, Free tier available)
-HUGGINGFACE_API_KEY="hf_..."
-HUGGINGFACE_MODEL="google/gemma-2-2b-it"
-HUGGINGFACE_IMAGE_MODEL="ByteDance/SDXL-Lightning"
+### **Step 1: Prepare Git Repository**
 
-# AI - Google Gemini (Image Generation)
-GEMINI_API_KEY="AIza_..."
-
-# AI - Ollama (Local - Not available on Vercel, use for local dev only)
-# OLLAMA_BASE_URL="http://localhost:11434" # Not applicable for Vercel
-```
-
-#### 🟢 **OPTIONAL - Communication Services**
-
-```env
-# Email (SendGrid)
-SENDGRID_API_KEY="SG...."
-SENDGRID_FROM_EMAIL="noreply@payaid.com"
-
-# WhatsApp (WATI)
-WATI_API_KEY="..."
-WATI_BASE_URL="https://api.wati.io"
-
-# SMS (Exotel)
-EXOTEL_API_KEY="..."
-EXOTEL_API_TOKEN="..."
-EXOTEL_SID="..."
-```
-
-#### 🟢 **OPTIONAL - File Storage**
-
-```env
-# Cloudflare R2
-CLOUDFLARE_R2_ACCOUNT_ID="..."
-CLOUDFLARE_R2_ACCESS_KEY_ID="..."
-CLOUDFLARE_R2_SECRET_ACCESS_KEY="..."
-CLOUDFLARE_R2_BUCKET_NAME="..."
-```
-
-#### 🟢 **OPTIONAL - Monitoring & Other**
-
-```env
-# Redis (for queues - optional)
-REDIS_URL="redis://..."
-
-# Monitoring
-SENTRY_DSN="..."
-
-# Cron Jobs
-CRON_SECRET="64-character-hex-string-generate-with-node-crypto"
-
-# Supabase (if using Supabase client library)
-SUPABASE_URL="..."
-SUPABASE_KEY="..."
-```
-
-### Step 4: Deploy
-
-1. After adding environment variables, click **"Deploy"**
-2. Wait for the build to complete (usually 2-5 minutes)
-3. Once deployed, you'll get a URL like: `https://payaid-v3.vercel.app`
-
-### Step 5: Update NEXTAUTH_URL (Important!)
-
-After deployment, you'll get your production URL. **Update the environment variable:**
-
-1. Go to **Project Settings** → **Environment Variables**
-2. Update `NEXTAUTH_URL` to your actual Vercel URL:
+1. **Check git status:**
+   ```bash
+   git status
    ```
-   NEXTAUTH_URL="https://payaid-v3.vercel.app"
+
+2. **Stage all changes:**
+   ```bash
+   git add .
    ```
-3. Update `APP_URL` and `NEXT_PUBLIC_APP_URL` to match:
+
+3. **Commit changes:**
+   ```bash
+   git commit -m "Financial Dashboard Module - Ready for Vercel deployment"
    ```
-   APP_URL="https://payaid-v3.vercel.app"
-   NEXT_PUBLIC_APP_URL="https://payaid-v3.vercel.app"
+
+4. **Push to GitHub:**
+   ```bash
+   git push
    ```
-4. **Redeploy** (Vercel will auto-redeploy when you update environment variables)
 
 ---
 
-## 🔧 Environment Variable Configuration Tips
+### **Step 2: Deploy to Vercel**
 
-### Setting Environment Variables in Vercel
+#### **Option A: Via Vercel Dashboard (Recommended for First Time)**
 
-1. Go to your project in Vercel dashboard
-2. Click **Settings** → **Environment Variables**
-3. For each variable:
-   - **Key:** Variable name (e.g., `DATABASE_URL`)
-   - **Value:** Variable value (e.g., `postgresql://...`)
-   - **Environment:** Select where it applies:
-     - ✅ **Production** (for production deployments)
-     - ✅ **Preview** (for preview deployments)
-     - ✅ **Development** (for local development with Vercel CLI)
+1. **Go to Vercel Dashboard:**
+   - Visit: https://vercel.com/dashboard
+   - Sign in or create account
 
-### Environment-Specific Values
+2. **Import Project:**
+   - Click "Add New" → "Project"
+   - Select your GitHub repository
+   - Vercel will auto-detect Next.js
 
-You can set different values for Production, Preview, and Development:
+3. **Configure Project:**
+   - **Framework Preset:** Next.js (auto-detected)
+   - **Root Directory:** `./` (default)
+   - **Build Command:** `npm run build` (auto-detected)
+   - **Output Directory:** `.next` (auto-detected)
+   - **Install Command:** `npm install --legacy-peer-deps` (from vercel.json)
 
-- **Production:** Use production database, production API keys
-- **Preview:** Use staging database, test API keys
-- **Development:** Use local development values (if using Vercel CLI)
+4. **Environment Variables:**
+   - Add `DATABASE_URL` from your `.env` file
+   - Add `CRON_SECRET` for cron jobs
+   - Add any other required environment variables
 
----
+5. **Deploy:**
+   - Click "Deploy"
+   - Wait for build to complete
 
-## ✅ Post-Deployment Checklist
+#### **Option B: Via Vercel CLI**
 
-- [ ] Deployment successful (no build errors)
-- [ ] `NEXTAUTH_URL` updated to production URL
-- [ ] `APP_URL` and `NEXT_PUBLIC_APP_URL` updated to production URL
-- [ ] Database connection working (test login/registration)
-- [ ] PayAid Payments configured (test payment link generation)
-- [ ] AI services working (test chat if configured)
-- [ ] Custom domain configured (if applicable)
+1. **Install Vercel CLI (if not installed):**
+   ```bash
+   npm install -g vercel
+   ```
 
----
+2. **Login to Vercel:**
+   ```bash
+   vercel login
+   ```
 
-## 🐛 Troubleshooting
+3. **Link Project:**
+   ```bash
+   vercel link
+   ```
 
-### Build Fails with Prisma Error
-
-**Error:** `Cannot find module '@prisma/client'`
-
-**Solution:** The `package.json` already includes `prisma generate` in the build script. If issues persist:
-1. Check that `DATABASE_URL` is set correctly
-2. Verify Prisma schema is valid: `npx prisma validate`
-
-### Build Fails with Module Not Found
-
-**Error:** `Cannot find module '@/lib/...'`
-
-**Solution:** This usually means a missing import. Check:
-1. All files are committed to GitHub
-2. No local-only files are referenced
-
-### Environment Variables Not Working
-
-**Solution:**
-1. Verify variables are set for the correct environment (Production/Preview)
-2. Redeploy after adding new variables
-3. Check variable names match exactly (case-sensitive)
-
-### Database Connection Issues
-
-**Solution:**
-1. Verify `DATABASE_URL` is correct
-2. Check database allows connections from Vercel IPs
-3. For Supabase: Whitelist Vercel IPs or use connection pooling
+4. **Deploy to Production:**
+   ```bash
+   vercel --prod
+   ```
 
 ---
 
-## 📝 Notes
+### **Step 3: Apply Database Schema**
 
-- **Automatic Deployments:** Vercel will automatically deploy when you push to the `main` branch
-- **Preview Deployments:** Every pull request gets a preview deployment
-- **Environment Variables:** Changes to environment variables require a redeploy
-- **Build Time:** First deployment may take longer (5-10 minutes), subsequent deployments are faster (2-5 minutes)
+After Vercel deployment, apply the database schema:
+
+#### **Option A: Via Vercel CLI (Recommended)**
+
+1. **Connect to Vercel project:**
+   ```bash
+   vercel link
+   ```
+
+2. **Run migration:**
+   ```bash
+   vercel env pull .env.production
+   npx prisma migrate deploy
+   ```
+
+#### **Option B: Via Vercel Dashboard**
+
+1. **Go to Project Settings → Environment Variables**
+2. **Copy `DATABASE_URL`**
+3. **Run locally with production URL:**
+   ```bash
+   DATABASE_URL="your-production-url" npx prisma migrate deploy
+   ```
+
+#### **Option C: Via Prisma Studio (For Development)**
+
+```bash
+# Set production DATABASE_URL
+export DATABASE_URL="your-production-url"
+npx prisma db push
+```
 
 ---
 
-## 🔗 Useful Links
+### **Step 4: Run Deployment Script**
 
-- [Vercel Dashboard](https://vercel.com/dashboard)
-- [Vercel Environment Variables Docs](https://vercel.com/docs/concepts/projects/environment-variables)
-- [Next.js on Vercel](https://vercel.com/docs/frameworks/nextjs)
+After database schema is applied, run the automated deployment script:
+
+```bash
+# Set production DATABASE_URL
+export DATABASE_URL="your-production-url"
+
+# Run deployment script
+npx tsx scripts/deploy-financial-dashboard.ts
+```
+
+**This will automatically:**
+- ✅ Apply materialized views (Step 3)
+- ✅ Initialize all active tenants (Step 4)
+- ✅ Sync existing financial data (Step 5)
+- ✅ Enable module access (Step 9)
 
 ---
 
-**Ready to deploy!** Follow the steps above to get your PayAid V3 application live on Vercel.
+### **Step 5: Verify Deployment**
 
+1. **Check Vercel Deployment:**
+   - Go to Vercel Dashboard
+   - Check deployment logs
+   - Verify build succeeded
+
+2. **Test API Endpoints:**
+   ```bash
+   # Dashboard snapshot
+   curl https://your-app.vercel.app/api/v1/financials/dashboard
+
+   # P&L
+   curl https://your-app.vercel.app/api/v1/financials/p-and-l?startDate=2024-01-01&endDate=2024-12-31
+   ```
+
+3. **Test Frontend:**
+   - Navigate to: `https://your-app.vercel.app/financials/dashboard`
+   - Verify all components load
+   - Test export functionality
+
+4. **Verify Cron Jobs:**
+   - Check Vercel Cron Jobs dashboard
+   - Verify financial dashboard cron is scheduled
+   - Test cron endpoint manually (with CRON_SECRET)
+
+---
+
+## 🔧 **VERCEL CONFIGURATION**
+
+### **Current `vercel.json`:**
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install --legacy-peer-deps",
+  "framework": "nextjs",
+  "env": {
+    "PRISMA_GENERATE_DATAPROXY": "false"
+  },
+  "crons": [
+    {
+      "path": "/api/cron/financial-dashboard",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}
+```
+
+### **Required Environment Variables:**
+
+Add these in Vercel Dashboard → Project Settings → Environment Variables:
+
+- `DATABASE_URL` - PostgreSQL connection string
+- `CRON_SECRET` - Secret for cron job authentication
+- `JWT_SECRET` - JWT token secret
+- Any other environment variables from your `.env` file
+
+---
+
+## 📝 **POST-DEPLOYMENT CHECKLIST**
+
+- [ ] Database schema applied
+- [ ] Materialized views created
+- [ ] Tenants initialized
+- [ ] Data synchronized
+- [ ] Module access enabled
+- [ ] API endpoints tested
+- [ ] Frontend verified
+- [ ] Cron jobs configured
+- [ ] Environment variables set
+- [ ] Performance monitoring set up
+
+---
+
+## 🐛 **TROUBLESHOOTING**
+
+### **Build Fails:**
+- Check Vercel build logs
+- Verify all environment variables are set
+- Check Prisma client generation (should happen in postinstall)
+
+### **Database Connection Issues:**
+- Verify `DATABASE_URL` is correct
+- Check database connection pool limits
+- Ensure database allows connections from Vercel IPs
+
+### **Cron Jobs Not Running:**
+- Verify `CRON_SECRET` is set
+- Check cron job path is correct
+- Verify cron schedule in vercel.json
+
+### **API Errors:**
+- Check API logs in Vercel
+- Verify database schema is applied
+- Check module access is enabled for tenants
+
+---
+
+## ✅ **SUCCESS CRITERIA**
+
+Deployment is successful when:
+- ✅ Build completes without errors
+- ✅ Database schema is applied
+- ✅ API endpoints return data
+- ✅ Frontend loads correctly
+- ✅ Cron jobs are scheduled
+- ✅ Financial Dashboard module is accessible
+
+---
+
+## 📞 **SUPPORT**
+
+If you encounter issues:
+1. Check Vercel deployment logs
+2. Check Vercel function logs
+3. Review database connection
+4. Verify environment variables
+5. Check Prisma client generation
+
+---
+
+**Status:** ✅ **Ready for Deployment**
+
+**Next Action:** Run deployment script or follow manual steps above.

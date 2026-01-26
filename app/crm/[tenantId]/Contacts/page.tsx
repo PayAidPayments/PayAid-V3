@@ -41,7 +41,8 @@ import {
   Sparkles,
   LogOut,
   ChevronDown as ChevronDownIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Search as SearchIcon
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
 // ModuleTopBar is now in layout.tsx

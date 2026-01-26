@@ -37,8 +37,8 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
   const moreMenuButtonRef = useRef<HTMLButtonElement>(null)
 
   const isActive = (href: string) => {
-    if (href === '/dashboard' || href === `/${moduleId}`) {
-      return pathname === href || pathname === `/${moduleId}/home`
+    if (href === '/home' || href === `/${moduleId}`) {
+      return pathname === href || pathname === `/${moduleId}/home` || pathname?.startsWith(`/${moduleId}/Home`)
     }
     return pathname?.startsWith(href)
   }
@@ -74,9 +74,9 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
 
   const getProfileUrl = () => {
     if (tenant?.id) {
-      return `/dashboard/${tenant.id}/settings/profile`
+      return `/home/${tenant.id}`
     }
-    return '/dashboard/settings/profile'
+    return '/home'
   }
 
   // Fetch news unread count

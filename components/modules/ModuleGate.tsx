@@ -37,9 +37,9 @@ export function ModuleGate({
   const router = useRouter()
 
   // Determine redirect destination
-  const defaultRedirect = user?.role === 'owner' || user?.role === 'admin' 
-    ? '/dashboard/admin/modules'  // Admins go to module management
-    : '/dashboard/admin/modules'   // Regular users also go to module management (they'll see upgrade options)
+  const defaultRedirect = tenant?.id 
+    ? `/home/${tenant.id}`  // Redirect to tenant home
+    : '/home'   // Fallback to home
 
   const redirectPath = redirectTo || defaultRedirect
 
@@ -92,10 +92,10 @@ export function ModuleGate({
           </Link>
           
           <Link
-            href="/dashboard"
+            href={tenant?.id ? `/home/${tenant.id}` : '/home'}
             className="inline-block w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-center"
           >
-            Back to Dashboard
+            Back to Home
           </Link>
         </div>
 

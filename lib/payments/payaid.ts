@@ -145,7 +145,7 @@ export class PayAidPayments {
 
     const url = `${this.baseUrl}${endpoint}`
 
-    let requestBody: any
+    let requestBody: Record<string, string | number | undefined>
     let headers: HeadersInit = {
       'Content-Type': 'application/json',
     }
@@ -214,7 +214,7 @@ export class PayAidPayments {
    */
   async createPaymentRequest(params: PaymentRequestParams): Promise<PaymentResponse> {
     // Ensure amount is in correct format (decimal 12,2)
-    const paymentParams: any = {
+    const paymentParams: Record<string, string | number | undefined> = {
       ...params,
       amount: params.amount.toFixed(2),
       currency: params.currency || 'INR',
@@ -234,7 +234,7 @@ export class PayAidPayments {
       throw new Error('Encryption key not configured')
     }
 
-    const paymentParams: any = {
+    const paymentParams: Record<string, string | number | undefined> = {
       ...params,
       amount: params.amount.toFixed(2),
       currency: params.currency || 'INR',
@@ -258,7 +258,7 @@ export class PayAidPayments {
     expiry_datetime: string
     order_id: string
   }> {
-    const paymentParams: any = {
+    const paymentParams: Record<string, string | number | undefined> = {
       ...params,
       amount: params.amount.toFixed(2),
       currency: params.currency || 'INR',
@@ -266,7 +266,14 @@ export class PayAidPayments {
       mode: params.mode || 'LIVE',
     }
 
-    const response = await this.request<{ data: any }>(
+    const response = await this.request<{ 
+      data: {
+        url: string
+        uuid: string
+        expiry_datetime: string
+        order_id: string
+      }
+    }>(
       '/v2/getpaymentrequesturl',
       'POST',
       paymentParams

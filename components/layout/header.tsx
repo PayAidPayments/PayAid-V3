@@ -76,9 +76,9 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
   const getProfileUrl = () => {
     if (tenant?.id) {
-      return `/dashboard/${tenant.id}/settings/profile`
+      return `/home/${tenant.id}`
     }
-    return '/dashboard/settings/profile'
+    return '/home'
   }
 
   return (

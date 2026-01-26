@@ -44,3 +44,45 @@ next-env.d.ts
 # separate module repositories (already in their own repos)
 /repositories.vercel
 .env*.local
+
+# Cursor IDE files
+.cursor/
+
+# Docker files
+.docker/
+.ollama/
+
+# Build outputs
+.next/
+out/
+build/
+
+# System files (Windows)
+AppData/
+NTUSER.DAT*
+ntuser.*
+*.ini
+Cookies/
+Local Settings/
+My Documents/
+NetHood/
+PrintHood/
+Recent/
+SendTo/
+Start Menu/
+Templates/
+3D Objects/
+Contacts/
+Desktop/
+Documents/
+Downloads/
+Favorites/
+IntelGraphicsProfiles/
+Links/
+Music/
+OneDrive/
+Pictures/
+Saved Games/
+Searches/
+Videos/
+deployed-page.html

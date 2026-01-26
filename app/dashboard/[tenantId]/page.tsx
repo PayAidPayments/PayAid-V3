@@ -1,12 +1,14 @@
 'use client'
 
+'use client'
+
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useAuthStore } from '@/lib/stores/auth'
-import DashboardPage from '../page'
+import { redirect } from 'next/navigation'
 
 // This page handles /dashboard/[tenantId] routes
-// It validates the tenant and renders the dashboard
+// It validates the tenant and redirects to the main dashboard
 export default function TenantDashboardPage() {
   const params = useParams()
   const router = useRouter()
@@ -21,8 +23,19 @@ export default function TenantDashboardPage() {
       router.replace(`/dashboard/${tenant.id}`)
       return
     }
+    
+    // Redirect to main dashboard stats page
+    if (tenantIdFromUrl) {
+      router.replace(`/dashboard/${tenantIdFromUrl}/stats`)
+    }
   }, [tenant?.id, tenantIdFromUrl, router])
 
-  // Render the actual dashboard page
-  return <DashboardPage />
+  // Show loading state
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <p>Loading dashboard...</p>
+      </div>
+    </div>
+  )
 }

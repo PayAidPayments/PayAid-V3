@@ -44,10 +44,16 @@ export default function LoginPage() {
     setError('')
 
     try {
-      await login(email, password)
+      // Login and get tenant data directly from response
+      const loginResult = await login(email, password)
+      const tenant = loginResult.tenant
       
-      // Get tenant ID from auth store after login completes
-      const { tenant } = useAuthStore.getState()
+      // If no tenant, redirect to /home and let it handle the redirect
+      if (!tenant?.id) {
+        console.warn('[LOGIN] Tenant ID not available after login, redirecting to /home')
+        router.push('/home')
+        return
+      }
       
       // Redirect to intended URL if provided, otherwise to dashboard
       if (redirectUrl) {
@@ -184,23 +190,32 @@ export default function LoginPage() {
             } else {
               finalUrl = '/home'
             }
-          } else if (tenant?.id && !redirectUrl.includes(`/dashboard/${tenant.id}`)) {
-            // Add tenant ID to dashboard path if not present
-            const pathWithoutDashboard = redirectUrl.replace(/^\/dashboard\/?/, '')
-            finalUrl = `/dashboard/${tenant.id}${pathWithoutDashboard ? '/' + pathWithoutDashboard : ''}`
+          } else if (redirectUrl === '/dashboard' || redirectUrl.startsWith('/dashboard')) {
+            // Redirect /dashboard to tenant home
+            if (tenant?.id) {
+              finalUrl = `/home/${tenant.id}`
+            } else {
+              finalUrl = '/home'
+            }
           }
-        } else if (tenant?.id && !redirectUrl.includes(`/dashboard/${tenant.id}`)) {
-          // Add tenant ID to dashboard path if not present
-          const pathWithoutDashboard = redirectUrl.replace(/^\/dashboard\/?/, '')
-          finalUrl = `/dashboard/${tenant.id}${pathWithoutDashboard ? '/' + pathWithoutDashboard : ''}`
+        } else if (redirectUrl === '/dashboard' || redirectUrl.startsWith('/dashboard')) {
+          // Redirect /dashboard to tenant home
+          if (tenant?.id) {
+            finalUrl = `/home/${tenant.id}`
+          } else {
+            finalUrl = '/home'
+          }
         }
         
         router.push(finalUrl)
       } else {
         // Default: Always redirect to tenant home page to show all apps
-        if (tenant?.id) {
-          router.push(`/home/${tenant.id}`)
+        if (tenant?.id && typeof tenant.id === 'string' && tenant.id.trim().length > 0) {
+          const homeUrl = `/home/${tenant.id}`
+          console.log('[LOGIN] Redirecting to:', homeUrl, { tenantId: tenant.id, tenantName: tenant.name })
+          router.push(homeUrl)
         } else {
+          console.warn('[LOGIN] No valid tenant ID, redirecting to /home', { tenant })
           router.push('/home')
         }
       }

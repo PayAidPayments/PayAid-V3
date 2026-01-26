@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { PageLoading } from '@/components/ui/loading'
+import { FileText } from 'lucide-react'
 
 export default function DealDetailPage() {
   const params = useParams()
@@ -43,6 +44,40 @@ export default function DealDetailPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            onClick={async () => {
+              try {
+                // Navigate to quote generation page or open modal
+                const response = await fetch(`/api/quotes`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    dealId: id,
+                    lineItems: [
+                      {
+                        productName: deal.name,
+                        quantity: 1,
+                        unitPrice: deal.value,
+                      },
+                    ],
+                  }),
+                })
+                if (response.ok) {
+                  const data = await response.json()
+                  router.push(`/crm/${tenantId}/Quotes/${data.data.id}`)
+                } else {
+                  alert('Failed to generate quote. Please try again.')
+                }
+              } catch (error) {
+                console.error('Error generating quote:', error)
+                alert('Failed to generate quote')
+              }
+            }}
+            className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Generate Quote
+          </Button>
           {deal.contact && (
             <Link href={`/finance/${tenantId}/Invoices/new?customerId=${deal.contact.id}`}>
               <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600">

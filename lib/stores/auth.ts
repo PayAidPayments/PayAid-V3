@@ -25,7 +25,7 @@ interface AuthState {
   token: string | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<{ user: User; tenant: Tenant | null; token: string }>
   register: (data: {
     email: string
     password: string
@@ -159,17 +159,26 @@ export const useAuthStore = create<AuthState>()(
             document.cookie = `token=${data.token}; expires=${expires.toUTCString()}; path=/; SameSite=Lax${isSecure ? '; Secure' : ''}`
           }
           
+          const tenantData = data.tenant ? {
+            ...data.tenant,
+            licensedModules: data.tenant?.licensedModules || [],
+            subscriptionTier: data.tenant?.subscriptionTier || 'free',
+          } : null
+          
           set({
             user: data.user,
-            tenant: {
-              ...data.tenant,
-              licensedModules: data.tenant?.licensedModules || [],
-              subscriptionTier: data.tenant?.subscriptionTier || 'free',
-            },
+            tenant: tenantData,
             token: data.token,
             isAuthenticated: true,
             isLoading: false,
           })
+          
+          // Return the login data for immediate use
+          return {
+            user: data.user,
+            tenant: tenantData,
+            token: data.token,
+          }
         } catch (error) {
           console.error('[AUTH] Login error:', error)
           set({ isLoading: false })

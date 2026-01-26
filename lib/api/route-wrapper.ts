@@ -10,10 +10,12 @@ import { handleError, generateRequestId, createSuccessResponse, ErrorCode, AppEr
  * Wrapper function for API route handlers
  * Automatically handles errors and returns standard error responses
  */
-export function withErrorHandling<T>(
-  handler: (request: NextRequest, context?: any) => Promise<NextResponse<T>>
+export function withErrorHandling<T = unknown>(
+  handler: (request: NextRequest, context?: { params?: Promise<Record<string, string>> }) => Promise<NextResponse<T | { success: boolean; statusCode: number; error: { code: string; message: string } }>>
 ) {
-  return async (request: NextRequest, context?: any): Promise<NextResponse> => {
+  return async (request: NextRequest, context?: { params?: Promise<Record<string, string>> }): Promise<NextResponse> => {
+    // Ensure context.params exists for route handlers that need it
+    const handlerContext = context || { params: Promise.resolve({}) as Promise<Record<string, string>> }
     const requestId = generateRequestId()
 
     try {

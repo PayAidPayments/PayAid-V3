@@ -84,6 +84,28 @@ export interface FilterCriteria {
   value: unknown
 }
 
+export interface DashboardWidget {
+  id: string
+  organizationId: string
+  dashboardId: string
+  widgetType: 'metric' | 'chart' | 'table' | 'gauge' | 'heatmap'
+  title: string
+  dataSource: {
+    module: string
+    metric: string
+    filters?: Record<string, unknown>
+    dateRange: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'custom'
+  }
+  displayOptions?: {
+    chartType?: 'line' | 'bar' | 'pie' | 'area'
+    currencyDisplay: 'INR'
+    compareWith?: 'previous_period' | 'previous_year'
+  }
+  position: { x: number; y: number }
+  size: { width: number; height: number }
+  refreshInterval?: number
+}
+
 export interface LeadPipeline {
   id: string
   organizationId: string
@@ -160,6 +182,139 @@ export interface Attachment {
   url: string
   uploadedBy: string
   uploadedAt: Date
+}
+
+/**
+ * Invoice Types (Finance Module)
+ */
+export interface Invoice {
+  id: string
+  organizationId: string
+  invoiceNumber: string
+  customerId?: string
+  customerName?: string
+  customerEmail?: string
+  customerPhone?: string
+  lineItems: Array<{
+    id: string
+    description: string
+    quantity: number
+    unitPrice: number
+    taxRate: number
+    hsnCode?: string
+    amount: number
+    taxAmount: number
+  }>
+  subtotalINR: number
+  totalTax: number
+  discountINR: number
+  totalINR: number
+  taxBreakdown: Record<string, number>
+  paymentTerms?: string
+  invoiceDate: Date
+  dueDate?: Date
+  status: 'draft' | 'sent' | 'viewed' | 'paid' | 'overdue' | 'cancelled'
+  paymentLinkUrl?: string
+  isRecurring?: boolean
+  recurringInterval?: 'monthly' | 'quarterly' | 'yearly'
+  createdAt: Date
+  updatedAt: Date
+}
+
+/**
+ * Expense Types (Finance Module)
+ */
+export interface Expense {
+  id: string
+  organizationId: string
+  description: string
+  amountINR: number
+  category: 'office' | 'travel' | 'marketing' | 'utilities' | 'supplies' | 'other'
+  paymentMethod: 'cash' | 'bank_transfer' | 'card' | 'upi' | 'other'
+  vendor?: string
+  receiptAttachment?: string
+  isRecurring: boolean
+  allocationToInvoice?: string
+  date: Date
+  status: 'pending' | 'approved' | 'rejected' | 'paid'
+  createdAt: Date
+  updatedAt: Date
+}
+
+/**
+ * GST Return Types (Finance Module)
+ */
+export interface GSTReturn {
+  id: string
+  organizationId: string
+  period: 'monthly' | 'quarterly'
+  month: number
+  year: number
+  totalSalesINR: number
+  totalPurchasesINR: number
+  outputGST: number
+  inputGST: number
+  netGSTPayable: number
+  taxBreakdown: Record<string, {
+    sales: number
+    purchases: number
+    outputGST: number
+    inputGST: number
+  }>
+  status: 'draft' | 'filed' | 'paid'
+  filedAt?: Date
+  createdAt: Date
+  updatedAt: Date
+}
+
+/**
+ * Task Types (Productivity Module)
+ */
+export interface Task {
+  id: string
+  organizationId: string
+  title: string
+  description?: string
+  status: 'todo' | 'in_progress' | 'blocked' | 'done'
+  priority: 'low' | 'medium' | 'high' | 'critical'
+  assignedTo: string[]
+  dueDate?: Date
+  projectId?: string
+  tags: string[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+/**
+ * Project Types (Productivity Module)
+ */
+export interface Project {
+  id: string
+  organizationId: string
+  name: string
+  description?: string
+  status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
+  startDate?: Date
+  endDate?: Date
+  budgetINR?: number
+  clientId?: string
+  teamMembers: string[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+/**
+ * Report Types (Analytics Module)
+ */
+export interface Report {
+  id: string
+  organizationId: string
+  name: string
+  type: 'financial' | 'sales' | 'inventory' | 'hr' | 'custom'
+  module: string
+  filters: Record<string, unknown>
+  createdAt: Date
+  updatedAt: Date
 }
 
 /**

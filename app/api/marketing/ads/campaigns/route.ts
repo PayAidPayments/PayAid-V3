@@ -17,17 +17,17 @@ export async function GET(request: NextRequest) {
     const { tenantId } = await requireModuleAccess(request, 'marketing')
 
     // For now, return empty array - in production, create AdCampaign model
-    const campaigns: any[] = []
+    const campaigns: Array<Record<string, unknown>> = []
 
     return NextResponse.json({ campaigns })
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }
 
     console.error('Get ad campaigns error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch campaigns', message: error?.message },
+      { error: 'Failed to fetch campaigns', message: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { prisma } from '@/lib/db/prisma'
 import { prismaWithRetry } from '@/lib/db/connection-retry'
+import { filterSmartNotifications, groupNotificationsByImportance, type Notification as SmartNotification } from '@/lib/notifications/smart-filter'
 
 interface Notification {
   id: string
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
     const unreadOnly = searchParams.get('unreadOnly') === 'true'
     const limit = parseInt(searchParams.get('limit') || '50')
     const moduleFilter = searchParams.get('module') // Optional: filter by module
+    const smartFilter = searchParams.get('smartFilter') === 'true' // Enable smart filtering
 
     // Get tenant with licensed modules
     const tenant = await prismaWithRetry(() =>
@@ -161,7 +163,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. Finance Module Notifications
-    if (licensedModules.includes('finance') && (!module || module === 'finance')) {
+    if (licensedModules.includes('finance') && (!moduleFilter || moduleFilter === 'finance')) {
       // Overdue invoices
       const overdueInvoices = await prismaWithRetry(() =>
         prisma.invoice.findMany({
@@ -224,7 +226,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. HR Module Notifications
-    if (licensedModules.includes('hr') && (!module || module === 'hr')) {
+    if (licensedModules.includes('hr') && (!moduleFilter || moduleFilter === 'hr')) {
       // Leave requests pending approval
       const pendingLeaves = await prismaWithRetry(() =>
         prisma.leaveRequest.findMany({
@@ -290,7 +292,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 4. Projects Module Notifications
-    if (licensedModules.includes('projects') && (!module || module === 'projects')) {
+    if (licensedModules.includes('projects') && (!moduleFilter || moduleFilter === 'projects')) {
       // Tasks due soon
       const projectTasksDue = await prismaWithRetry(() =>
         prisma.projectTask.findMany({
@@ -326,7 +328,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 5. Inventory Module Notifications
-    if (licensedModules.includes('inventory') && (!module || module === 'inventory')) {
+    if (licensedModules.includes('inventory') && (!moduleFilter || moduleFilter === 'inventory')) {
       // Low stock alerts
       const lowStockProducts = await prismaWithRetry(() =>
         prisma.product.findMany({
@@ -353,7 +355,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 6. Appointments Module Notifications
-    if (licensedModules.includes('appointments') && (!module || module === 'appointments')) {
+    if (licensedModules.includes('appointments') && (!moduleFilter || moduleFilter === 'appointments')) {
       // Upcoming appointments today
       const todayAppointments = await prismaWithRetry(() =>
         prisma.appointment.findMany({
@@ -384,23 +386,66 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Sort by priority and date
-    notifications.sort((a, b) => {
-      const priorityOrder = { HIGH: 3, MEDIUM: 2, LOW: 1 }
-      if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
-        return priorityOrder[b.priority] - priorityOrder[a.priority]
-      }
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    })
+    // Convert to smart filter format
+    const smartNotifications: SmartNotification[] = notifications.map((n) => ({
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      message: n.message,
+      priority: n.priority,
+      module: n.module || 'general',
+      timestamp: new Date(n.createdAt),
+      read: n.isRead,
+      actionUrl: n.actionUrl,
+    }))
 
-    // Apply limit
-    const limitedNotifications = notifications.slice(0, limit)
-    const unreadCount = limitedNotifications.filter((n) => !n.isRead).length
+    // Apply smart filtering if enabled
+    let finalNotifications = smartNotifications
+    if (smartFilter) {
+      finalNotifications = filterSmartNotifications(smartNotifications, {
+        minScore: 30, // Only show notifications with importance score >= 30
+        maxCount: limit,
+      })
+    } else {
+      // Sort by priority and date (original behavior)
+      finalNotifications.sort((a, b) => {
+        const priorityOrder = { HIGH: 3, MEDIUM: 2, LOW: 1 }
+        if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+          return priorityOrder[b.priority] - priorityOrder[a.priority]
+        }
+        return b.timestamp.getTime() - a.timestamp.getTime()
+      })
+      finalNotifications = finalNotifications.slice(0, limit)
+    }
+
+    // Convert back to response format
+    const responseNotifications = finalNotifications.map((n) => ({
+      id: n.id,
+      type: n.type,
+      module: n.module,
+      title: n.title,
+      message: n.message,
+      priority: n.priority,
+      isRead: n.read || false,
+      createdAt: n.timestamp.toISOString(),
+      actionUrl: n.actionUrl,
+    }))
+
+    const unreadCount = responseNotifications.filter((n) => !n.isRead).length
+
+    // Get grouped notifications for summary
+    const grouped = groupNotificationsByImportance(smartNotifications)
 
     return NextResponse.json({
-      notifications: limitedNotifications,
+      notifications: responseNotifications,
       unreadCount,
       total: notifications.length,
+      smartFilter: smartFilter,
+      summary: smartFilter ? {
+        critical: grouped.critical.length,
+        important: grouped.important.length,
+        normal: grouped.normal.length,
+      } : undefined,
     })
   } catch (error: any) {
     console.error('Get notifications error:', error)

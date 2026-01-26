@@ -1,0 +1,28 @@
+{
+  "postgresql": {
+    "full": {
+      "schedule": "0 2 * * 0",
+      "retention": 4,
+      "compression": true
+    },
+    "incremental": {
+      "schedule": "0 2 * * *",
+      "retention": 7,
+      "compression": true
+    },
+    "destination": {
+      "local": "./backups",
+      "s3": {
+        "enabled": false,
+        "bucket": "",
+        "region": "us-east-1",
+        "path": "database-backups"
+      }
+    }
+  },
+  "commands": {
+    "full": "pg_dump $DATABASE_URL > backups/full-$(date +%Y%m%d-%H%M%S).sql",
+    "incremental": "pg_dump $DATABASE_URL --schema-only > backups/incremental-$(date +%Y%m%d-%H%M%S).sql",
+    "restore": "psql $DATABASE_URL < backups/[BACKUP_FILE].sql"
+  }
+}

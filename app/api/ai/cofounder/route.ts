@@ -19,6 +19,7 @@ const cofounderSchema = z.object({
   }).optional(),
   conversationId: z.string().optional(), // Existing conversation ID
   useMultiSpecialist: z.boolean().optional().default(false), // Enable multi-specialist coordination
+  useLangChain: z.boolean().optional().default(false), // Enable LangChain agent orchestration
 })
 
 /**
@@ -129,41 +130,56 @@ ${tenant?.industry ? `Industry: ${tenant.industry}${tenant.industrySubType ? ` (
     // Build user message with context
     const userMessage = `${validated.message}\n\n${businessContext}`
     
-    // Try Groq first, fallback to Ollama, then HuggingFace
+    // Use LangChain if requested (for better tool composition and agent orchestration)
     let response = ''
     let usedService = 'unknown'
     
-    try {
-      const groq = getGroqClient()
-      const groqResponse = await groq.chat([
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ])
-      response = groqResponse.message || ''
-      usedService = 'groq'
-    } catch (groqError) {
-      console.warn('[COFOUNDER] Groq failed, trying Ollama:', groqError)
+    if (validated.useLangChain) {
       try {
-        const ollama = getOllamaClient()
-        const ollamaResponse = await ollama.chat([
+        const { executeLangChainQuery } = await import('@/lib/ai/langchain-setup')
+        response = await executeLangChainQuery(validated.message, tenantId, systemPrompt)
+        usedService = 'langchain'
+        console.log('[COFOUNDER] Using LangChain agent orchestration')
+      } catch (langchainError) {
+        console.warn('[COFOUNDER] LangChain failed, falling back to standard AI:', langchainError)
+        // Fall through to standard AI
+      }
+    }
+    
+    // If LangChain not used or failed, use standard AI
+    if (!response) {
+      try {
+        const groq = getGroqClient()
+        const groqResponse = await groq.chat([
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage },
         ])
-        response = ollamaResponse.message || ''
-        usedService = 'ollama'
-      } catch (ollamaError) {
-        console.warn('[COFOUNDER] Ollama failed, trying HuggingFace:', ollamaError)
+        response = groqResponse.message || ''
+        usedService = 'groq'
+      } catch (groqError) {
+        console.warn('[COFOUNDER] Groq failed, trying Ollama:', groqError)
         try {
-          const huggingFace = getHuggingFaceClient()
-          const hfResponse = await huggingFace.chat([
+          const ollama = getOllamaClient()
+          const ollamaResponse = await ollama.chat([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userMessage },
           ])
-          response = hfResponse.message || ''
-          usedService = 'huggingface'
-        } catch (hfError) {
-          console.error('[COFOUNDER] All AI services failed:', hfError)
-          throw new Error('AI services unavailable. Please try again later.')
+          response = ollamaResponse.message || ''
+          usedService = 'ollama'
+        } catch (ollamaError) {
+          console.warn('[COFOUNDER] Ollama failed, trying HuggingFace:', ollamaError)
+          try {
+            const huggingFace = getHuggingFaceClient()
+            const hfResponse = await huggingFace.chat([
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userMessage },
+            ])
+            response = hfResponse.message || ''
+            usedService = 'huggingface'
+          } catch (hfError) {
+            console.error('[COFOUNDER] All AI services failed:', hfError)
+            throw new Error('AI services unavailable. Please try again later.')
+          }
         }
       }
     }
@@ -275,6 +291,8 @@ ${tenant?.industry ? `Industry: ${tenant.industry}${tenant.industrySubType ? ` (
         tenantId,
         dataScopes: agent.dataScopes,
       },
+      method: usedService,
+      langChainEnabled: validated.useLangChain,
     })
   } catch (error) {
     console.error('[COFOUNDER] Error:', error)

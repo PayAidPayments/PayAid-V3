@@ -62,7 +62,7 @@ export function ModuleSwitcher() {
   const licensedModules = tenant?.licensedModules || []
   
   const allModules: Module[] = [
-    { id: 'dashboard', name: 'Dashboard', icon: '📊', url: '/dashboard', active: currentModule === 'dashboard', licensed: true },
+    { id: 'home', name: 'Home', icon: '🏠', url: tenantId ? `/home/${tenantId}` : '/home', active: currentModule === 'home', licensed: true },
     { id: 'crm', name: 'CRM', icon: '👥', url: getModuleUrl('crm'), active: currentModule === 'crm', licensed: licensedModules.includes('crm') || true },
     { id: 'sales', name: 'Sales', icon: '💼', url: getModuleUrl('sales'), active: currentModule === 'sales', licensed: licensedModules.includes('sales') || true },
     { id: 'finance', name: 'Finance', icon: '💰', url: getModuleUrl('finance'), active: currentModule === 'finance', licensed: licensedModules.includes('finance') || true },

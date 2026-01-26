@@ -104,7 +104,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           router.push('/login?redirect=' + encodeURIComponent(currentPath))
         } else {
           // Default: main login with redirect
-          const returnUrl = currentPath !== '/login' ? currentPath : '/dashboard'
+          const returnUrl = currentPath !== '/login' ? currentPath : '/home'
           router.push(`/login?redirect=${encodeURIComponent(returnUrl)}`)
         }
         return

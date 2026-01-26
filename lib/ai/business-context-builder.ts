@@ -92,6 +92,40 @@ ${pendingInvoices.slice(0, 5).map(i => `  - ${i.invoiceNumber}: ₹${i.total.toL
         orderBy: { value: 'desc' },
       })
 
+      // Predictive Insights: Churn Risk and Growth Opportunities
+      const customers = await prisma.contact.findMany({
+        where: { tenantId, type: { in: ['CUSTOMER', 'CLIENT'] } },
+        include: {
+          orders: {
+            select: { total: true, createdAt: true },
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+          },
+        },
+        take: 100,
+      })
+
+      // Calculate churn risk
+      const now = new Date()
+      const atRiskCustomers = customers.filter((c) => {
+        if (c.orders.length === 0) return true
+        const lastOrder = c.orders[0]
+        const daysSinceLastOrder = Math.floor(
+          (now.getTime() - new Date(lastOrder.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+        )
+        return daysSinceLastOrder > 60 // At risk if no order in 60+ days
+      })
+
+      // Calculate growth opportunities (high-value leads)
+      const highValueLeads = await prisma.contact.findMany({
+        where: {
+          tenantId,
+          type: 'LEAD',
+          likelyToBuy: true,
+        },
+        take: 5,
+      })
+
       context += `SALES DATA:
 - Total Contacts: ${contactsCount}
 - Total Deals: ${dealsCount}
@@ -99,6 +133,16 @@ ${pendingInvoices.slice(0, 5).map(i => `  - ${i.invoiceNumber}: ₹${i.total.toL
 ${activeDeals.length > 0 ? `
 Top Active Deals:
 ${activeDeals.slice(0, 5).map(d => `  - ${d.name}: ₹${d.value.toLocaleString('en-IN')} (${d.stage}, ${d.probability}% prob) - ${d.contact?.name || 'N/A'}`).join('\n')}
+` : ''}
+
+PREDICTIVE INSIGHTS:
+- Churn Risk: ${atRiskCustomers.length} customer${atRiskCustomers.length > 1 ? 's' : ''} at risk of churning (no activity in 60+ days)
+- Growth Opportunities: ${highValueLeads.length} high-value lead${highValueLeads.length > 1 ? 's' : ''} ready to convert
+${atRiskCustomers.length > 0 ? `
+⚠️ ACTION NEEDED: ${atRiskCustomers.length} customer${atRiskCustomers.length > 1 ? 's' : ''} need immediate re-engagement to prevent churn
+` : ''}
+${highValueLeads.length > 0 ? `
+💡 OPPORTUNITY: ${highValueLeads.length} high-value lead${highValueLeads.length > 1 ? 's' : ''} should be prioritized for conversion
 ` : ''}
 `
     }

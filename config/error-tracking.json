@@ -1,0 +1,13 @@
+{
+  "sentry": {
+    "enabled": false,
+    "dsn": "",
+    "environment": "development",
+    "tracesSampleRate": 0.1
+  },
+  "bugsnag": {
+    "enabled": false,
+    "apiKey": "",
+    "releaseStage": "development"
+  }
+}

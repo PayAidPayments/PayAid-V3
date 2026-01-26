@@ -12,18 +12,36 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         className={cn(
-          'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background',
+          // Base styles - Design System compliant
+          'inline-flex items-center justify-center rounded-lg text-sm font-semibold',
+          'transition-all duration-150 ease-in-out',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-primary focus-visible:ring-offset-2',
+          'disabled:opacity-50 disabled:cursor-not-allowed',
+          'active:scale-95', // Micro-interaction
           {
-            'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700': variant === 'default',
-            'bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700': variant === 'destructive',
-            'border border-gray-300 bg-transparent hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white': variant === 'outline',
-            'bg-gray-200 text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600': variant === 'secondary',
-            'hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white': variant === 'ghost',
-            'text-blue-600 underline-offset-4 hover:underline': variant === 'link',
-            'h-10 py-2 px-4': size === 'default',
-            'h-9 px-3': size === 'sm',
-            'h-11 px-8': size === 'lg',
-            'h-10 w-10': size === 'icon',
+            // Primary Button (High emphasis, main actions) - #0F766E
+            'bg-teal-primary text-white hover:bg-[#0D5B54] active:bg-[#0A4A43]': variant === 'default',
+            
+            // Danger Button (Destructive actions) - #DC2626
+            'bg-red-error text-white hover:bg-[#B91C1C] active:bg-[#991B1B]': variant === 'destructive',
+            
+            // Secondary Button (Lower emphasis) - Gray 100 background
+            'bg-gray-100 text-gray-900 hover:bg-gray-200 active:bg-gray-300 border border-gray-300': variant === 'secondary',
+            
+            // Outline Button
+            'border border-gray-300 bg-transparent text-gray-900 hover:bg-gray-50 active:bg-gray-100': variant === 'outline',
+            
+            // Tertiary/Ghost Button (Minimal style, text-only)
+            'text-teal-primary hover:bg-teal-primary/10 active:bg-teal-primary/20': variant === 'ghost',
+            
+            // Link Button
+            'text-teal-primary underline-offset-4 hover:underline p-0': variant === 'link',
+            
+            // Size variants (8px grid system)
+            'px-4 py-2.5': size === 'default', // 44px height (touch target)
+            'px-3 py-1.5 text-xs': size === 'sm', // 32px height
+            'px-6 py-3 text-base': size === 'lg', // 48px height
+            'h-10 w-10 p-0': size === 'icon', // 40px square
           },
           className
         )}

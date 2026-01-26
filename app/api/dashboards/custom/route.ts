@@ -1,89 +1,102 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { prisma } from '@/lib/db/prisma'
-import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 
-const createDashboardSchema = z.object({
+const dashboardSchema = z.object({
   name: z.string().min(1),
-  description: z.string().optional(),
-  layoutJson: z.record(z.any()),
-  widgets: z.array(z.record(z.any())),
-  isDefault: z.boolean().optional(),
-  isPublic: z.boolean().optional(),
+  widgets: z.array(
+    z.object({
+      id: z.string(),
+      type: z.enum(['metric', 'chart', 'list', 'table', 'kanban']),
+      title: z.string(),
+      config: z.record(z.any()),
+      position: z.object({
+        x: z.number(),
+        y: z.number(),
+        w: z.number(),
+        h: z.number(),
+      }),
+    })
+  ),
 })
 
-// GET /api/dashboards/custom - List custom dashboards
-export async function GET(request: NextRequest) {
+/**
+ * POST /api/dashboards/custom
+ * Create a custom dashboard
+ */
+export async function POST(request: NextRequest) {
   try {
-    // Check analytics module license
-    const { tenantId, userId } = await requireModuleAccess(request, 'analytics')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
-    const dashboards = await prisma.customDashboard.findMany({
-      where: {
-        tenantId: tenantId,
+    const body = await request.json()
+    const validated = dashboardSchema.parse(body)
+
+    // Store dashboard configuration (would be in a CustomDashboard model)
+    // For now, store in a JSON field or create a model
+    const dashboard = await prisma.customReport.create({
+      data: {
+        tenantId,
+        name: validated.name,
+        type: 'custom_dashboard',
+        config: {
+          widgets: validated.widgets,
+        },
+        createdById: userId,
       },
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'desc' },
-      ],
     })
 
-    return NextResponse.json({ dashboards })
+    return NextResponse.json({
+      success: true,
+      data: dashboard,
+    })
   } catch (error) {
-    console.error('Get custom dashboards error:', error)
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: error.errors },
+        { status: 400 }
+      )
+    }
+
+    console.error('Create dashboard error:', error)
     return NextResponse.json(
-      { error: 'Failed to get custom dashboards' },
+      { error: 'Failed to create dashboard' },
       { status: 500 }
     )
   }
 }
 
-// POST /api/dashboards/custom - Create custom dashboard
-export async function POST(request: NextRequest) {
+/**
+ * GET /api/dashboards/custom
+ * List custom dashboards
+ */
+export async function GET(request: NextRequest) {
   try {
-    // Check analytics module license
-    const { tenantId, userId } = await requireModuleAccess(request, 'analytics')
+    const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    const body = await request.json()
-    const validated = createDashboardSchema.parse(body)
-
-    // If setting as default, unset other defaults
-    if (validated.isDefault) {
-      await prisma.customDashboard.updateMany({
-        where: {
-          tenantId: tenantId,
-          isDefault: true,
-        },
-        data: {
-          isDefault: false,
-        },
-      })
-    }
-
-    const dashboard = await prisma.customDashboard.create({
-      data: {
-        name: validated.name,
-        description: validated.description,
-        layoutJson: validated.layoutJson,
-        widgets: validated.widgets,
-        isDefault: validated.isDefault ?? false,
-        isPublic: validated.isPublic ?? false,
-        tenantId: tenantId,
+    const dashboards = await prisma.customReport.findMany({
+      where: {
+        tenantId,
+        type: 'custom_dashboard',
       },
+      orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json(dashboard, { status: 201 })
+    return NextResponse.json({
+      success: true,
+      data: dashboards,
+    })
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      )
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
     }
 
-    console.error('Create custom dashboard error:', error)
+    console.error('List dashboards error:', error)
     return NextResponse.json(
-      { error: 'Failed to create custom dashboard' },
+      { error: 'Failed to list dashboards' },
       { status: 500 }
     )
   }

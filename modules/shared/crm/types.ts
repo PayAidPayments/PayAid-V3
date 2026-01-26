@@ -3,6 +3,7 @@
  * Shared across all industries
  */
 
+import { z } from 'zod'
 import { Contact, Segment, LeadPipeline, ContactType, ContactStatus } from '@/types/base-modules'
 
 export interface CreateContactRequest {
@@ -66,3 +67,15 @@ export interface CreatePipelineRequest {
     probability: number
   }>
 }
+
+export const UpdateContactSchema = z.object({
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().regex(/^\+?[1-9]\d{1,14}$/).optional(),
+  contactType: z.enum(['lead', 'customer', 'supplier', 'prospect']).optional(),
+  status: z.enum(['active', 'inactive', 'archived']).optional(),
+  tags: z.array(z.string()).optional(),
+  customFields: z.record(z.unknown()).optional(),
+  notes: z.string().optional(),
+})

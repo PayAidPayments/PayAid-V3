@@ -87,7 +87,7 @@ export function ModuleSwitcher({ currentModule }: { currentModule?: string }) {
     
     // Build URL with tenant ID if available
     let targetUrl = module.url
-    if (tenantId && !targetUrl.includes('/dashboard/')) {
+    if (tenantId) {
       // For module-specific routes (crm, sales, finance)
       targetUrl = `${module.url}/${tenantId}/Home/`
     }
