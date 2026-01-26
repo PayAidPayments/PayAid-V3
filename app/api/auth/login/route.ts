@@ -233,9 +233,40 @@ async function handleLogin(request: NextRequest) {
     
     try {
       if (user.tenantId) {
-        // Fetch roles and permissions from RBAC system
-        roles = await getUserRoles(user.id, user.tenantId)
-        permissions = await getUserPermissions(user.id, user.tenantId)
+        // OPTIMIZATION: Quick check if RBAC data exists before expensive queries
+        // This prevents slow queries for tenants without RBAC setup
+        const hasRBACData = await prisma.userRole.count({
+          where: { tenantId: user.tenantId },
+          take: 1,
+        })
+        
+        if (hasRBACData > 0) {
+          // Only fetch RBAC if data exists - use timeout to prevent hanging
+          const RBAC_TIMEOUT = 2000 // 2 seconds max
+          try {
+            const rbacPromise = Promise.all([
+              getUserRoles(user.id, user.tenantId),
+              getUserPermissions(user.id, user.tenantId),
+            ])
+            
+            const timeoutPromise = new Promise<[string[], string[]]>((resolve) => {
+              setTimeout(() => resolve([[], []]), RBAC_TIMEOUT)
+            })
+            
+            const [fetchedRoles, fetchedPermissions] = await Promise.race([
+              rbacPromise,
+              timeoutPromise,
+            ])
+            
+            roles = fetchedRoles
+            permissions = fetchedPermissions
+          } catch (rbacQueryError) {
+            // If RBAC query fails or times out, use fallback
+            console.warn('[LOGIN] RBAC query failed or timed out, using fallback:', {
+              error: rbacQueryError instanceof Error ? rbacQueryError.message : String(rbacQueryError),
+            })
+          }
+        }
         
         // Fallback to legacy role if no RBAC roles found
         if (roles.length === 0 && user.role) {
@@ -245,6 +276,7 @@ async function handleLogin(request: NextRequest) {
         console.log('[LOGIN] Roles and permissions fetched', { 
           rolesCount: roles.length,
           permissionsCount: permissions.length,
+          usedRBAC: hasRBACData > 0,
         })
       }
     } catch (rbacError) {
@@ -311,15 +343,44 @@ async function handleLogin(request: NextRequest) {
     // Step 10: Warm cache for tenant (async, non-blocking)
     step = 'warm_cache'
     if (user.tenantId) {
-      console.log('[LOGIN] Step 9: Warming cache for tenant...', { tenantId: user.tenantId })
-      // Warm cache asynchronously - don't block login response
-      warmTenantCache(user.tenantId).catch((cacheError) => {
-        // Non-critical error - log but don't fail login
-        console.warn('[LOGIN] Cache warming failed (non-critical):', {
-          error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+      // OPTIMIZATION: Skip cache warming for small tenants to improve login speed
+      // Only warm cache if tenant has significant data (prevents unnecessary queries)
+      try {
+        const [contactCount, dealCount] = await Promise.all([
+          prisma.contact.count({ where: { tenantId: user.tenantId } }),
+          prisma.deal.count({ where: { tenantId: user.tenantId } }),
+        ])
+        
+        const totalRecords = contactCount + dealCount
+        
+        // Only warm cache if tenant has more than 20 records
+        // This prevents slow cache warming for new/small tenants
+        if (totalRecords > 20) {
+          console.log('[LOGIN] Step 10: Warming cache for tenant...', { 
+            tenantId: user.tenantId,
+            totalRecords,
+          })
+          // Warm cache asynchronously - don't block login response
+          warmTenantCache(user.tenantId).catch((cacheError) => {
+            // Non-critical error - log but don't fail login
+            console.warn('[LOGIN] Cache warming failed (non-critical):', {
+              error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+              tenantId: user.tenantId,
+            })
+          })
+        } else {
+          console.log('[LOGIN] Skipping cache warming for small tenant', { 
+            tenantId: user.tenantId,
+            totalRecords,
+          })
+        }
+      } catch (countError) {
+        // If count fails, skip cache warming (non-critical)
+        console.warn('[LOGIN] Failed to check tenant size, skipping cache warming:', {
+          error: countError instanceof Error ? countError.message : String(countError),
           tenantId: user.tenantId,
         })
-      })
+      }
     }
 
     // Step 11: Prepare response
