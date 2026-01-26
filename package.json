@@ -10,7 +10,7 @@
     "dev:websocket": "tsx server/websocket-voice-server.ts",
     "dev:telephony": "tsx server/telephony-audio-stream.ts",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:websocket\"",
-    "build": "prisma generate && prisma migrate deploy && next build --webpack",
+    "build": "next build --webpack",
     "build:with-prisma": "prisma generate && prisma migrate deploy && next build --webpack",
     "build:typecheck": "next build --webpack",
     "build:with-db": "prisma generate && prisma db push --skip-generate --accept-data-loss && next build --webpack",
