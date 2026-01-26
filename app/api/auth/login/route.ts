@@ -21,14 +21,50 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  // Ensure we always return JSON, even for unexpected errors
+  // Server-side timeout wrapper (Vercel has 10s timeout on Hobby, 60s on Pro)
+  const SERVER_TIMEOUT = 25000 // 25 seconds (leave buffer for Vercel)
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => {
+    controller.abort()
+    console.error('[LOGIN] Server-side timeout after 25 seconds')
+  }, SERVER_TIMEOUT)
+
   try {
-    return await handleLogin(request)
+    // Ensure we always return JSON, even for unexpected errors
+    const result = await Promise.race([
+      handleLogin(request),
+      new Promise<NextResponse>((_, reject) => {
+        controller.signal.addEventListener('abort', () => {
+          reject(new Error('Server timeout: Request took too long to process'))
+        })
+      }),
+    ])
+    
+    clearTimeout(timeoutId)
+    return result
   } catch (unexpectedError) {
+    clearTimeout(timeoutId)
+    
     // Catch any errors that occur outside the main try-catch
     console.error('[LOGIN] Unexpected error outside handler:', unexpectedError)
     const errorMessage = unexpectedError instanceof Error ? unexpectedError.message : 'An unexpected error occurred'
     const errorStack = unexpectedError instanceof Error ? unexpectedError.stack : undefined
+    
+    // Check if it's a timeout error
+    if (errorMessage.includes('timeout') || errorMessage.includes('abort')) {
+      return NextResponse.json(
+        { 
+          error: 'Login failed',
+          message: 'Request timed out. Please try again.',
+        },
+        { 
+          status: 504, // Gateway Timeout
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      )
+    }
     
     return NextResponse.json(
       { 
@@ -100,9 +136,28 @@ async function handleLogin(request: NextRequest) {
       throw new Error('Database configuration error: DATABASE_URL is missing')
     }
     
+    // Test database connection with timeout
+    const DB_CONNECTION_TIMEOUT = 5000 // 5 seconds max for connection
+    let dbConnected = false
+    try {
+      const connectionTest = prisma.$queryRaw`SELECT 1`
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Database connection timeout')), DB_CONNECTION_TIMEOUT)
+      })
+      await Promise.race([connectionTest, timeoutPromise])
+      dbConnected = true
+      console.log('[LOGIN] Database connection verified')
+    } catch (connError) {
+      console.error('[LOGIN] Database connection test failed:', {
+        error: connError instanceof Error ? connError.message : String(connError),
+      })
+      throw new Error('Database connection failed. Please try again in a moment.')
+    }
+    
     let user
     try {
-      user = await prisma.user.findUnique({
+      // Add timeout to user query
+      const userQuery = prisma.user.findUnique({
         where: { email: validated.email.toLowerCase().trim() },
         include: { 
           tenant: {
@@ -117,6 +172,13 @@ async function handleLogin(request: NextRequest) {
           }
         },
       })
+      
+      const queryTimeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('User query timeout')), 5000) // 5 seconds max
+      })
+      
+      user = await Promise.race([userQuery, queryTimeout]) as any
+      
       console.log('[LOGIN] Database query completed', { 
         userFound: !!user,
         userId: user?.id,
