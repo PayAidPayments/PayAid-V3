@@ -222,35 +222,50 @@ async function handleLogin(request: NextRequest) {
     }
 
     // Step 8: Get user roles and permissions (Phase 1: RBAC)
+    // CRITICAL: Skip RBAC entirely if tables don't exist to prevent hanging
     step = 'get_roles_permissions'
-    console.log('[LOGIN] Step 8: Fetching user roles and permissions...', { 
+    console.log('[LOGIN] Step 8: Resolving roles and permissions...', { 
       userId: user.id,
       tenantId: user.tenantId || 'none',
     })
     
-    let roles: string[] = []
+    // Default to legacy role - RBAC is optional
+    let roles: string[] = user.role ? [user.role] : []
     let permissions: string[] = []
     
-    try {
-      if (user.tenantId) {
-        // OPTIMIZATION: Quick check if RBAC data exists before expensive queries
-        // This prevents slow queries for tenants without RBAC setup
-        const hasRBACData = await prisma.userRole.count({
+    // ONLY attempt RBAC if explicitly enabled via environment variable
+    // This prevents hanging on Vercel where tables may not exist
+    const RBAC_ENABLED = process.env.ENABLE_RBAC === 'true'
+    
+    if (!RBAC_ENABLED) {
+      console.log('[LOGIN] RBAC disabled via ENABLE_RBAC env var, using legacy role')
+    } else if (user.tenantId) {
+      // Quick check with very aggressive timeout (200ms)
+      const RBAC_CHECK_TIMEOUT = 200 // 200ms max
+      
+      try {
+        const checkPromise = prisma.userRole.count({
           where: { tenantId: user.tenantId },
           take: 1,
+        }).catch(() => 0) // Catch any error and return 0
+        
+        const timeoutPromise = new Promise<number>((resolve) => {
+          setTimeout(() => resolve(0), RBAC_CHECK_TIMEOUT)
         })
         
+        const hasRBACData = await Promise.race([checkPromise, timeoutPromise])
+        
         if (hasRBACData > 0) {
-          // Only fetch RBAC if data exists - use timeout to prevent hanging
-          const RBAC_TIMEOUT = 2000 // 2 seconds max
+          // Only fetch if data exists - with very short timeout (500ms)
+          const RBAC_FETCH_TIMEOUT = 500
           try {
             const rbacPromise = Promise.all([
-              getUserRoles(user.id, user.tenantId),
-              getUserPermissions(user.id, user.tenantId),
+              getUserRoles(user.id, user.tenantId).catch(() => []),
+              getUserPermissions(user.id, user.tenantId).catch(() => []),
             ])
             
             const timeoutPromise = new Promise<[string[], string[]]>((resolve) => {
-              setTimeout(() => resolve([[], []]), RBAC_TIMEOUT)
+              setTimeout(() => resolve([[], []]), RBAC_FETCH_TIMEOUT)
             })
             
             const [fetchedRoles, fetchedPermissions] = await Promise.race([
@@ -258,36 +273,27 @@ async function handleLogin(request: NextRequest) {
               timeoutPromise,
             ])
             
-            roles = fetchedRoles
-            permissions = fetchedPermissions
-          } catch (rbacQueryError) {
-            // If RBAC query fails or times out, use fallback
-            console.warn('[LOGIN] RBAC query failed or timed out, using fallback:', {
-              error: rbacQueryError instanceof Error ? rbacQueryError.message : String(rbacQueryError),
-            })
+            if (fetchedRoles.length > 0) {
+              roles = fetchedRoles
+            }
+            if (fetchedPermissions.length > 0) {
+              permissions = fetchedPermissions
+            }
+          } catch (error) {
+            console.warn('[LOGIN] RBAC fetch failed, using legacy role')
           }
         }
-        
-        // Fallback to legacy role if no RBAC roles found
-        if (roles.length === 0 && user.role) {
-          roles = [user.role]
-        }
-        
-        console.log('[LOGIN] Roles and permissions fetched', { 
-          rolesCount: roles.length,
-          permissionsCount: permissions.length,
-          usedRBAC: hasRBACData > 0,
-        })
-      }
-    } catch (rbacError) {
-      console.warn('[LOGIN] Failed to fetch RBAC data (using fallback):', {
-        error: rbacError instanceof Error ? rbacError.message : String(rbacError),
-      })
-      // Fallback to legacy role
-      if (user.role) {
-        roles = [user.role]
+      } catch (error) {
+        // Silently fail - use legacy role
+        console.warn('[LOGIN] RBAC check failed, using legacy role')
       }
     }
+    
+    console.log('[LOGIN] Roles and permissions resolved', { 
+      rolesCount: roles.length,
+      permissionsCount: permissions.length,
+      usingLegacyRole: roles.length > 0 && roles[0] === user.role,
+    })
 
     // Step 9: Generate JWT tokens (Phase 1: Enhanced JWT)
     step = 'generate_token'
