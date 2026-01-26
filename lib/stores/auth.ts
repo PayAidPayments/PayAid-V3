@@ -196,7 +196,7 @@ export const useAuthStore = create<AuthState>()(
           
           // Handle timeout specifically
           if (error instanceof Error && error.name === 'AbortError') {
-            throw new Error('Login request timed out. Please try again.')
+            throw new Error('Login request timed out. The server may be experiencing high load or a cold start. Please try again in a moment.')
           }
           
           throw error
