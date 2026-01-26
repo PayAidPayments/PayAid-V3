@@ -130,27 +130,13 @@ async function handleLogin(request: NextRequest) {
       throw new Error('Database configuration error: DATABASE_URL is missing')
     }
     
-    // Test database connection with timeout
-    const DB_CONNECTION_TIMEOUT = 5000 // 5 seconds max for connection
-    let dbConnected = false
-    try {
-      const connectionTest = prisma.$queryRaw`SELECT 1`
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Database connection timeout')), DB_CONNECTION_TIMEOUT)
-      })
-      await Promise.race([connectionTest, timeoutPromise])
-      dbConnected = true
-      console.log('[LOGIN] Database connection verified')
-    } catch (connError) {
-      console.error('[LOGIN] Database connection test failed:', {
-        error: connError instanceof Error ? connError.message : String(connError),
-      })
-      throw new Error('Database connection failed. Please try again in a moment.')
-    }
-    
+    // OPTIMIZATION: Skip connection test to save time - go straight to query
+    // If database is down, the query will fail fast anyway
     let user
     try {
-      // Add timeout to user query
+      // Direct user query with aggressive timeout (3 seconds max)
+      const USER_QUERY_TIMEOUT = 3000 // 3 seconds max
+      
       const userQuery = prisma.user.findUnique({
         where: { email: validated.email.toLowerCase().trim() },
         include: { 
@@ -168,7 +154,7 @@ async function handleLogin(request: NextRequest) {
       })
       
       const queryTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('User query timeout')), 5000) // 5 seconds max
+        setTimeout(() => reject(new Error('User query timeout - database may be slow')), USER_QUERY_TIMEOUT)
       })
       
       user = await Promise.race([userQuery, queryTimeout]) as any
@@ -404,46 +390,10 @@ async function handleLogin(request: NextRequest) {
 
     // Step 10: Warm cache for tenant (async, non-blocking)
     step = 'warm_cache'
-    if (user.tenantId) {
-      // OPTIMIZATION: Skip cache warming for small tenants to improve login speed
-      // Only warm cache if tenant has significant data (prevents unnecessary queries)
-      try {
-        const [contactCount, dealCount] = await Promise.all([
-          prisma.contact.count({ where: { tenantId: user.tenantId } }),
-          prisma.deal.count({ where: { tenantId: user.tenantId } }),
-        ])
-        
-        const totalRecords = contactCount + dealCount
-        
-        // Only warm cache if tenant has more than 20 records
-        // This prevents slow cache warming for new/small tenants
-        if (totalRecords > 20) {
-          console.log('[LOGIN] Step 10: Warming cache for tenant...', { 
-            tenantId: user.tenantId,
-            totalRecords,
-          })
-          // Warm cache asynchronously - don't block login response
-          warmTenantCache(user.tenantId).catch((cacheError) => {
-            // Non-critical error - log but don't fail login
-            console.warn('[LOGIN] Cache warming failed (non-critical):', {
-              error: cacheError instanceof Error ? cacheError.message : String(cacheError),
-              tenantId: user.tenantId,
-            })
-          })
-        } else {
-          console.log('[LOGIN] Skipping cache warming for small tenant', { 
-            tenantId: user.tenantId,
-            totalRecords,
-          })
-        }
-      } catch (countError) {
-        // If count fails, skip cache warming (non-critical)
-        console.warn('[LOGIN] Failed to check tenant size, skipping cache warming:', {
-          error: countError instanceof Error ? countError.message : String(countError),
-          tenantId: user.tenantId,
-        })
-      }
-    }
+    // OPTIMIZATION: Skip cache warming entirely during login to improve speed
+    // Cache can be warmed later via cron job or on first dashboard load
+    // This saves 1-3 seconds on login
+    console.log('[LOGIN] Step 10: Skipping cache warming for faster login')
 
     // Step 11: Prepare response
     step = 'prepare_response'
