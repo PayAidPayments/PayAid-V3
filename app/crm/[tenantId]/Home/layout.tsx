@@ -14,19 +14,31 @@ export default function CRMHomeLayout({
   const params = useParams()
   const router = useRouter()
   const { tenant } = useAuthStore()
-  const tenantId = (params?.tenantId as string | undefined) || tenant?.id
+  
+  // Get tenantId from URL params first, fallback to auth store
+  // Handle both string and array cases (Next.js can return either)
+  const tenantIdParam = params?.tenantId
+  const tenantIdFromParams = Array.isArray(tenantIdParam) 
+    ? tenantIdParam[0] 
+    : (tenantIdParam as string | undefined)
+  const tenantId = (tenantIdFromParams && typeof tenantIdFromParams === 'string' && tenantIdFromParams.trim()) 
+    ? tenantIdFromParams 
+    : (tenant?.id && typeof tenant.id === 'string' ? tenant.id : undefined)
 
   // Redirect if tenantId is still not available
   useEffect(() => {
-    if (!tenantId && tenant?.id) {
-      router.replace(`/crm/${tenant.id}/Home/`)
-    } else if (!tenantId) {
-      router.replace('/crm')
+    // Ensure tenantId is a valid string
+    if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
+      if (tenant?.id && typeof tenant.id === 'string') {
+        router.replace(`/crm/${tenant.id}/Home/`)
+      } else {
+        router.replace('/crm')
+      }
     }
   }, [tenantId, tenant?.id, router])
 
-  // Don't render if tenantId is not available
-  if (!tenantId) {
+  // Don't render if tenantId is not available or not a valid string
+  if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
     return null
   }
 

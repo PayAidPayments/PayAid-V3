@@ -95,8 +95,14 @@ export default function CRMDashboardPage() {
   const { user, tenant, token } = useAuthStore()
   
   // Get tenantId from URL params first, fallback to auth store
-  const tenantIdFromParams = params?.tenantId as string | undefined
-  const tenantId = tenantIdFromParams || tenant?.id
+  // Handle both string and array cases (Next.js can return either)
+  const tenantIdParam = params?.tenantId
+  const tenantIdFromParams = Array.isArray(tenantIdParam) 
+    ? tenantIdParam[0] 
+    : (tenantIdParam as string | undefined)
+  const tenantId = (tenantIdFromParams && typeof tenantIdFromParams === 'string' && tenantIdFromParams.trim()) 
+    ? tenantIdFromParams 
+    : (tenant?.id && typeof tenant.id === 'string' ? tenant.id : undefined)
   
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [tasksViewData, setTasksViewData] = useState<TasksViewData | null>(null)
@@ -115,13 +121,23 @@ export default function CRMDashboardPage() {
 
   // Validate tenantId - redirect if missing
   useEffect(() => {
-    if (!tenantId) {
+    // Ensure tenantId is a valid string
+    if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
       // If no tenantId in URL and no tenant in store, redirect to CRM entry point
+      if (!tenant?.id) {
+        router.replace('/crm')
+        return
+      }
+      // If tenantId is in auth store but not in URL, redirect to correct URL
+      if (tenant.id && typeof tenant.id === 'string') {
+        router.replace(`/crm/${tenant.id}/Home/`)
+        return
+      }
       router.replace('/crm')
       return
     }
     // If tenantId is in auth store but not in URL, redirect to correct URL
-    if (!tenantIdFromParams && tenant?.id) {
+    if (!tenantIdFromParams && tenant?.id && typeof tenant.id === 'string') {
       router.replace(`/crm/${tenant.id}/Home/`)
       return
     }
@@ -454,8 +470,8 @@ export default function CRMDashboardPage() {
     }
   }
 
-  // Show loading if tenantId is not available yet
-  if (!tenantId) {
+  // Show loading if tenantId is not available yet or not a valid string
+  if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
     return <DashboardLoading message="Loading CRM dashboard..." />
   }
 
@@ -517,7 +533,7 @@ export default function CRMDashboardPage() {
             <select 
               value={currentView}
               onChange={(e) => {
-                if (!tenantId) return
+                if (!tenantId || typeof tenantId !== 'string') return
                 const view = e.target.value
                 // Navigate to different pages based on selection
                 switch(view) {
