@@ -2,6 +2,9 @@
 
 import { useParams } from 'next/navigation'
 import { ModuleTopBar } from '@/components/modules/ModuleTopBar'
+import { useAuthStore } from '@/lib/stores/auth'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function CRMHomeLayout({
   children,
@@ -9,7 +12,23 @@ export default function CRMHomeLayout({
   children: React.ReactNode
 }) {
   const params = useParams()
-  const tenantId = params.tenantId as string
+  const router = useRouter()
+  const { tenant } = useAuthStore()
+  const tenantId = (params?.tenantId as string | undefined) || tenant?.id
+
+  // Redirect if tenantId is still not available
+  useEffect(() => {
+    if (!tenantId && tenant?.id) {
+      router.replace(`/crm/${tenant.id}/Home/`)
+    } else if (!tenantId) {
+      router.replace('/crm')
+    }
+  }, [tenantId, tenant?.id, router])
+
+  // Don't render if tenantId is not available
+  if (!tenantId) {
+    return null
+  }
 
   const topBarItems = [
     { name: 'Home', href: `/crm/${tenantId}/Home` },
