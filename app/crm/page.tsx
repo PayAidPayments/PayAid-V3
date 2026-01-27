@@ -44,13 +44,13 @@ export default function CRMModulePage() {
     }
 
     // If authenticated, check for tenant
-    if (tenant?.id) {
+    if (tenant?.id && typeof tenant.id === 'string' && tenant.id.trim()) {
       setHasRedirected(true)
       router.push(`/crm/${tenant.id}/Home/`)
     } else {
-      // No tenant - redirect to dashboard to set up tenant
+      // No tenant - redirect to home page to set up tenant
       setHasRedirected(true)
-      router.push('/dashboard')
+      router.push('/home')
     }
   }, [mounted, isAuthenticated, tenant?.id, isLoading, hasRedirected, router])
 
