@@ -141,15 +141,12 @@ export async function GET(request: NextRequest) {
       : { tenantId }
 
     // OPTIMIZATION: Batch queries to avoid connection pool exhaustion
-    // Split into smaller batches instead of one massive Promise.all
-    // Batch 1: Core stats (most important)
+    // Use smaller batches and sequential execution to prevent pool exhaustion
+    // Batch 1: Core stats (most critical - 3 queries max at a time)
     const [
       dealsCreatedInPeriod,
       dealsClosingInPeriod,
       overdueTasks,
-      pipelineByStageData,
-      topLeadSources,
-      wonDealsForQuarters, // Fetch once, reuse for all quarters and period revenue
     ] = await Promise.all([
       // Basic counts
       prismaWithRetry(() =>
@@ -178,6 +175,17 @@ export async function GET(request: NextRequest) {
           },
         })
       ),
+    ])
+
+    // Small delay to allow connection pool to recover
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Batch 1b: Secondary stats (3 queries)
+    const [
+      pipelineByStageData,
+      topLeadSources,
+      wonDealsForQuarters, // Fetch once, reuse for all quarters and period revenue
+    ] = await Promise.all([
       // Pipeline by stage - use groupBy for efficiency
       prismaWithRetry(() =>
         prisma.deal.groupBy({
@@ -218,27 +226,38 @@ export async function GET(request: NextRequest) {
       ),
     ])
 
-    // Batch 2: Quarterly data (fetch sequentially to avoid pool exhaustion)
-    const [q1DealsCreated, q1LeadsCreated] = await Promise.all([
-      prismaWithRetry(() =>
-        prisma.deal.count({
-          where: {
-            ...dealFilter,
-            createdAt: { gte: quarters[0].start, lte: quarters[0].end },
-          },
-        })
-      ),
-      prismaWithRetry(() =>
-        prisma.contact.count({
-          where: {
-            ...contactFilter,
-            createdAt: { gte: quarters[0].start, lte: quarters[0].end },
-          },
-        })
-      ),
-    ])
+    // Small delay before quarterly queries
+    await new Promise(resolve => setTimeout(resolve, 100))
 
-    const [q2DealsCreated, q2LeadsCreated] = await Promise.all([
+    // Batch 2: Quarterly data (fetch one quarter at a time to avoid pool exhaustion)
+    const q1DealsCreated = await prismaWithRetry(() =>
+      prisma.deal.count({
+        where: {
+          ...dealFilter,
+          createdAt: { gte: quarters[0].start, lte: quarters[0].end },
+        },
+      })
+    )
+    const q1LeadsCreated = await prismaWithRetry(() =>
+      prisma.contact.count({
+        where: {
+          ...contactFilter,
+          createdAt: { gte: quarters[0].start, lte: quarters[0].end },
+        },
+      })
+    )
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    const q2DealsCreated = await prismaWithRetry(() =>
+      prisma.deal.count({
+        where: {
+          ...dealFilter,
+          createdAt: { gte: quarters[1].start, lte: quarters[1].end },
+        },
+      })
+    )
+    const q2LeadsCreated = await prismaWithRetry(() =>
       prismaWithRetry(() =>
         prisma.deal.count({
           where: {
@@ -247,73 +266,74 @@ export async function GET(request: NextRequest) {
           },
         })
       ),
-      prismaWithRetry(() =>
-        prisma.contact.count({
-          where: {
-            ...contactFilter,
-            createdAt: { gte: quarters[1].start, lte: quarters[1].end },
-          },
-        })
-      ),
-    ])
+      prisma.contact.count({
+        where: {
+          ...contactFilter,
+          createdAt: { gte: quarters[1].start, lte: quarters[1].end },
+        },
+      })
+    )
 
-    const [q3DealsCreated, q3LeadsCreated] = await Promise.all([
-      prismaWithRetry(() =>
-        prisma.deal.count({
-          where: {
-            ...dealFilter,
-            createdAt: { gte: quarters[2].start, lte: quarters[2].end },
-          },
-        })
-      ),
-      prismaWithRetry(() =>
-        prisma.contact.count({
-          where: {
-            ...contactFilter,
-            createdAt: { gte: quarters[2].start, lte: quarters[2].end },
-          },
-        })
-      ),
-    ])
+    await new Promise(resolve => setTimeout(resolve, 100))
 
-    const [q4DealsCreated, q4LeadsCreated] = await Promise.all([
-      prismaWithRetry(() =>
-        prisma.deal.count({
-          where: {
-            ...dealFilter,
-            createdAt: { gte: quarters[3].start, lte: quarters[3].end },
-          },
-        })
-      ),
-      prismaWithRetry(() =>
-        prisma.contact.count({
-          where: {
-            ...contactFilter,
-            createdAt: { gte: quarters[3].start, lte: quarters[3].end },
-          },
-        })
-      ),
-    ])
+    const q3DealsCreated = await prismaWithRetry(() =>
+      prisma.deal.count({
+        where: {
+          ...dealFilter,
+          createdAt: { gte: quarters[2].start, lte: quarters[2].end },
+        },
+      })
+    )
+    const q3LeadsCreated = await prismaWithRetry(() =>
+      prisma.contact.count({
+        where: {
+          ...contactFilter,
+          createdAt: { gte: quarters[2].start, lte: quarters[2].end },
+        },
+      })
+    )
 
-    // Batch 3: Monthly lead creation - fetch in smaller batches (6 at a time)
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    const q4DealsCreated = await prismaWithRetry(() =>
+      prisma.deal.count({
+        where: {
+          ...dealFilter,
+          createdAt: { gte: quarters[3].start, lte: quarters[3].end },
+        },
+      })
+    )
+    const q4LeadsCreated = await prismaWithRetry(() =>
+      prisma.contact.count({
+        where: {
+          ...contactFilter,
+          createdAt: { gte: quarters[3].start, lte: quarters[3].end },
+        },
+      })
+    )
+
+    // Small delay before monthly queries
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Batch 3: Monthly lead creation - fetch sequentially (one at a time) to avoid pool exhaustion
     const monthlyCounts: number[] = []
-    for (let i = 0; i < 12; i += 6) {
-      const batch = await Promise.all(
-        Array.from({ length: Math.min(6, 12 - i) }, (_, j) => {
-          const date = new Date(now.getFullYear(), now.getMonth() - (i + j), 1)
-          const monthStart = new Date(date.getFullYear(), date.getMonth(), 1)
-          const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999)
-          return prismaWithRetry(() =>
-            prisma.contact.count({
-              where: {
-                ...contactFilter,
-                createdAt: { gte: monthStart, lte: monthEnd },
-              },
-            })
-          )
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1)
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999)
+      const count = await prismaWithRetry(() =>
+        prisma.contact.count({
+          where: {
+            ...contactFilter,
+            createdAt: { gte: monthStart, lte: monthEnd },
+          },
         })
       )
-      monthlyCounts.push(...batch)
+      monthlyCounts.push(count)
+      // Small delay every 3 queries to allow connection pool to recover
+      if ((i + 1) % 3 === 0 && i < 11) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
     }
 
     // Calculate revenue from won deals in the period
