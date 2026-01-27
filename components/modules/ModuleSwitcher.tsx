@@ -60,22 +60,23 @@ export function ModuleSwitcher() {
 
   // Get available modules based on licenses
   const licensedModules = tenant?.licensedModules || []
+  const tenantId = tenant?.id && typeof tenant.id === 'string' ? tenant.id : undefined
   
   const allModules: Module[] = [
     { id: 'home', name: 'Home', icon: '🏠', url: tenantId ? `/home/${tenantId}` : '/home', active: currentModule === 'home', licensed: true },
-    { id: 'crm', name: 'CRM', icon: '👥', url: getModuleUrl('crm'), active: currentModule === 'crm', licensed: licensedModules.includes('crm') || true },
-    { id: 'sales', name: 'Sales', icon: '💼', url: getModuleUrl('sales'), active: currentModule === 'sales', licensed: licensedModules.includes('sales') || true },
-    { id: 'finance', name: 'Finance', icon: '💰', url: getModuleUrl('finance'), active: currentModule === 'finance', licensed: licensedModules.includes('finance') || true },
-    { id: 'marketing', name: 'Marketing', icon: '📢', url: getModuleUrl('marketing'), active: currentModule === 'marketing', licensed: licensedModules.includes('marketing') || true },
-    { id: 'hr', name: 'HR', icon: '👔', url: getModuleUrl('hr'), active: currentModule === 'hr', licensed: licensedModules.includes('hr') || true },
-    { id: 'projects', name: 'Projects', icon: '📋', url: getModuleUrl('projects'), active: currentModule === 'projects', licensed: licensedModules.includes('projects') || true },
-    { id: 'inventory', name: 'Inventory', icon: '📦', url: getModuleUrl('inventory'), active: currentModule === 'inventory', licensed: licensedModules.includes('inventory') || true },
-    { id: 'ai-cofounder', name: 'AI Co-founder', icon: '🤖', url: getModuleUrl('ai-cofounder'), active: currentModule === 'ai-cofounder', licensed: licensedModules.includes('ai-cofounder') || true },
-    { id: 'ai-chat', name: 'AI Chat', icon: '💬', url: getModuleUrl('ai-chat'), active: currentModule === 'ai-chat', licensed: licensedModules.includes('ai-chat') || true },
-    { id: 'ai-insights', name: 'AI Insights', icon: '💡', url: getModuleUrl('ai-insights'), active: currentModule === 'ai-insights', licensed: licensedModules.includes('ai-insights') || true },
-    { id: 'website-builder', name: 'Website Builder', icon: '🌐', url: getModuleUrl('website-builder'), active: currentModule === 'website-builder', licensed: licensedModules.includes('website-builder') || true },
-    { id: 'logo-generator', name: 'Logo Generator', icon: '🎨', url: getModuleUrl('logo-generator'), active: currentModule === 'logo-generator', licensed: licensedModules.includes('logo-generator') || true },
-    { id: 'knowledge-rag', name: 'Knowledge & RAG AI', icon: '📚', url: getModuleUrl('knowledge-rag'), active: currentModule === 'knowledge-rag', licensed: licensedModules.includes('knowledge-rag') || true },
+    { id: 'crm', name: 'CRM', icon: '👥', url: getModuleUrl('crm', tenantId), active: currentModule === 'crm', licensed: licensedModules.includes('crm') || true },
+    { id: 'sales', name: 'Sales', icon: '💼', url: getModuleUrl('sales', tenantId), active: currentModule === 'sales', licensed: licensedModules.includes('sales') || true },
+    { id: 'finance', name: 'Finance', icon: '💰', url: getModuleUrl('finance', tenantId), active: currentModule === 'finance', licensed: licensedModules.includes('finance') || true },
+    { id: 'marketing', name: 'Marketing', icon: '📢', url: getModuleUrl('marketing', tenantId), active: currentModule === 'marketing', licensed: licensedModules.includes('marketing') || true },
+    { id: 'hr', name: 'HR', icon: '👔', url: getModuleUrl('hr', tenantId), active: currentModule === 'hr', licensed: licensedModules.includes('hr') || true },
+    { id: 'projects', name: 'Projects', icon: '📋', url: getModuleUrl('projects', tenantId), active: currentModule === 'projects', licensed: licensedModules.includes('projects') || true },
+    { id: 'inventory', name: 'Inventory', icon: '📦', url: getModuleUrl('inventory', tenantId), active: currentModule === 'inventory', licensed: licensedModules.includes('inventory') || true },
+    { id: 'ai-cofounder', name: 'AI Co-founder', icon: '🤖', url: getModuleUrl('ai-cofounder', tenantId), active: currentModule === 'ai-cofounder', licensed: licensedModules.includes('ai-cofounder') || true },
+    { id: 'ai-chat', name: 'AI Chat', icon: '💬', url: getModuleUrl('ai-chat', tenantId), active: currentModule === 'ai-chat', licensed: licensedModules.includes('ai-chat') || true },
+    { id: 'ai-insights', name: 'AI Insights', icon: '💡', url: getModuleUrl('ai-insights', tenantId), active: currentModule === 'ai-insights', licensed: licensedModules.includes('ai-insights') || true },
+    { id: 'website-builder', name: 'Website Builder', icon: '🌐', url: getModuleUrl('website-builder', tenantId), active: currentModule === 'website-builder', licensed: licensedModules.includes('website-builder') || true },
+    { id: 'logo-generator', name: 'Logo Generator', icon: '🎨', url: getModuleUrl('logo-generator', tenantId), active: currentModule === 'logo-generator', licensed: licensedModules.includes('logo-generator') || true },
+    { id: 'knowledge-rag', name: 'Knowledge & RAG AI', icon: '📚', url: getModuleUrl('knowledge-rag', tenantId), active: currentModule === 'knowledge-rag', licensed: licensedModules.includes('knowledge-rag') || true },
   ]
 
   const availableModules = allModules.filter(m => m.licensed)
