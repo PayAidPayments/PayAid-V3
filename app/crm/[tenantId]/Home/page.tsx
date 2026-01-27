@@ -92,8 +92,12 @@ export default function CRMDashboardPage() {
   const params = useParams()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const tenantId = params?.tenantId as string
   const { user, tenant, token } = useAuthStore()
+  
+  // Get tenantId from URL params first, fallback to auth store
+  const tenantIdFromParams = params?.tenantId as string | undefined
+  const tenantId = tenantIdFromParams || tenant?.id
+  
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [tasksViewData, setTasksViewData] = useState<TasksViewData | null>(null)
   const [activityFeedData, setActivityFeedData] = useState<any[]>([])
@@ -108,6 +112,20 @@ export default function CRMDashboardPage() {
   const fetchingStatsRef = useRef(false)
   const fetchingActivityRef = useRef(false)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Validate tenantId - redirect if missing
+  useEffect(() => {
+    if (!tenantId) {
+      // If no tenantId in URL and no tenant in store, redirect to CRM entry point
+      router.replace('/crm')
+      return
+    }
+    // If tenantId is in auth store but not in URL, redirect to correct URL
+    if (!tenantIdFromParams && tenant?.id) {
+      router.replace(`/crm/${tenant.id}/Home/`)
+      return
+    }
+  }, [tenantId, tenantIdFromParams, tenant?.id, router])
 
   // Detect dark mode
   useEffect(() => {
@@ -161,6 +179,11 @@ export default function CRMDashboardPage() {
 
   // Main data loading effect - only for stats and view-specific data
   useEffect(() => {
+    // Don't fetch if tenantId is not available
+    if (!tenantId) {
+      return
+    }
+
     // Cancel any in-flight requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
@@ -431,6 +454,11 @@ export default function CRMDashboardPage() {
     }
   }
 
+  // Show loading if tenantId is not available yet
+  if (!tenantId) {
+    return <DashboardLoading message="Loading CRM dashboard..." />
+  }
+
   if (loading) {
     return <DashboardLoading message="Loading CRM dashboard..." />
   }
@@ -489,6 +517,7 @@ export default function CRMDashboardPage() {
             <select 
               value={currentView}
               onChange={(e) => {
+                if (!tenantId) return
                 const view = e.target.value
                 // Navigate to different pages based on selection
                 switch(view) {
@@ -872,7 +901,7 @@ export default function CRMDashboardPage() {
           <>
         {/* KPI Cards - Design System Compliant with Animations */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Link href={`/crm/${tenantId}/Deals?filter=created&period=${timePeriod}`}>
+          <Link href={tenantId ? `/crm/${tenantId}/Deals?filter=created&period=${timePeriod}` : '#'}>
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -898,7 +927,7 @@ export default function CRMDashboardPage() {
             </motion.div>
           </Link>
 
-          <Link href={`/crm/${tenantId}/Deals?filter=won&period=${timePeriod}`}>
+          <Link href={tenantId ? `/crm/${tenantId}/Deals?filter=won&period=${timePeriod}` : '#'}>
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -924,7 +953,7 @@ export default function CRMDashboardPage() {
             </motion.div>
           </Link>
 
-          <Link href={`/crm/${tenantId}/Deals?filter=closing&period=${timePeriod}`}>
+          <Link href={tenantId ? `/crm/${tenantId}/Deals?filter=closing&period=${timePeriod}` : '#'}>
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -950,7 +979,7 @@ export default function CRMDashboardPage() {
             </motion.div>
           </Link>
 
-          <Link href={`/crm/${tenantId}/Tasks?filter=overdue`}>
+          <Link href={tenantId ? `/crm/${tenantId}/Tasks?filter=overdue` : '#'}>
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
