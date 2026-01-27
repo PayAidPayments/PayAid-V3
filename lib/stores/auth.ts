@@ -199,7 +199,17 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('Login request timed out. The server may be experiencing high load or a cold start. Please try again in a moment.')
           }
           
-          throw error
+          // Provide more helpful error messages
+          if (error instanceof Error) {
+            // Re-throw with improved message if needed
+            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+              throw new Error('Network error. Please check your internet connection and try again.')
+            }
+            // Keep original error message if it's already descriptive
+            throw error
+          }
+          
+          throw new Error('An unexpected error occurred during login. Please try again.')
         }
       },
 
