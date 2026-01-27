@@ -14,11 +14,8 @@ const nextConfig = {
     // Set to true for Vercel builds to allow deployment even with type errors
     ignoreBuildErrors: true,
   },
-  // Optimize ESLint
-  eslint: {
-    // Don't fail build on ESLint errors during build
-    ignoreDuringBuilds: true,
-  },
+  // ESLint configuration moved to .eslintrc.json (Next.js 16+)
+  // Removed deprecated eslint config from next.config.js
   // Optimize build performance
   experimental: {
     // Enable faster builds with SWC minification
