@@ -279,7 +279,7 @@ async function handleLogin(request: NextRequest) {
     
     if (!RBAC_ENABLED) {
       console.log('[LOGIN] RBAC disabled via ENABLE_RBAC env var, using legacy role')
-    } else if (user.tenantId) {
+    } else if (user.tenantId && typeof user.tenantId === 'string') {
       // Quick check with very aggressive timeout (200ms)
       const RBAC_CHECK_TIMEOUT = 200 // 200ms max
       
@@ -474,11 +474,21 @@ async function handleLogin(request: NextRequest) {
     console.error('[LOGIN] ❌ Error occurred:', errorLog)
     
     // Return error response with appropriate detail level
-    const responseMessage = isDevelopment()
-      ? `${errorMessage} (failed at step: ${step})`
-      : errorMessage.includes('Database') || errorMessage.includes('database')
-        ? 'Database connection error. Please try again later.'
-        : 'An error occurred during login'
+    let responseMessage = errorMessage
+    
+    // Provide user-friendly error messages
+    if (errorMessage.includes('Database') || errorMessage.includes('database') || errorMessage.includes('P1001') || errorMessage.includes('P2025')) {
+      responseMessage = 'Database connection error. Please try again later or contact support.'
+    } else if (errorMessage.includes('JWT_SECRET') || errorMessage.includes('JWT') || errorMessage.includes('token generation')) {
+      responseMessage = 'Authentication configuration error. Please contact support.'
+    } else if (errorMessage.includes('timeout') || errorMessage.includes('abort')) {
+      responseMessage = 'Request timed out. The server may be experiencing high load. Please try again in a moment.'
+    } else if (errorMessage.includes('Invalid email or password')) {
+      responseMessage = 'Invalid email or password. Please check your credentials and try again.'
+    } else if (!isDevelopment()) {
+      // In production, don't expose internal error details
+      responseMessage = 'An error occurred during login. Please try again or contact support.'
+    }
     
     return NextResponse.json(
       { 
@@ -488,6 +498,7 @@ async function handleLogin(request: NextRequest) {
           step,
           errorName,
           stack: errorStack,
+          originalError: errorMessage,
         }),
       },
       { 
