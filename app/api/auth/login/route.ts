@@ -21,8 +21,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  // Server-side timeout wrapper (Vercel has 10s timeout on Hobby, 60s on Pro)
-  const SERVER_TIMEOUT = 25000 // 25 seconds (leave buffer for Vercel)
+  // Server-side timeout wrapper (Vercel Hobby has 10s timeout, Pro has 60s)
+  // Use 8 seconds to be safe under Hobby plan limit
+  const SERVER_TIMEOUT = 8000 // 8 seconds (safe buffer for Vercel Hobby 10s limit)
   
   try {
     // Ensure we always return JSON, even for unexpected errors
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
       handleLogin(request),
       new Promise<NextResponse>((_, reject) => {
         setTimeout(() => {
-          console.error('[LOGIN] Server-side timeout after 25 seconds')
+          console.error('[LOGIN] Server-side timeout after 8 seconds')
           reject(new Error('Server timeout: Request took too long to process'))
         }, SERVER_TIMEOUT)
       }),
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'Login failed',
-          message: 'Request timed out. Please try again.',
+          message: 'Login request timed out. The server may be experiencing high load or a cold start. Please try again in a moment.',
         },
         { 
           status: 504, // Gateway Timeout
@@ -134,8 +135,8 @@ async function handleLogin(request: NextRequest) {
     // If database is down, the query will fail fast anyway
     let user
     try {
-      // Direct user query with aggressive timeout (3 seconds max)
-      const USER_QUERY_TIMEOUT = 3000 // 3 seconds max
+      // Direct user query with aggressive timeout (2.5 seconds max to leave time for other operations)
+      const USER_QUERY_TIMEOUT = 2500 // 2.5 seconds max
       
       const userQuery = prisma.user.findUnique({
         where: { email: validated.email.toLowerCase().trim() },
@@ -245,23 +246,20 @@ async function handleLogin(request: NextRequest) {
       )
     }
 
-    // Step 7: Update last login
+    // Step 7: Update last login (non-blocking, fire and forget)
     step = 'update_last_login'
-    console.log('[LOGIN] Step 7: Updating last login timestamp...', { userId: user.id })
-    try {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { lastLoginAt: new Date() },
-      })
-      console.log('[LOGIN] Last login updated successfully')
-    } catch (updateError: any) {
-      console.error('[LOGIN] Failed to update last login (non-critical):', {
+    // OPTIMIZATION: Make this truly async and non-blocking to save time
+    // Don't wait for it to complete - it's not critical for login success
+    prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    }).catch((updateError: any) => {
+      // Silently log but don't block login
+      console.warn('[LOGIN] Failed to update last login (non-critical):', {
         error: updateError instanceof Error ? updateError.message : String(updateError),
-        code: updateError?.code,
-        stack: updateError instanceof Error ? updateError.stack : undefined,
       })
-      // Non-critical error, continue with login
-    }
+    })
+    console.log('[LOGIN] Last login update initiated (async)')
 
     // Step 8: Get user roles and permissions (Phase 1: RBAC)
     // CRITICAL: Skip RBAC entirely if tables don't exist to prevent hanging
