@@ -63,31 +63,26 @@ export function Loading({
     );
   }
 
-  // Default spinner variant
+  // Default spinner variant - Updated to match PageLoading style for consistency
   return (
     <div className={cn('flex flex-col items-center justify-center min-h-[200px]', className)}>
-      <div className="relative">
-        {/* Outer ring */}
-        <div className={cn(
-          'rounded-full border-4 border-gray-200 dark:border-gray-700',
-          sizeClasses[size]
-        )}></div>
-        {/* Spinning ring */}
-        <div className={cn(
-          'absolute top-0 left-0 rounded-full border-4 border-transparent border-t-teal-primary border-r-blue-secondary animate-spin',
-          sizeClasses[size]
-        )}></div>
-        {/* Inner pulse */}
-        <div className={cn(
-          'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-primary animate-pulse',
-          size === 'sm' ? 'h-2 w-2' : size === 'md' ? 'h-3 w-3' : 'h-4 w-4'
-        )}></div>
+      {/* Use same animation style as PageLoading for consistency */}
+      <div className="flex justify-center mb-4">
+        <div className="flex space-x-2">
+          <div className="h-3 w-3 bg-teal-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+          <div className="h-3 w-3 bg-blue-secondary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+          <div className="h-3 w-3 bg-teal-primary rounded-full animate-bounce"></div>
+        </div>
       </div>
       {message && (
-        <p className="mt-4 text-sm font-medium text-gray-600 dark:text-gray-400 animate-pulse">
-          {message}
-        </p>
+        <p className="text-gray-600 dark:text-gray-400 font-medium">{message}</p>
       )}
+      {/* Progress bar - Using Design System Colors */}
+      <div className="mt-6 w-64 mx-auto">
+        <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-teal-primary to-blue-secondary rounded-full animate-[loading_1.5s_ease-in-out_infinite]"></div>
+        </div>
+      </div>
     </div>
   );
 }
