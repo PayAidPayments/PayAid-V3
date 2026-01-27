@@ -1,8 +1,7 @@
 'use client'
 
-import { useParams } from 'next/navigation'
 import { ModuleTopBar } from '@/components/modules/ModuleTopBar'
-import { useAuthStore } from '@/lib/stores/auth'
+import { useTenantId } from '@/lib/utils/get-tenant-id'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -11,31 +10,16 @@ export default function CRMHomeLayout({
 }: {
   children: React.ReactNode
 }) {
-  const params = useParams()
   const router = useRouter()
-  const { tenant } = useAuthStore()
-  
-  // Get tenantId from URL params first, fallback to auth store
-  // Handle both string and array cases (Next.js can return either)
-  const tenantIdParam = params?.tenantId
-  const tenantIdFromParams = Array.isArray(tenantIdParam) 
-    ? tenantIdParam[0] 
-    : (tenantIdParam as string | undefined)
-  const tenantId = (tenantIdFromParams && typeof tenantIdFromParams === 'string' && tenantIdFromParams.trim()) 
-    ? tenantIdFromParams 
-    : (tenant?.id && typeof tenant.id === 'string' ? tenant.id : undefined)
+  const tenantId = useTenantId()
 
   // Redirect if tenantId is still not available
   useEffect(() => {
     // Ensure tenantId is a valid string
     if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
-      if (tenant?.id && typeof tenant.id === 'string') {
-        router.replace(`/crm/${tenant.id}/Home/`)
-      } else {
-        router.replace('/crm')
-      }
+      router.replace('/crm')
     }
-  }, [tenantId, tenant?.id, router])
+  }, [tenantId, router])
 
   // Don't render if tenantId is not available or not a valid string
   if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
