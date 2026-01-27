@@ -30,26 +30,46 @@ interface ModuleCardProps {
 function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {
   const params = useParams();
   const { tenant } = useAuthStore();
-  const tenantId = (params?.tenantId as string) || tenant?.id;
+  
+  // Safely get tenantId - handle both string and array cases
+  const tenantIdParam = params?.tenantId;
+  const tenantIdFromParams = Array.isArray(tenantIdParam) 
+    ? (tenantIdParam[0] || null)
+    : (tenantIdParam as string | undefined || null);
+  const tenantId: string | undefined = (tenantIdFromParams && typeof tenantIdFromParams === 'string' && tenantIdFromParams.trim()) 
+    ? tenantIdFromParams 
+    : (tenant?.id && typeof tenant.id === 'string' && tenant.id.trim() ? tenant.id : undefined);
   
   // Construct module URL with tenantId
-  const getModuleUrl = () => {
-    if (!tenantId) return module.url;
+  const getModuleUrl = (): string => {
+    // If no tenantId, return base module URL (will redirect to login or entry point)
+    if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
+      return module.url;
+    }
     
     // If URL already includes tenantId, return as is
-    if (module.url.includes(`/${tenantId}/`)) return module.url;
+    if (module.url.includes(`/${tenantId}/`)) {
+      return module.url;
+    }
     
     // For module routes like /crm, /sales, etc., add tenantId
     // Format: /module/[tenantId]/Home/
     const modulePath = module.url.replace(/^\//, '').split('/')[0];
     if (modulePath && !modulePath.includes('dashboard') && !modulePath.includes('http')) {
-      return `/${modulePath}/${tenantId}/Home/`;
+      // Ensure tenantId is valid before using in template string
+      if (tenantId && typeof tenantId === 'string' && tenantId.trim()) {
+        return `/${modulePath}/${tenantId}/Home/`;
+      }
+      return module.url;
     }
     
     // For dashboard routes, add tenantId after /dashboard
     if (module.url.startsWith('/dashboard/')) {
       const pathAfterDashboard = module.url.replace('/dashboard/', '');
-      return `/dashboard/${tenantId}/${pathAfterDashboard}`;
+      if (tenantId && typeof tenantId === 'string' && tenantId.trim()) {
+        return `/dashboard/${tenantId}/${pathAfterDashboard}`;
+      }
+      return module.url;
     }
     
     return module.url;

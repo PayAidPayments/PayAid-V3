@@ -77,22 +77,30 @@ export function clearSSOToken(): void {
 
 /**
  * Get module URL for navigation
+ * If tenantId is provided, returns full path with tenantId
+ * Otherwise returns entry point URL
  */
-export function getModuleUrl(moduleId: string): string {
+export function getModuleUrl(moduleId: string, tenantId?: string): string {
+  // If tenantId is provided and valid, return full path
+  if (tenantId && typeof tenantId === 'string' && tenantId.trim()) {
+    return `/${moduleId}/${tenantId}/Home/`
+  }
+
+  // Otherwise return entry point (will redirect)
   const moduleUrls: Record<string, string> = {
-    crm: process.env.NEXT_PUBLIC_CRM_URL || 'https://crm.payaid.in',
-    sales: process.env.NEXT_PUBLIC_SALES_URL || 'https://sales.payaid.in',
-    finance: process.env.NEXT_PUBLIC_FINANCE_URL || 'https://finance.payaid.in',
-    marketing: process.env.NEXT_PUBLIC_MARKETING_URL || 'https://marketing.payaid.in',
-    hr: process.env.NEXT_PUBLIC_HR_URL || 'https://hr.payaid.in',
-    projects: process.env.NEXT_PUBLIC_PROJECTS_URL || 'https://projects.payaid.in',
-    inventory: process.env.NEXT_PUBLIC_INVENTORY_URL || 'https://inventory.payaid.in',
-    'ai-cofounder': process.env.NEXT_PUBLIC_AI_COFOUNDER_URL || '/ai-cofounder',
-    'ai-chat': process.env.NEXT_PUBLIC_AI_CHAT_URL || '/ai-chat',
-    'ai-insights': process.env.NEXT_PUBLIC_AI_INSIGHTS_URL || '/ai-insights',
-    'website-builder': process.env.NEXT_PUBLIC_WEBSITE_BUILDER_URL || '/website-builder',
-    'logo-generator': process.env.NEXT_PUBLIC_LOGO_GENERATOR_URL || '/logo-generator',
-    'knowledge-rag': process.env.NEXT_PUBLIC_KNOWLEDGE_RAG_URL || '/knowledge-rag',
+    crm: process.env.NEXT_PUBLIC_CRM_URL || '/crm',
+    sales: process.env.NEXT_PUBLIC_SALES_URL || '/sales',
+    finance: process.env.NEXT_PUBLIC_FINANCE_URL || '/finance',
+    marketing: process.env.NEXT_PUBLIC_MARKETING_URL || '/marketing',
+    hr: process.env.NEXT_PUBLIC_HR_URL || '/hr',
+    projects: process.env.NEXT_PUBLIC_PROJECTS_URL || '/projects',
+    inventory: process.env.NEXT_PUBLIC_INVENTORY_URL || '/inventory',
+    'ai-cofounder': process.env.NEXT_PUBLIC_AI_COFOUNDER_URL || '/ai-studio',
+    'ai-chat': process.env.NEXT_PUBLIC_AI_CHAT_URL || '/ai-studio',
+    'ai-insights': process.env.NEXT_PUBLIC_AI_INSIGHTS_URL || '/ai-studio',
+    'website-builder': process.env.NEXT_PUBLIC_WEBSITE_BUILDER_URL || '/ai-studio',
+    'logo-generator': process.env.NEXT_PUBLIC_LOGO_GENERATOR_URL || '/ai-studio',
+    'knowledge-rag': process.env.NEXT_PUBLIC_KNOWLEDGE_RAG_URL || '/ai-studio',
   }
 
   // For now, use current domain with module prefix
