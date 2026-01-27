@@ -526,13 +526,12 @@ export default function CRMDashboardPage() {
               onChange={(e) => {
                 setTimePeriod(e.target.value as 'month' | 'quarter' | 'financial-year' | 'year')
               }}
-              className="text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1.5 text-[#53328A] font-medium cursor-pointer"
-              style={{ color: '#53328A' }}
+              className="text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1.5 text-white font-medium cursor-pointer"
             >
-              <option value="month" className="text-[#53328A] bg-white">This Month</option>
-              <option value="quarter" className="text-[#53328A] bg-white">This Quarter</option>
-              <option value="financial-year" className="text-[#53328A] bg-white">This Financial Year</option>
-              <option value="year" className="text-[#53328A] bg-white">This Year</option>
+              <option value="month" className="text-gray-900 bg-white">This Month</option>
+              <option value="quarter" className="text-gray-900 bg-white">This Quarter</option>
+              <option value="financial-year" className="text-gray-900 bg-white">This Financial Year</option>
+              <option value="year" className="text-gray-900 bg-white">This Year</option>
             </select>
             <select 
               value={currentView}
@@ -563,15 +562,14 @@ export default function CRMDashboardPage() {
                     router.push(`/crm/${tenantId}/Home/`)
                 }
               }}
-              className="text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1.5 text-[#53328A] font-medium cursor-pointer"
-              style={{ color: '#53328A' }}
+              className="text-sm bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1.5 text-white font-medium cursor-pointer"
             >
-              <option value="manager" className="text-[#53328A] bg-white">Manager&apos;s Home</option>
-              <option value="tasks" className="text-[#53328A] bg-white">Tasks View</option>
-              <option value="activity" className="text-[#53328A] bg-white">Activity Feed</option>
-              <option value="pipeline" className="text-[#53328A] bg-white">Pipeline View</option>
-              <option value="sales" className="text-[#53328A] bg-white">Sales Performance</option>
-              <option value="custom" className="text-[#53328A] bg-white">Custom Dashboard</option>
+              <option value="manager" className="text-gray-900 bg-white">Manager&apos;s Home</option>
+              <option value="tasks" className="text-gray-900 bg-white">Tasks View</option>
+              <option value="activity" className="text-gray-900 bg-white">Activity Feed</option>
+              <option value="pipeline" className="text-gray-900 bg-white">Pipeline View</option>
+              <option value="sales" className="text-gray-900 bg-white">Sales Performance</option>
+              <option value="custom" className="text-gray-900 bg-white">Custom Dashboard</option>
             </select>
           </div>
         </div>
