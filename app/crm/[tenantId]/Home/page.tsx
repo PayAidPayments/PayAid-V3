@@ -96,13 +96,14 @@ export default function CRMDashboardPage() {
   
   // Get tenantId from URL params first, fallback to auth store
   // Handle both string and array cases (Next.js can return either)
+  // Ensure tenantId is always defined (even if undefined, we'll handle it)
   const tenantIdParam = params?.tenantId
   const tenantIdFromParams = Array.isArray(tenantIdParam) 
-    ? tenantIdParam[0] 
-    : (tenantIdParam as string | undefined)
-  const tenantId = (tenantIdFromParams && typeof tenantIdFromParams === 'string' && tenantIdFromParams.trim()) 
+    ? (tenantIdParam[0] || null)
+    : (tenantIdParam as string | undefined || null)
+  const tenantId: string | undefined = (tenantIdFromParams && typeof tenantIdFromParams === 'string' && tenantIdFromParams.trim()) 
     ? tenantIdFromParams 
-    : (tenant?.id && typeof tenant.id === 'string' ? tenant.id : undefined)
+    : (tenant?.id && typeof tenant.id === 'string' && tenant.id.trim() ? tenant.id : undefined)
   
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [tasksViewData, setTasksViewData] = useState<TasksViewData | null>(null)
