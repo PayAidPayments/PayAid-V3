@@ -1,15 +1,29 @@
 'use client'
 
-import { useParams } from 'next/navigation'
 import { ModuleTopBar } from '@/components/modules/ModuleTopBar'
+import { useTenantId } from '@/lib/utils/get-tenant-id'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 export default function CRMDialerLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const params = useParams()
-  const tenantId = params.tenantId as string
+  const router = useRouter()
+  const tenantId = useTenantId()
+
+  // Redirect if tenantId is not available
+  useEffect(() => {
+    if (!tenantId) {
+      router.replace('/crm')
+    }
+  }, [tenantId, router])
+
+  // Don't render if tenantId is not available
+  if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
+    return null
+  }
 
   const topBarItems = [
     { name: 'Home', href: `/crm/${tenantId}/Home` },
