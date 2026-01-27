@@ -243,45 +243,21 @@ export async function GET(request: NextRequest) {
     
     // Query 6: Won deals (for revenue calculation)
     const wonDealsForQuarters = await prismaWithRetry(() =>
-      // Pipeline by stage - use groupBy for efficiency
-      prismaWithRetry(() =>
-        prisma.deal.groupBy({
-          by: ['stage'],
-          where: dealFilter,
-          _count: { id: true },
-        })
-      ),
-      prismaWithRetry(() =>
-        prisma.leadSource.findMany({
-          where: { tenantId },
-          orderBy: { leadsCount: 'desc' },
-          take: 10,
-          select: {
-            id: true,
-            name: true,
-            leadsCount: true,
-            conversionsCount: true,
-            totalValue: true,
-            conversionRate: true,
-          },
-        })
-      ),
-      // Fetch won deals once - reuse for all quarters and period revenue
-      prismaWithRetry(() =>
-        prisma.deal.findMany({
-          where: {
-            ...dealFilter,
-            stage: 'won',
-          },
-          select: {
-            value: true,
-            actualCloseDate: true,
-            updatedAt: true,
-            createdAt: true,
-          },
-        })
-      ),
-    ])
+      prisma.deal.findMany({
+        where: {
+          ...dealFilter,
+          stage: 'won',
+        },
+        select: {
+          value: true,
+          actualCloseDate: true,
+          updatedAt: true,
+          createdAt: true,
+        },
+      })
+    )
+    
+    await new Promise(resolve => setTimeout(resolve, 150))
 
     // Small delay before quarterly queries
     await new Promise(resolve => setTimeout(resolve, 100))
