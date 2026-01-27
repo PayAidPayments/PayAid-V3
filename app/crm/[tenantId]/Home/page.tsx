@@ -220,14 +220,15 @@ export default function CRMDashboardPage() {
       try {
         fetchingStatsRef.current = true
         
-        // Load stats first (most important)
+        // Load stats first (most important) - this will show the main dashboard
         await fetchDashboardStats(signal)
         
-        // Small delay to allow connection pool to recover
-        await new Promise(resolve => setTimeout(resolve, 300))
-        
-        // Load view-specific data sequentially (only if not aborted)
+        // Only load view-specific data after stats are loaded and if not aborted
+        // This allows the main dashboard to render faster
         if (!signal.aborted) {
+          // Small delay to allow connection pool to recover
+          await new Promise(resolve => setTimeout(resolve, 200))
+          
           if (currentView === 'tasks') {
             await fetchTasksViewData()
           } else if (currentView === 'activity') {
@@ -240,6 +241,8 @@ export default function CRMDashboardPage() {
           return
         }
         console.error('Error loading dashboard data:', error)
+        // Don't block UI - set loading to false even on error
+        setLoading(false)
       } finally {
         fetchingStatsRef.current = false
       }
