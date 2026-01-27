@@ -140,14 +140,48 @@ export async function GET(request: NextRequest) {
       ? { tenantId, assignedToId: userFilter.assignedToId }
       : { tenantId }
 
-    // OPTIMIZATION: Batch queries to avoid connection pool exhaustion
-    // Use smaller batches and sequential execution to prevent pool exhaustion
-    // Batch 1: Core stats (most critical - 3 queries max at a time)
-    const [
-      dealsCreatedInPeriod,
-      dealsClosingInPeriod,
-      overdueTasks,
-    ] = await Promise.all([
+    // OPTIMIZATION: Fully sequential queries to prevent connection pool exhaustion
+    // Execute queries one at a time with delays to ensure connection pool recovery
+    // This is slower but prevents "Too many concurrent requests" errors
+    
+    // Query 1: Deals created
+    const dealsCreatedInPeriod = await prismaWithRetry(() =>
+      prisma.deal.count({
+        where: {
+          ...dealFilter,
+          createdAt: { gte: periodStart, lte: periodEnd },
+        },
+      })
+    )
+    
+    // Small delay between queries
+    await new Promise(resolve => setTimeout(resolve, 150))
+    
+    // Query 2: Deals closing
+    const dealsClosingInPeriod = await prismaWithRetry(() =>
+      prisma.deal.count({
+        where: {
+          ...dealFilter,
+          expectedCloseDate: { gte: periodStart, lte: periodEnd },
+          stage: { not: 'lost' },
+        },
+      })
+    )
+    
+    await new Promise(resolve => setTimeout(resolve, 150))
+    
+    // Query 3: Overdue tasks
+    const overdueTasks = await prismaWithRetry(() =>
+      prisma.task.count({
+        where: {
+          ...userFilter,
+          dueDate: { lt: now },
+          status: { in: ['pending', 'in_progress'] },
+        },
+      })
+    )
+    
+    await new Promise(resolve => setTimeout(resolve, 150))
       // Basic counts
       prismaWithRetry(() =>
         prisma.deal.count({
@@ -177,15 +211,38 @@ export async function GET(request: NextRequest) {
       ),
     ])
 
-    // Small delay to allow connection pool to recover
-    await new Promise(resolve => setTimeout(resolve, 100))
-
-    // Batch 1b: Secondary stats (3 queries)
-    const [
-      pipelineByStageData,
-      topLeadSources,
-      wonDealsForQuarters, // Fetch once, reuse for all quarters and period revenue
-    ] = await Promise.all([
+    // Query 4: Pipeline by stage
+    const pipelineByStageData = await prismaWithRetry(() =>
+      prisma.deal.groupBy({
+        by: ['stage'],
+        where: dealFilter,
+        _count: { id: true },
+      })
+    )
+    
+    await new Promise(resolve => setTimeout(resolve, 150))
+    
+    // Query 5: Top lead sources
+    const topLeadSources = await prismaWithRetry(() =>
+      prisma.leadSource.findMany({
+        where: { tenantId },
+        orderBy: { leadsCount: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          name: true,
+          leadsCount: true,
+          conversionsCount: true,
+          totalValue: true,
+          conversionRate: true,
+        },
+      })
+    )
+    
+    await new Promise(resolve => setTimeout(resolve, 150))
+    
+    // Query 6: Won deals (for revenue calculation)
+    const wonDealsForQuarters = await prismaWithRetry(() =>
       // Pipeline by stage - use groupBy for efficiency
       prismaWithRetry(() =>
         prisma.deal.groupBy({
