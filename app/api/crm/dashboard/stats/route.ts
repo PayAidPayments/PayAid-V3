@@ -258,14 +258,6 @@ export async function GET(request: NextRequest) {
       })
     )
     const q2LeadsCreated = await prismaWithRetry(() =>
-      prismaWithRetry(() =>
-        prisma.deal.count({
-          where: {
-            ...dealFilter,
-            createdAt: { gte: quarters[1].start, lte: quarters[1].end },
-          },
-        })
-      ),
       prisma.contact.count({
         where: {
           ...contactFilter,
