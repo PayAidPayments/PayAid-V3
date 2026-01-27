@@ -182,34 +182,6 @@ export async function GET(request: NextRequest) {
     )
     
     await new Promise(resolve => setTimeout(resolve, 150))
-      // Basic counts
-      prismaWithRetry(() =>
-        prisma.deal.count({
-          where: {
-            ...dealFilter,
-            createdAt: { gte: periodStart, lte: periodEnd },
-          },
-        })
-      ),
-      prismaWithRetry(() =>
-        prisma.deal.count({
-          where: {
-            ...dealFilter,
-            expectedCloseDate: { gte: periodStart, lte: periodEnd },
-            stage: { not: 'lost' },
-          },
-        })
-      ),
-      prismaWithRetry(() =>
-        prisma.task.count({
-          where: {
-            ...userFilter,
-            dueDate: { lt: now },
-            status: { in: ['pending', 'in_progress'] },
-          },
-        })
-      ),
-    ])
 
     // Query 4: Pipeline by stage
     const pipelineByStageData = await prismaWithRetry(() =>
