@@ -220,7 +220,25 @@ export default function LoginPage() {
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      console.error('[LOGIN PAGE] Login error:', err)
+      let errorMessage = 'Login failed'
+      
+      if (err instanceof Error) {
+        errorMessage = err.message
+        
+        // Provide more helpful error messages
+        if (err.message.includes('timeout') || err.message.includes('timed out')) {
+          errorMessage = 'Login request timed out. The server may be experiencing high load. Please try again in a moment.'
+        } else if (err.message.includes('Database') || err.message.includes('database')) {
+          errorMessage = 'Database connection error. Please try again later or contact support.'
+        } else if (err.message.includes('Network') || err.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.'
+        } else if (err.message.includes('Invalid email or password')) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.'
+        }
+      }
+      
+      setError(errorMessage)
     }
   }
   
