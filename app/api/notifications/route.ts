@@ -516,12 +516,16 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Get notifications error:', error)
     
-    // Handle pool exhaustion
+    // Handle circuit breaker and pool exhaustion gracefully
     const errorMessage = error?.message || String(error)
+    const errorCode = error?.code || ''
     const isPoolExhausted = errorMessage.includes('MaxClientsInSessionMode') || 
-                            errorMessage.includes('max clients reached')
+                            errorMessage.includes('max clients reached') ||
+                            errorMessage.includes('connection pool') ||
+                            errorCode === 'P1002'
+    const isCircuitOpen = errorCode === 'CIRCUIT_OPEN' || error?.isCircuitBreaker
     
-    if (isPoolExhausted) {
+    if (isCircuitOpen || isPoolExhausted) {
       return NextResponse.json(
         { 
           notifications: [],
