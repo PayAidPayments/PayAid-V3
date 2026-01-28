@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch user with tenant - using retry logic for connection stability
+    // Fetch user with tenant - using retry logic with faster settings
     const userData = await prismaWithRetry(() =>
       prisma.user.findUnique({
         where: { id: payload.userId },
@@ -72,7 +72,12 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-      })
+      }),
+      {
+        maxRetries: 2, // Reduce retries
+        retryDelay: 300, // Faster retries
+        exponentialBackoff: false, // Disable exponential backoff
+      }
     )
 
     if (!userData) {
