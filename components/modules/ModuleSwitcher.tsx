@@ -135,10 +135,11 @@ export function ModuleSwitcher() {
       return
     }
 
-    // For CRM and other modules, use direct navigation (no SSO needed for same-domain)
-    // SSO is only needed for cross-domain navigation
-    const moduleUrl = tenant?.id ? getModuleUrl(module.id, tenant.id) : module.url
-    router.push(moduleUrl)
+    // For CRM and other modules, always use base URL (e.g., /crm)
+    // The entry point will handle redirecting to tenant-specific route
+    // This ensures auth state is properly checked before redirecting
+    // Using base URL prevents middleware from blocking due to missing cookie token
+    router.push(module.url)
     setIsOpen(false)
   }
 
