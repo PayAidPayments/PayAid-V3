@@ -15,8 +15,8 @@ interface CircuitBreakerState {
 const CIRCUIT_BREAKER_CONFIG = {
   failureThreshold: 5, // Open circuit after 5 consecutive failures
   successThreshold: 2, // Close circuit after 2 consecutive successes
-  timeout: 30000, // 30 seconds before attempting to close circuit
-  resetTimeout: 60000, // 1 minute before resetting failure count
+  timeout: 60000, // 60 seconds before attempting to close circuit (increased to give DB more time to recover)
+  resetTimeout: 120000, // 2 minutes before resetting failure count
 }
 
 class CircuitBreaker {

@@ -36,6 +36,9 @@ export function NotificationBell() {
   const router = useRouter()
   const [showDropdown, setShowDropdown] = useState(false)
 
+  // Track consecutive 503 errors to back off polling
+  const [consecutive503Errors, setConsecutive503Errors] = useState(0)
+
   // Fetch notifications from all modules
   const { data, isLoading } = useQuery<{ notifications: Notification[]; unreadCount: number; total: number }>({
     queryKey: ['notifications'],
@@ -44,15 +47,31 @@ export function NotificationBell() {
         headers: getAuthHeaders(),
       })
       if (!response.ok) {
-        if (response.status === 401 || response.status === 503) {
-          // Silently fail for unauthorized or service unavailable
+        if (response.status === 401) {
+          // Reset 503 counter on 401 (auth issue, not DB)
+          setConsecutive503Errors(0)
+          return { notifications: [], unreadCount: 0, total: 0 }
+        }
+        if (response.status === 503) {
+          // Increment 503 counter - database is unavailable
+          setConsecutive503Errors(prev => prev + 1)
           return { notifications: [], unreadCount: 0, total: 0 }
         }
         throw new Error('Failed to fetch notifications')
       }
+      // Success - reset 503 counter
+      setConsecutive503Errors(0)
       return response.json()
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    // Back off polling when database is unavailable:
+    // - Normal: 30 seconds
+    // - After 1-2 503s: 60 seconds
+    // - After 3+ 503s: 120 seconds (2 minutes)
+    refetchInterval: consecutive503Errors === 0 
+      ? 30000 
+      : consecutive503Errors <= 2 
+        ? 60000 
+        : 120000,
     retry: false, // Don't retry on 401/503 errors
   })
 
