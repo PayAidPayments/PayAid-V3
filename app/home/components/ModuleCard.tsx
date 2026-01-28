@@ -40,38 +40,11 @@ function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {
     ? tenantIdFromParams 
     : (tenant?.id && typeof tenant.id === 'string' && tenant.id.trim() ? tenant.id : undefined);
   
-  // Construct module URL with tenantId
+  // Construct module URL - always use base module URL to let entry point handle redirect
   const getModuleUrl = (): string => {
-    // If no tenantId, return base module URL (will redirect to login or entry point)
-    if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
-      return module.url;
-    }
-    
-    // If URL already includes tenantId, return as is
-    if (module.url.includes(`/${tenantId}/`)) {
-      return module.url;
-    }
-    
-    // For module routes like /crm, /sales, etc., add tenantId
-    // Format: /module/[tenantId]/Home/
-    const modulePath = module.url.replace(/^\//, '').split('/')[0];
-    if (modulePath && !modulePath.includes('dashboard') && !modulePath.includes('http')) {
-      // Ensure tenantId is valid before using in template string
-      if (tenantId && typeof tenantId === 'string' && tenantId.trim()) {
-        return `/${modulePath}/${tenantId}/Home/`;
-      }
-      return module.url;
-    }
-    
-    // For dashboard routes, add tenantId after /dashboard
-    if (module.url.startsWith('/dashboard/')) {
-      const pathAfterDashboard = module.url.replace('/dashboard/', '');
-      if (tenantId && typeof tenantId === 'string' && tenantId.trim()) {
-        return `/dashboard/${tenantId}/${pathAfterDashboard}`;
-      }
-      return module.url;
-    }
-    
+    // Always return base module URL (e.g., /crm, /sales, /finance)
+    // The module entry point will handle redirecting to /module/[tenantId]/Home/
+    // This ensures auth state is properly checked before redirecting
     return module.url;
   };
   
