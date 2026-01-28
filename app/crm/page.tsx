@@ -24,6 +24,7 @@ export default function CRMModulePage() {
   // Try to fetch user if we have a token but aren't authenticated
   useEffect(() => {
     if (mounted && token && !isAuthenticated && !isLoading) {
+      // Try to fetch user to restore auth state
       fetchUser().catch(() => {
         // Silently fail - will redirect to login below
       })
@@ -32,27 +33,44 @@ export default function CRMModulePage() {
 
   // Handle redirects once auth state is determined
   useEffect(() => {
-    if (!mounted || isLoading || hasRedirected) {
+    if (!mounted || hasRedirected) {
       return
     }
 
-    // If not authenticated after checking, redirect to main login
-    if (!isAuthenticated) {
+    // If still loading auth state, wait
+    if (isLoading) {
+      return
+    }
+
+    // If we have a token but aren't authenticated yet, wait a moment for fetchUser to complete
+    if (token && !isAuthenticated) {
+      // Give fetchUser a chance to complete (max 2 seconds)
+      const timeout = setTimeout(() => {
+        if (!isAuthenticated) {
+          setHasRedirected(true)
+          router.push('/login')
+        }
+      }, 2000)
+      return () => clearTimeout(timeout)
+    }
+
+    // If not authenticated and no token, redirect to login
+    if (!isAuthenticated && !token) {
       setHasRedirected(true)
       router.push('/login')
       return
     }
 
     // If authenticated, check for tenant
-    if (tenant?.id && typeof tenant.id === 'string' && tenant.id.trim()) {
+    if (isAuthenticated && tenant?.id && typeof tenant.id === 'string' && tenant.id.trim()) {
       setHasRedirected(true)
       router.push(`/crm/${tenant.id}/Home/`)
-    } else {
-      // No tenant - redirect to home page to set up tenant
+    } else if (isAuthenticated) {
+      // Authenticated but no tenant - redirect to home page to set up tenant
       setHasRedirected(true)
       router.push('/home')
     }
-  }, [mounted, isAuthenticated, tenant?.id, isLoading, hasRedirected, router])
+  }, [mounted, isAuthenticated, tenant?.id, isLoading, hasRedirected, router, token])
 
   // Show loading while checking auth state
   return <PageLoading message="Loading CRM..." fullScreen={true} />
