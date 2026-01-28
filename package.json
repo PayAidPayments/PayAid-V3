@@ -26,6 +26,7 @@
     "db:seed-all": "npx tsx prisma/seed-all-sample-data.ts",
     "db:seed-news": "npx tsx prisma/seed-news-items.ts",
     "enable-all-modules": "npx tsx scripts/enable-all-modules.ts",
+    "test:crm": "npx tsx scripts/test-crm-dashboard.ts",
     "type-check": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc --noEmit",
     "type-check:quick": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc --noEmit --skipLibCheck",
     "check-before-push": "powershell -ExecutionPolicy Bypass -File scripts/check-before-push.ps1",
