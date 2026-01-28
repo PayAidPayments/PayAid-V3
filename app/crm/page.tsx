@@ -34,18 +34,24 @@ export default function CRMModulePage() {
       fetchAttemptedRef.current = true
       setIsFetchingUser(true)
       
-      fetchUser()
-        .then(() => {
-          setIsFetchingUser(false)
-        })
-        .catch((error) => {
-          console.error('[CRM] Failed to fetch user:', error)
-          setIsFetchingUser(false)
-          // If fetchUser fails, token is likely invalid - clear it
-          if (error?.message?.includes('401') || error?.message?.includes('unauthorized')) {
-            useAuthStore.getState().logout()
-          }
-        })
+      // Add a small delay to ensure auth store is fully hydrated
+      const timeoutId = setTimeout(() => {
+        fetchUser()
+          .then(() => {
+            setIsFetchingUser(false)
+          })
+          .catch((error) => {
+            console.error('[CRM] Failed to fetch user:', error)
+            setIsFetchingUser(false)
+            // If fetchUser fails with 401, token is invalid - clear it
+            if (error?.message?.includes('401') || error?.message?.includes('unauthorized') || error?.message?.includes('Invalid or expired token')) {
+              console.warn('[CRM] Token is invalid - clearing auth state')
+              useAuthStore.getState().logout()
+            }
+          })
+      }, 100) // Small delay to ensure hydration is complete
+      
+      return () => clearTimeout(timeoutId)
     }
   }, [mounted, token, isAuthenticated, isLoading, isFetchingUser, fetchUser])
 
