@@ -104,19 +104,21 @@ export function ModuleSwitcher() {
   
   const allModules: Module[] = [
     { id: 'home', name: 'Home', icon: 'home', iconComponent: moduleIconMap['home'], url: tenantId ? `/home/${tenantId}` : '/home', active: currentModule === 'home', licensed: true },
-    { id: 'crm', name: 'CRM', icon: 'crm', iconComponent: moduleIconMap['crm'], url: getModuleUrl('crm', tenantId), active: currentModule === 'crm', licensed: licensedModules.includes('crm') || true },
-    { id: 'sales', name: 'Sales', icon: 'sales', iconComponent: moduleIconMap['sales'], url: getModuleUrl('sales', tenantId), active: currentModule === 'sales', licensed: licensedModules.includes('sales') || true },
-    { id: 'finance', name: 'Finance', icon: 'finance', iconComponent: moduleIconMap['finance'], url: getModuleUrl('finance', tenantId), active: currentModule === 'finance', licensed: licensedModules.includes('finance') || true },
-    { id: 'marketing', name: 'Marketing', icon: 'marketing', iconComponent: moduleIconMap['marketing'], url: getModuleUrl('marketing', tenantId), active: currentModule === 'marketing', licensed: licensedModules.includes('marketing') || true },
-    { id: 'hr', name: 'HR', icon: 'hr', iconComponent: moduleIconMap['hr'], url: getModuleUrl('hr', tenantId), active: currentModule === 'hr', licensed: licensedModules.includes('hr') || true },
-    { id: 'projects', name: 'Projects', icon: 'projects', iconComponent: moduleIconMap['projects'], url: getModuleUrl('projects', tenantId), active: currentModule === 'projects', licensed: licensedModules.includes('projects') || true },
-    { id: 'inventory', name: 'Inventory', icon: 'inventory', iconComponent: moduleIconMap['inventory'], url: getModuleUrl('inventory', tenantId), active: currentModule === 'inventory', licensed: licensedModules.includes('inventory') || true },
-    { id: 'ai-cofounder', name: 'AI Co-founder', icon: 'ai-cofounder', iconComponent: moduleIconMap['ai-cofounder'], url: getModuleUrl('ai-cofounder', tenantId), active: currentModule === 'ai-cofounder', licensed: licensedModules.includes('ai-cofounder') || true },
-    { id: 'ai-chat', name: 'AI Chat', icon: 'ai-chat', iconComponent: moduleIconMap['ai-chat'], url: getModuleUrl('ai-chat', tenantId), active: currentModule === 'ai-chat', licensed: licensedModules.includes('ai-chat') || true },
-    { id: 'ai-insights', name: 'AI Insights', icon: 'ai-insights', iconComponent: moduleIconMap['ai-insights'], url: getModuleUrl('ai-insights', tenantId), active: currentModule === 'ai-insights', licensed: licensedModules.includes('ai-insights') || true },
-    { id: 'website-builder', name: 'Website Builder', icon: 'website-builder', iconComponent: moduleIconMap['website-builder'], url: getModuleUrl('website-builder', tenantId), active: currentModule === 'website-builder', licensed: licensedModules.includes('website-builder') || true },
-    { id: 'logo-generator', name: 'Logo Generator', icon: 'logo-generator', iconComponent: moduleIconMap['logo-generator'], url: getModuleUrl('logo-generator', tenantId), active: currentModule === 'logo-generator', licensed: licensedModules.includes('logo-generator') || true },
-    { id: 'knowledge-rag', name: 'Knowledge & RAG AI', icon: 'knowledge-rag', iconComponent: moduleIconMap['knowledge-rag'], url: getModuleUrl('knowledge-rag', tenantId), active: currentModule === 'knowledge-rag', licensed: licensedModules.includes('knowledge-rag') || true },
+    // Always use base module URLs (e.g., /crm) - entry points handle tenant-specific redirects
+    // This ensures middleware doesn't block and auth state is properly checked
+    { id: 'crm', name: 'CRM', icon: 'crm', iconComponent: moduleIconMap['crm'], url: '/crm', active: currentModule === 'crm', licensed: licensedModules.includes('crm') || true },
+    { id: 'sales', name: 'Sales', icon: 'sales', iconComponent: moduleIconMap['sales'], url: '/sales', active: currentModule === 'sales', licensed: licensedModules.includes('sales') || true },
+    { id: 'finance', name: 'Finance', icon: 'finance', iconComponent: moduleIconMap['finance'], url: '/finance', active: currentModule === 'finance', licensed: licensedModules.includes('finance') || true },
+    { id: 'marketing', name: 'Marketing', icon: 'marketing', iconComponent: moduleIconMap['marketing'], url: '/marketing', active: currentModule === 'marketing', licensed: licensedModules.includes('marketing') || true },
+    { id: 'hr', name: 'HR', icon: 'hr', iconComponent: moduleIconMap['hr'], url: '/hr', active: currentModule === 'hr', licensed: licensedModules.includes('hr') || true },
+    { id: 'projects', name: 'Projects', icon: 'projects', iconComponent: moduleIconMap['projects'], url: '/projects', active: currentModule === 'projects', licensed: licensedModules.includes('projects') || true },
+    { id: 'inventory', name: 'Inventory', icon: 'inventory', iconComponent: moduleIconMap['inventory'], url: '/inventory', active: currentModule === 'inventory', licensed: licensedModules.includes('inventory') || true },
+    { id: 'ai-cofounder', name: 'AI Co-founder', icon: 'ai-cofounder', iconComponent: moduleIconMap['ai-cofounder'], url: '/ai-cofounder', active: currentModule === 'ai-cofounder', licensed: licensedModules.includes('ai-cofounder') || true },
+    { id: 'ai-chat', name: 'AI Chat', icon: 'ai-chat', iconComponent: moduleIconMap['ai-chat'], url: '/ai-chat', active: currentModule === 'ai-chat', licensed: licensedModules.includes('ai-chat') || true },
+    { id: 'ai-insights', name: 'AI Insights', icon: 'ai-insights', iconComponent: moduleIconMap['ai-insights'], url: '/ai-insights', active: currentModule === 'ai-insights', licensed: licensedModules.includes('ai-insights') || true },
+    { id: 'website-builder', name: 'Website Builder', icon: 'website-builder', iconComponent: moduleIconMap['website-builder'], url: '/website-builder', active: currentModule === 'website-builder', licensed: licensedModules.includes('website-builder') || true },
+    { id: 'logo-generator', name: 'Logo Generator', icon: 'logo-generator', iconComponent: moduleIconMap['logo-generator'], url: '/logo-generator', active: currentModule === 'logo-generator', licensed: licensedModules.includes('logo-generator') || true },
+    { id: 'knowledge-rag', name: 'Knowledge & RAG AI', icon: 'knowledge-rag', iconComponent: moduleIconMap['knowledge-rag'], url: '/knowledge-rag', active: currentModule === 'knowledge-rag', licensed: licensedModules.includes('knowledge-rag') || true },
   ]
 
   const availableModules = allModules.filter(m => m.licensed)
