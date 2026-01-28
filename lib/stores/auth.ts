@@ -274,13 +274,13 @@ export const useAuthStore = create<AuthState>()(
 
         set({ isLoading: true })
         try {
-          // Add timeout to prevent hanging - use 3 seconds for faster failure
+          // Add timeout to prevent hanging - use 5 seconds (increased from 3s for database retries)
           const controller = new AbortController()
           const timeoutId = setTimeout(() => {
             if (!controller.signal.aborted) {
               controller.abort()
             }
-          }, 3000) // 3 second timeout for faster response
+          }, 5000) // 5 second timeout to allow for database retries
 
           const response = await fetch('/api/auth/me', {
             headers: {
