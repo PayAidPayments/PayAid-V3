@@ -63,18 +63,37 @@ export default function CRMModulePage() {
 
     // Get current state after rehydration
     const currentState = useAuthStore.getState()
-    const currentIsAuthenticated = currentState.isAuthenticated || !!currentState.token
-    const currentTenant = currentState.tenant
+    
+    // Also check localStorage directly as fallback
+    let tokenFromStorage: string | null = null
+    let tenantFromStorage: any = null
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('auth-storage')
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          tokenFromStorage = parsed.state?.token || null
+          tenantFromStorage = parsed.state?.tenant || null
+        }
+      } catch (error) {
+        console.error('[CRM] Error reading from localStorage:', error)
+      }
+    }
 
-    if (!currentIsAuthenticated) {
+    // Use Zustand state if available, otherwise fall back to localStorage
+    const finalToken = currentState.token || tokenFromStorage
+    const finalTenant = currentState.tenant || tenantFromStorage
+    const finalIsAuthenticated = currentState.isAuthenticated || !!finalToken
+
+    if (!finalIsAuthenticated || !finalToken) {
       // Not logged in - redirect to login with CRM redirect
       router.push('/login?redirect=/crm')
       return
     }
 
-    if (currentTenant?.id) {
+    if (finalTenant?.id) {
       // Redirect to tenant-specific CRM dashboard
-      router.push(`/crm/${currentTenant.id}/Home/`)
+      router.push(`/crm/${finalTenant.id}/Home/`)
     } else {
       // No tenant - redirect to home page to set up tenant
       router.push('/home')
