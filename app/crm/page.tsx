@@ -16,16 +16,62 @@ export default function CRMModulePage() {
   const [mounted, setMounted] = useState(false)
   const [hasRedirected, setHasRedirected] = useState(false)
   const [isFetchingUser, setIsFetchingUser] = useState(false)
+  const [rehydrated, setRehydrated] = useState(false)
   const fetchAttemptedRef = useRef(false)
 
   // Wait for component to mount (client-side only)
   useEffect(() => {
     setMounted(true)
+    
+    // Check if auth store has rehydrated by checking localStorage
+    const checkRehydration = () => {
+      if (typeof window === 'undefined') return
+      
+      try {
+        const stored = localStorage.getItem('auth-storage')
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          const hasToken = !!parsed.state?.token
+          const hasUser = !!parsed.state?.user
+          const hasTenant = !!parsed.state?.tenant
+          
+          // If we have token + user + tenant in storage, mark as rehydrated
+          if (hasToken && hasUser && hasTenant) {
+            setRehydrated(true)
+            // Also ensure store state matches
+            const currentState = useAuthStore.getState()
+            if (!currentState.isAuthenticated && currentState.token) {
+              useAuthStore.setState({ isAuthenticated: true })
+            }
+            return
+          }
+          
+          // If we have token but not user/tenant, still mark as rehydrated
+          // (fetchUser will populate user/tenant)
+          if (hasToken) {
+            setRehydrated(true)
+            return
+          }
+        }
+        
+        // No stored auth data - mark as rehydrated anyway
+        setRehydrated(true)
+      } catch (error) {
+        console.error('[CRM] Error checking rehydration:', error)
+        setRehydrated(true) // Assume rehydrated to prevent blocking
+      }
+    }
+    
+    // Check immediately and after a small delay
+    checkRehydration()
+    const timeoutId = setTimeout(checkRehydration, 100)
+    
+    return () => clearTimeout(timeoutId)
   }, [])
 
   // Try to fetch user if we have a token but aren't authenticated
   useEffect(() => {
-    if (!mounted || fetchAttemptedRef.current) {
+    if (!mounted || !rehydrated || fetchAttemptedRef.current) {
       return
     }
 
@@ -34,37 +80,29 @@ export default function CRMModulePage() {
       fetchAttemptedRef.current = true
       setIsFetchingUser(true)
       
-      // Add a small delay to ensure auth store is fully hydrated
-      const timeoutId = setTimeout(() => {
-        fetchUser()
-          .then(() => {
-            setIsFetchingUser(false)
-          })
-          .catch((error) => {
-            console.error('[CRM] Failed to fetch user:', error)
-            setIsFetchingUser(false)
-            // If fetchUser fails with 401, token is invalid - clear it
-            if (error?.message?.includes('401') || error?.message?.includes('unauthorized') || error?.message?.includes('Invalid or expired token')) {
-              console.warn('[CRM] Token is invalid - clearing auth state')
-              useAuthStore.getState().logout()
-            }
-          })
-      }, 100) // Small delay to ensure hydration is complete
-      
-      return () => clearTimeout(timeoutId)
+      fetchUser()
+        .then(() => {
+          setIsFetchingUser(false)
+        })
+        .catch((error) => {
+          console.error('[CRM] Failed to fetch user:', error)
+          setIsFetchingUser(false)
+          // If fetchUser fails with 401, token is invalid - clear it
+          if (error?.message?.includes('401') || error?.message?.includes('unauthorized') || error?.message?.includes('Invalid or expired token')) {
+            console.warn('[CRM] Token is invalid - clearing auth state')
+            useAuthStore.getState().logout()
+          }
+        })
     }
-  }, [mounted, token, isAuthenticated, isLoading, isFetchingUser, fetchUser])
+  }, [mounted, rehydrated, token, isAuthenticated, isLoading, isFetchingUser, fetchUser])
 
   // Handle redirects once auth state is determined
   useEffect(() => {
-    if (!mounted || hasRedirected) {
+    if (!mounted || !rehydrated || hasRedirected) {
       return
     }
 
     // Wait for auth state to stabilize
-    // Give it time for:
-    // 1. Zustand rehydration (localStorage) - usually instant but can take a moment
-    // 2. fetchUser to complete if token exists
     if (isLoading || isFetchingUser) {
       return
     }
@@ -89,7 +127,7 @@ export default function CRMModulePage() {
           setHasRedirected(true)
           router.push('/login?redirect=/crm')
         }
-      }, 2000) // Increased to 2 seconds to give fetchUser more time
+      }, 3000) // Increased to 3 seconds to give fetchUser more time
       return () => clearTimeout(timeout)
     }
 
@@ -109,7 +147,7 @@ export default function CRMModulePage() {
       setHasRedirected(true)
       router.push('/home')
     }
-  }, [mounted, isAuthenticated, tenant?.id, isLoading, hasRedirected, router, token, isFetchingUser])
+  }, [mounted, rehydrated, isAuthenticated, tenant?.id, isLoading, hasRedirected, router, token, isFetchingUser])
 
   // Show loading while checking auth state
   return <PageLoading message="Loading CRM..." fullScreen={true} />
