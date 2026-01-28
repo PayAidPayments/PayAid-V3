@@ -321,4 +321,50 @@ export class TransactionSyncService {
       await this.syncExpense(expense.id)
     }
   }
+
+  /**
+   * Sync all financial data for tenant
+   */
+  async syncAll(options?: {
+    syncInvoices?: boolean
+    syncPayments?: boolean
+    syncExpenses?: boolean
+    syncBankFeeds?: boolean
+  }): Promise<void> {
+    const opts = {
+      syncInvoices: true,
+      syncPayments: true,
+      syncExpenses: true,
+      syncBankFeeds: false,
+      ...options,
+    }
+
+    if (opts.syncInvoices) {
+      await this.syncAllInvoices()
+    }
+
+    if (opts.syncExpenses) {
+      await this.syncAllExpenses()
+    }
+
+    // Payments are handled as part of invoice sync
+    // Bank feeds would be handled separately
+  }
+}
+
+/**
+ * Sync financial data for a tenant
+ * Convenience function for deployment scripts
+ */
+export async function syncFinancialData(
+  tenantId: string,
+  options?: {
+    syncInvoices?: boolean
+    syncPayments?: boolean
+    syncExpenses?: boolean
+    syncBankFeeds?: boolean
+  }
+): Promise<void> {
+  const service = new TransactionSyncService(tenantId)
+  await service.syncAll(options)
 }

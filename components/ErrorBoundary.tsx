@@ -1,138 +1,59 @@
 'use client'
 
-import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
+import React from 'react'
 
-interface Props {
-  children: ReactNode
-  fallback?: ReactNode
-  onError?: (error: Error, errorInfo: ErrorInfo) => void
-}
-
-interface State {
+interface ErrorBoundaryState {
   hasError: boolean
   error: Error | null
-  errorInfo: ErrorInfo | null
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
+export class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  ErrorBoundaryState
+> {
+  constructor(props: { children: React.ReactNode }) {
     super(props)
-    this.state = {
-      hasError: false,
-      error: null,
-      errorInfo: null,
-    }
+    this.state = { hasError: false, error: null }
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    return {
-      hasError: true,
-      error,
-      errorInfo: null,
-    }
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error }
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to monitoring service
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo)
-    
-    // Send to error tracking service
-    if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-      // Sentry integration would go here
-    }
-
-    this.setState({
-      error,
-      errorInfo,
-    })
-
-    // Call custom error handler
-    this.props.onError?.(error, errorInfo)
-  }
-
-  handleReset = () => {
-    this.setState({
-      hasError: false,
-      error: null,
-      errorInfo: null,
-    })
   }
 
   render() {
     if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback
-      }
-
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-          <Card className="max-w-2xl w-full">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="w-8 h-8 text-red-600" />
-                <div>
-                  <CardTitle>Something went wrong</CardTitle>
-                  <CardDescription>
-                    An unexpected error occurred. We've been notified and are working on a fix.
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {process.env.NODE_ENV === 'development' && this.state.error && (
-                <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-                  <div className="text-sm font-mono text-red-800">
-                    <div className="font-semibold mb-2">{this.state.error.name}</div>
-                    <div className="mb-2">{this.state.error.message}</div>
-                    {this.state.error.stack && (
-                      <pre className="text-xs overflow-auto max-h-64">
-                        {this.state.error.stack}
-                      </pre>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <Button onClick={this.handleReset} variant="outline">
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Try Again
-                </Button>
-                <Button onClick={() => (window.location.href = '/')} variant="default">
-                  <Home className="w-4 h-4 mr-2" />
-                  Go Home
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              Something went wrong
+            </h1>
+            <p className="text-gray-600 mb-4">
+              {this.state.error?.message || 'An unexpected error occurred'}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Reload Page
+            </button>
+            <details className="mt-4 text-left">
+              <summary className="cursor-pointer text-sm text-gray-500">
+                Error Details
+              </summary>
+              <pre className="mt-2 text-xs bg-gray-100 p-4 rounded overflow-auto">
+                {this.state.error?.stack}
+              </pre>
+            </details>
+          </div>
         </div>
       )
     }
 
     return this.props.children
   }
-}
-
-/**
- * Module-specific error boundary
- */
-export function ModuleErrorBoundary({
-  module,
-  children,
-}: {
-  module: string
-  children: ReactNode
-}) {
-  return (
-    <ErrorBoundary
-      onError={(error, errorInfo) => {
-        console.error(`[${module}] Error:`, error, errorInfo)
-      }}
-    >
-      {children}
-    </ErrorBoundary>
-  )
 }
