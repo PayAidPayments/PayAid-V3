@@ -11,7 +11,7 @@ import {
   Home,
   Users,
   Briefcase,
-  DollarSign,
+  Landmark,
   Megaphone,
   UserCircle,
   FolderKanban,
@@ -32,7 +32,7 @@ const moduleIconMap: Record<string, React.ComponentType<{ className?: string }>>
   'home': Home,
   'crm': Users,
   'sales': Briefcase,
-  'finance': DollarSign,
+  'finance': Landmark, // Changed from DollarSign to Landmark (bank/finance icon for Indian Rupee context)
   'marketing': Megaphone,
   'hr': UserCircle,
   'projects': FolderKanban,

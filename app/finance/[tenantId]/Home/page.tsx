@@ -7,6 +7,7 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { FileText, ShoppingCart, Landmark, TrendingUp, RefreshCw, ArrowUpRight, ArrowDownRight, TrendingDown } from 'lucide-react'
+import { PageLoading } from '@/components/ui/loading'
 import { 
   LineChart, 
   Line, 
@@ -149,14 +150,7 @@ export default function FinanceDashboardPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center w-full py-20">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
-    )
+    return <PageLoading message="Loading Finance dashboard..." fullScreen={true} />
   }
 
   // Prepare chart data
