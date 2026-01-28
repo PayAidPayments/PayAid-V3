@@ -771,7 +771,7 @@ async function seedDemoData() {
       console.warn('Cache invalidation failed (non-critical):', cacheError)
     }
 
-    return NextResponse.json({
+    return {
       success: true,
       message: 'Sample data seeded successfully',
       tenantId: tenant.id,
@@ -787,16 +787,13 @@ async function seedDemoData() {
         leadSources: leadSources.length,
         purchaseOrders: purchaseOrders.length,
       },
-    })
+    }
   } catch (error) {
     console.error('Seed demo data error:', error)
     const errorMessage = error instanceof Error ? error.message : String(error)
     const errorStack = error instanceof Error ? error.stack : undefined
     
-    return NextResponse.json(
-      {
-        error: 'Failed to seed demo data',
-        message: errorMessage,
+    throw new Error(`Failed to seed demo data: ${errorMessage}`)
         stack: process.env.NODE_ENV === 'development' ? errorStack : undefined,
       },
       { status: 500 }
