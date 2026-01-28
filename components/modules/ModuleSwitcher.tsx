@@ -135,14 +135,10 @@ export function ModuleSwitcher() {
       return
     }
 
-    // For other modules, use SSO navigation
-    const ssoToken = getSSOToken()
-    if (ssoToken) {
-      navigateToModule(module.id, ssoToken)
-    } else {
-      // Fallback to regular navigation if no SSO token
-      router.push(module.url)
-    }
+    // For CRM and other modules, use direct navigation (no SSO needed for same-domain)
+    // SSO is only needed for cross-domain navigation
+    const moduleUrl = tenant?.id ? getModuleUrl(module.id, tenant.id) : module.url
+    router.push(moduleUrl)
     setIsOpen(false)
   }
 
