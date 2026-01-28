@@ -87,11 +87,82 @@ async function seedIndustryDataInline(tenantId: string, contacts: any[]) {
 }
 
 /**
+ * GET /api/admin/seed-demo-data
+ * Shows instructions or triggers seeding (for browser access)
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const trigger = searchParams.get('trigger') === 'true'
+    
+    // If trigger=true, actually seed the data
+    if (trigger) {
+      // Call the POST handler logic
+      const result = await seedDemoData()
+      return NextResponse.json({
+        success: true,
+        message: 'Demo data seeded successfully',
+        ...result,
+      })
+    }
+    
+    // Otherwise, show instructions
+    return NextResponse.json({
+      message: 'Demo Data Seeding Endpoint',
+      instructions: [
+        'To seed demo data, use one of these methods:',
+        '1. Visit this URL with ?trigger=true parameter',
+        '2. Use POST request: curl -X POST https://payaid-v3.vercel.app/api/admin/seed-demo-data',
+        '3. Use browser console: fetch("/api/admin/seed-demo-data", {method: "POST"})',
+      ],
+      quickSeed: 'Visit: /api/admin/seed-demo-data?trigger=true',
+      note: 'This will create contacts, deals, tasks, and lead sources for your tenant.',
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+  } catch (error: any) {
+    console.error('[SEED_DEMO_DATA] GET Error:', error)
+    return NextResponse.json(
+      {
+        error: 'Failed to seed demo data',
+        message: error?.message,
+      },
+      { status: 500 }
+    )
+  }
+}
+
+/**
  * POST /api/admin/seed-demo-data
  * Seeds comprehensive sample data for the demo tenant
  * This endpoint should be protected in production
  */
 export async function POST(request: NextRequest) {
+  try {
+    const result = await seedDemoData()
+    return NextResponse.json({
+      success: true,
+      message: 'Demo data seeded successfully',
+      ...result,
+    })
+  } catch (error: any) {
+    console.error('[SEED_DEMO_DATA] POST Error:', error)
+    return NextResponse.json(
+      {
+        error: 'Failed to seed demo data',
+        message: error?.message,
+      },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * Shared seeding logic
+ */
+async function seedDemoData() {
   try {
     // Disconnect any existing connections to free up the pool
     try {
