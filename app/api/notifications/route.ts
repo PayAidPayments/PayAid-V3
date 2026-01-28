@@ -34,13 +34,36 @@ export async function GET(request: NextRequest) {
     const moduleFilter = searchParams.get('module') // Optional: filter by module
     const smartFilter = searchParams.get('smartFilter') === 'true' // Enable smart filtering
 
-    // Get tenant with licensed modules
-    const tenant = await prismaWithRetry(() =>
-      prisma.tenant.findUnique({
-        where: { id: user.tenantId },
-        select: { licensedModules: true },
-      })
-    )
+    // Get tenant with licensed modules - use minimal retries and handle circuit breaker
+    let tenant
+    try {
+      tenant = await prismaWithRetry(() =>
+        prisma.tenant.findUnique({
+          where: { id: user.tenantId },
+          select: { licensedModules: true },
+        }),
+        {
+          maxRetries: 1, // Only 1 retry
+          retryDelay: 200, // Minimal delay
+          exponentialBackoff: false,
+        }
+      )
+    } catch (error: any) {
+      // If circuit breaker is open or pool exhausted, return empty notifications
+      if (error?.code === 'CIRCUIT_OPEN' || error?.isCircuitBreaker || 
+          error?.message?.includes('connection pool') || error?.message?.includes('temporarily unavailable')) {
+        return NextResponse.json(
+          { 
+            notifications: [], 
+            unreadCount: 0, 
+            total: 0,
+            grouped: { high: 0, medium: 0, low: 0 },
+          },
+          { status: 503 }
+        )
+      }
+      throw error
+    }
 
     const licensedModules = tenant?.licensedModules || []
     const notifications: Notification[] = []
@@ -81,19 +104,34 @@ export async function GET(request: NextRequest) {
 
     // 1. CRM Module Notifications
     if (licensedModules.includes('crm') && (!moduleFilter || moduleFilter === 'crm')) {
-      // Overdue tasks
-      const overdueTasks = await prismaWithRetry(() =>
-        prisma.task.findMany({
-          where: {
-            tenantId: user.tenantId,
-            assignedToId: user.userId,
-            dueDate: { lt: now },
-            status: { in: ['pending', 'in_progress'] },
-          },
-          take: 10,
-          orderBy: { dueDate: 'asc' },
-        })
-      )
+      // Overdue tasks - use minimal retries
+      let overdueTasks = []
+      try {
+        overdueTasks = await prismaWithRetry(() =>
+          prisma.task.findMany({
+            where: {
+              tenantId: user.tenantId,
+              assignedToId: user.userId,
+              dueDate: { lt: now },
+              status: { in: ['pending', 'in_progress'] },
+            },
+            take: 10,
+            orderBy: { dueDate: 'asc' },
+          }),
+          {
+            maxRetries: 1,
+            retryDelay: 200,
+            exponentialBackoff: false,
+          }
+        )
+      } catch (error: any) {
+        // Skip if circuit breaker is open - continue with other notifications
+        if (error?.code === 'CIRCUIT_OPEN' || error?.isCircuitBreaker) {
+          console.warn('[NOTIFICATIONS] Circuit breaker open, skipping CRM overdue tasks')
+        } else {
+          throw error
+        }
+      }
 
       overdueTasks.forEach((task) => {
         addNotification(
@@ -108,18 +146,32 @@ export async function GET(request: NextRequest) {
         )
       })
 
-      // Tasks due today
-      const tasksDueToday = await prismaWithRetry(() =>
-        prisma.task.findMany({
-          where: {
-            tenantId: user.tenantId,
-            assignedToId: user.userId,
-            dueDate: { gte: todayStart, lte: todayEnd },
-            status: { in: ['pending', 'in_progress'] },
-          },
-          take: 5,
-        })
-      )
+      // Tasks due today - use minimal retries
+      let tasksDueToday = []
+      try {
+        tasksDueToday = await prismaWithRetry(() =>
+          prisma.task.findMany({
+            where: {
+              tenantId: user.tenantId,
+              assignedToId: user.userId,
+              dueDate: { gte: todayStart, lte: todayEnd },
+              status: { in: ['pending', 'in_progress'] },
+            },
+            take: 5,
+          }),
+          {
+            maxRetries: 1,
+            retryDelay: 200,
+            exponentialBackoff: false,
+          }
+        )
+      } catch (error: any) {
+        if (error?.code === 'CIRCUIT_OPEN' || error?.isCircuitBreaker) {
+          console.warn('[NOTIFICATIONS] Circuit breaker open, skipping CRM tasks due today')
+        } else {
+          throw error
+        }
+      }
 
       tasksDueToday.forEach((task) => {
         addNotification(
@@ -134,19 +186,33 @@ export async function GET(request: NextRequest) {
         )
       })
 
-      // Deals closing this week
+      // Deals closing this week - use minimal retries
       const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-      const dealsClosing = await prismaWithRetry(() =>
-        prisma.deal.findMany({
-          where: {
-            tenantId: user.tenantId,
-            expectedCloseDate: { gte: now, lte: weekEnd },
-            stage: { not: 'lost' },
-          },
-          take: 5,
-          orderBy: { expectedCloseDate: 'asc' },
-        })
-      )
+      let dealsClosing = []
+      try {
+        dealsClosing = await prismaWithRetry(() =>
+          prisma.deal.findMany({
+            where: {
+              tenantId: user.tenantId,
+              expectedCloseDate: { gte: now, lte: weekEnd },
+              stage: { not: 'lost' },
+            },
+            take: 5,
+            orderBy: { expectedCloseDate: 'asc' },
+          }),
+          {
+            maxRetries: 1,
+            retryDelay: 200,
+            exponentialBackoff: false,
+          }
+        )
+      } catch (error: any) {
+        if (error?.code === 'CIRCUIT_OPEN' || error?.isCircuitBreaker) {
+          console.warn('[NOTIFICATIONS] Circuit breaker open, skipping CRM deals closing')
+        } else {
+          throw error
+        }
+      }
 
       dealsClosing.forEach((deal) => {
         addNotification(
