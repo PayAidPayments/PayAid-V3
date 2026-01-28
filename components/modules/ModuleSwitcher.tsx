@@ -141,6 +141,16 @@ export function ModuleSwitcher() {
     // The entry point will handle redirecting to tenant-specific route
     // This ensures auth state is properly checked before redirecting
     // Using base URL prevents middleware from blocking due to missing cookie token
+    
+    // Sync token to cookie before navigating (for middleware access)
+    const currentState = useAuthStore.getState()
+    if (currentState.token && typeof window !== 'undefined') {
+      const expires = new Date()
+      expires.setTime(expires.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days
+      const isSecure = window.location.protocol === 'https:'
+      document.cookie = `token=${currentState.token}; expires=${expires.toUTCString()}; path=/; SameSite=Lax${isSecure ? '; Secure' : ''}`
+    }
+    
     router.push(module.url)
     setIsOpen(false)
   }
