@@ -83,6 +83,23 @@ export function clearSSOToken(): void {
 export function getModuleUrl(moduleId: string, tenantId?: string): string {
   // If tenantId is provided and valid, return full path
   if (tenantId && typeof tenantId === 'string' && tenantId.trim()) {
+    // AI modules redirect to ai-studio sub-pages, but we still create the Home route for consistency
+    const aiModuleMap: Record<string, string> = {
+      'ai-cofounder': `/ai-studio/${tenantId}/Cofounder`,
+      'ai-chat': `/ai-studio/${tenantId}/Chat`,
+      'ai-insights': `/ai-studio/${tenantId}/Insights`,
+      'website-builder': `/ai-studio/${tenantId}/Websites`,
+      'logo-generator': `/ai-studio/${tenantId}/Logos`,
+      'knowledge-rag': `/ai-studio/${tenantId}/Knowledge`,
+    }
+    
+    // If it's an AI module, return the ai-studio path directly (Home route will redirect)
+    if (aiModuleMap[moduleId]) {
+      // Return the Home route which will redirect to the actual page
+      return `/${moduleId}/${tenantId}/Home/`
+    }
+    
+    // For other modules, use the standard Home route
     return `/${moduleId}/${tenantId}/Home/`
   }
 
