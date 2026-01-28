@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { PageLoading } from '@/components/ui/loading'
@@ -12,23 +12,74 @@ import { PageLoading } from '@/components/ui/loading'
  */
 export default function CRMModulePage() {
   const router = useRouter()
-  const { tenant, isAuthenticated } = useAuthStore()
+  const { tenant, isAuthenticated, token } = useAuthStore()
+  const [hasChecked, setHasChecked] = useState(false)
 
+  // Wait for Zustand to rehydrate from localStorage before checking auth
   useEffect(() => {
-    if (!isAuthenticated) {
+    // Check if auth storage exists in localStorage
+    if (typeof window === 'undefined') return
+
+    const checkRehydration = () => {
+      try {
+        const stored = localStorage.getItem('auth-storage')
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          const hasToken = !!parsed.state?.token
+          
+          // If we have token in storage, wait a moment for Zustand to rehydrate
+          if (hasToken) {
+            // Give Zustand time to rehydrate (check after a short delay)
+            setTimeout(() => {
+              setHasChecked(true)
+            }, 200) // 200ms should be enough for rehydration
+            return
+          }
+        }
+        
+        // No stored auth - mark as checked immediately
+        setHasChecked(true)
+      } catch (error) {
+        console.error('[CRM] Error checking rehydration:', error)
+        setHasChecked(true) // Assume checked to prevent blocking
+      }
+    }
+
+    checkRehydration()
+
+    // Fallback timeout - always mark as checked after 1 second max
+    const timeoutId = setTimeout(() => {
+      setHasChecked(true)
+    }, 1000)
+
+    return () => clearTimeout(timeoutId)
+  }, [])
+
+  // Handle redirects once rehydration is checked
+  useEffect(() => {
+    if (!hasChecked) {
+      return
+    }
+
+    // Get current state after rehydration
+    const currentState = useAuthStore.getState()
+    const currentIsAuthenticated = currentState.isAuthenticated || !!currentState.token
+    const currentTenant = currentState.tenant
+
+    if (!currentIsAuthenticated) {
       // Not logged in - redirect to login with CRM redirect
       router.push('/login?redirect=/crm')
       return
     }
 
-    if (tenant?.id) {
+    if (currentTenant?.id) {
       // Redirect to tenant-specific CRM dashboard
-      router.push(`/crm/${tenant.id}/Home/`)
+      router.push(`/crm/${currentTenant.id}/Home/`)
     } else {
       // No tenant - redirect to home page to set up tenant
       router.push('/home')
     }
-  }, [isAuthenticated, tenant?.id, router])
+  }, [hasChecked, isAuthenticated, tenant?.id, token, router])
 
   return <PageLoading message="Loading CRM..." fullScreen={true} />
 }
