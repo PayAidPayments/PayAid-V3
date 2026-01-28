@@ -29,7 +29,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
-import { cn } from '@/lib/utils/cn'
+import { cn } from '@/lib/utils'
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Users,
