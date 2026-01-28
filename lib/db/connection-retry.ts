@@ -2,7 +2,10 @@
  * Database Connection Retry Utility
  * 
  * Provides retry logic for database operations to handle transient connection failures
+ * Includes circuit breaker pattern to prevent cascading failures
  */
+
+import { circuitBreaker } from './circuit-breaker'
 
 export interface RetryOptions {
   maxRetries?: number
@@ -43,20 +46,42 @@ function isRetryableError(error: any, retryableErrors: string[]): boolean {
 }
 
 /**
- * Execute a database operation with retry logic
+ * Execute a database operation with retry logic and circuit breaker
  */
 export async function withRetry<T>(
   operation: () => Promise<T>,
   options: RetryOptions = {}
 ): Promise<T> {
+  // Check circuit breaker first
+  if (circuitBreaker.isOpen()) {
+    const error = new Error('Database is temporarily unavailable. Please try again in a moment.')
+    ;(error as any).code = 'CIRCUIT_OPEN'
+    ;(error as any).isCircuitBreaker = true
+    throw error
+  }
+
   const config = { ...DEFAULT_OPTIONS, ...options }
   let lastError: any
 
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     try {
-      return await operation()
+      const result = await operation()
+      // Record success in circuit breaker
+      circuitBreaker.recordSuccess()
+      return result
     } catch (error: any) {
       lastError = error
+
+      // Record failure in circuit breaker
+      circuitBreaker.recordFailure()
+
+      // Don't retry if circuit breaker is open
+      if (circuitBreaker.isOpen()) {
+        const circuitError = new Error('Database is temporarily unavailable. Please try again in a moment.')
+        ;(circuitError as any).code = 'CIRCUIT_OPEN'
+        ;(circuitError as any).isCircuitBreaker = true
+        throw circuitError
+      }
 
       // Don't retry if it's not a retryable error
       if (!isRetryableError(error, config.retryableErrors)) {

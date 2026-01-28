@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch user with tenant - using retry logic with faster settings
+    // Fetch user with tenant - using retry logic with minimal retries
     const userData = await prismaWithRetry(() =>
       prisma.user.findUnique({
         where: { id: payload.userId },
@@ -74,9 +74,9 @@ export async function GET(request: NextRequest) {
         },
       }),
       {
-        maxRetries: 2, // Reduce retries
-        retryDelay: 300, // Faster retries
-        exponentialBackoff: false, // Disable exponential backoff
+        maxRetries: 1, // Only 1 retry to prevent connection pool exhaustion
+        retryDelay: 200, // Minimal delay
+        exponentialBackoff: false, // No exponential backoff
       }
     )
 
@@ -111,17 +111,33 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Get user error:', error)
     
-    // Handle pool exhaustion gracefully
+    // Handle circuit breaker and pool exhaustion gracefully
     const errorMessage = error instanceof Error ? error.message : 'Failed to get user'
+    const errorCode = (error as any)?.code || ''
+    
+    // Check for circuit breaker errors
+    if (errorCode === 'CIRCUIT_OPEN' || (error as any)?.isCircuitBreaker) {
+      return NextResponse.json(
+        { 
+          error: 'Database temporarily unavailable',
+          message: 'Database is temporarily unavailable due to high load. Please try again in a moment.',
+        },
+        { status: 503 }
+      )
+    }
+    
+    // Handle pool exhaustion gracefully
     const isPoolExhausted = errorMessage.includes('MaxClientsInSessionMode') || 
-                            errorMessage.includes('max clients reached')
+                            errorMessage.includes('max clients reached') ||
+                            errorMessage.includes('connection pool is full') ||
+                            errorCode === 'P1002'
     
     if (isPoolExhausted) {
       // Pool exhausted - return 503 with retry suggestion
       return NextResponse.json(
         { 
           error: 'Database temporarily unavailable',
-          message: 'Please try again in a moment',
+          message: 'Database connection pool is full. Please try again in a moment.',
         },
         { status: 503 }
       )
