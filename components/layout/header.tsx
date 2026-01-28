@@ -4,6 +4,7 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { NotificationBell } from '@/components/NotificationBell'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { BusinessUnitSelector } from '@/components/business-units/BusinessUnitSelector'
+import { ModuleSwitcher } from '@/components/Navigation/ModuleSwitcher'
 import { Newspaper, User, Settings, LogOut, ChevronDown } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -82,13 +83,13 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   }
 
   return (
-    <header className="h-16 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-30 transition-colors">
+    <header className="h-16 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-30 transition-colors duration-150">
       <div className="flex items-center justify-between h-full px-4 sm:px-6">
         <div className="flex items-center gap-3">
           {/* Menu Toggle Button - Mobile and Desktop */}
           <button
             onClick={onMenuClick}
-            className="mobile-menu-button desktop-menu-button p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+            className="mobile-menu-button desktop-menu-button p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-primary focus:ring-offset-2 transition-colors duration-150"
             aria-label="Toggle menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,7 +101,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[200px] sm:max-w-none">
                 {tenant?.name || 'PayAid V3'}
               </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+              <p className="text-xs text-gray-600 dark:text-gray-400 capitalize">
                 {tenant?.plan || 'Free'} Plan
               </p>
             </div>
@@ -112,18 +113,20 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           </div>
         </div>
         <div className="flex items-center space-x-2 sm:space-x-4">
+          {/* Module Switcher */}
+          <ModuleSwitcher />
           {/* Theme Toggle */}
           <ThemeToggle />
           {/* News Button */}
           <button
             onClick={handleNewsClick}
-            className="relative p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+            className="relative p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-primary focus:ring-offset-2 transition-colors duration-150"
             aria-label="Open Industry Intelligence"
             title="Industry Intelligence"
           >
             <Newspaper className="w-5 h-5" />
             {newsUnreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+              <span className="absolute -top-1 -right-1 bg-red-error text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
                 {newsUnreadCount > 9 ? '9+' : newsUnreadCount}
               </span>
             )}
@@ -134,17 +137,17 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           <div className="relative" ref={profileMenuRef}>
             <button
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-              className="flex items-center gap-2 p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              className="flex items-center gap-2 p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-primary focus:ring-offset-2 transition-colors duration-150"
               aria-label="User menu"
             >
-              <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
+              <div className="w-8 h-8 rounded-full bg-teal-primary dark:bg-teal-primary flex items-center justify-center text-white font-semibold text-sm">
                 {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
               </div>
               <ChevronDown className={`w-4 h-4 transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {profileMenuOpen && (
-              <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-700 z-50">
+              <div className="absolute right-0 mt-2 w-56 rounded-lg shadow-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 z-50">
                 <div className="py-1" role="menu">
                   <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
