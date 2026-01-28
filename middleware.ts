@@ -45,13 +45,22 @@ export async function middleware(request: NextRequest) {
     }
 
     // Module routes - check module access
+    // Skip base module routes (e.g., /crm, /sales) - they handle their own auth
+    // Only check routes with tenantId (e.g., /crm/[tenantId]/Home)
     const moduleMatch = pathname.match(/^\/([^\/]+)/)
     if (moduleMatch) {
       const moduleId = moduleMatch[1]
       const module = getModule(moduleId)
       
       if (module) {
-        // This is a module route - check access
+        // Allow base module routes (e.g., /crm, /sales) to pass through
+        // These are entry points that handle their own auth logic
+        const isBaseModuleRoute = pathname === `/${moduleId}` || pathname === `/${moduleId}/`
+        if (isBaseModuleRoute) {
+          return NextResponse.next()
+        }
+        
+        // For routes with tenantId (e.g., /crm/[tenantId]/Home), check access
         const token = getTokenFromRequest(request)
         if (!token) {
           return NextResponse.redirect(new URL('/login', request.url))
