@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
+import { prismaWithRetry } from '@/lib/db/connection-retry'
 import { verifyPassword } from '@/lib/auth/password'
 import { signToken, signRefreshToken } from '@/lib/auth/jwt'
 import { isDevelopment } from '@/lib/utils/env'
@@ -131,34 +132,27 @@ async function handleLogin(request: NextRequest) {
       throw new Error('Database configuration error: DATABASE_URL is missing')
     }
     
-    // OPTIMIZATION: Skip connection test to save time - go straight to query
-    // If database is down, the query will fail fast anyway
+    // Use prismaWithRetry for better connection handling
     let user
     try {
-      // Direct user query with aggressive timeout (2.5 seconds max to leave time for other operations)
-      const USER_QUERY_TIMEOUT = 2500 // 2.5 seconds max
-      
-      const userQuery = prisma.user.findUnique({
-        where: { email: validated.email.toLowerCase().trim() },
-        include: { 
-          tenant: {
-            select: {
-              id: true,
-              name: true,
-              subdomain: true,
-              plan: true,
-              licensedModules: true,
-              subscriptionTier: true,
+      // Use retry logic for database connection stability
+      user = await prismaWithRetry(() =>
+        prisma.user.findUnique({
+          where: { email: validated.email.toLowerCase().trim() },
+          include: { 
+            tenant: {
+              select: {
+                id: true,
+                name: true,
+                subdomain: true,
+                plan: true,
+                licensedModules: true,
+                subscriptionTier: true,
+              }
             }
-          }
-        },
-      })
-      
-      const queryTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('User query timeout - database may be slow')), USER_QUERY_TIMEOUT)
-      })
-      
-      user = await Promise.race([userQuery, queryTimeout]) as any
+          },
+        })
+      )
       
       console.log('[LOGIN] Database query completed', { 
         userFound: !!user,
