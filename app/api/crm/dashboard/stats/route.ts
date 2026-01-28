@@ -84,12 +84,35 @@ function getTimePeriodBounds(timePeriod: string = 'month') {
   }
 }
 
+// Rate limiting: Track active requests per tenant
+const activeRequests = new Map<string, number>()
+const MAX_CONCURRENT_REQUESTS_PER_TENANT = 1
+
 // GET /api/crm/dashboard/stats - Get CRM dashboard statistics
 export async function GET(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const user = await authenticateRequest(request)
-    const userFilter = await getUserFilter(tenantId, user?.userId)
+    
+    // Rate limiting: Check if tenant already has an active request
+    const activeCount = activeRequests.get(tenantId) || 0
+    if (activeCount >= MAX_CONCURRENT_REQUESTS_PER_TENANT) {
+      console.warn(`[CRM_STATS] Rate limit: Tenant ${tenantId} has ${activeCount} active requests`)
+      return NextResponse.json(
+        { 
+          error: 'Too many concurrent requests',
+          message: 'Please wait for the previous request to complete. Try again in a moment.',
+          retryAfter: 3,
+        },
+        { status: 429 } // Too Many Requests
+      )
+    }
+    
+    // Increment active request count
+    activeRequests.set(tenantId, activeCount + 1)
+    
+    try {
+      const userFilter = await getUserFilter(tenantId, user?.userId)
 
     // Get time period from query params
     const searchParams = request.nextUrl.searchParams
@@ -485,8 +508,27 @@ export async function GET(request: NextRequest) {
       periodLabel: periodBounds.label,
     }
 
-    return NextResponse.json(stats)
+      return NextResponse.json(stats)
+    } finally {
+      // Decrement active request count
+      const currentCount = activeRequests.get(tenantId) || 0
+      if (currentCount > 0) {
+        activeRequests.set(tenantId, currentCount - 1)
+      } else {
+        activeRequests.delete(tenantId)
+      }
+    }
   } catch (error: any) {
+    // Decrement active request count on error
+    if (tenantId) {
+      const currentCount = activeRequests.get(tenantId) || 0
+      if (currentCount > 0) {
+        activeRequests.set(tenantId, currentCount - 1)
+      } else {
+        activeRequests.delete(tenantId)
+      }
+    }
+    
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }

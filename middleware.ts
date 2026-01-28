@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { verifyToken, type JWTPayload } from '@/lib/auth/jwt'
+import { getModule } from '@/lib/modules/moduleRegistry'
 
-// Minimal middleware - just pass through all requests
-// Authentication and routing will be handled by page components
-// Note: Middleware runs in Edge Runtime by default in Next.js
+/**
+ * Phase 2: Enhanced Middleware with Module Route Protection
+ * Handles authentication and module access checks
+ */
+
 export async function middleware(request: NextRequest) {
   try {
     // Validate request object exists
@@ -12,8 +16,75 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next()
     }
 
-    // Simply let all requests proceed
-    // Page components will handle authentication and redirects
+    const pathname = request.nextUrl.pathname
+
+    // Skip middleware for public routes
+    const publicRoutes = ['/login', '/register', '/api/auth', '/_next', '/favicon.ico']
+    if (publicRoutes.some(route => pathname.startsWith(route))) {
+      return NextResponse.next()
+    }
+
+    // Admin routes - check for super admin
+    if (pathname.startsWith('/admin')) {
+      const token = getTokenFromRequest(request)
+      if (!token) {
+        return NextResponse.redirect(new URL('/login', request.url))
+      }
+
+      try {
+        const decoded = verifyToken(token)
+        const isSuperAdmin = decoded.roles?.includes('super_admin') || 
+                           decoded.role === 'super_admin'
+        
+        if (!isSuperAdmin) {
+          return NextResponse.redirect(new URL('/dashboard', request.url))
+        }
+      } catch {
+        return NextResponse.redirect(new URL('/login', request.url))
+      }
+    }
+
+    // Module routes - check module access
+    const moduleMatch = pathname.match(/^\/([^\/]+)/)
+    if (moduleMatch) {
+      const moduleId = moduleMatch[1]
+      const module = getModule(moduleId)
+      
+      if (module) {
+        // This is a module route - check access
+        const token = getTokenFromRequest(request)
+        if (!token) {
+          return NextResponse.redirect(new URL('/login', request.url))
+        }
+
+        try {
+          const decoded = verifyToken(token)
+          
+          // Check if module is in user's enabled modules
+          // Note: Full check requires DB query, so we do basic check here
+          // Full validation happens in API routes
+          const userModules = decoded.modules || decoded.licensedModules || []
+          if (!userModules.includes(moduleId)) {
+            // Module not enabled - redirect to dashboard
+            return NextResponse.redirect(new URL('/dashboard', request.url))
+          }
+
+          // Check admin-only routes
+          if (module.admin_only_routes?.some(route => pathname.startsWith(route))) {
+            const isAdmin = decoded.roles?.includes('admin') || 
+                           decoded.roles?.includes('Admin') ||
+                           decoded.role === 'admin'
+            if (!isAdmin) {
+              return NextResponse.redirect(new URL(`/${moduleId}`, request.url))
+            }
+          }
+        } catch {
+          return NextResponse.redirect(new URL('/login', request.url))
+        }
+      }
+    }
+
+    // All other routes - let through
     return NextResponse.next()
   } catch (error) {
     // Log error in production (Vercel will capture this)
@@ -21,13 +92,40 @@ export async function middleware(request: NextRequest) {
     console.error('Middleware error:', errorMessage)
     
     // Return a response to prevent middleware failure
-    // Always return NextResponse.next() to avoid breaking the request
     return NextResponse.next()
   }
+}
+
+/**
+ * Extract token from request (cookie or header)
+ */
+function getTokenFromRequest(request: NextRequest): string | null {
+  // Try authorization header first
+  const authHeader = request.headers.get('authorization')
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.substring(7)
+  }
+
+  // Try cookie
+  const token = request.cookies.get('token')?.value
+  if (token) {
+    return token
+  }
+
+  return null
 }
 
 export const config = {
   matcher: [
     '/dashboard/:path*',
+    '/admin/:path*',
+    '/crm/:path*',
+    '/hr/:path*',
+    '/accounting/:path*',
+    '/communication/:path*',
+    '/reports/:path*',
+    '/payments/:path*',
+    '/workflow/:path*',
+    '/analytics/:path*',
   ],
 }

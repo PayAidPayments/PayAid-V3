@@ -1,25 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db/prisma'
 import { verifyToken } from '@/lib/auth/jwt'
-import { z } from 'zod'
+import { prisma } from '@/lib/db/prisma'
+import { getModule, getAllModules } from '@/lib/modules/moduleRegistry'
 
-const updateModulesSchema = z.object({
-  licensedModules: z.array(z.string()),
-})
-
-// PATCH /api/admin/tenants/[tenantId]/modules
-// Update tenant's licensed modules (admin only)
-// NOTE: This route does NOT require module access - it's used to activate modules!
-export async function PATCH(
+/**
+ * GET /api/admin/tenants/[tenantId]/modules
+ * Get tenant's enabled modules
+ */
+export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ tenantId: string }> }
+  { params }: { params: { tenantId: string } }
 ) {
   try {
-    const resolvedParams = await params
-    const tenantId = resolvedParams.tenantId
-    // Check authentication only (no module check - this route is for activating modules!)
+    // Check authentication
     const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -27,184 +22,25 @@ export async function PATCH(
     }
 
     const token = authHeader.substring(7)
-    let payload
-    try {
-      payload = verifyToken(token)
-    } catch (error) {
+    const decoded = verifyToken(token)
+
+    // Check if super admin
+    const isSuperAdmin = decoded.roles?.includes('super_admin') || 
+                        decoded.role === 'super_admin'
+    
+    if (!isSuperAdmin) {
       return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      )
-    }
-
-    if (!payload.userId || !payload.tenantId) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      )
-    }
-
-    const userId = payload.userId
-    const authTenantId = payload.tenantId
-
-    // Verify user is admin/owner
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    })
-
-    if (user?.role !== 'owner' && user?.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized: Admin access required' },
+        { error: 'Super admin access required' },
         { status: 403 }
       )
     }
 
-    // Verify tenant ID matches (or allow super admin to update any tenant)
-    if (authTenantId !== tenantId && user?.role !== 'owner') {
-      return NextResponse.json(
-        { error: 'Unauthorized: Cannot modify other tenants' },
-        { status: 403 }
-      )
-    }
-
-    // Validate tenant ID exists
-    if (!tenantId) {
-      return NextResponse.json(
-        { error: 'Tenant ID is required' },
-        { status: 400 }
-      )
-    }
-
-    // Check if tenant exists before updating
-    const existingTenant = await prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: { id: true },
-    })
-
-    if (!existingTenant) {
-      return NextResponse.json(
-        { error: 'Tenant not found' },
-        { status: 404 }
-      )
-    }
-
-    const body = await request.json()
-    const validated = updateModulesSchema.parse(body)
-
-    // Validate licensedModules array
-    if (!Array.isArray(validated.licensedModules)) {
-      return NextResponse.json(
-        { error: 'licensedModules must be an array' },
-        { status: 400 }
-      )
-    }
-
-    // Update tenant's licensed modules
-    const updated = await prisma.tenant.update({
-      where: { id: tenantId },
-      data: {
-        licensedModules: validated.licensedModules,
-      },
+    // Get tenant
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: params.tenantId },
       select: {
         id: true,
         name: true,
-        licensedModules: true,
-        subscriptionTier: true,
-      },
-    })
-
-    return NextResponse.json({
-      success: true,
-      tenant: updated,
-    })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    // Log detailed error for debugging
-    console.error('Update modules error:', error)
-    
-    // Check for database connection errors
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    const isDatabaseError = errorMessage.includes('database') || 
-                           errorMessage.includes('connection') ||
-                           errorMessage.includes('credentials') ||
-                           errorMessage.includes('authentication failed')
-    
-    // Return more detailed error message
-    return NextResponse.json(
-      { 
-        error: isDatabaseError ? 'Database connection error' : 'Failed to update modules',
-        message: isDatabaseError 
-          ? 'Database connection failed. Please check your DATABASE_URL configuration.'
-          : errorMessage,
-        ...(process.env.NODE_ENV === 'development' && { 
-          stack: error instanceof Error ? error.stack : undefined,
-          originalError: errorMessage 
-        }),
-      },
-      { status: 500 }
-    )
-  }
-}
-
-// GET /api/admin/tenants/[tenantId]/modules
-// Get tenant's licensed modules
-// NOTE: This route does NOT require module access - it's used to check module status!
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ tenantId: string }> }
-) {
-  try {
-    const resolvedParams = await params
-    const tenantId = resolvedParams.tenantId
-
-    // Check authentication only (no module check - this route is for checking module status!)
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.substring(7)
-    let payload
-    try {
-      payload = verifyToken(token)
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      )
-    }
-
-    if (!payload.tenantId) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      )
-    }
-
-    const authTenantId = payload.tenantId
-
-    // Verify tenant ID matches
-    if (authTenantId !== tenantId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      )
-    }
-
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: {
-        id: true,
         licensedModules: true,
         subscriptionTier: true,
       },
@@ -217,24 +53,131 @@ export async function GET(
       )
     }
 
+    const allModules = getAllModules()
+    const enabledModules = tenant.licensedModules || []
+
     return NextResponse.json({
-      licensedModules: tenant.licensedModules || [],
-      subscriptionTier: tenant.subscriptionTier || 'free',
+      tenant_id: tenant.id,
+      tenant_name: tenant.name,
+      enabled_modules: enabledModules,
+      available_modules: allModules.map(m => ({
+        id: m.id,
+        name: m.name,
+        description: m.description,
+        category: m.category,
+        enabled: enabledModules.includes(m.id),
+        enabled_by_default: m.enabled_by_default,
+      })),
+      subscription_tier: tenant.subscriptionTier,
     })
   } catch (error) {
-    console.error('Get modules error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    const isDatabaseError = errorMessage.includes('database') || 
-                           errorMessage.includes('connection') ||
-                           errorMessage.includes('credentials') ||
-                           errorMessage.includes('authentication failed')
-    
+    console.error('Get tenant modules error:', error)
     return NextResponse.json(
       { 
-        error: isDatabaseError ? 'Database connection error' : 'Failed to get modules',
-        message: isDatabaseError 
-          ? 'Database connection failed. Please check your DATABASE_URL configuration.'
-          : errorMessage,
+        error: 'Failed to get modules',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * PUT /api/admin/tenants/[tenantId]/modules
+ * Enable/disable module for tenant
+ */
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { tenantId: string } }
+) {
+  try {
+    // Check authentication
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const token = authHeader.substring(7)
+    const decoded = verifyToken(token)
+
+    // Check if super admin
+    const isSuperAdmin = decoded.roles?.includes('super_admin') || 
+                        decoded.role === 'super_admin'
+    
+    if (!isSuperAdmin) {
+      return NextResponse.json(
+        { error: 'Super admin access required' },
+        { status: 403 }
+      )
+    }
+
+    // Parse request body
+    const body = await request.json()
+    const { moduleId, enabled } = body
+
+    if (!moduleId || typeof enabled !== 'boolean') {
+      return NextResponse.json(
+        { error: 'moduleId and enabled are required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate module exists
+    const module = getModule(moduleId)
+    if (!module) {
+      return NextResponse.json(
+        { error: 'Invalid module' },
+        { status: 400 }
+      )
+    }
+
+    // Get tenant
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: params.tenantId },
+      select: {
+        id: true,
+        licensedModules: true,
+      },
+    })
+
+    if (!tenant) {
+      return NextResponse.json(
+        { error: 'Tenant not found' },
+        { status: 404 }
+      )
+    }
+
+    // Update enabled modules
+    const currentModules = tenant.licensedModules || []
+    const updatedModules = enabled
+      ? [...new Set([...currentModules, moduleId])]
+      : currentModules.filter(m => m !== moduleId)
+
+    const updated = await prisma.tenant.update({
+      where: { id: params.tenantId },
+      data: {
+        licensedModules: updatedModules,
+      },
+      select: {
+        id: true,
+        licensedModules: true,
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      tenant: updated,
+      message: `Module ${enabled ? 'enabled' : 'disabled'} successfully`,
+    })
+  } catch (error) {
+    console.error('Update tenant modules error:', error)
+    return NextResponse.json(
+      { 
+        error: 'Failed to update modules',
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     )
