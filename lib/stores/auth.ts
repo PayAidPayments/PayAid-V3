@@ -422,24 +422,13 @@ export const useAuthStore = create<AuthState>()(
             // Immediately set loading to false after rehydration
             state.isLoading = false
             
-            // If we have a token and user/tenant data, mark as authenticated
+            // If we have a token, mark as authenticated
             // This ensures auth state is stable immediately after rehydration
-            if (state.token && state.user && state.tenant) {
-              state.isAuthenticated = true
-            } else if (state.token) {
-              // Token exists but no user data - assume authenticated for now
-              // fetchUser will update the state properly
+            if (state.token) {
               state.isAuthenticated = true
             } else {
               // No token - definitely not authenticated
               state.isAuthenticated = false
-            }
-          } else {
-            // If state is null/undefined, set defaults
-            // Don't call setState here as it can cause circular dependency
-            return {
-              isLoading: false,
-              isAuthenticated: false,
             }
           }
         }
