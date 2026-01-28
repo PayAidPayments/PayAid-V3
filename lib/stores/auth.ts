@@ -303,14 +303,29 @@ export const useAuthStore = create<AuthState>()(
               })
               return
             }
+            
+            // Handle 503 (Service Unavailable) gracefully - don't clear auth state
+            // This happens when database is temporarily unavailable (circuit breaker, pool exhaustion)
+            // Keep existing auth state and just mark as not loading
+            if (response.status === 503) {
+              console.warn('[AUTH] /api/auth/me returned 503 - database temporarily unavailable. Keeping existing auth state.')
+              set({
+                isLoading: false,
+                // Keep existing auth state - don't clear it
+                // User is still authenticated, just can't verify right now
+              })
+              return
+            }
+            
             // Check if response is JSON before parsing
             const contentType = response.headers.get('content-type') || ''
             if (!contentType.includes('application/json')) {
               // Non-JSON response (likely HTML error page)
               console.warn('[AUTH] /api/auth/me returned non-JSON response:', response.status, response.statusText)
+              // Don't clear auth state for non-JSON errors - might be temporary
               set({
-                isAuthenticated: false,
                 isLoading: false,
+                // Keep existing auth state
               })
               return
             }

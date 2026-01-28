@@ -91,12 +91,32 @@ export default function CRMModulePage() {
     // Use Zustand state if available, otherwise fall back to localStorage
     const finalToken = currentState.token || tokenFromStorage
     const finalTenant = currentState.tenant || tenantFromStorage
+    // If we have a token, consider user authenticated even if isAuthenticated is false
+    // (might be false due to temporary 503 errors from /api/auth/me)
     const finalIsAuthenticated = currentState.isAuthenticated || !!finalToken
 
-    if (!finalIsAuthenticated || !finalToken) {
-      // Not logged in - redirect to login with CRM redirect
+    if (!finalToken) {
+      // No token at all - definitely not logged in
       router.push('/login?redirect=/crm')
       return
+    }
+
+    // If we have a token but no tenant, try to get tenant from token
+    if (!finalTenant?.id && finalToken) {
+      try {
+        // Decode token to get tenantId (don't verify, just decode)
+        const parts = finalToken.split('.')
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]))
+          if (payload.tenantId) {
+            // We have tenantId from token - redirect to CRM dashboard
+            router.push(`/crm/${payload.tenantId}/Home/`)
+            return
+          }
+        }
+      } catch (error) {
+        console.error('[CRM] Error decoding token:', error)
+      }
     }
 
     if (finalTenant?.id) {
