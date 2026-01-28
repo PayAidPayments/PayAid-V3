@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -8,170 +9,293 @@ import { cn } from '@/lib/utils/cn'
 import { useState, useMemo } from 'react'
 import { getModuleLink, requiresSSO } from '@/lib/navigation/module-navigation'
 import { useDashboardUrl } from '@/lib/utils/dashboard-url'
-import { XIcon } from 'lucide-react'
+import { 
+  XIcon,
+  Users,
+  Briefcase,
+  FileText,
+  DollarSign,
+  TrendingUp,
+  ShoppingCart,
+  CreditCard,
+  Receipt,
+  BarChart3,
+  TrendingDown,
+  ClipboardList,
+  Building2,
+  Megaphone,
+  Target,
+  Smartphone,
+  Image,
+  Mail,
+  PartyPopper,
+  MessageSquare,
+  Zap,
+  Link as LinkIcon,
+  Bot,
+  Lightbulb,
+  Globe,
+  Palette,
+  BookOpen,
+  Phone,
+  Settings,
+  CheckSquare,
+  Calendar,
+  Plane,
+  FileEdit,
+  UserCircle,
+  Rocket,
+  Wallet,
+  FileSpreadsheet,
+  Presentation,
+  Folder,
+  Video,
+  FileCheck,
+  Wrench,
+  Factory,
+  Scale,
+  Package,
+  Cog,
+  LayoutDashboard,
+  Search,
+  Bell,
+  CheckCircle,
+  AlertCircle,
+  XCircle,
+  Info,
+  ChevronDown,
+  Plus
+} from 'lucide-react'
+
+// Icon mapping for navigation items
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  'contacts': Users,
+  'deals': Briefcase,
+  'invoices': Receipt,
+  'tasks': CheckSquare,
+  'landing-pages': FileText,
+  'checkout-pages': CreditCard,
+  'orders': ShoppingCart,
+  'accounting': Scale,
+  'expenses': TrendingDown,
+  'revenue': BarChart3,
+  'reports': ClipboardList,
+  'purchase-orders': ShoppingCart,
+  'vendors': Building2,
+  'billing': CreditCard,
+  'campaigns': Megaphone,
+  'analytics': BarChart3,
+  'segments': Target,
+  'social-media': Smartphone,
+  'media-library': Image,
+  'email-templates': Mail,
+  'events': PartyPopper,
+  'whatsapp': MessageSquare,
+  'email': Mail,
+  'chat': MessageSquare,
+  'ai-cofounder': Bot,
+  'ai-chat': MessageSquare,
+  'ai-insights': Lightbulb,
+  'website-builder': Globe,
+  'logo-generator': Palette,
+  'knowledge-rag': BookOpen,
+  'voice-agents': Phone,
+  'spreadsheets': FileSpreadsheet,
+  'documents': FileText,
+  'slides': Presentation,
+  'drive': Folder,
+  'meet': Video,
+  'pdf': FileCheck,
+  'employees': Users,
+  'attendance': Calendar,
+  'check-in': CheckSquare,
+  'leave': Plane,
+  'hiring': FileEdit,
+  'candidates': UserCircle,
+  'interviews': Briefcase,
+  'offers': FileText,
+  'onboarding': Rocket,
+  'payroll': Wallet,
+  'salary': DollarSign,
+  'tax': FileText,
+  'reports-analytics': BarChart3,
+  'custom-dashboards': LayoutDashboard,
+  'gst': FileText,
+  'industries': Factory,
+  'settings': Settings,
+  'module-management': Wrench,
+  'crm': Users,
+  'sales': TrendingUp,
+  'finance': Scale,
+  'marketing': Megaphone,
+  'communication': MessageSquare,
+  'productivity': FileText,
+  'hr': Users,
+  'analytics': BarChart3,
+}
 
 // Core Navigation - Always visible, single-click access
 // NOTE: Products and Orders removed from CRM (moved to Sales/Inventory modules per decoupled architecture)
 const mainNavigation = [
   // Dashboard link removed - using decoupled architecture (/home for module selection)
-  { name: 'Contacts', href: '/dashboard/contacts', icon: '👥', module: 'crm' },
-  { name: 'Deals', href: '/dashboard/deals', icon: '💼', module: 'crm' },
-  { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾', module: 'finance' }, // Finance
+  { name: 'Contacts', href: '/dashboard/contacts', icon: 'contacts', module: 'crm' },
+  { name: 'Deals', href: '/dashboard/deals', icon: 'deals', module: 'crm' },
+  { name: 'Invoices', href: '/dashboard/invoices', icon: 'invoices', module: 'finance' }, // Finance
 ]
 
 // 9 Logical Modules - Collapsible sections
 const navigationSections = [
   {
     name: 'CRM Module',
-    icon: '👥',
+    icon: 'contacts',
     items: [
-      { name: 'Contacts', href: '/dashboard/contacts', icon: '👥', module: 'crm' },
-      { name: 'Deals', href: '/dashboard/deals', icon: '💼', module: 'crm' },
-      { name: 'Tasks', href: '/dashboard/tasks', icon: '✅', module: 'crm' },
+      { name: 'Contacts', href: '/dashboard/contacts', icon: 'contacts', module: 'crm' },
+      { name: 'Deals', href: '/dashboard/deals', icon: 'deals', module: 'crm' },
+      { name: 'Tasks', href: '/dashboard/tasks', icon: 'tasks', module: 'crm' },
       // NOTE: Products moved to Inventory module, Orders moved to Sales module, Projects moved to Projects module
     ],
   },
   {
     name: 'Sales & Ecommerce',
-    icon: '💰',
+    icon: 'orders',
     items: [
-      { name: 'Landing Pages', href: '/dashboard/landing-pages', icon: '📄', module: 'sales' },
-      { name: 'Checkout Pages', href: '/dashboard/checkout-pages', icon: '💳', module: 'sales' },
-      { name: 'Orders', href: '/dashboard/orders', icon: '🛒', module: 'sales' }, // Ecommerce orders
+      { name: 'Landing Pages', href: '/dashboard/landing-pages', icon: 'landing-pages', module: 'sales' },
+      { name: 'Checkout Pages', href: '/dashboard/checkout-pages', icon: 'checkout-pages', module: 'sales' },
+      { name: 'Orders', href: '/dashboard/orders', icon: 'orders', module: 'sales' }, // Ecommerce orders
     ],
   },
   {
     name: 'Finance & Accounting',
-    icon: '💼',
+    icon: 'accounting',
     items: [
-      { name: 'Accounting', href: '/dashboard/accounting', icon: '💰', module: 'finance' },
-      { name: 'Expenses', href: '/dashboard/accounting/expenses', icon: '💸', module: 'finance' },
-      { name: 'Revenue Dashboard', href: '/dashboard/accounting/reports/revenue', icon: '📊', module: 'finance' },
-      { name: 'Expense Dashboard', href: '/dashboard/accounting/reports/expenses', icon: '📉', module: 'finance' },
-      { name: 'Accounting Reports', href: '/dashboard/accounting/reports', icon: '📋', module: 'finance' },
-      { name: 'Purchase Orders', href: '/dashboard/purchases/orders', icon: '🛒', module: 'finance' },
-      { name: 'Vendors', href: '/dashboard/purchases/vendors', icon: '🏢', module: 'finance' },
-      { name: 'Billing', href: '/dashboard/billing', icon: '💳', module: null },
-      { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾', module: 'finance' }, // Cross-linked
+      { name: 'Accounting', href: '/dashboard/accounting', icon: 'accounting', module: 'finance' },
+      { name: 'Expenses', href: '/dashboard/accounting/expenses', icon: 'expenses', module: 'finance' },
+      { name: 'Revenue Dashboard', href: '/dashboard/accounting/reports/revenue', icon: 'revenue', module: 'finance' },
+      { name: 'Expense Dashboard', href: '/dashboard/accounting/reports/expenses', icon: 'expenses', module: 'finance' },
+      { name: 'Accounting Reports', href: '/dashboard/accounting/reports', icon: 'reports', module: 'finance' },
+      { name: 'Purchase Orders', href: '/dashboard/purchases/orders', icon: 'purchase-orders', module: 'finance' },
+      { name: 'Vendors', href: '/dashboard/purchases/vendors', icon: 'vendors', module: 'finance' },
+      { name: 'Billing', href: '/dashboard/billing', icon: 'billing', module: null },
+      { name: 'Invoices', href: '/dashboard/invoices', icon: 'invoices', module: 'finance' }, // Cross-linked
     ],
   },
   {
     name: 'Marketing',
-    icon: '📢',
+    icon: 'campaigns',
     items: [
-      { name: 'Campaigns', href: '/dashboard/marketing/campaigns', icon: '📢', module: 'marketing' },
-      { name: 'Marketing Analytics', href: '/dashboard/marketing/analytics', icon: '📊', module: 'marketing' },
-      { name: 'Segments', href: '/dashboard/marketing/segments', icon: '🎯', module: 'marketing' },
-      { name: 'Social Media', href: '/dashboard/marketing/social', icon: '📱', module: 'marketing' },
-      { name: 'Media Library', href: '/dashboard/media-library', icon: '🖼️', module: 'marketing' },
-      { name: 'Email Templates', href: '/dashboard/email-templates', icon: '✉️', module: 'marketing' },
-      { name: 'Events', href: '/dashboard/events', icon: '🎉', module: 'marketing' },
+      { name: 'Campaigns', href: '/dashboard/marketing/campaigns', icon: 'campaigns', module: 'marketing' },
+      { name: 'Marketing Analytics', href: '/dashboard/marketing/analytics', icon: 'analytics', module: 'marketing' },
+      { name: 'Segments', href: '/dashboard/marketing/segments', icon: 'segments', module: 'marketing' },
+      { name: 'Social Media', href: '/dashboard/marketing/social', icon: 'social-media', module: 'marketing' },
+      { name: 'Media Library', href: '/dashboard/media-library', icon: 'media-library', module: 'marketing' },
+      { name: 'Email Templates', href: '/dashboard/email-templates', icon: 'email-templates', module: 'marketing' },
+      { name: 'Events', href: '/dashboard/events', icon: 'events', module: 'marketing' },
     ],
   },
   {
     name: 'Communication',
-    icon: '💬',
+    icon: 'chat',
     items: [
-      { name: 'WhatsApp Setup', href: '/dashboard/whatsapp/setup', icon: '⚡', module: 'communication' },
-      { name: 'WhatsApp Accounts', href: '/dashboard/whatsapp/accounts', icon: '📱', module: 'communication' },
-      { name: 'WhatsApp Inbox', href: '/dashboard/whatsapp/inbox', icon: '📥', module: 'communication' },
-      { name: 'WhatsApp Sessions', href: '/dashboard/whatsapp/sessions', icon: '🔗', module: 'communication' },
-      { name: 'Email Accounts', href: '/dashboard/email/accounts', icon: '📧', module: 'communication' },
-      { name: 'Webmail', href: '/dashboard/email/webmail', icon: '✉️', module: 'communication' },
-      { name: 'Team Chat', href: '/dashboard/chat', icon: '💬', module: 'communication' },
+      { name: 'WhatsApp Setup', href: '/dashboard/whatsapp/setup', icon: 'whatsapp', module: 'communication' },
+      { name: 'WhatsApp Accounts', href: '/dashboard/whatsapp/accounts', icon: 'whatsapp', module: 'communication' },
+      { name: 'WhatsApp Inbox', href: '/dashboard/whatsapp/inbox', icon: 'whatsapp', module: 'communication' },
+      { name: 'WhatsApp Sessions', href: '/dashboard/whatsapp/sessions', icon: 'whatsapp', module: 'communication' },
+      { name: 'Email Accounts', href: '/dashboard/email/accounts', icon: 'email', module: 'communication' },
+      { name: 'Webmail', href: '/dashboard/email/webmail', icon: 'email', module: 'communication' },
+      { name: 'Team Chat', href: '/dashboard/chat', icon: 'chat', module: 'communication' },
     ],
   },
   {
     name: 'AI Features',
-    icon: '🤖',
+    icon: 'ai-cofounder',
     items: [
-      { name: 'AI Co-founder', href: '/ai-cofounder', icon: '🤖', module: 'ai-cofounder' },
-      { name: 'AI Chat', href: '/ai-chat', icon: '💬', module: 'ai-chat' },
-      { name: 'AI Insights', href: '/ai-insights', icon: '💡', module: 'ai-insights' },
-      { name: 'Website Builder', href: '/website-builder', icon: '🌐', module: 'website-builder' },
-      { name: 'Logo Generator', href: '/logo-generator', icon: '🎨', module: 'logo-generator' },
-      { name: 'Knowledge & RAG AI', href: '/knowledge-rag', icon: '📚', module: 'knowledge-rag' },
-      { name: 'AI Calling Bot', href: '/voice-agents', icon: '📞', module: 'voice-agents', comingSoon: true },
+      { name: 'AI Co-founder', href: '/ai-cofounder', icon: 'ai-cofounder', module: 'ai-cofounder' },
+      { name: 'AI Chat', href: '/ai-chat', icon: 'ai-chat', module: 'ai-chat' },
+      { name: 'AI Insights', href: '/ai-insights', icon: 'ai-insights', module: 'ai-insights' },
+      { name: 'Website Builder', href: '/website-builder', icon: 'website-builder', module: 'website-builder' },
+      { name: 'Logo Generator', href: '/logo-generator', icon: 'logo-generator', module: 'logo-generator' },
+      { name: 'Knowledge & RAG AI', href: '/knowledge-rag', icon: 'knowledge-rag', module: 'knowledge-rag' },
+      { name: 'AI Calling Bot', href: '/voice-agents', icon: 'voice-agents', module: 'voice-agents', comingSoon: true },
     ],
   },
   {
     name: 'Productivity Suite',
-    icon: '💼',
+    icon: 'documents',
     items: [
-      { name: 'Spreadsheets', href: '/dashboard/spreadsheets', icon: '📊', module: 'productivity' },
-      { name: 'Documents', href: '/dashboard/docs', icon: '📄', module: 'productivity' },
-      { name: 'Slides', href: '/dashboard/slides', icon: '📽️', module: 'productivity' },
-      { name: 'Drive', href: '/dashboard/drive', icon: '📁', module: 'productivity' },
-      { name: 'Meet', href: '/dashboard/meet', icon: '📹', module: 'productivity' },
-      { name: 'PDF Tools', href: '/dashboard/pdf', icon: '📑', module: 'productivity' },
+      { name: 'Spreadsheets', href: '/dashboard/spreadsheets', icon: 'spreadsheets', module: 'productivity' },
+      { name: 'Documents', href: '/dashboard/docs', icon: 'documents', module: 'productivity' },
+      { name: 'Slides', href: '/dashboard/slides', icon: 'slides', module: 'productivity' },
+      { name: 'Drive', href: '/dashboard/drive', icon: 'drive', module: 'productivity' },
+      { name: 'Meet', href: '/dashboard/meet', icon: 'meet', module: 'productivity' },
+      { name: 'PDF Tools', href: '/dashboard/pdf', icon: 'pdf', module: 'productivity' },
     ],
   },
   {
     name: 'HR & Payroll',
-    icon: '👔',
+    icon: 'employees',
     items: [
-      { name: 'Employees', href: '/dashboard/hr/employees', icon: '👔', module: 'hr' },
-      { name: 'Attendance', href: '/dashboard/hr/attendance/calendar', icon: '📅', module: 'hr' },
-      { name: 'Check-in/Check-out', href: '/dashboard/hr/attendance/check-in', icon: '✅', module: 'hr' },
-      { name: 'Leave Management', href: '/dashboard/hr/leave/requests', icon: '🏖️', module: 'hr' },
-      { name: 'Leave Balances', href: '/dashboard/hr/leave/balances', icon: '📊', module: 'hr' },
-      { name: 'Apply Leave', href: '/dashboard/hr/leave/apply', icon: '📝', module: 'hr' },
-      { name: 'Hiring', href: '/dashboard/hr/hiring/job-requisitions', icon: '📝', module: 'hr' },
-      { name: 'Candidates', href: '/dashboard/hr/hiring/candidates', icon: '👤', module: 'hr' },
-      { name: 'Interviews', href: '/dashboard/hr/hiring/interviews', icon: '💼', module: 'hr' },
-      { name: 'Offers', href: '/dashboard/hr/hiring/offers', icon: '📄', module: 'hr' },
-      { name: 'Onboarding', href: '/dashboard/hr/onboarding/instances', icon: '🚀', module: 'hr' },
-      { name: 'Onboarding Templates', href: '/dashboard/hr/onboarding/templates', icon: '📋', module: 'hr' },
-      { name: 'Payroll', href: '/dashboard/hr/payroll/cycles', icon: '💰', module: 'hr' },
-      { name: 'Salary Structures', href: '/dashboard/hr/payroll/salary-structures', icon: '💵', module: 'hr' },
-      { name: 'Payroll Reports', href: '/dashboard/hr/payroll/reports', icon: '📈', module: 'hr' },
-      { name: 'Tax Declarations', href: '/dashboard/hr/tax-declarations', icon: '📑', module: 'hr' },
+      { name: 'Employees', href: '/dashboard/hr/employees', icon: 'employees', module: 'hr' },
+      { name: 'Attendance', href: '/dashboard/hr/attendance/calendar', icon: 'attendance', module: 'hr' },
+      { name: 'Check-in/Check-out', href: '/dashboard/hr/attendance/check-in', icon: 'check-in', module: 'hr' },
+      { name: 'Leave Management', href: '/dashboard/hr/leave/requests', icon: 'leave', module: 'hr' },
+      { name: 'Leave Balances', href: '/dashboard/hr/leave/balances', icon: 'leave', module: 'hr' },
+      { name: 'Apply Leave', href: '/dashboard/hr/leave/apply', icon: 'leave', module: 'hr' },
+      { name: 'Hiring', href: '/dashboard/hr/hiring/job-requisitions', icon: 'hiring', module: 'hr' },
+      { name: 'Candidates', href: '/dashboard/hr/hiring/candidates', icon: 'candidates', module: 'hr' },
+      { name: 'Interviews', href: '/dashboard/hr/hiring/interviews', icon: 'interviews', module: 'hr' },
+      { name: 'Offers', href: '/dashboard/hr/hiring/offers', icon: 'offers', module: 'hr' },
+      { name: 'Onboarding', href: '/dashboard/hr/onboarding/instances', icon: 'onboarding', module: 'hr' },
+      { name: 'Onboarding Templates', href: '/dashboard/hr/onboarding/templates', icon: 'onboarding', module: 'hr' },
+      { name: 'Payroll', href: '/dashboard/hr/payroll/cycles', icon: 'payroll', module: 'hr' },
+      { name: 'Salary Structures', href: '/dashboard/hr/payroll/salary-structures', icon: 'salary', module: 'hr' },
+      { name: 'Payroll Reports', href: '/dashboard/hr/payroll/reports', icon: 'payroll', module: 'hr' },
+      { name: 'Tax Declarations', href: '/dashboard/hr/tax-declarations', icon: 'tax', module: 'hr' },
     ],
   },
   {
     name: 'Reports & Analytics',
-    icon: '📊',
+    icon: 'reports-analytics',
     items: [
-      { name: 'Advanced Reporting', href: '/dashboard/reports', icon: '📈', module: 'analytics' },
-      { name: 'Custom Dashboards', href: '/dashboard/dashboards/custom', icon: '📊', module: 'analytics' },
-      { name: 'Analytics', href: '/dashboard/analytics', icon: '📈', module: 'analytics' },
-      { name: 'GST Reports', href: '/dashboard/gst/gstr-1', icon: '📋', module: 'finance' },
-      { name: 'GSTR-3B', href: '/dashboard/gst/gstr-3b', icon: '📄', module: 'finance' },
-      { name: 'GST Hub', href: '/dashboard/gst', icon: '🏛️', module: 'finance' },
+      { name: 'Advanced Reporting', href: '/dashboard/reports', icon: 'reports-analytics', module: 'analytics' },
+      { name: 'Custom Dashboards', href: '/dashboard/dashboards/custom', icon: 'custom-dashboards', module: 'analytics' },
+      { name: 'Analytics', href: '/dashboard/analytics', icon: 'analytics', module: 'analytics' },
+      { name: 'GST Reports', href: '/dashboard/gst/gstr-1', icon: 'gst', module: 'finance' },
+      { name: 'GSTR-3B', href: '/dashboard/gst/gstr-3b', icon: 'gst', module: 'finance' },
+      { name: 'GST Hub', href: '/dashboard/gst', icon: 'gst', module: 'finance' },
     ],
   },
   {
     name: 'Industries',
-    icon: '🏭',
+    icon: 'industries',
     items: [
-      { name: 'Industries Hub', href: '/dashboard/industries', icon: '🏭', module: null },
-      { name: 'Industry Setup', href: '/dashboard/setup/industry', icon: '⚙️', module: null },
-      { name: 'Business Units', href: '/dashboard/business-units', icon: '🏢', module: null },
-      // Existing Industries
-      { name: 'Restaurant - Orders', href: '/dashboard/industries/restaurant/orders', icon: '📋', module: null },
-      { name: 'Restaurant - Menu', href: '/dashboard/industries/restaurant/menu', icon: '🍽️', module: null },
-      { name: 'Restaurant - Kitchen', href: '/dashboard/industries/restaurant/kitchen', icon: '👨‍🍳', module: null },
-      { name: 'Restaurant - Tables', href: '/dashboard/industries/restaurant/tables', icon: '🪑', module: null },
-      { name: 'Restaurant - Reservations', href: '/dashboard/industries/restaurant/reservations', icon: '📅', module: null },
-      { name: 'Retail - Products', href: '/dashboard/industries/retail/products', icon: '🛒', module: null },
+      { name: 'Industries Hub', href: '/dashboard/industries', icon: 'industries', module: null },
+      { name: 'Industry Setup', href: '/dashboard/setup/industry', icon: 'settings', module: null },
+      { name: 'Business Units', href: '/dashboard/business-units', icon: 'vendors', module: null },
+      // Existing Industries - using generic icons for now
+      { name: 'Restaurant - Orders', href: '/dashboard/industries/restaurant/orders', icon: 'orders', module: null },
+      { name: 'Restaurant - Menu', href: '/dashboard/industries/restaurant/menu', icon: 'documents', module: null },
+      { name: 'Restaurant - Kitchen', href: '/dashboard/industries/restaurant/kitchen', icon: 'settings', module: null },
+      { name: 'Restaurant - Tables', href: '/dashboard/industries/restaurant/tables', icon: 'settings', module: null },
+      { name: 'Restaurant - Reservations', href: '/dashboard/industries/restaurant/reservations', icon: 'calendar', module: null },
+      { name: 'Retail - Products', href: '/dashboard/industries/retail/products', icon: 'orders', module: null },
       // Phase 1: Critical Gaps
-      { name: 'Healthcare - Prescriptions', href: '/dashboard/industries/healthcare/prescriptions', icon: '💊', module: null },
-      { name: 'Healthcare - Lab Tests', href: '/dashboard/industries/healthcare/lab-tests', icon: '🧪', module: null },
-      { name: 'Education - Students', href: '/dashboard/industries/education/students', icon: '🎓', module: null },
-      { name: 'Education - Courses', href: '/dashboard/industries/education/courses', icon: '📚', module: null },
-      { name: 'Real Estate - Leads', href: '/dashboard/industries/real-estate/leads', icon: '🏠', module: null },
-      { name: 'Logistics - Shipments', href: '/dashboard/industries/logistics/shipments', icon: '🚚', module: null },
+      { name: 'Healthcare - Prescriptions', href: '/dashboard/industries/healthcare/prescriptions', icon: 'documents', module: null },
+      { name: 'Healthcare - Lab Tests', href: '/dashboard/industries/healthcare/lab-tests', icon: 'documents', module: null },
+      { name: 'Education - Students', href: '/dashboard/industries/education/students', icon: 'contacts', module: null },
+      { name: 'Education - Courses', href: '/dashboard/industries/education/courses', icon: 'documents', module: null },
+      { name: 'Real Estate - Leads', href: '/dashboard/industries/real-estate/leads', icon: 'contacts', module: null },
+      { name: 'Logistics - Shipments', href: '/dashboard/industries/logistics/shipments', icon: 'orders', module: null },
       // Phase 2: High Value
-      { name: 'Agriculture - Crops', href: '/dashboard/industries/agriculture/crops', icon: '🌾', module: null },
-      { name: 'Construction - Projects', href: '/dashboard/industries/construction/projects', icon: '🏗️', module: null },
-      { name: 'Beauty - Appointments', href: '/dashboard/industries/beauty/appointments', icon: '💅', module: null },
-      { name: 'Automotive - Job Cards', href: '/dashboard/industries/automotive/job-cards', icon: '🔧', module: null },
+      { name: 'Agriculture - Crops', href: '/dashboard/industries/agriculture/crops', icon: 'documents', module: null },
+      { name: 'Construction - Projects', href: '/dashboard/industries/construction/projects', icon: 'deals', module: null },
+      { name: 'Beauty - Appointments', href: '/dashboard/industries/beauty/appointments', icon: 'calendar', module: null },
+      { name: 'Automotive - Job Cards', href: '/dashboard/industries/automotive/job-cards', icon: 'documents', module: null },
       // Phase 3: Market Expansion
-      { name: 'Hospitality - Bookings', href: '/dashboard/industries/hospitality/bookings', icon: '🏨', module: null },
-      { name: 'Legal - Cases', href: '/dashboard/industries/legal/cases', icon: '⚖️', module: null },
-      { name: 'Financial - Tax Filings', href: '/dashboard/industries/financial/tax-filings', icon: '💰', module: null },
-      { name: 'Events - Management', href: '/dashboard/industries/events/events', icon: '🎉', module: null },
-      { name: 'Wholesale - Customers', href: '/dashboard/industries/wholesale/customers', icon: '📦', module: null },
+      { name: 'Hospitality - Bookings', href: '/dashboard/industries/hospitality/bookings', icon: 'calendar', module: null },
+      { name: 'Legal - Cases', href: '/dashboard/industries/legal/cases', icon: 'documents', module: null },
+      { name: 'Financial - Tax Filings', href: '/dashboard/industries/financial/tax-filings', icon: 'tax', module: null },
+      { name: 'Events - Management', href: '/dashboard/industries/events/events', icon: 'events', module: null },
+      { name: 'Wholesale - Customers', href: '/dashboard/industries/wholesale/customers', icon: 'contacts', module: null },
     ],
   },
 ]
@@ -185,6 +309,8 @@ function NavItem({
   isActive: boolean
   onLinkClick?: () => void
 }) {
+  // Get icon component from iconMap, fallback to Settings if not found
+  const IconComponent = iconMap[item.icon] || Settings
   const { tenant } = useAuthStore()
   const tenantId = tenant?.id
   
@@ -258,7 +384,7 @@ function NavItem({
         isComingSoon && 'opacity-60 cursor-not-allowed'
       )}
     >
-      <span className="mr-3 text-lg">{item.icon}</span>
+      <IconComponent className="mr-3 h-6 w-6 text-gray-600 dark:text-gray-400 flex-shrink-0" strokeWidth={2} />
       <span className="flex-1">{item.name}</span>
       {isComingSoon && (
         <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-0.5 rounded">
@@ -271,6 +397,8 @@ function NavItem({
 
 
 function NavSection({ section, pathname, onLinkClick }: { section: typeof navigationSections[0]; pathname: string; onLinkClick?: () => void }) {
+  // Get icon component for section header
+  const SectionIcon = iconMap[section.icon] || Settings
   const { tenant } = useAuthStore()
   const { hasModule, licensedModules } = usePayAidAuth()
   const tenantId = tenant?.id
@@ -345,7 +473,7 @@ function NavSection({ section, pathname, onLinkClick }: { section: typeof naviga
         )}
       >
         <div className="flex items-center flex-1 min-w-0">
-          <span className="mr-3 text-lg shrink-0">{section.icon}</span>
+          <SectionIcon className="mr-3 h-6 w-6 text-gray-600 dark:text-gray-400 shrink-0" strokeWidth={2} />
           <span className="truncate">{section.name}</span>
         </div>
         <svg
@@ -463,13 +591,13 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
         <div className="pt-2 border-t border-gray-200 dark:border-gray-700 mt-2 space-y-1">
           {isAdmin && (
             <NavItem
-              item={{ name: 'Module Management', href: '/dashboard/admin/modules', icon: '🔧', module: null }}
+              item={{ name: 'Module Management', href: '/dashboard/admin/modules', icon: 'module-management', module: null }}
               isActive={isPathActive('/dashboard/admin/modules')}
               onLinkClick={onClose}
             />
           )}
           <NavItem
-            item={{ name: 'Settings', href: '/dashboard/settings', icon: '⚙️', module: null }}
+            item={{ name: 'Settings', href: '/dashboard/settings', icon: 'settings', module: null }}
             isActive={isPathActive('/dashboard/settings')}
             onLinkClick={onClose}
           />
@@ -485,7 +613,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
                 'bg-[#F5C700] text-[#53328A] hover:bg-[#E0B200] text-center justify-center'
               )}
             >
-              <span className="mr-2">+</span>
+              <Plus className="mr-2 h-4 w-4" strokeWidth={2} />
               Add Modules
             </Link>
           </div>
