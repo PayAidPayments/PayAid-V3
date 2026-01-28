@@ -132,10 +132,11 @@ async function handleLogin(request: NextRequest) {
       throw new Error('Database configuration error: DATABASE_URL is missing')
     }
     
-    // Use prismaWithRetry with faster retry settings for login (critical path)
+      // Use prismaWithRetry with minimal retry settings for login (critical path)
     let user
     try {
-      // Use retry logic with faster settings for login (reduce delays)
+      // Use retry logic with minimal retries to prevent connection pool exhaustion
+      // Circuit breaker will prevent cascading failures
       user = await prismaWithRetry(() =>
         prisma.user.findUnique({
           where: { email: validated.email.toLowerCase().trim() },
@@ -153,9 +154,9 @@ async function handleLogin(request: NextRequest) {
           },
         }),
         {
-          maxRetries: 2, // Reduce retries from 3 to 2
-          retryDelay: 300, // Reduce delay from 1000ms to 300ms
-          exponentialBackoff: false, // Disable exponential backoff for faster retries
+          maxRetries: 1, // Only 1 retry to prevent connection pool exhaustion
+          retryDelay: 200, // Minimal delay
+          exponentialBackoff: false, // No exponential backoff
         }
       )
       
@@ -178,6 +179,11 @@ async function handleLogin(request: NextRequest) {
         hasDatabaseUrl: !!process.env.DATABASE_URL,
       })
       
+      // Check for circuit breaker errors
+      if (errorCode === 'CIRCUIT_OPEN' || dbError?.isCircuitBreaker) {
+        throw new Error('Database is temporarily unavailable due to high load. Please try again in a moment.')
+      }
+      
       // Provide more specific error messages for common database errors
       if (errorCode === 'P1001' || errorMessage.includes('Can\'t reach database server')) {
         throw new Error('Database connection failed. Please check your database configuration.')
@@ -185,6 +191,8 @@ async function handleLogin(request: NextRequest) {
         throw new Error('Database table not found. Please run database migrations.')
       } else if (errorCode === 'P1000' || errorMessage.includes('Authentication failed')) {
         throw new Error('Database authentication failed. Please check your database credentials.')
+      } else if (errorCode === 'P1002' || errorMessage.includes('Pooler timeout') || errorMessage.includes('max clients')) {
+        throw new Error('Database connection pool is full. Please try again in a moment.')
       }
       
       throw new Error(`Database error: ${errorMessage}`)
@@ -415,7 +423,11 @@ async function handleLogin(request: NextRequest) {
     let responseMessage = errorMessage
     
     // Provide user-friendly error messages
-    if (errorMessage.includes('Database') || errorMessage.includes('database') || errorMessage.includes('P1001') || errorMessage.includes('P2025')) {
+    if (errorMessage.includes('temporarily unavailable') || errorMessage.includes('CIRCUIT_OPEN') || errorMessage.includes('high load')) {
+      responseMessage = 'Database is temporarily unavailable due to high load. Please try again in a moment.'
+    } else if (errorMessage.includes('connection pool is full') || errorMessage.includes('P1002') || errorMessage.includes('max clients')) {
+      responseMessage = 'Database connection pool is full. Please try again in a moment.'
+    } else if (errorMessage.includes('Database') || errorMessage.includes('database') || errorMessage.includes('P1001') || errorMessage.includes('P2025')) {
       responseMessage = 'Database connection error. Please try again later or contact support.'
     } else if (errorMessage.includes('JWT_SECRET') || errorMessage.includes('JWT') || errorMessage.includes('token generation')) {
       responseMessage = 'Authentication configuration error. Please contact support.'
