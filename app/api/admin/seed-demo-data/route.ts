@@ -794,10 +794,6 @@ async function seedDemoData() {
     const errorStack = error instanceof Error ? error.stack : undefined
     
     throw new Error(`Failed to seed demo data: ${errorMessage}`)
-        stack: process.env.NODE_ENV === 'development' ? errorStack : undefined,
-      },
-      { status: 500 }
-    )
   }
 }
 
