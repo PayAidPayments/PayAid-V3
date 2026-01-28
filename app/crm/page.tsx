@@ -36,10 +36,10 @@ export default function CRMModulePage() {
       return
     }
 
-    // If not authenticated after checking, redirect to login
+    // If not authenticated after checking, redirect to main login
     if (!isAuthenticated) {
       setHasRedirected(true)
-      router.push('/crm/login')
+      router.push('/login')
       return
     }
 
