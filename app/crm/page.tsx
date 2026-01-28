@@ -57,7 +57,7 @@ export default function CRMModulePage() {
 
     // Wait for auth state to stabilize
     // Give it time for:
-    // 1. Zustand rehydration (localStorage)
+    // 1. Zustand rehydration (localStorage) - usually instant but can take a moment
     // 2. fetchUser to complete if token exists
     if (isLoading || isFetchingUser) {
       return
@@ -66,6 +66,9 @@ export default function CRMModulePage() {
     // If we have a token but aren't authenticated yet, wait a bit longer for fetchUser
     if (token && !isAuthenticated && fetchAttemptedRef.current) {
       // Already attempted fetchUser - if still not authenticated, token is invalid
+      // Clear invalid token and redirect to login
+      console.warn('[CRM] Token exists but fetchUser failed - redirecting to login')
+      useAuthStore.getState().logout()
       setHasRedirected(true)
       router.push('/login?redirect=/crm')
       return
@@ -75,11 +78,12 @@ export default function CRMModulePage() {
     if (token && !isAuthenticated && !fetchAttemptedRef.current) {
       // Give it a moment for the effect above to trigger fetchUser
       const timeout = setTimeout(() => {
-        if (!isAuthenticated && !isFetchingUser) {
+        if (!isAuthenticated && !isFetchingUser && !hasRedirected) {
+          console.warn('[CRM] Token exists but fetchUser did not complete - redirecting to login')
           setHasRedirected(true)
           router.push('/login?redirect=/crm')
         }
-      }, 1000)
+      }, 2000) // Increased to 2 seconds to give fetchUser more time
       return () => clearTimeout(timeout)
     }
 
