@@ -179,7 +179,7 @@ async function seedDemoData() {
       where: { subdomain: 'demo' },
     })
 
-    const businessName = 'Demo Business Private Limited'
+    const businessName = 'Demo Business Pvt Ltd'
     const expectedPrefix = businessName.split(/\s+/)[0].toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 20)
     
     // Check if existing tenant has personalized ID format
