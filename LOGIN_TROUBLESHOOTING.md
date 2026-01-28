@@ -1,142 +1,200 @@
-# Login Timeout Troubleshooting Guide
+# Login Troubleshooting Guide
 
-**Issue:** Login request timing out  
-**Last Updated:** January 2026
+## Quick Fixes
 
----
+### Step 1: Check Health Status
+Visit: https://payaid-v3.vercel.app/api/health
 
-## 🔍 **DIAGNOSTIC STEPS**
+This will show:
+- ✅ Database connection status
+- ✅ JWT_SECRET configuration
+- ✅ Environment status
 
-### **1. Check Vercel Logs**
-1. Go to: https://vercel.com/dashboard
-2. Select your project
-3. Go to "Deployments" → Latest deployment → "Functions" tab
-4. Look for `/api/auth/login` function logs
-5. Check for:
-   - Database connection errors
-   - Timeout errors
-   - Function execution time
+**If database is not connected:**
+- Check Vercel environment variables
+- Verify `DATABASE_URL` is set correctly
+- Check database is accessible
 
-### **2. Check Database Connection**
+**If JWT_SECRET is not configured:**
+- Check Vercel environment variables
+- Verify `JWT_SECRET` is set and not default value
+
+### Step 2: Ensure Demo User Exists
+Visit: https://payaid-v3.vercel.app/api/admin/ensure-demo-user
+
+This will:
+- ✅ Check if `admin@demo.com` exists
+- ✅ Create user if missing
+- ✅ Reset password if needed
+
+**Expected credentials:**
+- Email: `admin@demo.com`
+- Password: `Test@1234`
+
+### Step 3: Reset Password (If user exists but login fails)
+Visit: https://payaid-v3.vercel.app/api/admin/ensure-demo-user
+
+Or use POST:
 ```bash
-# Test database connection
-npx prisma db execute --stdin <<< "SELECT 1"
+curl -X POST https://payaid-v3.vercel.app/api/admin/ensure-demo-user
 ```
 
-**Common Issues:**
-- `DATABASE_URL` not set in Vercel
-- Database firewall blocking Vercel IPs
+### Step 4: Check Browser Console
+1. Open browser console (F12)
+2. Try logging in
+3. Check for errors in console
+4. Check Network tab for API response
+
+## Common Error Messages
+
+### "Login failed" (Generic)
+**Possible causes:**
+- Database connection timeout
+- JWT_SECRET not configured
+- User doesn't exist
+- Password mismatch
+
+**Solution:**
+1. Check `/api/health` endpoint
+2. Ensure demo user exists: `/api/admin/ensure-demo-user`
+3. Try resetting password: POST to `/api/admin/ensure-demo-user`
+
+### "Invalid email or password"
+**Possible causes:**
+- User doesn't exist
+- Password is incorrect
+- Password hash mismatch
+
+**Solution:**
+1. Visit `/api/admin/ensure-demo-user` to create/reset user
+2. Use exact credentials: `admin@demo.com` / `Test@1234`
+
+### "Database connection failed"
+**Possible causes:**
+- DATABASE_URL not configured in Vercel
+- Database server is down
 - Connection pool exhausted
-- Database server down
 
-### **3. Check Vercel Plan Limits**
-- **Hobby Plan:** 10 second function timeout
-- **Pro Plan:** 60 second function timeout
+**Solution:**
+1. Check Vercel environment variables
+2. Verify database is running
+3. Check `/api/health` for connection status
 
-**If on Hobby Plan:**
-- Login might be hitting 10s limit
-- **Solution:** Upgrade to Pro OR optimize to complete in < 10s
+### "Request timed out"
+**Possible causes:**
+- Database is slow
+- Cold start on Vercel
+- Too many concurrent requests
 
----
+**Solution:**
+1. Wait a moment and try again
+2. Check Vercel function logs
+3. Verify database performance
 
-## ✅ **FIXES APPLIED**
+## Diagnostic Steps
 
-### **1. Client-Side Timeout: 30 seconds** ✅
-- File: `lib/stores/auth.ts`
-- Prevents client from waiting forever
-
-### **2. Server-Side Timeout: 25 seconds** ✅
-- File: `app/api/auth/login/route.ts`
-- Prevents server from hanging
-- Returns 504 Gateway Timeout
-
-### **3. Database Connection Test: 5 seconds** ✅
-- Tests connection before querying
-- Fails fast if database is unreachable
-
-### **4. User Query Timeout: 5 seconds** ✅
-- Prevents user query from hanging
-- Fails fast if query is slow
-
-### **5. RBAC Optimization** ✅
-- RBAC check: 0.2 seconds
-- RBAC fetch: 0.5 seconds
-- Falls back to legacy role
-
----
-
-## 🚀 **QUICK FIXES**
-
-### **Option 1: Disable RBAC (Fastest)**
-In Vercel Environment Variables:
-```
-ENABLE_RBAC=false
+### 1. Check Health Endpoint
+```bash
+curl https://payaid-v3.vercel.app/api/health
 ```
 
-This skips all RBAC queries, making login faster.
+Expected response:
+```json
+{
+  "status": "healthy",
+  "checks": {
+    "database": {
+      "configured": true,
+      "connected": true
+    },
+    "jwt": {
+      "configured": true
+    }
+  }
+}
+```
 
-### **Option 2: Check Database URL**
-1. Go to Vercel Dashboard → Project → Settings → Environment Variables
-2. Verify `DATABASE_URL` is set correctly
-3. Test connection: `npx prisma db execute --stdin <<< "SELECT 1"`
+### 2. Check Demo User
+```bash
+curl https://payaid-v3.vercel.app/api/admin/ensure-demo-user
+```
 
-### **Option 3: Upgrade Vercel Plan**
-- Hobby: 10s timeout (might be too short)
-- Pro: 60s timeout (recommended)
+Expected response:
+```json
+{
+  "success": true,
+  "message": "Demo user exists",
+  "user": {
+    "email": "admin@demo.com",
+    "hasPassword": true
+  }
+}
+```
 
----
+### 3. Test Login API Directly
+```bash
+curl -X POST https://payaid-v3.vercel.app/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@demo.com","password":"Test@1234"}'
+```
 
-## 📊 **EXPECTED TIMELINE**
+Expected response:
+```json
+{
+  "token": "...",
+  "refreshToken": "...",
+  "user": {...}
+}
+```
 
-### **Normal Login (4-10 seconds):**
-1. Cold start: 2-5 seconds
-2. Database connection: 0.5-1 second
-3. User query: 0.5-1 second
-4. RBAC (if enabled): 0.2-0.5 seconds
-5. Token generation: < 0.1 seconds
-6. **Total: 4-10 seconds** ✅
+## Browser Console Method
 
-### **If Timing Out:**
-- Check Vercel logs for where it's hanging
-- Check database connection
-- Check Vercel plan limits
-- Consider disabling RBAC
+If login page isn't working, try logging in via console:
 
----
+```javascript
+fetch('/api/auth/login', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    email: 'admin@demo.com',
+    password: 'Test@1234'
+  })
+})
+.then(r => r.json())
+.then(data => {
+  if (data.token) {
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('refreshToken', data.refreshToken)
+    localStorage.setItem('user', JSON.stringify(data.user))
+    window.location.href = '/home'
+  } else {
+    console.error('Login failed:', data)
+  }
+})
+.catch(err => console.error('Error:', err))
+```
 
-## 🐛 **COMMON ERRORS**
+## Vercel Environment Variables Checklist
 
-### **Error: "Database connection timeout"**
-**Cause:** Database is unreachable or slow  
-**Fix:**
-1. Check `DATABASE_URL` in Vercel
-2. Check database firewall rules
-3. Check database server status
+Ensure these are set in Vercel:
+- ✅ `DATABASE_URL` - PostgreSQL connection string
+- ✅ `JWT_SECRET` - Secret key for JWT tokens (not default value)
+- ✅ `JWT_REFRESH_SECRET` - Secret key for refresh tokens (optional)
 
-### **Error: "Server timeout: Request took too long"**
-**Cause:** Function exceeded 25 seconds  
-**Fix:**
-1. Check Vercel logs for slow operations
-2. Optimize database queries
-3. Disable RBAC if not needed
-4. Upgrade Vercel plan
+## Still Not Working?
 
-### **Error: "User query timeout"**
-**Cause:** User query taking > 5 seconds  
-**Fix:**
-1. Check database indexes
-2. Check database load
-3. Optimize query
+1. Check Vercel function logs:
+   - Go to Vercel Dashboard → Project → Functions → View Logs
+   - Look for `/api/auth/login` errors
+   - Check for specific error messages
 
----
+2. Check browser console:
+   - Open DevTools (F12)
+   - Check Console tab for errors
+   - Check Network tab for failed requests
 
-## 📝 **NEXT STEPS**
-
-1. **Check Vercel Logs** - See where it's hanging
-2. **Test Database Connection** - Verify it's reachable
-3. **Check Vercel Plan** - Ensure timeout is sufficient
-4. **Disable RBAC** - If not needed, set `ENABLE_RBAC=false`
-
----
-
-**Status:** ✅ **Fixes Applied - Check Vercel Logs for Details**
+3. Verify credentials:
+   - Email: `admin@demo.com` (exact, case-insensitive)
+   - Password: `Test@1234` (exact, case-sensitive)
