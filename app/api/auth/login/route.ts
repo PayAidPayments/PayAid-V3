@@ -132,10 +132,10 @@ async function handleLogin(request: NextRequest) {
       throw new Error('Database configuration error: DATABASE_URL is missing')
     }
     
-    // Use prismaWithRetry for better connection handling
+    // Use prismaWithRetry with faster retry settings for login (critical path)
     let user
     try {
-      // Use retry logic for database connection stability
+      // Use retry logic with faster settings for login (reduce delays)
       user = await prismaWithRetry(() =>
         prisma.user.findUnique({
           where: { email: validated.email.toLowerCase().trim() },
@@ -151,7 +151,12 @@ async function handleLogin(request: NextRequest) {
               }
             }
           },
-        })
+        }),
+        {
+          maxRetries: 2, // Reduce retries from 3 to 2
+          retryDelay: 300, // Reduce delay from 1000ms to 300ms
+          exponentialBackoff: false, // Disable exponential backoff for faster retries
+        }
       )
       
       console.log('[LOGIN] Database query completed', { 
@@ -256,78 +261,17 @@ async function handleLogin(request: NextRequest) {
     console.log('[LOGIN] Last login update initiated (async)')
 
     // Step 8: Get user roles and permissions (Phase 1: RBAC)
-    // CRITICAL: Skip RBAC entirely if tables don't exist to prevent hanging
+    // CRITICAL: Skip RBAC entirely during login to prevent timeouts and database pool exhaustion
+    // RBAC can be fetched later via /api/auth/me if needed
     step = 'get_roles_permissions'
-    console.log('[LOGIN] Step 8: Resolving roles and permissions...', { 
-      userId: user.id,
-      tenantId: user.tenantId || 'none',
-    })
+    console.log('[LOGIN] Step 8: Skipping RBAC fetch during login (will fetch later if needed)')
     
-    // Default to legacy role - RBAC is optional
+    // Use legacy role from user record - RBAC is optional and can be fetched later
     let roles: string[] = user.role ? [user.role] : []
     let permissions: string[] = []
     
-    // ONLY attempt RBAC if explicitly enabled via environment variable
-    // This prevents hanging on Vercel where tables may not exist
-    const RBAC_ENABLED = process.env.ENABLE_RBAC === 'true'
-    
-    if (!RBAC_ENABLED) {
-      console.log('[LOGIN] RBAC disabled via ENABLE_RBAC env var, using legacy role')
-    } else if (user.tenantId && typeof user.tenantId === 'string') {
-      // Quick check with very aggressive timeout (200ms)
-      const RBAC_CHECK_TIMEOUT = 200 // 200ms max
-      
-      try {
-        const checkPromise = prisma.userRole.count({
-          where: { tenantId: user.tenantId },
-          take: 1,
-        }).catch(() => 0) // Catch any error and return 0
-        
-        const timeoutPromise = new Promise<number>((resolve) => {
-          setTimeout(() => resolve(0), RBAC_CHECK_TIMEOUT)
-        })
-        
-        const hasRBACData = await Promise.race([checkPromise, timeoutPromise])
-        
-        if (hasRBACData > 0) {
-          // Only fetch if data exists - with very short timeout (500ms)
-          const RBAC_FETCH_TIMEOUT = 500
-          try {
-            const rbacPromise = Promise.all([
-              getUserRoles(user.id, user.tenantId).catch(() => []),
-              getUserPermissions(user.id, user.tenantId).catch(() => []),
-            ])
-            
-            const timeoutPromise = new Promise<[string[], string[]]>((resolve) => {
-              setTimeout(() => resolve([[], []]), RBAC_FETCH_TIMEOUT)
-            })
-            
-            const [fetchedRoles, fetchedPermissions] = await Promise.race([
-              rbacPromise,
-              timeoutPromise,
-            ])
-            
-            if (fetchedRoles.length > 0) {
-              roles = fetchedRoles
-            }
-            if (fetchedPermissions.length > 0) {
-              permissions = fetchedPermissions
-            }
-          } catch (error) {
-            console.warn('[LOGIN] RBAC fetch failed, using legacy role')
-          }
-        }
-      } catch (error) {
-        // Silently fail - use legacy role
-        console.warn('[LOGIN] RBAC check failed, using legacy role')
-      }
-    }
-    
-    console.log('[LOGIN] Roles and permissions resolved', { 
-      rolesCount: roles.length,
-      permissionsCount: permissions.length,
-      usingLegacyRole: roles.length > 0 && roles[0] === user.role,
-    })
+    // Skip RBAC entirely to speed up login and prevent database pool exhaustion
+    console.log('[LOGIN] Using legacy role for login, RBAC will be fetched on-demand via /api/auth/me')
 
     // Step 9: Generate JWT tokens (Phase 1: Enhanced JWT)
     step = 'generate_token'
