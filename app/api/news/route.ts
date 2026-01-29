@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth/jwt'
 import { prisma } from '@/lib/db/prisma'
 import { prismaWithRetry } from '@/lib/db/connection-retry'
+import { circuitBreaker } from '@/lib/db/circuit-breaker'
 
 /**
  * GET /api/news
@@ -38,9 +39,23 @@ export async function GET(request: NextRequest) {
 
     const tenantId = payload.tenantId
 
-    // Skip connection test - go directly to query
-    // Connection tests can fail due to pool exhaustion even when database is working
-    // The actual query will succeed or fail, which is more reliable
+    // Check circuit breaker state before attempting database operations
+    if (circuitBreaker.isOpen()) {
+      console.warn('[NEWS API] Circuit breaker is open, returning empty results')
+      return NextResponse.json({
+        newsItems: [],
+        grouped: {
+          critical: [],
+          important: [],
+          informational: [],
+          opportunity: [],
+          warning: [],
+          growth: [],
+        },
+        unreadCount: 0,
+        total: 0,
+      }, { status: 503 })
+    }
 
     const searchParams = request.nextUrl.searchParams
     const urgency = searchParams.get('urgency')
@@ -139,6 +154,24 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching news:', error)
     
+    // Handle circuit breaker errors
+    if (error?.code === 'CIRCUIT_OPEN' || error?.isCircuitBreaker) {
+      console.warn('[NEWS API] Circuit breaker is open, returning empty results')
+      return NextResponse.json({
+        newsItems: [],
+        grouped: {
+          critical: [],
+          important: [],
+          informational: [],
+          opportunity: [],
+          warning: [],
+          growth: [],
+        },
+        unreadCount: 0,
+        total: 0,
+      }, { status: 503 })
+    }
+    
     // Handle Prisma database connection errors - but don't fail on pool exhaustion
     const isPoolExhausted = error?.message?.includes('MaxClientsInSessionMode') || 
                             error?.message?.includes('max clients reached')
@@ -158,7 +191,7 @@ export async function GET(request: NextRequest) {
         },
         unreadCount: 0,
         total: 0,
-      })
+      }, { status: 503 })
     }
     
     // Handle other Prisma database connection errors
