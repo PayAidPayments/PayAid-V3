@@ -1,20 +1,16 @@
 'use client'
 
 import { ModuleTopBar } from '@/components/modules/ModuleTopBar'
-import { useEffect, useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
-import { useAuthStore } from '@/lib/stores/auth'
+import { useParams } from 'next/navigation'
 
 export default function CRMHomeLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
   const params = useParams()
-  const [hasChecked, setHasChecked] = useState(false)
   
-  // Get tenantId from URL params first (most reliable)
+  // Get tenantId from URL params (should always be present if we're on this route)
   const tenantIdParam = params?.tenantId
   const tenantIdFromParams = Array.isArray(tenantIdParam) 
     ? (tenantIdParam[0] || null)
@@ -23,67 +19,12 @@ export default function CRMHomeLayout({
     ? tenantIdFromParams 
     : undefined
 
-  // Redirect if tenantId is still not available (but wait for Zustand rehydration)
-  useEffect(() => {
-    if (hasChecked) return
-    
-    // If tenantId is in URL params, we're good
-    if (tenantId) {
-      setHasChecked(true)
-      return
-    }
-
-    // Wait a bit for Zustand to rehydrate
-    const checkAndRedirect = () => {
-      setHasChecked(true)
-      
-      // Check localStorage as fallback
-      let tenantFromStorage: any = null
-      if (typeof window !== 'undefined') {
-        try {
-          const stored = localStorage.getItem('auth-storage')
-          if (stored) {
-            const parsed = JSON.parse(stored)
-            tenantFromStorage = parsed.state?.tenant || null
-          }
-        } catch (error) {
-          console.error('[CRM_LAYOUT] Error reading from localStorage:', error)
-        }
-      }
-
-      const currentState = useAuthStore.getState()
-      const finalTenant = currentState.tenant || tenantFromStorage
-      const finalTenantId = tenantIdFromParams || finalTenant?.id
-
-      // If we have tenantId in URL, we're good
-      if (tenantIdFromParams) {
-        return
-      }
-
-      // If no tenantId anywhere, redirect to CRM entry point
-      if (!finalTenantId) {
-        console.log('[CRM_LAYOUT] No tenantId found, redirecting to /crm')
-        router.replace('/crm')
-        return
-      }
-
-      // If tenantId is in auth store but not in URL, redirect to correct URL
-      if (finalTenant?.id && !tenantIdFromParams) {
-        console.log(`[CRM_LAYOUT] TenantId in store but not URL, redirecting to /crm/${finalTenant.id}/Home/`)
-        router.replace(`/crm/${finalTenant.id}/Home/`)
-        return
-      }
-    }
-
-    const timeoutId = setTimeout(checkAndRedirect, 300)
-
-    return () => {
-      clearTimeout(timeoutId)
-    }
-  }, [tenantId, tenantIdFromParams, router, hasChecked])
-
-  // Don't render if tenantId is not available (but wait for check)
-  if (!hasChecked || (!tenantId && !tenantIdFromParams)) {
+  // NO REDIRECT LOGIC - If tenantId is in URL params, render the layout
+  // The entry point (/crm) handles redirecting to the correct URL
+  // This layout should just render if tenantId is in the URL
+  
+  // If no tenantId in URL params, don't render (entry point will handle redirect)
+  if (!tenantIdFromParams || typeof tenantIdFromParams !== 'string' || !tenantIdFromParams.trim()) {
     return null
   }
 
