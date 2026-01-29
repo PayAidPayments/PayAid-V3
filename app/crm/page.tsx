@@ -59,14 +59,22 @@ export default function CRMModulePage() {
       const finalToken = currentState.token || tokenFromStorage
       const finalTenant = currentState.tenant || tenantFromStorage
 
+      console.log('[CRM] Redirect check:', {
+        hasToken: !!finalToken,
+        hasTenant: !!finalTenant?.id,
+        tenantId: finalTenant?.id,
+      })
+
       // If no token, redirect to login
       if (!finalToken) {
+        console.log('[CRM] No token found, redirecting to login')
         router.replace('/login?redirect=/crm')
         return
       }
 
       // If we have tenant ID, redirect to dashboard
       if (finalTenant?.id) {
+        console.log(`[CRM] Redirecting to CRM dashboard: /crm/${finalTenant.id}/Home/`)
         router.replace(`/crm/${finalTenant.id}/Home/`)
         return
       }
@@ -78,6 +86,7 @@ export default function CRMModulePage() {
           if (parts.length === 3) {
             const payload = JSON.parse(atob(parts[1]))
             if (payload.tenantId) {
+              console.log(`[CRM] Extracted tenantId from token, redirecting to: /crm/${payload.tenantId}/Home/`)
               router.replace(`/crm/${payload.tenantId}/Home/`)
               return
             }
@@ -88,16 +97,18 @@ export default function CRMModulePage() {
       }
 
       // Fallback: redirect to home
+      console.log('[CRM] No tenant ID found, redirecting to home')
       router.replace('/home')
     }
 
     // Small delay to allow Zustand to rehydrate, but don't wait too long
-    const timeoutId = setTimeout(redirect, 100)
+    // Only run once - don't depend on tenant/token changes
+    const timeoutId = setTimeout(redirect, 200)
 
     return () => {
       clearTimeout(timeoutId)
     }
-  }, [router, tenant?.id, token])
+  }, [router]) // Only depend on router - don't re-run when tenant/token changes
 
   return <PageLoading message="Loading CRM..." fullScreen={true} />
 }
