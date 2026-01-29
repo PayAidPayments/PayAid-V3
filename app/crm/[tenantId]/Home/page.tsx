@@ -120,60 +120,9 @@ export default function CRMDashboardPage() {
   const fetchingActivityRef = useRef(false)
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Validate tenantId - redirect if missing (but wait for Zustand rehydration)
-  useEffect(() => {
-    // If tenantId is in URL params, we're good - don't redirect
-    if (tenantIdFromParams && typeof tenantIdFromParams === 'string' && tenantIdFromParams.trim()) {
-      return // TenantId is in URL, no need to redirect
-    }
-
-    // Wait a bit for Zustand to rehydrate before checking
-    const checkAndRedirect = () => {
-      // Check localStorage as fallback
-      let tenantFromStorage: any = null
-      if (typeof window !== 'undefined') {
-        try {
-          const stored = localStorage.getItem('auth-storage')
-          if (stored) {
-            const parsed = JSON.parse(stored)
-            tenantFromStorage = parsed.state?.tenant || null
-          }
-        } catch (error) {
-          console.error('[CRM_DASHBOARD] Error reading from localStorage:', error)
-        }
-      }
-
-      const currentState = useAuthStore.getState()
-      const finalTenant = currentState.tenant || tenantFromStorage
-      const finalTenantId = tenantIdFromParams || finalTenant?.id
-
-      // If we have tenantId in URL, we're good
-      if (tenantIdFromParams) {
-        return
-      }
-
-      // If no tenantId anywhere, redirect to CRM entry point
-      if (!finalTenantId) {
-        console.log('[CRM_DASHBOARD] No tenantId found, redirecting to /crm')
-        router.replace('/crm')
-        return
-      }
-
-      // If tenantId is in auth store but not in URL, redirect to correct URL
-      if (finalTenant?.id && !tenantIdFromParams) {
-        console.log(`[CRM_DASHBOARD] TenantId in store but not URL, redirecting to /crm/${finalTenant.id}/Home/`)
-        router.replace(`/crm/${finalTenant.id}/Home/`)
-        return
-      }
-    }
-
-    // Small delay to allow Zustand to rehydrate
-    const timeoutId = setTimeout(checkAndRedirect, 300)
-
-    return () => {
-      clearTimeout(timeoutId)
-    }
-  }, [tenantIdFromParams, router]) // Only depend on URL param and router
+  // NO REDIRECT LOGIC - If tenantId is in URL params, we're good
+  // The entry point (/crm) handles redirecting to the correct URL
+  // This page should just render if tenantId is in the URL
 
   // Detect dark mode
   useEffect(() => {
