@@ -62,14 +62,15 @@ export async function middleware(request: NextRequest) {
         
         // For routes with tenantId (e.g., /crm/[tenantId]/Home), check access
         const token = getTokenFromRequest(request)
+        
+        // For CRM specifically, always allow through - client-side will handle auth
+        // This prevents redirect loops and allows users to access CRM even if token is expired
+        if (moduleId === 'crm' && pathname.match(/^\/crm\/[^\/]+\//)) {
+          // Allow CRM routes through - client-side will handle auth checks
+          return NextResponse.next()
+        }
+        
         if (!token) {
-          // For CRM specifically, allow through if it's a valid route structure
-          // The client-side entry point will handle auth checks
-          // This prevents redirect loops when cookie isn't set yet
-          if (moduleId === 'crm' && pathname.match(/^\/crm\/[^\/]+\//)) {
-            // Allow CRM routes through - client-side will handle auth
-            return NextResponse.next()
-          }
           return NextResponse.redirect(new URL('/login', request.url))
         }
 
@@ -96,7 +97,14 @@ export async function middleware(request: NextRequest) {
             }
           }
         } catch {
-          return NextResponse.redirect(new URL('/login', request.url))
+          // For non-CRM modules, redirect to login on token verification failure
+          // For CRM, we already allowed it through above
+          if (moduleId !== 'crm') {
+            return NextResponse.redirect(new URL('/login', request.url))
+          }
+          // For CRM, allow through even if token verification fails
+          // Client-side will handle re-authentication
+          return NextResponse.next()
         }
       }
     }
