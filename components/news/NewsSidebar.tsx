@@ -384,6 +384,18 @@ export function NewsSidebar() {
   // Check if this is demo business
   const isDemoBusiness = tenant?.subdomain === 'demo' || tenant?.name === 'Demo Business Pvt Ltd'
 
+  // Track consecutive 503 errors to back off polling
+  const [consecutive503Errors, setConsecutive503Errors] = useState(0)
+
+  const getRefetchInterval = () => {
+    if (consecutive503Errors >= 3) {
+      return 10 * 60 * 1000 // 10 minutes
+    } else if (consecutive503Errors >= 1) {
+      return 5 * 60 * 1000 // 5 minutes (default)
+    }
+    return 5 * 60 * 1000 // 5 minutes (default)
+  }
+
   // Fetch news items with category filter
   const { data, isLoading, error: fetchError } = useQuery<NewsResponse>({
     queryKey: ['news', token, selectedCategory],
@@ -398,9 +410,32 @@ export function NewsSidebar() {
         headers: getAuthHeaders(),
       })
       if (!response.ok) {
+        if (response.status === 503) {
+          // Service unavailable (e.g., database pool exhausted, circuit breaker open)
+          console.warn('[NewsSidebar] /api/news returned 503. Backing off polling.')
+          setConsecutive503Errors((prev) => prev + 1)
+          // Return empty data but don't throw error to prevent query from going into error state
+          return {
+            newsItems: [],
+            grouped: {
+              critical: [],
+              important: [],
+              informational: [],
+              opportunity: [],
+              warning: [],
+              growth: [],
+            },
+            unreadCount: 0,
+            total: 0,
+          }
+        }
+        // For other errors, reset 503 count and throw
+        setConsecutive503Errors(0)
         const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.error || 'Failed to fetch news')
       }
+      // On success, reset 503 error count
+      setConsecutive503Errors(0)
       const apiData = await response.json()
       
       // If API returns no data and this is demo business, use sample news
@@ -411,9 +446,8 @@ export function NewsSidebar() {
       return apiData
     },
     enabled: !!token,
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
-    retry: 2, // Retry twice on failure
-    retryDelay: 1000, // Wait 1 second between retries
+    refetchInterval: getRefetchInterval(), // Dynamic refetch interval
+    retry: false, // Don't retry on 503 errors
   })
 
   // Mark as read mutation
