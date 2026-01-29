@@ -63,6 +63,13 @@ export async function middleware(request: NextRequest) {
         // For routes with tenantId (e.g., /crm/[tenantId]/Home), check access
         const token = getTokenFromRequest(request)
         if (!token) {
+          // For CRM specifically, allow through if it's a valid route structure
+          // The client-side entry point will handle auth checks
+          // This prevents redirect loops when cookie isn't set yet
+          if (moduleId === 'crm' && pathname.match(/^\/crm\/[^\/]+\//)) {
+            // Allow CRM routes through - client-side will handle auth
+            return NextResponse.next()
+          }
           return NextResponse.redirect(new URL('/login', request.url))
         }
 
@@ -72,8 +79,9 @@ export async function middleware(request: NextRequest) {
           // Check if module is in user's enabled modules
           // Note: Full check requires DB query, so we do basic check here
           // Full validation happens in API routes
+          // For CRM, always allow (it's a core module)
           const userModules = decoded.modules || decoded.licensedModules || []
-          if (!userModules.includes(moduleId)) {
+          if (moduleId !== 'crm' && !userModules.includes(moduleId)) {
             // Module not enabled - redirect to dashboard
             return NextResponse.redirect(new URL('/dashboard', request.url))
           }
