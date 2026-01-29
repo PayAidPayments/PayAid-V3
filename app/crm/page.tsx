@@ -23,7 +23,7 @@ export default function CRMModulePage() {
       return
     }
 
-    const redirect = () => {
+    const redirect = async () => {
       if (hasRedirected.current) {
         return
       }
@@ -41,12 +41,15 @@ export default function CRMModulePage() {
             tokenFromStorage = parsed.state?.token || null
             tenantFromStorage = parsed.state?.tenant || null
             
-            // Sync token to cookie for middleware access
+            // Sync token to cookie for middleware access (CRITICAL: do this BEFORE redirect)
             if (tokenFromStorage) {
               const expires = new Date()
               expires.setTime(expires.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days
               const isSecure = window.location.protocol === 'https:'
+              // Set cookie synchronously - this must happen before redirect
               document.cookie = `token=${tokenFromStorage}; expires=${expires.toUTCString()}; path=/; SameSite=Lax${isSecure ? '; Secure' : ''}`
+              // Small delay to ensure cookie is set before redirect
+              await new Promise(resolve => setTimeout(resolve, 50))
             }
           }
         } catch (error) {
@@ -103,7 +106,11 @@ export default function CRMModulePage() {
 
     // Small delay to allow Zustand to rehydrate, but don't wait too long
     // Only run once - don't depend on tenant/token changes
-    const timeoutId = setTimeout(redirect, 200)
+    const timeoutId = setTimeout(() => {
+      redirect().catch(err => {
+        console.error('[CRM] Redirect error:', err)
+      })
+    }, 200)
 
     return () => {
       clearTimeout(timeoutId)
