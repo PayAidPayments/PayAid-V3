@@ -10,6 +10,7 @@ import { useParams, useRouter } from 'next/navigation';
 
 export default function TenantHomePage() {
   const [mounted, setMounted] = useState(false);
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const params = useParams();
   const router = useRouter();
   const { tenant, isAuthenticated } = useAuthStore();
@@ -18,21 +19,67 @@ export default function TenantHomePage() {
   useEffect(() => {
     setMounted(true);
     
-    // Verify tenant ID matches authenticated tenant
-    if (isAuthenticated && tenant?.id && tenantId !== tenant.id) {
-      // Redirect to correct tenant home page
-      router.replace(`/home/${tenant.id}`);
-    } else if (isAuthenticated && !tenant?.id) {
-      // No tenant - redirect to login
-      router.replace('/login');
-    } else if (!isAuthenticated) {
-      // Not authenticated - redirect to login
-      router.replace('/login');
-    }
-  }, [tenantId, tenant?.id, isAuthenticated, router]);
+    // Wait a bit for Zustand to rehydrate before checking auth
+    const checkAuth = () => {
+      if (hasCheckedAuth) return;
+      setHasCheckedAuth(true);
 
-  // Show loading while verifying tenant
-  if (!mounted || (isAuthenticated && tenant?.id !== tenantId)) {
+      // Check localStorage directly as fallback
+      let tokenFromStorage: string | null = null;
+      let tenantFromStorage: any = null;
+      
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('auth-storage');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            tokenFromStorage = parsed.state?.token || null;
+            tenantFromStorage = parsed.state?.tenant || null;
+          }
+        } catch (error) {
+          console.error('[HOME] Error reading from localStorage:', error);
+        }
+      }
+
+      // Use Zustand state if available, otherwise fall back to localStorage
+      const currentState = useAuthStore.getState();
+      const finalIsAuthenticated = currentState.isAuthenticated || !!tokenFromStorage;
+      const finalTenant = currentState.tenant || tenantFromStorage;
+
+      // Only redirect if we're CERTAIN user is not authenticated (after rehydration)
+      if (!finalIsAuthenticated && !tokenFromStorage) {
+        // Definitely not authenticated - redirect to login
+        console.log('[HOME] No auth found, redirecting to login');
+        router.replace('/login');
+        return;
+      }
+
+      // Verify tenant ID matches authenticated tenant
+      if (finalIsAuthenticated && finalTenant?.id && tenantId !== finalTenant.id) {
+        // Redirect to correct tenant home page
+        console.log(`[HOME] Tenant ID mismatch, redirecting to /home/${finalTenant.id}`);
+        router.replace(`/home/${finalTenant.id}`);
+        return;
+      }
+
+      // If authenticated but no tenant ID in URL, and we have tenant, redirect to correct URL
+      if (finalIsAuthenticated && finalTenant?.id && !tenantId) {
+        console.log(`[HOME] No tenantId in URL, redirecting to /home/${finalTenant.id}`);
+        router.replace(`/home/${finalTenant.id}`);
+        return;
+      }
+    };
+
+    // Small delay to allow Zustand to rehydrate
+    const timeoutId = setTimeout(checkAuth, 200);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [tenantId, router]); // Don't depend on tenant/isAuthenticated to avoid re-running on rehydration
+
+  // Show loading while verifying tenant (but don't block if we've already checked)
+  if (!mounted || (!hasCheckedAuth && isAuthenticated && tenant?.id !== tenantId)) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
