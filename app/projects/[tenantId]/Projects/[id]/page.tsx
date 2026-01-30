@@ -13,6 +13,7 @@ import { getAuthHeaders } from '@/lib/api/client'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageLoading } from '@/components/ui/loading'
 import { ArrowLeft, Plus, Clock, Users } from 'lucide-react'
+import { formatINRForDisplay } from '@/lib/utils/formatINR'
 
 interface Project {
   id: string
@@ -217,13 +218,13 @@ export default function ProjectDetailPage() {
                     <div>
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Budget</label>
                       <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-1">
-                        {project.budget ? `₹${project.budget.toLocaleString('en-IN')}` : '-'}
+                        {project.budget ? formatINRForDisplay(project.budget) : '-'}
                       </p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Actual Cost</label>
                       <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-1">
-                        ₹{project.actualCost?.toLocaleString('en-IN') || '0'}
+                        {formatINRForDisplay(project.actualCost || 0)}
                       </p>
                     </div>
                   </div>

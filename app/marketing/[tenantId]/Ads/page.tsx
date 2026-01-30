@@ -11,7 +11,7 @@ import {
   Megaphone, 
   Plus, 
   TrendingUp, 
-  DollarSign,
+  IndianRupee,
   Eye,
   MousePointerClick,
   Users,
@@ -21,6 +21,7 @@ import {
   Pause
 } from 'lucide-react'
 import { PageLoading } from '@/components/ui/loading'
+import { formatINRForDisplay } from '@/lib/utils/formatINR'
 
 interface AdCampaign {
   id: string
@@ -159,10 +160,10 @@ export default function AdsManagementPage() {
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Total Spent</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  ₹{totalSpent.toLocaleString('en-IN')}
+                  {formatINRForDisplay(totalSpent)}
                 </p>
               </div>
-              <DollarSign className="h-8 w-8 text-green-600 dark:text-green-400" />
+              <IndianRupee className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
           </CardContent>
         </Card>
@@ -244,13 +245,13 @@ export default function AdsManagementPage() {
                         <div>
                           <p className="text-gray-600 dark:text-gray-400">Budget</p>
                           <p className="font-semibold text-gray-900 dark:text-gray-100">
-                            ₹{campaign.budget.toLocaleString('en-IN')}
+                            {formatINRForDisplay(campaign.budget)}
                           </p>
                         </div>
                         <div>
                           <p className="text-gray-600 dark:text-gray-400">Spent</p>
                           <p className="font-semibold text-gray-900 dark:text-gray-100">
-                            ₹{campaign.spent.toLocaleString('en-IN')}
+                            {formatINRForDisplay(campaign.spent)}
                           </p>
                         </div>
                         <div>
