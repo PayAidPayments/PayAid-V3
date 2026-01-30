@@ -497,18 +497,19 @@ export async function seedMarketingModule(tenantId: string, contacts: any[]) {
       })
     }
     
-    // Note: Marketing leads may use Contact model or separate MarketingLead model
-    // This creates contacts with marketing-specific source
+    // Create marketing leads as contacts with marketing-specific source
     try {
-      const created = await prisma.contact.createMany({
-        data: batch.map(b => ({ ...b, type: 'lead' as any })),
+      await prisma.contact.createMany({
+        data: batch.map(b => ({ 
+          ...b, 
+          type: 'lead' as any,
+          source: b.source,
+        })),
         skipDuplicates: true,
       })
-      if (created) {
-        leads.push(...(await prisma.contact.findMany({
-          where: { tenantId, email: { in: batch.map(b => b.email) } },
-        }) || []))
-      }
+      leads.push(...(await prisma.contact.findMany({
+        where: { tenantId, email: { in: batch.map(b => b.email) } },
+      })))
     } catch (err) {
       console.warn('Marketing leads seeding skipped:', err)
     }
@@ -553,17 +554,28 @@ export async function seedProjectsModule(tenantId: string, adminUserId: string, 
     }
     
     try {
-      const created = await (prisma as any).project?.createMany?.({
-        data: batch,
+      await prisma.project.createMany({
+        data: batch.map(b => ({
+          tenantId: b.tenantId,
+          name: b.name,
+          description: b.description,
+          status: b.status.toUpperCase(),
+          startDate: b.startDate,
+          endDate: b.endDate,
+          budget: b.budget,
+          actualCost: b.spent,
+          priority: 'MEDIUM',
+          clientId: b.clientId,
+          ownerId: b.assignedToId,
+          createdAt: b.createdAt,
+        })),
         skipDuplicates: true,
       })
-      if (created) {
-        projects.push(...(await (prisma as any).project?.findMany?.({
-          where: { tenantId, name: { in: batch.map(b => b.name) } },
-        }) || []))
-      }
+      projects.push(...(await prisma.project.findMany({
+        where: { tenantId, name: { in: batch.map(b => b.name) } },
+      })))
     } catch (err) {
-      console.warn('Project seeding skipped (model may not exist):', err)
+      console.warn('Project seeding skipped:', err)
     }
   }
   
@@ -594,13 +606,24 @@ export async function seedProjectsModule(tenantId: string, adminUserId: string, 
   try {
     for (let i = 0; i < projectTasks.length; i += BATCH_SIZE) {
       const batch = projectTasks.slice(i, i + BATCH_SIZE)
-      await (prisma as any).projectTask?.createMany?.({
-        data: batch,
+      await prisma.projectTask.createMany({
+        data: batch.map(t => ({
+          tenantId: t.tenantId,
+          projectId: t.projectId,
+          name: t.title,
+          description: t.description,
+          status: t.status.toUpperCase(),
+          priority: t.priority.toUpperCase(),
+          assignedToId: t.assignedToId,
+          dueDate: t.dueDate,
+          completedAt: t.status === 'done' ? t.dueDate : null,
+          createdAt: t.createdAt,
+        })),
         skipDuplicates: true,
       })
     }
   } catch (err) {
-    console.warn('Project tasks seeding skipped (model may not exist):', err)
+    console.warn('Project tasks seeding skipped:', err)
   }
   
   console.log(`✅ Created ${projectTasks.length} project tasks`)

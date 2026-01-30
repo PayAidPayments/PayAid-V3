@@ -789,6 +789,10 @@ async function seedDemoData() {
         purchaseOrders: purchaseOrders.length,
         employees: moduleData.hr?.employees?.length || 0,
         attendance: moduleData.hr?.attendanceRecords?.length || 0,
+        campaigns: moduleData.marketing?.campaigns?.length || 0,
+        marketingLeads: moduleData.marketing?.leads?.length || 0,
+        projects: moduleData.projects?.projects?.length || 0,
+        projectTasks: moduleData.projects?.projectTasks?.length || 0,
       },
     }
   } catch (error) {

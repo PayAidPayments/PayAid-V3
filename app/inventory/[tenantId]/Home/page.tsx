@@ -254,7 +254,7 @@ export default function InventoryDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-gray-900 mb-1">
-                ₹{stats?.totalStockValue ? stats.totalStockValue.toLocaleString('en-IN') : '0'}
+                {stats?.totalStockValue ? formatINRForDisplay(stats.totalStockValue) : '₹0'}
               </div>
               <p className="text-xs text-gray-600">Total inventory value</p>
             </CardContent>
@@ -400,7 +400,7 @@ export default function InventoryDashboardPage() {
                         <p className="text-sm text-gray-500">Stock: {product.quantity}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-green-600">₹{product.value.toLocaleString('en-IN')}</p>
+                        <p className="font-semibold text-green-600">{formatINRForDisplay(product.value)}</p>
                       </div>
                     </div>
                   ))}

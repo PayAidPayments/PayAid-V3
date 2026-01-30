@@ -177,76 +177,29 @@ export default function HRDashboardPage() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="p-6 space-y-6">
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Employees</CardTitle>
-              <Users className="w-4 h-4 text-pink-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalEmployees || 0}</div>
-              <p className="text-xs text-gray-500 mt-1">{stats?.activeEmployees || 0} active</p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">On Leave</CardTitle>
-              <Calendar className="w-4 h-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.onLeave || 0}</div>
-              <p className="text-xs text-gray-500 mt-1">Currently on leave</p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Pending Payroll</CardTitle>
-              <IndianRupee className="w-4 h-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.pendingPayroll || 0}</div>
-              <p className="text-xs text-gray-500 mt-1">This month</p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Open Positions</CardTitle>
-              <Briefcase className="w-4 h-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.openPositions || 0}</div>
-              <p className="text-xs text-gray-500 mt-1">Hiring</p>
-            </CardContent>
-          </Card>
-        </div>
-
+      {/* Content Sections - 32px gap */}
+      <div className="p-6 space-y-8">
         {/* Performance Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <GlassCard delay={0.1}>
             <CardHeader>
               <CardTitle className="text-sm font-medium">Attendance Rate</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-600">{stats?.attendanceRate?.toFixed(1) || 0}%</div>
+              <div className="text-3xl font-bold text-success">{stats?.attendanceRate?.toFixed(1) || 0}%</div>
             </CardContent>
-          </Card>
+          </GlassCard>
 
-          <Card>
+          <GlassCard delay={0.2}>
             <CardHeader>
               <CardTitle className="text-sm font-medium">Leave Utilization</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-blue-600">{stats?.leaveUtilization?.toFixed(1) || 0}%</div>
+              <div className="text-3xl font-bold text-info">{stats?.leaveUtilization?.toFixed(1) || 0}%</div>
             </CardContent>
-          </Card>
+          </GlassCard>
 
-          <Card>
+          <GlassCard delay={0.3}>
             <CardHeader>
               <CardTitle className="text-sm font-medium">Employee Growth</CardTitle>
             </CardHeader>

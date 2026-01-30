@@ -27,6 +27,11 @@ import {
 } from 'recharts'
 import { format } from 'date-fns'
 import { ModuleSwitcher } from '@/components/ModuleSwitcher'
+import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
+import { GlassCard } from '@/components/modules/GlassCard'
+import { getModuleConfig } from '@/lib/modules/module-config'
+import { formatINRForDisplay } from '@/lib/utils/formatINR'
+import { IndianRupee } from 'lucide-react'
 
 interface SalesDashboardStats {
   landingPages: number
@@ -388,7 +393,7 @@ export default function SalesDashboardPage() {
                           border: `1px solid ${PAYAID_GREEN}`,
                           borderRadius: '8px',
                         }}
-                        formatter={(value: any) => [`₹${value.toLocaleString('en-IN')}`, 'Revenue']}
+                        formatter={(value: any) => [formatINRForDisplay(value), 'Revenue']}
                       />
                       <Area 
                         type="monotone" 
@@ -473,7 +478,7 @@ export default function SalesDashboardPage() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-gray-900">₹{order.total.toLocaleString('en-IN')}</p>
+                        <p className="font-semibold text-gray-900">{formatINRForDisplay(order.total)}</p>
                         <span className={`text-xs px-2 py-1 rounded ${
                           order.status === 'confirmed' || order.status === 'delivered' 
                             ? 'bg-green-100 text-green-800' 
@@ -489,10 +494,10 @@ export default function SalesDashboardPage() {
                 <p className="text-sm text-gray-500 text-center py-8">No recent orders</p>
               )}
             </CardContent>
-          </Card>
+          </GlassCard>
 
           {/* Quick Actions */}
-          <Card className="border-0 shadow-lg">
+          <GlassCard delay={0.4}>
             <CardHeader>
               <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
               <CardDescription>Get started with Sales</CardDescription>
