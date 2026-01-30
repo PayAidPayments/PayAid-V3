@@ -118,7 +118,7 @@ export const LOCALE = 'en-IN'
 
 /**
  * Pre-commit hook helper: Check for dollar symbols in files
- * Usage: node -e "require('./lib/utils/currency-enforcement').checkFilesForDollarSymbols(['src/**/*.ts', 'src/**/*.tsx'])"
+ * Usage: node -e "require('./lib/utils/currency-enforcement').checkFilesForDollarSymbols(['src/.../*.ts', 'src/.../*.tsx'])"
  */
 export async function checkFilesForDollarSymbols(filePatterns: string[]): Promise<{
   valid: boolean
