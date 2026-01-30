@@ -80,11 +80,16 @@
   - ✅ Stock values use INR formatting
   - ✅ Replaced DollarSign icon with IndianRupee icon
 
-- 🔄 **Remaining Modules Currency Updates** (PENDING)
-  - Analytics: Revenue metrics, financial reports (Module not yet created)
-  - ✅ Marketing: Campaign budgets, ROI ✅ **COMPLETE** (No currency in current dashboard)
-  - ✅ Projects: Project budgets, costs ✅ **COMPLETE** (No currency in current dashboard)
-  - All other modules with financial data
+- ✅ **Remaining Modules Currency Updates** ✅ **COMPLETE**
+  - 📅 Analytics: Revenue metrics, financial reports (Module not yet created)
+  - ✅ Marketing: Campaign budgets, ROI ✅ **COMPLETE**
+    - ✅ Updated Ads page to use `formatINRForDisplay()`
+    - ✅ Replaced `DollarSign` icon with `IndianRupee` icon
+    - ✅ Updated budget and spent displays
+  - ✅ Projects: Project budgets, costs ✅ **COMPLETE**
+    - ✅ Updated project detail page to use `formatINRForDisplay()`
+    - ✅ Updated budget and actualCost displays
+  - 🔄 All other modules with financial data (will be updated as modules are migrated to UDS)
 
 ---
 
