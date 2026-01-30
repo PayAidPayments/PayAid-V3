@@ -422,22 +422,22 @@ async function handleLogin(request: NextRequest) {
     // Return error response with appropriate detail level
     let responseMessage = errorMessage
     
-    // Provide user-friendly error messages
+    // Provide user-friendly error messages with actionable guidance
     if (errorMessage.includes('temporarily unavailable') || errorMessage.includes('CIRCUIT_OPEN') || errorMessage.includes('high load')) {
-      responseMessage = 'Database is temporarily unavailable due to high load. Please try again in a moment.'
+      responseMessage = 'Database is temporarily unavailable due to high load. The system is protecting itself. Please wait 1-2 minutes and try again.'
     } else if (errorMessage.includes('connection pool is full') || errorMessage.includes('P1002') || errorMessage.includes('max clients')) {
-      responseMessage = 'Database connection pool is full. Please try again in a moment.'
+      responseMessage = 'Database connection pool is full. Please wait 1-2 minutes for connections to free up, then try again.'
     } else if (errorMessage.includes('Database') || errorMessage.includes('database') || errorMessage.includes('P1001') || errorMessage.includes('P2025')) {
-      responseMessage = 'Database connection error. Please try again later or contact support.'
+      responseMessage = 'Database connection error. Please try again in a moment. If the problem persists, contact support.'
     } else if (errorMessage.includes('JWT_SECRET') || errorMessage.includes('JWT') || errorMessage.includes('token generation')) {
       responseMessage = 'Authentication configuration error. Please contact support.'
     } else if (errorMessage.includes('timeout') || errorMessage.includes('abort')) {
-      responseMessage = 'Request timed out. The server may be experiencing high load. Please try again in a moment.'
+      responseMessage = 'Request timed out. The server may be experiencing high load or a cold start. Please wait 30 seconds and try again.'
     } else if (errorMessage.includes('Invalid email or password')) {
       responseMessage = 'Invalid email or password. Please check your credentials and try again.'
     } else if (!isDevelopment()) {
       // In production, don't expose internal error details
-      responseMessage = 'An error occurred during login. Please try again or contact support.'
+      responseMessage = 'An error occurred during login. Please wait a moment and try again. If the problem persists, contact support.'
     }
     
     return NextResponse.json(
