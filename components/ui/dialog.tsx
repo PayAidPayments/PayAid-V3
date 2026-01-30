@@ -110,13 +110,19 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
     return (
       <>
         <div
-          className="fixed inset-0 z-50 bg-black/50"
+          className="fixed inset-0 z-50 bg-black/50 animate-fade-in"
           onClick={() => context.onOpenChange(false)}
         />
         <div
           ref={ref}
           className={cn(
-            'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-gray-200 bg-white p-6 shadow-lg duration-200 sm:rounded-lg',
+            // Design System: Modal with proper animations and styling
+            'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg',
+            'translate-x-[-50%] translate-y-[-50%]',
+            'gap-4 border border-gray-200 bg-white',
+            'p-6 shadow-lg',
+            'animate-scale-in',
+            'sm:rounded-xl', // 12px radius for large containers
             className
           )}
           {...props}
@@ -125,7 +131,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
           <button
             type="button"
             onClick={() => context.onOpenChange(false)}
-            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:pointer-events-none"
+            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity duration-150 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-teal-primary focus:ring-offset-2 disabled:pointer-events-none"
           >
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
@@ -139,7 +145,13 @@ DialogContent.displayName = 'DialogContent'
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn('flex flex-col space-y-1.5 text-center sm:text-left', className)}
+    className={cn(
+      // Design System: Dialog header with proper spacing
+      'flex flex-col space-y-1.5',
+      'p-6 border-b border-gray-200',
+      'text-center sm:text-left',
+      className
+    )}
     {...props}
   />
 )
@@ -151,7 +163,12 @@ const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h2
     ref={ref}
-    className={cn('text-lg font-semibold leading-none tracking-tight', className)}
+    className={cn(
+      // Design System: H2 - 24px / 600 weight / 1.4 line-height
+      'text-xl font-semibold leading-tight tracking-tight',
+      'text-gray-900',
+      className
+    )}
     {...props}
   />
 ))
@@ -163,7 +180,11 @@ const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn('text-sm text-gray-500', className)}
+    className={cn(
+      // Design System: Body Small - 14px / 400 weight
+      'text-sm text-gray-600',
+      className
+    )}
     {...props}
   />
 ))
@@ -171,7 +192,12 @@ DialogDescription.displayName = 'DialogDescription'
 
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)}
+    className={cn(
+      // Design System: Dialog footer with proper spacing
+      'flex flex-col-reverse sm:flex-row sm:justify-end',
+      'gap-3 p-6 border-t border-gray-200',
+      className
+    )}
     {...props}
   />
 )

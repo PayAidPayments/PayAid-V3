@@ -977,12 +977,12 @@ export default function CRMDashboardPage() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <Badge className={
-                                  activity.type === 'task' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                                  activity.type === 'call' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                                  activity.type === 'email' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-                                  activity.type === 'meeting' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
-                                  activity.type === 'deal' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                                  'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                                  activity.type === 'task' ? 'bg-blue-secondary/10 text-blue-secondary border border-blue-secondary/20' :
+                                  activity.type === 'call' ? 'bg-emerald-success/10 text-emerald-success border border-emerald-success/20' :
+                                  activity.type === 'email' ? 'bg-teal-primary/10 text-teal-primary border border-teal-primary/20' :
+                                  activity.type === 'meeting' ? 'bg-amber-alert/10 text-amber-alert border border-amber-alert/20' :
+                                  activity.type === 'deal' ? 'bg-gold-accent/10 text-gold-accent border border-gold-accent/20' :
+                                  'bg-gray-100 text-gray-700 border border-gray-300'
                                 }>
                                   {activity.type}
                                 </Badge>
