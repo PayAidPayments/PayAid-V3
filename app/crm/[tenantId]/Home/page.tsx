@@ -28,6 +28,7 @@ import {
   Zap
 } from 'lucide-react'
 import { format } from 'date-fns'
+import { formatINR, formatINRCompact, formatINRForDisplay } from '@/lib/utils/formatINR'
 import { DashboardLoading } from '@/components/ui/loading'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -1120,7 +1121,7 @@ export default function CRMDashboardPage() {
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <div className="text-3xl font-bold text-gray-900 mb-1">
-                    ₹{stats?.revenueThisMonth?.toLocaleString('en-IN') || '0'}
+                    {stats?.revenueThisMonth ? formatINRForDisplay(stats.revenueThisMonth) : '₹0'}
                   </div>
                   <p className="text-sm text-success flex items-center gap-1 font-medium mb-3">
                     <ArrowUpRight className="w-4 h-4" />
