@@ -119,6 +119,7 @@ export default function CRMDashboardPage() {
   const fetchingStatsRef = useRef(false)
   const fetchingActivityRef = useRef(false)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const hasCheckedDataRef = useRef(false) // Track if we've checked for demo data
 
   // NO REDIRECT LOGIC - If tenantId is in URL params, we're good
   // The entry point (/crm) handles redirecting to the correct URL
