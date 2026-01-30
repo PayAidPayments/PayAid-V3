@@ -4,7 +4,7 @@
  * Ensures ZERO empty states across the platform
  */
 
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/db/prisma'
 import {
   generateIndianName,
   generateIndianEmail,
@@ -20,7 +20,7 @@ import {
   pickRandomN,
 } from './indian-data-helpers'
 
-const prisma = new PrismaClient()
+const BATCH_SIZE = 10
 
 /**
  * CRM Module Seeder
