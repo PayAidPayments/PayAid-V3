@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prepare": "husky install",
     "verify:db": "tsx scripts/verify-database-connection-setup.ts",
     "check:vercel-env": "tsx scripts/check-vercel-env.ts",
     "check:postgrest": "tsx scripts/check-postgrest-status.ts",
@@ -144,6 +145,7 @@
     "dotenv": "^17.2.3",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.1.0",
+    "husky": "^9.1.7",
     "pg": "^8.16.3",
     "tsx": "^4.21.0"
   }
