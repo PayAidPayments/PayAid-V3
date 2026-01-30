@@ -90,8 +90,28 @@ const MAX_CONCURRENT_REQUESTS_PER_TENANT = 1
 
 // GET /api/crm/dashboard/stats - Get CRM dashboard statistics
 export async function GET(request: NextRequest) {
+  let tenantId: string | undefined
+  
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    // Try to get module access - handle errors gracefully
+    try {
+      const access = await requireModuleAccess(request, 'crm')
+      tenantId = access.tenantId
+    } catch (licenseError) {
+      // If it's a license error, return proper JSON response
+      if (licenseError && typeof licenseError === 'object' && 'moduleId' in licenseError) {
+        return handleLicenseError(licenseError)
+      }
+      // If token is invalid, return 401
+      return NextResponse.json(
+        { 
+          error: 'Unauthorized',
+          message: 'Invalid or expired token. Please log in again.',
+        },
+        { status: 401 }
+      )
+    }
+    
     const user = await authenticateRequest(request)
     
     // Rate limiting: Check if tenant already has an active request
@@ -529,32 +549,52 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // Handle license errors
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }
 
-    console.error('CRM dashboard stats error:', error)
+    console.error('[CRM_STATS] Error:', error)
     
     // Handle connection pool exhaustion specifically
     const errorMessage = error?.message || String(error)
+    const errorCode = error?.code || ''
     const isPoolExhausted = errorMessage.includes('MaxClientsInSessionMode') || 
-                            errorMessage.includes('max clients reached')
+                            errorMessage.includes('max clients reached') ||
+                            errorMessage.includes('connection pool is full') ||
+                            errorCode === 'P1002' ||
+                            errorCode === 'CIRCUIT_OPEN' ||
+                            error?.isCircuitBreaker
     
     if (isPoolExhausted) {
-      console.warn('Database connection pool exhausted for CRM dashboard stats')
+      console.warn('[CRM_STATS] Database connection pool exhausted')
       return NextResponse.json(
         { 
           error: 'Database temporarily unavailable',
           message: 'Too many concurrent requests. Please try again in a moment.',
-          retryAfter: 5, // Suggest retrying after 5 seconds
+          retryAfter: 5,
         },
-        { status: 503 } // Service Unavailable
+        { 
+          status: 503,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
       )
     }
     
+    // Always return valid JSON, even on unexpected errors
     return NextResponse.json(
-      { error: 'Failed to fetch dashboard stats', message: error?.message },
-      { status: 500 }
+      { 
+        error: 'Failed to fetch dashboard stats',
+        message: errorMessage || 'An unexpected error occurred',
+      },
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
     )
   }
 }

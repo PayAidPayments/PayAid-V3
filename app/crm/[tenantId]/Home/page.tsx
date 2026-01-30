@@ -359,14 +359,45 @@ export default function CRMDashboardPage() {
         signal, // Add abort signal
       })
 
+      // Check if request was aborted
+      if (signal?.aborted) {
+        return
+      }
+
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type') || ''
+      const isJson = contentType.includes('application/json')
+
       if (response.ok) {
-        const data = await response.json()
-        setStats(data)
-        setLoading(false)
+        // Check if response has content before parsing
+        const text = await response.text()
+        if (!text || text.trim() === '') {
+          console.error('[CRM_DASHBOARD] Empty response from stats API')
+          throw new Error('Empty response from server')
+        }
+        
+        try {
+          const data = JSON.parse(text)
+          setStats(data)
+          setLoading(false)
+        } catch (parseError) {
+          console.error('[CRM_DASHBOARD] Failed to parse JSON response:', parseError, { text: text.substring(0, 200) })
+          throw new Error('Invalid response format from server')
+        }
       } else if (response.status === 503) {
         // Handle service unavailable (pool exhaustion)
-        const errorData = await response.json().catch(() => ({}))
-        const retryAfter = errorData.retryAfter || 5
+        let errorData = {}
+        if (isJson) {
+          try {
+            const text = await response.text()
+            if (text && text.trim()) {
+              errorData = JSON.parse(text)
+            }
+          } catch (parseError) {
+            console.warn('[CRM_DASHBOARD] Failed to parse 503 error response:', parseError)
+          }
+        }
+        const retryAfter = (errorData as any).retryAfter || 5
         
         // Check if request was aborted before retrying
         if (signal?.aborted) {
@@ -405,8 +436,22 @@ export default function CRMDashboardPage() {
           })
         }
       } else {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to fetch dashboard stats')
+        // Handle other error statuses
+        let errorMessage = `Failed to fetch dashboard stats: ${response.status} ${response.statusText}`
+        
+        if (isJson) {
+          try {
+            const text = await response.text()
+            if (text && text.trim()) {
+              const errorData = JSON.parse(text)
+              errorMessage = errorData.message || errorData.error || errorMessage
+            }
+          } catch (parseError) {
+            console.warn('[CRM_DASHBOARD] Failed to parse error response:', parseError)
+          }
+        }
+        
+        throw new Error(errorMessage)
       }
     } catch (error: any) {
       // Ignore abort errors
