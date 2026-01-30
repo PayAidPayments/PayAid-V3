@@ -986,7 +986,7 @@ export default function CRMDashboardPage() {
                                   activity.type === 'call' ? 'bg-emerald-success/10 text-emerald-success border border-emerald-success/20' :
                                   activity.type === 'email' ? 'bg-purple-100 text-purple-700 border border-purple-300' :
                                   activity.type === 'meeting' ? 'bg-amber-alert/10 text-amber-alert border border-amber-alert/20' :
-                                  activity.type === 'deal' ? 'bg-gold-accent/10 text-gold-accent border border-gold-accent/20' :
+                                  activity.type === 'deal' ? 'bg-gold-100 text-gold-700 border border-gold-300' :
                                   'bg-gray-100 text-gray-700 border border-gray-300'
                                 }>
                                   {activity.type}
