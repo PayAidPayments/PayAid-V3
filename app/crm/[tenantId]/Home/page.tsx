@@ -1209,7 +1209,7 @@ export default function CRMDashboardPage() {
                         contentStyle={{
                           backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
                           color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
-                          border: `1px solid ${TEAL_PRIMARY}`,
+                          border: `1px solid ${PURPLE_PRIMARY}`,
                           borderRadius: '8px',
                         }}
                       />
@@ -1237,8 +1237,8 @@ export default function CRMDashboardPage() {
                     <AreaChart data={monthlyLeadData}>
                       <defs>
                         <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={TEAL_PRIMARY} stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor={TEAL_PRIMARY} stopOpacity={0}/>
+                          <stop offset="5%" stopColor={PURPLE_PRIMARY} stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor={PURPLE_PRIMARY} stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#f0f0f0'} />
@@ -1255,14 +1255,14 @@ export default function CRMDashboardPage() {
                         contentStyle={{
                           backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
                           color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
-                          border: `1px solid ${TEAL_PRIMARY}`,
+                          border: `1px solid ${PURPLE_PRIMARY}`,
                           borderRadius: '8px',
                         }}
                       />
                       <Area 
                         type="monotone" 
                         dataKey="leads" 
-                        stroke={TEAL_PRIMARY} 
+                        stroke={PURPLE_PRIMARY} 
                         fillOpacity={1} 
                         fill="url(#colorLeads)" 
                       />
@@ -1372,7 +1372,7 @@ export default function CRMDashboardPage() {
                         contentStyle={{
                           backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
                           color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
-                          border: `1px solid ${TEAL_PRIMARY}`,
+                          border: `1px solid ${PURPLE_PRIMARY}`,
                           borderRadius: '8px',
                           fontSize: '12px',
                         }}
@@ -1427,7 +1427,7 @@ export default function CRMDashboardPage() {
                           color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
                         }}
                       />
-                      <Bar dataKey="leadsCount" fill={TEAL_PRIMARY} name="Leads" radius={[0, 8, 8, 0]} />
+                      <Bar dataKey="leadsCount" fill={PURPLE_PRIMARY} name="Leads" radius={[0, 8, 8, 0]} />
                       <Bar dataKey="conversionsCount" fill={GOLD_ACCENT} name="Conversions" radius={[0, 8, 8, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
