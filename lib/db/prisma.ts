@@ -94,19 +94,31 @@ function createPrismaClient(): PrismaClient {
   })
 }
 
-// Lazy initialization function - only create Prisma client when actually needed
-// This prevents errors during module import if DATABASE_URL is not set
+// Optimized initialization - cache client globally to reduce initialization overhead
+// This is especially important for serverless cold starts
 function getPrismaClient(): PrismaClient {
+  // Always cache in global to avoid re-initialization overhead
   if (globalForPrisma.prisma) {
     return globalForPrisma.prisma
   }
   
   try {
     const client = createPrismaClient()
-    // In development, cache the Prisma client to avoid creating multiple connections
-    if (!isProduction()) {
-      globalForPrisma.prisma = client
-    }
+    // Cache in global for both dev and production (Vercel handles cleanup)
+    // This reduces initialization overhead on each request
+    globalForPrisma.prisma = client
+    
+    // Pre-connect to database to reduce first-query latency
+    // This is especially important for serverless cold starts
+    // Don't await - let it connect in background
+    client.$connect().catch((error) => {
+      // Silently handle connection errors - Prisma will retry on first query
+      // This is non-blocking and won't affect performance
+      if (isDevelopment()) {
+        console.warn('[PRISMA] Pre-connection failed (will retry on first query):', error?.message)
+      }
+    })
+    
     return client
   } catch (error) {
     // If DATABASE_URL is not set, provide a more helpful error
