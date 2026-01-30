@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import * as bcrypt from 'bcryptjs'
 import { generateTenantId } from '@/lib/utils/tenant-id'
+import { seedAllModules } from '@/lib/seed/module-seeders'
 
 // Inline industry seeding functions
 async function seedIndustryDataInline(tenantId: string, contacts: any[]) {
@@ -778,14 +779,16 @@ async function seedDemoData() {
       businessName: tenant.name,
       hasPersonalizedId: tenant.id.startsWith('demo-') && tenant.id.includes('-'),
       counts: {
-        contacts: contacts.length,
-        deals: deals.length,
-        products: products.length,
-        invoices: invoices.length,
-        orders: orders.length,
-        tasks: tasks.length,
+        contacts: contacts.length + (moduleData.crm?.contacts?.length || 0),
+        deals: deals.length + (moduleData.crm?.deals?.length || 0),
+        products: products.length + (moduleData.inventory?.products?.length || 0),
+        invoices: invoices.length + (moduleData.finance?.invoices?.length || 0),
+        orders: orders.length + (moduleData.sales?.orders?.length || 0),
+        tasks: tasks.length + (moduleData.crm?.tasks?.length || 0),
         leadSources: leadSources.length,
         purchaseOrders: purchaseOrders.length,
+        employees: moduleData.hr?.employees?.length || 0,
+        attendance: moduleData.hr?.attendanceRecords?.length || 0,
       },
     }
   } catch (error) {
