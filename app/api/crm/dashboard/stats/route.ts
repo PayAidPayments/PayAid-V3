@@ -514,10 +514,10 @@ export async function GET(request: NextRequest) {
       revenueThisMonth: revenueInPeriod,
       dealsClosingThisMonth: dealsClosingInPeriod,
       overdueTasks,
-      quarterlyPerformance,
-      pipelineByStage,
-      monthlyLeadCreation,
-      topLeadSources: topLeadSources
+      quarterlyPerformance: Array.isArray(quarterlyPerformance) ? quarterlyPerformance : [],
+      pipelineByStage: Array.isArray(pipelineByStage) ? pipelineByStage : [],
+      monthlyLeadCreation: Array.isArray(monthlyLeadCreation) ? monthlyLeadCreation : [],
+      topLeadSources: Array.isArray(topLeadSources) ? topLeadSources : []
         .filter(source => source.leadsCount > 0) // Only show sources with leads
         .map(source => ({
           name: source.name,
