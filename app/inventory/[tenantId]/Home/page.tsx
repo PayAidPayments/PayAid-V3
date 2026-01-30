@@ -11,10 +11,14 @@ import {
   TrendingUp,
   RefreshCw,
   ArrowUpRight,
-  DollarSign,
+  IndianRupee,
   Warehouse,
   ShoppingCart
 } from 'lucide-react'
+import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
+import { GlassCard } from '@/components/modules/GlassCard'
+import { getModuleConfig } from '@/lib/modules/module-config'
+import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 // ModuleTopBar is now in layout.tsx
 import { 
@@ -245,7 +249,7 @@ export default function InventoryDashboardPage() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-700">Stock Value</CardTitle>
               <div className="p-2 bg-blue-500/20 rounded-lg">
-                <DollarSign className="h-5 w-5 text-blue-600" />
+                <IndianRupee className="h-5 w-5 text-blue-600" />
               </div>
             </CardHeader>
             <CardContent>
