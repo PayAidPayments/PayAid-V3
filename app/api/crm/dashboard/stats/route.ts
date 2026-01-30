@@ -85,8 +85,9 @@ function getTimePeriodBounds(timePeriod: string = 'month') {
 }
 
 // Rate limiting: Track active requests per tenant
+// For minimal data/users, allow 3 concurrent requests (dashboard may make multiple calls)
 const activeRequests = new Map<string, number>()
-const MAX_CONCURRENT_REQUESTS_PER_TENANT = 1
+const MAX_CONCURRENT_REQUESTS_PER_TENANT = 3 // Increased from 1 to 3 for minimal data
 
 // GET /api/crm/dashboard/stats - Get CRM dashboard statistics
 export async function GET(request: NextRequest) {

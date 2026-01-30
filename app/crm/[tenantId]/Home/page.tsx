@@ -384,6 +384,57 @@ export default function CRMDashboardPage() {
           console.error('[CRM_DASHBOARD] Failed to parse JSON response:', parseError, { text: text.substring(0, 200) })
           throw new Error('Invalid response format from server')
         }
+      } else if (response.status === 429) {
+        // Handle rate limit (too many concurrent requests)
+        let errorData = {}
+        if (isJson) {
+          try {
+            const text = await response.text()
+            if (text && text.trim()) {
+              errorData = JSON.parse(text)
+            }
+          } catch (parseError) {
+            console.warn('[CRM_DASHBOARD] Failed to parse 429 error response:', parseError)
+          }
+        }
+        const retryAfter = (errorData as any).retryAfter || 3
+        
+        // Check if request was aborted before retrying
+        if (signal?.aborted) {
+          return
+        }
+        
+        if (retryCount < MAX_RETRIES) {
+          setError(`Too many requests. Retrying in ${retryAfter} seconds... (${retryCount + 1}/${MAX_RETRIES})`)
+          // Retry after delay
+          await new Promise(resolve => setTimeout(resolve, retryAfter * 1000))
+          
+          // Check again if aborted before retrying
+          if (signal?.aborted) {
+            return
+          }
+          
+          return fetchDashboardStats(signal, retryCount + 1)
+        } else {
+          setError(errorData.message || 'Too many concurrent requests. Please wait a moment and refresh the page.')
+          setLoading(false)
+          // Set default stats to prevent blocking
+          setStats({
+            dealsCreatedThisMonth: 0,
+            revenueThisMonth: 0,
+            dealsClosingThisMonth: 0,
+            overdueTasks: 0,
+            quarterlyPerformance: [
+              { quarter: 'FY 2024-Q4', leadsCreated: 0, dealsCreated: 0, dealsWon: 0, revenue: 0 },
+              { quarter: 'FY 2025-Q1', leadsCreated: 0, dealsCreated: 0, dealsWon: 0, revenue: 0 },
+              { quarter: 'FY 2025-Q2', leadsCreated: 0, dealsCreated: 0, dealsWon: 0, revenue: 0 },
+              { quarter: 'FY 2025-Q3', leadsCreated: 0, dealsCreated: 0, dealsWon: 0, revenue: 0 },
+            ],
+            pipelineByStage: [],
+            monthlyLeadCreation: [],
+            topLeadSources: [],
+          })
+        }
       } else if (response.status === 503) {
         // Handle service unavailable (pool exhaustion)
         let errorData = {}
