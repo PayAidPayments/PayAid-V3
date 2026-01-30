@@ -206,7 +206,7 @@ export default function HRDashboardPage() {
             <CardContent>
               <div className="text-3xl font-bold text-pink-600">+{stats?.employeeGrowth?.toFixed(1) || 0}%</div>
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
 
         {/* Charts */}

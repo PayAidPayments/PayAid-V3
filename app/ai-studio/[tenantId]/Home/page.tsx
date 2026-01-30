@@ -4,11 +4,17 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Sparkles, MessageSquare, Lightbulb, Globe, Palette, BookOpen } from 'lucide-react'
+import { Sparkles, MessageSquare, Lightbulb, Globe, Palette, BookOpen, Bot } from 'lucide-react'
+import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
+import { GlassCard } from '@/components/modules/GlassCard'
+import { getModuleConfig } from '@/lib/modules/module-config'
+import { useAuthStore } from '@/lib/stores/auth'
 
 export default function AIStudioHomePage() {
   const params = useParams()
   const tenantId = params.tenantId as string
+  const { user, tenant } = useAuthStore()
+  const moduleConfig = getModuleConfig('ai-studio') || getModuleConfig('crm')!
 
   const aiFeatures = [
     {
@@ -62,39 +68,69 @@ export default function AIStudioHomePage() {
     },
   ]
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">AI Studio</h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Explore all AI-powered features to enhance your business operations
-        </p>
-      </div>
+  const heroMetrics = [
+    {
+      label: 'AI Features',
+      value: '7',
+      icon: <Bot className="w-5 h-5" />,
+      color: 'purple' as const,
+    },
+    {
+      label: 'Active Agents',
+      value: '9',
+      icon: <Sparkles className="w-5 h-5" />,
+      color: 'gold' as const,
+    },
+    {
+      label: 'Total Interactions',
+      value: '1.2K',
+      icon: <MessageSquare className="w-5 h-5" />,
+      color: 'info' as const,
+    },
+    {
+      label: 'AI Insights',
+      value: '24/7',
+      icon: <Lightbulb className="w-5 h-5" />,
+      color: 'success' as const,
+    },
+  ]
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {aiFeatures.map((feature) => {
-          const Icon = feature.icon
-          return (
-            <Card key={feature.href} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className={`p-2 rounded-lg bg-gradient-to-br ${feature.color}`}>
-                    <Icon className="h-5 w-5 text-white" />
+  return (
+    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>
+      <UniversalModuleHero
+        moduleName="AI Studio"
+        moduleIcon={<moduleConfig.icon className="w-8 h-8" />}
+        gradientFrom={moduleConfig.gradientFrom}
+        gradientTo={moduleConfig.gradientTo}
+        metrics={heroMetrics}
+      />
+
+      <div className="p-6 space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {aiFeatures.map((feature, index) => {
+            const Icon = feature.icon
+            return (
+              <GlassCard key={feature.href} delay={index * 0.1}>
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`p-2 rounded-lg bg-gradient-to-br ${feature.color}`}>
+                      <Icon className="h-5 w-5 text-white" />
+                    </div>
+                    <CardTitle className="text-xl">{feature.title}</CardTitle>
                   </div>
-                  <CardTitle className="text-xl">{feature.title}</CardTitle>
-                </div>
-                <CardDescription>{feature.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href={feature.href}>
-                  <Button className="w-full" variant="outline">
-                    Open {feature.title}
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )
-        })}
+                  <CardDescription>{feature.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Link href={feature.href}>
+                    <Button className="w-full" variant="outline">
+                      Open {feature.title}
+                    </Button>
+                  </Link>
+                </CardContent>
+              </GlassCard>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
