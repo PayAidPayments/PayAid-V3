@@ -133,10 +133,11 @@ async function handleLogin(request: NextRequest) {
     }
     
       // Use prismaWithRetry with minimal retry settings for login (critical path)
+      // Login is a critical operation - allow bypassing circuit breaker if needed
     let user
     try {
       // Use retry logic with minimal retries to prevent connection pool exhaustion
-      // Circuit breaker will prevent cascading failures
+      // Bypass circuit breaker for login (critical operation) - allows testing if DB recovered
       user = await prismaWithRetry(() =>
         prisma.user.findUnique({
           where: { email: validated.email.toLowerCase().trim() },
@@ -154,9 +155,10 @@ async function handleLogin(request: NextRequest) {
           },
         }),
         {
-          maxRetries: 1, // Only 1 retry to prevent connection pool exhaustion
-          retryDelay: 200, // Minimal delay
+          maxRetries: 2, // Allow 2 retries for login (critical operation)
+          retryDelay: 500, // 500ms delay between retries
           exponentialBackoff: false, // No exponential backoff
+          bypassCircuitBreaker: true, // Bypass circuit breaker for login
         }
       )
       
@@ -181,7 +183,19 @@ async function handleLogin(request: NextRequest) {
       
       // Check for circuit breaker errors
       if (errorCode === 'CIRCUIT_OPEN' || dbError?.isCircuitBreaker) {
-        throw new Error('Database is temporarily unavailable due to high load. Please try again in a moment.')
+        // For login, provide more helpful message with retry suggestion
+        const { circuitBreaker } = await import('@/lib/db/circuit-breaker')
+        const circuitState = circuitBreaker.getState()
+        const timeSinceFailure = circuitState.lastFailureTime 
+          ? Math.ceil((Date.now() - circuitState.lastFailureTime) / 1000)
+          : 0
+        const waitTime = Math.max(0, 60 - timeSinceFailure) // Wait up to 60 seconds
+        
+        throw new Error(
+          waitTime > 0
+            ? `Database is temporarily unavailable due to high load. Please wait ${waitTime} seconds and try again.`
+            : 'Database is temporarily unavailable due to high load. Please try again in a moment.'
+        )
       }
       
       // Provide more specific error messages for common database errors
