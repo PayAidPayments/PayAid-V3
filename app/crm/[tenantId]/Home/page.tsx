@@ -630,26 +630,26 @@ export default function CRMDashboardPage() {
     return <DashboardLoading message="Loading CRM dashboard..." />
   }
 
-  // Prepare chart data
-  const pipelineChartData = stats?.pipelineByStage.map((item, idx) => ({
+  // Prepare chart data - ensure arrays before mapping
+  const pipelineChartData = (Array.isArray(stats?.pipelineByStage) ? stats.pipelineByStage : []).map((item, idx) => ({
     name: item.stage.charAt(0).toUpperCase() + item.stage.slice(1),
     value: item.count,
     fill: CHART_COLORS[idx % CHART_COLORS.length]
-  })) || []
+  }))
 
-  const monthlyLeadData = stats?.monthlyLeadCreation.map(item => ({
+  const monthlyLeadData = (Array.isArray(stats?.monthlyLeadCreation) ? stats.monthlyLeadCreation : []).map(item => ({
     month: item.month,
     leads: item.count
-  })) || []
+  }))
 
   // Map quarterly performance data for the chart - use actual data from API
-  const quarterlyRevenueData = stats?.quarterlyPerformance?.map(q => ({
+  const quarterlyRevenueData = (Array.isArray(stats?.quarterlyPerformance) ? stats.quarterlyPerformance : []).map(q => ({
     quarter: q.quarter,
     revenue: q.revenue,
     deals: q.dealsWon
-  })) || []
+  }))
 
-  const topLeadSourcesData = stats?.topLeadSources || []
+  const topLeadSourcesData = Array.isArray(stats?.topLeadSources) ? stats.topLeadSources : []
 
   return (
     <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative transition-colors">
@@ -743,7 +743,7 @@ export default function CRMDashboardPage() {
                 <CardDescription>Tasks and activities due today</CardDescription>
               </CardHeader>
               <CardContent>
-                {tasksViewData?.myOpenActivitiesToday && tasksViewData.myOpenActivitiesToday.length > 0 ? (
+                {Array.isArray(tasksViewData?.myOpenActivitiesToday) && tasksViewData.myOpenActivitiesToday.length > 0 ? (
                   <div className="space-y-2">
                     {tasksViewData.myOpenActivitiesToday.map((activity) => (
                       <div key={activity.id} className="p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -777,7 +777,7 @@ export default function CRMDashboardPage() {
                 <CardDescription>All pending and in-progress tasks</CardDescription>
               </CardHeader>
               <CardContent>
-                {tasksViewData?.myOpenTasks && tasksViewData.myOpenTasks.length > 0 ? (
+                {Array.isArray(tasksViewData?.myOpenTasks) && tasksViewData.myOpenTasks.length > 0 ? (
                   <div className="space-y-2">
                     {tasksViewData.myOpenTasks.map((task) => (
                       <div key={task.id} className="p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -810,7 +810,7 @@ export default function CRMDashboardPage() {
                 <CardDescription>Scheduled meetings today</CardDescription>
               </CardHeader>
               <CardContent>
-                {tasksViewData?.myMeetingsToday && tasksViewData.myMeetingsToday.length > 0 ? (
+                {Array.isArray(tasksViewData?.myMeetingsToday) && tasksViewData.myMeetingsToday.length > 0 ? (
                   <div className="space-y-2">
                     {tasksViewData.myMeetingsToday.map((meeting) => (
                       <div key={meeting.id} className="p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -844,7 +844,7 @@ export default function CRMDashboardPage() {
                 <CardDescription>Recent leads assigned to you</CardDescription>
               </CardHeader>
               <CardContent>
-                {tasksViewData?.myLeads && tasksViewData.myLeads.length > 0 ? (
+                {Array.isArray(tasksViewData?.myLeads) && tasksViewData.myLeads.length > 0 ? (
                   <div className="space-y-2">
                     {tasksViewData.myLeads.map((lead) => (
                       <div key={lead.id} className="p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -877,7 +877,7 @@ export default function CRMDashboardPage() {
                 <CardDescription>Deals distribution across pipeline stages</CardDescription>
               </CardHeader>
               <CardContent>
-                {tasksViewData?.myPipelineDealsByStage && tasksViewData.myPipelineDealsByStage.length > 0 ? (
+                {Array.isArray(tasksViewData?.myPipelineDealsByStage) && tasksViewData.myPipelineDealsByStage.length > 0 ? (
                   <div className="space-y-2">
                     {tasksViewData.myPipelineDealsByStage.map((stage) => (
                       <div key={stage.stage} className="p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -906,7 +906,7 @@ export default function CRMDashboardPage() {
                 <CardDescription>Deals expected to close this month</CardDescription>
               </CardHeader>
               <CardContent>
-                {tasksViewData?.myDealsClosingThisMonth && tasksViewData.myDealsClosingThisMonth.length > 0 ? (
+                {Array.isArray(tasksViewData?.myDealsClosingThisMonth) && tasksViewData.myDealsClosingThisMonth.length > 0 ? (
                   <div className="space-y-2">
                     {tasksViewData.myDealsClosingThisMonth.map((deal) => (
                       <div key={deal.id} className="p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -968,7 +968,7 @@ export default function CRMDashboardPage() {
                 <CardDescription>All activities sorted by most recent</CardDescription>
               </CardHeader>
               <CardContent>
-                {activityFeedData.length > 0 ? (
+                {Array.isArray(activityFeedData) && activityFeedData.length > 0 ? (
                   <div className="space-y-4">
                     {activityFeedData.map((activity, index) => (
                       <div
@@ -1534,7 +1534,7 @@ export default function CRMDashboardPage() {
                 <thead>
                   <tr className="border-b-2 border-gray-200">
                     <th className="text-left p-3 font-semibold text-gray-700">Metric</th>
-                    {stats?.quarterlyPerformance.map((q, idx) => (
+                    {(Array.isArray(stats?.quarterlyPerformance) ? stats.quarterlyPerformance : []).map((q, idx) => (
                       <th key={idx} className="text-right p-3 font-semibold text-gray-700">{q.quarter}</th>
                     ))}
                   </tr>
@@ -1542,25 +1542,25 @@ export default function CRMDashboardPage() {
                 <tbody>
                   <tr className="border-b hover:bg-gray-50 transition-colors">
                     <td className="p-3 font-medium">Leads Created</td>
-                    {stats?.quarterlyPerformance.map((q, idx) => (
+                    {(Array.isArray(stats?.quarterlyPerformance) ? stats.quarterlyPerformance : []).map((q, idx) => (
                       <td key={idx} className="text-right p-3">{q.leadsCreated.toLocaleString()}</td>
                     ))}
                   </tr>
                   <tr className="border-b hover:bg-gray-50 transition-colors">
                     <td className="p-3 font-medium">Deals Created</td>
-                    {stats?.quarterlyPerformance.map((q, idx) => (
+                    {(Array.isArray(stats?.quarterlyPerformance) ? stats.quarterlyPerformance : []).map((q, idx) => (
                       <td key={idx} className="text-right p-3">{q.dealsCreated.toLocaleString()}</td>
                     ))}
                   </tr>
                   <tr className="border-b hover:bg-gray-50 transition-colors">
                     <td className="p-3 font-medium">Deals Won</td>
-                    {stats?.quarterlyPerformance.map((q, idx) => (
+                    {(Array.isArray(stats?.quarterlyPerformance) ? stats.quarterlyPerformance : []).map((q, idx) => (
                       <td key={idx} className="text-right p-3 font-semibold text-green-600">{q.dealsWon.toLocaleString()}</td>
                     ))}
                   </tr>
                   <tr className="hover:bg-gray-50 transition-colors">
                     <td className="p-3 font-medium">Revenue</td>
-                    {stats?.quarterlyPerformance.map((q, idx) => (
+                    {(Array.isArray(stats?.quarterlyPerformance) ? stats.quarterlyPerformance : []).map((q, idx) => (
                       <td key={idx} className="text-right p-3 font-semibold text-blue-600">{formatINRForDisplay(q.revenue)}</td>
                     ))}
                   </tr>
