@@ -84,13 +84,14 @@ interface TasksViewData {
   myDealsClosingThisMonth: any[]
 }
 
-// Design System Colors for charts (PayAid UI/UX Standards)
-const TEAL_PRIMARY = '#0F766E' // Deep Teal
-const BLUE_SECONDARY = '#0284C7' // Vibrant Blue
-const EMERALD_SUCCESS = '#059669' // Success
-const AMBER_ALERT = '#D97706' // Alert
-const GOLD_ACCENT = '#FBBF24' // Accent Gold
-const CHART_COLORS = [TEAL_PRIMARY, BLUE_SECONDARY, EMERALD_SUCCESS, GOLD_ACCENT, AMBER_ALERT, '#8B5CF6']
+// PayAid Brand Colors for charts
+const PURPLE_PRIMARY = '#53328A' // PayAid Purple - Primary brand color
+const GOLD_ACCENT = '#F5C700' // PayAid Gold - Accent brand color
+const SUCCESS = '#059669' // Success (Emerald)
+const WARNING = '#D97706' // Warning (Amber)
+const ERROR = '#DC2626' // Error (Red)
+const INFO = '#0284C7' // Info (Blue)
+const CHART_COLORS = [PURPLE_PRIMARY, GOLD_ACCENT, SUCCESS, INFO, WARNING, '#8B5CF6']
 
 export default function CRMDashboardPage() {
   const params = useParams()
@@ -1280,9 +1281,9 @@ export default function CRMDashboardPage() {
         {/* Quarterly Performance and TOP 10 Lead Sources - Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Quarterly Performance - Bar Chart */}
-          <Card className="border-0 shadow-lg">
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 bg-gradient-to-br from-white to-purple-50/20">
             <CardHeader className="pb-1">
-              <CardTitle className="text-lg font-semibold pl-5">Quarterly Performance Overview</CardTitle>
+              <CardTitle className="text-lg font-semibold pl-5 text-purple-900">Quarterly Performance Overview</CardTitle>
               <CardDescription className="pl-5">Revenue and deals won by quarter (Q1-Q4)</CardDescription>
             </CardHeader>
             <CardContent className="pb-0 pl-5 pt-8">
@@ -1311,7 +1312,7 @@ export default function CRMDashboardPage() {
                         contentStyle={{
                           backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
                           color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
-                          border: `1px solid ${TEAL_PRIMARY}`,
+                          border: `1px solid ${PURPLE_PRIMARY}`,
                           borderRadius: '8px',
                         }}
                         formatter={(value: any, name?: string) => {
@@ -1322,7 +1323,7 @@ export default function CRMDashboardPage() {
                       <Legend 
                         wrapperStyle={{ color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)' }}
                       />
-                      <Bar yAxisId="left" dataKey="revenue" fill={TEAL_PRIMARY} name="Revenue (₹)" radius={[8, 8, 0, 0]} />
+                      <Bar yAxisId="left" dataKey="revenue" fill={PURPLE_PRIMARY} name="Revenue (₹)" radius={[8, 8, 0, 0]} />
                       <Bar yAxisId="right" dataKey="deals" fill={GOLD_ACCENT} name="Deals Won" radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -1336,9 +1337,9 @@ export default function CRMDashboardPage() {
           </Card>
 
           {/* TOP 10 Lead Sources */}
-          <Card className="border-0 shadow-lg">
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 bg-gradient-to-br from-white to-gold-50/20">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold">TOP 10 Lead Sources</CardTitle>
+              <CardTitle className="text-lg font-semibold text-purple-900">TOP 10 Lead Sources</CardTitle>
               <CardDescription>Best performing lead sources</CardDescription>
             </CardHeader>
             <CardContent>

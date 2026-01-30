@@ -49,9 +49,9 @@ function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {
   };
   
   const statusConfig = {
-    active: { label: "Active", className: "bg-emerald-success/10 text-emerald-success border border-emerald-success/20", style: {} },
-    "coming-soon": { label: "Coming Soon", className: "bg-amber-alert/10 text-amber-alert border border-amber-alert/20", style: {} },
-    beta: { label: "Beta", className: "bg-blue-secondary/10 text-blue-secondary border border-blue-secondary/20", style: {} },
+    active: { label: "Active", className: "bg-success-light text-success border border-success/30", style: {} },
+    "coming-soon": { label: "Coming Soon", className: "bg-warning-light text-warning border border-warning/30", style: {} },
+    beta: { label: "Beta", className: "bg-info-light text-info border border-info/30", style: {} },
     deprecated: { label: "Deprecated", className: "bg-gray-100 text-gray-700 border border-gray-300", style: {} }
   };
 
