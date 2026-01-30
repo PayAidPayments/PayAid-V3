@@ -1162,8 +1162,8 @@ export default function CRMDashboardPage() {
             </CardHeader>
             <CardContent>
               {pipelineChartData.length > 0 ? (
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-64 w-full" style={{ minWidth: 0, minHeight: 256 }}>
+                  <ResponsiveContainer width="100%" height={256} minWidth={0} minHeight={256}>
                     <PieChart>
                       <Pie
                         data={pipelineChartData}
@@ -1227,8 +1227,8 @@ export default function CRMDashboardPage() {
             </CardHeader>
             <CardContent>
               {monthlyLeadData.length > 0 ? (
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-64 w-full" style={{ minWidth: 0, minHeight: 256 }}>
+                  <ResponsiveContainer width="100%" height={256} minWidth={0} minHeight={256}>
                     <AreaChart data={monthlyLeadData}>
                       <defs>
                         <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
@@ -1283,8 +1283,8 @@ export default function CRMDashboardPage() {
             </CardHeader>
             <CardContent className="pb-0 pl-5 pt-8">
               {quarterlyRevenueData.length > 0 ? (
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-80 w-full" style={{ minWidth: 0, minHeight: 320 }}>
+                  <ResponsiveContainer width="100%" height={320} minWidth={0} minHeight={320}>
                     <BarChart data={quarterlyRevenueData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#f0f0f0'} />
                       <XAxis 
@@ -1339,8 +1339,8 @@ export default function CRMDashboardPage() {
             </CardHeader>
             <CardContent>
               {topLeadSourcesData.length > 0 ? (
-                <div className="h-[500px]">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-[500px] w-full" style={{ minWidth: 0, minHeight: 500 }}>
+                  <ResponsiveContainer width="100%" height={500} minWidth={0} minHeight={500}>
                     <BarChart 
                       data={topLeadSourcesData} 
                       layout="vertical"
