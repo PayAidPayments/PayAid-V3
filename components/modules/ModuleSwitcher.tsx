@@ -196,7 +196,7 @@ export function ModuleSwitcher() {
                     onClick={() => handleModuleSwitch(module)}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150 ${
                       module.active
-                        ? 'bg-teal-primary/10 text-teal-primary'
+                        ? 'bg-purple-500/10 text-purple-500'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                     }`}
                   >
@@ -207,7 +207,7 @@ export function ModuleSwitcher() {
                     )}
                     <span className="flex-1 text-left">{module.name}</span>
                     {module.active && (
-                      <span className="text-xs text-teal-primary">●</span>
+                      <span className="text-xs text-purple-500">●</span>
                     )}
                     {module.url.startsWith('http') && (
                       <ExternalLink className="h-3 w-3 text-gray-400" />
