@@ -12,7 +12,6 @@ import {
   Share2, 
   MessageCircle, 
   TrendingUp, 
-  RefreshCw, 
   ArrowUpRight, 
   ArrowDownRight,
   BarChart3,
@@ -21,9 +20,10 @@ import {
   Zap,
   Target
 } from 'lucide-react'
-import { DashboardLoading } from '@/components/ui/loading'
-import { ModuleSwitcher } from '@/components/ModuleSwitcher'
-// ModuleTopBar is now in layout.tsx
+import { PageLoading } from '@/components/ui/loading'
+import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
+import { GlassCard } from '@/components/modules/GlassCard'
+import { getModuleConfig } from '@/lib/modules/module-config'
 import { 
   LineChart, 
   Line, 
@@ -76,10 +76,12 @@ interface MarketingDashboardStats {
   }>
 }
 
-// PayAid brand colors for charts
-const PAYAID_PURPLE = '#8B5CF6'
-const PAYAID_DARK_PURPLE = '#6B4BA1'
-const CHART_COLORS = [PAYAID_PURPLE, '#EC4899', '#10B981', '#F59E0B', '#3B82F6']
+// PayAid Brand Colors for charts
+const PURPLE_PRIMARY = '#53328A' // PayAid Purple
+const GOLD_ACCENT = '#F5C700' // PayAid Gold
+const SUCCESS = '#059669' // Success (Emerald)
+const INFO = '#0284C7' // Info (Blue)
+const CHART_COLORS = [PURPLE_PRIMARY, GOLD_ACCENT, SUCCESS, INFO, '#EC4899', '#F59E0B']
 
 export default function MarketingDashboardPage() {
   const params = useParams()
@@ -146,56 +148,60 @@ export default function MarketingDashboardPage() {
   }
 
   if (loading) {
-    return <DashboardLoading message="Loading Marketing dashboard..." />
+    return <PageLoading message="Loading Marketing dashboard..." fullScreen={true} />
   }
 
-  const emailGrowthColor = (stats?.emailGrowth || 0) >= 0 ? 'text-green-600' : 'text-red-600'
-  const emailGrowthIcon = (stats?.emailGrowth || 0) >= 0 ? ArrowUpRight : ArrowDownRight
+  // Get module configuration
+  const moduleConfig = getModuleConfig('marketing')
+
+  // Hero metrics
+  const heroMetrics = [
+    {
+      label: 'Total Campaigns',
+      value: stats?.totalCampaigns || 0,
+      change: stats?.activeCampaigns ? Math.round((stats.activeCampaigns / stats.totalCampaigns) * 100) : 0,
+      trend: 'up' as const,
+      icon: <Megaphone className="w-5 h-5" />,
+      color: 'purple' as const,
+    },
+    {
+      label: 'Email Sent',
+      value: stats?.emailSentThisMonth?.toLocaleString() || '0',
+      change: stats?.emailGrowth,
+      trend: (stats?.emailGrowth || 0) >= 0 ? 'up' as const : 'down' as const,
+      icon: <Mail className="w-5 h-5" />,
+      color: 'info' as const,
+    },
+    {
+      label: 'Social Posts',
+      value: stats?.socialPostsThisMonth || 0,
+      icon: <Share2 className="w-5 h-5" />,
+      color: 'success' as const,
+    },
+    {
+      label: 'WhatsApp Messages',
+      value: stats?.whatsappMessagesThisMonth || 0,
+      icon: <MessageCircle className="w-5 h-5" />,
+      color: 'success' as const,
+    },
+  ]
 
   return (
-    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 relative" style={{ zIndex: 1 }}>
-      {/* Top Navigation Bar */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-20 shadow-sm">
-        <div className="px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <h2 className="text-lg font-semibold text-gray-900">Marketing</h2>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link href={`/marketing/${tenantId}/Home/`} className="text-purple-600 font-medium border-b-2 border-purple-600 pb-2">Home</Link>
-              <Link href={`/marketing/${tenantId}/Campaigns`} className="text-gray-600 hover:text-gray-900 transition-colors">Campaigns</Link>
-              <Link href={`/marketing/${tenantId}/Email`} className="text-gray-600 hover:text-gray-900 transition-colors">Email</Link>
-              <Link href={`/marketing/${tenantId}/Social-Media`} className="text-gray-600 hover:text-gray-900 transition-colors">Social Media</Link>
-              <Link href={`/marketing/${tenantId}/WhatsApp`} className="text-gray-600 hover:text-gray-900 transition-colors">WhatsApp</Link>
-              <Link href={`/marketing/${tenantId}/Analytics`} className="text-gray-600 hover:text-gray-900 transition-colors">Analytics</Link>
-              <Link href={`/marketing/${tenantId}/Segments`} className="text-gray-600 hover:text-gray-900 transition-colors">Segments</Link>
-            </nav>
-          </div>
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={fetchDashboardStats}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Refresh"
-            >
-              <RefreshCw className="w-5 h-5 text-gray-600" />
-            </button>
-            <ModuleSwitcher currentModule="marketing" />
-          </div>
-        </div>
-      </div>
+    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>
+      {/* Universal Module Hero */}
+      <UniversalModuleHero
+        moduleName="Marketing"
+        moduleIcon={<moduleConfig.icon className="w-8 h-8" />}
+        gradientFrom={moduleConfig.gradientFrom}
+        gradientTo={moduleConfig.gradientTo}
+        metrics={heroMetrics}
+        subtitle="AI-Powered Marketing Platform - Automate, Optimize, and Scale"
+      />
 
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white px-6 py-6 shadow-lg mt-16">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">Welcome back, {user?.name || 'User'}!</h1>
-            <p className="text-purple-100">AI-Powered Marketing Platform - Automate, Optimize, and Scale</p>
-          </div>
-        </div>
-      </div>
-
-      {/* AI Capabilities Highlight */}
-      <div className="p-6">
-        <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-purple-200 dark:border-purple-800">
-          <CardContent className="pt-6">
+      {/* Content Sections - 32px gap between sections */}
+      <div className="p-6 space-y-8">
+        {/* AI Capabilities Highlight */}
+        <GlassCard>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-purple-600 rounded-lg">
                 <Sparkles className="h-6 w-6 text-white" />
@@ -255,124 +261,58 @@ export default function MarketingDashboardPage() {
                 </Link>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content */}
-      <div className="p-6 space-y-6">
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Campaigns</CardTitle>
-              <Megaphone className="w-4 h-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalCampaigns || 0}</div>
-              <p className="text-xs text-gray-500 mt-1">{stats?.activeCampaigns || 0} active</p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Email Sent This Month</CardTitle>
-              <Mail className="w-4 h-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.emailSentThisMonth?.toLocaleString() || 0}</div>
-              <p className={`text-xs flex items-center gap-1 mt-1 ${emailGrowthColor}`}>
-                {emailGrowthIcon && (() => {
-                  const Icon = emailGrowthIcon
-                  return <Icon className="w-3 h-3" />
-                })()}
-                {Math.abs(stats?.emailGrowth || 0).toFixed(1)}% from last month
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Social Posts</CardTitle>
-              <Share2 className="w-4 h-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.socialPostsThisMonth || 0}</div>
-              <p className="text-xs text-gray-500 mt-1">This month</p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">WhatsApp Messages</CardTitle>
-              <MessageCircle className="w-4 h-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.whatsappMessagesThisMonth || 0}</div>
-              <p className="text-xs text-gray-500 mt-1">This month</p>
-            </CardContent>
-          </Card>
-        </div>
+        </GlassCard>
 
         {/* Performance Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Email Open Rate</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-blue-600">{stats?.emailOpenRate?.toFixed(1) || 0}%</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Email Click Rate</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-green-600">{stats?.emailClickRate?.toFixed(1) || 0}%</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Social Engagement</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-purple-600">{stats?.socialEngagement?.toFixed(1) || 0}%</div>
-            </CardContent>
-          </Card>
-        </div>
+        <GlassCard delay={0.1}>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Performance Metrics</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Email Open Rate</p>
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{stats?.emailOpenRate?.toFixed(1) || 0}%</div>
+            </div>
+            <div className="text-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Email Click Rate</p>
+              <div className="text-3xl font-bold text-green-600 dark:text-green-400">{stats?.emailClickRate?.toFixed(1) || 0}%</div>
+            </div>
+            <div className="text-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Social Engagement</p>
+              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{stats?.socialEngagement?.toFixed(1) || 0}%</div>
+            </div>
+          </div>
+        </GlassCard>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Monthly Email Performance</CardTitle>
-              <CardDescription>Email sent, opened, and clicked over time</CardDescription>
-            </CardHeader>
-            <CardContent>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <GlassCard delay={0.2}>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Monthly Email Performance</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Email sent, opened, and clicked over time</p>
+            <div style={{ minHeight: '300px' }}>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={stats?.monthlyEmailSent || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="month" stroke="#6b7280" />
+                  <YAxis stroke="#6b7280" />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: `1px solid ${PURPLE_PRIMARY}`,
+                      borderRadius: '8px',
+                    }}
+                  />
                   <Legend />
-                  <Line type="monotone" dataKey="sent" stroke={CHART_COLORS[0]} name="Sent" />
-                  <Line type="monotone" dataKey="opened" stroke={CHART_COLORS[1]} name="Opened" />
-                  <Line type="monotone" dataKey="clicked" stroke={CHART_COLORS[2]} name="Clicked" />
+                  <Line type="monotone" dataKey="sent" stroke={CHART_COLORS[0]} name="Sent" strokeWidth={2} />
+                  <Line type="monotone" dataKey="opened" stroke={CHART_COLORS[1]} name="Opened" strokeWidth={2} />
+                  <Line type="monotone" dataKey="clicked" stroke={CHART_COLORS[2]} name="Clicked" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </div>
+          </GlassCard>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Campaigns by Type</CardTitle>
-              <CardDescription>Distribution of campaigns</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <GlassCard delay={0.3}>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Campaigns by Type</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Distribution of campaigns</p>
+            <div style={{ minHeight: '300px' }}>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -382,18 +322,24 @@ export default function MarketingDashboardPage() {
                     labelLine={false}
                     label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
                     outerRadius={80}
-                    fill="#8884d8"
+                    fill={PURPLE_PRIMARY}
                     dataKey="count"
                   >
                     {(stats?.campaignsByType || []).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: `1px solid ${PURPLE_PRIMARY}`,
+                      borderRadius: '8px',
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </div>
+          </GlassCard>
         </div>
       </div>
     </div>
