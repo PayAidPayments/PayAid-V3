@@ -141,6 +141,57 @@ export default function CRMDashboardPage() {
     
     return () => observer.disconnect()
   }, [])
+
+  // Check if demo data exists and seed if needed (only once)
+  useEffect(() => {
+    if (!tenantId || !token || hasCheckedDataRef.current) return
+    
+    hasCheckedDataRef.current = true // Mark as checked to prevent multiple checks
+    
+    const checkAndSeedData = async () => {
+      try {
+        // Check if data exists
+        const checkResponse = await fetch('/api/admin/check-dashboard-data', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+        
+        if (checkResponse.ok) {
+          const checkData = await checkResponse.json()
+          
+          // If no data, seed it automatically
+          if (!checkData.hasData) {
+            console.log('[CRM_DASHBOARD] No data found, seeding demo data...')
+            try {
+              const seedResponse = await fetch('/api/admin/seed-demo-data', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+              })
+              
+              if (seedResponse.ok) {
+                const seedData = await seedResponse.json()
+                console.log('[CRM_DASHBOARD] Demo data seeded:', seedData)
+                // Reload stats after seeding (with a delay to allow DB to process)
+                setTimeout(() => {
+                  if (abortControllerRef.current) {
+                    fetchDashboardStats(abortControllerRef.current.signal)
+                  }
+                }, 2000)
+              }
+            } catch (seedError) {
+              console.error('[CRM_DASHBOARD] Failed to seed demo data:', seedError)
+            }
+          }
+        }
+      } catch (checkError) {
+        console.error('[CRM_DASHBOARD] Failed to check dashboard data:', checkError)
+      }
+    }
+    
+    // Small delay to avoid race conditions with initial load
+    const timeoutId = setTimeout(checkAndSeedData, 500)
+    return () => clearTimeout(timeoutId)
+  }, [tenantId, token]) // Only run when tenantId or token changes
+
   // Determine current view based on URL query params
   const viewParam = searchParams?.get('view')
   
