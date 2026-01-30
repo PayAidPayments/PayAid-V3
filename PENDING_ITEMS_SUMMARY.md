@@ -318,7 +318,12 @@ All premium features implemented:
 3. ✅ Replace all old color references (teal-primary, blue-secondary) ✅ **COMPLETE**
 4. ✅ Complete currency formatting in remaining modules ✅ **COMPLETE**
    - ✅ Marketing module (Ads page) ✅ **COMPLETE**
+     - ✅ Updated budget and spent displays to use `formatINRForDisplay()`
+     - ✅ Replaced `DollarSign` icon with `IndianRupee` icon
    - ✅ Projects module (Project detail page) ✅ **COMPLETE**
+     - ✅ Updated budget and actualCost displays to use `formatINRForDisplay()`
+   - 📅 Analytics module (when created - will use `formatINRForDisplay()` for all revenue metrics)
+   - 🔄 Other modules (will be updated as they're migrated to UDS)
 
 ### **Medium Term (Next Quarter):**
 1. 📅 Rollout to remaining 20+ modules (Phase 3 continuation)
