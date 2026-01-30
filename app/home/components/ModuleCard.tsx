@@ -124,10 +124,10 @@ function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {
         {module.description}
       </p>
       
-      <div className="flex items-center text-sm font-medium" style={{ color: module.color }}>
+      <div className="flex items-center text-sm font-semibold text-teal-primary group-hover:text-teal-700 transition-colors duration-150">
         <span>Open</span>
         <svg 
-          className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" 
+          className="ml-2 w-4 h-4 transition-transform duration-150 group-hover:translate-x-1" 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
