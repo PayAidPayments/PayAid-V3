@@ -494,7 +494,7 @@ export default function SalesDashboardPage() {
                 <p className="text-sm text-gray-500 text-center py-8">No recent orders</p>
               )}
             </CardContent>
-          </GlassCard>
+          </Card>
 
           {/* Quick Actions */}
           <GlassCard delay={0.4}>
@@ -522,7 +522,7 @@ export default function SalesDashboardPage() {
                 </Button>
               </Link>
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
       </div>
     </div>

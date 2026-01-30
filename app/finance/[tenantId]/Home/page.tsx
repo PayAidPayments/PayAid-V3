@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FileText, ShoppingCart, Landmark, TrendingUp, RefreshCw, ArrowUpRight, ArrowDownRight, TrendingDown } from 'lucide-react'
+import { FileText, ShoppingCart, Landmark, TrendingUp, TrendingDown, IndianRupee, Scale } from 'lucide-react'
 import { PageLoading } from '@/components/ui/loading'
 import { 
   LineChart, 
@@ -31,7 +31,6 @@ import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 import { GlassCard } from '@/components/modules/GlassCard'
 import { getModuleConfig } from '@/lib/modules/module-config'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
-import { Scale, FileText, ShoppingCart, TrendingUp, TrendingDown, IndianRupee } from 'lucide-react'
 
 interface FinanceDashboardStats {
   totalInvoices: number
@@ -175,7 +174,7 @@ export default function FinanceDashboardPage() {
   const isProfit = (stats?.profit || 0) >= 0
 
   // Get module configuration
-  const moduleConfig = getModuleConfig('finance')
+  const moduleConfig = getModuleConfig('finance') || getModuleConfig('crm')!
 
   // Hero metrics
   const heroMetrics = [
@@ -307,7 +306,7 @@ export default function FinanceDashboardPage() {
                 </div>
               )}
             </CardContent>
-          </Card>
+          </GlassCard>
 
           {/* Invoices by Status - Pie Chart */}
           <GlassCard delay={0.5}>
@@ -351,7 +350,7 @@ export default function FinanceDashboardPage() {
                 </div>
               )}
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
 
         {/* Recent Activity & Quick Actions */}
@@ -392,7 +391,7 @@ export default function FinanceDashboardPage() {
                 <p className="text-sm text-gray-500 text-center py-8">No recent invoices</p>
               )}
             </CardContent>
-          </Card>
+          </GlassCard>
 
           {/* Quick Actions */}
           <GlassCard delay={0.7}>
@@ -420,7 +419,7 @@ export default function FinanceDashboardPage() {
                 </Button>
               </Link>
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
       </div>
     </div>
