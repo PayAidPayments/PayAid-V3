@@ -86,7 +86,7 @@ function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {
         "transition-all duration-150 ease-in-out",
         isComingSoon 
           ? "opacity-60 cursor-not-allowed" 
-          : "hover:shadow-md hover:border-teal-primary/30 dark:hover:border-teal-primary/30 hover:-translate-y-0.5"
+          : "hover:shadow-md hover:border-purple-300 dark:hover:border-purple-400 hover:-translate-y-0.5"
       )}
     >
       <div className="flex items-start justify-between mb-4">
@@ -124,7 +124,7 @@ function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {
         {module.description}
       </p>
       
-      <div className="flex items-center text-sm font-semibold text-teal-primary group-hover:text-teal-700 transition-colors duration-150">
+      <div className="flex items-center text-sm font-semibold text-purple-500 group-hover:text-purple-600 transition-colors duration-150">
         <span>Open</span>
         <svg 
           className="ml-2 w-4 h-4 transition-transform duration-150 group-hover:translate-x-1" 
