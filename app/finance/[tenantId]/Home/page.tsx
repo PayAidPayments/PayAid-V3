@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FileText, ShoppingCart, Landmark, TrendingUp, RefreshCw, ArrowUpRight, ArrowDownRight, TrendingDown } from 'lucide-react'
 import { PageLoading } from '@/components/ui/loading'
@@ -27,6 +28,11 @@ import {
 } from 'recharts'
 import { format } from 'date-fns'
 import { motion } from 'framer-motion'
+import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
+import { GlassCard } from '@/components/modules/GlassCard'
+import { getModuleConfig } from '@/lib/modules/module-config'
+import { formatINRForDisplay } from '@/lib/utils/formatINR'
+import { Scale, FileText, ShoppingCart, TrendingUp, TrendingDown, IndianRupee } from 'lucide-react'
 
 interface FinanceDashboardStats {
   totalInvoices: number
@@ -72,12 +78,12 @@ interface FinanceDashboardStats {
   }>
 }
 
-// Design System Colors for charts (PayAid UI/UX Standards)
-const TEAL_PRIMARY = '#0F766E' // Deep Teal
-const BLUE_SECONDARY = '#0284C7' // Vibrant Blue
-const EMERALD_SUCCESS = '#059669' // Success
-const GOLD_ACCENT = '#FBBF24' // Accent Gold
-const CHART_COLORS = [TEAL_PRIMARY, BLUE_SECONDARY, EMERALD_SUCCESS, GOLD_ACCENT, '#FCD34D', '#FDE68A']
+// PayAid Brand Colors for charts
+const PURPLE_PRIMARY = '#53328A' // PayAid Purple
+const GOLD_ACCENT = '#F5C700' // PayAid Gold
+const SUCCESS = '#059669' // Success (Emerald)
+const INFO = '#0284C7' // Info (Blue)
+const CHART_COLORS = [PURPLE_PRIMARY, GOLD_ACCENT, SUCCESS, INFO, '#8B5CF6', '#FCD34D']
 
 export default function FinanceDashboardPage() {
   const params = useParams()
@@ -169,35 +175,53 @@ export default function FinanceDashboardPage() {
   // Profit/Loss indicator
   const isProfit = (stats?.profit || 0) >= 0
 
+  // Get module configuration
+  const moduleConfig = getModuleConfig('finance')
+
+  // Hero metrics
+  const heroMetrics = [
+    {
+      label: 'Total Revenue',
+      value: stats?.totalRevenue ? formatINRForDisplay(stats.totalRevenue) : '₹0',
+      change: stats?.revenueGrowth,
+      trend: (stats?.revenueGrowth || 0) > 0 ? 'up' as const : 'down' as const,
+      icon: <IndianRupee className="w-5 h-5" />,
+      color: 'gold' as const,
+    },
+    {
+      label: 'Invoices',
+      value: stats?.totalInvoices || 0,
+      change: stats?.invoiceGrowth,
+      trend: (stats?.invoiceGrowth || 0) > 0 ? 'up' as const : 'down' as const,
+      icon: <FileText className="w-5 h-5" />,
+      color: 'info' as const,
+    },
+    {
+      label: 'Purchase Orders',
+      value: stats?.purchaseOrders || 0,
+      icon: <ShoppingCart className="w-5 h-5" />,
+      color: 'purple' as const,
+    },
+    {
+      label: 'Net Profit',
+      value: stats?.profit ? formatINRForDisplay(Math.abs(stats.profit)) : '₹0',
+      change: stats?.profitMargin,
+      trend: isProfit ? 'up' as const : 'down' as const,
+      icon: isProfit ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />,
+      color: isProfit ? 'success' as const : 'error' as const,
+    },
+  ]
+
   return (
     <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>
-      {/* Refresh button - moved to page content since ModuleTopBar handles navigation */}
-      <div className="absolute top-20 right-6 z-10">
-        <button 
-          onClick={fetchDashboardStats}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          title="Refresh"
-        >
-          <RefreshCw className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-        </button>
-      </div>
-
-      {/* Welcome Banner - Enhanced - Design System Colors */}
-      <div className="bg-gradient-to-r from-teal-primary to-blue-secondary text-white px-6 py-6 shadow-lg mt-16">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">
-              Finance Dashboard
-            </h1>
-            {tenant && (
-              <p className="text-white/90 flex items-center gap-2">
-                <Landmark className="w-5 h-5" />
-                {tenant.name}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Universal Module Hero */}
+      <UniversalModuleHero
+        moduleName="Finance"
+        moduleIcon={<moduleConfig.icon className="w-8 h-8" />}
+        gradientFrom={moduleConfig.gradientFrom}
+        gradientTo={moduleConfig.gradientTo}
+        metrics={heroMetrics}
+      />
 
       {error && (
         <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -206,150 +230,42 @@ export default function FinanceDashboardPage() {
         </div>
       )}
 
-      <div className="p-6 space-y-6 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
-        {/* KPI Cards - Design System Compliant with Animations */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0 * 0.1, duration: 0.3 }}
-          >
-            <Card className="border-0 shadow-sm bg-white hover:shadow-md transition-all duration-150">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Total Revenue</CardTitle>
-                <div className="w-12 h-12 bg-emerald-success/10 rounded-lg flex items-center justify-center">
-                  <span className="text-emerald-success font-bold text-lg">₹</span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-semibold text-gray-900 mb-1">
-                  ₹{stats?.totalRevenue?.toLocaleString('en-IN') || '0'}
-                </div>
-                <p className="text-sm text-emerald-success flex items-center gap-1">
-                  {stats && stats.revenueGrowth > 0 && (
-                    <>
-                      <ArrowUpRight className="w-3 h-3" />
-                      <span className="font-medium">{stats.revenueGrowth.toFixed(1)}%</span>
-                    </>
-                  )}
-                  <span className="text-gray-600">This month</span>
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 * 0.1, duration: 0.3 }}
-          >
-            <Card className="border-0 shadow-sm bg-white hover:shadow-md transition-all duration-150">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Invoices</CardTitle>
-                <div className="w-12 h-12 bg-blue-secondary/10 rounded-lg flex items-center justify-center">
-                  <FileText className="h-6 w-6 text-blue-secondary" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-semibold text-gray-900 mb-1">
-                  {stats?.totalInvoices || 0}
-                </div>
-                <p className="text-sm text-emerald-success flex items-center gap-1">
-                  {stats && stats.invoiceGrowth > 0 && (
-                    <>
-                      <ArrowUpRight className="w-3 h-3" />
-                      <span className="font-medium">{stats.invoiceGrowth.toFixed(1)}%</span>
-                    </>
-                  )}
-                  <span className="text-gray-600">This month</span>
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 * 0.1, duration: 0.3 }}
-          >
-            <Card className="border-0 shadow-sm bg-white hover:shadow-md transition-all duration-150">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Purchase Orders</CardTitle>
-                <div className="w-12 h-12 bg-teal-primary/10 rounded-lg flex items-center justify-center">
-                  <ShoppingCart className="h-6 w-6 text-teal-primary" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-semibold text-gray-900 mb-1">
-                  {stats?.purchaseOrders || 0}
-                </div>
-                <p className="text-sm text-gray-600">This month: {stats?.purchaseOrdersThisMonth || 0}</p>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 * 0.1, duration: 0.3 }}
-          >
-            <Card className="border-0 shadow-sm bg-white hover:shadow-md transition-all duration-150">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Net Profit</CardTitle>
-                <div className={`w-12 h-12 ${isProfit ? 'bg-emerald-success/10' : 'bg-red-error/10'} rounded-lg flex items-center justify-center`}>
-                  {isProfit ? (
-                    <TrendingUp className={`h-6 w-6 ${isProfit ? 'text-emerald-success' : 'text-red-error'}`} />
-                  ) : (
-                    <TrendingDown className="h-6 w-6 text-red-error" />
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className={`text-3xl font-semibold mb-1 ${isProfit ? 'text-emerald-success' : 'text-red-error'}`}>
-                  {isProfit ? '+' : ''}₹{stats?.profit?.toLocaleString('en-IN') || '0'}
-                </div>
-                <p className="text-sm text-gray-600">
-                  Margin: {stats?.profitMargin?.toFixed(1) || '0'}%
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
+      {/* Content Sections - 32px gap */}
+      <div className="p-6 space-y-8 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
         {/* Secondary Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="border-0 shadow-lg">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <GlassCard delay={0.1}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-700">Paid Invoices</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats?.paidInvoices || 0}</div>
+              <div className="text-2xl font-bold text-success">{stats?.paidInvoices || 0}</div>
             </CardContent>
-          </Card>
+          </GlassCard>
 
-          <Card className="border-0 shadow-lg">
+          <GlassCard delay={0.2}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-700">Overdue Invoices</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats?.overdueInvoices || 0}</div>
+              <div className="text-2xl font-bold text-error">{stats?.overdueInvoices || 0}</div>
             </CardContent>
-          </Card>
+          </GlassCard>
 
-          <Card className="border-0 shadow-lg">
+          <GlassCard delay={0.3}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-700">GST Reports</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-gray-900">{stats?.gstReports || 0}</div>
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
 
         {/* Charts Row - Modern Visualizations */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Monthly Revenue Trend - Area Chart */}
-          <Card className="border-0 shadow-lg">
+          <GlassCard delay={0.4}>
             <CardHeader>
               <CardTitle className="text-lg font-semibold">Revenue Trend</CardTitle>
               <CardDescription>Monthly revenue over the last 6 months</CardDescription>
@@ -361,8 +277,8 @@ export default function FinanceDashboardPage() {
                     <AreaChart data={monthlyRevenueData}>
                       <defs>
                         <linearGradient id="colorFinanceRevenue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={TEAL_PRIMARY} stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor={TEAL_PRIMARY} stopOpacity={0}/>
+                          <stop offset="5%" stopColor={GOLD_ACCENT} stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor={GOLD_ACCENT} stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -371,15 +287,15 @@ export default function FinanceDashboardPage() {
                       <Tooltip 
                         contentStyle={{
                           backgroundColor: '#fff',
-                          border: `1px solid ${TEAL_PRIMARY}`,
+                          border: `1px solid ${GOLD_ACCENT}`,
                           borderRadius: '8px',
                         }}
-                        formatter={(value: any) => [`₹${value.toLocaleString('en-IN')}`, 'Revenue']}
+                        formatter={(value: any) => [formatINRForDisplay(value), 'Revenue']}
                       />
                       <Area 
                         type="monotone" 
                         dataKey="revenue" 
-                        stroke={TEAL_PRIMARY} 
+                        stroke={GOLD_ACCENT} 
                         fillOpacity={1} 
                         fill="url(#colorFinanceRevenue)" 
                       />
@@ -395,7 +311,7 @@ export default function FinanceDashboardPage() {
           </Card>
 
           {/* Invoices by Status - Pie Chart */}
-          <Card className="border-0 shadow-lg">
+          <GlassCard delay={0.5}>
             <CardHeader>
               <CardTitle className="text-lg font-semibold">Invoices by Status</CardTitle>
               <CardDescription>Distribution of invoices across different statuses</CardDescription>
@@ -423,7 +339,7 @@ export default function FinanceDashboardPage() {
                         formatter={(value: any) => [value, 'Invoices']}
                         contentStyle={{
                           backgroundColor: '#fff',
-                          border: `1px solid ${TEAL_PRIMARY}`,
+                          border: `1px solid ${GOLD_ACCENT}`,
                           borderRadius: '8px',
                         }}
                       />
@@ -440,9 +356,9 @@ export default function FinanceDashboardPage() {
         </div>
 
         {/* Recent Activity & Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Invoices */}
-          <Card className="border-0 shadow-lg">
+          <GlassCard delay={0.6}>
             <CardHeader>
               <CardTitle className="text-lg font-semibold">Recent Invoices</CardTitle>
               <CardDescription>Latest invoices created</CardDescription>
@@ -459,7 +375,7 @@ export default function FinanceDashboardPage() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-gray-900">₹{invoice.total.toLocaleString('en-IN')}</p>
+                        <p className="font-semibold text-gray-900">{formatINRForDisplay(invoice.total)}</p>
                         <span className={`text-xs px-2 py-1 rounded ${
                           invoice.status === 'paid' 
                             ? 'bg-green-100 text-green-800' 
@@ -480,7 +396,7 @@ export default function FinanceDashboardPage() {
           </Card>
 
           {/* Quick Actions */}
-          <Card className="border-0 shadow-lg">
+          <GlassCard delay={0.7}>
             <CardHeader>
               <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
               <CardDescription>Get started with Finance</CardDescription>

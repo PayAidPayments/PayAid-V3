@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { 
   Users, 
-  DollarSign, 
+  IndianRupee, 
   Calendar, 
   Clock, 
   Briefcase, 
@@ -17,6 +17,10 @@ import {
   ArrowUpRight,
   UserPlus
 } from 'lucide-react'
+import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
+import { GlassCard } from '@/components/modules/GlassCard'
+import { getModuleConfig } from '@/lib/modules/module-config'
+import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { DashboardLoading } from '@/components/ui/loading'
 import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 // ModuleTopBar is now in layout.tsx
@@ -202,7 +206,7 @@ export default function HRDashboardPage() {
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">Pending Payroll</CardTitle>
-              <DollarSign className="w-4 h-4 text-green-600" />
+              <IndianRupee className="w-4 h-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats?.pendingPayroll || 0}</div>
