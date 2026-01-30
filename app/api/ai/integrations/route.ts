@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { prisma } from '@/lib/db/prisma'
+import { prismaWithRetry } from '@/lib/db/connection-retry'
 
 // GET /api/ai/integrations - Get all AI integrations for the current tenant
 export async function GET(request: NextRequest) {
@@ -8,31 +9,35 @@ export async function GET(request: NextRequest) {
     // Check AI Studio module license
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
-    const integrations = await prisma.oAuthIntegration.findMany({
-      where: {
-        tenantId: tenantId,
-      },
-      select: {
-        id: true,
-        provider: true,
-        providerEmail: true,
-        providerName: true,
-        isActive: true,
-        lastUsedAt: true,
-        expiresAt: true,
-        createdAt: true,
-        // Don't return sensitive tokens
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    })
+    const integrations = await prismaWithRetry(() =>
+      prisma.oAuthIntegration.findMany({
+        where: {
+          tenantId: tenantId,
+        },
+        select: {
+          id: true,
+          provider: true,
+          providerEmail: true,
+          providerName: true,
+          isActive: true,
+          lastUsedAt: true,
+          expiresAt: true,
+          createdAt: true,
+          // Don't return sensitive tokens
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      })
+    )
 
     // Check tenant-specific Google AI Studio API key (not global)
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: { googleAiStudioApiKey: true },
-    })
+    const tenant = await prismaWithRetry(() =>
+      prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { googleAiStudioApiKey: true },
+      })
+    )
 
     const googleAiStudioConfigured = !!tenant?.googleAiStudioApiKey
 

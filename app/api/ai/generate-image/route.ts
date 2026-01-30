@@ -4,6 +4,7 @@ import { aiGateway } from '@/lib/ai/gateway'
 import { getHuggingFaceClient } from '@/lib/ai/huggingface'
 import { getNanoBananaClient } from '@/lib/ai/nanobanana'
 import { prisma } from '@/lib/db/prisma'
+import { prismaWithRetry } from '@/lib/db/connection-retry'
 import { enhanceImagePrompt } from '@/lib/ai/prompt-enhancer'
 import { analyzePromptContext } from '@/lib/ai/context-analyzer'
 import { z } from 'zod'
@@ -153,10 +154,12 @@ export async function POST(request: NextRequest) {
     // Try Google AI Studio (if selected or auto)
     // Check if tenant has their own API key configured
     const shouldUseGoogle = provider === 'auto' || provider === 'google-ai-studio'
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: { googleAiStudioApiKey: true },
-    })
+    const tenant = await prismaWithRetry(() =>
+      prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { googleAiStudioApiKey: true },
+      })
+    )
     
     if (shouldUseGoogle && tenant?.googleAiStudioApiKey) {
       try {
