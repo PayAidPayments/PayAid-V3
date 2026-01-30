@@ -26,9 +26,9 @@ export function Loading({
     return (
       <div className={cn('flex flex-col items-center justify-center min-h-[200px]', className)}>
         <div className="flex space-x-2">
-          <div className="h-3 w-3 bg-teal-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-          <div className="h-3 w-3 bg-blue-secondary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-          <div className="h-3 w-3 bg-teal-primary rounded-full animate-bounce"></div>
+          <div className="h-3 w-3 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+          <div className="h-3 w-3 bg-info rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+          <div className="h-3 w-3 bg-purple-500 rounded-full animate-bounce"></div>
         </div>
         {message && <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">{message}</p>}
       </div>
@@ -38,7 +38,7 @@ export function Loading({
   if (variant === 'pulse') {
     return (
       <div className={cn('flex flex-col items-center justify-center min-h-[200px]', className)}>
-        <div className={cn('rounded-full bg-gradient-to-r from-teal-primary to-blue-secondary', sizeClasses[size])}>
+        <div className={cn('rounded-full bg-gradient-to-r from-purple-500 to-info', sizeClasses[size])}>
           <div className={cn('rounded-full bg-white dark:bg-gray-900 m-1 animate-pulse', size === 'sm' ? 'h-4 w-4' : size === 'md' ? 'h-10 w-10' : 'h-14 w-14')}></div>
         </div>
         {message && <p className="mt-4 text-sm text-gray-600 dark:text-gray-400 animate-pulse">{message}</p>}
@@ -69,9 +69,9 @@ export function Loading({
       {/* Use same animation style as PageLoading for consistency */}
       <div className="flex justify-center mb-4">
         <div className="flex space-x-2">
-          <div className="h-3 w-3 bg-teal-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-          <div className="h-3 w-3 bg-blue-secondary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-          <div className="h-3 w-3 bg-teal-primary rounded-full animate-bounce"></div>
+          <div className="h-3 w-3 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+          <div className="h-3 w-3 bg-info rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+          <div className="h-3 w-3 bg-purple-500 rounded-full animate-bounce"></div>
         </div>
       </div>
       {message && (
@@ -80,7 +80,7 @@ export function Loading({
       {/* Progress bar - Using Design System Colors */}
       <div className="mt-6 w-64 mx-auto">
         <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-teal-primary to-blue-secondary rounded-full animate-[loading_1.5s_ease-in-out_infinite]"></div>
+          <div className="h-full bg-gradient-to-r from-purple-500 to-info rounded-full animate-[loading_1.5s_ease-in-out_infinite]"></div>
         </div>
       </div>
     </div>
@@ -101,8 +101,8 @@ export function PageLoading({ message = 'Loading...', fullScreen = true }: { mes
         <div className="inline-flex items-center justify-center">
           <div className="relative">
             {/* Gradient oval animation - Increased size - Using Design System Colors */}
-            <div className="absolute inset-0 w-40 h-24 rounded-full bg-gradient-to-r from-teal-primary via-blue-secondary to-teal-primary animate-spin [animation-duration:3s] opacity-75 blur-sm"></div>
-            <div className="relative w-40 h-24 rounded-full bg-gradient-to-r from-teal-primary to-blue-secondary flex items-center justify-center">
+            <div className="absolute inset-0 w-40 h-24 rounded-full bg-gradient-to-r from-purple-500 via-info to-purple-500 animate-spin [animation-duration:3s] opacity-75 blur-sm"></div>
+            <div className="relative w-40 h-24 rounded-full bg-gradient-to-r from-purple-500 to-info flex items-center justify-center">
               {/* Business name or V3 text in white */}
               <span className="text-white font-bold text-base md:text-lg whitespace-nowrap overflow-hidden text-ellipsis max-w-[140px] px-2" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>
                 {displayText.length > 12 ? displayText.substring(0, 12) + '...' : displayText}
@@ -115,9 +115,9 @@ export function PageLoading({ message = 'Loading...', fullScreen = true }: { mes
       {/* Loading animation - Using Design System Colors */}
       <div className="flex justify-center mb-4">
         <div className="flex space-x-2">
-          <div className="h-3 w-3 bg-teal-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-          <div className="h-3 w-3 bg-blue-secondary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-          <div className="h-3 w-3 bg-teal-primary rounded-full animate-bounce"></div>
+          <div className="h-3 w-3 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+          <div className="h-3 w-3 bg-info rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+          <div className="h-3 w-3 bg-purple-500 rounded-full animate-bounce"></div>
         </div>
       </div>
 
@@ -127,7 +127,7 @@ export function PageLoading({ message = 'Loading...', fullScreen = true }: { mes
       {/* Progress bar - Using Design System Colors */}
       <div className="mt-6 w-64 mx-auto">
         <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-teal-primary to-blue-secondary rounded-full animate-[loading_1.5s_ease-in-out_infinite]"></div>
+          <div className="h-full bg-gradient-to-r from-purple-500 to-info rounded-full animate-[loading_1.5s_ease-in-out_infinite]"></div>
         </div>
       </div>
     </div>

@@ -14,7 +14,7 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
       destructive: 'bg-red-error/10 text-red-error border-l-4 border-red-error [&>svg]:text-red-error',
       success: 'bg-emerald-success/10 text-emerald-success border-l-4 border-emerald-success [&>svg]:text-emerald-success',
       warning: 'bg-amber-alert/10 text-amber-alert border-l-4 border-amber-alert [&>svg]:text-amber-alert',
-      info: 'bg-blue-secondary/10 text-blue-secondary border-l-4 border-blue-secondary [&>svg]:text-blue-secondary',
+      info: 'bg-info/10 text-info border-l-4 border-info [&>svg]:text-info',
     }
 
     const variantIcons = {

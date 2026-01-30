@@ -46,7 +46,7 @@ const TableRow = React.forwardRef<
       'border-b border-gray-200 dark:border-gray-700',
       'transition-colors duration-150',
       'hover:bg-gray-50 dark:hover:bg-gray-800',
-      'data-[state=selected]:bg-teal-primary/10 dark:data-[state=selected]:bg-teal-primary/20',
+      'data-[state=selected]:bg-purple-500/10 dark:data-[state=selected]:bg-purple-500/20',
       className
     )}
     {...props}
