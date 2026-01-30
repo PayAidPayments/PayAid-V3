@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { prisma } from '@/lib/db/prisma'
+import { prismaWithRetry } from '@/lib/db/connection-retry'
 import { decrypt } from '@/lib/encryption'
 import { enhanceImagePrompt } from '@/lib/ai/prompt-enhancer'
 import { z } from 'zod'
@@ -21,10 +22,12 @@ export async function POST(request: NextRequest) {
     const validated = generateImageSchema.parse(body)
 
     // Get tenant-specific API key (NO global fallback - each tenant must use their own key)
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: { googleAiStudioApiKey: true, name: true },
-    })
+    const tenant = await prismaWithRetry(() =>
+      prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { googleAiStudioApiKey: true, name: true },
+      })
+    )
 
     // Decrypt the API key (or use plain text if not encrypted)
     let apiKey: string | null = null
@@ -294,15 +297,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Track usage
-    await prisma.aIUsage.create({
-      data: {
-        tenantId: tenantId,
-        service: 'text-to-image',
-        requestType: 'generate',
-        modelUsed: 'gemini-2.5-flash-image',
-        duration: Date.now() - Date.now(), // Will be updated if we track timing
-      },
+    // Track usage (non-blocking - don't fail if this fails)
+    prismaWithRetry(() =>
+      prisma.aIUsage.create({
+        data: {
+          tenantId: tenantId,
+          service: 'text-to-image',
+          requestType: 'generate',
+          modelUsed: 'gemini-2.5-flash-image',
+          duration: Date.now() - Date.now(), // Will be updated if we track timing
+        },
+      })
+    ).catch((error) => {
+      // Log but don't fail the request if usage tracking fails
+      console.warn('Failed to track AI usage:', error)
     })
 
     return NextResponse.json({
