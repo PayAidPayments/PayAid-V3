@@ -1571,6 +1571,9 @@ export default function CRMDashboardPage() {
           </>
         )}
       </div>
+
+      {/* Floating AI Assistant - Always available */}
+      <FloatingAIAssistant tenantId={tenantId} />
     </div>
   )
 }
