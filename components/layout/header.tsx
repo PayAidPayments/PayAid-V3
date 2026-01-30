@@ -89,7 +89,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           {/* Menu Toggle Button - Mobile and Desktop */}
           <button
             onClick={onMenuClick}
-            className="mobile-menu-button desktop-menu-button p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-primary focus:ring-offset-2 transition-colors duration-150"
+            className="mobile-menu-button desktop-menu-button p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors duration-150"
             aria-label="Toggle menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,7 +120,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           {/* News Button */}
           <button
             onClick={handleNewsClick}
-            className="relative p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-primary focus:ring-offset-2 transition-colors duration-150"
+            className="relative p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors duration-150"
             aria-label="Open Industry Intelligence"
             title="Industry Intelligence"
           >
@@ -137,10 +137,10 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           <div className="relative" ref={profileMenuRef}>
             <button
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-              className="flex items-center gap-2 p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-primary focus:ring-offset-2 transition-colors duration-150"
+              className="flex items-center gap-2 p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors duration-150"
               aria-label="User menu"
             >
-              <div className="w-8 h-8 rounded-full bg-teal-primary dark:bg-teal-primary flex items-center justify-center text-white font-semibold text-sm">
+              <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
                 {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
               </div>
               <ChevronDown className={`w-4 h-4 transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} />

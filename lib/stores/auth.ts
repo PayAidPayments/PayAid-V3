@@ -87,13 +87,16 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true })
         try {
-          // Add timeout to prevent hanging (30 seconds max for production)
-          // Production may have cold starts, database connection delays, etc.
+          // Add timeout to prevent hanging
+          // Local dev: 15 seconds (server timeout is 10s, add buffer)
+          // Production: 15 seconds (server timeout is 5s, but allow for network delays)
+          const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+          const timeoutMs = isDev ? 15000 : 15000 // 15 seconds for both
           const controller = new AbortController()
           const timeoutId = setTimeout(() => {
             controller.abort()
-            console.warn('[AUTH] Login request timed out after 30 seconds')
-          }, 30000) // 30 second timeout for production
+            console.warn(`[AUTH] Login request timed out after ${timeoutMs / 1000} seconds`)
+          }, timeoutMs)
           
           const response = await fetch('/api/auth/login', {
             method: 'POST',
