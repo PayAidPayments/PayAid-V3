@@ -12,6 +12,7 @@ export interface RetryOptions {
   retryDelay?: number
   exponentialBackoff?: boolean
   retryableErrors?: string[]
+  bypassCircuitBreaker?: boolean // Allow bypassing circuit breaker for critical operations
 }
 
 const DEFAULT_OPTIONS: Required<RetryOptions> = {
@@ -52,12 +53,20 @@ export async function withRetry<T>(
   operation: () => Promise<T>,
   options: RetryOptions = {}
 ): Promise<T> {
-  // Check circuit breaker first
-  if (circuitBreaker.isOpen()) {
-    const error = new Error('Database is temporarily unavailable. Please try again in a moment.')
-    ;(error as any).code = 'CIRCUIT_OPEN'
-    ;(error as any).isCircuitBreaker = true
-    throw error
+  // Check circuit breaker first (unless bypassed for critical operations)
+  if (!options.bypassCircuitBreaker && circuitBreaker.isOpen()) {
+    // For critical operations, try to force half-open state
+    if (circuitBreaker.allowsCriticalOperation()) {
+      circuitBreaker.forceHalfOpen()
+    } else {
+      const error = new Error('Database is temporarily unavailable. Please try again in a moment.')
+      ;(error as any).code = 'CIRCUIT_OPEN'
+      ;(error as any).isCircuitBreaker = true
+      throw error
+    }
+  } else if (options.bypassCircuitBreaker && circuitBreaker.isOpen()) {
+    // Force half-open for critical operations
+    circuitBreaker.forceHalfOpen()
   }
 
   const config = { ...DEFAULT_OPTIONS, ...options }

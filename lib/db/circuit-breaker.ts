@@ -119,6 +119,43 @@ class CircuitBreaker {
       successCount: 0,
     }
   }
+
+  /**
+   * Force circuit to HALF_OPEN state for critical operations (e.g., login)
+   * This allows one attempt to test if database has recovered
+   */
+  forceHalfOpen(): void {
+    if (this.state.state === 'OPEN') {
+      this.state.state = 'HALF_OPEN'
+      this.state.successCount = 0
+      console.log('[CIRCUIT_BREAKER] Forced to HALF_OPEN for critical operation')
+    }
+  }
+
+  /**
+   * Check if circuit allows critical operations (always allows in HALF_OPEN, allows in OPEN if timeout passed)
+   */
+  allowsCriticalOperation(): boolean {
+    const { state, lastFailureTime } = this.state
+    
+    if (state === 'CLOSED') {
+      return true
+    }
+    
+    if (state === 'HALF_OPEN') {
+      return true // Always allow in half-open
+    }
+    
+    if (state === 'OPEN') {
+      // If timeout has passed, allow one attempt
+      if (lastFailureTime && Date.now() - lastFailureTime > CIRCUIT_BREAKER_CONFIG.timeout) {
+        return true
+      }
+      return false
+    }
+    
+    return false
+  }
 }
 
 // Singleton instance
