@@ -20,7 +20,12 @@ import {
   Building2,
   Handshake,
   Target,
-  DollarSign
+  DollarSign,
+  Plus,
+  Mail,
+  CheckCircle,
+  Activity,
+  Zap
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { DashboardLoading } from '@/components/ui/loading'
@@ -1058,21 +1063,34 @@ export default function CRMDashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0 * 0.1, duration: 0.3 }}
             >
-              <Card className="border-0 shadow-md bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-150 cursor-pointer border-l-4 border-purple-500">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Card className="border-0 shadow-md bg-gradient-to-br from-white via-purple-50/20 to-purple-50/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer border-l-4 border-purple-500 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
                   <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Deals Created</CardTitle>
-                  <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center shadow-sm">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center shadow-md">
                     <Briefcase className="h-6 w-6 text-purple-600" />
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative z-10">
                   <div className="text-3xl font-bold text-gray-900 mb-1">
                     {stats?.dealsCreatedThisMonth || 0}
                   </div>
-                  <p className="text-sm text-success flex items-center gap-1 font-medium">
+                  <p className="text-sm text-success flex items-center gap-1 font-medium mb-3">
                     <ArrowUpRight className="w-4 h-4" />
                     <span>{getPeriodLabel()}</span>
                   </p>
+                  {/* Mini Sparkline Chart */}
+                  <div className="h-12 mt-2 flex items-end gap-0.5">
+                    {[65, 45, 78, 92, 88, 72, 85, 95, 82, 90].map((v, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ height: 0 }}
+                        animate={{ height: `${v}%` }}
+                        transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
+                        className="flex-1 bg-gradient-to-t from-purple-500 to-purple-400 rounded-t-sm hover:from-purple-600 hover:to-purple-500 transition-colors"
+                      />
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -1084,21 +1102,34 @@ export default function CRMDashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 * 0.1, duration: 0.3 }}
             >
-              <Card className="border-0 shadow-md bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-150 cursor-pointer border-l-4 border-gold-500">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Card className="border-0 shadow-md bg-gradient-to-br from-white via-gold-50/20 to-gold-50/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer border-l-4 border-gold-500 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-gold-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
                   <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Revenue</CardTitle>
-                  <div className="w-12 h-12 bg-gold-100 rounded-xl flex items-center justify-center shadow-sm">
+                  <div className="w-12 h-12 bg-gradient-to-br from-gold-100 to-gold-200 rounded-xl flex items-center justify-center shadow-md">
                     <DollarSign className="h-6 w-6 text-gold-600" />
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative z-10">
                   <div className="text-3xl font-bold text-gray-900 mb-1">
                     ₹{stats?.revenueThisMonth?.toLocaleString('en-IN') || '0'}
                   </div>
-                  <p className="text-sm text-success flex items-center gap-1 font-medium">
+                  <p className="text-sm text-success flex items-center gap-1 font-medium mb-3">
                     <ArrowUpRight className="w-4 h-4" />
                     <span>{getPeriodLabel()}</span>
                   </p>
+                  {/* Mini Sparkline Chart */}
+                  <div className="h-12 mt-2 flex items-end gap-0.5">
+                    {[45, 55, 65, 75, 85, 90, 88, 92, 95, 98].map((v, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ height: 0 }}
+                        animate={{ height: `${v}%` }}
+                        transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
+                        className="flex-1 bg-gradient-to-t from-gold-500 to-gold-400 rounded-t-sm hover:from-gold-600 hover:to-gold-500 transition-colors"
+                      />
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -1110,21 +1141,44 @@ export default function CRMDashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 * 0.1, duration: 0.3 }}
             >
-              <Card className="border-0 shadow-md bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-150 cursor-pointer border-l-4 border-info">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Card className="border-0 shadow-md bg-gradient-to-br from-white via-blue-50/20 to-blue-50/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer border-l-4 border-info relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-info/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
                   <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Deals Closing</CardTitle>
-                  <div className="w-12 h-12 bg-info-light rounded-xl flex items-center justify-center shadow-sm">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center shadow-md">
                     <Target className="h-6 w-6 text-info" />
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative z-10">
                   <div className="text-3xl font-bold text-gray-900 mb-1">
                     {stats?.dealsClosingThisMonth || 0}
                   </div>
-                  <p className="text-sm text-success flex items-center gap-1 font-medium">
+                  <p className="text-sm text-success flex items-center gap-1 font-medium mb-3">
                     <ArrowUpRight className="w-4 h-4" />
                     <span>{getPeriodLabel()}</span>
                   </p>
+                  {/* Circular Progress Indicator */}
+                  <div className="w-16 h-16 relative mt-2">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle cx="32" cy="32" r="24" fill="none" stroke="#E5E7EB" strokeWidth="4" />
+                      <motion.circle
+                        cx="32"
+                        cy="32"
+                        r="24"
+                        fill="none"
+                        stroke={INFO}
+                        strokeWidth="4"
+                        initial={{ strokeDashoffset: 151 }}
+                        animate={{ strokeDashoffset: 151 * (1 - Math.min((stats?.dealsClosingThisMonth || 0) / 20, 1)) }}
+                        transition={{ duration: 1, ease: 'easeOut' }}
+                        strokeDasharray="151"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-info">
+                      {Math.min(Math.round(((stats?.dealsClosingThisMonth || 0) / 20) * 100), 100)}%
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -1136,21 +1190,28 @@ export default function CRMDashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 * 0.1, duration: 0.3 }}
             >
-              <Card className="border-0 shadow-md bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-150 cursor-pointer border-l-4 border-error">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Card className="border-0 shadow-md bg-gradient-to-br from-white via-red-50/20 to-red-50/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer border-l-4 border-error relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-error/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
                   <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Overdue Tasks</CardTitle>
-                  <div className="w-12 h-12 bg-error-light rounded-xl flex items-center justify-center shadow-sm">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-100 to-red-200 rounded-xl flex items-center justify-center shadow-md">
                     <AlertCircle className="h-6 w-6 text-error" />
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative z-10">
                   <div className="text-3xl font-bold text-gray-900 mb-1">
                     {stats?.overdueTasks || 0}
                   </div>
-                  <p className="text-sm text-error flex items-center gap-1 font-medium">
+                  <p className="text-sm text-error flex items-center gap-1 font-medium mb-3">
                     <ArrowDownRight className="w-4 h-4" />
                     <span>Requires attention</span>
                   </p>
+                  {/* Alert Badge */}
+                  {stats && stats.overdueTasks > 0 && (
+                    <div className="mt-2 px-3 py-1.5 bg-error/10 border border-error/20 rounded-lg">
+                      <p className="text-xs font-semibold text-error">Action Required</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
