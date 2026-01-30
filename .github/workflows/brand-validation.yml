@@ -1,0 +1,67 @@
+name: Brand Validation
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  brand-validation:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for better diff detection
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for dollar symbols
+        run: |
+          echo "💰 Checking for dollar symbols in code..."
+          if grep -r '\$[0-9]' --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.css" --include="*.scss" --include="*.md" app/ components/ lib/ 2>/dev/null | grep -v node_modules | grep -v ".next"; then
+            echo "❌ ERROR: Dollar symbols found in code!"
+            echo "PayAid V3 uses Indian Rupee (₹) only."
+            echo "Please replace all dollar symbols with formatINR() or formatINRForDisplay()"
+            grep -r '\$[0-9]' --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.css" --include="*.scss" --include="*.md" app/ components/ lib/ 2>/dev/null | grep -v node_modules | grep -v ".next" || true
+            exit 1
+          else
+            echo "✅ No dollar symbols found"
+          fi
+
+      - name: Check for old color references
+        run: |
+          echo "🎨 Checking for old color references..."
+          if grep -r 'teal-primary\|blue-secondary' --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.css" --include="*.scss" app/ components/ lib/ 2>/dev/null | grep -v node_modules | grep -v ".next"; then
+            echo "⚠️  WARNING: Old color references found!"
+            echo "Please replace 'teal-primary' with 'purple-500'"
+            echo "Please replace 'blue-secondary' with appropriate PayAid brand colors"
+            grep -r 'teal-primary\|blue-secondary' --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.css" --include="*.scss" app/ components/ lib/ 2>/dev/null | grep -v node_modules | grep -v ".next" || true
+            # Don't fail the build, just warn
+          else
+            echo "✅ No old color references found"
+          fi
+
+      - name: Validate currency formatting
+        run: |
+          echo "💱 Validating currency formatting..."
+          # Check if formatINR functions are being used
+          if ! grep -r 'formatINR\|formatINRForDisplay\|formatINRCompact' --include="*.ts" --include="*.tsx" app/ components/ lib/ 2>/dev/null | grep -v node_modules | grep -v ".next" | head -1; then
+            echo "⚠️  WARNING: No currency formatting functions found. Ensure all currency values use formatINR()"
+          else
+            echo "✅ Currency formatting functions found"
+          fi
+
+      - name: Brand validation summary
+        run: |
+          echo "✅ Brand validation checks completed!"
+          echo "All PayAid brand enforcement rules have been validated."

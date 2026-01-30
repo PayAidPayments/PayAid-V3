@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# PayAid V3 Pre-commit Hook
+# Validates code before commit to ensure brand compliance
+
+echo "🔍 Running pre-commit checks..."
+
+# Check for dollar symbols in staged files
+echo "💰 Checking for dollar symbols..."
+if git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx|css|scss|md)$' | xargs grep -l '\$[0-9]' 2>/dev/null; then
+  echo "❌ ERROR: Dollar symbols (\$) found in code!"
+  echo "   PayAid V3 uses Indian Rupee (₹) only."
+  echo "   Please replace all dollar symbols with formatINR() or formatINRForDisplay()"
+  echo ""
+  echo "   Files with dollar symbols:"
+  git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx|css|scss|md)$' | xargs grep -n '\$[0-9]' 2>/dev/null || true
+  exit 1
+fi
+
+# Check for old color references
+echo "🎨 Checking for old color references..."
+if git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx|css|scss)$' | xargs grep -l 'teal-primary\|blue-secondary' 2>/dev/null; then
+  echo "⚠️  WARNING: Old color references found!"
+  echo "   Please replace 'teal-primary' with 'purple-500'"
+  echo "   Please replace 'blue-secondary' with appropriate PayAid brand colors"
+  echo ""
+  echo "   Files with old colors:"
+  git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx|css|scss)$' | xargs grep -n 'teal-primary\|blue-secondary' 2>/dev/null || true
+  # Don't block commit, just warn
+fi
+
+echo "✅ Pre-commit checks passed!"
