@@ -887,7 +887,7 @@ export default function CRMDashboardPage() {
                             <p className="text-sm text-gray-600 dark:text-gray-400">{stage.count || 0} deals</p>
                           </div>
                           <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                            ₹{(stage.totalValue || 0).toLocaleString('en-IN')}
+                            {formatINRForDisplay(stage.totalValue || 0)}
                           </div>
                         </div>
                       </div>
@@ -921,7 +921,7 @@ export default function CRMDashboardPage() {
                             )}
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-blue-600 dark:text-blue-400">₹{(deal.value || 0).toLocaleString('en-IN')}</p>
+                            <p className="font-semibold text-blue-600 dark:text-blue-400">{formatINRForDisplay(deal.value || 0)}</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                               {deal.expectedCloseDate ? new Date(deal.expectedCloseDate).toLocaleDateString('en-IN') : 'No date'}
                             </p>
@@ -1029,7 +1029,7 @@ export default function CRMDashboardPage() {
                                     <span>Duration: {activity.metadata.duration}m</span>
                                   )}
                                   {activity.metadata.value && (
-                                    <span>Value: ₹{activity.metadata.value.toLocaleString('en-IN')}</span>
+                                    <span>Value: {formatINRForDisplay(activity.metadata.value)}</span>
                                   )}
                                   {activity.metadata.stage && (
                                     <span>Stage: {activity.metadata.stage}</span>
@@ -1397,7 +1397,7 @@ export default function CRMDashboardPage() {
                           borderRadius: '8px',
                         }}
                         formatter={(value: any, name?: string) => {
-                          if (name === 'revenue') return [`₹${value.toLocaleString('en-IN')}`, 'Revenue']
+                          if (name === 'revenue') return [formatINRForDisplay(value), 'Revenue']
                           return [value, 'Deals Won']
                         }}
                       />
@@ -1483,7 +1483,7 @@ export default function CRMDashboardPage() {
                                     value = value
                                   } else if (entry.dataKey === 'totalValue') {
                                     label = 'Total Value'
-                                    value = `₹${value.toLocaleString('en-IN')}`
+                                    value = formatINRForDisplay(value)
                                   } else if (entry.dataKey === 'conversionRate') {
                                     label = 'Conversion Rate'
                                     value = `${value.toFixed(1)}%`
@@ -1561,7 +1561,7 @@ export default function CRMDashboardPage() {
                   <tr className="hover:bg-gray-50 transition-colors">
                     <td className="p-3 font-medium">Revenue</td>
                     {stats?.quarterlyPerformance.map((q, idx) => (
-                      <td key={idx} className="text-right p-3 font-semibold text-blue-600">₹{q.revenue.toLocaleString('en-IN')}</td>
+                      <td key={idx} className="text-right p-3 font-semibold text-blue-600">{formatINRForDisplay(q.revenue)}</td>
                     ))}
                   </tr>
                 </tbody>
