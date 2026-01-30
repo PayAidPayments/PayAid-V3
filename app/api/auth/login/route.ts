@@ -23,8 +23,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   // Server-side timeout wrapper (Vercel Hobby has 10s timeout, Pro has 60s)
-  // Use 8 seconds to be safe under Hobby plan limit
-  const SERVER_TIMEOUT = 8000 // 8 seconds (safe buffer for Vercel Hobby 10s limit)
+  // For minimal data/users, login should complete in < 2 seconds
+  // Use 5 seconds to allow for cold starts but fail fast if something is wrong
+  const SERVER_TIMEOUT = 5000 // 5 seconds - faster timeout for minimal data
   
   try {
     // Ensure we always return JSON, even for unexpected errors
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
       handleLogin(request),
       new Promise<NextResponse>((_, reject) => {
         setTimeout(() => {
-          console.error('[LOGIN] Server-side timeout after 8 seconds')
+          console.error('[LOGIN] Server-side timeout after 5 seconds')
           reject(new Error('Server timeout: Request took too long to process'))
         }, SERVER_TIMEOUT)
       }),
