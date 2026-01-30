@@ -48,21 +48,26 @@ function createPrismaClient(): PrismaClient {
   // Add connection pool parameters if not already present
   // These parameters are passed to the underlying PostgreSQL driver
   if (!url.searchParams.has('connection_limit')) {
-    // For serverless (Vercel), use smaller pool (10 connections)
-    // For long-running processes, use smaller pool to avoid Supabase limits (5-10 connections)
-    // Supabase free tier has limited connections, so we use conservative limits
+    // Optimized for minimal data/users: Use smaller pool but with faster timeouts
+    // For serverless (Vercel), use smaller pool (5 connections for minimal load)
+    // For long-running processes, use 5-10 connections
+    // Supabase free tier has limited connections, but we optimize for speed over pool size
     const connectionLimit = process.env.DATABASE_CONNECTION_LIMIT 
       ? parseInt(process.env.DATABASE_CONNECTION_LIMIT, 10)
-      : (isProduction() ? 10 : 5) // Reduced from 20 to 5 for development to avoid pool exhaustion
+      : (isProduction() ? 5 : 3) // Reduced to 3-5 for faster connection establishment
     url.searchParams.set('connection_limit', connectionLimit.toString())
   }
   
   if (!url.searchParams.has('pool_timeout')) {
-    url.searchParams.set('pool_timeout', '20') // 20 seconds
+    // Reduced from 20s to 5s for faster failure detection
+    // With minimal data/users, connections should be available quickly
+    url.searchParams.set('pool_timeout', '5') // 5 seconds - faster failure detection
   }
   
   if (!url.searchParams.has('connect_timeout')) {
-    url.searchParams.set('connect_timeout', '10') // 10 seconds
+    // Reduced from 10s to 3s for faster connection establishment
+    // Database should respond quickly with minimal load
+    url.searchParams.set('connect_timeout', '3') // 3 seconds - faster connection
   }
 
   // For Supabase pooler, ensure proper configuration

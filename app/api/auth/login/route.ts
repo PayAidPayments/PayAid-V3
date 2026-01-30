@@ -138,6 +138,8 @@ async function handleLogin(request: NextRequest) {
     try {
       // Use retry logic with minimal retries to prevent connection pool exhaustion
       // Bypass circuit breaker for login (critical operation) - allows testing if DB recovered
+      // For minimal data/users, use direct query with minimal retries
+      // Retry only on actual connection failures, not on every query
       user = await prismaWithRetry(() =>
         prisma.user.findUnique({
           where: { email: validated.email.toLowerCase().trim() },
@@ -155,8 +157,8 @@ async function handleLogin(request: NextRequest) {
           },
         }),
         {
-          maxRetries: 2, // Allow 2 retries for login (critical operation)
-          retryDelay: 500, // 500ms delay between retries
+          maxRetries: 1, // Only 1 retry for login (minimal data = fast queries)
+          retryDelay: 100, // Reduced from 500ms to 100ms - faster retry
           exponentialBackoff: false, // No exponential backoff
           bypassCircuitBreaker: true, // Bypass circuit breaker for login
         }
