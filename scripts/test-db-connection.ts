@@ -1,76 +1,71 @@
 /**
- * Test Database Connection Script
- * Tests if database connection works
+ * Quick database connection test
+ * Run: npx tsx scripts/test-db-connection.ts
  */
 
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/db/prisma'
 
-const prisma = new PrismaClient()
-
-async function main() {
-  console.log('🔍 Testing database connection...\n')
+async function testConnection() {
+  console.log('🔍 Testing database connection...')
+  console.log('DATABASE_URL:', process.env.DATABASE_URL ? '✅ Set' : '❌ Not set')
+  
+  if (!process.env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL is not set. Please set it in .env.local')
+    process.exit(1)
+  }
 
   try {
-    // Test basic connection
-    await prisma.$connect()
+    console.log('⏳ Attempting to connect...')
+    const startTime = Date.now()
+    
+    // Test basic query
+    const result = await prisma.$queryRaw`SELECT 1 as test`
+    const duration = Date.now() - startTime
+    
     console.log('✅ Database connection successful!')
-
-    // Test query
-    const result = await prisma.$queryRaw`SELECT version()`
-    console.log('✅ Database query successful!')
-    console.log('   Database:', result)
-
-    // Check if tables exist
-    const tables = await prisma.$queryRaw<Array<{ tablename: string }>>`
-      SELECT tablename 
-      FROM pg_tables 
-      WHERE schemaname = 'public'
-    `
-
-    if (tables.length === 0) {
-      console.log('\n⚠️  No tables found in database')
-      console.log('💡 Run migrations: npm run db:migrate')
-    } else {
-      console.log(`\n✅ Found ${tables.length} tables:`)
-      tables.slice(0, 10).forEach(table => {
-        console.log(`   - ${table.tablename}`)
-      })
-      if (tables.length > 10) {
-        console.log(`   ... and ${tables.length - 10} more`)
-      }
+    console.log(`⏱️  Query took ${duration}ms`)
+    console.log('Result:', result)
+    
+    // Test user query (what login does)
+    console.log('\n🔍 Testing user query (simulating login)...')
+    const userStartTime = Date.now()
+    const userCount = await prisma.user.count()
+    const userDuration = Date.now() - userStartTime
+    
+    console.log(`✅ User query successful!`)
+    console.log(`⏱️  Query took ${userDuration}ms`)
+    console.log(`📊 Total users in database: ${userCount}`)
+    
+    if (userDuration > 5000) {
+      console.warn('⚠️  WARNING: User query took more than 5 seconds. This may cause login timeouts.')
     }
-
+    
+    await prisma.$disconnect()
+    process.exit(0)
   } catch (error: any) {
     console.error('❌ Database connection failed!')
-    console.error('\nError:', error.message)
-
+    console.error('Error:', error.message)
+    console.error('Code:', error.code)
+    
     if (error.code === 'P1001') {
-      console.log('\n💡 Connection timeout or refused')
-      console.log('   Possible causes:')
-      console.log('   1. Database server is down')
-      console.log('   2. Wrong connection string')
-      console.log('   3. Firewall blocking connection')
-      console.log('   4. Supabase project paused (free tier)')
-    } else if (error.code === 'P1002') {
-      console.log('\n💡 Connection timeout')
-      console.log('   Try:')
-      console.log('   1. Use direct connection (not pooler)')
-      console.log('   2. Use local PostgreSQL')
-      console.log('   3. Check Supabase project status')
+      console.error('\n💡 This usually means:')
+      console.error('   - Database server is not reachable')
+      console.error('   - Wrong host/port in DATABASE_URL')
+      console.error('   - Firewall blocking connection')
     } else if (error.code === 'P1000') {
-      console.log('\n💡 Authentication failed')
-      console.log('   Check DATABASE_URL in .env file')
+      console.error('\n💡 This usually means:')
+      console.error('   - Wrong username or password')
+      console.error('   - Database credentials are incorrect')
+    } else if (error.code === 'P1002' || error.message.includes('pooler') || error.message.includes('max clients')) {
+      console.error('\n💡 This usually means:')
+      console.error('   - Connection pool is full')
+      console.error('   - Too many concurrent connections')
+      console.error('   - Supabase free tier limit reached')
     }
-
-    console.log('\n💡 Solutions:')
-    console.log('   1. Check .env file DATABASE_URL')
-    console.log('   2. Verify database is running')
-    console.log('   3. Try direct connection (not pooler)')
-    console.log('   4. Use local PostgreSQL for development')
+    
+    await prisma.$disconnect().catch(() => {})
+    process.exit(1)
   }
 }
 
-main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect())
-
+testConnection()

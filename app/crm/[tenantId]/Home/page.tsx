@@ -16,7 +16,11 @@ import {
   BarChart3,
   RefreshCw,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Building2,
+  Handshake,
+  Target,
+  DollarSign
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { DashboardLoading } from '@/components/ui/loading'
@@ -634,16 +638,16 @@ export default function CRMDashboardPage() {
 
   return (
     <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative transition-colors">
-      {/* Welcome Banner - Enhanced - Design System Colors */}
-      <div className="bg-gradient-to-r from-teal-primary to-blue-secondary text-white px-6 py-6 shadow-lg">
+      {/* Welcome Banner - Enhanced - PayAid Brand Colors */}
+      <div className="bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 text-white px-6 py-8 shadow-xl">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2">
-              Welcome back, {user?.name || 'User'}! 👋
+            <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
+              <span>Welcome back, {user?.name || 'User'}!</span>
             </h1>
             {tenant && (
-              <p className="text-blue-100 flex items-center gap-2">
-                <span>🏢</span>
+              <p className="text-purple-100 flex items-center gap-2 text-lg">
+                <Building2 className="w-5 h-5" />
                 {tenant.name}
               </p>
             )}
@@ -718,7 +722,7 @@ export default function CRMDashboardPage() {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Tasks & Activities</h2>
             
             {/* My Open Activities for Today */}
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">My Open Activities for Today</CardTitle>
                 <CardDescription>Tasks and activities due today</CardDescription>
@@ -752,7 +756,7 @@ export default function CRMDashboardPage() {
             </Card>
 
             {/* My Open Tasks */}
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">My Open Tasks</CardTitle>
                 <CardDescription>All pending and in-progress tasks</CardDescription>
@@ -785,7 +789,7 @@ export default function CRMDashboardPage() {
             </Card>
 
             {/* My Meetings for Today */}
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">My Meetings for Today</CardTitle>
                 <CardDescription>Scheduled meetings today</CardDescription>
@@ -819,7 +823,7 @@ export default function CRMDashboardPage() {
             </Card>
 
             {/* My Leads */}
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">My Leads</CardTitle>
                 <CardDescription>Recent leads assigned to you</CardDescription>
@@ -852,7 +856,7 @@ export default function CRMDashboardPage() {
             </Card>
 
             {/* My Pipeline Deals By Stage */}
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">My Pipeline Deals By Stage</CardTitle>
                 <CardDescription>Deals distribution across pipeline stages</CardDescription>
@@ -881,7 +885,7 @@ export default function CRMDashboardPage() {
             </Card>
 
             {/* My Deals Closing This Month */}
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">My Deals Closing This Month</CardTitle>
                 <CardDescription>Deals expected to close this month</CardDescription>
@@ -943,7 +947,7 @@ export default function CRMDashboardPage() {
               </select>
             </div>
 
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
               <CardHeader>
                 <CardTitle>Recent Activities</CardTitle>
                 <CardDescription>All activities sorted by most recent</CardDescription>
@@ -977,9 +981,9 @@ export default function CRMDashboardPage() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <Badge className={
-                                  activity.type === 'task' ? 'bg-blue-secondary/10 text-blue-secondary border border-blue-secondary/20' :
+                                  activity.type === 'task' ? 'bg-info-light text-info border border-info/30' :
                                   activity.type === 'call' ? 'bg-emerald-success/10 text-emerald-success border border-emerald-success/20' :
-                                  activity.type === 'email' ? 'bg-teal-primary/10 text-teal-primary border border-teal-primary/20' :
+                                  activity.type === 'email' ? 'bg-purple-100 text-purple-700 border border-purple-300' :
                                   activity.type === 'meeting' ? 'bg-amber-alert/10 text-amber-alert border border-amber-alert/20' :
                                   activity.type === 'deal' ? 'bg-gold-accent/10 text-gold-accent border border-gold-accent/20' :
                                   'bg-gray-100 text-gray-700 border border-gray-300'
@@ -1053,20 +1057,20 @@ export default function CRMDashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0 * 0.1, duration: 0.3 }}
             >
-              <Card className="border-0 shadow-sm bg-white hover:shadow-md transition-all duration-150 cursor-pointer">
+              <Card className="border-0 shadow-md bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-150 cursor-pointer border-l-4 border-purple-500">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Deals Created</CardTitle>
-                  <div className="w-12 h-12 bg-teal-primary/10 rounded-lg flex items-center justify-center">
-                    <Briefcase className="h-6 w-6 text-teal-primary" />
+                  <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center shadow-sm">
+                    <Briefcase className="h-6 w-6 text-purple-600" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-semibold text-gray-900 mb-1">
+                  <div className="text-3xl font-bold text-gray-900 mb-1">
                     {stats?.dealsCreatedThisMonth || 0}
                   </div>
-                  <p className="text-sm text-emerald-success flex items-center gap-1">
-                    <ArrowUpRight className="w-3 h-3" />
-                    <span className="font-medium">{getPeriodLabel()}</span>
+                  <p className="text-sm text-success flex items-center gap-1 font-medium">
+                    <ArrowUpRight className="w-4 h-4" />
+                    <span>{getPeriodLabel()}</span>
                   </p>
                 </CardContent>
               </Card>
@@ -1079,20 +1083,20 @@ export default function CRMDashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 * 0.1, duration: 0.3 }}
             >
-              <Card className="border-0 shadow-sm bg-white hover:shadow-md transition-all duration-150 cursor-pointer">
+              <Card className="border-0 shadow-md bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-150 cursor-pointer border-l-4 border-gold-500">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Revenue</CardTitle>
-                  <div className="w-12 h-12 bg-emerald-success/10 rounded-lg flex items-center justify-center">
-                    <span className="text-emerald-success font-bold text-lg">₹</span>
+                  <div className="w-12 h-12 bg-gold-100 rounded-xl flex items-center justify-center shadow-sm">
+                    <DollarSign className="h-6 w-6 text-gold-600" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-semibold text-gray-900 mb-1">
+                  <div className="text-3xl font-bold text-gray-900 mb-1">
                     ₹{stats?.revenueThisMonth?.toLocaleString('en-IN') || '0'}
                   </div>
-                  <p className="text-sm text-emerald-success flex items-center gap-1">
-                    <ArrowUpRight className="w-3 h-3" />
-                    <span className="font-medium">{getPeriodLabel()}</span>
+                  <p className="text-sm text-success flex items-center gap-1 font-medium">
+                    <ArrowUpRight className="w-4 h-4" />
+                    <span>{getPeriodLabel()}</span>
                   </p>
                 </CardContent>
               </Card>
@@ -1105,20 +1109,20 @@ export default function CRMDashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 * 0.1, duration: 0.3 }}
             >
-              <Card className="border-0 shadow-sm bg-white hover:shadow-md transition-all duration-150 cursor-pointer">
+              <Card className="border-0 shadow-md bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-150 cursor-pointer border-l-4 border-info">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Deals Closing</CardTitle>
-                  <div className="w-12 h-12 bg-blue-secondary/10 rounded-lg flex items-center justify-center">
-                    <Calendar className="h-6 w-6 text-blue-secondary" />
+                  <div className="w-12 h-12 bg-info-light rounded-xl flex items-center justify-center shadow-sm">
+                    <Target className="h-6 w-6 text-info" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-semibold text-gray-900 mb-1">
+                  <div className="text-3xl font-bold text-gray-900 mb-1">
                     {stats?.dealsClosingThisMonth || 0}
                   </div>
-                  <p className="text-sm text-emerald-success flex items-center gap-1">
-                    <ArrowUpRight className="w-3 h-3" />
-                    <span className="font-medium">{getPeriodLabel()}</span>
+                  <p className="text-sm text-success flex items-center gap-1 font-medium">
+                    <ArrowUpRight className="w-4 h-4" />
+                    <span>{getPeriodLabel()}</span>
                   </p>
                 </CardContent>
               </Card>
@@ -1131,20 +1135,20 @@ export default function CRMDashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 * 0.1, duration: 0.3 }}
             >
-              <Card className="border-0 shadow-sm bg-white hover:shadow-md transition-all duration-150 cursor-pointer">
+              <Card className="border-0 shadow-md bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-150 cursor-pointer border-l-4 border-error">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Overdue Tasks</CardTitle>
-                  <div className="w-12 h-12 bg-red-error/10 rounded-lg flex items-center justify-center">
-                    <AlertCircle className="h-6 w-6 text-red-error" />
+                  <div className="w-12 h-12 bg-error-light rounded-xl flex items-center justify-center shadow-sm">
+                    <AlertCircle className="h-6 w-6 text-error" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-semibold text-gray-900 mb-1">
+                  <div className="text-3xl font-bold text-gray-900 mb-1">
                     {stats?.overdueTasks || 0}
                   </div>
-                  <p className="text-sm text-red-error flex items-center gap-1">
-                    <ArrowDownRight className="w-3 h-3" />
-                    <span className="font-medium">Requires attention</span>
+                  <p className="text-sm text-error flex items-center gap-1 font-medium">
+                    <ArrowDownRight className="w-4 h-4" />
+                    <span>Requires attention</span>
                   </p>
                 </CardContent>
               </Card>
@@ -1155,11 +1159,11 @@ export default function CRMDashboardPage() {
         {/* Charts Row - Modern Visualizations */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Pipeline by Stage - Pie Chart */}
-          <Card className="border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold">Pipeline by Stage</CardTitle>
-              <CardDescription>Distribution of deals across pipeline stages</CardDescription>
-            </CardHeader>
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 bg-gradient-to-br from-white to-purple-50/30">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-purple-900">Pipeline by Stage</CardTitle>
+                <CardDescription>Distribution of deals across pipeline stages</CardDescription>
+              </CardHeader>
             <CardContent>
               {pipelineChartData.length > 0 ? (
                 <div className="h-64 w-full" style={{ minWidth: 0, minHeight: 256 }}>

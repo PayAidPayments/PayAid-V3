@@ -24,8 +24,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   // Server-side timeout wrapper (Vercel Hobby has 10s timeout, Pro has 60s)
   // For minimal data/users, login should complete in < 2 seconds
-  // Use 5 seconds to allow for cold starts but fail fast if something is wrong
-  const SERVER_TIMEOUT = 5000 // 5 seconds - faster timeout for minimal data
+  // Use 10 seconds for local dev (allows for slower DB connections), 5 seconds for production
+  const SERVER_TIMEOUT = isDevelopment() ? 10000 : 5000 // 10s for dev, 5s for prod
   
   try {
     // Ensure we always return JSON, even for unexpected errors
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       handleLogin(request),
       new Promise<NextResponse>((_, reject) => {
         setTimeout(() => {
-          console.error('[LOGIN] Server-side timeout after 5 seconds')
+          console.error(`[LOGIN] Server-side timeout after ${SERVER_TIMEOUT / 1000} seconds`)
           reject(new Error('Server timeout: Request took too long to process'))
         }, SERVER_TIMEOUT)
       }),
@@ -130,7 +130,16 @@ async function handleLogin(request: NextRequest) {
     // Check database connection first
     if (!process.env.DATABASE_URL) {
       console.error('[LOGIN] DATABASE_URL is not configured')
-      throw new Error('Database configuration error: DATABASE_URL is missing')
+      return NextResponse.json(
+        { 
+          error: 'Database configuration error',
+          message: 'DATABASE_URL environment variable is not set. Please configure it in your .env.local file.',
+        },
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
     }
     
       // Use prismaWithRetry with minimal retry settings for login (critical path)
