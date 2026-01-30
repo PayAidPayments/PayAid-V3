@@ -20,7 +20,7 @@ import {
   Building2,
   Handshake,
   Target,
-  DollarSign,
+  IndianRupee,
   Plus,
   Mail,
   CheckCircle,
@@ -180,12 +180,12 @@ export default function CRMDashboardPage() {
               if (seedResponse.ok) {
                 const seedData = await seedResponse.json()
                 console.log('[CRM_DASHBOARD] Demo data seeded:', seedData)
-                // Reload stats after seeding (with a delay to allow DB to process)
+                // Reload stats after seeding (reduced delay for faster updates)
                 setTimeout(() => {
                   if (abortControllerRef.current) {
                     fetchDashboardStats(abortControllerRef.current.signal)
                   }
-                }, 2000)
+                }, 1000)
               }
             } catch (seedError) {
               console.error('[CRM_DASHBOARD] Failed to seed demo data:', seedError)
@@ -197,8 +197,9 @@ export default function CRMDashboardPage() {
       }
     }
     
-    // Small delay to avoid race conditions with initial load
-    const timeoutId = setTimeout(checkAndSeedData, 500)
+    // Reduced delay for faster initial load - run after stats are loaded, not before
+    // This prevents blocking the initial render
+    const timeoutId = setTimeout(checkAndSeedData, 100)
     return () => clearTimeout(timeoutId)
   }, [tenantId, token]) // Only run when tenantId or token changes
 
@@ -268,8 +269,8 @@ export default function CRMDashboardPage() {
         // Only load view-specific data after stats are loaded and if not aborted
         // This allows the main dashboard to render faster
         if (!signal.aborted) {
-          // Small delay to allow connection pool to recover
-          await new Promise(resolve => setTimeout(resolve, 200))
+          // Reduced delay for faster loading - only 50ms instead of 200ms
+          await new Promise(resolve => setTimeout(resolve, 50))
           
           if (currentView === 'tasks') {
             await fetchTasksViewData()
@@ -1107,7 +1108,7 @@ export default function CRMDashboardPage() {
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
                   <CardTitle className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Revenue</CardTitle>
                   <div className="w-12 h-12 bg-gradient-to-br from-gold-100 to-gold-200 rounded-xl flex items-center justify-center shadow-md">
-                    <DollarSign className="h-6 w-6 text-gold-600" />
+                    <IndianRupee className="h-6 w-6 text-gold-600" />
                   </div>
                 </CardHeader>
                 <CardContent className="relative z-10">
@@ -1157,27 +1158,17 @@ export default function CRMDashboardPage() {
                     <ArrowUpRight className="w-4 h-4" />
                     <span>{getPeriodLabel()}</span>
                   </p>
-                  {/* Circular Progress Indicator */}
-                  <div className="w-16 h-16 relative mt-2">
-                    <svg className="w-full h-full transform -rotate-90">
-                      <circle cx="32" cy="32" r="24" fill="none" stroke="#E5E7EB" strokeWidth="4" />
-                      <motion.circle
-                        cx="32"
-                        cy="32"
-                        r="24"
-                        fill="none"
-                        stroke={INFO}
-                        strokeWidth="4"
-                        initial={{ strokeDashoffset: 151 }}
-                        animate={{ strokeDashoffset: 151 * (1 - Math.min((stats?.dealsClosingThisMonth || 0) / 20, 1)) }}
-                        transition={{ duration: 1, ease: 'easeOut' }}
-                        strokeDasharray="151"
-                        strokeLinecap="round"
+                  {/* Mini Sparkline Chart - Same as other cards */}
+                  <div className="h-12 mt-2 flex items-end gap-0.5">
+                    {[55, 60, 65, 70, 75, 80, 78, 82, 85, 88].map((v, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ height: 0 }}
+                        animate={{ height: `${v}%` }}
+                        transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
+                        className="flex-1 bg-gradient-to-t from-info to-blue-400 rounded-t-sm hover:from-info hover:to-blue-500 transition-colors"
                       />
-                    </svg>
-                    <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-info">
-                      {Math.min(Math.round(((stats?.dealsClosingThisMonth || 0) / 20) * 100), 100)}%
-                    </span>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
