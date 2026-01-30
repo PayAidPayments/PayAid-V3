@@ -49,10 +49,10 @@ function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {
   };
   
   const statusConfig = {
-    active: { label: "Active", className: "bg-green-100 border-green-200", style: { color: '#53328A' } },
-    "coming-soon": { label: "Coming Soon", className: "bg-yellow-100 border-yellow-200", style: { color: '#53328A' } },
-    beta: { label: "Beta", className: "bg-blue-100 border-blue-200", style: { color: '#53328A' } },
-    deprecated: { label: "Deprecated", className: "bg-gray-100 border-gray-200", style: { color: '#53328A' } }
+    active: { label: "Active", className: "bg-emerald-success/10 text-emerald-success border border-emerald-success/20", style: {} },
+    "coming-soon": { label: "Coming Soon", className: "bg-amber-alert/10 text-amber-alert border border-amber-alert/20", style: {} },
+    beta: { label: "Beta", className: "bg-blue-secondary/10 text-blue-secondary border border-blue-secondary/20", style: {} },
+    deprecated: { label: "Deprecated", className: "bg-gray-100 text-gray-700 border border-gray-300", style: {} }
   };
 
   // Default to "active" if status is missing or invalid
@@ -78,10 +78,15 @@ function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {
       href={isComingSoon ? '#' : getModuleUrl()}
       onClick={handleClick}
       className={cn(
-        "group relative block p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg transition-all duration-200",
+        // Design System: Card with proper hover states and animations
+        "group relative block p-6",
+        "bg-white dark:bg-gray-800",
+        "border border-gray-200 dark:border-gray-700",
+        "rounded-lg",
+        "transition-all duration-150 ease-in-out",
         isComingSoon 
           ? "opacity-60 cursor-not-allowed" 
-          : "hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600"
+          : "hover:shadow-md hover:border-teal-primary/30 dark:hover:border-teal-primary/30 hover:-translate-y-0.5"
       )}
     >
       <div className="flex items-start justify-between mb-4">

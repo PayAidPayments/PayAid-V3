@@ -187,11 +187,11 @@ export default function FinanceDashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">
-              Finance Dashboard 💰
+              Finance Dashboard
             </h1>
             {tenant && (
-              <p className="text-yellow-100 flex items-center gap-2">
-                <span>🏢</span>
+              <p className="text-white/90 flex items-center gap-2">
+                <Landmark className="w-5 h-5" />
                 {tenant.name}
               </p>
             )}

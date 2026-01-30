@@ -112,6 +112,33 @@ select:focus {
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  
+  /* Design System: Typography hierarchy */
+  h1 {
+    @apply text-3xl md:text-4xl font-bold text-gray-900 tracking-tight;
+    line-height: 1.2;
+  }
+  
+  h2 {
+    @apply text-2xl md:text-3xl font-bold text-gray-900 tracking-tight;
+    line-height: 1.25;
+  }
+  
+  h3 {
+    @apply text-xl md:text-2xl font-semibold text-gray-900 tracking-tight;
+    line-height: 1.3;
+  }
+  
+  h4 {
+    @apply text-lg font-semibold text-gray-900;
+    line-height: 1.4;
+  }
+  
+  /* Design System: Smooth transitions for all interactive elements */
+  button, a, input, select, textarea {
+    @apply transition-colors duration-150 ease-in-out;
   }
 }
 
