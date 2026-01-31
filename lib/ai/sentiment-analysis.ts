@@ -3,7 +3,7 @@
  * Enhanced sentiment analysis for communications
  */
 
-import { Groq } from '@langchain/groq'
+import { ChatGroq } from '@langchain/groq'
 import { logger } from '@/lib/logging/structured-logger'
 
 export interface SentimentResult {
@@ -21,10 +21,10 @@ export interface SentimentResult {
 }
 
 export class SentimentAnalysisService {
-  private llm: Groq
+  private llm: ChatGroq
 
   constructor() {
-    this.llm = new Groq({
+    this.llm = new ChatGroq({
       modelName: 'llama-3.1-70b-versatile',
       temperature: 0.3,
       apiKey: process.env.GROQ_API_KEY,
