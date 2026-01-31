@@ -182,7 +182,8 @@ export function ModuleSwitcher() {
   const licensedModules = tenant?.licensedModules || []
   const tenantId = tenant?.id && typeof tenant.id === 'string' ? tenant.id : undefined
   
-  // Build modules list from config, filtering by status
+  // Build modules list from config, filtering by status and excluding industry modules
+  // Industry is selected during signup and cannot be switched
   const allModules: Module[] = [
     // Add Home module first
     { 
@@ -194,9 +195,12 @@ export function ModuleSwitcher() {
       active: currentModule === 'home', 
       licensed: true 
     },
-    // Add all other modules from config
+    // Add all other modules from config, excluding industry modules
     ...moduleConfigs
-      .filter(config => config.status === 'active' || config.status === 'beta') // Include active and beta modules
+      .filter(config => 
+        (config.status === 'active' || config.status === 'beta') && 
+        config.category !== 'industry' // Exclude industry modules - they're not switchable modules
+      )
       .map(config => ({
         id: config.id,
         name: config.name,
@@ -208,8 +212,8 @@ export function ModuleSwitcher() {
         category: config.category, // Store category for sorting
       }))
       .sort((a, b) => {
-        // Sort by category (core, productivity, ai, industry), then alphabetically
-        const categoryOrder: Record<string, number> = { 'core': 0, 'productivity': 1, 'ai': 2, 'industry': 3 }
+        // Sort by category (core, productivity, ai), then alphabetically
+        const categoryOrder: Record<string, number> = { 'core': 0, 'productivity': 1, 'ai': 2 }
         const orderA = categoryOrder[(a as any).category] || 99
         const orderB = categoryOrder[(b as any).category] || 99
         

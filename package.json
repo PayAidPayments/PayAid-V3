@@ -11,7 +11,7 @@
     "dev:websocket": "tsx server/websocket-voice-server.ts",
     "dev:telephony": "tsx server/telephony-audio-stream.ts",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:websocket\"",
-    "build": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next build",
+    "build": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next build --webpack",
     "build:with-prisma": "prisma generate && prisma migrate deploy && next build --webpack",
     "build:typecheck": "next build --webpack",
     "build:with-db": "prisma generate && prisma db push --skip-generate --accept-data-loss && next build --webpack",

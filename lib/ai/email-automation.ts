@@ -3,7 +3,7 @@
  * AI-powered email response automation
  */
 
-import { Groq } from '@langchain/groq'
+import { ChatGroq } from '@langchain/groq'
 import { logger } from '@/lib/logging/structured-logger'
 
 export interface EmailContext {
@@ -28,10 +28,10 @@ export interface EmailResponse {
 }
 
 export class EmailAutomationService {
-  private llm: Groq
+  private llm: ChatGroq
 
   constructor() {
-    this.llm = new Groq({
+    this.llm = new ChatGroq({
       modelName: 'llama-3.1-70b-versatile',
       temperature: 0.7,
       apiKey: process.env.GROQ_API_KEY,

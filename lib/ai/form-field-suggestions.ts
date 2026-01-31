@@ -3,7 +3,7 @@
  * Context-aware form field suggestions based on industry, purpose, and best practices
  */
 
-import { Groq } from '@langchain/groq'
+import { ChatGroq } from '@langchain/groq'
 import { logger } from '@/lib/logging/structured-logger'
 import { FormField } from '@/lib/forms/form-builder'
 
@@ -25,10 +25,10 @@ export interface FieldSuggestion {
 }
 
 export class FormFieldSuggestionService {
-  private llm: Groq
+  private llm: ChatGroq
 
   constructor() {
-    this.llm = new Groq({
+    this.llm = new ChatGroq({
       modelName: 'llama-3.1-70b-versatile',
       temperature: 0.7,
       apiKey: process.env.GROQ_API_KEY,

@@ -154,9 +154,13 @@ export function ModuleSwitcher() {
       iconComponent: Home,
     })
 
-    // Add all active modules from config
+    // Add all active modules from config, excluding industry modules
+    // Industry is selected during signup and cannot be switched
     for (const config of moduleConfigs) {
-      if (config.status === 'active' || config.status === 'beta') {
+      if (
+        (config.status === 'active' || config.status === 'beta') &&
+        config.category !== 'industry' // Exclude industry modules - they're not switchable modules
+      ) {
         // Map icon names to components
         const iconName = config.icon
         const iconComponent = iconMap[iconName] || iconMap[config.id] || Users
@@ -172,8 +176,8 @@ export function ModuleSwitcher() {
       }
     }
 
-    // Sort by category then name
-    const categoryOrder: Record<string, number> = { 'core': 0, 'productivity': 1, 'ai': 2, 'industry': 3 }
+    // Sort by category then name (excluding industry)
+    const categoryOrder: Record<string, number> = { 'core': 0, 'productivity': 1, 'ai': 2 }
     modules.sort((a, b) => {
       if (a.id === 'home') return -1
       if (b.id === 'home') return 1

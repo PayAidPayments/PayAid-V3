@@ -5,18 +5,15 @@ const nextConfig = {
   output: 'standalone',
   // Enable response compression (gzip/brotli) for better performance
   compress: true,
-  // Add empty turbopack config to silence error, but we'll use webpack for better compatibility
-  turbopack: {},
+  // Disable Turbopack - use webpack for better compatibility with native modules
+  // Turbopack has issues with native modules like ssh2, bull, dockerode
+  // webpack: {}, // Use webpack instead
   // Optimize TypeScript compilation
   typescript: {
     // Don't fail build on type errors during build (type checking happens separately)
     // This speeds up builds significantly
     // Set to true for Vercel builds to allow deployment even with type errors
     ignoreBuildErrors: true,
-  },
-  // ESLint configuration - ignore during builds to prevent failures
-  eslint: {
-    ignoreDuringBuilds: true,
   },
   // Optimize build performance
   experimental: {
