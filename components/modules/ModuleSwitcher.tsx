@@ -23,29 +23,94 @@ import {
   Palette,
   BookOpen,
   Phone,
-  BarChart3
+  BarChart3,
+  ShoppingCart,
+  Calendar,
+  GitBranch,
+  Newspaper,
+  FileText,
+  Table,
+  FileEdit,
+  Folder,
+  Presentation,
+  Video,
+  UtensilsCrossed,
+  Store,
+  Wrench,
+  ShoppingBag,
+  Factory,
+  BriefcaseBusiness,
+  Heart,
+  GraduationCap,
+  Truck,
+  Sprout,
+  Hammer,
+  Scissors,
+  Car,
+  Building2,
+  Scale,
+  TrendingUp,
+  PackageSearch,
+  ShieldCheck,
+  Sparkles
 } from 'lucide-react'
 import { getSSOToken, navigateToModule, getModuleUrl } from '@/lib/sso/token-manager'
 import { useAuthStore } from '@/lib/stores/auth'
+import { modules as moduleConfigs } from '@/lib/modules.config'
 
 // Icon mapping for modules
 const moduleIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   'home': Home,
   'crm': Users,
-  'sales': Briefcase,
-  'finance': Landmark, // Changed from DollarSign to Landmark (bank/finance icon for Indian Rupee context)
+  'sales': ShoppingCart,
+  'finance': Landmark,
   'marketing': Megaphone,
   'hr': UserCircle,
   'projects': FolderKanban,
   'inventory': Package,
   'analytics': BarChart3,
-  'ai-cofounder': Bot,
+  'ai-cofounder': Sparkles,
   'ai-chat': MessageSquare,
   'ai-insights': Lightbulb,
   'website-builder': Globe,
   'logo-generator': Palette,
   'knowledge-rag': BookOpen,
   'voice-agents': Phone,
+  'communication': MessageSquare,
+  'industry-intelligence': Newspaper,
+  'appointments': Calendar,
+  'workflow': GitBranch,
+  'help-center': BookOpen,
+  'contracts': FileText,
+  'spreadsheet': Table,
+  'docs': FileEdit,
+  'drive': Folder,
+  'slides': Presentation,
+  'meet': Video,
+  'pdf': FileText,
+  'restaurant': UtensilsCrossed,
+  'retail': Store,
+  'service': Wrench,
+  'ecommerce': ShoppingBag,
+  'manufacturing': Factory,
+  'field-service': Wrench,
+  'asset-management': Package,
+  'compliance': ShieldCheck,
+  'lms': GraduationCap,
+  'professional-services': BriefcaseBusiness,
+  'healthcare': Heart,
+  'education': GraduationCap,
+  'real-estate': Home,
+  'logistics': Truck,
+  'agriculture': Sprout,
+  'construction': Hammer,
+  'beauty': Scissors,
+  'automotive': Car,
+  'hospitality': Building2,
+  'legal': Scale,
+  'financial-services': TrendingUp,
+  'events': Calendar,
+  'wholesale': PackageSearch,
 }
 
 interface Module {
@@ -67,36 +132,47 @@ export function ModuleSwitcher() {
 
   // Detect current module from pathname
   useEffect(() => {
-    if (pathname?.startsWith('/dashboard/crm') || pathname?.startsWith('/crm')) {
+    if (!pathname) {
+      setCurrentModule('dashboard')
+      return
+    }
+
+    // Check all modules from config
+    for (const moduleConfig of moduleConfigs) {
+      const moduleId = moduleConfig.id
+      const moduleUrl = moduleConfig.url
+      
+      // Check if pathname matches module URL patterns
+      if (
+        pathname.startsWith(moduleUrl) ||
+        pathname.includes(`/${moduleId}/`) ||
+        pathname.includes(`/${moduleId}`) ||
+        (moduleUrl.includes('/dashboard/') && pathname.startsWith(moduleUrl.replace('/dashboard', '')))
+      ) {
+        setCurrentModule(moduleId)
+        return
+      }
+    }
+
+    // Fallback checks for common patterns
+    if (pathname.startsWith('/dashboard/crm') || pathname.startsWith('/crm')) {
       setCurrentModule('crm')
-    } else if (pathname?.startsWith('/dashboard/finance') || pathname?.startsWith('/finance')) {
+    } else if (pathname.startsWith('/dashboard/finance') || pathname.startsWith('/finance')) {
       setCurrentModule('finance')
-    } else if (pathname?.startsWith('/dashboard/sales') || pathname?.startsWith('/sales')) {
+    } else if (pathname.startsWith('/dashboard/sales') || pathname.startsWith('/sales')) {
       setCurrentModule('sales')
-    } else if (pathname?.startsWith('/dashboard/marketing') || pathname?.startsWith('/marketing')) {
+    } else if (pathname.startsWith('/dashboard/marketing') || pathname.startsWith('/marketing')) {
       setCurrentModule('marketing')
-    } else if (pathname?.startsWith('/dashboard/hr') || pathname?.startsWith('/hr')) {
+    } else if (pathname.startsWith('/dashboard/hr') || pathname.startsWith('/hr')) {
       setCurrentModule('hr')
-    } else if (pathname?.startsWith('/dashboard/projects') || pathname?.startsWith('/projects')) {
+    } else if (pathname.startsWith('/dashboard/projects') || pathname.startsWith('/projects')) {
       setCurrentModule('projects')
-    } else if (pathname?.startsWith('/dashboard/inventory') || pathname?.startsWith('/inventory')) {
+    } else if (pathname.startsWith('/dashboard/inventory') || pathname.startsWith('/inventory')) {
       setCurrentModule('inventory')
-    } else if (pathname?.startsWith('/dashboard/analytics') || pathname?.startsWith('/analytics')) {
+    } else if (pathname.startsWith('/dashboard/analytics') || pathname.startsWith('/analytics')) {
       setCurrentModule('analytics')
-    } else if (pathname?.startsWith('/ai-cofounder') || pathname?.includes('/Cofounder')) {
-      setCurrentModule('ai-cofounder')
-    } else if (pathname?.startsWith('/ai-chat') || pathname?.includes('/Chat')) {
-      setCurrentModule('ai-chat')
-    } else if (pathname?.startsWith('/ai-insights') || pathname?.includes('/Insights')) {
-      setCurrentModule('ai-insights')
-    } else if (pathname?.startsWith('/website-builder') || pathname?.includes('/Websites')) {
-      setCurrentModule('website-builder')
-    } else if (pathname?.startsWith('/logo-generator') || pathname?.includes('/Logos')) {
-      setCurrentModule('logo-generator')
-    } else if (pathname?.startsWith('/knowledge-rag') || pathname?.includes('/Knowledge')) {
-      setCurrentModule('knowledge-rag')
-    } else if (pathname?.startsWith('/ai-studio')) {
-      setCurrentModule('ai-studio')
+    } else if (pathname.startsWith('/home')) {
+      setCurrentModule('home')
     } else {
       setCurrentModule('dashboard')
     }
@@ -106,24 +182,40 @@ export function ModuleSwitcher() {
   const licensedModules = tenant?.licensedModules || []
   const tenantId = tenant?.id && typeof tenant.id === 'string' ? tenant.id : undefined
   
+  // Build modules list from config, filtering by status
   const allModules: Module[] = [
-    { id: 'home', name: 'Home', icon: 'home', iconComponent: moduleIconMap['home'], url: tenantId ? `/home/${tenantId}` : '/home', active: currentModule === 'home', licensed: true },
-    // Always use base module URLs (e.g., /crm) - entry points handle tenant-specific redirects
-    // This ensures middleware doesn't block and auth state is properly checked
-    { id: 'crm', name: 'CRM', icon: 'crm', iconComponent: moduleIconMap['crm'], url: '/crm', active: currentModule === 'crm', licensed: licensedModules.includes('crm') || true },
-    { id: 'sales', name: 'Sales', icon: 'sales', iconComponent: moduleIconMap['sales'], url: '/sales', active: currentModule === 'sales', licensed: licensedModules.includes('sales') || true },
-    { id: 'finance', name: 'Finance', icon: 'finance', iconComponent: moduleIconMap['finance'], url: '/finance', active: currentModule === 'finance', licensed: licensedModules.includes('finance') || true },
-    { id: 'marketing', name: 'Marketing', icon: 'marketing', iconComponent: moduleIconMap['marketing'], url: '/marketing', active: currentModule === 'marketing', licensed: licensedModules.includes('marketing') || true },
-    { id: 'hr', name: 'HR', icon: 'hr', iconComponent: moduleIconMap['hr'], url: '/hr', active: currentModule === 'hr', licensed: licensedModules.includes('hr') || true },
-    { id: 'projects', name: 'Projects', icon: 'projects', iconComponent: moduleIconMap['projects'], url: '/projects', active: currentModule === 'projects', licensed: licensedModules.includes('projects') || true },
-    { id: 'inventory', name: 'Inventory', icon: 'inventory', iconComponent: moduleIconMap['inventory'], url: '/inventory', active: currentModule === 'inventory', licensed: licensedModules.includes('inventory') || true },
-    { id: 'analytics', name: 'Analytics', icon: 'analytics', iconComponent: moduleIconMap['analytics'], url: '/analytics', active: currentModule === 'analytics', licensed: licensedModules.includes('analytics') || true },
-    { id: 'ai-cofounder', name: 'AI Co-founder', icon: 'ai-cofounder', iconComponent: moduleIconMap['ai-cofounder'], url: '/ai-cofounder', active: currentModule === 'ai-cofounder', licensed: licensedModules.includes('ai-cofounder') || true },
-    { id: 'ai-chat', name: 'AI Chat', icon: 'ai-chat', iconComponent: moduleIconMap['ai-chat'], url: '/ai-chat', active: currentModule === 'ai-chat', licensed: licensedModules.includes('ai-chat') || true },
-    { id: 'ai-insights', name: 'AI Insights', icon: 'ai-insights', iconComponent: moduleIconMap['ai-insights'], url: '/ai-insights', active: currentModule === 'ai-insights', licensed: licensedModules.includes('ai-insights') || true },
-    { id: 'website-builder', name: 'Website Builder', icon: 'website-builder', iconComponent: moduleIconMap['website-builder'], url: '/website-builder', active: currentModule === 'website-builder', licensed: licensedModules.includes('website-builder') || true },
-    { id: 'logo-generator', name: 'Logo Generator', icon: 'logo-generator', iconComponent: moduleIconMap['logo-generator'], url: '/logo-generator', active: currentModule === 'logo-generator', licensed: licensedModules.includes('logo-generator') || true },
-    { id: 'knowledge-rag', name: 'Knowledge & RAG AI', icon: 'knowledge-rag', iconComponent: moduleIconMap['knowledge-rag'], url: '/knowledge-rag', active: currentModule === 'knowledge-rag', licensed: licensedModules.includes('knowledge-rag') || true },
+    // Add Home module first
+    { 
+      id: 'home', 
+      name: 'Home', 
+      icon: 'home', 
+      iconComponent: moduleIconMap['home'], 
+      url: tenantId ? `/home/${tenantId}` : '/home', 
+      active: currentModule === 'home', 
+      licensed: true 
+    },
+    // Add all other modules from config
+    ...moduleConfigs
+      .filter(config => config.status === 'active' || config.status === 'beta') // Include active and beta modules
+      .map(config => ({
+        id: config.id,
+        name: config.name,
+        icon: config.icon,
+        iconComponent: moduleIconMap[config.id] || moduleIconMap[config.icon.toLowerCase()] || Users,
+        url: config.url,
+        active: currentModule === config.id,
+        licensed: licensedModules.includes(config.id) || licensedModules.length === 0 || true, // Show all if no license check or if licensed
+        category: config.category, // Store category for sorting
+      }))
+      .sort((a, b) => {
+        // Sort by category (core, productivity, ai, industry), then alphabetically
+        const categoryOrder: Record<string, number> = { 'core': 0, 'productivity': 1, 'ai': 2, 'industry': 3 }
+        const orderA = categoryOrder[(a as any).category] || 99
+        const orderB = categoryOrder[(b as any).category] || 99
+        
+        if (orderA !== orderB) return orderA - orderB
+        return a.name.localeCompare(b.name)
+      })
   ]
 
   const availableModules = allModules.filter(m => m.licensed)
@@ -189,36 +281,40 @@ export function ModuleSwitcher() {
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute top-full right-0 mt-2 z-20 min-w-[200px] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-            <div className="p-2">
-              <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
-                Switch Module
+          <div className="absolute top-full right-0 mt-2 z-20 min-w-[280px] max-w-[320px] max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-2 overflow-y-auto max-h-[80vh]">
+              <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase sticky top-0 bg-white dark:bg-gray-800 z-10">
+                Switch Module ({availableModules.length})
               </div>
               <div className="space-y-1">
-                {availableModules.map((module) => (
-                  <button
-                    key={module.id}
-                    onClick={() => handleModuleSwitch(module)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150 ${
-                      module.active
-                        ? 'bg-purple-500/10 text-purple-500'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    {module.iconComponent ? (
-                      <module.iconComponent className="h-5 w-5 flex-shrink-0" strokeWidth={2} />
-                    ) : (
-                      <span className="text-lg">{module.icon}</span>
-                    )}
-                    <span className="flex-1 text-left">{module.name}</span>
-                    {module.active && (
-                      <span className="text-xs text-purple-500">●</span>
-                    )}
-                    {module.url.startsWith('http') && (
-                      <ExternalLink className="h-3 w-3 text-gray-400" />
-                    )}
-                  </button>
-                ))}
+                {availableModules.map((module) => {
+                  const moduleConfig = moduleConfigs.find(m => m.id === module.id)
+                  return (
+                    <button
+                      key={module.id}
+                      onClick={() => handleModuleSwitch(module)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150 ${
+                        module.active
+                          ? 'bg-purple-500/10 text-purple-500 font-medium'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                      title={moduleConfig?.description}
+                    >
+                      {module.iconComponent ? (
+                        <module.iconComponent className="h-5 w-5 flex-shrink-0" strokeWidth={2} />
+                      ) : (
+                        <span className="text-lg">{module.icon}</span>
+                      )}
+                      <span className="flex-1 text-left truncate">{module.name}</span>
+                      {module.active && (
+                        <span className="text-xs text-purple-500 flex-shrink-0">●</span>
+                      )}
+                      {module.url.startsWith('http') && (
+                        <ExternalLink className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
