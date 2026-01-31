@@ -137,7 +137,7 @@ export default function CustomReportsPage() {
     try {
       const token = useAuthStore.getState().token
       
-      const response = await fetch(`/api/reports/custom/${reportId}`, {
+      const response = await fetch(`/api/reports/${reportId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
