@@ -22,7 +22,8 @@ import {
   Globe,
   Palette,
   BookOpen,
-  Phone
+  Phone,
+  BarChart3
 } from 'lucide-react'
 import { getSSOToken, navigateToModule, getModuleUrl } from '@/lib/sso/token-manager'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -37,6 +38,7 @@ const moduleIconMap: Record<string, React.ComponentType<{ className?: string }>>
   'hr': UserCircle,
   'projects': FolderKanban,
   'inventory': Package,
+  'analytics': BarChart3,
   'ai-cofounder': Bot,
   'ai-chat': MessageSquare,
   'ai-insights': Lightbulb,
@@ -79,6 +81,8 @@ export function ModuleSwitcher() {
       setCurrentModule('projects')
     } else if (pathname?.startsWith('/dashboard/inventory') || pathname?.startsWith('/inventory')) {
       setCurrentModule('inventory')
+    } else if (pathname?.startsWith('/dashboard/analytics') || pathname?.startsWith('/analytics')) {
+      setCurrentModule('analytics')
     } else if (pathname?.startsWith('/ai-cofounder') || pathname?.includes('/Cofounder')) {
       setCurrentModule('ai-cofounder')
     } else if (pathname?.startsWith('/ai-chat') || pathname?.includes('/Chat')) {
@@ -113,6 +117,7 @@ export function ModuleSwitcher() {
     { id: 'hr', name: 'HR', icon: 'hr', iconComponent: moduleIconMap['hr'], url: '/hr', active: currentModule === 'hr', licensed: licensedModules.includes('hr') || true },
     { id: 'projects', name: 'Projects', icon: 'projects', iconComponent: moduleIconMap['projects'], url: '/projects', active: currentModule === 'projects', licensed: licensedModules.includes('projects') || true },
     { id: 'inventory', name: 'Inventory', icon: 'inventory', iconComponent: moduleIconMap['inventory'], url: '/inventory', active: currentModule === 'inventory', licensed: licensedModules.includes('inventory') || true },
+    { id: 'analytics', name: 'Analytics', icon: 'analytics', iconComponent: moduleIconMap['analytics'], url: '/analytics', active: currentModule === 'analytics', licensed: licensedModules.includes('analytics') || true },
     { id: 'ai-cofounder', name: 'AI Co-founder', icon: 'ai-cofounder', iconComponent: moduleIconMap['ai-cofounder'], url: '/ai-cofounder', active: currentModule === 'ai-cofounder', licensed: licensedModules.includes('ai-cofounder') || true },
     { id: 'ai-chat', name: 'AI Chat', icon: 'ai-chat', iconComponent: moduleIconMap['ai-chat'], url: '/ai-chat', active: currentModule === 'ai-chat', licensed: licensedModules.includes('ai-chat') || true },
     { id: 'ai-insights', name: 'AI Insights', icon: 'ai-insights', iconComponent: moduleIconMap['ai-insights'], url: '/ai-insights', active: currentModule === 'ai-insights', licensed: licensedModules.includes('ai-insights') || true },

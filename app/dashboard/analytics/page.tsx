@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -57,9 +57,11 @@ export default function AnalyticsPage() {
   const websites = websitesData?.websites || []
 
   // Auto-select first website if available
-  if (websites.length > 0 && !selectedWebsiteId) {
-    setSelectedWebsiteId(websites[0].id)
-  }
+  useEffect(() => {
+    if (websites.length > 0 && !selectedWebsiteId) {
+      setSelectedWebsiteId(websites[0].id)
+    }
+  }, [websites, selectedWebsiteId])
 
   const analytics = analyticsData
 
