@@ -136,6 +136,7 @@ export default function CRMDashboardPage() {
   // Refs to prevent duplicate API calls
   const fetchingStatsRef = useRef(false)
   const fetchingActivityRef = useRef(false)
+  const fetchingTasksViewRef = useRef(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const hasCheckedDataRef = useRef(false) // Track if we've checked for demo data
 
@@ -354,9 +355,18 @@ export default function CRMDashboardPage() {
   }, [activityFilter, currentView])
 
   const fetchTasksViewData = async () => {
+    // Prevent duplicate calls
+    if (fetchingTasksViewRef.current) {
+      return
+    }
+    
     try {
+      fetchingTasksViewRef.current = true
       const token = useAuthStore.getState().token
-      if (!token) return
+      if (!token) {
+        fetchingTasksViewRef.current = false
+        return
+      }
 
       const response = await fetch('/api/crm/dashboard/tasks-view', {
         headers: {
@@ -369,9 +379,28 @@ export default function CRMDashboardPage() {
       }
 
       const data = await response.json()
-      setTasksViewData(data)
+      // Ensure all array properties exist to prevent .map() errors
+      setTasksViewData({
+        myOpenActivitiesToday: Array.isArray(data.myOpenActivitiesToday) ? data.myOpenActivitiesToday : [],
+        myOpenTasks: Array.isArray(data.myOpenTasks) ? data.myOpenTasks : [],
+        myMeetingsToday: Array.isArray(data.myMeetingsToday) ? data.myMeetingsToday : [],
+        myLeads: Array.isArray(data.myLeads) ? data.myLeads : [],
+        myPipelineDealsByStage: Array.isArray(data.myPipelineDealsByStage) ? data.myPipelineDealsByStage : [],
+        myDealsClosingThisMonth: Array.isArray(data.myDealsClosingThisMonth) ? data.myDealsClosingThisMonth : [],
+      })
     } catch (err) {
       console.error('Error fetching tasks view:', err)
+      // Set empty data on error to prevent undefined errors
+      setTasksViewData({
+        myOpenActivitiesToday: [],
+        myOpenTasks: [],
+        myMeetingsToday: [],
+        myLeads: [],
+        myPipelineDealsByStage: [],
+        myDealsClosingThisMonth: [],
+      })
+    } finally {
+      fetchingTasksViewRef.current = false
     }
   }
 
