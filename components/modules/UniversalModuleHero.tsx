@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Building2, TrendingUp } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
+import Link from 'next/link'
 
 interface MetricCard {
   label: string
@@ -11,6 +12,8 @@ interface MetricCard {
   trend?: 'up' | 'down' | 'stable'
   icon?: React.ReactNode
   color?: 'purple' | 'gold' | 'success' | 'info' | 'warning' | 'error'
+  href?: string // Optional navigation URL
+  onClick?: () => void // Optional click handler
 }
 
 interface UniversalModuleHeroProps {
@@ -35,19 +38,54 @@ export function UniversalModuleHero({
   const getMetricColor = (color?: MetricCard['color']) => {
     switch (color) {
       case 'purple':
-        return 'border-purple-500 bg-purple-50'
+        return {
+          bg: 'bg-purple-50 dark:bg-purple-900/20',
+          border: 'border-purple-500',
+          text: 'text-purple-900 dark:text-purple-100',
+          textSecondary: 'text-purple-700 dark:text-purple-300',
+        }
       case 'gold':
-        return 'border-gold-500 bg-gold-50'
+        return {
+          bg: 'bg-gold-50 dark:bg-gold-900/20',
+          border: 'border-gold-500',
+          text: 'text-gold-900 dark:text-gold-100',
+          textSecondary: 'text-gold-700 dark:text-gold-300',
+        }
       case 'success':
-        return 'border-success bg-success-light'
+        return {
+          bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+          border: 'border-emerald-500',
+          text: 'text-emerald-900 dark:text-emerald-100',
+          textSecondary: 'text-emerald-700 dark:text-emerald-300',
+        }
       case 'info':
-        return 'border-info bg-info-light'
+        return {
+          bg: 'bg-blue-50 dark:bg-blue-900/20',
+          border: 'border-blue-500',
+          text: 'text-blue-900 dark:text-blue-100',
+          textSecondary: 'text-blue-700 dark:text-blue-300',
+        }
       case 'warning':
-        return 'border-warning bg-warning-light'
+        return {
+          bg: 'bg-yellow-50 dark:bg-yellow-900/20',
+          border: 'border-yellow-500',
+          text: 'text-yellow-900 dark:text-yellow-100',
+          textSecondary: 'text-yellow-700 dark:text-yellow-300',
+        }
       case 'error':
-        return 'border-error bg-error-light'
+        return {
+          bg: 'bg-red-50 dark:bg-red-900/20',
+          border: 'border-red-500',
+          text: 'text-red-900 dark:text-red-100',
+          textSecondary: 'text-red-700 dark:text-red-300',
+        }
       default:
-        return 'border-purple-500 bg-purple-50'
+        return {
+          bg: 'bg-purple-50 dark:bg-purple-900/20',
+          border: 'border-purple-500',
+          text: 'text-purple-900 dark:text-purple-100',
+          textSecondary: 'text-purple-700 dark:text-purple-300',
+        }
     }
   }
 
@@ -76,42 +114,69 @@ export function UniversalModuleHero({
 
       {/* 4 Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metrics.map((metric, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1, duration: 0.3 }}
-            className={`
-              bg-white/10 backdrop-blur-sm rounded-lg p-4
-              border-2 border-white/20
-              hover:bg-white/20 transition-all duration-200
-              ${getMetricColor(metric.color)}
-            `}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-white/80 uppercase tracking-wider">
-                {metric.label}
-              </p>
-              {metric.icon && <div className="text-white/80">{metric.icon}</div>}
-            </div>
-            <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-bold text-white">
-                {typeof metric.value === 'number' ? metric.value.toLocaleString('en-IN') : metric.value}
-              </p>
-              {metric.change !== undefined && (
-                <div className={`flex items-center gap-1 text-xs font-semibold ${
-                  metric.trend === 'up' ? 'text-success' : 
-                  metric.trend === 'down' ? 'text-error' : 
-                  'text-white/70'
-                }`}>
-                  <TrendingUp className={`w-3 h-3 ${metric.trend === 'down' ? 'rotate-180' : ''}`} />
-                  <span>{Math.abs(metric.change)}%</span>
+        {metrics.map((metric, index) => {
+          const colors = getMetricColor(metric.color)
+          const isClickable = metric.href || metric.onClick
+
+          const CardContent = (
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <p className={`text-xs font-semibold ${colors.textSecondary} uppercase tracking-wider`}>
+                  {metric.label}
+                </p>
+                {metric.icon && <div className={colors.textSecondary}>{metric.icon}</div>}
+              </div>
+              <div className="flex items-baseline gap-2">
+                <p className={`text-2xl font-bold ${colors.text}`}>
+                  {typeof metric.value === 'number' ? metric.value.toLocaleString('en-IN') : metric.value}
+                </p>
+                {metric.change !== undefined && (
+                  <div className={`flex items-center gap-1 text-xs font-semibold ${
+                    metric.trend === 'up' ? 'text-emerald-700 dark:text-emerald-300' : 
+                    metric.trend === 'down' ? 'text-red-700 dark:text-red-300' : 
+                    colors.textSecondary
+                  }`}>
+                    <TrendingUp className={`w-3 h-3 ${metric.trend === 'down' ? 'rotate-180' : ''}`} />
+                    <span>{Math.abs(metric.change)}%</span>
+                  </div>
+                )}
+              </div>
+            </>
+          )
+
+          return (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1, duration: 0.3 }}
+            >
+              {metric.href ? (
+                <Link
+                  href={metric.href}
+                  className={`
+                    block ${colors.bg} ${colors.border} border-2 rounded-lg p-4
+                    ${isClickable ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02]' : ''}
+                    transition-all duration-200
+                  `}
+                >
+                  {CardContent}
+                </Link>
+              ) : (
+                <div
+                  onClick={metric.onClick}
+                  className={`
+                    ${colors.bg} ${colors.border} border-2 rounded-lg p-4
+                    ${isClickable ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02]' : ''}
+                    transition-all duration-200
+                  `}
+                >
+                  {CardContent}
                 </div>
               )}
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          )
+        })}
       </div>
     </div>
   )
