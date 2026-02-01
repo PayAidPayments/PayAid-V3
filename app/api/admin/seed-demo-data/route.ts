@@ -355,35 +355,82 @@ async function seedDemoData() {
 
     console.log(`✅ Created ${contacts.length} contacts`)
 
-    // Create sample deals (20+ deals with various stages)
+    // Calculate financial year quarters (Indian FY: Apr-Mar)
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth() // 0-indexed
+    const fyStartYear = currentMonth >= 3 ? currentYear : currentYear - 1 // FY starts in April (month 3)
+    const fyEndYear = fyStartYear + 1
+    
+    // Q1: Apr-Jun, Q2: Jul-Sep, Q3: Oct-Dec, Q4: Jan-Mar
+    const q1Start = new Date(fyStartYear, 3, 1) // April 1
+    const q1End = new Date(fyStartYear, 5, 30) // June 30
+    const q2Start = new Date(fyStartYear, 6, 1) // July 1
+    const q2End = new Date(fyStartYear, 8, 30) // September 30
+    const q3Start = new Date(fyStartYear, 9, 1) // October 1
+    const q3End = new Date(fyStartYear, 11, 31) // December 31
+    const q4Start = new Date(fyEndYear, 0, 1) // January 1
+    const q4End = new Date(fyEndYear, 2, 31) // March 31
+    
+    // Create sample deals (30+ deals with various stages and quarters)
     const dealsData = [
-      // Active deals
-      { name: 'Tech Solutions Enterprise Deal', value: 150000, stage: 'proposal', probability: 60, contactIdx: 0 },
-      { name: 'Digital Marketing Annual Contract', value: 120000, stage: 'negotiation', probability: 75, contactIdx: 1 },
-      { name: 'Acme Corporation Expansion', value: 200000, stage: 'qualified', probability: 50, contactIdx: 2 },
-      { name: 'StartupXYZ Series A Support', value: 80000, stage: 'proposal', probability: 65, contactIdx: 3 },
-      { name: 'Enterprise Solutions Partnership', value: 300000, stage: 'negotiation', probability: 80, contactIdx: 4 },
-      { name: 'Tech Innovations Platform', value: 180000, stage: 'qualified', probability: 55, contactIdx: 5 },
-      { name: 'Business Growth Co Strategy', value: 95000, stage: 'proposal', probability: 70, contactIdx: 6 },
-      { name: 'Corporate Ventures Deal', value: 220000, stage: 'negotiation', probability: 75, contactIdx: 7 },
-      { name: 'Professional Services Contract', value: 110000, stage: 'qualified', probability: 60, contactIdx: 8 },
-      { name: 'Consulting Group Engagement', value: 140000, stage: 'proposal', probability: 65, contactIdx: 9 },
-      { name: 'Digital Solutions Upgrade', value: 75000, stage: 'qualified', probability: 50, contactIdx: 10 },
-      { name: 'Prospect Industries Deal', value: 160000, stage: 'proposal', probability: 70, contactIdx: 11 },
-      { name: 'Client Services Expansion', value: 190000, stage: 'negotiation', probability: 80, contactIdx: 12 },
-      { name: 'Partner Network Collaboration', value: 130000, stage: 'qualified', probability: 55, contactIdx: 13 },
-      { name: 'Hot Lead Corp Opportunity', value: 170000, stage: 'proposal', probability: 75, contactIdx: 14 },
-      { name: 'New Lead Solutions Deal', value: 100000, stage: 'qualified', probability: 60, contactIdx: 15 },
-      { name: 'Big Deal Enterprises Contract', value: 250000, stage: 'negotiation', probability: 85, contactIdx: 16 },
-      { name: 'Customer First Partnership', value: 145000, stage: 'proposal', probability: 70, contactIdx: 17 },
-      { name: 'Enterprise Group Deal', value: 300000, stage: 'negotiation', probability: 80, contactIdx: 18 },
+      // Q1 Deals (Apr-Jun)
+      { name: 'Q1 - Tech Solutions Enterprise Deal', value: 150000, stage: 'won', probability: 100, contactIdx: 0, quarter: 'q1' },
+      { name: 'Q1 - Digital Marketing Annual Contract', value: 120000, stage: 'won', probability: 100, contactIdx: 1, quarter: 'q1' },
+      { name: 'Q1 - Acme Corporation Expansion', value: 200000, stage: 'won', probability: 100, contactIdx: 2, quarter: 'q1' },
+      { name: 'Q1 - StartupXYZ Series A Support', value: 80000, stage: 'won', probability: 100, contactIdx: 3, quarter: 'q1' },
+      { name: 'Q1 - Enterprise Solutions Partnership', value: 300000, stage: 'won', probability: 100, contactIdx: 4, quarter: 'q1' },
       
-      // Won deals - Created this month for revenue
-      { name: 'Won - Customer First Ltd', value: 150000, stage: 'won', probability: 100, contactIdx: 17 },
-      { name: 'Won - Partner Network', value: 85000, stage: 'won', probability: 100, contactIdx: 13 },
-      { name: 'Won - Client Services Inc', value: 200000, stage: 'won', probability: 100, contactIdx: 12 },
-      { name: 'Won - Digital Marketing Pro', value: 120000, stage: 'won', probability: 100, contactIdx: 1 },
-      { name: 'Won - Enterprise Solutions', value: 95000, stage: 'won', probability: 100, contactIdx: 4 },
+      // Q2 Deals (Jul-Sep)
+      { name: 'Q2 - Tech Innovations Platform', value: 180000, stage: 'won', probability: 100, contactIdx: 5, quarter: 'q2' },
+      { name: 'Q2 - Business Growth Co Strategy', value: 95000, stage: 'won', probability: 100, contactIdx: 6, quarter: 'q2' },
+      { name: 'Q2 - Corporate Ventures Deal', value: 220000, stage: 'won', probability: 100, contactIdx: 7, quarter: 'q2' },
+      { name: 'Q2 - Professional Services Contract', value: 110000, stage: 'won', probability: 100, contactIdx: 8, quarter: 'q2' },
+      { name: 'Q2 - Consulting Group Engagement', value: 140000, stage: 'won', probability: 100, contactIdx: 9, quarter: 'q2' },
+      
+      // Q3 Deals (Oct-Dec)
+      { name: 'Q3 - Digital Solutions Upgrade', value: 75000, stage: 'won', probability: 100, contactIdx: 10, quarter: 'q3' },
+      { name: 'Q3 - Prospect Industries Deal', value: 160000, stage: 'won', probability: 100, contactIdx: 11, quarter: 'q3' },
+      { name: 'Q3 - Client Services Expansion', value: 190000, stage: 'won', probability: 100, contactIdx: 12, quarter: 'q3' },
+      { name: 'Q3 - Partner Network Collaboration', value: 130000, stage: 'won', probability: 100, contactIdx: 13, quarter: 'q3' },
+      { name: 'Q3 - Hot Lead Corp Opportunity', value: 170000, stage: 'won', probability: 100, contactIdx: 14, quarter: 'q3' },
+      
+      // Q4 Deals (Jan-Mar) - IMPORTANT: These should show in charts
+      { name: 'Q4 - New Lead Solutions Deal', value: 100000, stage: 'won', probability: 100, contactIdx: 15, quarter: 'q4' },
+      { name: 'Q4 - Big Deal Enterprises Contract', value: 250000, stage: 'won', probability: 100, contactIdx: 16, quarter: 'q4' },
+      { name: 'Q4 - Customer First Partnership', value: 145000, stage: 'won', probability: 100, contactIdx: 17, quarter: 'q4' },
+      { name: 'Q4 - Enterprise Group Deal', value: 300000, stage: 'won', probability: 100, contactIdx: 18, quarter: 'q4' },
+      { name: 'Q4 - Global Solutions Contract', value: 180000, stage: 'won', probability: 100, contactIdx: 19, quarter: 'q4' },
+      
+      // Active deals created this month (for "Deals Created This Month" stat)
+      { name: 'Current Month - Active Deal 1', value: 150000, stage: 'proposal', probability: 60, contactIdx: 0, quarter: 'current' },
+      { name: 'Current Month - Active Deal 2', value: 120000, stage: 'negotiation', probability: 75, contactIdx: 1, quarter: 'current' },
+      { name: 'Current Month - Active Deal 3', value: 200000, stage: 'qualified', probability: 50, contactIdx: 2, quarter: 'current' },
+      { name: 'Current Month - Active Deal 4', value: 80000, stage: 'proposal', probability: 65, contactIdx: 3, quarter: 'current' },
+      { name: 'Current Month - Active Deal 5', value: 300000, stage: 'negotiation', probability: 80, contactIdx: 4, quarter: 'current' },
+      { name: 'Current Month - Active Deal 6', value: 180000, stage: 'qualified', probability: 55, contactIdx: 5, quarter: 'current' },
+      { name: 'Current Month - Active Deal 7', value: 95000, stage: 'proposal', probability: 70, contactIdx: 6, quarter: 'current' },
+      { name: 'Current Month - Active Deal 8', value: 220000, stage: 'negotiation', probability: 75, contactIdx: 7, quarter: 'current' },
+      { name: 'Current Month - Active Deal 9', value: 110000, stage: 'qualified', probability: 60, contactIdx: 8, quarter: 'current' },
+      { name: 'Current Month - Active Deal 10', value: 140000, stage: 'proposal', probability: 65, contactIdx: 9, quarter: 'current' },
+      { name: 'Current Month - Active Deal 11', value: 75000, stage: 'qualified', probability: 50, contactIdx: 10, quarter: 'current' },
+      { name: 'Current Month - Active Deal 12', value: 160000, stage: 'proposal', probability: 70, contactIdx: 11, quarter: 'current' },
+      
+      // Won deals created this month (for "Revenue This Month" stat)
+      { name: 'Won This Month - Customer First Ltd', value: 150000, stage: 'won', probability: 100, contactIdx: 17, quarter: 'current' },
+      { name: 'Won This Month - Partner Network', value: 85000, stage: 'won', probability: 100, contactIdx: 13, quarter: 'current' },
+      { name: 'Won This Month - Client Services Inc', value: 200000, stage: 'won', probability: 100, contactIdx: 12, quarter: 'current' },
+      { name: 'Won This Month - Digital Marketing Pro', value: 120000, stage: 'won', probability: 100, contactIdx: 1, quarter: 'current' },
+      { name: 'Won This Month - Enterprise Solutions', value: 95000, stage: 'won', probability: 100, contactIdx: 4, quarter: 'current' },
+      
+      // Deals closing this month (for "Deals Closing This Month" stat)
+      { name: 'Closing This Month - Deal 1', value: 180000, stage: 'negotiation', probability: 85, contactIdx: 5, quarter: 'current' },
+      { name: 'Closing This Month - Deal 2', value: 220000, stage: 'negotiation', probability: 90, contactIdx: 7, quarter: 'current' },
+      { name: 'Closing This Month - Deal 3', value: 160000, stage: 'proposal', probability: 80, contactIdx: 11, quarter: 'current' },
+      { name: 'Closing This Month - Deal 4', value: 190000, stage: 'negotiation', probability: 85, contactIdx: 12, quarter: 'current' },
+      { name: 'Closing This Month - Deal 5', value: 250000, stage: 'negotiation', probability: 90, contactIdx: 16, quarter: 'current' },
+      { name: 'Closing This Month - Deal 6', value: 145000, stage: 'proposal', probability: 75, contactIdx: 17, quarter: 'current' },
+      { name: 'Closing This Month - Deal 7', value: 300000, stage: 'negotiation', probability: 95, contactIdx: 18, quarter: 'current' },
+      { name: 'Closing This Month - Deal 8', value: 180000, stage: 'proposal', probability: 80, contactIdx: 19, quarter: 'current' },
     ]
 
     // Delete existing deals and recreate
@@ -404,28 +451,77 @@ async function seedDemoData() {
       const batchDeals = await Promise.all(
         batch.map((deal, batchIdx) => {
           const idx = i + batchIdx
-          // For won deals, create them within current month for revenue calculation
-          // For regular deals, create some this month and some in future months
           let dealCreatedAt: Date
           let dealExpectedCloseDate: Date
+          let actualCloseDate: Date | undefined
           
-          if (deal.stage === 'won') {
-            // Won deals: created this month (spread across the month)
-            const dayInMonth = Math.min((idx % daysInMonth) + 1, daysInMonth)
-            dealCreatedAt = new Date(now.getFullYear(), now.getMonth(), dayInMonth, 12, 0, 0)
+          if (deal.quarter === 'q1') {
+            // Q1 deals: Create in Q1 period (Apr-Jun)
+            const q1Day = Math.floor(Math.random() * 90) + 1 // Random day in Q1 (Apr 1 - Jun 30)
+            dealCreatedAt = new Date(fyStartYear, 3, Math.min(q1Day, 30), 12, 0, 0) // April
+            if (q1Day > 30) {
+              dealCreatedAt = new Date(fyStartYear, 4, Math.min(q1Day - 30, 31), 12, 0, 0) // May
+            }
+            if (q1Day > 61) {
+              dealCreatedAt = new Date(fyStartYear, 5, Math.min(q1Day - 61, 30), 12, 0, 0) // June
+            }
+            actualCloseDate = deal.stage === 'won' ? dealCreatedAt : undefined
             dealExpectedCloseDate = dealCreatedAt
-          } else if (idx < 5) {
-            // First 5 regular deals: created this month
-            const dayInMonth = Math.min((idx % daysElapsed) + 1, daysElapsed)
-            dealCreatedAt = new Date(now.getFullYear(), now.getMonth(), dayInMonth, 12, 0, 0)
-            // Expected close date: within current month (for "Deals Closing This Month")
-            const closeDay = Math.min(dayInMonth + 7, daysInMonth)
-            dealExpectedCloseDate = new Date(now.getFullYear(), now.getMonth(), closeDay, 12, 0, 0)
+          } else if (deal.quarter === 'q2') {
+            // Q2 deals: Create in Q2 period (Jul-Sep)
+            const q2Day = Math.floor(Math.random() * 92) + 1 // Random day in Q2
+            dealCreatedAt = new Date(fyStartYear, 6, Math.min(q2Day, 31), 12, 0, 0) // July
+            if (q2Day > 31) {
+              dealCreatedAt = new Date(fyStartYear, 7, Math.min(q2Day - 31, 31), 12, 0, 0) // August
+            }
+            if (q2Day > 62) {
+              dealCreatedAt = new Date(fyStartYear, 8, Math.min(q2Day - 62, 30), 12, 0, 0) // September
+            }
+            actualCloseDate = deal.stage === 'won' ? dealCreatedAt : undefined
+            dealExpectedCloseDate = dealCreatedAt
+          } else if (deal.quarter === 'q3') {
+            // Q3 deals: Create in Q3 period (Oct-Dec)
+            const q3Day = Math.floor(Math.random() * 92) + 1 // Random day in Q3
+            dealCreatedAt = new Date(fyStartYear, 9, Math.min(q3Day, 31), 12, 0, 0) // October
+            if (q3Day > 31) {
+              dealCreatedAt = new Date(fyStartYear, 10, Math.min(q3Day - 31, 30), 12, 0, 0) // November
+            }
+            if (q3Day > 61) {
+              dealCreatedAt = new Date(fyStartYear, 11, Math.min(q3Day - 61, 31), 12, 0, 0) // December
+            }
+            actualCloseDate = deal.stage === 'won' ? dealCreatedAt : undefined
+            dealExpectedCloseDate = dealCreatedAt
+          } else if (deal.quarter === 'q4') {
+            // Q4 deals: Create in Q4 period (Jan-Mar) - IMPORTANT for charts
+            const q4Day = Math.floor(Math.random() * 90) + 1 // Random day in Q4
+            dealCreatedAt = new Date(fyEndYear, 0, Math.min(q4Day, 31), 12, 0, 0) // January
+            if (q4Day > 31) {
+              dealCreatedAt = new Date(fyEndYear, 1, Math.min(q4Day - 31, 28), 12, 0, 0) // February
+            }
+            if (q4Day > 59) {
+              dealCreatedAt = new Date(fyEndYear, 2, Math.min(q4Day - 59, 31), 12, 0, 0) // March
+            }
+            actualCloseDate = deal.stage === 'won' ? dealCreatedAt : undefined
+            dealExpectedCloseDate = dealCreatedAt
           } else {
-            // Other deals: created in past months or future
-            const monthsAgo = (idx - 5) % 6 // Spread across last 6 months
-            dealCreatedAt = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 15, 12, 0, 0)
-            dealExpectedCloseDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+            // Current month deals (for stat cards)
+            if (deal.stage === 'won') {
+              // Won deals this month: for "Revenue This Month"
+              const dayInMonth = Math.min((idx % daysInMonth) + 1, daysInMonth)
+              dealCreatedAt = new Date(now.getFullYear(), now.getMonth(), dayInMonth, 12, 0, 0)
+              actualCloseDate = dealCreatedAt
+              dealExpectedCloseDate = dealCreatedAt
+            } else if (deal.name.includes('Closing This Month')) {
+              // Deals closing this month: for "Deals Closing This Month" stat
+              const dayInMonth = Math.min((idx % daysInMonth) + 1, daysInMonth)
+              dealCreatedAt = new Date(now.getFullYear(), now.getMonth() - 1, 15, 12, 0, 0) // Created last month
+              dealExpectedCloseDate = new Date(now.getFullYear(), now.getMonth(), Math.min(dayInMonth + 5, daysInMonth), 12, 0, 0) // Closing this month
+            } else {
+              // Active deals created this month: for "Deals Created This Month" stat
+              const dayInMonth = Math.min((idx % daysElapsed) + 1, daysElapsed)
+              dealCreatedAt = new Date(now.getFullYear(), now.getMonth(), dayInMonth, 12, 0, 0)
+              dealExpectedCloseDate = new Date(now.getFullYear(), now.getMonth() + 1, 15, 12, 0, 0) // Next month
+            }
           }
           
           return prisma.deal.create({
@@ -437,7 +533,7 @@ async function seedDemoData() {
               probability: deal.probability,
               expectedCloseDate: dealExpectedCloseDate,
               contactId: contacts[deal.contactIdx].id,
-              actualCloseDate: deal.stage === 'won' ? dealCreatedAt : undefined,
+              actualCloseDate: actualCloseDate,
               createdAt: dealCreatedAt,
             },
           })
