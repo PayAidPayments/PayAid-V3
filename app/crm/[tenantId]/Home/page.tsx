@@ -741,14 +741,14 @@ export default function CRMDashboardPage() {
   return (
     <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative transition-colors">
       {/* Welcome Banner - Enhanced - PayAid Brand Colors */}
-      <div className="bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 text-white px-6 py-8 shadow-xl">
+      <div className="bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 px-6 py-8 shadow-xl">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
+            <h1 className="text-3xl font-bold mb-2 flex items-center gap-3 text-white">
               <span>Welcome back, {user?.name || 'User'}!</span>
             </h1>
             {tenant && (
-              <p className="text-purple-100 flex items-center gap-2 text-lg">
+              <p className="text-white flex items-center gap-2 text-lg opacity-90">
                 <Building2 className="w-5 h-5" />
                 {tenant.name}
               </p>
