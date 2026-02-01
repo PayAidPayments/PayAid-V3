@@ -9,6 +9,8 @@
  * reducing primary database load by 70-80%.
  */
 
+import 'server-only' // Mark this file as server-only to prevent client bundling
+
 import { PrismaClient } from '@prisma/client'
 import { isDevelopment, isProduction } from '@/lib/utils/env'
 
