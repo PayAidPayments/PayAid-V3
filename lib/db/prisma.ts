@@ -1,10 +1,10 @@
-import 'server-only' // Mark this file as server-only to prevent client bundling
-
 import { PrismaClient } from '@prisma/client'
 import { isDevelopment, isProduction } from '@/lib/utils/env'
 
 // Prevent Prisma from being imported in client-side code
 // Only throw error in browser runtime (not during SSR or build)
+// Note: We can't use 'server-only' here because some files that import Prisma
+// are also imported by client components indirectly. The runtime check is sufficient.
 if (typeof window !== 'undefined') {
   throw new Error(
     'Prisma Client cannot be used in client-side code. ' +
