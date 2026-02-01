@@ -251,7 +251,7 @@ export const modules: ModuleConfig[] = [
     name: "Drive",
     description: "Cloud storage with 50GB free storage",
     icon: "Folder",
-    url: "/dashboard/drive",
+    url: "/drive",
     status: "active",
     category: "productivity",
     color: "#DC2626"
@@ -261,7 +261,7 @@ export const modules: ModuleConfig[] = [
     name: "Slides",
     description: "PowerPoint alternative with themes and collaboration",
     icon: "Presentation",
-    url: "/dashboard/slides",
+    url: "/slides",
     status: "active",
     category: "productivity",
     color: "#EA4335"
@@ -271,7 +271,7 @@ export const modules: ModuleConfig[] = [
     name: "Meet",
     description: "Video conferencing with screen sharing and recording",
     icon: "Video",
-    url: "/dashboard/meet",
+    url: "/meet",
     status: "active",
     category: "productivity",
     color: "#4285F4"
@@ -281,7 +281,7 @@ export const modules: ModuleConfig[] = [
     name: "PDF Tools",
     description: "PDF reader, editor, merge, split, compress, and convert",
     icon: "FileText",
-    url: "/dashboard/pdf",
+    url: "/pdf",
     status: "active",
     category: "productivity",
     color: "#DC2626"
