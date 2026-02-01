@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FileText, CreditCard, ShoppingCart, TrendingUp } from 'lucide-react'
+import { FileText, CreditCard, ShoppingCart, TrendingUp, IndianRupee } from 'lucide-react'
 // ModuleTopBar is now in layout.tsx
 import { 
   LineChart, 
@@ -30,7 +30,6 @@ import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 import { GlassCard } from '@/components/modules/GlassCard'
 import { getModuleConfig } from '@/lib/modules/module-config'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
-import { IndianRupee, FileText, ShoppingCart, TrendingUp } from 'lucide-react'
 
 interface SalesDashboardStats {
   landingPages: number
