@@ -315,14 +315,17 @@ async function seedDemoData() {
       const batchContacts = await Promise.all(
         batch.map((contact, batchIdx) => {
           const idx = i + batchIdx
-          // Spread contacts across last 12 months, with some in March 2025
+          // Spread contacts across last 12 months including future months (Jan-Feb 2026)
           let createdAt: Date
-          if (idx < 5) {
-            // First 5 contacts in March 2025
-            createdAt = new Date(2025, 2, 1 + (idx % 28)) // March 2025
+          if (idx < 2) {
+            // First 2 contacts in January 2026
+            createdAt = new Date(2026, 0, 1 + (idx % 28)) // January 2026
+          } else if (idx < 4) {
+            // Next 2 contacts in February 2026
+            createdAt = new Date(2026, 1, 1 + ((idx - 2) % 28)) // February 2026
           } else {
-            // Rest spread across last 12 months
-            const monthsAgo = (idx - 5) % 12
+            // Rest spread across last 12 months (from current month backwards)
+            const monthsAgo = (idx - 4) % 12
             createdAt = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1 + (idx % 28))
           }
           
