@@ -119,17 +119,42 @@ export async function GET(request: NextRequest) {
     ])
 
     // Monthly project creation (last 6 months)
-    const monthlyProjectCreation = await prisma.$queryRaw<Array<{ month: string; count: number }>>`
-      SELECT 
-        TO_CHAR("createdAt", 'Mon YYYY') as month,
-        COUNT(*)::int as count
-      FROM "Project"
-      WHERE "tenantId" = ${tenantId}
-        AND "createdAt" IS NOT NULL
-        AND "createdAt" >= ${sixMonthsAgo}
-      GROUP BY TO_CHAR("createdAt", 'Mon YYYY')
-      ORDER BY MIN("createdAt") ASC
-    `.catch(() => [])
+    // Use Prisma queries instead of raw SQL for database compatibility
+    let monthlyProjectCreation: Array<{ month: string; count: number }> = []
+    try {
+      const projects = await prisma.project.findMany({
+        where: {
+          tenantId,
+          createdAt: {
+            gte: sixMonthsAgo,
+          },
+        },
+        select: {
+          createdAt: true,
+        },
+      })
+
+      // Group by month
+      const monthMap = new Map<string, number>()
+      projects.forEach((project) => {
+        if (project.createdAt) {
+          const date = new Date(project.createdAt)
+          const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+          monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + 1)
+        }
+      })
+
+      monthlyProjectCreation = Array.from(monthMap.entries())
+        .map(([month, count]) => ({ month, count }))
+        .sort((a, b) => {
+          const dateA = new Date(a.month)
+          const dateB = new Date(b.month)
+          return dateA.getTime() - dateB.getTime()
+        })
+    } catch (error) {
+      console.error('Error fetching monthly project creation:', error)
+      monthlyProjectCreation = []
+    }
 
     return NextResponse.json({
       totalProjects,
@@ -147,10 +172,12 @@ export async function GET(request: NextRequest) {
         priority: p.priority,
         count: p._count.id || 0,
       })),
-      monthlyProjectCreation: monthlyProjectCreation.map((m: any) => ({
-        month: m.month,
-        count: Number(m.count) || 0,
-      })),
+      monthlyProjectCreation: Array.isArray(monthlyProjectCreation) 
+        ? monthlyProjectCreation.map((m: any) => ({
+            month: m.month || '',
+            count: Number(m.count) || 0,
+          }))
+        : [],
       recentProjects: recentProjects.map((p: any) => ({
         id: p.id,
         name: p.name,
