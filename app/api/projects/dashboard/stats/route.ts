@@ -164,27 +164,33 @@ export async function GET(request: NextRequest) {
       totalTasks,
       completedTasks,
       totalTimeLogged: Number(totalTimeLogged._sum?.hours || 0) || 0,
-      projectsByStatus: projectsByStatus.map((p: any) => ({
-        status: p.status,
-        count: p._count.id || 0,
-      })),
-      projectsByPriority: projectsByPriority.map((p: any) => ({
-        priority: p.priority,
-        count: p._count.id || 0,
-      })),
-      monthlyProjectCreation: Array.isArray(monthlyProjectCreation) 
-        ? monthlyProjectCreation.map((m: any) => ({
-            month: m.month || '',
-            count: Number(m.count) || 0,
+      projectsByStatus: Array.isArray(projectsByStatus) 
+        ? projectsByStatus.map((p: any) => ({
+            status: p?.status || '',
+            count: p?._count?.id || 0,
           }))
         : [],
-      recentProjects: recentProjects.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        status: p.status,
-        progress: p.progress || 0,
-        createdAt: p.createdAt.toISOString(),
-      })),
+      projectsByPriority: Array.isArray(projectsByPriority) 
+        ? projectsByPriority.map((p: any) => ({
+            priority: p?.priority || '',
+            count: p?._count?.id || 0,
+          }))
+        : [],
+      monthlyProjectCreation: Array.isArray(monthlyProjectCreation) 
+        ? monthlyProjectCreation.map((m: any) => ({
+            month: m?.month || '',
+            count: Number(m?.count) || 0,
+          }))
+        : [],
+      recentProjects: Array.isArray(recentProjects) 
+        ? recentProjects.map((p: any) => ({
+            id: p?.id || '',
+            name: p?.name || '',
+            status: p?.status || '',
+            progress: p?.progress || 0,
+            createdAt: p?.createdAt ? (typeof p.createdAt === 'string' ? p.createdAt : p.createdAt.toISOString()) : new Date().toISOString(),
+          }))
+        : [],
     })
   } catch (error: any) {
     console.error('Projects dashboard stats error:', error)
