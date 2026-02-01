@@ -852,6 +852,137 @@ async function seedDemoData() {
 
     console.log(`✅ Created ${purchaseOrders.length} purchase orders`)
 
+    // Create sample expenses (for Net Profit calculation)
+    const expensesData = [
+      { description: 'Office Rent - January', amount: 50000, category: 'Rent', vendor: 'Property Management Co', gstAmount: 9000 },
+      { description: 'Internet & Phone Bills', amount: 15000, category: 'Utilities', vendor: 'Telecom Provider', gstAmount: 2700 },
+      { description: 'Software Subscriptions', amount: 25000, category: 'Software', vendor: 'SaaS Provider', gstAmount: 4500 },
+      { description: 'Marketing Campaign', amount: 40000, category: 'Marketing', vendor: 'Digital Agency', gstAmount: 7200 },
+      { description: 'Employee Salaries', amount: 200000, category: 'Salaries', vendor: 'Payroll', gstAmount: 0 },
+      { description: 'Office Supplies', amount: 10000, category: 'Supplies', vendor: 'Stationery Store', gstAmount: 1800 },
+      { description: 'Travel & Conferences', amount: 30000, category: 'Travel', vendor: 'Travel Agency', gstAmount: 5400 },
+      { description: 'Professional Services', amount: 35000, category: 'Services', vendor: 'Consulting Firm', gstAmount: 6300 },
+      { description: 'Equipment Purchase', amount: 60000, category: 'Equipment', vendor: 'Tech Supplier', gstAmount: 10800 },
+      { description: 'Insurance Premium', amount: 20000, category: 'Insurance', vendor: 'Insurance Co', gstAmount: 3600 },
+    ]
+
+    await prisma.expense.deleteMany({ where: { tenantId } })
+    
+    const expenses = await Promise.all(
+      expensesData.map((expense, idx) => {
+        // Create expenses in current month and previous months for better data distribution
+        const expenseDate = idx < 5 
+          ? new Date(now.getFullYear(), now.getMonth(), Math.min(idx + 1, 28), 12, 0, 0) // Current month
+          : new Date(now.getFullYear(), now.getMonth() - 1, Math.min((idx - 5) + 1, 28), 12, 0, 0) // Last month
+        return prisma.expense.create({
+          data: {
+            tenantId,
+            description: expense.description,
+            amount: expense.amount,
+            category: expense.category,
+            vendor: expense.vendor,
+            date: expenseDate,
+            gstAmount: expense.gstAmount,
+            hsnCode: '998314', // Standard HSN code for services
+            status: idx < 7 ? 'approved' : 'paid', // Mix of approved and paid for variety
+            createdAt: expenseDate,
+          },
+        })
+      })
+    )
+
+    console.log(`✅ Created ${expenses.length} expenses`)
+
+    // Create GST Reports (stored as custom reports with type 'gst')
+    const gstReportsData = [
+      {
+        name: 'GSTR-1 - January 2026',
+        description: 'Monthly GST sales report (GSTR-1) for January 2026',
+        type: 'gst',
+        reportType: 'gstr1',
+        filters: JSON.stringify({
+          dateRange: 'month',
+          month: 1,
+          year: 2026,
+          reportType: 'sales',
+        }),
+        columns: JSON.stringify(['invoiceNumber', 'invoiceDate', 'customerName', 'gstin', 'cgst', 'sgst', 'igst', 'total']),
+      },
+      {
+        name: 'GSTR-3B - January 2026',
+        description: 'Monthly GST return summary (GSTR-3B) for January 2026',
+        type: 'gst',
+        reportType: 'gstr3b',
+        filters: JSON.stringify({
+          dateRange: 'month',
+          month: 1,
+          year: 2026,
+          reportType: 'summary',
+        }),
+        columns: JSON.stringify(['outputGST', 'inputGST', 'netGSTPayable', 'taxBreakdown']),
+      },
+      {
+        name: 'GST Purchase Report - January 2026',
+        description: 'Monthly GST purchase report with input tax credit',
+        type: 'gst',
+        reportType: 'purchase',
+        filters: JSON.stringify({
+          dateRange: 'month',
+          month: 1,
+          year: 2026,
+          reportType: 'purchase',
+        }),
+        columns: JSON.stringify(['vendorName', 'invoiceNumber', 'invoiceDate', 'gstin', 'cgst', 'sgst', 'igst', 'total']),
+      },
+      {
+        name: 'GSTR-1 - December 2025',
+        description: 'Monthly GST sales report (GSTR-1) for December 2025',
+        type: 'gst',
+        reportType: 'gstr1',
+        filters: JSON.stringify({
+          dateRange: 'month',
+          month: 12,
+          year: 2025,
+          reportType: 'sales',
+        }),
+        columns: JSON.stringify(['invoiceNumber', 'invoiceDate', 'customerName', 'gstin', 'cgst', 'sgst', 'igst', 'total']),
+      },
+      {
+        name: 'GSTR-3B - December 2025',
+        description: 'Monthly GST return summary (GSTR-3B) for December 2025',
+        type: 'gst',
+        reportType: 'gstr3b',
+        filters: JSON.stringify({
+          dateRange: 'month',
+          month: 12,
+          year: 2025,
+          reportType: 'summary',
+        }),
+        columns: JSON.stringify(['outputGST', 'inputGST', 'netGSTPayable', 'taxBreakdown']),
+      },
+    ]
+
+    await prisma.report.deleteMany({ where: { tenantId, type: 'gst' } })
+    
+    const gstReports = await Promise.all(
+      gstReportsData.map((report) =>
+        prisma.report.create({
+          data: {
+            tenantId,
+            name: report.name,
+            description: report.description,
+            type: 'gst',
+            reportType: report.reportType,
+            filters: report.filters,
+            columns: report.columns,
+            createdAt: new Date(),
+          },
+        })
+      )
+    )
+
+    console.log(`✅ Created ${gstReports.length} GST reports`)
+
     // Seed industry-specific data
     console.log('🌾 Seeding Industry Data...')
     try {
