@@ -176,7 +176,7 @@ export default function FinanceDashboardPage() {
   // Get module configuration
   const moduleConfig = getModuleConfig('finance') || getModuleConfig('crm')!
 
-  // Hero metrics
+  // Hero metrics with navigation links
   const heroMetrics = [
     {
       label: 'Total Revenue',
@@ -185,6 +185,7 @@ export default function FinanceDashboardPage() {
       trend: (stats?.revenueGrowth || 0) > 0 ? 'up' as const : 'down' as const,
       icon: <IndianRupee className="w-5 h-5" />,
       color: 'gold' as const,
+      href: `/finance/${tenantId}/Accounting/Reports/Revenue`,
     },
     {
       label: 'Invoices',
@@ -193,12 +194,14 @@ export default function FinanceDashboardPage() {
       trend: (stats?.invoiceGrowth || 0) > 0 ? 'up' as const : 'down' as const,
       icon: <FileText className="w-5 h-5" />,
       color: 'info' as const,
+      href: `/finance/${tenantId}/Invoices`,
     },
     {
       label: 'Purchase Orders',
       value: stats?.purchaseOrders || 0,
       icon: <ShoppingCart className="w-5 h-5" />,
       color: 'purple' as const,
+      href: `/finance/${tenantId}/Purchase-Orders`,
     },
     {
       label: 'Net Profit',
@@ -207,6 +210,7 @@ export default function FinanceDashboardPage() {
       trend: isProfit ? 'up' as const : 'down' as const,
       icon: isProfit ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />,
       color: isProfit ? 'success' as const : 'error' as const,
+      href: `/finance/${tenantId}/Accounting/Reports`,
     },
   ]
 
