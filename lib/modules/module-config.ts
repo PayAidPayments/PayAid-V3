@@ -7,7 +7,7 @@ import {
   Users, Briefcase, Scale, ShoppingCart, Building2, BarChart3,
   FileText, Calendar, Megaphone, Package, GraduationCap, Stethoscope,
   Factory, Wrench, Palette, Globe, BookOpen, Video, Music, Camera,
-  Car, Plane, UtensilsCrossed, Shirt, Home, Zap, Bot, Target
+  Car, Plane, UtensilsCrossed, Shirt, Home, Zap, Bot, Target, Newspaper
 } from 'lucide-react'
 
 export interface ModuleConfig {
@@ -146,6 +146,14 @@ export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     gradientTo: 'to-purple-800',
     icon: Bot,
     description: 'AI-powered tools and automation',
+  },
+  'industry-intelligence': {
+    id: 'industry-intelligence',
+    name: 'Industry Intelligence',
+    gradientFrom: 'from-purple-600',
+    gradientTo: 'to-indigo-700',
+    icon: Newspaper,
+    description: 'Industry news, trends, and business intelligence',
   },
   // Add more modules as needed...
 }
