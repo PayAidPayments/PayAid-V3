@@ -241,7 +241,7 @@ export const modules: ModuleConfig[] = [
     name: "Docs",
     description: "Word alternative with rich text editing and collaboration",
     icon: "FileEdit",
-    url: "/dashboard/docs",
+    url: "/docs",
     status: "active",
     category: "productivity",
     color: "#0284C7"
