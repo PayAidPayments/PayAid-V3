@@ -3,18 +3,24 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
+import { PageLoading } from '@/components/ui/loading'
 
-export default function WebsiteBuilderPage() {
+export default function WebsiteBuilderModulePage() {
   const router = useRouter()
-  const { tenant } = useAuthStore()
+  const { tenant, isAuthenticated, isLoading } = useAuthStore()
 
   useEffect(() => {
-    if (tenant?.id) {
-      router.push(`/ai-studio/${tenant.id}/Websites`)
-    } else {
-      router.push('/login')
+    if (isLoading) return
+    if (!isAuthenticated) {
+      router.push('/login?redirect=/website-builder')
+      return
     }
-  }, [tenant?.id, router])
+    if (tenant?.id) {
+      router.push(`/website-builder/${tenant.id}/Home/`)
+    } else {
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, tenant?.id, isLoading, router])
 
-  return null
+  return <PageLoading message="Loading Website Builder..." fullScreen={true} />
 }
