@@ -518,8 +518,9 @@ async function seedDemoData() {
             const monthInQ4 = q4DealIndex % 3 // 0=Jan, 1=Feb, 2=Mar
             const dayInMonth = Math.min((q4DealIndex % 28) + 1, 28) // Day 1-28
             dealCreatedAt = new Date(fyEndYear, monthInQ4, dayInMonth, 12, 0, 0)
-            // For won deals, set actualCloseDate to the same date (or slightly later) to ensure they're counted
-            actualCloseDate = deal.stage === 'won' ? new Date(fyEndYear, monthInQ4, Math.min(dayInMonth + 3, 28), 12, 0, 0) : undefined
+            // For won deals, set actualCloseDate to the same date to ensure they're counted in Q4
+            // Use the same date to ensure it falls within Q4 period (Jan-Mar 2026)
+            actualCloseDate = deal.stage === 'won' ? new Date(fyEndYear, monthInQ4, dayInMonth, 14, 0, 0) : undefined
             dealExpectedCloseDate = dealCreatedAt
           } else {
             // Current month deals (for stat cards)
