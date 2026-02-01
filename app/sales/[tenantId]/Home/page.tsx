@@ -316,7 +316,7 @@ export default function SalesDashboardPage() {
                 </div>
               )}
             </CardContent>
-          </Card>
+          </GlassCard>
 
           {/* Orders by Status - Pie Chart */}
           <GlassCard delay={0.6}>
