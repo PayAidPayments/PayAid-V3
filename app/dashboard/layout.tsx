@@ -45,8 +45,19 @@ export default function DashboardLayout({
   // Detect current module from pathname
   const currentModule = detectModuleFromPath(pathname || '')
   
-  // Get module-specific top bar
+  // Check if this is a module route with its own layout (e.g., /finance/[tenantId]/Home)
+  // These routes have their own ModuleTopBar in their layout files, so we shouldn't render one here
+  const isModuleRouteWithLayout = pathname && (
+    pathname.match(/^\/(crm|finance|sales|marketing|hr|projects|inventory|analytics|communication|education|healthcare|manufacturing|retail|ai-studio|docs|drive|meet|pdf|slides|spreadsheet|ai-chat|ai-cofounder|ai-insights|knowledge-rag|logo-generator|website-builder|appointments|compliance|contracts|help-center|lms|industry-intelligence|workflow-automation)\/[^/]+\//)
+  )
+  
+  // Get module-specific top bar (only for dashboard routes, not module routes with their own layouts)
   const getModuleTopBar = () => {
+    // Skip top bar if this route has its own module layout
+    if (isModuleRouteWithLayout) {
+      return null
+    }
+    
     switch (currentModule) {
       case 'crm':
         return <CRMTopBar />
