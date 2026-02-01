@@ -79,58 +79,46 @@ export default function HRDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
-  const hasCheckedAuth = useRef(false)
+  const hasFetchedData = useRef(false)
 
-  // Handle authentication and cookie sync
+  // Handle authentication and mount
   useEffect(() => {
     setMounted(true)
     
-    // Wait a bit for Zustand to rehydrate
-    const checkAuth = () => {
-      if (hasCheckedAuth.current) return
-      hasCheckedAuth.current = true
-
-      // Check localStorage directly as fallback
-      let tokenFromStorage: string | null = null
-      if (typeof window !== 'undefined') {
+    // Quick auth check - if no token after a short delay, redirect
+    const timeoutId = setTimeout(() => {
+      const currentState = useAuthStore.getState()
+      const finalToken = currentState.token
+      
+      if (!finalToken && typeof window !== 'undefined') {
+        // Try localStorage as fallback
         try {
           const stored = localStorage.getItem('auth-storage')
           if (stored) {
             const parsed = JSON.parse(stored)
-            tokenFromStorage = parsed.state?.token || null
-            
-            if (tokenFromStorage) {
-              // Set cookie for middleware access
-              const expires = new Date()
-              expires.setTime(expires.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days
-              const isSecure = window.location.protocol === 'https:'
-              document.cookie = `token=${tokenFromStorage}; expires=${expires.toUTCString()}; path=/; SameSite=Lax${isSecure ? '; Secure' : ''}`
+            const tokenFromStorage = parsed.state?.token || null
+            if (!tokenFromStorage) {
+              router.replace(`/login?redirect=${encodeURIComponent(`/hr/${tenantId}/Home/`)}`)
+              return
             }
+          } else {
+            router.replace(`/login?redirect=${encodeURIComponent(`/hr/${tenantId}/Home/`)}`)
+            return
           }
         } catch (error) {
-          console.error('[HR Dashboard] Error syncing token to cookie:', error)
+          router.replace(`/login?redirect=${encodeURIComponent(`/hr/${tenantId}/Home/`)}`)
+          return
         }
       }
-
-      // Use Zustand state if available, otherwise fall back to localStorage
-      const currentState = useAuthStore.getState()
-      const finalToken = currentState.token || tokenFromStorage
-
-      // If no token after rehydration, redirect to login
-      if (!finalToken) {
-        console.log('[HR Dashboard] No token found, redirecting to login')
-        router.replace(`/login?redirect=${encodeURIComponent(`/hr/${tenantId}/Home/`)}`)
-        return
-      }
-    }
-
-    // Small delay to allow Zustand to rehydrate
-    const timeoutId = setTimeout(checkAuth, 200)
+    }, 100) // Reduced delay
+    
     return () => clearTimeout(timeoutId)
   }, [router, tenantId])
 
+  // Fetch data once when mounted and tenantId is available
   useEffect(() => {
-    if (mounted && hasCheckedAuth.current) {
+    if (mounted && tenantId && !hasFetchedData.current) {
+      hasFetchedData.current = true
       fetchDashboardStats()
     }
   }, [tenantId, mounted])
@@ -139,16 +127,9 @@ export default function HRDashboardPage() {
     try {
       setLoading(true)
       setError(null)
-      const token = useAuthStore.getState().token
       
-      if (!token) {
-        console.error('No authentication token found')
-        setLoading(false)
-        return
-      }
-
-      // For now, use mock data until API is ready
-      // TODO: Replace with actual API call: /api/hr/dashboard/stats
+      // Use mock data for now (API can be added later)
+      // This ensures the page loads quickly without waiting for API calls
       const mockStats: HRDashboardStats = {
         totalEmployees: 156,
         activeEmployees: 142,
@@ -173,8 +154,8 @@ export default function HRDashboardPage() {
         ],
       }
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Minimal delay to show loading state
+      await new Promise(resolve => setTimeout(resolve, 100))
       setStats(mockStats)
     } catch (error: any) {
       console.error('Failed to fetch dashboard stats:', error)
