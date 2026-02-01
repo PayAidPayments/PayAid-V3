@@ -29,7 +29,7 @@ interface CashFlowManagementProps {
 
 export function CashFlowManagement({ tenantId }: CashFlowManagementProps) {
   const [forecastPeriod, setForecastPeriod] = useState<'30' | '60' | '90'>('30')
-  const [cashFlowData, setCashFlowData] = useState<any>(null)
+  const [apiData, setApiData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export function CashFlowManagement({ tenantId }: CashFlowManagementProps) {
       })
       if (response.ok) {
         const data = await response.json()
-        setCashFlowData(data)
+        setApiData(data)
       }
     } catch (error) {
       console.error('Failed to fetch cash flow:', error)
@@ -56,8 +56,13 @@ export function CashFlowManagement({ tenantId }: CashFlowManagementProps) {
   }
 
   // Use API data or fallback to mock
-  const currentCash = cashFlowData?.currentCash || 2500000
-  const cashFlowData = [
+  const currentCash = apiData?.currentCash || 2500000
+  const cashFlowData = apiData?.monthlyCashFlow?.map((item: any) => ({
+    date: item.month || item.date,
+    inflow: item.inflow || 0,
+    outflow: item.outflow || 0,
+    net: item.net || (item.inflow - item.outflow) || 0,
+  })) || [
     { date: 'Jan', inflow: 1200000, outflow: 800000, net: 400000 },
     { date: 'Feb', inflow: 1500000, outflow: 900000, net: 600000 },
     { date: 'Mar', inflow: 1800000, outflow: 1100000, net: 700000 },
@@ -66,7 +71,7 @@ export function CashFlowManagement({ tenantId }: CashFlowManagementProps) {
     { date: 'Jun', inflow: 1700000, outflow: 1050000, net: 650000 },
   ]
 
-  const forecastData = cashFlowData?.forecast?.slice(0, 5).map((item: any, idx: number) => ({
+  const forecastData = apiData?.forecast?.slice(0, 5).map((item: any, idx: number) => ({
     date: `Day ${(idx + 1) * 7}`,
     forecast: item.forecast || 0,
   })) || [
@@ -77,7 +82,7 @@ export function CashFlowManagement({ tenantId }: CashFlowManagementProps) {
     { date: 'Day 30', forecast: 3200000 },
   ]
 
-  const workingCapital = cashFlowData?.workingCapital || {
+  const workingCapital = apiData?.workingCapital || {
     currentAssets: 5000000,
     currentLiabilities: 2000000,
     workingCapital: 3000000,
