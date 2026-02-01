@@ -542,6 +542,7 @@ export async function seedHRModule(tenantId: string, adminUserId: string) {
   console.log(`✅ Created ${attendanceRecords.length} attendance records`)
 
   // Create pending payroll runs (142 employees * average salary)
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
   const payrollRuns = []
   for (const employee of employees.filter(e => e.status === 'ACTIVE').slice(0, 142)) {
     const ctc = employee.ctcAnnualInr ? Number(employee.ctcAnnualInr) : 600000
