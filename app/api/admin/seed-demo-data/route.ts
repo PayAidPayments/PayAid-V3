@@ -1008,6 +1008,16 @@ async function seedDemoData() {
       console.warn('Industry data seeding failed (non-critical):', industryError)
     }
 
+    // Seed all other modules (HR, Marketing, Projects, etc.)
+    console.log('🌱 Seeding All Modules...')
+    let moduleData: any = {}
+    try {
+      moduleData = await seedAllModules(tenantId, adminUser.id, contacts, now)
+      console.log('✅ All modules seeded')
+    } catch (moduleError) {
+      console.warn('Module seeding failed (non-critical):', moduleError)
+    }
+
     // Invalidate cache
     try {
       const { cache } = await import('@/lib/redis/client')
