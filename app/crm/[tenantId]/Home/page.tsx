@@ -478,16 +478,21 @@ export default function CRMDashboardPage() {
         
         try {
           const data = JSON.parse(text)
-          // Ensure all array properties exist to prevent .map() errors
+          // Ensure all array properties exist and are properly normalized to prevent .map() errors
+          const normalizeArray = <T,>(arr: any, defaultValue: T[] = []): T[] => {
+            if (!Array.isArray(arr)) return defaultValue
+            return arr.map((item: any) => item).filter((item: any) => item !== null && item !== undefined)
+          }
+          
           setStats({
-            dealsCreatedThisMonth: data.dealsCreatedThisMonth || 0,
-            revenueThisMonth: data.revenueThisMonth || 0,
-            dealsClosingThisMonth: data.dealsClosingThisMonth || 0,
-            overdueTasks: data.overdueTasks || 0,
-            quarterlyPerformance: Array.isArray(data.quarterlyPerformance) ? data.quarterlyPerformance : [],
-            pipelineByStage: Array.isArray(data.pipelineByStage) ? data.pipelineByStage : [],
-            monthlyLeadCreation: Array.isArray(data.monthlyLeadCreation) ? data.monthlyLeadCreation : [],
-            topLeadSources: Array.isArray(data.topLeadSources) ? data.topLeadSources : [],
+            dealsCreatedThisMonth: Number(data.dealsCreatedThisMonth || 0),
+            revenueThisMonth: Number(data.revenueThisMonth || 0),
+            dealsClosingThisMonth: Number(data.dealsClosingThisMonth || 0),
+            overdueTasks: Number(data.overdueTasks || 0),
+            quarterlyPerformance: normalizeArray(data.quarterlyPerformance, []),
+            pipelineByStage: normalizeArray(data.pipelineByStage, []),
+            monthlyLeadCreation: normalizeArray(data.monthlyLeadCreation, []),
+            topLeadSources: normalizeArray(data.topLeadSources, []),
           })
           setLoading(false)
         } catch (parseError) {
