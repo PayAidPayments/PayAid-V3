@@ -591,54 +591,82 @@ export async function GET(request: NextRequest) {
       revenueThisMonth: hasRealData ? revenueInPeriod : 450000,
       dealsClosingThisMonth: hasRealData ? dealsClosingInPeriod : 8,
       overdueTasks: overdueTasks || 0,
-      quarterlyPerformance: Array.isArray(quarterlyPerformance) && quarterlyPerformance.length > 0 
-        ? quarterlyPerformance 
-        : [
-            { quarter: 'Q1', leadsCreated: 52, dealsCreated: 35, dealsWon: 15, revenue: 520000 },
-            { quarter: 'Q2', leadsCreated: 48, dealsCreated: 32, dealsWon: 14, revenue: 480000 },
-            { quarter: 'Q3', leadsCreated: 60, dealsCreated: 40, dealsWon: 18, revenue: 600000 },
-            { quarter: 'Q4', leadsCreated: 55, dealsCreated: 38, dealsWon: 16, revenue: 550000 },
-          ],
-      pipelineByStage: Array.isArray(pipelineByStage) && pipelineByStage.length > 0 
-        ? pipelineByStage 
-        : [
-            { stage: 'Lead', count: 25 },
-            { stage: 'Qualified', count: 18 },
-            { stage: 'Proposal', count: 12 },
-            { stage: 'Negotiation', count: 8 },
-            { stage: 'Won', count: 15 },
-          ],
-      monthlyLeadCreation: Array.isArray(monthlyLeadCreation) && monthlyLeadCreation.length >= 12
-        ? monthlyLeadCreation
-        : (() => {
-            // Generate 12 months including Jan and Feb 2026
-            const months = []
-            const startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1)
-            for (let i = 0; i < 12; i++) {
-              const date = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1)
-              months.push({
-                month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-                count: 15 + Math.floor(Math.random() * 20), // Sample data: 15-35 leads per month
-              })
-            }
-            return months
-          })(),
-      topLeadSources: (Array.isArray(topLeadSources) && topLeadSources.length > 0) 
-        ? topLeadSources
-          .filter(source => source && (source.leadsCount || 0) > 0) // Only show sources with leads
-          .map(source => ({
-            name: source?.name || 'Unknown',
-            leadsCount: source?.leadsCount || 0,
-            conversionsCount: source?.conversionsCount || 0,
-            totalValue: source?.totalValue || 0,
-            conversionRate: source?.conversionRate || 0,
-          }))
-        : [
-            { name: 'Website', leadsCount: 45, conversionsCount: 12, totalValue: 450000, conversionRate: 26.7 },
-            { name: 'Referral', leadsCount: 32, conversionsCount: 10, totalValue: 320000, conversionRate: 31.3 },
-            { name: 'Social Media', leadsCount: 28, conversionsCount: 8, totalValue: 280000, conversionRate: 28.6 },
-            { name: 'Email Campaign', leadsCount: 22, conversionsCount: 6, totalValue: 220000, conversionRate: 27.3 },
-          ],
+      quarterlyPerformance: (() => {
+        // Ensure array and normalize all values
+        const safe = Array.isArray(quarterlyPerformance) && quarterlyPerformance.length > 0 
+          ? quarterlyPerformance.map(q => ({
+              quarter: String(q?.quarter || ''),
+              leadsCreated: Number(q?.leadsCreated || 0),
+              dealsCreated: Number(q?.dealsCreated || 0),
+              dealsWon: Number(q?.dealsWon || 0),
+              revenue: Number(q?.revenue || 0),
+            }))
+          : [
+              { quarter: 'Q1', leadsCreated: 52, dealsCreated: 35, dealsWon: 15, revenue: 520000 },
+              { quarter: 'Q2', leadsCreated: 48, dealsCreated: 32, dealsWon: 14, revenue: 480000 },
+              { quarter: 'Q3', leadsCreated: 60, dealsCreated: 40, dealsWon: 18, revenue: 600000 },
+              { quarter: 'Q4', leadsCreated: 55, dealsCreated: 38, dealsWon: 16, revenue: 550000 },
+            ]
+        return Array.isArray(safe) ? safe : []
+      })(),
+      pipelineByStage: (() => {
+        // Ensure array and normalize all values
+        const safe = Array.isArray(pipelineByStage) && pipelineByStage.length > 0 
+          ? pipelineByStage.map(item => ({
+              stage: String(item?.stage || 'Unknown'),
+              count: Number(item?.count || 0),
+            }))
+          : [
+              { stage: 'Lead', count: 25 },
+              { stage: 'Qualified', count: 18 },
+              { stage: 'Proposal', count: 12 },
+              { stage: 'Negotiation', count: 8 },
+              { stage: 'Won', count: 15 },
+            ]
+        return Array.isArray(safe) ? safe : []
+      })(),
+      monthlyLeadCreation: (() => {
+        // Ensure array and normalize all values
+        const safe = Array.isArray(monthlyLeadCreation) && monthlyLeadCreation.length >= 12
+          ? monthlyLeadCreation.map(item => ({
+              month: String(item?.month || ''),
+              count: Number(item?.count || 0),
+            }))
+          : (() => {
+              // Generate 12 months including Jan and Feb 2026
+              const months = []
+              const startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1)
+              for (let i = 0; i < 12; i++) {
+                const date = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1)
+                months.push({
+                  month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+                  count: 15 + Math.floor(Math.random() * 20), // Sample data: 15-35 leads per month
+                })
+              }
+              return months
+            })()
+        return Array.isArray(safe) ? safe : []
+      })(),
+      topLeadSources: (() => {
+        // Ensure array and normalize all values
+        const safe = (Array.isArray(topLeadSources) && topLeadSources.length > 0) 
+          ? topLeadSources
+              .filter(source => source && (source.leadsCount || 0) > 0) // Only show sources with leads
+              .map(source => ({
+                name: String(source?.name || 'Unknown'),
+                leadsCount: Number(source?.leadsCount || 0),
+                conversionsCount: Number(source?.conversionsCount || 0),
+                totalValue: Number(source?.totalValue || 0),
+                conversionRate: Number(source?.conversionRate || 0),
+              }))
+          : [
+              { name: 'Website', leadsCount: 45, conversionsCount: 12, totalValue: 450000, conversionRate: 26.7 },
+              { name: 'Referral', leadsCount: 32, conversionsCount: 10, totalValue: 320000, conversionRate: 31.3 },
+              { name: 'Social Media', leadsCount: 28, conversionsCount: 8, totalValue: 280000, conversionRate: 28.6 },
+              { name: 'Email Campaign', leadsCount: 22, conversionsCount: 6, totalValue: 220000, conversionRate: 27.3 },
+            ]
+        return Array.isArray(safe) ? safe : []
+      })(),
       periodLabel: periodBounds.label,
     }
 
