@@ -22,7 +22,6 @@ import { GlassCard } from '@/components/modules/GlassCard'
 import { getModuleConfig } from '@/lib/modules/module-config'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { DashboardLoading } from '@/components/ui/loading'
-import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 // ModuleTopBar is now in layout.tsx
 import { 
   LineChart, 
@@ -136,46 +135,59 @@ export default function HRDashboardPage() {
     return <DashboardLoading message="Loading HR dashboard..." />
   }
 
-  return (
-    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 relative" style={{ zIndex: 1 }}>
-      {/* Top Navigation Bar */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-20 shadow-sm">
-        <div className="px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <h2 className="text-lg font-semibold text-gray-900">HR</h2>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link href={`/hr/${tenantId}/Home/`} className="text-pink-600 font-medium border-b-2 border-pink-600 pb-2">Home</Link>
-              <Link href={`/hr/${tenantId}/Employees`} className="text-gray-600 hover:text-gray-900 transition-colors">Employees</Link>
-              <Link href={`/hr/${tenantId}/Payroll`} className="text-gray-600 hover:text-gray-900 transition-colors">Payroll</Link>
-              <Link href={`/hr/${tenantId}/Leave`} className="text-gray-600 hover:text-gray-900 transition-colors">Leave</Link>
-              <Link href={`/hr/${tenantId}/Attendance`} className="text-gray-600 hover:text-gray-900 transition-colors">Attendance</Link>
-              <Link href={`/hr/${tenantId}/Hiring`} className="text-gray-600 hover:text-gray-900 transition-colors">Hiring</Link>
-              <Link href={`/hr/${tenantId}/Onboarding`} className="text-gray-600 hover:text-gray-900 transition-colors">Onboarding</Link>
-              <Link href={`/hr/${tenantId}/Reports`} className="text-gray-600 hover:text-gray-900 transition-colors">Reports</Link>
-            </nav>
-          </div>
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={fetchDashboardStats}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Refresh"
-            >
-              <RefreshCw className="w-5 h-5 text-gray-600" />
-            </button>
-            <ModuleSwitcher currentModule="hr" />
-          </div>
-        </div>
-      </div>
+  // Get module configuration
+  const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
 
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-pink-600 to-rose-600 text-white px-6 py-6 shadow-lg mt-16">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">Welcome back, {user?.name || 'User'}!</h1>
-            <p className="text-pink-100">Manage your workforce and track HR metrics</p>
-          </div>
+  // Hero metrics
+  const heroMetrics = [
+    {
+      label: 'Total Employees',
+      value: stats?.totalEmployees || 0,
+      change: stats?.employeeGrowth,
+      trend: (stats?.employeeGrowth || 0) > 0 ? 'up' as const : 'down' as const,
+      icon: <Users className="w-5 h-5" />,
+      color: 'purple' as const,
+      href: `/hr/${tenantId}/Employees`,
+    },
+    {
+      label: 'Active Employees',
+      value: stats?.activeEmployees || 0,
+      icon: <Briefcase className="w-5 h-5" />,
+      color: 'success' as const,
+    },
+    {
+      label: 'On Leave',
+      value: stats?.onLeave || 0,
+      icon: <Calendar className="w-5 h-5" />,
+      color: 'warning' as const,
+      href: `/hr/${tenantId}/Leave`,
+    },
+    {
+      label: 'Pending Payroll',
+      value: stats?.pendingPayroll ? formatINRForDisplay(stats.pendingPayroll) : '₹0',
+      icon: <IndianRupee className="w-5 h-5" />,
+      color: 'gold' as const,
+      href: `/hr/${tenantId}/Payroll`,
+    },
+  ]
+
+  return (
+    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>
+      {/* Universal Module Hero */}
+      <UniversalModuleHero
+        moduleName="HR"
+        moduleIcon={<moduleConfig.icon className="w-8 h-8" />}
+        gradientFrom={moduleConfig.gradientFrom}
+        gradientTo={moduleConfig.gradientTo}
+        metrics={heroMetrics}
+      />
+
+      {error && (
+        <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-700 font-medium">Error:</p>
+          <p className="text-red-600 text-sm">{error}</p>
         </div>
-      </div>
+      )}
 
       {/* Content Sections - 32px gap */}
       <div className="p-6 space-y-8">
