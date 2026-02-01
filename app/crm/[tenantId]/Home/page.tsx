@@ -681,26 +681,57 @@ export default function CRMDashboardPage() {
     topLeadSources: [],
   }
 
-  // Prepare chart data - ensure arrays before mapping
-  const pipelineChartData = (Array.isArray(safeStats.pipelineByStage) ? safeStats.pipelineByStage : []).map((item, idx) => ({
-    name: item?.stage ? item.stage.charAt(0).toUpperCase() + item.stage.slice(1) : `Stage ${idx + 1}`,
-    value: item?.count || 0,
-    fill: CHART_COLORS[idx % CHART_COLORS.length]
-  }))
+  // Prepare chart data - ensure arrays before mapping with extra safety
+  const pipelineChartData = (() => {
+    try {
+      const data = Array.isArray(safeStats.pipelineByStage) ? safeStats.pipelineByStage : []
+      return Array.isArray(data) ? data.map((item, idx) => ({
+        name: item?.stage ? item.stage.charAt(0).toUpperCase() + item.stage.slice(1) : `Stage ${idx + 1}`,
+        value: item?.count || 0,
+        fill: CHART_COLORS[idx % CHART_COLORS.length]
+      })) : []
+    } catch (err) {
+      console.error('Error preparing pipelineChartData:', err)
+      return []
+    }
+  })()
 
-  const monthlyLeadData = (Array.isArray(safeStats.monthlyLeadCreation) ? safeStats.monthlyLeadCreation : []).map(item => ({
-    month: item?.month || '',
-    leads: item?.count || 0
-  }))
+  const monthlyLeadData = (() => {
+    try {
+      const data = Array.isArray(safeStats.monthlyLeadCreation) ? safeStats.monthlyLeadCreation : []
+      return Array.isArray(data) ? data.map(item => ({
+        month: item?.month || '',
+        leads: item?.count || 0
+      })) : []
+    } catch (err) {
+      console.error('Error preparing monthlyLeadData:', err)
+      return []
+    }
+  })()
 
   // Map quarterly performance data for the chart - use actual data from API
-  const quarterlyRevenueData = (Array.isArray(safeStats.quarterlyPerformance) ? safeStats.quarterlyPerformance : []).map(q => ({
-    quarter: q?.quarter || '',
-    revenue: (q?.revenue ?? 0) || 0,
-    deals: (q?.dealsWon ?? 0) || 0
-  }))
+  const quarterlyRevenueData = (() => {
+    try {
+      const data = Array.isArray(safeStats.quarterlyPerformance) ? safeStats.quarterlyPerformance : []
+      return Array.isArray(data) ? data.map(q => ({
+        quarter: q?.quarter || '',
+        revenue: (q?.revenue ?? 0) || 0,
+        deals: (q?.dealsWon ?? 0) || 0
+      })) : []
+    } catch (err) {
+      console.error('Error preparing quarterlyRevenueData:', err)
+      return []
+    }
+  })()
 
-  const topLeadSourcesData = Array.isArray(safeStats.topLeadSources) ? safeStats.topLeadSources : []
+  const topLeadSourcesData = (() => {
+    try {
+      return Array.isArray(safeStats.topLeadSources) ? safeStats.topLeadSources : []
+    } catch (err) {
+      console.error('Error preparing topLeadSourcesData:', err)
+      return []
+    }
+  })()
 
   return (
     <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative transition-colors">
