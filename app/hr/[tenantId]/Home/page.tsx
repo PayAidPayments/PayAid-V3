@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useEffect, useState, useRef } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -72,15 +72,68 @@ const CHART_COLORS = [PAYAID_PINK, '#F472B6', '#FBBF24', '#10B981', '#3B82F6']
 
 export default function HRDashboardPage() {
   const params = useParams()
+  const router = useRouter()
   const tenantId = params?.tenantId as string
-  const { user, tenant } = useAuthStore()
+  const { user, tenant, token } = useAuthStore()
   const [stats, setStats] = useState<HRDashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
+  const hasCheckedAuth = useRef(false)
+
+  // Handle authentication and cookie sync
+  useEffect(() => {
+    setMounted(true)
+    
+    // Wait a bit for Zustand to rehydrate
+    const checkAuth = () => {
+      if (hasCheckedAuth.current) return
+      hasCheckedAuth.current = true
+
+      // Check localStorage directly as fallback
+      let tokenFromStorage: string | null = null
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('auth-storage')
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            tokenFromStorage = parsed.state?.token || null
+            
+            if (tokenFromStorage) {
+              // Set cookie for middleware access
+              const expires = new Date()
+              expires.setTime(expires.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days
+              const isSecure = window.location.protocol === 'https:'
+              document.cookie = `token=${tokenFromStorage}; expires=${expires.toUTCString()}; path=/; SameSite=Lax${isSecure ? '; Secure' : ''}`
+            }
+          }
+        } catch (error) {
+          console.error('[HR Dashboard] Error syncing token to cookie:', error)
+        }
+      }
+
+      // Use Zustand state if available, otherwise fall back to localStorage
+      const currentState = useAuthStore.getState()
+      const finalToken = currentState.token || tokenFromStorage
+
+      // If no token after rehydration, redirect to login
+      if (!finalToken) {
+        console.log('[HR Dashboard] No token found, redirecting to login')
+        router.replace(`/login?redirect=${encodeURIComponent(`/hr/${tenantId}/Home/`)}`)
+        return
+      }
+    }
+
+    // Small delay to allow Zustand to rehydrate
+    const timeoutId = setTimeout(checkAuth, 200)
+    return () => clearTimeout(timeoutId)
+  }, [router, tenantId])
 
   useEffect(() => {
-    fetchDashboardStats()
-  }, [tenantId])
+    if (mounted && hasCheckedAuth.current) {
+      fetchDashboardStats()
+    }
+  }, [tenantId, mounted])
 
   const fetchDashboardStats = async () => {
     try {

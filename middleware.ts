@@ -82,10 +82,10 @@ export async function middleware(request: NextRequest) {
         // For routes with tenantId (e.g., /crm/[tenantId]/Home), check access
         const token = getTokenFromRequest(request)
         
-        // For CRM specifically, always allow through - client-side will handle auth
-        // This prevents redirect loops and allows users to access CRM even if token is expired
-        if (moduleId === 'crm' && pathname.match(/^\/crm\/[^\/]+\//)) {
-          // Allow CRM routes through - client-side will handle auth checks
+        // For CRM and HR specifically, always allow through - client-side will handle auth
+        // This prevents redirect loops and allows users to access modules even if token is expired
+        if ((moduleId === 'crm' || moduleId === 'hr') && pathname.match(/^\/(crm|hr)\/[^\/]+\//)) {
+          // Allow CRM and HR routes through - client-side will handle auth checks
           return NextResponse.next()
         }
         
