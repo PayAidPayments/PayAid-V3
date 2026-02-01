@@ -31,6 +31,11 @@ import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 import { GlassCard } from '@/components/modules/GlassCard'
 import { getModuleConfig } from '@/lib/modules/module-config'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
+import { QuickActionsPanel } from '@/components/finance/QuickActionsPanel'
+import { FinancialAlerts } from '@/components/finance/FinancialAlerts'
+import { CashFlowManagement } from '@/components/finance/CashFlowManagement'
+import { FinancialForecasting } from '@/components/finance/FinancialForecasting'
+import { FinancialAnalytics } from '@/components/finance/FinancialAnalytics'
 
 interface FinanceDashboardStats {
   totalInvoices: number
