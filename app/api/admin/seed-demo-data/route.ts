@@ -315,17 +315,16 @@ async function seedDemoData() {
       const batchContacts = await Promise.all(
         batch.map((contact, batchIdx) => {
           const idx = i + batchIdx
-          // Spread contacts across last 12 months including future months (Jan-Feb 2026)
+          // Spread contacts across last 12 months including Q4 (Jan-Mar 2026) for better quarterly data
           let createdAt: Date
-          if (idx < 2) {
-            // First 2 contacts in January 2026
-            createdAt = new Date(2026, 0, 1 + (idx % 28)) // January 2026
-          } else if (idx < 4) {
-            // Next 2 contacts in February 2026
-            createdAt = new Date(2026, 1, 1 + ((idx - 2) % 28)) // February 2026
+          if (idx < 8) {
+            // First 8 contacts in Q4 (Jan-Mar 2026) - More leads for Q4
+            const monthInQ4 = idx % 3 // 0=Jan, 1=Feb, 2=Mar
+            const dayInMonth = Math.min((idx % 28) + 1, 28)
+            createdAt = new Date(2026, monthInQ4, dayInMonth) // Q4 2026 (Jan-Mar)
           } else {
             // Rest spread across last 12 months (from current month backwards)
-            const monthsAgo = (idx - 4) % 12
+            const monthsAgo = (idx - 8) % 12
             createdAt = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1 + (idx % 28))
           }
           
@@ -511,15 +510,13 @@ async function seedDemoData() {
             dealExpectedCloseDate = dealCreatedAt
           } else if (deal.quarter === 'q4') {
             // Q4 deals: Create in Q4 period (Jan-Mar) - IMPORTANT for charts
-            const q4Day = Math.floor(Math.random() * 90) + 1 // Random day in Q4
-            dealCreatedAt = new Date(fyEndYear, 0, Math.min(q4Day, 31), 12, 0, 0) // January
-            if (q4Day > 31) {
-              dealCreatedAt = new Date(fyEndYear, 1, Math.min(q4Day - 31, 28), 12, 0, 0) // February
-            }
-            if (q4Day > 59) {
-              dealCreatedAt = new Date(fyEndYear, 2, Math.min(q4Day - 59, 31), 12, 0, 0) // March
-            }
-            actualCloseDate = deal.stage === 'won' ? dealCreatedAt : undefined
+            // Distribute evenly across Jan, Feb, Mar for better data spread
+            const q4DealIndex = dealsData.filter(d => d.quarter === 'q4').indexOf(deal)
+            const monthInQ4 = q4DealIndex % 3 // 0=Jan, 1=Feb, 2=Mar
+            const dayInMonth = Math.min((q4DealIndex % 28) + 1, 28) // Day 1-28
+            dealCreatedAt = new Date(fyEndYear, monthInQ4, dayInMonth, 12, 0, 0)
+            // For won deals, set actualCloseDate to the same date (or slightly later) to ensure they're counted
+            actualCloseDate = deal.stage === 'won' ? new Date(fyEndYear, monthInQ4, Math.min(dayInMonth + 3, 28), 12, 0, 0) : undefined
             dealExpectedCloseDate = dealCreatedAt
           } else {
             // Current month deals (for stat cards)
