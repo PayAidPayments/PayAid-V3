@@ -231,7 +231,7 @@ export const modules: ModuleConfig[] = [
     name: "Spreadsheet",
     description: "Excel alternative with formulas, charts, and collaboration",
     icon: "Table",
-    url: "/dashboard/spreadsheets",
+    url: "/spreadsheet",
     status: "active",
     category: "productivity",
     color: "#059669"
