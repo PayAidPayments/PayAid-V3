@@ -3,18 +3,24 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
+import { PageLoading } from '@/components/ui/loading'
 
-export default function AIInsightsPage() {
+export default function AIInsightsModulePage() {
   const router = useRouter()
-  const { tenant } = useAuthStore()
+  const { tenant, isAuthenticated, isLoading } = useAuthStore()
 
   useEffect(() => {
-    if (tenant?.id) {
-      router.push(`/ai-studio/${tenant.id}/Insights`)
-    } else {
-      router.push('/login')
+    if (isLoading) return
+    if (!isAuthenticated) {
+      router.push('/login?redirect=/ai-insights')
+      return
     }
-  }, [tenant?.id, router])
+    if (tenant?.id) {
+      router.push(`/ai-insights/${tenant.id}/Home/`)
+    } else {
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, tenant?.id, isLoading, router])
 
-  return null
+  return <PageLoading message="Loading AI Insights..." fullScreen={true} />
 }
