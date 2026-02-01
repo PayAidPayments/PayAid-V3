@@ -18,6 +18,25 @@ export async function middleware(request: NextRequest) {
 
     const pathname = request.nextUrl.pathname
 
+    // Handle case-insensitive module routes (e.g., /HR -> /hr)
+    // Known module IDs that should be lowercase
+    const moduleIds = ['crm', 'hr', 'sales', 'finance', 'marketing', 'projects', 'analytics', 
+                       'accounting', 'communication', 'inventory', 'retail', 'healthcare', 
+                       'education', 'manufacturing', 'ai-studio', 'ai-cofounder', 'voice-agents']
+    
+    const pathParts = pathname.split('/').filter(Boolean)
+    if (pathParts.length > 0) {
+      const firstPart = pathParts[0].toLowerCase()
+      // If the first part is a known module but the pathname has uppercase, redirect to lowercase
+      if (moduleIds.includes(firstPart) && pathParts[0] !== firstPart) {
+        const correctedPath = '/' + firstPart + (pathname.endsWith('/') ? '/' : '') + 
+                            (pathParts.length > 1 ? '/' + pathParts.slice(1).join('/') : '')
+        const url = request.nextUrl.clone()
+        url.pathname = correctedPath
+        return NextResponse.redirect(url)
+      }
+    }
+
     // Skip middleware for public routes
     const publicRoutes = ['/login', '/register', '/api/auth', '/_next', '/favicon.ico']
     if (publicRoutes.some(route => pathname.startsWith(route))) {
@@ -145,12 +164,28 @@ export const config = {
     '/dashboard/:path*',
     '/admin/:path*',
     '/crm/:path*',
+    '/CRM/:path*',
     '/hr/:path*',
+    '/HR/:path*',
     '/accounting/:path*',
+    '/Accounting/:path*',
     '/communication/:path*',
+    '/Communication/:path*',
     '/reports/:path*',
+    '/Reports/:path*',
     '/payments/:path*',
+    '/Payments/:path*',
     '/workflow/:path*',
+    '/Workflow/:path*',
     '/analytics/:path*',
+    '/Analytics/:path*',
+    '/sales/:path*',
+    '/Sales/:path*',
+    '/finance/:path*',
+    '/Finance/:path*',
+    '/marketing/:path*',
+    '/Marketing/:path*',
+    '/projects/:path*',
+    '/Projects/:path*',
   ],
 }
