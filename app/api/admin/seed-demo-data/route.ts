@@ -463,6 +463,9 @@ async function seedDemoData() {
     const deals: any[] = []
     const DEAL_BATCH_SIZE = 3 // Reduced to avoid pool exhaustion
     
+    // Pre-calculate Q4 deal indices for proper date distribution
+    const q4Deals = dealsData.filter(d => d.quarter === 'q4')
+    
     for (let i = 0; i < dealsData.length; i += DEAL_BATCH_SIZE) {
       const batch = dealsData.slice(i, i + DEAL_BATCH_SIZE)
       const batchDeals = await Promise.all(
@@ -511,7 +514,7 @@ async function seedDemoData() {
           } else if (deal.quarter === 'q4') {
             // Q4 deals: Create in Q4 period (Jan-Mar) - IMPORTANT for charts
             // Distribute evenly across Jan, Feb, Mar for better data spread
-            const q4DealIndex = dealsData.filter(d => d.quarter === 'q4').indexOf(deal)
+            const q4DealIndex = q4Deals.indexOf(deal)
             const monthInQ4 = q4DealIndex % 3 // 0=Jan, 1=Feb, 2=Mar
             const dayInMonth = Math.min((q4DealIndex % 28) + 1, 28) // Day 1-28
             dealCreatedAt = new Date(fyEndYear, monthInQ4, dayInMonth, 12, 0, 0)
