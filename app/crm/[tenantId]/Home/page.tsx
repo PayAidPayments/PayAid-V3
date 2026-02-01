@@ -478,7 +478,17 @@ export default function CRMDashboardPage() {
         
         try {
           const data = JSON.parse(text)
-          setStats(data)
+          // Ensure all array properties exist to prevent .map() errors
+          setStats({
+            dealsCreatedThisMonth: data.dealsCreatedThisMonth || 0,
+            revenueThisMonth: data.revenueThisMonth || 0,
+            dealsClosingThisMonth: data.dealsClosingThisMonth || 0,
+            overdueTasks: data.overdueTasks || 0,
+            quarterlyPerformance: Array.isArray(data.quarterlyPerformance) ? data.quarterlyPerformance : [],
+            pipelineByStage: Array.isArray(data.pipelineByStage) ? data.pipelineByStage : [],
+            monthlyLeadCreation: Array.isArray(data.monthlyLeadCreation) ? data.monthlyLeadCreation : [],
+            topLeadSources: Array.isArray(data.topLeadSources) ? data.topLeadSources : [],
+          })
           setLoading(false)
         } catch (parseError) {
           console.error('[CRM_DASHBOARD] Failed to parse JSON response:', parseError, { text: text.substring(0, 200) })
@@ -659,26 +669,38 @@ export default function CRMDashboardPage() {
     return <DashboardLoading message="Loading CRM dashboard..." />
   }
 
+  // Ensure stats is never null - use default values if missing
+  const safeStats: DashboardStats = stats || {
+    dealsCreatedThisMonth: 0,
+    revenueThisMonth: 0,
+    dealsClosingThisMonth: 0,
+    overdueTasks: 0,
+    quarterlyPerformance: [],
+    pipelineByStage: [],
+    monthlyLeadCreation: [],
+    topLeadSources: [],
+  }
+
   // Prepare chart data - ensure arrays before mapping
-  const pipelineChartData = (Array.isArray(stats?.pipelineByStage) ? stats.pipelineByStage : []).map((item, idx) => ({
-    name: item.stage.charAt(0).toUpperCase() + item.stage.slice(1),
-    value: item.count,
+  const pipelineChartData = (Array.isArray(safeStats.pipelineByStage) ? safeStats.pipelineByStage : []).map((item, idx) => ({
+    name: item?.stage ? item.stage.charAt(0).toUpperCase() + item.stage.slice(1) : `Stage ${idx + 1}`,
+    value: item?.count || 0,
     fill: CHART_COLORS[idx % CHART_COLORS.length]
   }))
 
-  const monthlyLeadData = (Array.isArray(stats?.monthlyLeadCreation) ? stats.monthlyLeadCreation : []).map(item => ({
-    month: item.month,
-    leads: item.count
+  const monthlyLeadData = (Array.isArray(safeStats.monthlyLeadCreation) ? safeStats.monthlyLeadCreation : []).map(item => ({
+    month: item?.month || '',
+    leads: item?.count || 0
   }))
 
   // Map quarterly performance data for the chart - use actual data from API
-  const quarterlyRevenueData = (Array.isArray(stats?.quarterlyPerformance) ? stats.quarterlyPerformance : []).map(q => ({
-    quarter: q.quarter,
-    revenue: q.revenue,
-    deals: q.dealsWon
+  const quarterlyRevenueData = (Array.isArray(safeStats.quarterlyPerformance) ? safeStats.quarterlyPerformance : []).map(q => ({
+    quarter: q?.quarter || '',
+    revenue: (q?.revenue ?? 0) || 0,
+    deals: (q?.dealsWon ?? 0) || 0
   }))
 
-  const topLeadSourcesData = Array.isArray(stats?.topLeadSources) ? stats.topLeadSources : []
+  const topLeadSourcesData = Array.isArray(safeStats.topLeadSources) ? safeStats.topLeadSources : []
 
   return (
     <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative transition-colors">
@@ -1111,7 +1133,7 @@ export default function CRMDashboardPage() {
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <div className="text-3xl font-bold text-gray-900 mb-1">
-                    {stats?.dealsCreatedThisMonth || 0}
+                    {safeStats.dealsCreatedThisMonth || 0}
                   </div>
                   <p className="text-sm text-success flex items-center gap-1 font-medium mb-3">
                     <ArrowUpRight className="w-4 h-4" />
@@ -1150,7 +1172,7 @@ export default function CRMDashboardPage() {
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <div className="text-3xl font-bold text-gray-900 mb-1">
-                    {stats?.revenueThisMonth ? formatINRForDisplay(stats.revenueThisMonth) : '₹0'}
+                    {safeStats.revenueThisMonth ? formatINRForDisplay(safeStats.revenueThisMonth) : '₹0'}
                   </div>
                   <p className="text-sm text-success flex items-center gap-1 font-medium mb-3">
                     <ArrowUpRight className="w-4 h-4" />
@@ -1189,7 +1211,7 @@ export default function CRMDashboardPage() {
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <div className="text-3xl font-bold text-gray-900 mb-1">
-                    {stats?.dealsClosingThisMonth || 0}
+                    {safeStats.dealsClosingThisMonth || 0}
                   </div>
                   <p className="text-sm text-success flex items-center gap-1 font-medium mb-3">
                     <ArrowUpRight className="w-4 h-4" />
@@ -1228,7 +1250,7 @@ export default function CRMDashboardPage() {
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <div className="text-3xl font-bold text-gray-900 mb-1">
-                    {stats?.overdueTasks || 0}
+                    {safeStats.overdueTasks || 0}
                   </div>
                   <p className="text-sm text-error flex items-center gap-1 font-medium mb-3">
                     <ArrowDownRight className="w-4 h-4" />
@@ -1563,34 +1585,34 @@ export default function CRMDashboardPage() {
                 <thead>
                   <tr className="border-b-2 border-gray-200">
                     <th className="text-left p-3 font-semibold text-gray-700">Metric</th>
-                    {(Array.isArray(stats?.quarterlyPerformance) ? stats.quarterlyPerformance : []).map((q, idx) => (
-                      <th key={idx} className="text-right p-3 font-semibold text-gray-700">{q.quarter}</th>
+                    {(Array.isArray(safeStats.quarterlyPerformance) ? safeStats.quarterlyPerformance : []).map((q, idx) => (
+                      <th key={idx} className="text-right p-3 font-semibold text-gray-700">{q?.quarter || ''}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="border-b hover:bg-gray-50 transition-colors">
                     <td className="p-3 font-medium">Leads Created</td>
-                    {(Array.isArray(stats?.quarterlyPerformance) ? stats.quarterlyPerformance : []).map((q, idx) => (
-                      <td key={idx} className="text-right p-3">{q.leadsCreated.toLocaleString()}</td>
+                    {(Array.isArray(safeStats.quarterlyPerformance) ? safeStats.quarterlyPerformance : []).map((q, idx) => (
+                      <td key={idx} className="text-right p-3">{((q?.leadsCreated ?? 0) || 0).toLocaleString()}</td>
                     ))}
                   </tr>
                   <tr className="border-b hover:bg-gray-50 transition-colors">
                     <td className="p-3 font-medium">Deals Created</td>
-                    {(Array.isArray(stats?.quarterlyPerformance) ? stats.quarterlyPerformance : []).map((q, idx) => (
-                      <td key={idx} className="text-right p-3">{q.dealsCreated.toLocaleString()}</td>
+                    {(Array.isArray(safeStats.quarterlyPerformance) ? safeStats.quarterlyPerformance : []).map((q, idx) => (
+                      <td key={idx} className="text-right p-3">{((q?.dealsCreated ?? 0) || 0).toLocaleString()}</td>
                     ))}
                   </tr>
                   <tr className="border-b hover:bg-gray-50 transition-colors">
                     <td className="p-3 font-medium">Deals Won</td>
-                    {(Array.isArray(stats?.quarterlyPerformance) ? stats.quarterlyPerformance : []).map((q, idx) => (
-                      <td key={idx} className="text-right p-3 font-semibold text-green-600">{q.dealsWon.toLocaleString()}</td>
+                    {(Array.isArray(safeStats.quarterlyPerformance) ? safeStats.quarterlyPerformance : []).map((q, idx) => (
+                      <td key={idx} className="text-right p-3 font-semibold text-green-600">{((q?.dealsWon ?? 0) || 0).toLocaleString()}</td>
                     ))}
                   </tr>
                   <tr className="hover:bg-gray-50 transition-colors">
                     <td className="p-3 font-medium">Revenue</td>
-                    {(Array.isArray(stats?.quarterlyPerformance) ? stats.quarterlyPerformance : []).map((q, idx) => (
-                      <td key={idx} className="text-right p-3 font-semibold text-blue-600">{formatINRForDisplay(q.revenue)}</td>
+                    {(Array.isArray(safeStats.quarterlyPerformance) ? safeStats.quarterlyPerformance : []).map((q, idx) => (
+                      <td key={idx} className="text-right p-3 font-semibold text-blue-600">{formatINRForDisplay((q?.revenue ?? 0) || 0)}</td>
                     ))}
                   </tr>
                 </tbody>

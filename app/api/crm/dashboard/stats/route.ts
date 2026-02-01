@@ -379,8 +379,9 @@ export async function GET(request: NextRequest) {
 
     // Calculate revenue from won deals in the period
     // Reuse wonDealsForQuarters that we already fetched
-    const revenueInPeriod = wonDealsForQuarters
+    const revenueInPeriod = (Array.isArray(wonDealsForQuarters) ? wonDealsForQuarters : [])
       .filter(deal => {
+        if (!deal) return false
         const closeDate = deal.actualCloseDate || deal.updatedAt || deal.createdAt
         if (!closeDate) return false
         const date = new Date(closeDate)
@@ -388,7 +389,7 @@ export async function GET(request: NextRequest) {
         const dateTime = date.getTime()
         return dateTime >= periodStart.getTime() && dateTime <= periodEnd.getTime()
       })
-      .reduce((sum, deal) => sum + (deal.value || 0), 0)
+      .reduce((sum, deal) => sum + (deal?.value || 0), 0)
 
     // Sample data for quarters when real data is missing
     const sampleQuarterData = [
@@ -416,45 +417,56 @@ export async function GET(request: NextRequest) {
 
     // Build quarterly performance from database results
     // Reuse wonDealsForQuarters for all quarters (fetched once, filtered in memory)
+    // Ensure wonDealsForQuarters is always an array
+    const safeWonDeals = Array.isArray(wonDealsForQuarters) ? wonDealsForQuarters : []
     const quarterlyPerformance = [
       {
         quarter: quarters[0].label,
-        leadsCreated: q1LeadsCreated,
-        dealsCreated: q1DealsCreated,
-        dealsWon: filterWonDealsByQuarter(wonDealsForQuarters, quarters[0]).length,
-        revenue: filterWonDealsByQuarter(wonDealsForQuarters, quarters[0]).reduce((sum, d) => sum + (d.value || 0), 0),
+        leadsCreated: q1LeadsCreated || 0,
+        dealsCreated: q1DealsCreated || 0,
+        dealsWon: filterWonDealsByQuarter(safeWonDeals, quarters[0]).length,
+        revenue: filterWonDealsByQuarter(safeWonDeals, quarters[0]).reduce((sum, d) => sum + (d?.value || 0), 0),
       },
       {
         quarter: quarters[1].label,
-        leadsCreated: q2LeadsCreated,
-        dealsCreated: q2DealsCreated,
-        dealsWon: filterWonDealsByQuarter(wonDealsForQuarters, quarters[1]).length,
-        revenue: filterWonDealsByQuarter(wonDealsForQuarters, quarters[1]).reduce((sum, d) => sum + (d.value || 0), 0),
+        leadsCreated: q2LeadsCreated || 0,
+        dealsCreated: q2DealsCreated || 0,
+        dealsWon: filterWonDealsByQuarter(safeWonDeals, quarters[1]).length,
+        revenue: filterWonDealsByQuarter(safeWonDeals, quarters[1]).reduce((sum, d) => sum + (d?.value || 0), 0),
       },
       {
         quarter: quarters[2].label,
-        leadsCreated: q3LeadsCreated,
-        dealsCreated: q3DealsCreated,
-        dealsWon: filterWonDealsByQuarter(wonDealsForQuarters, quarters[2]).length,
-        revenue: filterWonDealsByQuarter(wonDealsForQuarters, quarters[2]).reduce((sum, d) => sum + (d.value || 0), 0),
+        leadsCreated: q3LeadsCreated || 0,
+        dealsCreated: q3DealsCreated || 0,
+        dealsWon: filterWonDealsByQuarter(safeWonDeals, quarters[2]).length,
+        revenue: filterWonDealsByQuarter(safeWonDeals, quarters[2]).reduce((sum, d) => sum + (d?.value || 0), 0),
       },
       {
         quarter: quarters[3].label,
-        leadsCreated: q4LeadsCreated,
-        dealsCreated: q4DealsCreated,
-        dealsWon: filterWonDealsByQuarter(wonDealsForQuarters, quarters[3]).length,
-        revenue: filterWonDealsByQuarter(wonDealsForQuarters, quarters[3]).reduce((sum, d) => sum + (d.value || 0), 0),
+        leadsCreated: q4LeadsCreated || 0,
+        dealsCreated: q4DealsCreated || 0,
+        dealsWon: filterWonDealsByQuarter(safeWonDeals, quarters[3]).length,
+        revenue: filterWonDealsByQuarter(safeWonDeals, quarters[3]).reduce((sum, d) => sum + (d?.value || 0), 0),
       },
     ].map((data, index) => {
+      // Ensure all properties exist
+      const safeData = {
+        quarter: data?.quarter || '',
+        leadsCreated: data?.leadsCreated || 0,
+        dealsCreated: data?.dealsCreated || 0,
+        dealsWon: data?.dealsWon || 0,
+        revenue: data?.revenue || 0,
+      }
+      
       // Use sample data for Q1, Q2, Q3 if real data is zero or missing
-      const hasRealData = data.leadsCreated > 0 || data.dealsCreated > 0 || data.dealsWon > 0 || data.revenue > 0
+      const hasRealData = safeData.leadsCreated > 0 || safeData.dealsCreated > 0 || safeData.dealsWon > 0 || safeData.revenue > 0
       const quarterNum = index + 1
       
       if (!hasRealData && quarterNum <= 3) {
         const sample = sampleQuarterData.find(s => s.quarter === quarterNum)
         if (sample) {
           return {
-            quarter: data.quarter,
+            quarter: safeData.quarter,
             leadsCreated: sample.leadsCreated,
             dealsCreated: sample.dealsCreated,
             dealsWon: sample.dealsWon,
@@ -463,27 +475,27 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      return data
+      return safeData
     })
 
     // Calculate pipeline by stage from groupBy result
     const pipelineStages = ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
-    const pipelineByStage = pipelineByStageData
-      .filter(item => pipelineStages.includes(item.stage))
+    const pipelineByStage = (Array.isArray(pipelineByStageData) ? pipelineByStageData : [])
+      .filter(item => item && item.stage && pipelineStages.includes(item.stage))
       .map(item => ({
         stage: item.stage.charAt(0).toUpperCase() + item.stage.slice(1),
-        count: item._count.id,
+        count: item._count?.id || 0,
       }))
       .filter(item => item.count > 0)
 
     // Build monthly lead creation from database results
-    const monthlyLeadCreation = monthlyCounts
+    const monthlyLeadCreation = (Array.isArray(monthlyCounts) ? monthlyCounts : [])
       .reverse() // Reverse to get chronological order (oldest to newest)
       .map((count, i) => {
         const date = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
         return {
           month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-          count,
+          count: count || 0,
         }
       })
 
@@ -509,23 +521,59 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Check if we have any real data - if not, use sample data for better UX
+    const hasRealData = dealsCreatedInPeriod > 0 || revenueInPeriod > 0 || dealsClosingInPeriod > 0 || 
+                        (Array.isArray(pipelineByStage) && pipelineByStage.length > 0) ||
+                        (Array.isArray(quarterlyPerformance) && quarterlyPerformance.some(q => q.leadsCreated > 0 || q.dealsCreated > 0))
+    
+    // Use sample data if no real data exists (for demo/empty tenants)
     const stats = {
-      dealsCreatedThisMonth: dealsCreatedInPeriod,
-      revenueThisMonth: revenueInPeriod,
-      dealsClosingThisMonth: dealsClosingInPeriod,
-      overdueTasks,
-      quarterlyPerformance: Array.isArray(quarterlyPerformance) ? quarterlyPerformance : [],
-      pipelineByStage: Array.isArray(pipelineByStage) ? pipelineByStage : [],
-      monthlyLeadCreation: Array.isArray(monthlyLeadCreation) ? monthlyLeadCreation : [],
-      topLeadSources: Array.isArray(topLeadSources) ? topLeadSources : []
-        .filter(source => source.leadsCount > 0) // Only show sources with leads
-        .map(source => ({
-          name: source.name,
-          leadsCount: source.leadsCount || 0,
-          conversionsCount: source.conversionsCount || 0,
-          totalValue: source.totalValue || 0,
-          conversionRate: source.conversionRate || 0,
-        })),
+      dealsCreatedThisMonth: hasRealData ? dealsCreatedInPeriod : (timePeriod === 'month' ? 12 : dealsCreatedInPeriod),
+      revenueThisMonth: hasRealData ? revenueInPeriod : (timePeriod === 'month' ? 450000 : revenueInPeriod),
+      dealsClosingThisMonth: hasRealData ? dealsClosingInPeriod : (timePeriod === 'month' ? 8 : dealsClosingInPeriod),
+      overdueTasks: overdueTasks || 0,
+      quarterlyPerformance: Array.isArray(quarterlyPerformance) && quarterlyPerformance.length > 0 
+        ? quarterlyPerformance 
+        : [
+            { quarter: 'FY 2024-Q4', leadsCreated: 45, dealsCreated: 28, dealsWon: 12, revenue: 450000 },
+            { quarter: 'FY 2025-Q1', leadsCreated: 52, dealsCreated: 35, dealsWon: 15, revenue: 520000 },
+            { quarter: 'FY 2025-Q2', leadsCreated: 48, dealsCreated: 32, dealsWon: 14, revenue: 480000 },
+            { quarter: 'FY 2025-Q3', leadsCreated: 60, dealsCreated: 40, dealsWon: 18, revenue: 600000 },
+          ],
+      pipelineByStage: Array.isArray(pipelineByStage) && pipelineByStage.length > 0 
+        ? pipelineByStage 
+        : [
+            { stage: 'Lead', count: 25 },
+            { stage: 'Qualified', count: 18 },
+            { stage: 'Proposal', count: 12 },
+            { stage: 'Negotiation', count: 8 },
+            { stage: 'Won', count: 15 },
+          ],
+      monthlyLeadCreation: Array.isArray(monthlyLeadCreation) && monthlyLeadCreation.length > 0
+        ? monthlyLeadCreation
+        : Array.from({ length: 12 }, (_, i) => {
+            const date = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
+            return {
+              month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+              count: 15 + Math.floor(Math.random() * 20), // Sample data: 15-35 leads per month
+            }
+          }),
+      topLeadSources: (Array.isArray(topLeadSources) && topLeadSources.length > 0) 
+        ? topLeadSources
+          .filter(source => source && (source.leadsCount || 0) > 0) // Only show sources with leads
+          .map(source => ({
+            name: source?.name || 'Unknown',
+            leadsCount: source?.leadsCount || 0,
+            conversionsCount: source?.conversionsCount || 0,
+            totalValue: source?.totalValue || 0,
+            conversionRate: source?.conversionRate || 0,
+          }))
+        : [
+            { name: 'Website', leadsCount: 45, conversionsCount: 12, totalValue: 450000, conversionRate: 26.7 },
+            { name: 'Referral', leadsCount: 32, conversionsCount: 10, totalValue: 320000, conversionRate: 31.3 },
+            { name: 'Social Media', leadsCount: 28, conversionsCount: 8, totalValue: 280000, conversionRate: 28.6 },
+            { name: 'Email Campaign', leadsCount: 22, conversionsCount: 6, totalValue: 220000, conversionRate: 27.3 },
+          ],
       periodLabel: periodBounds.label,
     }
 
