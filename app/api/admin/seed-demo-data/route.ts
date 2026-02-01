@@ -893,72 +893,72 @@ async function seedDemoData() {
 
     console.log(`✅ Created ${expenses.length} expenses`)
 
-    // Create GST Reports (stored as custom reports with type 'gst')
+    // Create GST Reports (stored as Report model with type 'gst')
     const gstReportsData = [
       {
         name: 'GSTR-1 - January 2026',
         description: 'Monthly GST sales report (GSTR-1) for January 2026',
         type: 'gst',
-        reportType: 'gstr1',
-        filters: JSON.stringify({
+        config: {
+          reportType: 'gstr1',
           dateRange: 'month',
           month: 1,
           year: 2026,
           reportType: 'sales',
-        }),
-        columns: JSON.stringify(['invoiceNumber', 'invoiceDate', 'customerName', 'gstin', 'cgst', 'sgst', 'igst', 'total']),
+          columns: ['invoiceNumber', 'invoiceDate', 'customerName', 'gstin', 'cgst', 'sgst', 'igst', 'total'],
+        },
       },
       {
         name: 'GSTR-3B - January 2026',
         description: 'Monthly GST return summary (GSTR-3B) for January 2026',
         type: 'gst',
-        reportType: 'gstr3b',
-        filters: JSON.stringify({
+        config: {
+          reportType: 'gstr3b',
           dateRange: 'month',
           month: 1,
           year: 2026,
           reportType: 'summary',
-        }),
-        columns: JSON.stringify(['outputGST', 'inputGST', 'netGSTPayable', 'taxBreakdown']),
+          columns: ['outputGST', 'inputGST', 'netGSTPayable', 'taxBreakdown'],
+        },
       },
       {
         name: 'GST Purchase Report - January 2026',
         description: 'Monthly GST purchase report with input tax credit',
         type: 'gst',
-        reportType: 'purchase',
-        filters: JSON.stringify({
+        config: {
+          reportType: 'purchase',
           dateRange: 'month',
           month: 1,
           year: 2026,
           reportType: 'purchase',
-        }),
-        columns: JSON.stringify(['vendorName', 'invoiceNumber', 'invoiceDate', 'gstin', 'cgst', 'sgst', 'igst', 'total']),
+          columns: ['vendorName', 'invoiceNumber', 'invoiceDate', 'gstin', 'cgst', 'sgst', 'igst', 'total'],
+        },
       },
       {
         name: 'GSTR-1 - December 2025',
         description: 'Monthly GST sales report (GSTR-1) for December 2025',
         type: 'gst',
-        reportType: 'gstr1',
-        filters: JSON.stringify({
+        config: {
+          reportType: 'gstr1',
           dateRange: 'month',
           month: 12,
           year: 2025,
           reportType: 'sales',
-        }),
-        columns: JSON.stringify(['invoiceNumber', 'invoiceDate', 'customerName', 'gstin', 'cgst', 'sgst', 'igst', 'total']),
+          columns: ['invoiceNumber', 'invoiceDate', 'customerName', 'gstin', 'cgst', 'sgst', 'igst', 'total'],
+        },
       },
       {
         name: 'GSTR-3B - December 2025',
         description: 'Monthly GST return summary (GSTR-3B) for December 2025',
         type: 'gst',
-        reportType: 'gstr3b',
-        filters: JSON.stringify({
+        config: {
+          reportType: 'gstr3b',
           dateRange: 'month',
           month: 12,
           year: 2025,
           reportType: 'summary',
-        }),
-        columns: JSON.stringify(['outputGST', 'inputGST', 'netGSTPayable', 'taxBreakdown']),
+          columns: ['outputGST', 'inputGST', 'netGSTPayable', 'taxBreakdown'],
+        },
       },
     ]
 
@@ -972,10 +972,10 @@ async function seedDemoData() {
             name: report.name,
             description: report.description,
             type: 'gst',
-            reportType: report.reportType,
-            filters: report.filters,
-            columns: report.columns,
-            createdAt: new Date(),
+            config: report.config,
+            createdById: adminUser.id,
+            isPublic: false,
+            isActive: true,
           },
         })
       )
