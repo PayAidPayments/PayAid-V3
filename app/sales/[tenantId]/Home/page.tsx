@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FileText, CreditCard, ShoppingCart, TrendingUp, RefreshCw, ArrowUpRight, Eye, Users, Settings, LogOut, ChevronDown } from 'lucide-react'
+import { FileText, CreditCard, ShoppingCart, TrendingUp } from 'lucide-react'
 // ModuleTopBar is now in layout.tsx
 import { 
   LineChart, 
@@ -26,12 +26,11 @@ import {
   AreaChart
 } from 'recharts'
 import { format } from 'date-fns'
-import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 import { GlassCard } from '@/components/modules/GlassCard'
 import { getModuleConfig } from '@/lib/modules/module-config'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
-import { IndianRupee } from 'lucide-react'
+import { IndianRupee, FileText, ShoppingCart, TrendingUp } from 'lucide-react'
 
 interface SalesDashboardStats {
   landingPages: number
@@ -70,41 +69,9 @@ const CHART_COLORS = [PAYAID_GREEN, '#34D399', '#6EE7B7', '#A7F3D0', '#D1FAE5']
 
 export default function SalesDashboardPage() {
   const params = useParams()
-  const router = useRouter()
   const tenantId = params?.tenantId as string
-  const { user, tenant, logout } = useAuthStore()
+  const { user, tenant } = useAuthStore()
   const [stats, setStats] = useState<SalesDashboardStats | null>(null)
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
-  const profileMenuRef = useRef<HTMLDivElement>(null)
-
-  const handleLogout = async () => {
-    await logout()
-    router.push('/login')
-  }
-
-  const getUserInitials = () => {
-    if (user?.name) {
-      return user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    }
-    return user?.email?.[0]?.toUpperCase() || 'U'
-  }
-
-  // Close profile menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
-        setProfileMenuOpen(false)
-      }
-    }
-
-    if (profileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [profileMenuOpen])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -186,97 +153,54 @@ export default function SalesDashboardPage() {
     revenue: item.revenue
   })) || []
 
+  // Get module configuration
+  const moduleConfig = getModuleConfig('sales') || getModuleConfig('crm')!
+
+  // Hero metrics
+  const heroMetrics = [
+    {
+      label: 'Total Orders',
+      value: stats?.totalOrders || 0,
+      change: stats?.orderGrowth,
+      trend: (stats?.orderGrowth || 0) > 0 ? 'up' as const : 'down' as const,
+      icon: <ShoppingCart className="w-5 h-5" />,
+      color: 'success' as const,
+      href: `/sales/${tenantId}/Orders`,
+    },
+    {
+      label: 'Revenue',
+      value: stats?.revenueThisMonth ? formatINRForDisplay(stats.revenueThisMonth) : '₹0',
+      change: stats?.revenueGrowth,
+      trend: (stats?.revenueGrowth || 0) > 0 ? 'up' as const : 'down' as const,
+      icon: <IndianRupee className="w-5 h-5" />,
+      color: 'gold' as const,
+    },
+    {
+      label: 'Landing Pages',
+      value: stats?.landingPages || 0,
+      icon: <FileText className="w-5 h-5" />,
+      color: 'info' as const,
+      href: `/sales/${tenantId}/Landing-Pages`,
+    },
+    {
+      label: 'Checkout Pages',
+      value: stats?.checkoutPages || 0,
+      icon: <TrendingUp className="w-5 h-5" />,
+      color: 'purple' as const,
+      href: `/sales/${tenantId}/Checkout-Pages`,
+    },
+  ]
+
   return (
-    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 relative" style={{ zIndex: 1 }}>
-      {/* Top Navigation Bar - Modern Style */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-20 shadow-sm">
-        <div className="px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <h2 className="text-lg font-semibold text-gray-900">Sales</h2>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link href={`/sales/${tenantId}/Home/`} className="text-green-600 font-medium border-b-2 border-green-600 pb-2">Home</Link>
-              <Link href={`/sales/${tenantId}/Landing-Pages`} className="text-gray-600 hover:text-gray-900 transition-colors">Landing Pages</Link>
-              <Link href={`/sales/${tenantId}/Checkout-Pages`} className="text-gray-600 hover:text-gray-900 transition-colors">Checkout Pages</Link>
-              <Link href={`/sales/${tenantId}/Orders`} className="text-gray-600 hover:text-gray-900 transition-colors">Orders</Link>
-            </nav>
-          </div>
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={fetchDashboardStats}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Refresh"
-            >
-              <RefreshCw className="w-5 h-5 text-gray-600" />
-            </button>
-            {/* Module Switcher for Decoupled Architecture */}
-            <ModuleSwitcher currentModule="sales" />
-            
-            {/* User Profile Dropdown */}
-            <div className="relative" ref={profileMenuRef}>
-              <button
-                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="User menu"
-              >
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm">
-                  {getUserInitials()}
-                </div>
-                <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
-                  <p className="text-xs text-gray-500">{user?.email}</p>
-                </div>
-                <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {profileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  <div className="py-1">
-                    <div className="px-4 py-3 border-b border-gray-200">
-                      <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
-                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        router.push(tenantId ? `/dashboard/${tenantId}/settings/profile` : '/dashboard/settings/profile')
-                        setProfileMenuOpen(false)
-                      }}
-                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
-                    >
-                      <Settings className="w-4 h-4 mr-3" />
-                      Profile Settings
-                    </button>
-                    <div className="border-t border-gray-200 my-1"></div>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
-                    >
-                      <LogOut className="w-4 h-4 mr-3" />
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Welcome Banner - Enhanced */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-6 shadow-lg mt-16">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">
-              Sales Dashboard 🚀
-            </h1>
-            {tenant && (
-              <p className="text-green-100 flex items-center gap-2">
-                <span>🏢</span>
-                {tenant.name}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>
+      {/* Universal Module Hero */}
+      <UniversalModuleHero
+        moduleName="Sales"
+        moduleIcon={<moduleConfig.icon className="w-8 h-8" />}
+        gradientFrom={moduleConfig.gradientFrom}
+        gradientTo={moduleConfig.gradientTo}
+        metrics={heroMetrics}
+      />
 
       {error && (
         <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -285,10 +209,18 @@ export default function SalesDashboardPage() {
         </div>
       )}
 
-      <div className="p-6 space-y-6 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
-        {/* KPI Cards - Modern Design with Gradients */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100 hover:shadow-xl transition-shadow">
+      {error && (
+        <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-700 font-medium">Error:</p>
+          <p className="text-red-600 text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Content Sections - 32px gap */}
+      <div className="p-6 space-y-8 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
+        {/* Secondary Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <GlassCard delay={0.1}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-700">Landing Pages</CardTitle>
               <div className="p-2 bg-green-500/20 rounded-lg">
@@ -366,9 +298,9 @@ export default function SalesDashboardPage() {
         </div>
 
         {/* Charts Row - Modern Visualizations */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Monthly Revenue Trend - Area Chart */}
-          <Card className="border-0 shadow-lg">
+          <GlassCard delay={0.5}>
             <CardHeader>
               <CardTitle className="text-lg font-semibold">Revenue Trend</CardTitle>
               <CardDescription>Monthly revenue over the last 6 months</CardDescription>
@@ -414,7 +346,7 @@ export default function SalesDashboardPage() {
           </Card>
 
           {/* Orders by Status - Pie Chart */}
-          <Card className="border-0 shadow-lg">
+          <GlassCard delay={0.6}>
             <CardHeader>
               <CardTitle className="text-lg font-semibold">Orders by Status</CardTitle>
               <CardDescription>Distribution of orders across different statuses</CardDescription>
@@ -455,13 +387,13 @@ export default function SalesDashboardPage() {
                 </div>
               )}
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
 
         {/* Recent Orders & Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Orders */}
-          <Card className="border-0 shadow-lg">
+          <GlassCard delay={0.7}>
             <CardHeader>
               <CardTitle className="text-lg font-semibold">Recent Orders</CardTitle>
               <CardDescription>Latest orders from your sales channels</CardDescription>
@@ -494,10 +426,10 @@ export default function SalesDashboardPage() {
                 <p className="text-sm text-gray-500 text-center py-8">No recent orders</p>
               )}
             </CardContent>
-          </Card>
+          </GlassCard>
 
           {/* Quick Actions */}
-          <GlassCard delay={0.4}>
+          <GlassCard delay={0.8}>
             <CardHeader>
               <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
               <CardDescription>Get started with Sales</CardDescription>
