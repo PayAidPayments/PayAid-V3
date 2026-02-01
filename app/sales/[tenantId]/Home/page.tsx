@@ -228,73 +228,46 @@ export default function SalesDashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
-                {stats?.landingPages || 0}
-              </div>
-              <p className="text-xs text-gray-600">Active pages</p>
+              <div className="text-3xl font-bold">{stats?.landingPageViews || 0}</div>
+              <p className="text-xs text-gray-600 mt-1">Total views</p>
             </CardContent>
-          </Card>
+          </GlassCard>
 
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Checkout Pages</CardTitle>
-              <div className="p-2 bg-blue-500/20 rounded-lg">
-                <CreditCard className="h-5 w-5 text-blue-600" />
-              </div>
+          <GlassCard delay={0.2}>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Checkout Page Views</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
-                {stats?.checkoutPages || 0}
-              </div>
-              <p className="text-xs text-gray-600">Active pages</p>
+              <div className="text-3xl font-bold">{stats?.checkoutPageViews || 0}</div>
+              <p className="text-xs text-gray-600 mt-1">Total views</p>
             </CardContent>
-          </Card>
+          </GlassCard>
 
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 hover:shadow-xl transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Total Orders</CardTitle>
-              <div className="p-2 bg-purple-500/20 rounded-lg">
-                <ShoppingCart className="h-5 w-5 text-purple-600" />
-              </div>
+          <GlassCard delay={0.3}>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Orders This Month</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
-                {stats?.totalOrders || 0}
-              </div>
-              <p className="text-xs text-gray-600 flex items-center gap-1">
+              <div className="text-3xl font-bold">{stats?.ordersThisMonth || 0}</div>
+              <p className="text-xs text-gray-600 mt-1">
                 {stats && stats.orderGrowth > 0 && (
-                  <>
-                    <ArrowUpRight className="w-3 h-3 text-green-600" />
-                    <span className="text-green-600 font-medium">{stats.orderGrowth.toFixed(1)}%</span>
-                  </>
+                  <span className="text-success">{stats.orderGrowth.toFixed(1)}% growth</span>
                 )}
-                <span>This month</span>
               </p>
             </CardContent>
-          </Card>
+          </GlassCard>
 
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-50 to-amber-100 hover:shadow-xl transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Revenue</CardTitle>
-              <div className="p-2 bg-amber-500/20 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-amber-600" />
-              </div>
+          <GlassCard delay={0.4}>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Revenue Growth</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
-                ₹{stats?.revenueThisMonth?.toLocaleString('en-IN') || '0'}
+              <div className="text-3xl font-bold">
+                {stats && stats.revenueGrowth > 0 ? `+${stats.revenueGrowth.toFixed(1)}%` : '0%'}
               </div>
-              <p className="text-xs text-gray-600 flex items-center gap-1">
-                {stats && stats.revenueGrowth > 0 && (
-                  <>
-                    <ArrowUpRight className="w-3 h-3 text-green-600" />
-                    <span className="text-green-600 font-medium">{stats.revenueGrowth.toFixed(1)}%</span>
-                  </>
-                )}
-                <span>This month</span>
-              </p>
+              <p className="text-xs text-gray-600 mt-1">Month over month</p>
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
 
         {/* Charts Row - Modern Visualizations */}
