@@ -431,10 +431,10 @@ export async function GET(request: NextRequest) {
 
     // Sample data for quarters when real data is missing
     const sampleQuarterData = [
-      { quarter: 1, leadsCreated: 45, dealsCreated: 28, dealsWon: 12, revenue: 450000 },
-      { quarter: 2, leadsCreated: 52, dealsCreated: 35, dealsWon: 15, revenue: 520000 },
-      { quarter: 3, leadsCreated: 48, dealsCreated: 32, dealsWon: 14, revenue: 480000 },
-      { quarter: 4, leadsCreated: 60, dealsCreated: 40, dealsWon: 18, revenue: 600000 },
+      { quarter: 1, leadsCreated: 52, dealsCreated: 35, dealsWon: 15, revenue: 520000 },
+      { quarter: 2, leadsCreated: 48, dealsCreated: 32, dealsWon: 14, revenue: 480000 },
+      { quarter: 3, leadsCreated: 60, dealsCreated: 40, dealsWon: 18, revenue: 600000 },
+      { quarter: 4, leadsCreated: 55, dealsCreated: 38, dealsWon: 16, revenue: 550000 },
     ]
 
     // Helper function to filter won deals by quarter date
