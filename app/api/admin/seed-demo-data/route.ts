@@ -397,12 +397,27 @@ async function seedDemoData() {
       { name: 'Q3 - Partner Network Collaboration', value: 130000, stage: 'won', probability: 100, contactIdx: 13, quarter: 'q3' },
       { name: 'Q3 - Hot Lead Corp Opportunity', value: 170000, stage: 'won', probability: 100, contactIdx: 14, quarter: 'q3' },
       
-      // Q4 Deals (Jan-Mar) - IMPORTANT: These should show in charts
+      // Q4 Deals (Jan-Mar) - IMPORTANT: These should show in charts - Added more deals for better data
       { name: 'Q4 - New Lead Solutions Deal', value: 100000, stage: 'won', probability: 100, contactIdx: 15, quarter: 'q4' },
       { name: 'Q4 - Big Deal Enterprises Contract', value: 250000, stage: 'won', probability: 100, contactIdx: 16, quarter: 'q4' },
       { name: 'Q4 - Customer First Partnership', value: 145000, stage: 'won', probability: 100, contactIdx: 17, quarter: 'q4' },
       { name: 'Q4 - Enterprise Group Deal', value: 300000, stage: 'won', probability: 100, contactIdx: 18, quarter: 'q4' },
       { name: 'Q4 - Global Solutions Contract', value: 180000, stage: 'won', probability: 100, contactIdx: 19, quarter: 'q4' },
+      { name: 'Q4 - Premium Services Agreement', value: 220000, stage: 'won', probability: 100, contactIdx: 0, quarter: 'q4' },
+      { name: 'Q4 - Strategic Partnership Deal', value: 175000, stage: 'won', probability: 100, contactIdx: 1, quarter: 'q4' },
+      { name: 'Q4 - Technology Integration Contract', value: 195000, stage: 'won', probability: 100, contactIdx: 2, quarter: 'q4' },
+      { name: 'Q4 - Business Expansion Project', value: 280000, stage: 'won', probability: 100, contactIdx: 3, quarter: 'q4' },
+      { name: 'Q4 - Enterprise Software License', value: 160000, stage: 'won', probability: 100, contactIdx: 4, quarter: 'q4' },
+      { name: 'Q4 - Digital Transformation Deal', value: 240000, stage: 'won', probability: 100, contactIdx: 5, quarter: 'q4' },
+      { name: 'Q4 - Cloud Services Agreement', value: 135000, stage: 'won', probability: 100, contactIdx: 6, quarter: 'q4' },
+      { name: 'Q4 - Consulting Services Contract', value: 185000, stage: 'won', probability: 100, contactIdx: 7, quarter: 'q4' },
+      { name: 'Q4 - Support & Maintenance Deal', value: 125000, stage: 'won', probability: 100, contactIdx: 8, quarter: 'q4' },
+      { name: 'Q4 - Annual Subscription Renewal', value: 210000, stage: 'won', probability: 100, contactIdx: 9, quarter: 'q4' },
+      { name: 'Q4 - Custom Development Project', value: 275000, stage: 'won', probability: 100, contactIdx: 10, quarter: 'q4' },
+      { name: 'Q4 - Data Analytics Platform', value: 155000, stage: 'won', probability: 100, contactIdx: 11, quarter: 'q4' },
+      { name: 'Q4 - Security & Compliance Package', value: 190000, stage: 'won', probability: 100, contactIdx: 12, quarter: 'q4' },
+      { name: 'Q4 - Training & Certification Deal', value: 110000, stage: 'won', probability: 100, contactIdx: 13, quarter: 'q4' },
+      { name: 'Q4 - Integration Services Contract', value: 165000, stage: 'won', probability: 100, contactIdx: 14, quarter: 'q4' },
       
       // Active deals created this month (for "Deals Created This Month" stat)
       { name: 'Current Month - Active Deal 1', value: 150000, stage: 'proposal', probability: 60, contactIdx: 0, quarter: 'current' },
