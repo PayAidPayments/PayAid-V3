@@ -252,89 +252,327 @@ export async function seedFinanceModule(tenantId: string, contacts: any[]) {
 export async function seedHRModule(tenantId: string, adminUserId: string) {
   console.log('👥 Seeding HR Module...')
   
-  // Create employees
-  const EMPLOYEE_COUNT = 50
+  // First, create departments and designations
+  const departments = await Promise.all([
+    prisma.department.upsert({
+      where: { id: `dept-sales-${tenantId}` },
+      update: {},
+      create: {
+        id: `dept-sales-${tenantId}`,
+        tenantId,
+        name: 'Sales',
+        code: 'SALES',
+      },
+    }),
+    prisma.department.upsert({
+      where: { id: `dept-engineering-${tenantId}` },
+      update: {},
+      create: {
+        id: `dept-engineering-${tenantId}`,
+        tenantId,
+        name: 'Engineering',
+        code: 'ENG',
+      },
+    }),
+    prisma.department.upsert({
+      where: { id: `dept-marketing-${tenantId}` },
+      update: {},
+      create: {
+        id: `dept-marketing-${tenantId}`,
+        tenantId,
+        name: 'Marketing',
+        code: 'MKT',
+      },
+    }),
+    prisma.department.upsert({
+      where: { id: `dept-hr-${tenantId}` },
+      update: {},
+      create: {
+        id: `dept-hr-${tenantId}`,
+        tenantId,
+        name: 'HR',
+        code: 'HR',
+      },
+    }),
+    prisma.department.upsert({
+      where: { id: `dept-finance-${tenantId}` },
+      update: {},
+      create: {
+        id: `dept-finance-${tenantId}`,
+        tenantId,
+        name: 'Finance',
+        code: 'FIN',
+      },
+    }),
+  ])
+
+  const designations = await Promise.all([
+    prisma.designation.upsert({
+      where: { id: `desg-swe-${tenantId}` },
+      update: {},
+      create: {
+        id: `desg-swe-${tenantId}`,
+        tenantId,
+        name: 'Software Engineer',
+        code: 'SWE',
+      },
+    }),
+    prisma.designation.upsert({
+      where: { id: `desg-sales-mgr-${tenantId}` },
+      update: {},
+      create: {
+        id: `desg-sales-mgr-${tenantId}`,
+        tenantId,
+        name: 'Sales Manager',
+        code: 'SALES_MGR',
+      },
+    }),
+    prisma.designation.upsert({
+      where: { id: `desg-mkt-exec-${tenantId}` },
+      update: {},
+      create: {
+        id: `desg-mkt-exec-${tenantId}`,
+        tenantId,
+        name: 'Marketing Executive',
+        code: 'MKT_EXEC',
+      },
+    }),
+    prisma.designation.upsert({
+      where: { id: `desg-hr-mgr-${tenantId}` },
+      update: {},
+      create: {
+        id: `desg-hr-mgr-${tenantId}`,
+        tenantId,
+        name: 'HR Manager',
+        code: 'HR_MGR',
+      },
+    }),
+    prisma.designation.upsert({
+      where: { id: `desg-acc-${tenantId}` },
+      update: {},
+      create: {
+        id: `desg-acc-${tenantId}`,
+        tenantId,
+        name: 'Accountant',
+        code: 'ACC',
+      },
+    }),
+  ])
+
+  // Create employees - 156 total, 142 active, 14 inactive
+  const EMPLOYEE_COUNT = 156
   const employees = []
+  const now = new Date()
   
   for (let i = 0; i < EMPLOYEE_COUNT; i += BATCH_SIZE) {
     const batch = []
     for (let j = 0; j < BATCH_SIZE && i + j < EMPLOYEE_COUNT; j++) {
-      const name = generateIndianName()
-      const address = generateIndianAddress()
-      const department = pickRandom([
-        'Engineering', 'Sales', 'Marketing', 'HR', 'Finance', 'Operations', 'Support',
-      ])
-      const designation = pickRandom([
-        'Software Engineer', 'Senior Developer', 'Sales Manager', 'Marketing Executive',
-        'HR Manager', 'Accountant', 'Operations Manager', 'Support Executive',
-      ])
+      const idx = i + j
+      const nameParts = generateIndianName().split(' ')
+      const firstName = nameParts[0] || 'Employee'
+      const lastName = nameParts.slice(1).join(' ') || 'User'
+      const email = generateIndianEmail(`${firstName} ${lastName}`)
+      const dept = pickRandom(departments)
+      const desg = pickRandom(designations)
+      
+      // 142 active, 14 inactive
+      const status = idx < 142 ? 'ACTIVE' : 'INACTIVE'
+      const joiningDate = generatePastDate(1095) // Within last 3 years
       
       batch.push({
         tenantId,
-        employeeId: `EMP-${String(i + j + 1).padStart(4, '0')}`,
-        fullName: name,
-        email: generateIndianEmail(name),
-        phone: generateIndianPhone(),
-        department,
-        designation,
-        employmentType: pickRandom(['full_time', 'part_time', 'contract']),
-        joiningDate: generatePastDate(1095), // Within last 3 years
-        status: pickRandom(['active', 'active', 'active', 'on_leave']), // Mostly active
-        ...address,
-        createdAt: generatePastDate(1095),
+        employeeCode: `EMP-${String(idx + 1).padStart(4, '0')}`,
+        firstName,
+        lastName,
+        officialEmail: email,
+        personalEmail: `${firstName.toLowerCase()}.personal@example.com`,
+        mobileNumber: generateIndianPhone().replace('+91-', ''),
+        joiningDate,
+        status,
+        departmentId: dept.id,
+        designationId: desg.id,
+        ctcAnnualInr: generateAmount(300000, 2000000),
+        fixedComponentInr: generateAmount(200000, 1500000),
+        variableComponentInr: generateAmount(50000, 500000),
+        createdBy: adminUserId,
       })
     }
     
-    await prisma.employee.createMany({
+    const created = await prisma.employee.createMany({
       data: batch,
       skipDuplicates: true,
     })
     employees.push(...(await prisma.employee.findMany({
-      where: { tenantId, email: { in: batch.map(b => b.email) } },
+      where: { tenantId, officialEmail: { in: batch.map(b => b.officialEmail) } },
     })))
+    
+    if (i % 50 === 0) console.log(`  Created ${i + created.count} employees...`)
   }
   
   console.log(`✅ Created ${employees.length} employees`)
-  
-  // Create attendance records (last 90 days)
-  const ATTENDANCE_COUNT = 1500 // ~50 employees * 30 days
+
+  // Create leave types
+  const leaveTypes = await Promise.all([
+    prisma.leaveType.upsert({
+      where: { id: `leave-cl-${tenantId}` },
+      update: {},
+      create: {
+        id: `leave-cl-${tenantId}`,
+        tenantId,
+        name: 'Casual Leave',
+        code: 'CL',
+        maxDays: 12,
+      },
+    }),
+    prisma.leaveType.upsert({
+      where: { id: `leave-sl-${tenantId}` },
+      update: {},
+      create: {
+        id: `leave-sl-${tenantId}`,
+        tenantId,
+        name: 'Sick Leave',
+        code: 'SL',
+        maxDays: 12,
+      },
+    }),
+    prisma.leaveType.upsert({
+      where: { id: `leave-pl-${tenantId}` },
+      update: {},
+      create: {
+        id: `leave-pl-${tenantId}`,
+        tenantId,
+        name: 'Privilege Leave',
+        code: 'PL',
+        maxDays: 15,
+      },
+    }),
+  ])
+
+  // Create leave balances for active employees
+  for (const employee of employees.filter(e => e.status === 'ACTIVE')) {
+    for (const leaveType of leaveTypes) {
+      await prisma.leaveBalance.upsert({
+        where: {
+          id: `balance-${employee.id}-${leaveType.id}`,
+        },
+        update: {},
+        create: {
+          id: `balance-${employee.id}-${leaveType.id}`,
+          tenantId,
+          employeeId: employee.id,
+          leaveTypeId: leaveType.id,
+          balance: leaveType.maxDays || 12,
+        },
+      })
+    }
+  }
+
+  // Create 8 leave requests that are currently active (on leave)
+  const activeEmployees = employees.filter(e => e.status === 'ACTIVE').slice(0, 8)
+  const leaveRequests = []
+  for (const employee of activeEmployees) {
+    const startDate = new Date(now)
+    startDate.setDate(startDate.getDate() - Math.floor(Math.random() * 3)) // Started 0-3 days ago
+    const endDate = new Date(startDate)
+    endDate.setDate(endDate.getDate() + Math.floor(Math.random() * 5) + 1) // 1-5 days duration
+    
+    const leaveRequest = await prisma.leaveRequest.create({
+      data: {
+        tenantId,
+        employeeId: employee.id,
+        leaveTypeId: leaveTypes[0].id, // CL
+        startDate,
+        endDate,
+        days: Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)),
+        status: 'APPROVED',
+        reason: 'Personal work',
+      },
+    })
+    leaveRequests.push(leaveRequest)
+  }
+  console.log(`✅ Created ${leaveRequests.length} active leave requests`)
+
+  // Create attendance records for current month (for active employees)
   const attendanceRecords = []
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   
-  for (const employee of employees) {
-    for (let day = 0; day < 30; day++) {
-      const date = generatePastDate(30 - day)
-      const status = pickRandom(['present', 'present', 'present', 'present', 'absent', 'half_day'])
+  for (const employee of employees.filter(e => e.status === 'ACTIVE').slice(0, 120)) {
+    for (let day = 1; day <= now.getDate(); day++) {
+      const date = new Date(now.getFullYear(), now.getMonth(), day)
+      if (date > now) break
+      
+      // Skip if employee is on leave
+      const isOnLeave = leaveRequests.some(lr => 
+        lr.employeeId === employee.id &&
+        date >= lr.startDate &&
+        date <= lr.endDate
+      )
+      
+      if (isOnLeave) continue
+      
+      const checkInTime = new Date(date)
+      checkInTime.setHours(9 + Math.floor(Math.random() * 2), Math.floor(Math.random() * 60), 0)
+      
+      const checkOutTime = new Date(date)
+      checkOutTime.setHours(17 + Math.floor(Math.random() * 2), Math.floor(Math.random() * 60), 0)
+      
+      const workHours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60)
       
       attendanceRecords.push({
         tenantId,
         employeeId: employee.id,
         date,
-        status,
-        checkIn: status === 'present' || status === 'half_day' ? generateDate(
-          new Date(date.getFullYear(), date.getMonth(), date.getDate(), 9, 0),
-          new Date(date.getFullYear(), date.getMonth(), date.getDate(), 10, 30)
-        ) : null,
-        checkOut: status === 'present' ? generateDate(
-          new Date(date.getFullYear(), date.getMonth(), date.getDate(), 17, 0),
-          new Date(date.getFullYear(), date.getMonth(), date.getDate(), 19, 0)
-        ) : null,
-        createdAt: date,
+        checkInTime,
+        checkOutTime,
+        workHours,
+        status: 'PRESENT',
+        source: 'WEB',
       })
     }
   }
   
-  // Insert in batches
+  // Insert attendance in batches
   for (let i = 0; i < attendanceRecords.length; i += BATCH_SIZE) {
     const batch = attendanceRecords.slice(i, i + BATCH_SIZE)
-    await prisma.attendance.createMany({
+    await prisma.attendanceRecord.createMany({
       data: batch,
       skipDuplicates: true,
     })
   }
-  
   console.log(`✅ Created ${attendanceRecords.length} attendance records`)
-  
-  return { employees, attendanceRecords }
+
+  // Create pending payroll runs (142 employees * average salary)
+  const payrollRuns = []
+  for (const employee of employees.filter(e => e.status === 'ACTIVE').slice(0, 142)) {
+    const ctc = employee.ctcAnnualInr ? Number(employee.ctcAnnualInr) : 600000
+    const monthlyGross = ctc / 12
+    
+    await prisma.payrollRun.create({
+      data: {
+        tenantId,
+        employeeId: employee.id,
+        payrollCycleId: null, // Can be linked to a cycle later
+        status: 'PENDING',
+        grossSalary: monthlyGross,
+        basicSalary: monthlyGross * 0.5,
+        hra: monthlyGross * 0.2,
+        allowances: monthlyGross * 0.1,
+        deductions: monthlyGross * 0.1,
+        netSalary: monthlyGross * 0.9,
+        payPeriodStart: startOfMonth,
+        payPeriodEnd: endOfMonth,
+      },
+    })
+  }
+  console.log(`✅ Created ${employees.filter(e => e.status === 'ACTIVE').length} pending payroll runs`)
+
+  return { 
+    employees, 
+    attendanceRecords,
+    leaveRequests,
+    departments,
+    designations,
+  }
 }
 
 /**

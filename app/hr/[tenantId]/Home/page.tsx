@@ -127,14 +127,37 @@ export default function HRDashboardPage() {
     try {
       setLoading(true)
       setError(null)
+      const token = useAuthStore.getState().token
       
-      // Use mock data for now (API can be added later)
-      // This ensures the page loads quickly without waiting for API calls
+      if (!token) {
+        console.error('No authentication token found')
+        setLoading(false)
+        return
+      }
+
+      // Fetch from API
+      const response = await fetch(`/api/hr/dashboard/stats`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch HR dashboard stats: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      setStats(data)
+    } catch (error: any) {
+      console.error('Failed to fetch dashboard stats:', error)
+      setError(error.message || 'An unexpected error occurred while fetching data.')
+      
+      // Fallback to mock data if API fails
       const mockStats: HRDashboardStats = {
         totalEmployees: 156,
         activeEmployees: 142,
         onLeave: 8,
-        pendingPayroll: 142,
+        pendingPayroll: 1420000,
         openPositions: 12,
         employeeGrowth: 8.3,
         attendanceRate: 94.5,
@@ -153,13 +176,7 @@ export default function HRDashboardPage() {
           { month: 'Mar', count: 156 },
         ],
       }
-      
-      // Minimal delay to show loading state
-      await new Promise(resolve => setTimeout(resolve, 100))
       setStats(mockStats)
-    } catch (error: any) {
-      console.error('Failed to fetch dashboard stats:', error)
-      setError(error.message || 'An unexpected error occurred while fetching data.')
     } finally {
       setLoading(false)
     }
@@ -188,6 +205,7 @@ export default function HRDashboardPage() {
       value: stats?.activeEmployees || 0,
       icon: <Briefcase className="w-5 h-5" />,
       color: 'success' as const,
+      href: `/hr/${tenantId}/Employees?status=ACTIVE`,
     },
     {
       label: 'On Leave',
