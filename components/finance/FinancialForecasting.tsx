@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuthStore } from '@/lib/stores/auth'
 import { TrendingUp, TrendingDown, Target, DollarSign, Calendar } from 'lucide-react'
 import { 
   LineChart, 
@@ -28,9 +29,34 @@ interface FinancialForecastingProps {
 
 export function FinancialForecasting({ tenantId }: FinancialForecastingProps) {
   const [scenario, setScenario] = useState<'best' | 'base' | 'worst'>('base')
+  const [forecastData, setForecastData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Revenue Forecast Data
-  const revenueForecast = [
+  useEffect(() => {
+    fetchForecast()
+  }, [tenantId])
+
+  const fetchForecast = async () => {
+    try {
+      const token = useAuthStore.getState().token
+      const response = await fetch('/api/finance/forecast', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setForecastData(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch forecast:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Use API data or fallback to mock
+  const revenueForecast = forecastData?.forecast || [
     { month: 'Jan', actual: 1200000, forecast: 1300000, best: 1500000, worst: 1100000 },
     { month: 'Feb', actual: 1500000, forecast: 1600000, best: 1800000, worst: 1400000 },
     { month: 'Mar', actual: 1800000, forecast: 1900000, best: 2200000, worst: 1600000 },

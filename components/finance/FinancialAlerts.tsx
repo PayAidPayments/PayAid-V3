@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuthStore } from '@/lib/stores/auth'
 import { AlertCircle, Bell, DollarSign, TrendingDown, Calendar, FileText } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,7 +25,31 @@ interface FinancialAlertsProps {
 }
 
 export function FinancialAlerts({ tenantId }: FinancialAlertsProps) {
-  const [alerts, setAlerts] = useState<FinancialAlert[]>([
+  const [alerts, setAlerts] = useState<FinancialAlert[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchAlerts()
+  }, [tenantId])
+
+  const fetchAlerts = async () => {
+    try {
+      const token = useAuthStore.getState().token
+      const response = await fetch('/api/finance/alerts', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setAlerts(data.alerts || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch alerts:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
     {
       id: '1',
       type: 'low-cash',

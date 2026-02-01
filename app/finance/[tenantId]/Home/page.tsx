@@ -434,8 +434,23 @@ export default function FinanceDashboardPage() {
               </Link>
             </CardContent>
           </GlassCard>
+
+          {/* Financial Alerts */}
+          <FinancialAlerts tenantId={tenantId} />
         </div>
+
+        {/* Cash Flow Management */}
+        <CashFlowManagement tenantId={tenantId} />
+
+        {/* Financial Forecasting */}
+        <FinancialForecasting tenantId={tenantId} />
+
+        {/* Financial Analytics */}
+        <FinancialAnalytics tenantId={tenantId} />
       </div>
+
+      {/* Quick Actions Panel - Floating */}
+      <QuickActionsPanel tenantId={tenantId} />
     </div>
   )
 }
