@@ -66,7 +66,10 @@ export function CashFlowManagement({ tenantId }: CashFlowManagementProps) {
     { date: 'Jun', inflow: 1700000, outflow: 1050000, net: 650000 },
   ]
 
-  const forecastData = [
+  const forecastData = cashFlowData?.forecast?.slice(0, 5).map((item: any, idx: number) => ({
+    date: `Day ${(idx + 1) * 7}`,
+    forecast: item.forecast || 0,
+  })) || [
     { date: 'Day 1', forecast: 2500000 },
     { date: 'Day 7', forecast: 2800000 },
     { date: 'Day 14', forecast: 3100000 },
@@ -74,7 +77,7 @@ export function CashFlowManagement({ tenantId }: CashFlowManagementProps) {
     { date: 'Day 30', forecast: 3200000 },
   ]
 
-  const workingCapital = {
+  const workingCapital = cashFlowData?.workingCapital || {
     currentAssets: 5000000,
     currentLiabilities: 2000000,
     workingCapital: 3000000,
