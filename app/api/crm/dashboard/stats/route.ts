@@ -134,10 +134,10 @@ export async function GET(request: NextRequest) {
         dealsClosingThisMonth: 8,
         overdueTasks: 0,
         quarterlyPerformance: [
-          { quarter: 'FY 2024-Q4', leadsCreated: 45, dealsCreated: 28, dealsWon: 12, revenue: 450000 },
-          { quarter: 'FY 2025-Q1', leadsCreated: 52, dealsCreated: 35, dealsWon: 15, revenue: 520000 },
-          { quarter: 'FY 2025-Q2', leadsCreated: 48, dealsCreated: 32, dealsWon: 14, revenue: 480000 },
-          { quarter: 'FY 2025-Q3', leadsCreated: 60, dealsCreated: 40, dealsWon: 18, revenue: 600000 },
+          { quarter: 'Q1', leadsCreated: 52, dealsCreated: 35, dealsWon: 15, revenue: 520000 },
+          { quarter: 'Q2', leadsCreated: 48, dealsCreated: 32, dealsWon: 14, revenue: 480000 },
+          { quarter: 'Q3', leadsCreated: 60, dealsCreated: 40, dealsWon: 18, revenue: 600000 },
+          { quarter: 'Q4', leadsCreated: 55, dealsCreated: 38, dealsWon: 16, revenue: 550000 },
         ],
         pipelineByStage: [
           { stage: 'Lead', count: 25 },
@@ -146,13 +146,21 @@ export async function GET(request: NextRequest) {
           { stage: 'Negotiation', count: 8 },
           { stage: 'Won', count: 15 },
         ],
-        monthlyLeadCreation: Array.from({ length: 12 }, (_, i) => {
-          const date = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
-          return {
-            month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-            count: 15 + Math.floor(Math.random() * 20),
+        monthlyLeadCreation: (() => {
+          // Generate 12 months including Jan and Feb 2026
+          const months = []
+          const currentDate = new Date(now.getFullYear(), now.getMonth(), 1)
+          
+          // Start from 11 months ago and go forward to include future months
+          for (let i = 11; i >= 0; i--) {
+            const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1)
+            months.push({
+              month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+              count: 15 + Math.floor(Math.random() * 20),
+            })
           }
-        }),
+          return months
+        })(),
         topLeadSources: [
           { name: 'Website', leadsCount: 45, conversionsCount: 12, totalValue: 450000, conversionRate: 26.7 },
           { name: 'Referral', leadsCount: 32, conversionsCount: 10, totalValue: 320000, conversionRate: 31.3 },
@@ -488,11 +496,11 @@ export async function GET(request: NextRequest) {
         revenue: data?.revenue || 0,
       }
       
-      // Use sample data for Q1, Q2, Q3 if real data is zero or missing
+      // Use sample data for all quarters (Q1-Q4) if real data is zero or missing
       const hasRealData = safeData.leadsCreated > 0 || safeData.dealsCreated > 0 || safeData.dealsWon > 0 || safeData.revenue > 0
       const quarterNum = index + 1
       
-      if (!hasRealData && quarterNum <= 3) {
+      if (!hasRealData) {
         const sample = sampleQuarterData.find(s => s.quarter === quarterNum)
         if (sample) {
           return {
@@ -565,10 +573,10 @@ export async function GET(request: NextRequest) {
       quarterlyPerformance: Array.isArray(quarterlyPerformance) && quarterlyPerformance.length > 0 
         ? quarterlyPerformance 
         : [
-            { quarter: 'FY 2024-Q4', leadsCreated: 45, dealsCreated: 28, dealsWon: 12, revenue: 450000 },
-            { quarter: 'FY 2025-Q1', leadsCreated: 52, dealsCreated: 35, dealsWon: 15, revenue: 520000 },
-            { quarter: 'FY 2025-Q2', leadsCreated: 48, dealsCreated: 32, dealsWon: 14, revenue: 480000 },
-            { quarter: 'FY 2025-Q3', leadsCreated: 60, dealsCreated: 40, dealsWon: 18, revenue: 600000 },
+            { quarter: 'Q1', leadsCreated: 52, dealsCreated: 35, dealsWon: 15, revenue: 520000 },
+            { quarter: 'Q2', leadsCreated: 48, dealsCreated: 32, dealsWon: 14, revenue: 480000 },
+            { quarter: 'Q3', leadsCreated: 60, dealsCreated: 40, dealsWon: 18, revenue: 600000 },
+            { quarter: 'Q4', leadsCreated: 55, dealsCreated: 38, dealsWon: 16, revenue: 550000 },
           ],
       pipelineByStage: Array.isArray(pipelineByStage) && pipelineByStage.length > 0 
         ? pipelineByStage 
