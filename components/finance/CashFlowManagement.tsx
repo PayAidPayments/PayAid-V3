@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuthStore } from '@/lib/stores/auth'
 import { TrendingUp, TrendingDown, AlertCircle, Calendar, DollarSign } from 'lucide-react'
 import { 
   AreaChart, 
@@ -28,9 +29,34 @@ interface CashFlowManagementProps {
 
 export function CashFlowManagement({ tenantId }: CashFlowManagementProps) {
   const [forecastPeriod, setForecastPeriod] = useState<'30' | '60' | '90'>('30')
+  const [cashFlowData, setCashFlowData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Mock data - should come from API
-  const currentCash = 2500000
+  useEffect(() => {
+    fetchCashFlow()
+  }, [tenantId])
+
+  const fetchCashFlow = async () => {
+    try {
+      const token = useAuthStore.getState().token
+      const response = await fetch('/api/finance/cash-flow', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setCashFlowData(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch cash flow:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Use API data or fallback to mock
+  const currentCash = cashFlowData?.currentCash || 2500000
   const cashFlowData = [
     { date: 'Jan', inflow: 1200000, outflow: 800000, net: 400000 },
     { date: 'Feb', inflow: 1500000, outflow: 900000, net: 600000 },
