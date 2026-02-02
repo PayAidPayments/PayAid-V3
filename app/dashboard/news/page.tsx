@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -101,6 +102,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: string; color: stri
 }
 
 export default function NewsPage() {
+  const router = useRouter()
   const { token, tenant } = useAuthStore()
   const [news, setNews] = useState<NewsResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -109,11 +111,13 @@ export default function NewsPage() {
 
   useEffect(() => {
     // Redirect to Industry Intelligence module if tenant is available
-    if (tenant?.id && typeof window !== 'undefined') {
-      window.location.href = `/industry-intelligence/${tenant.id}/Home`
+    if (tenant?.id) {
+      router.push(`/industry-intelligence/${tenant.id}/Home`)
       return
     }
-    fetchNews()
+    if (token) {
+      fetchNews()
+    }
   }, [token, tenant])
 
   const fetchNews = async () => {
