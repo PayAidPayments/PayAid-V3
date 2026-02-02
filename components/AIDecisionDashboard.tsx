@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { DashboardLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
-import { getRiskColor, getRiskCategory } from '@/lib/ai/decision-risk'
+import { getRiskColor, getRiskCategory } from '@/lib/ai/decision-risk-client'
 
 const PAYAID_PURPLE = '#53328A'
 const PAYAID_GOLD = '#F5C700'
