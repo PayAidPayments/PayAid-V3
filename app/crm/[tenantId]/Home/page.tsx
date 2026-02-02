@@ -469,7 +469,7 @@ export default function CRMDashboardPage() {
 
   const fetchDashboardStats = async (signal?: AbortSignal, retryCount = 0): Promise<void> => {
     const MAX_RETRIES = 2
-    const RETRY_DELAY = 1500 // 1.5 seconds (reduced for faster retries)
+    const RETRY_DELAY = 1000 // 1 second (optimized for faster retries)
     
     try {
       setLoading(true)
