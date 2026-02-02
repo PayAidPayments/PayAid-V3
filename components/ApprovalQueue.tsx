@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw } from 'lucide-react'
 import { DashboardLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
-import { getRiskColor } from '@/lib/ai/decision-risk'
+import { getRiskColor } from '@/lib/ai/decision-risk-client'
 
 const PAYAID_PURPLE = '#53328A'
 
