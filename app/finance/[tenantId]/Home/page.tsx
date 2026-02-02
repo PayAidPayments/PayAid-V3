@@ -36,11 +36,6 @@ import { FinancialAlerts } from '@/components/finance/FinancialAlerts'
 import { CashFlowManagement } from '@/components/finance/CashFlowManagement'
 import { FinancialForecasting } from '@/components/finance/FinancialForecasting'
 import { FinancialAnalytics } from '@/components/finance/FinancialAnalytics'
-import { QuickActionsPanel } from '@/components/finance/QuickActionsPanel'
-import { FinancialAlerts } from '@/components/finance/FinancialAlerts'
-import { CashFlowManagement } from '@/components/finance/CashFlowManagement'
-import { FinancialForecasting } from '@/components/finance/FinancialForecasting'
-import { FinancialAnalytics } from '@/components/finance/FinancialAnalytics'
 
 interface FinanceDashboardStats {
   totalInvoices: number
