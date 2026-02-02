@@ -18,6 +18,8 @@ export default function HRLeaveLayout({
     { name: 'Leave', href: `/hr/${tenantId}/Leave` },
     { name: 'Attendance', href: `/hr/${tenantId}/Attendance` },
     { name: 'Hiring', href: `/hr/${tenantId}/Hiring` },
+    { name: 'Onboarding', href: `/hr/${tenantId}/Onboarding` },
+    { name: 'Reports', href: `/hr/${tenantId}/Reports` },
   ]
 
   return (
@@ -28,7 +30,7 @@ export default function HRLeaveLayout({
           moduleName="HR"
           items={topBarItems}
         />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>
