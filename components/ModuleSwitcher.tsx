@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useAuthStore } from '@/lib/stores/auth'
-import { ChevronDown, Home, Briefcase, DollarSign, ShoppingCart, Users, BarChart3, FolderKanban, Package } from 'lucide-react'
+import { ChevronDown, Home, Briefcase, DollarSign, ShoppingCart, Users, BarChart3, FolderKanban, Package, TrendingUp } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface Module {
@@ -69,6 +69,13 @@ const modules: Module[] = [
     url: '/hr',
     icon: Briefcase,
     description: 'Employees & payroll'
+  },
+  {
+    id: 'industry-intelligence',
+    name: 'Industry Intelligence',
+    url: '/industry-intelligence',
+    icon: TrendingUp,
+    description: 'News & market trends'
   },
 ]
 
