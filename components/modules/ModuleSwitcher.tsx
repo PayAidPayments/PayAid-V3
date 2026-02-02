@@ -682,9 +682,10 @@ export function ModuleSwitcher() {
         <LayoutGrid className="h-4 w-4" />
         {currentModuleData ? (
           <>
-            {moduleIconMap[currentModuleData.id] && (
-              <moduleIconMap[currentModuleData.id] className="h-4 w-4" strokeWidth={2} />
-            )}
+            {(() => {
+              const Icon = moduleIconMap[currentModuleData.id]
+              return Icon ? <Icon className="h-4 w-4" strokeWidth={2} /> : null
+            })()}
             <span className="hidden sm:inline">{currentModuleData.name}</span>
           </>
         ) : (
