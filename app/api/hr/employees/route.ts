@@ -112,13 +112,16 @@ export async function GET(request: NextRequest) {
       prisma.employee.count({ where }),
     ])
 
+    // Ensure employees is always an array
+    const safeEmployees = Array.isArray(employees) ? employees : []
+
     return NextResponse.json({
-      employees,
+      employees: safeEmployees,
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: total || 0,
+        totalPages: Math.ceil((total || 0) / limit),
       },
     })
   } catch (error) {

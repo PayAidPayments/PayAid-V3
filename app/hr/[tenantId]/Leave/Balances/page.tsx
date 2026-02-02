@@ -64,11 +64,11 @@ export default function HRLeaveBalancesPage() {
           className="h-10 rounded-md border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 px-3"
         >
           <option value="">Select Employee</option>
-          {employees?.employees.map((emp) => (
+          {employees?.employees && Array.isArray(employees.employees) ? employees.employees.map((emp) => (
             <option key={emp.id} value={emp.id}>
               {emp.employeeCode} - {emp.firstName} {emp.lastName}
             </option>
-          ))}
+          )) : null}
         </select>
       </div>
 
@@ -78,7 +78,7 @@ export default function HRLeaveBalancesPage() {
             <p>Please select an employee to view leave balances</p>
           </CardContent>
         </Card>
-      ) : balanceData && balanceData.balances.length > 0 ? (
+      ) : balanceData && balanceData.balances && Array.isArray(balanceData.balances) && balanceData.balances.length > 0 ? (
         <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
             <CardTitle className="dark:text-gray-100">Leave Balances</CardTitle>
@@ -101,7 +101,7 @@ export default function HRLeaveBalancesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {balanceData.balances.map((balance, index) => (
+                {(balanceData.balances || []).map((balance, index) => (
                   <TableRow key={index} className="dark:border-gray-700">
                     <TableCell className="font-medium dark:text-gray-100">{balance.leaveType.name}</TableCell>
                     <TableCell>

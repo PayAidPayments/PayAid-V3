@@ -122,7 +122,7 @@ export default function HRLeaveRequestsPage() {
     return <PageLoading message="Loading leave requests..." fullScreen={false} />
   }
 
-  const requests = data?.requests || []
+  const requests = (data?.requests && Array.isArray(data.requests)) ? data.requests : []
   const pagination = data?.pagination
   
   const dynamicTitle = getDynamicTitle('Leave Requests', statusFilter)
@@ -189,7 +189,7 @@ export default function HRLeaveRequestsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {requests.map((request) => (
+                  {(requests || []).map((request) => (
                     <TableRow key={request.id} className="dark:border-gray-700">
                       <TableCell>
                         <div>

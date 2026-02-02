@@ -94,9 +94,12 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Ensure balances is always an array
+    const safeBalances = Array.isArray(balanceSummary) ? balanceSummary : []
+
     return NextResponse.json({
       employeeId,
-      balances: balanceSummary,
+      balances: safeBalances,
     })
   } catch (error) {
     // Handle license errors

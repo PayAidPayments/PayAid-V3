@@ -61,13 +61,16 @@ export async function GET(request: NextRequest) {
       prisma.leaveRequest.count({ where }),
     ])
 
+    // Ensure requests is always an array
+    const safeRequests = Array.isArray(requests) ? requests : []
+
     return NextResponse.json({
-      requests,
+      requests: safeRequests,
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: total || 0,
+        totalPages: Math.ceil((total || 0) / limit),
       },
     })
   } catch (error) {
