@@ -22,6 +22,7 @@ import { GlassCard } from '@/components/modules/GlassCard'
 import { getModuleConfig } from '@/lib/modules/module-config'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { DashboardLoading } from '@/components/ui/loading'
+import { AIAnalytics } from '@/components/hr/AIAnalytics'
 // ModuleTopBar is now in layout.tsx
 import { 
   LineChart, 
@@ -275,7 +276,7 @@ export default function HRDashboardPage() {
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
+          <GlassCard delay={0.4}>
             <CardHeader>
               <CardTitle>Monthly Employee Growth</CardTitle>
               <CardDescription>Employee count over time</CardDescription>
@@ -292,9 +293,9 @@ export default function HRDashboardPage() {
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
-          </Card>
+          </GlassCard>
 
-          <Card>
+          <GlassCard delay={0.5}>
             <CardHeader>
               <CardTitle>Employees by Department</CardTitle>
               <CardDescription>Distribution of employees</CardDescription>
@@ -320,8 +321,11 @@ export default function HRDashboardPage() {
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
+
+        {/* AI Analytics */}
+        <AIAnalytics tenantId={tenantId} />
       </div>
     </div>
   )
