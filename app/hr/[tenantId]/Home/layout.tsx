@@ -18,6 +18,8 @@ export default function HRHomeLayout({
     { name: 'Leave', href: `/hr/${tenantId}/Leave` },
     { name: 'Attendance', href: `/hr/${tenantId}/Attendance` },
     { name: 'Hiring', href: `/hr/${tenantId}/Hiring` },
+    { name: 'Onboarding', href: `/hr/${tenantId}/Onboarding` },
+    { name: 'Reports', href: `/hr/${tenantId}/Reports` },
   ]
 
   return (
