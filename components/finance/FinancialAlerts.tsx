@@ -50,56 +50,6 @@ export function FinancialAlerts({ tenantId }: FinancialAlertsProps) {
       setLoading(false)
     }
   }
-    {
-      id: '1',
-      type: 'low-cash',
-      title: 'Low Cash Alert',
-      message: 'Cash balance is below ₹10,00,000 threshold',
-      severity: 'critical',
-      timestamp: new Date(),
-      actionUrl: '/finance/cash-flow',
-      read: false,
-    },
-    {
-      id: '2',
-      type: 'overdue',
-      title: 'Overdue Invoices',
-      message: '5 invoices totaling ₹2,50,000 are overdue',
-      severity: 'warning',
-      timestamp: new Date(Date.now() - 3600000),
-      actionUrl: '/finance/invoices?status=overdue',
-      read: false,
-    },
-    {
-      id: '3',
-      type: 'budget-variance',
-      title: 'Budget Variance Alert',
-      message: 'Expenses exceed budget by 15% this month',
-      severity: 'warning',
-      timestamp: new Date(Date.now() - 7200000),
-      actionUrl: '/finance/budget',
-      read: false,
-    },
-    {
-      id: '4',
-      type: 'gst-filing',
-      title: 'GST Filing Reminder',
-      message: 'GSTR-3B filing due in 3 days',
-      severity: 'info',
-      timestamp: new Date(Date.now() - 10800000),
-      actionUrl: '/finance/gst',
-      read: true,
-    },
-    {
-      id: '5',
-      type: 'payment-received',
-      title: 'Payment Received',
-      message: 'Payment of ₹50,000 received for INV-001',
-      severity: 'info',
-      timestamp: new Date(Date.now() - 14400000),
-      read: true,
-    },
-  ])
 
   const getAlertIcon = (type: FinancialAlert['type']) => {
     switch (type) {
