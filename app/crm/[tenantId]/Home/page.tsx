@@ -132,6 +132,7 @@ export default function CRMDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   // Profile menu and news handled by ModuleTopBar in layout
   const [isDark, setIsDark] = useState(false)
   
@@ -247,6 +248,23 @@ export default function CRMDashboardPage() {
       setCurrentView(user?.role === 'owner' || user?.role === 'admin' || user?.role === 'manager' ? 'manager' : 'tasks')
     }
   }, [viewParam, user?.role])
+
+  // Keyboard shortcut for Command Palette (Ctrl+K or Cmd+K)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+        event.preventDefault()
+        setCommandPaletteOpen(true)
+      }
+      // Close with Escape
+      if (event.key === 'Escape' && commandPaletteOpen) {
+        setCommandPaletteOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [commandPaletteOpen])
 
   // Main data loading effect - only for stats and view-specific data
   useEffect(() => {
