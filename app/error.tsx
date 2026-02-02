@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
@@ -11,6 +13,8 @@ export default function Error({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const router = useRouter()
+  const { tenant } = useAuthStore()
   useEffect(() => {
     // Log the error to an error reporting service
     console.error('Application error:', error)
@@ -58,7 +62,14 @@ export default function Error({
             Try again
           </Button>
           <Button
-            onClick={() => window.location.href = '/'}
+            onClick={() => {
+              // Navigate to Home page with tenant ID if available, otherwise to /home
+              if (tenant?.id) {
+                router.push(`/home/${tenant.id}`)
+              } else {
+                router.push('/home')
+              }
+            }}
             variant="outline"
             className="border-2 border-gray-300 dark:border-gray-600 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 font-medium px-6 py-2"
           >
