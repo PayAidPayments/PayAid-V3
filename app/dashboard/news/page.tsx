@@ -101,15 +101,20 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: string; color: stri
 }
 
 export default function NewsPage() {
-  const { token } = useAuthStore()
+  const { token, tenant } = useAuthStore()
   const [news, setNews] = useState<NewsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedUrgency, setSelectedUrgency] = useState<string | null>(null)
 
   useEffect(() => {
+    // Redirect to Industry Intelligence module if tenant is available
+    if (tenant?.id && typeof window !== 'undefined') {
+      window.location.href = `/industry-intelligence/${tenant.id}/Home`
+      return
+    }
     fetchNews()
-  }, [token])
+  }, [token, tenant])
 
   const fetchNews = async () => {
     try {
@@ -158,10 +163,10 @@ export default function NewsPage() {
   }
 
   const displayNews = selectedCategory && news?.grouped
-    ? Object.values(news.grouped).flat().filter(item => item.category === selectedCategory)
+    ? (Object.values(news.grouped).flat().filter(item => item.category === selectedCategory) || [])
     : selectedUrgency && news?.grouped
-    ? news.grouped[selectedUrgency as keyof typeof news.grouped] || []
-    : news?.newsItems || []
+    ? (news.grouped[selectedUrgency as keyof typeof news.grouped] || [])
+    : (news?.newsItems && Array.isArray(news.newsItems) ? news.newsItems : [])
 
   const categories = Object.keys(CATEGORY_CONFIG)
   const urgencies = Object.keys(URGENCY_CONFIG)
@@ -254,7 +259,7 @@ export default function NewsPage() {
           </Card>
         ) : (
           <div className="grid gap-4">
-            {displayNews.map((item) => {
+            {(displayNews || []).map((item) => {
               const urgencyConfig = URGENCY_CONFIG[item.urgency] || URGENCY_CONFIG.informational
               const categoryConfig = CATEGORY_CONFIG[item.category] || {
                 label: item.category,

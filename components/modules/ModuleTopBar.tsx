@@ -109,9 +109,12 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
   }, [token])
 
   const handleNewsClick = () => {
-    // Toggle news sidebar
-    const event = new CustomEvent('toggle-news-sidebar')
-    window.dispatchEvent(event)
+    // Navigate to Industry Intelligence module or news page
+    if (tenant?.id) {
+      router.push(`/industry-intelligence/${tenant.id}/Home`)
+    } else {
+      router.push('/industry-intelligence')
+    }
   }
 
   return (
