@@ -11,4 +11,5 @@ export * from './indian-states'
 export * from './module-detection'
 export * from './performance'
 export * from './retry'
-export * from './cache-warmer'
+// NOTE: cache-warmer is NOT exported here because it imports Prisma (server-only)
+// Import it directly from './cache-warmer' in server-side code only
