@@ -529,36 +529,48 @@ export async function GET(request: NextRequest) {
     // Reuse wonDealsForQuarters for all quarters (fetched once, filtered in memory)
     // Ensure wonDealsForQuarters is always an array
     const safeWonDeals = Array.isArray(wonDealsForQuarters) ? wonDealsForQuarters : []
-    const quarterlyPerformance = [
+    
+    // Ensure quarters is an array with at least 4 elements
+    const safeQuarters = Array.isArray(quarters) && quarters.length >= 4 ? quarters : [
+      { label: 'Q1', start: startOfQuarter(new Date(now.getFullYear(), 0, 1)), end: endOfQuarter(new Date(now.getFullYear(), 0, 1)) },
+      { label: 'Q2', start: startOfQuarter(new Date(now.getFullYear(), 3, 1)), end: endOfQuarter(new Date(now.getFullYear(), 3, 1)) },
+      { label: 'Q3', start: startOfQuarter(new Date(now.getFullYear(), 6, 1)), end: endOfQuarter(new Date(now.getFullYear(), 6, 1)) },
+      { label: 'Q4', start: startOfQuarter(new Date(now.getFullYear(), 9, 1)), end: endOfQuarter(new Date(now.getFullYear(), 9, 1)) },
+    ]
+    
+    const quarterlyPerformanceArray = [
       {
-        quarter: quarters[0].label,
+        quarter: safeQuarters[0]?.label || 'Q1',
         leadsCreated: q1LeadsCreated || 0,
         dealsCreated: q1DealsCreated || 0,
-        dealsWon: filterWonDealsByQuarter(safeWonDeals, quarters[0]).length,
-        revenue: filterWonDealsByQuarter(safeWonDeals, quarters[0]).reduce((sum, d) => sum + (d?.value || 0), 0),
+        dealsWon: filterWonDealsByQuarter(safeWonDeals, safeQuarters[0] || safeQuarters[0]).length,
+        revenue: filterWonDealsByQuarter(safeWonDeals, safeQuarters[0] || safeQuarters[0]).reduce((sum, d) => sum + (d?.value || 0), 0),
       },
       {
-        quarter: quarters[1].label,
+        quarter: safeQuarters[1]?.label || 'Q2',
         leadsCreated: q2LeadsCreated || 0,
         dealsCreated: q2DealsCreated || 0,
-        dealsWon: filterWonDealsByQuarter(safeWonDeals, quarters[1]).length,
-        revenue: filterWonDealsByQuarter(safeWonDeals, quarters[1]).reduce((sum, d) => sum + (d?.value || 0), 0),
+        dealsWon: filterWonDealsByQuarter(safeWonDeals, safeQuarters[1] || safeQuarters[1]).length,
+        revenue: filterWonDealsByQuarter(safeWonDeals, safeQuarters[1] || safeQuarters[1]).reduce((sum, d) => sum + (d?.value || 0), 0),
       },
       {
-        quarter: quarters[2].label,
+        quarter: safeQuarters[2]?.label || 'Q3',
         leadsCreated: q3LeadsCreated || 0,
         dealsCreated: q3DealsCreated || 0,
-        dealsWon: filterWonDealsByQuarter(safeWonDeals, quarters[2]).length,
-        revenue: filterWonDealsByQuarter(safeWonDeals, quarters[2]).reduce((sum, d) => sum + (d?.value || 0), 0),
+        dealsWon: filterWonDealsByQuarter(safeWonDeals, safeQuarters[2] || safeQuarters[2]).length,
+        revenue: filterWonDealsByQuarter(safeWonDeals, safeQuarters[2] || safeQuarters[2]).reduce((sum, d) => sum + (d?.value || 0), 0),
       },
       {
-        quarter: quarters[3].label,
+        quarter: safeQuarters[3]?.label || 'Q4',
         leadsCreated: q4LeadsCreated || 0,
         dealsCreated: q4DealsCreated || 0,
-        dealsWon: filterWonDealsByQuarter(safeWonDeals, quarters[3]).length,
-        revenue: filterWonDealsByQuarter(safeWonDeals, quarters[3]).reduce((sum, d) => sum + (d?.value || 0), 0),
+        dealsWon: filterWonDealsByQuarter(safeWonDeals, safeQuarters[3] || safeQuarters[3]).length,
+        revenue: filterWonDealsByQuarter(safeWonDeals, safeQuarters[3] || safeQuarters[3]).reduce((sum, d) => sum + (d?.value || 0), 0),
       },
-    ].map((data, index) => {
+    ]
+    
+    // Ensure quarterlyPerformanceArray is an array before mapping
+    const quarterlyPerformance = Array.isArray(quarterlyPerformanceArray) ? quarterlyPerformanceArray.map((data, index) => {
       // Ensure all properties exist
       const safeData = {
         quarter: data?.quarter || '',
@@ -586,7 +598,7 @@ export async function GET(request: NextRequest) {
       }
       
       return safeData
-    })
+    }) : []
 
     // Calculate pipeline by stage from groupBy result (with values)
     const pipelineStages = ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
@@ -601,7 +613,24 @@ export async function GET(request: NextRequest) {
 
     // Build monthly lead creation from database results
     // Generate 12 months: from 11 months ago to current month (or future months if needed)
-    const monthlyLeadCreation = (Array.isArray(monthlyCounts) ? monthlyCounts : [])
+    // Ensure monthlyCounts is always an array before processing
+    let safeMonthlyCounts: number[] = []
+    try {
+      if (Array.isArray(monthlyCounts)) {
+        safeMonthlyCounts = monthlyCounts.filter((c: any) => typeof c === 'number' || (typeof c === 'string' && !isNaN(Number(c))))
+          .map((c: any) => Number(c) || 0)
+      } else if (monthlyCounts && typeof monthlyCounts === 'object') {
+        // If it's an object, try to extract array values
+        console.warn('[CRM_STATS] monthlyCounts is not an array:', typeof monthlyCounts, monthlyCounts)
+        safeMonthlyCounts = []
+      }
+    } catch (err) {
+      console.error('[CRM_STATS] Error processing monthlyCounts:', err)
+      safeMonthlyCounts = []
+    }
+    
+    const monthlyLeadCreation = safeMonthlyCounts
+      .slice() // Create a copy before reversing to avoid mutating
       .reverse() // Reverse to get chronological order (oldest to newest)
       .map((count, i) => {
         const date = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
