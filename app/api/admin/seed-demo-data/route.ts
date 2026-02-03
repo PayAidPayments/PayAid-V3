@@ -279,83 +279,193 @@ async function seedDemoData() {
       'Partner Channel',
     ]
 
-    // Create sample contacts (20+ contacts)
+    // Create sample contacts (50+ contacts with proper stage distribution)
     const contactNames = [
-      { name: 'John Doe', email: 'john@example.com', phone: '+91-9876543210', type: 'customer', company: 'Tech Solutions Inc' },
-      { name: 'Jane Smith', email: 'jane@example.com', phone: '+91-9876543211', type: 'customer', company: 'Digital Marketing Pro' },
-      { name: 'Acme Corporation', email: 'contact@acme.com', phone: '+91-22-12345678', type: 'customer', company: 'Acme Corporation' },
-      { name: 'Rajesh Kumar', email: 'rajesh@startup.com', phone: '+91-9876543212', type: 'lead', company: 'StartupXYZ' },
-      { name: 'Priya Sharma', email: 'priya@enterprise.com', phone: '+91-9876543213', type: 'lead', company: 'Enterprise Solutions' },
-      { name: 'Amit Patel', email: 'amit@tech.com', phone: '+91-9876543214', type: 'lead', company: 'Tech Innovations' },
-      { name: 'Sneha Reddy', email: 'sneha@business.com', phone: '+91-9876543215', type: 'lead', company: 'Business Growth Co' },
-      { name: 'Vikram Singh', email: 'vikram@corp.com', phone: '+91-9876543216', type: 'customer', company: 'Corporate Ventures' },
-      { name: 'Anjali Mehta', email: 'anjali@services.com', phone: '+91-9876543217', type: 'lead', company: 'Professional Services Ltd' },
-      { name: 'Rahul Gupta', email: 'rahul@consulting.com', phone: '+91-9876543218', type: 'lead', company: 'Consulting Group' },
-      { name: 'Meera Nair', email: 'meera@digital.com', phone: '+91-9876543219', type: 'customer', company: 'Digital Solutions' },
-      { name: 'Prospect Industries', email: 'info@prospect.com', phone: '+91-22-87654321', type: 'lead', company: 'Prospect Industries' },
-      { name: 'Client Services Inc', email: 'contact@clientservices.com', phone: '+91-9876543220', type: 'customer', company: 'Client Services Inc' },
-      { name: 'Partner Network', email: 'hello@partnernetwork.com', phone: '+91-9876543221', type: 'customer', company: 'Partner Network' },
-      { name: 'Hot Lead Corp', email: 'sales@hotlead.com', phone: '+91-9876543222', type: 'lead', company: 'Hot Lead Corp' },
-      { name: 'New Lead Solutions', email: 'info@newlead.com', phone: '+91-9876543223', type: 'lead', company: 'New Lead Solutions' },
-      { name: 'Big Deal Enterprises', email: 'contact@bigdeal.com', phone: '+91-9876543224', type: 'lead', company: 'Big Deal Enterprises' },
-      { name: 'Customer First Ltd', email: 'hello@customerfirst.com', phone: '+91-9876543225', type: 'customer', company: 'Customer First Ltd' },
-      { name: 'Enterprise Group', email: 'info@enterprisegroup.com', phone: '+91-9876543226', type: 'lead', company: 'Enterprise Group' },
-      { name: 'Global Solutions', email: 'contact@globalsolutions.com', phone: '+91-9876543227', type: 'customer', company: 'Global Solutions' },
+      // Customers (stage='customer') - 15 contacts
+      { name: 'John Doe', email: 'john@example.com', phone: '+91-9876543210', stage: 'customer', company: 'Tech Solutions Inc', leadScore: 85 },
+      { name: 'Jane Smith', email: 'jane@example.com', phone: '+91-9876543211', stage: 'customer', company: 'Digital Marketing Pro', leadScore: 90 },
+      { name: 'Acme Corporation', email: 'contact@acme.com', phone: '+91-22-12345678', stage: 'customer', company: 'Acme Corporation', leadScore: 88 },
+      { name: 'Vikram Singh', email: 'vikram@corp.com', phone: '+91-9876543216', stage: 'customer', company: 'Corporate Ventures', leadScore: 82 },
+      { name: 'Meera Nair', email: 'meera@digital.com', phone: '+91-9876543219', stage: 'customer', company: 'Digital Solutions', leadScore: 87 },
+      { name: 'Client Services Inc', email: 'contact@clientservices.com', phone: '+91-9876543220', stage: 'customer', company: 'Client Services Inc', leadScore: 91 },
+      { name: 'Partner Network', email: 'hello@partnernetwork.com', phone: '+91-9876543221', stage: 'customer', company: 'Partner Network', leadScore: 89 },
+      { name: 'Customer First Ltd', email: 'hello@customerfirst.com', phone: '+91-9876543225', stage: 'customer', company: 'Customer First Ltd', leadScore: 86 },
+      { name: 'Global Solutions', email: 'contact@globalsolutions.com', phone: '+91-9876543227', stage: 'customer', company: 'Global Solutions', leadScore: 92 },
+      { name: 'Premium Services Co', email: 'contact@premiumservices.com', phone: '+91-9876543228', stage: 'customer', company: 'Premium Services Co', leadScore: 84 },
+      { name: 'Enterprise Solutions Ltd', email: 'info@enterprisesolutions.com', phone: '+91-9876543229', stage: 'customer', company: 'Enterprise Solutions Ltd', leadScore: 88 },
+      { name: 'Strategic Partners Inc', email: 'hello@strategicpartners.com', phone: '+91-9876543230', stage: 'customer', company: 'Strategic Partners Inc', leadScore: 90 },
+      { name: 'Business Excellence Group', email: 'contact@businessexcellence.com', phone: '+91-9876543231', stage: 'customer', company: 'Business Excellence Group', leadScore: 85 },
+      { name: 'Innovation Hub', email: 'info@innovationhub.com', phone: '+91-9876543232', stage: 'customer', company: 'Innovation Hub', leadScore: 87 },
+      { name: 'Growth Partners', email: 'hello@growthpartners.com', phone: '+91-9876543233', stage: 'customer', company: 'Growth Partners', leadScore: 89 },
+      
+      // Contacts (stage='contact') - 15 contacts
+      { name: 'Rajesh Kumar', email: 'rajesh@startup.com', phone: '+91-9876543212', stage: 'contact', company: 'StartupXYZ', leadScore: 65 },
+      { name: 'Priya Sharma', email: 'priya@enterprise.com', phone: '+91-9876543213', stage: 'contact', company: 'Enterprise Solutions', leadScore: 70 },
+      { name: 'Amit Patel', email: 'amit@tech.com', phone: '+91-9876543214', stage: 'contact', company: 'Tech Innovations', leadScore: 68 },
+      { name: 'Sneha Reddy', email: 'sneha@business.com', phone: '+91-9876543215', stage: 'contact', company: 'Business Growth Co', leadScore: 72 },
+      { name: 'Anjali Mehta', email: 'anjali@services.com', phone: '+91-9876543217', stage: 'contact', company: 'Professional Services Ltd', leadScore: 66 },
+      { name: 'Rahul Gupta', email: 'rahul@consulting.com', phone: '+91-9876543218', stage: 'contact', company: 'Consulting Group', leadScore: 69 },
+      { name: 'Prospect Industries', email: 'info@prospect.com', phone: '+91-22-87654321', stage: 'contact', company: 'Prospect Industries', leadScore: 71 },
+      { name: 'Hot Lead Corp', email: 'sales@hotlead.com', phone: '+91-9876543222', stage: 'contact', company: 'Hot Lead Corp', leadScore: 67 },
+      { name: 'New Lead Solutions', email: 'info@newlead.com', phone: '+91-9876543223', stage: 'contact', company: 'New Lead Solutions', leadScore: 64 },
+      { name: 'Big Deal Enterprises', email: 'contact@bigdeal.com', phone: '+91-9876543224', stage: 'contact', company: 'Big Deal Enterprises', leadScore: 73 },
+      { name: 'Enterprise Group', email: 'info@enterprisegroup.com', phone: '+91-9876543226', stage: 'contact', company: 'Enterprise Group', leadScore: 70 },
+      { name: 'Tech Startups Inc', email: 'hello@techstartups.com', phone: '+91-9876543234', stage: 'contact', company: 'Tech Startups Inc', leadScore: 68 },
+      { name: 'Digital Ventures', email: 'contact@digitalventures.com', phone: '+91-9876543235', stage: 'contact', company: 'Digital Ventures', leadScore: 65 },
+      { name: 'Cloud Solutions Co', email: 'info@cloudsolutions.com', phone: '+91-9876543236', stage: 'contact', company: 'Cloud Solutions Co', leadScore: 69 },
+      { name: 'Data Analytics Ltd', email: 'hello@dataanalytics.com', phone: '+91-9876543237', stage: 'contact', company: 'Data Analytics Ltd', leadScore: 71 },
+      
+      // Prospects (stage='prospect') - 20 contacts with high lead scores for Sales Automation
+      { name: 'AI Tech Solutions', email: 'contact@aitech.com', phone: '+91-9876543238', stage: 'prospect', company: 'AI Tech Solutions', leadScore: 75 },
+      { name: 'Blockchain Innovations', email: 'info@blockchain.com', phone: '+91-9876543239', stage: 'prospect', company: 'Blockchain Innovations', leadScore: 78 },
+      { name: 'Cybersecurity Pro', email: 'hello@cybersecurity.com', phone: '+91-9876543240', stage: 'prospect', company: 'Cybersecurity Pro', leadScore: 72 },
+      { name: 'FinTech Solutions', email: 'contact@fintech.com', phone: '+91-9876543241', stage: 'prospect', company: 'FinTech Solutions', leadScore: 80 },
+      { name: 'Healthcare Tech', email: 'info@healthcaretech.com', phone: '+91-9876543242', stage: 'prospect', company: 'Healthcare Tech', leadScore: 76 },
+      { name: 'EdTech Platform', email: 'hello@edtech.com', phone: '+91-9876543243', stage: 'prospect', company: 'EdTech Platform', leadScore: 74 },
+      { name: 'E-commerce Solutions', email: 'contact@ecommerce.com', phone: '+91-9876543244', stage: 'prospect', company: 'E-commerce Solutions', leadScore: 77 },
+      { name: 'SaaS Platform Inc', email: 'info@saasplatform.com', phone: '+91-9876543245', stage: 'prospect', company: 'SaaS Platform Inc', leadScore: 79 },
+      { name: 'Mobile App Dev', email: 'hello@mobileapp.com', phone: '+91-9876543246', stage: 'prospect', company: 'Mobile App Dev', leadScore: 73 },
+      { name: 'Web Development Co', email: 'contact@webdev.com', phone: '+91-9876543247', stage: 'prospect', company: 'Web Development Co', leadScore: 75 },
+      { name: 'IT Consulting Group', email: 'info@itconsulting.com', phone: '+91-9876543248', stage: 'prospect', company: 'IT Consulting Group', leadScore: 78 },
+      { name: 'Software Services', email: 'hello@softwareservices.com', phone: '+91-9876543249', stage: 'prospect', company: 'Software Services', leadScore: 76 },
+      { name: 'Cloud Infrastructure', email: 'contact@cloudinfra.com', phone: '+91-9876543250', stage: 'prospect', company: 'Cloud Infrastructure', leadScore: 81 },
+      { name: 'Data Science Labs', email: 'info@datascience.com', phone: '+91-9876543251', stage: 'prospect', company: 'Data Science Labs', leadScore: 74 },
+      { name: 'Machine Learning Co', email: 'hello@mlcompany.com', phone: '+91-9876543252', stage: 'prospect', company: 'Machine Learning Co', leadScore: 77 },
+      { name: 'IoT Solutions', email: 'contact@iotsolutions.com', phone: '+91-9876543253', stage: 'prospect', company: 'IoT Solutions', leadScore: 75 },
+      { name: 'Automation Systems', email: 'info@automation.com', phone: '+91-9876543254', stage: 'prospect', company: 'Automation Systems', leadScore: 79 },
+      { name: 'DevOps Services', email: 'hello@devops.com', phone: '+91-9876543255', stage: 'prospect', company: 'DevOps Services', leadScore: 76 },
+      { name: 'Quality Assurance Co', email: 'contact@qacompany.com', phone: '+91-9876543256', stage: 'prospect', company: 'Quality Assurance Co', leadScore: 73 },
+      { name: 'UI/UX Design Studio', email: 'info@uidesign.com', phone: '+91-9876543257', stage: 'prospect', company: 'UI/UX Design Studio', leadScore: 78 },
     ]
 
-    // Delete existing contacts and recreate (to ensure fresh data)
-    await prisma.contact.deleteMany({ where: { tenantId } })
+    // Check existing contacts count - only delete if we need to recreate for proper stage distribution
+    const existingContactsCount = await prisma.contact.count({ where: { tenantId } })
+    const existingContacts = await prisma.contact.findMany({ 
+      where: { tenantId },
+      select: { id: true, stage: true, name: true }
+    })
+    
+    // Only delete if we have fewer than 30 contacts or missing stage distribution
+    const hasProperDistribution = existingContacts.filter(c => c.stage === 'customer').length >= 10 &&
+                                  existingContacts.filter(c => c.stage === 'contact').length >= 10 &&
+                                  existingContacts.filter(c => c.stage === 'prospect').length >= 10
+    
+    if (existingContactsCount < 30 || !hasProperDistribution) {
+      console.log(`[SEED] Recreating contacts for proper distribution (existing: ${existingContactsCount})`)
+      await prisma.contact.deleteMany({ where: { tenantId } })
+    } else {
+      console.log(`[SEED] Preserving existing ${existingContactsCount} contacts`)
+    }
     
     // Create contacts in batches to avoid connection pool exhaustion
     const contacts: any[] = []
     const BATCH_SIZE = 3 // Process 3 contacts at a time (reduced to avoid pool exhaustion)
     
-    for (let i = 0; i < contactNames.length; i += BATCH_SIZE) {
-      const batch = contactNames.slice(i, i + BATCH_SIZE)
-      const batchContacts = await Promise.all(
-        batch.map((contact, batchIdx) => {
-          const idx = i + batchIdx
-          // Spread contacts across last 12 months including Q4 (Jan-Mar 2026) for better quarterly data
-          let createdAt: Date
-          if (idx < 8) {
-            // First 8 contacts in Q4 (Jan-Mar 2026) - More leads for Q4
-            const monthInQ4 = idx % 3 // 0=Jan, 1=Feb, 2=Mar
-            const dayInMonth = Math.min((idx % 28) + 1, 28)
-            createdAt = new Date(2026, monthInQ4, dayInMonth) // Q4 2026 (Jan-Mar)
-          } else {
-            // Rest spread across last 12 months (from current month backwards)
-            const monthsAgo = (idx - 8) % 12
-            createdAt = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1 + (idx % 28))
-          }
-          
-          return prisma.contact.create({
-            data: {
-              tenantId,
-              name: contact.name,
-              email: contact.email,
-              phone: contact.phone,
-              company: contact.company,
-              type: contact.type as any,
-              status: 'active',
-              country: 'India',
-              city: 'Bangalore',
-              state: 'Karnataka',
-              postalCode: '560001',
-              address: `${contact.company}, Bangalore`,
-              source: sourceNames[idx % sourceNames.length],
-              createdAt,
-            },
+    // Get existing contacts to preserve them
+    const existingContactEmails = new Set(existingContacts.map(c => {
+      // Try to find email from existing contacts
+      return null // We'll check by name instead
+    }))
+    
+    // Create new contacts only if we deleted old ones, otherwise use existing
+    if (existingContactsCount < 30 || !hasProperDistribution) {
+      for (let i = 0; i < contactNames.length; i += BATCH_SIZE) {
+        const batch = contactNames.slice(i, i + BATCH_SIZE)
+        const batchContacts = await Promise.all(
+          batch.map((contact, batchIdx) => {
+            const idx = i + batchIdx
+            // Spread contacts across last 12 months including Q4 (Jan-Mar 2026) for better quarterly data
+            let createdAt: Date
+            if (idx < 8) {
+              // First 8 contacts in Q4 (Jan-Mar 2026) - More leads for Q4
+              const monthInQ4 = idx % 3 // 0=Jan, 1=Feb, 2=Mar
+              const dayInMonth = Math.min((idx % 28) + 1, 28)
+              createdAt = new Date(2026, monthInQ4, dayInMonth) // Q4 2026 (Jan-Mar)
+            } else {
+              // Rest spread across last 12 months (from current month backwards)
+              const monthsAgo = (idx - 8) % 12
+              createdAt = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1 + (idx % 28))
+            }
+            
+            return prisma.contact.create({
+              data: {
+                tenantId,
+                name: contact.name,
+                email: contact.email,
+                phone: contact.phone,
+                company: contact.company,
+                type: contact.stage === 'customer' ? 'customer' : contact.stage === 'contact' ? 'lead' : 'lead', // Keep type for backward compatibility
+                stage: contact.stage, // Use stage field (prospect, contact, customer)
+                status: 'active',
+                country: 'India',
+                city: 'Bangalore',
+                state: 'Karnataka',
+                postalCode: '560001',
+                address: `${contact.company}, Bangalore`,
+                source: sourceNames[idx % sourceNames.length],
+                leadScore: contact.leadScore || 0,
+                lastContactedAt: contact.stage === 'customer' ? new Date(now.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000) : null, // Customers have recent activity
+                createdAt,
+              },
+            })
           })
-        })
-      )
-      contacts.push(...batchContacts)
-      // Delay between batches to allow connections to be released
-      if (i + BATCH_SIZE < contactNames.length) {
-        await new Promise(resolve => setTimeout(resolve, 200)) // Increased delay
+        )
+        contacts.push(...batchContacts)
+        // Delay between batches to allow connections to be released
+        if (i + BATCH_SIZE < contactNames.length) {
+          await new Promise(resolve => setTimeout(resolve, 200)) // Increased delay
+        }
+      }
+    } else {
+      // Use existing contacts
+      console.log(`[SEED] Using existing ${existingContacts.length} contacts`)
+      contacts.push(...existingContacts)
+      
+      // Still create additional contacts if we have fewer than 50
+      if (existingContactsCount < 50) {
+        const additionalContactsNeeded = 50 - existingContactsCount
+        const additionalContactNames = contactNames.slice(existingContactsCount)
+        
+        for (let i = 0; i < Math.min(additionalContactsNeeded, additionalContactNames.length); i += BATCH_SIZE) {
+          const batch = additionalContactNames.slice(i, i + BATCH_SIZE)
+          const batchContacts = await Promise.all(
+            batch.map((contact, batchIdx) => {
+              const idx = existingContactsCount + i + batchIdx
+              const monthsAgo = idx % 12
+              const createdAt = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1 + (idx % 28))
+              
+              return prisma.contact.create({
+                data: {
+                  tenantId,
+                  name: contact.name,
+                  email: contact.email,
+                  phone: contact.phone,
+                  company: contact.company,
+                  type: contact.stage === 'customer' ? 'customer' : contact.stage === 'contact' ? 'lead' : 'lead',
+                  stage: contact.stage,
+                  status: 'active',
+                  country: 'India',
+                  city: 'Bangalore',
+                  state: 'Karnataka',
+                  postalCode: '560001',
+                  address: `${contact.company}, Bangalore`,
+                  source: sourceNames[idx % sourceNames.length],
+                  leadScore: contact.leadScore || 0,
+                  lastContactedAt: contact.stage === 'customer' ? new Date(now.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000) : null,
+                  createdAt,
+                },
+              })
+            })
+          )
+          contacts.push(...batchContacts)
+          if (i + BATCH_SIZE < Math.min(additionalContactsNeeded, additionalContactNames.length)) {
+            await new Promise(resolve => setTimeout(resolve, 200))
+          }
+        }
       }
     }
 
-    console.log(`✅ Created ${contacts.length} contacts`)
+    console.log(`✅ Total contacts: ${contacts.length} (${existingContactsCount < 30 ? 'created new' : 'preserved existing and added more'})`)
 
     // Calculate financial year quarters (Indian FY: Apr-Mar)
     const currentYear = now.getFullYear()
@@ -450,8 +560,15 @@ async function seedDemoData() {
       { name: 'Closing This Month - Deal 8', value: 180000, stage: 'proposal', probability: 80, contactIdx: 19, quarter: 'current' },
     ]
 
-    // Delete existing deals and recreate
-    await prisma.deal.deleteMany({ where: { tenantId } })
+    // Check existing deals - preserve them and add more
+    const existingDealsCount = await prisma.deal.count({ where: { tenantId } })
+    const existingDeals = await prisma.deal.findMany({ 
+      where: { tenantId },
+      select: { id: true, name: true, stage: true, value: true, createdAt: true }
+    })
+    
+    console.log(`[SEED] Found ${existingDealsCount} existing deals - will add more`)
+    // Don't delete existing deals - just add more to them
     
     // Get current month dates
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -466,8 +583,28 @@ async function seedDemoData() {
     // Pre-calculate Q4 deal indices for proper date distribution
     const q4Deals = dealsData.filter(d => d.quarter === 'q4')
     
-    for (let i = 0; i < dealsData.length; i += DEAL_BATCH_SIZE) {
-      const batch = dealsData.slice(i, i + DEAL_BATCH_SIZE)
+    // Add existing deals to the deals array to preserve them
+    if (existingDeals.length > 0) {
+      console.log(`[SEED] Preserving ${existingDeals.length} existing deals`)
+      deals.push(...existingDeals.map(d => ({
+        id: d.id,
+        name: d.name,
+        stage: d.stage,
+        value: d.value,
+        createdAt: d.createdAt,
+      })))
+    }
+    
+    // Only create new deals if we have fewer than 60 total
+    const totalDealsNeeded = 60
+    const newDealsToCreate = Math.max(0, totalDealsNeeded - existingDealsCount)
+    
+    if (newDealsToCreate > 0) {
+      console.log(`[SEED] Creating ${newDealsToCreate} additional deals`)
+      const dealsToCreate = dealsData.slice(0, newDealsToCreate)
+      
+      for (let i = 0; i < dealsToCreate.length; i += DEAL_BATCH_SIZE) {
+      const batch = dealsToCreate.slice(i, i + DEAL_BATCH_SIZE)
       const batchDeals = await Promise.all(
         batch.map((deal, batchIdx) => {
           const idx = i + batchIdx
@@ -537,8 +674,13 @@ async function seedDemoData() {
               dealExpectedCloseDate = new Date(now.getFullYear(), now.getMonth(), Math.min(dayInMonth + 5, daysInMonth), 12, 0, 0) // Closing this month
             } else {
               // Active deals created this month: for "Deals Created This Month" stat
+              // Ensure these are created in the CURRENT month (not future/past)
               const dayInMonth = Math.min((idx % daysElapsed) + 1, daysElapsed)
               dealCreatedAt = new Date(now.getFullYear(), now.getMonth(), dayInMonth, 12, 0, 0)
+              // Ensure createdAt is not in the future
+              if (dealCreatedAt > now) {
+                dealCreatedAt = new Date(now.getFullYear(), now.getMonth(), Math.min(dayInMonth, now.getDate()), 12, 0, 0)
+              }
               dealExpectedCloseDate = new Date(now.getFullYear(), now.getMonth() + 1, 15, 12, 0, 0) // Next month
             }
           }
@@ -560,12 +702,15 @@ async function seedDemoData() {
       )
       deals.push(...batchDeals)
       // Delay between batches to allow connections to be released
-      if (i + DEAL_BATCH_SIZE < dealsData.length) {
+      if (i + DEAL_BATCH_SIZE < dealsToCreate.length) {
         await new Promise(resolve => setTimeout(resolve, 200)) // Increased delay
       }
     }
+    } else {
+      console.log(`[SEED] Sufficient deals exist (${existingDealsCount}), not creating more`)
+    }
 
-    console.log(`✅ Created ${deals.length} deals`)
+    console.log(`✅ Total deals: ${deals.length} (${existingDealsCount > 0 ? `${existingDealsCount} preserved, ${deals.length - existingDealsCount} added` : 'all created'})`)
 
     // Create sample products
     const productsData = [
@@ -679,7 +824,7 @@ async function seedDemoData() {
 
     console.log(`✅ Created ${orders.length} orders`)
 
-    // Create sample tasks (mix of overdue and upcoming)
+    // Create sample tasks (30+ tasks - mix of overdue and upcoming)
     const tasksData = [
       // Overdue tasks (past due dates)
       { title: 'Follow up with John Doe', status: 'pending', priority: 'high', contactIdx: 0, daysOffset: -5 },
@@ -687,40 +832,117 @@ async function seedDemoData() {
       { title: 'Review contract with Enterprise Group', status: 'pending', priority: 'high', contactIdx: 18, daysOffset: -7 },
       { title: 'Send quote to Tech Innovations', status: 'pending', priority: 'medium', contactIdx: 5, daysOffset: -2 },
       { title: 'Schedule demo for Business Growth Co', status: 'pending', priority: 'high', contactIdx: 6, daysOffset: -1 },
-      // More overdue tasks
       { title: 'Call back Customer First Ltd', status: 'pending', priority: 'high', contactIdx: 17, daysOffset: -10 },
       { title: 'Send contract to Partner Network', status: 'in_progress', priority: 'medium', contactIdx: 13, daysOffset: -4 },
       { title: 'Follow up on proposal - Client Services', status: 'pending', priority: 'high', contactIdx: 12, daysOffset: -6 },
       { title: 'Update CRM records for Digital Marketing', status: 'pending', priority: 'low', contactIdx: 1, daysOffset: -8 },
       { title: 'Schedule meeting with Enterprise Solutions', status: 'pending', priority: 'medium', contactIdx: 4, daysOffset: -9 },
+      { title: 'Send follow-up email to AI Tech Solutions', status: 'pending', priority: 'medium', contactIdx: 20, daysOffset: -6 },
+      { title: 'Prepare quote for Blockchain Innovations', status: 'pending', priority: 'high', contactIdx: 21, daysOffset: -4 },
+      { title: 'Schedule discovery call with FinTech Solutions', status: 'pending', priority: 'high', contactIdx: 23, daysOffset: -2 },
+      { title: 'Review proposal for SaaS Platform Inc', status: 'in_progress', priority: 'medium', contactIdx: 27, daysOffset: -5 },
+      { title: 'Follow up with Cloud Infrastructure', status: 'pending', priority: 'high', contactIdx: 32, daysOffset: -3 },
       // Upcoming tasks (not overdue)
       { title: 'Prepare presentation for Global Solutions', status: 'pending', priority: 'high', contactIdx: 19, daysOffset: 7 },
       { title: 'Review proposal draft', status: 'in_progress', priority: 'medium', contactIdx: 10, daysOffset: 5 },
       { title: 'Send follow-up email', status: 'pending', priority: 'low', contactIdx: 11, daysOffset: 3 },
       { title: 'Schedule product demo', status: 'pending', priority: 'high', contactIdx: 14, daysOffset: 10 },
       { title: 'Prepare contract documents', status: 'pending', priority: 'medium', contactIdx: 15, daysOffset: 6 },
+      { title: 'Follow up with Healthcare Tech', status: 'pending', priority: 'medium', contactIdx: 24, daysOffset: 4 },
+      { title: 'Schedule meeting with EdTech Platform', status: 'pending', priority: 'high', contactIdx: 25, daysOffset: 8 },
+      { title: 'Send proposal to E-commerce Solutions', status: 'pending', priority: 'high', contactIdx: 26, daysOffset: 5 },
+      { title: 'Prepare demo for Mobile App Dev', status: 'pending', priority: 'medium', contactIdx: 28, daysOffset: 6 },
+      { title: 'Follow up call with IT Consulting Group', status: 'pending', priority: 'high', contactIdx: 30, daysOffset: 7 },
+      { title: 'Review contract with Cloud Infrastructure', status: 'pending', priority: 'medium', contactIdx: 32, daysOffset: 9 },
+      { title: 'Send quote to Data Science Labs', status: 'pending', priority: 'high', contactIdx: 33, daysOffset: 4 },
+      { title: 'Schedule demo for Machine Learning Co', status: 'pending', priority: 'high', contactIdx: 34, daysOffset: 8 },
+      { title: 'Follow up with IoT Solutions', status: 'pending', priority: 'medium', contactIdx: 35, daysOffset: 5 },
+      { title: 'Prepare proposal for Automation Systems', status: 'pending', priority: 'high', contactIdx: 36, daysOffset: 6 },
     ]
 
-    await prisma.task.deleteMany({ where: { tenantId } })
+    // Check existing tasks - preserve and add more
+    const existingTasksCount = await prisma.task.count({ where: { tenantId } })
+    const existingTasks = await prisma.task.findMany({ 
+      where: { tenantId },
+      select: { id: true, title: true, status: true, dueDate: true }
+    })
     
-    const tasks = await Promise.all(
-      tasksData.map((task) =>
-        prisma.task.create({
+    console.log(`[SEED] Found ${existingTasksCount} existing tasks - will add more`)
+    
+    // Create additional tasks if we have fewer than 40
+    const totalTasksNeeded = 40
+    const newTasksToCreate = Math.max(0, totalTasksNeeded - existingTasksCount)
+    const tasks: any[] = [...existingTasks]
+    
+    if (newTasksToCreate > 0) {
+      const tasksToCreate = tasksData.slice(0, newTasksToCreate)
+      const newTasks = await Promise.all(
+        tasksToCreate.map((task) =>
+          prisma.task.create({
+            data: {
+              tenantId,
+              title: task.title,
+              description: `Task: ${task.title}`,
+              status: task.status as any,
+              priority: task.priority as any,
+              dueDate: new Date(now.getTime() + task.daysOffset * 24 * 60 * 60 * 1000),
+              contactId: contacts[task.contactIdx]?.id || contacts[0]?.id,
+              assignedToId: adminUser.id,
+            },
+          })
+        )
+      )
+      tasks.push(...newTasks)
+    }
+
+    console.log(`✅ Total tasks: ${tasks.length} (${existingTasksCount > 0 ? `${existingTasksCount} preserved, ${tasks.length - existingTasksCount} added` : 'all created'})`)
+
+    // Create sample meetings (15+ meetings)
+    const meetingsData = [
+      { title: 'Discovery Call - AI Tech Solutions', contactIdx: 20, daysOffset: 2, duration: 30 },
+      { title: 'Product Demo - Blockchain Innovations', contactIdx: 21, daysOffset: 5, duration: 60 },
+      { title: 'Proposal Review - FinTech Solutions', contactIdx: 23, daysOffset: 7, duration: 45 },
+      { title: 'Follow-up Meeting - Healthcare Tech', contactIdx: 24, daysOffset: 3, duration: 30 },
+      { title: 'Contract Discussion - SaaS Platform Inc', contactIdx: 27, daysOffset: 6, duration: 60 },
+      { title: 'Technical Deep Dive - Cloud Infrastructure', contactIdx: 32, daysOffset: 4, duration: 90 },
+      { title: 'Q&A Session - Data Science Labs', contactIdx: 33, daysOffset: 8, duration: 45 },
+      { title: 'Onboarding Meeting - Tech Solutions Inc', contactIdx: 0, daysOffset: 1, duration: 60 },
+      { title: 'Quarterly Review - Digital Marketing Pro', contactIdx: 1, daysOffset: 10, duration: 45 },
+      { title: 'Strategy Session - Acme Corporation', contactIdx: 2, daysOffset: 12, duration: 90 },
+      { title: 'Product Training - Corporate Ventures', contactIdx: 7, daysOffset: 9, duration: 60 },
+      { title: 'Support Call - Digital Solutions', contactIdx: 10, daysOffset: 2, duration: 30 },
+      { title: 'Renewal Discussion - Client Services Inc', contactIdx: 12, daysOffset: 11, duration: 45 },
+      { title: 'Expansion Meeting - Partner Network', contactIdx: 13, daysOffset: 6, duration: 60 },
+      { title: 'Executive Briefing - Global Solutions', contactIdx: 19, daysOffset: 14, duration: 90 },
+    ]
+
+    await prisma.meeting.deleteMany({ where: { tenantId } })
+    
+    const meetings = await Promise.all(
+      meetingsData.map((meeting, idx) => {
+        const startTime = new Date(now.getTime() + meeting.daysOffset * 24 * 60 * 60 * 1000)
+        startTime.setHours(10 + (idx % 6), (idx % 4) * 15, 0, 0) // Spread across day
+        const endTime = new Date(startTime.getTime() + meeting.duration * 60 * 1000)
+        const meetingCode = `MTG-${String(idx + 1).padStart(6, '0')}`
+        
+        return prisma.meeting.create({
           data: {
             tenantId,
-            title: task.title,
-            description: `Task: ${task.title}`,
-            status: task.status as any,
-            priority: task.priority as any,
-            dueDate: new Date(now.getTime() + task.daysOffset * 24 * 60 * 60 * 1000),
-            contactId: contacts[task.contactIdx]?.id || contacts[0].id,
-            assignedToId: adminUser.id,
+            title: meeting.title,
+            description: `Meeting with ${contacts[meeting.contactIdx]?.name || 'Contact'}`,
+            meetingCode,
+            startTime,
+            endTime,
+            status: meeting.daysOffset < 0 ? 'ended' : meeting.daysOffset === 0 ? 'in-progress' : 'scheduled',
+            hostId: adminUser.id,
+            participants: [contacts[meeting.contactIdx]?.id || contacts[0].id],
+            createdAt: startTime,
           },
         })
-      )
+      })
     )
 
-    console.log(`✅ Created ${tasks.length} tasks`)
+    console.log(`✅ Created ${meetings.length} meetings`)
 
     // Create Lead Sources and assign to contacts
     const leadSourcesData = [
@@ -909,6 +1131,176 @@ async function seedDemoData() {
 
     console.log(`✅ Created ${expenses.length} expenses`)
 
+    // Create sample meetings (15+ meetings)
+    const meetingsData = [
+      { title: 'Discovery Call - AI Tech Solutions', contactIdx: 20, daysOffset: 2, duration: 30 },
+      { title: 'Product Demo - Blockchain Innovations', contactIdx: 21, daysOffset: 5, duration: 60 },
+      { title: 'Proposal Review - FinTech Solutions', contactIdx: 23, daysOffset: 7, duration: 45 },
+      { title: 'Follow-up Meeting - Healthcare Tech', contactIdx: 24, daysOffset: 3, duration: 30 },
+      { title: 'Contract Discussion - SaaS Platform Inc', contactIdx: 27, daysOffset: 6, duration: 60 },
+      { title: 'Technical Deep Dive - Cloud Infrastructure', contactIdx: 32, daysOffset: 4, duration: 90 },
+      { title: 'Q&A Session - Data Science Labs', contactIdx: 33, daysOffset: 8, duration: 45 },
+      { title: 'Onboarding Meeting - Tech Solutions Inc', contactIdx: 0, daysOffset: 1, duration: 60 },
+      { title: 'Quarterly Review - Digital Marketing Pro', contactIdx: 1, daysOffset: 10, duration: 45 },
+      { title: 'Strategy Session - Acme Corporation', contactIdx: 2, daysOffset: 12, duration: 90 },
+      { title: 'Product Training - Corporate Ventures', contactIdx: 7, daysOffset: 9, duration: 60 },
+      { title: 'Support Call - Digital Solutions', contactIdx: 10, daysOffset: 2, duration: 30 },
+      { title: 'Renewal Discussion - Client Services Inc', contactIdx: 12, daysOffset: 11, duration: 45 },
+      { title: 'Expansion Meeting - Partner Network', contactIdx: 13, daysOffset: 6, duration: 60 },
+      { title: 'Executive Briefing - Global Solutions', contactIdx: 19, daysOffset: 14, duration: 90 },
+    ]
+
+    // Check existing meetings - preserve and add more
+    const existingMeetingsCount = await prisma.meeting.count({ where: { tenantId } })
+    const existingMeetings = await prisma.meeting.findMany({ 
+      where: { tenantId },
+      select: { id: true, title: true, status: true, startTime: true }
+    })
+    
+    console.log(`[SEED] Found ${existingMeetingsCount} existing meetings - will add more`)
+    
+    // Create additional meetings if we have fewer than 20
+    const totalMeetingsNeeded = 20
+    const newMeetingsToCreate = Math.max(0, totalMeetingsNeeded - existingMeetingsCount)
+    const meetings: any[] = [...existingMeetings]
+    
+    if (newMeetingsToCreate > 0) {
+      const meetingsToCreate = meetingsData.slice(0, newMeetingsToCreate)
+      const newMeetings = await Promise.all(
+        meetingsToCreate.map((meeting, idx) => {
+          const startTime = new Date(now.getTime() + meeting.daysOffset * 24 * 60 * 60 * 1000)
+          startTime.setHours(10 + (idx % 6), (idx % 4) * 15, 0, 0) // Spread across day
+          const endTime = new Date(startTime.getTime() + meeting.duration * 60 * 1000)
+          const meetingCode = `MTG-${String(existingMeetingsCount + idx + 1).padStart(6, '0')}`
+          
+          return prisma.meeting.create({
+            data: {
+              tenantId,
+              title: meeting.title,
+              description: `Meeting with ${contacts[meeting.contactIdx]?.name || 'Contact'}`,
+              meetingCode,
+              startTime,
+              endTime,
+              status: meeting.daysOffset < 0 ? 'ended' : meeting.daysOffset === 0 ? 'in-progress' : 'scheduled',
+              hostId: adminUser.id,
+              participants: [contacts[meeting.contactIdx]?.id || contacts[0]?.id],
+              createdAt: startTime,
+            },
+          })
+        })
+      )
+      meetings.push(...newMeetings)
+    }
+
+    console.log(`✅ Total meetings: ${meetings.length} (${existingMeetingsCount > 0 ? `${existingMeetingsCount} preserved, ${meetings.length - existingMeetingsCount} added` : 'all created'})`)
+
+    // Create website and visitor sessions for Visitors page
+    let website = await prisma.website.findFirst({ where: { tenantId } })
+    if (!website) {
+      website = await prisma.website.create({
+        data: {
+          tenantId,
+          name: 'Main Website',
+          domain: 'demobusiness.com',
+          status: 'active',
+        },
+      })
+    }
+
+    // Create sample visitor sessions (20+ sessions)
+    await prisma.websiteSession.deleteMany({ where: { tenantId } })
+    
+    const visitorSessions = []
+    const visitorIds = Array.from({ length: 15 }, (_, i) => `visitor-${i + 1}`)
+    
+    for (let i = 0; i < 20; i++) {
+      const visitorId = visitorIds[i % visitorIds.length]
+      const sessionDate = new Date(now.getTime() - (i % 7) * 24 * 60 * 60 * 1000) // Last 7 days
+      sessionDate.setHours(9 + (i % 8), (i % 4) * 15, 0, 0)
+      
+      const session = await prisma.websiteSession.create({
+        data: {
+          tenantId,
+          websiteId: website.id,
+          visitorId,
+          startedAt: sessionDate,
+          endedAt: new Date(sessionDate.getTime() + (60 + (i % 120)) * 60 * 1000), // 1-3 hours
+          duration: 60 + (i % 120),
+          pageViews: 3 + (i % 10),
+          device: ['Desktop', 'Mobile', 'Tablet'][i % 3],
+          browser: ['Chrome', 'Firefox', 'Safari', 'Edge'][i % 4],
+          os: ['Windows', 'macOS', 'iOS', 'Android'][i % 4],
+          country: 'India',
+          city: ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad'][i % 4],
+          referrer: i % 3 === 0 ? 'google.com' : i % 3 === 1 ? 'linkedin.com' : 'direct',
+        },
+      })
+      
+      // Create page visits for this session
+      const pages = ['/', '/products', '/pricing', '/about', '/contact']
+      for (let j = 0; j < Math.min(session.pageViews, 5); j++) {
+        let page = await prisma.websitePage.findFirst({
+          where: { tenantId, websiteId: website.id, path: pages[j % pages.length] },
+        })
+        
+        if (!page) {
+          page = await prisma.websitePage.create({
+            data: {
+              tenantId,
+              websiteId: website.id,
+              path: pages[j % pages.length],
+              title: pages[j % pages.length] === '/' ? 'Home' : pages[j % pages.length].charAt(1).toUpperCase() + pages[j % pages.length].slice(2),
+            },
+          })
+        }
+        
+        await prisma.websiteVisit.create({
+          data: {
+            tenantId,
+            sessionId: session.id,
+            pageId: page.id,
+            visitedAt: new Date(sessionDate.getTime() + j * 30 * 1000),
+            device: session.device,
+            browser: session.browser,
+            os: session.os,
+            country: session.country,
+            city: session.city,
+            referrer: session.referrer,
+          },
+        })
+      }
+      
+      // Create some events for high-intent visitors
+      if (i % 3 === 0) {
+        await prisma.websiteEvent.create({
+          data: {
+            tenantId,
+            sessionId: session.id,
+            eventType: 'engagement',
+            eventName: 'form_submit',
+            occurredAt: new Date(sessionDate.getTime() + 5 * 60 * 1000),
+            metadata: { formName: 'Contact Form' },
+          },
+        })
+      }
+      if (i % 4 === 0) {
+        await prisma.websiteEvent.create({
+          data: {
+            tenantId,
+            sessionId: session.id,
+            eventType: 'engagement',
+            eventName: 'scroll_depth',
+            occurredAt: new Date(sessionDate.getTime() + 3 * 60 * 1000),
+            metadata: { depth: 75 },
+          },
+        })
+      }
+      
+      visitorSessions.push(session)
+    }
+
+    console.log(`✅ Created ${visitorSessions.length} visitor sessions`)
+
     // Create GST Reports (stored as Report model with type 'gst')
     const gstReportsData = [
       {
@@ -1041,6 +1433,7 @@ async function seedDemoData() {
         invoices: invoices.length + (moduleData.finance?.invoices?.length || 0),
         orders: orders.length + (moduleData.sales?.orders?.length || 0),
         tasks: tasks.length + (moduleData.crm?.tasks?.length || 0),
+        meetings: meetings.length,
         leadSources: leadSources.length,
         purchaseOrders: purchaseOrders.length,
         employees: moduleData.hr?.employees?.length || 0,
@@ -1049,6 +1442,7 @@ async function seedDemoData() {
         marketingLeads: moduleData.marketing?.leads?.length || 0,
         projects: moduleData.projects?.projects?.length || 0,
         projectTasks: moduleData.projects?.projectTasks?.length || 0,
+        visitorSessions: visitorSessions.length,
       },
     }
   } catch (error) {

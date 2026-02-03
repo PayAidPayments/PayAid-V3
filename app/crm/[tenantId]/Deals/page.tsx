@@ -87,19 +87,21 @@ export default function CRMDealsPage() {
 
   // Handle URL query parameters
   useEffect(() => {
-    const filter = searchParams?.get('filter')
-    const period = searchParams?.get('period')
-    if (filter && period) {
-      // Map old format to new format
-      if (filter === 'created' && period === 'month') {
-        setSelectedCategory('created')
-      } else if (filter === 'won' && period === 'month') {
-        setSelectedCategory('won')
-      } else {
-        setSelectedCategory(filter)
-      }
-    } else if (filter) {
-      setSelectedCategory(filter)
+    const category = searchParams?.get('category')
+    const filter = searchParams?.get('filter') // Support old format
+    const timePeriodParam = searchParams?.get('timePeriod')
+    const period = searchParams?.get('period') // Support old format
+    
+    // Use category if available, otherwise fall back to filter
+    const selectedFilter = category || filter
+    if (selectedFilter) {
+      setSelectedCategory(selectedFilter)
+    }
+    
+    // Use timePeriod if available, otherwise fall back to period
+    const selectedPeriod = timePeriodParam || period
+    if (selectedPeriod && ['month', 'quarter', 'financial-year', 'year'].includes(selectedPeriod)) {
+      setTimePeriod(selectedPeriod as 'month' | 'quarter' | 'financial-year' | 'year')
     }
   }, [searchParams])
 

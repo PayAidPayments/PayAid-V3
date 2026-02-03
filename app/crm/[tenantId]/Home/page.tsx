@@ -1202,7 +1202,7 @@ export default function CRMDashboardPage() {
           <>
         {/* KPI Cards - Design System Compliant with Animations */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Link href={tenantId ? `/crm/${tenantId}/Deals?filter=created&period=${timePeriod}` : '#'}>
+          <Link href={tenantId ? `/crm/${tenantId}/Deals?category=created&timePeriod=${timePeriod}` : '#'}>
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1241,7 +1241,7 @@ export default function CRMDashboardPage() {
             </motion.div>
           </Link>
 
-          <Link href={tenantId ? `/crm/${tenantId}/Deals?filter=won&period=${timePeriod}` : '#'}>
+          <Link href={tenantId ? `/crm/${tenantId}/Deals?category=won&timePeriod=${timePeriod}` : '#'}>
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1280,7 +1280,7 @@ export default function CRMDashboardPage() {
             </motion.div>
           </Link>
 
-          <Link href={tenantId ? `/crm/${tenantId}/Deals?filter=closing&period=${timePeriod}` : '#'}>
+          <Link href={tenantId ? `/crm/${tenantId}/Deals?category=closing&timePeriod=${timePeriod}` : '#'}>
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}

@@ -133,6 +133,12 @@ export async function GET(request: NextRequest) {
         revenueThisMonth: 450000,
         dealsClosingThisMonth: 8,
         overdueTasks: 0,
+        totalTasks: 30,
+        completedTasks: 18,
+        totalMeetings: 15,
+        totalLeads: 35,
+        convertedLeads: 15,
+        conversionRate: 42.9,
         quarterlyPerformance: [
           { quarter: 'Q1', leadsCreated: 52, dealsCreated: 35, dealsWon: 15, revenue: 520000 },
           { quarter: 'Q2', leadsCreated: 48, dealsCreated: 32, dealsWon: 14, revenue: 480000 },
@@ -140,11 +146,11 @@ export async function GET(request: NextRequest) {
           { quarter: 'Q4', leadsCreated: 55, dealsCreated: 38, dealsWon: 16, revenue: 550000 },
         ],
         pipelineByStage: [
-          { stage: 'Lead', count: 25 },
-          { stage: 'Qualified', count: 18 },
-          { stage: 'Proposal', count: 12 },
-          { stage: 'Negotiation', count: 8 },
-          { stage: 'Won', count: 15 },
+          { stage: 'Lead', count: 25, value: 250000 },
+          { stage: 'Qualified', count: 18, value: 450000 },
+          { stage: 'Proposal', count: 12, value: 600000 },
+          { stage: 'Negotiation', count: 8, value: 800000 },
+          { stage: 'Won', count: 15, value: 1500000 },
         ],
         monthlyLeadCreation: (() => {
           // Generate 12 months including Jan and Feb 2026
@@ -265,14 +271,69 @@ export async function GET(request: NextRequest) {
     
     await new Promise(resolve => setTimeout(resolve, 150))
 
-    // Query 4: Pipeline by stage
+    // Query 3.5: Total tasks and completed tasks
+    const totalTasks = await prismaWithRetry(() =>
+      prisma.task.count({
+        where: userFilter,
+      })
+    )
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    const completedTasks = await prismaWithRetry(() =>
+      prisma.task.count({
+        where: {
+          ...userFilter,
+          status: 'completed',
+        },
+      })
+    )
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    // Query 3.6: Total meetings
+    const totalMeetings = await prismaWithRetry(() =>
+      prisma.meeting.count({
+        where: { tenantId },
+      })
+    )
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    // Query 3.7: Total leads and converted leads
+    const totalLeads = await prismaWithRetry(() =>
+      prisma.contact.count({
+        where: {
+          ...contactFilter,
+          stage: { in: ['prospect', 'contact'] },
+        },
+      })
+    )
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    const convertedLeads = await prismaWithRetry(() =>
+      prisma.contact.count({
+        where: {
+          ...contactFilter,
+          stage: 'customer',
+        },
+      })
+    )
+    
+    await new Promise(resolve => setTimeout(resolve, 150))
+
+    // Query 4: Pipeline by stage (with values)
     const pipelineByStageData = await prismaWithRetry(() =>
       prisma.deal.groupBy({
         by: ['stage'],
         where: dealFilter,
         _count: { id: true },
+        _sum: { value: true },
       })
     )
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
     
     await new Promise(resolve => setTimeout(resolve, 150))
     
@@ -516,13 +577,14 @@ export async function GET(request: NextRequest) {
       return safeData
     })
 
-    // Calculate pipeline by stage from groupBy result
+    // Calculate pipeline by stage from groupBy result (with values)
     const pipelineStages = ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
     const pipelineByStage = (Array.isArray(pipelineByStageData) ? pipelineByStageData : [])
       .filter(item => item && item.stage && pipelineStages.includes(item.stage))
       .map(item => ({
         stage: item.stage.charAt(0).toUpperCase() + item.stage.slice(1),
         count: item._count?.id || 0,
+        value: Number(item._sum?.value || 0),
       }))
       .filter(item => item.count > 0)
 
@@ -591,6 +653,12 @@ export async function GET(request: NextRequest) {
       revenueThisMonth: (revenueInPeriod > 0) ? revenueInPeriod : 450000,
       dealsClosingThisMonth: (dealsClosingInPeriod > 0) ? dealsClosingInPeriod : 8,
       overdueTasks: overdueTasks || 0,
+      totalTasks: totalTasks || 0,
+      completedTasks: completedTasks || 0,
+      totalMeetings: totalMeetings || 0,
+      totalLeads: totalLeads || 0,
+      convertedLeads: convertedLeads || 0,
+      conversionRate: totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0,
       quarterlyPerformance: (() => {
         // Ensure array and normalize all values
         const safe = Array.isArray(quarterlyPerformance) && quarterlyPerformance.length > 0 
@@ -610,18 +678,19 @@ export async function GET(request: NextRequest) {
         return Array.isArray(safe) ? safe : []
       })(),
       pipelineByStage: (() => {
-        // Ensure array and normalize all values
+        // Ensure array and normalize all values (including value field)
         const safe = Array.isArray(pipelineByStage) && pipelineByStage.length > 0 
           ? pipelineByStage.map(item => ({
               stage: String(item?.stage || 'Unknown'),
               count: Number(item?.count || 0),
+              value: Number(item?.value || 0),
             }))
           : [
-              { stage: 'Lead', count: 25 },
-              { stage: 'Qualified', count: 18 },
-              { stage: 'Proposal', count: 12 },
-              { stage: 'Negotiation', count: 8 },
-              { stage: 'Won', count: 15 },
+              { stage: 'Lead', count: 25, value: 250000 },
+              { stage: 'Qualified', count: 18, value: 450000 },
+              { stage: 'Proposal', count: 12, value: 600000 },
+              { stage: 'Negotiation', count: 8, value: 800000 },
+              { stage: 'Won', count: 15, value: 1500000 },
             ]
         return Array.isArray(safe) ? safe : []
       })(),
