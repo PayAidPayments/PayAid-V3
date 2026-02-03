@@ -175,18 +175,31 @@ export async function POST(request: NextRequest) {
     // Check if background mode is requested
     const searchParams = request.nextUrl.searchParams
     const background = searchParams.get('background') === 'true'
+    const targetTenantId = searchParams.get('tenantId') // Allow specifying tenant ID
 
     if (background) {
       // Start seeding in background and return immediately
-      seedDemoData().catch((err) => {
-        console.error('[SEED_DEMO_DATA] Background seed error:', err)
-      })
-      
-      return NextResponse.json({
-        success: true,
-        message: 'Seed operation started in background. This may take 30-60 seconds. Please refresh the page in a minute.',
-        background: true,
-      })
+      // If tenantId is provided, seed for that specific tenant
+      if (targetTenantId) {
+        seedDemoDataForTenant(targetTenantId).catch((err) => {
+          console.error('[SEED_DEMO_DATA] Background seed error for tenant:', err)
+        })
+        return NextResponse.json({
+          success: true,
+          message: `Seed operation started in background for tenant ${targetTenantId}. This may take 30-60 seconds. Please refresh the page in a minute.`,
+          background: true,
+          tenantId: targetTenantId,
+        })
+      } else {
+        seedDemoData().catch((err) => {
+          console.error('[SEED_DEMO_DATA] Background seed error:', err)
+        })
+        return NextResponse.json({
+          success: true,
+          message: 'Seed operation started in background. This may take 30-60 seconds. Please refresh the page in a minute.',
+          background: true,
+        })
+      }
     }
 
     // Add timeout wrapper for Vercel Hobby plan (10s limit)
@@ -252,6 +265,24 @@ async function seedDemoDataForTenant(tenantId: string) {
   console.log(`[SEED_DEMO_DATA] Seeding for specific tenant: ${tenant.name} (${tenantId})`)
   
   // Use the existing seed logic but with the provided tenantId
+  return seedDemoDataInternal(tenantId, tenant)
+}
+
+/**
+ * Seed data for a specific tenant ID (without recreating tenant)
+ */
+async function seedDemoDataForTenant(tenantId: string) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+  })
+  
+  if (!tenant) {
+    throw new Error(`Tenant not found: ${tenantId}`)
+  }
+  
+  console.log(`[SEED_DEMO_DATA] Seeding for specific tenant: ${tenant.name} (${tenantId})`)
+  
+  // Use the existing seed logic but skip tenant creation
   return seedDemoDataInternal(tenantId, tenant)
 }
 
