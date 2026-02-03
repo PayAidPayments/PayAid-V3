@@ -557,9 +557,11 @@ export default function CRMDealsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {displayedDeals.map((deal: any) => (
+                    {Array.isArray(displayedDeals) ? displayedDeals.map((deal: any) => (
                       <DealRow key={deal.id} deal={deal} tenantId={tenantId} onDelete={handleDelete} />
-                    ))}
+                    )) : (
+                      <p className="text-gray-600 dark:text-gray-400">Invalid deals data format</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
