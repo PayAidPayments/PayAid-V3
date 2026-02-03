@@ -94,7 +94,10 @@ export async function GET(request: NextRequest) {
           stage: true,
           probability: true,
           expectedCloseDate: true,
+          actualCloseDate: true,
+          closedAt: true,
           createdAt: true,
+          updatedAt: true,
           contact: {
             select: {
               id: true,
