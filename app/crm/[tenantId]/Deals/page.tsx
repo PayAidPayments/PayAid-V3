@@ -12,10 +12,11 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { format, isThisMonth, isPast, startOfMonth, endOfMonth, isWithinInterval, startOfYear, endOfYear, startOfQuarter, endOfQuarter, isThisYear, isThisQuarter } from 'date-fns'
+import { format, isThisMonth, isPast, isWithinInterval } from 'date-fns'
 import { Briefcase, TrendingUp, CheckCircle2, XCircle, Calendar, DollarSign, AlertCircle, Filter } from 'lucide-react'
 // ModuleTopBar is now in layout.tsx
 import { PageLoading } from '@/components/ui/loading'
+import { getTimePeriodBounds, validateFilterParams, type DealCategory, type TimePeriod } from '@/lib/utils/crm-filters'
 
 // Deal Row Component
 function DealRow({ deal, tenantId, onDelete }: { deal: any; tenantId: string; onDelete: (id: string) => void }) {
@@ -147,24 +148,21 @@ export default function CRMDealsPage() {
     return () => clearTimeout(timeoutId)
   }, [tenantId, token])
 
-  // Handle URL query parameters
+  // Handle URL query parameters - use shared validation utility
   useEffect(() => {
     const category = searchParams?.get('category')
     const filter = searchParams?.get('filter') // Support old format
     const timePeriodParam = searchParams?.get('timePeriod')
     const period = searchParams?.get('period') // Support old format
     
-    // Use category if available, otherwise fall back to filter
-    const selectedFilter = category || filter
-    if (selectedFilter) {
-      setSelectedCategory(selectedFilter)
-    }
+    // Use shared validation utility to ensure consistency
+    const { category: validatedCategory, timePeriod: validatedTimePeriod } = validateFilterParams(
+      category || filter || undefined,
+      timePeriodParam || period || undefined
+    )
     
-    // Use timePeriod if available, otherwise fall back to period
-    const selectedPeriod = timePeriodParam || period
-    if (selectedPeriod && ['month', 'quarter', 'financial-year', 'year'].includes(selectedPeriod)) {
-      setTimePeriod(selectedPeriod as 'month' | 'quarter' | 'financial-year' | 'year')
-    }
+    setSelectedCategory(validatedCategory)
+    setTimePeriod(validatedTimePeriod)
   }, [searchParams])
 
   const handleDelete = async (id: string) => {
@@ -177,52 +175,12 @@ export default function CRMDealsPage() {
     }
   }
 
-  // Get time period boundaries based on selected period
-  const getTimePeriodBounds = () => {
-    const now = new Date()
-    
-    switch (timePeriod) {
-      case 'month':
-        return {
-          start: startOfMonth(now),
-          end: endOfMonth(now),
-          label: 'This Month'
-        }
-      case 'quarter':
-        return {
-          start: startOfQuarter(now),
-          end: endOfQuarter(now),
-          label: 'This Quarter'
-        }
-      case 'financial-year':
-        // Financial year in India runs from April 1 to March 31
-        const currentYear = now.getFullYear()
-        const currentMonth = now.getMonth() // 0-indexed (0=Jan, 3=Apr, 11=Dec)
-        // If current month is Jan-Mar (0-2), FY started in previous year's April
-        // If current month is Apr-Dec (3-11), FY started in current year's April
-        const fyStartYear = currentMonth >= 3 ? currentYear : currentYear - 1
-        const fyEndYear = fyStartYear + 1
-        return {
-          start: new Date(fyStartYear, 3, 1), // April 1
-          end: new Date(fyEndYear, 2, 31, 23, 59, 59, 999), // March 31
-          label: 'This Financial Year'
-        }
-      case 'year':
-        return {
-          start: startOfYear(now),
-          end: endOfYear(now),
-          label: 'This Year'
-        }
-      default:
-        return {
-          start: startOfMonth(now),
-          end: endOfMonth(now),
-          label: 'This Month'
-        }
-    }
+  // Use shared filter utility for time period bounds
+  const getTimePeriodBoundsLocal = () => {
+    return getTimePeriodBounds(timePeriod)
   }
 
-  // Categorize deals
+  // Categorize deals using shared filter logic
   const categorizedDeals = useMemo(() => {
     if (!data?.deals) {
       console.log('[DEALS_PAGE] No deals data:', { data, hasData: !!data, hasDeals: !!data?.deals })
@@ -401,7 +359,7 @@ export default function CRMDealsPage() {
 
   const stats = useMemo(() => {
     const all = categorizedDeals.all
-    const period = getTimePeriodBounds()
+    const period = getTimePeriodBoundsLocal()
     const totalValue = all.reduce((sum: number, deal: any) => sum + (deal.value || 0), 0)
     const wonValue = categorizedDeals.won.reduce((sum: number, deal: any) => sum + (deal.value || 0), 0)
     const closingValue = categorizedDeals.closing.reduce((sum: number, deal: any) => sum + (deal.value || 0), 0)
