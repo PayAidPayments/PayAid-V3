@@ -148,11 +148,26 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
   try {
-    // Add basic authentication check (optional - can be enhanced)
+    // Add basic authentication check - but allow if user is authenticated via session
     const authHeader = request.headers.get('authorization')
-    if (!authHeader && process.env.NODE_ENV === 'production') {
+    
+    // Try to authenticate via session if no auth header
+    let isAuthenticated = !!authHeader
+    if (!authHeader) {
+      try {
+        const { authenticateRequest } = await import('@/lib/middleware/auth')
+        const user = await authenticateRequest(request).catch(() => null)
+        isAuthenticated = !!user
+      } catch (authError) {
+        // If auth fails, check if we're in development
+        isAuthenticated = process.env.NODE_ENV !== 'production'
+      }
+    }
+    
+    // Only require auth in production
+    if (!isAuthenticated && process.env.NODE_ENV === 'production') {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Authentication required' },
+        { error: 'Unauthorized', message: 'Authentication required. Please log in first or provide Authorization header.' },
         { status: 401 }
       )
     }
