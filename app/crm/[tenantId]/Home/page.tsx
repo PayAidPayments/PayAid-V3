@@ -1653,10 +1653,10 @@ export default function CRMDashboardPage() {
           </Card>
         </div>
 
-        {/* Quarterly Performance and TOP 10 Lead Sources - Side by Side */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Quarterly Performance - Bar Chart */}
-          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 bg-gradient-to-br from-white to-purple-50/20">
+          {/* Quarterly Performance and TOP 10 Lead Sources - Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 xl:mr-80 mt-6">
+            {/* Quarterly Performance - Bar Chart */}
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 bg-gradient-to-br from-white to-purple-50/20">
             <CardHeader className="pb-1">
               <CardTitle className="text-lg font-semibold pl-5 text-purple-900">Quarterly Performance Overview</CardTitle>
               <CardDescription className="pl-5">Revenue and deals won by quarter (Q1-Q4)</CardDescription>
@@ -1814,7 +1814,7 @@ export default function CRMDashboardPage() {
               )}
             </CardContent>
           </Card>
-        </div>
+          </div>
         )}
 
         {/* Quarterly Performance Table - Enhanced - Only render if we have valid stats */}
