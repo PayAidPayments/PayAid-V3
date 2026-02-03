@@ -85,10 +85,39 @@ async function getAuthToken(tenantId: string): Promise<string | null> {
       return null
     }
 
-    // In production, you'd need to actually login to get a token
-    // For testing, you might need to use a test token or skip auth
     console.log(`Found user: ${user.email} for tenant ${tenantId}`)
-    return null // Return null to test without auth (endpoints should handle this)
+    
+    // Try to login via API to get a token
+    try {
+      const loginResponse = await fetch(`${BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: user.email,
+          password: 'Test@1234', // Default test password - adjust if needed
+        }),
+      })
+
+      if (loginResponse.ok) {
+        const loginData = await loginResponse.json()
+        if (loginData.token) {
+          console.log(`✓ Successfully obtained auth token`)
+          return loginData.token
+        }
+      } else {
+        const errorData = await loginResponse.json()
+        console.warn(`Login failed: ${errorData.error || 'Unknown error'}`)
+        console.warn(`  Attempted email: ${user.email}`)
+        console.warn(`  Status: ${loginResponse.status}`)
+      }
+    } catch (loginError: any) {
+      console.warn(`Failed to login via API: ${loginError.message}`)
+      console.warn(`  Will attempt tests without auth token`)
+    }
+
+    return null
   } catch (error) {
     console.error('Error getting auth token:', error)
     return null
@@ -132,11 +161,15 @@ async function runTests(tenantId?: string) {
   // Test 2: P&L for Date Range
   console.log('2. Testing P&L for Date Range...')
   const currentYear = new Date().getFullYear()
+  // Use 2026 as fiscal year since periods were initialized for 2026-2027
+  const fiscalYear = 2026
+  const startDate = `${fiscalYear}-01-01`
+  const endDate = `${fiscalYear}-12-31`
   results.push(
     await testEndpoint(
       'P&L Date Range',
       'GET',
-      `${API_BASE}/p-and-l?startDate=${currentYear}-01-01&endDate=${currentYear}-12-31&tenantId=${tenantId}`,
+      `${API_BASE}/p-and-l?start_date=${startDate}&end_date=${endDate}&tenantId=${tenantId}`,
       undefined,
       headers
     )
@@ -148,7 +181,7 @@ async function runTests(tenantId?: string) {
     await testEndpoint(
       'P&L Trend',
       'GET',
-      `${API_BASE}/p-and-l/trend/${currentYear}?tenantId=${tenantId}`,
+      `${API_BASE}/p-and-l/trend/${fiscalYear}?tenantId=${tenantId}`,
       undefined,
       headers
     )
@@ -160,7 +193,7 @@ async function runTests(tenantId?: string) {
     await testEndpoint(
       'Cash Flow Daily',
       'GET',
-      `${API_BASE}/cash-flow/daily?startDate=${currentYear}-01-01&endDate=${currentYear}-12-31&tenantId=${tenantId}`,
+      `${API_BASE}/cash-flow/daily?startDate=${startDate}&endDate=${endDate}&tenantId=${tenantId}`,
       undefined,
       headers
     )
@@ -216,11 +249,12 @@ async function runTests(tenantId?: string) {
 
   // Test 9: Variance Analysis
   console.log('9. Testing Variance Analysis...')
+  const fiscalMonth = 1 // January
   results.push(
     await testEndpoint(
       'Variance Analysis',
       'GET',
-      `${API_BASE}/variance/${currentYear}/1?tenantId=${tenantId}`,
+      `${API_BASE}/variance/${fiscalYear}/${fiscalMonth}?tenantId=${tenantId}`,
       undefined,
       headers
     )

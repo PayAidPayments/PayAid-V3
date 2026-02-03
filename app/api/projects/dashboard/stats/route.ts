@@ -199,8 +199,24 @@ export async function GET(request: NextRequest) {
       return handleLicenseError(error)
     }
 
+    // Return fallback stats with arrays to prevent frontend crashes
     return NextResponse.json(
-      { error: 'Failed to fetch projects dashboard stats', message: error?.message },
+      { 
+        error: 'Failed to fetch projects dashboard stats', 
+        message: error?.message,
+        // Always return arrays to prevent "t.map is not a function" errors
+        totalProjects: 0,
+        activeProjects: 0,
+        completedProjects: 0,
+        onHoldProjects: 0,
+        totalTasks: 0,
+        completedTasks: 0,
+        totalTimeLogged: 0,
+        projectsByStatus: [],
+        projectsByPriority: [],
+        monthlyProjectCreation: [],
+        recentProjects: [],
+      },
       { status: 500 }
     )
   }

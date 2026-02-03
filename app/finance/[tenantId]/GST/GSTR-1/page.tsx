@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { PageLoading } from '@/components/ui/loading'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAuthStore } from '@/lib/stores/auth'
+import { formatINRStandard } from '@/lib/utils/formatINR'
 
 interface GSTR1Data {
   filingPeriod: string
@@ -157,7 +158,7 @@ export default function FinanceGSTR1Page() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold dark:text-gray-100">
-              ₹{((gstr1?.summary.totalAmount || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatINRStandard((gstr1?.summary.totalAmount || 0) / 1000)}
             </div>
           </CardContent>
         </Card>
@@ -167,7 +168,7 @@ export default function FinanceGSTR1Page() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold dark:text-gray-100">
-              ₹{((gstr1?.summary.totalGST || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatINRStandard((gstr1?.summary.totalGST || 0) / 1000)}
             </div>
           </CardContent>
         </Card>
@@ -192,7 +193,7 @@ export default function FinanceGSTR1Page() {
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-semibold dark:text-gray-100">
-                        ₹{((b2bGroup.total || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {formatINRStandard((b2bGroup.total || 0) / 1000)}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">Total</div>
                     </div>
@@ -215,13 +216,13 @@ export default function FinanceGSTR1Page() {
                             {new Date(invoice.invoiceDate).toLocaleDateString('en-IN')}
                           </TableCell>
                           <TableCell className="text-right dark:text-gray-300">
-                            ₹{((invoice.amount || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {formatINRStandard((invoice.amount || 0) / 1000)}
                           </TableCell>
                           <TableCell className="text-right dark:text-gray-300">
-                            ₹{((invoice.gst || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {formatINRStandard((invoice.gst || 0) / 1000)}
                           </TableCell>
                           <TableCell className="text-right font-semibold dark:text-gray-100">
-                            ₹{((invoice.total || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {formatINRStandard((invoice.total || 0) / 1000)}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -249,7 +250,7 @@ export default function FinanceGSTR1Page() {
               </div>
               <div className="text-right">
                 <div className="text-lg font-semibold dark:text-gray-100">
-                  ₹{((gstr1.b2c.total || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatINRStandard((gstr1.b2c.total || 0) / 1000)}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Total</div>
               </div>
@@ -272,13 +273,13 @@ export default function FinanceGSTR1Page() {
                       {new Date(invoice.invoiceDate).toLocaleDateString('en-IN')}
                     </TableCell>
                     <TableCell className="text-right dark:text-gray-300">
-                      ₹{((invoice.amount || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatINRStandard((invoice.amount || 0) / 1000)}
                     </TableCell>
                     <TableCell className="text-right dark:text-gray-300">
-                      ₹{((invoice.gst || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatINRStandard((invoice.gst || 0) / 1000)}
                     </TableCell>
                     <TableCell className="text-right font-semibold dark:text-gray-100">
-                      ₹{((invoice.total || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatINRStandard((invoice.total || 0) / 1000)}
                     </TableCell>
                   </TableRow>
                 ))}

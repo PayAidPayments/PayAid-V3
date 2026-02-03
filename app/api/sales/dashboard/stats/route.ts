@@ -161,16 +161,20 @@ export async function GET(request: NextRequest) {
       revenueThisMonth: revenueThisMonth._sum.total || 0,
       revenueLastMonth: revenueLastMonth._sum.total || 0,
       revenueGrowth: Math.round(revenueGrowth * 10) / 10,
-      recentOrders,
-      monthlyRevenue: monthlyRevenue.map((r: any) => ({
-        month: r.month,
-        revenue: Number(r.revenue) || 0,
-      })),
-      ordersByStatus: ordersByStatus.map((o: any) => ({
-        status: o.status,
-        count: o._count.id || 0,
-        total: Number(o._sum.total) || 0,
-      })),
+      recentOrders: Array.isArray(recentOrders) ? recentOrders : [],
+      monthlyRevenue: Array.isArray(monthlyRevenue)
+        ? monthlyRevenue.map((r: any) => ({
+            month: r?.month || '',
+            revenue: Number(r?.revenue) || 0,
+          }))
+        : [],
+      ordersByStatus: Array.isArray(ordersByStatus)
+        ? ordersByStatus.map((o: any) => ({
+            status: o?.status || '',
+            count: o?._count?.id || 0,
+            total: Number(o?._sum?.total) || 0,
+          }))
+        : [],
       landingPageViews,
       checkoutPageViews,
     })
@@ -181,8 +185,27 @@ export async function GET(request: NextRequest) {
       return handleLicenseError(error)
     }
 
+    // Return fallback stats with arrays to prevent frontend crashes
     return NextResponse.json(
-      { error: 'Failed to fetch sales dashboard stats', message: error?.message },
+      { 
+        error: 'Failed to fetch sales dashboard stats', 
+        message: error?.message,
+        // Always return arrays to prevent "t.map is not a function" errors
+        landingPages: 0,
+        checkoutPages: 0,
+        totalOrders: 0,
+        ordersThisMonth: 0,
+        ordersLastMonth: 0,
+        orderGrowth: 0,
+        revenueThisMonth: 0,
+        revenueLastMonth: 0,
+        revenueGrowth: 0,
+        recentOrders: [],
+        monthlyRevenue: [],
+        ordersByStatus: [],
+        landingPageViews: 0,
+        checkoutPageViews: 0,
+      },
       { status: 500 }
     )
   }

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { PageLoading } from '@/components/ui/loading'
+import { formatINRStandard } from '@/lib/utils/formatINR'
 
 function getAuthHeaders() {
   const { token } = useAuthStore.getState()
@@ -137,7 +138,7 @@ export default function FinanceReportsPage() {
                     <div className="flex justify-between dark:text-gray-300">
                       <span>Total Revenue</span>
                       <span className="font-medium">
-                        ₹{(data.revenue?.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        {formatINRStandard(data.revenue?.total || 0)}
                       </span>
                     </div>
                   </div>
@@ -148,7 +149,7 @@ export default function FinanceReportsPage() {
                     <div className="flex justify-between dark:text-gray-300">
                       <span>Total Expenses</span>
                       <span className="font-medium">
-                        ₹{(data.expenses?.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        {formatINRStandard(data.expenses?.total || 0)}
                       </span>
                     </div>
                   </div>
@@ -157,7 +158,7 @@ export default function FinanceReportsPage() {
                   <div className="flex justify-between text-lg font-bold dark:text-gray-100">
                     <span>Net Profit/Loss</span>
                     <span className={data.netProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                      ₹{data.netProfit?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
+                      {formatINRStandard(data.netProfit || 0)}
                     </span>
                   </div>
                 </div>
@@ -172,7 +173,7 @@ export default function FinanceReportsPage() {
                     <div className="flex justify-between dark:text-gray-300">
                       <span>Total Assets</span>
                       <span className="font-medium">
-                        ₹{data.assets?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
+                        {formatINRStandard(data.assets || 0)}
                       </span>
                     </div>
                   </div>
@@ -183,7 +184,7 @@ export default function FinanceReportsPage() {
                     <div className="flex justify-between dark:text-gray-300">
                       <span>Total Liabilities</span>
                       <span className="font-medium">
-                        ₹{data.liabilities?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
+                        {formatINRStandard(data.liabilities || 0)}
                       </span>
                     </div>
                   </div>
@@ -192,7 +193,7 @@ export default function FinanceReportsPage() {
                   <div className="flex justify-between text-lg font-bold dark:text-gray-100">
                     <span>Equity</span>
                     <span className="font-medium">
-                      ₹{data.equity?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
+                      {formatINRStandard(data.equity || 0)}
                     </span>
                   </div>
                 </div>

@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -12,6 +11,11 @@ import { PageLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
 import { getAuthHeaders } from '@/lib/api/client'
 import { getDynamicTitle, getDynamicDescription } from '@/lib/utils/status-labels'
+import { formatINRStandard, formatINRForDisplay } from '@/lib/utils/formatINR'
+import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
+import { GlassCard } from '@/components/modules/GlassCard'
+import { getModuleConfig } from '@/lib/modules/module-config'
+import { ShoppingCart, IndianRupee, Plus, CheckCircle2, Package } from 'lucide-react'
 
 interface PurchaseOrder {
   id: string
@@ -86,27 +90,73 @@ export default function FinancePurchaseOrdersPage() {
 
   const orders = data?.orders || []
   const pagination = data?.pagination
+  const moduleConfig = getModuleConfig('finance')
   
   const dynamicTitle = getDynamicTitle('Purchase Orders', statusFilter)
   const dynamicDescription = getDynamicDescription('Purchase Orders', statusFilter)
+
+  const totalAmount = orders.reduce((sum, order) => sum + (order.total || 0), 0)
+  const approvedOrders = orders.filter(order => order.status === 'APPROVED').length
+  const pendingOrders = orders.filter(order => order.status === 'PENDING_APPROVAL').length
+
+  const heroMetrics = [
+    {
+      label: 'Total Orders',
+      value: pagination?.total?.toString() || orders.length.toString(),
+      icon: ShoppingCart,
+      href: '#',
+    },
+    {
+      label: 'Total Amount',
+      value: formatINRForDisplay(totalAmount),
+      icon: IndianRupee,
+      href: '#',
+    },
+    {
+      label: 'Approved',
+      value: approvedOrders.toString(),
+      icon: CheckCircle2,
+      href: '#',
+    },
+    {
+      label: 'Pending',
+      value: pendingOrders.toString(),
+      icon: Package,
+      href: '#',
+    },
+  ]
 
   if (isLoading) {
     return <PageLoading message="Loading purchase orders..." fullScreen={false} />
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{dynamicTitle}</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">{dynamicDescription}</p>
-        </div>
-        <Link href={`/finance/${tenantId}/Purchase-Orders/New`}>
-          <Button className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">New Purchase Order</Button>
-        </Link>
-      </div>
+    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>
+      {/* Universal Module Hero */}
+      <UniversalModuleHero
+        moduleName="Purchase Orders"
+        moduleIcon={<moduleConfig.icon className="w-8 h-8" />}
+        gradientFrom={moduleConfig.gradientFrom}
+        gradientTo={moduleConfig.gradientTo}
+        metrics={heroMetrics}
+      />
 
-      <div className="flex gap-2 flex-wrap">
+      {/* Content Sections - 32px gap */}
+      <div className="p-6 space-y-8 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
+        {/* Action Button */}
+        <div className="flex items-center justify-end">
+          <Link href={`/finance/${tenantId}/Purchase-Orders/New`}>
+            <Button className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#3F1F62] hover:to-[#E0B200] text-white">
+              <Plus className="w-4 h-4 mr-2" />
+              New Purchase Order
+            </Button>
+          </Link>
+        </div>
+
+        {/* Filters */}
+        <GlassCard>
+          <div className="p-6">
+            <div className="flex gap-2 flex-wrap">
         <Button
           variant={statusFilter === 'all' ? 'default' : 'outline'}
           onClick={() => setStatusFilter('all')}
@@ -142,20 +192,26 @@ export default function FinancePurchaseOrdersPage() {
         >
           Received
         </Button>
-      </div>
+            </div>
+          </div>
+        </GlassCard>
 
-      {orders.length === 0 ? (
-        <Card className="dark:bg-gray-800 dark:border-gray-700">
-          <CardContent className="py-12 text-center">
-            <p className="text-gray-600 dark:text-gray-400">No purchase orders found. Create your first purchase order to get started.</p>
-            <Link href={`/finance/${tenantId}/Purchase-Orders/New`}>
-              <Button className="mt-4 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">Create Purchase Order</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="dark:bg-gray-800 dark:border-gray-700">
-          <Table>
+        {/* Orders Table */}
+        {orders.length === 0 ? (
+          <GlassCard>
+            <div className="p-6 py-12 text-center">
+              <p className="text-gray-600 dark:text-gray-400">No purchase orders found. Create your first purchase order to get started.</p>
+              <Link href={`/finance/${tenantId}/Purchase-Orders/New`}>
+                <Button className="mt-4 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#3F1F62] hover:to-[#E0B200] text-white">
+                  Create Purchase Order
+                </Button>
+              </Link>
+            </div>
+          </GlassCard>
+        ) : (
+          <GlassCard>
+            <div className="p-6">
+              <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="dark:text-gray-300">PO Number</TableHead>
@@ -196,7 +252,7 @@ export default function FinancePurchaseOrdersPage() {
                     )}
                   </TableCell>
                   <TableCell className="font-medium dark:text-gray-100">
-                    ₹{Number(order.total).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatINRStandard(Number(order.total))}
                   </TableCell>
                   <TableCell className="dark:text-gray-300">{order._count.items}</TableCell>
                   <TableCell>
@@ -238,8 +294,10 @@ export default function FinancePurchaseOrdersPage() {
               </div>
             </div>
           )}
-        </Card>
-      )}
+            </div>
+          </GlassCard>
+        )}
+      </div>
     </div>
   )
 }

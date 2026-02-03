@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { getAuthHeaders } from '@/lib/api/client'
+import { formatINRStandard } from '@/lib/utils/formatINR'
 
 interface Vendor {
   id: string
@@ -340,7 +341,7 @@ export default function FinancePurchaseOrdersNewPage() {
                           />
                         </TableCell>
                         <TableCell className="font-medium dark:text-gray-100">
-                          ₹{itemTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatINRStandard(itemTotal)}
                         </TableCell>
                         <TableCell>
                           {items.length > 1 && (
@@ -366,21 +367,21 @@ export default function FinancePurchaseOrdersNewPage() {
               <div className="w-64 space-y-2">
                 <div className="flex justify-between dark:text-gray-300">
                   <span>Subtotal:</span>
-                  <span className="font-medium">₹{totals.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="font-medium">{formatINRStandard(totals.subtotal)}</span>
                 </div>
                 <div className="flex justify-between dark:text-gray-300">
                   <span>Tax:</span>
-                  <span className="font-medium">₹{totals.tax.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="font-medium">{formatINRStandard(totals.tax)}</span>
                 </div>
                 {totals.discount > 0 && (
                   <div className="flex justify-between dark:text-gray-300">
                     <span>Discount:</span>
-                    <span className="font-medium">-₹{totals.discount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="font-medium">-{formatINRStandard(totals.discount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-lg font-bold border-t dark:border-gray-700 pt-2 dark:text-gray-100">
                   <span>Total:</span>
-                  <span>₹{totals.total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span>{formatINRStandard(totals.total)}</span>
                 </div>
               </div>
             </div>

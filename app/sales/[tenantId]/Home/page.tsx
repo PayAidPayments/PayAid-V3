@@ -371,7 +371,7 @@ export default function SalesDashboardPage() {
               <CardDescription>Latest orders from your sales channels</CardDescription>
             </CardHeader>
             <CardContent>
-              {stats?.recentOrders && stats.recentOrders.length > 0 ? (
+              {stats?.recentOrders && Array.isArray(stats.recentOrders) && stats.recentOrders.length > 0 ? (
                 <div className="space-y-3">
                   {stats.recentOrders.map((order) => (
                     <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">

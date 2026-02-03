@@ -11,6 +11,7 @@ import { PageLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
 import { getAuthHeaders } from '@/lib/api/client'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { formatINRStandard } from '@/lib/utils/formatINR'
 
 interface PurchaseOrder {
   id: string
@@ -192,7 +193,7 @@ export default function FinancePurchaseOrderDetailPage() {
             <div className="text-right">
               <div className="text-sm text-gray-600 dark:text-gray-400">Total Amount</div>
               <div className="text-2xl font-bold dark:text-gray-100">
-                ₹{Number(order.total).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatINRStandard(Number(order.total))}
               </div>
             </div>
           </div>
@@ -325,9 +326,9 @@ export default function FinancePurchaseOrderDetailPage() {
                       <TableCell className="font-medium dark:text-gray-100">{item.productName}</TableCell>
                       <TableCell className="dark:text-gray-300">{item.description || '-'}</TableCell>
                       <TableCell className="dark:text-gray-300">{item.quantity}</TableCell>
-                      <TableCell className="dark:text-gray-300">₹{Number(item.unitPrice).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="dark:text-gray-300">{formatINRStandard(Number(item.unitPrice))}</TableCell>
                       <TableCell className="dark:text-gray-300">{item.taxRate}%</TableCell>
-                      <TableCell className="dark:text-gray-300">₹{Number(item.taxAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="dark:text-gray-300">{formatINRStandard(Number(item.taxAmount))}</TableCell>
                       <TableCell className="dark:text-gray-300">
                         {item.receivedQuantity > 0 ? (
                           <span className="text-green-600 dark:text-green-400">{item.receivedQuantity} / {item.quantity}</span>
@@ -336,7 +337,7 @@ export default function FinancePurchaseOrderDetailPage() {
                         )}
                       </TableCell>
                       <TableCell className="font-medium dark:text-gray-100">
-                        ₹{Number(item.total).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {formatINRStandard(Number(item.total))}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -347,21 +348,21 @@ export default function FinancePurchaseOrderDetailPage() {
                 <div className="w-64 space-y-2">
                   <div className="flex justify-between dark:text-gray-300">
                     <span>Subtotal:</span>
-                    <span className="font-medium">₹{Number(order.subtotal).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="font-medium">{formatINRStandard(Number(order.subtotal))}</span>
                   </div>
                   <div className="flex justify-between dark:text-gray-300">
                     <span>Tax:</span>
-                    <span className="font-medium">₹{Number(order.tax).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="font-medium">{formatINRStandard(Number(order.tax))}</span>
                   </div>
                   {order.discount > 0 && (
                     <div className="flex justify-between dark:text-gray-300">
                       <span>Discount:</span>
-                      <span className="font-medium">-₹{Number(order.discount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="font-medium">-{formatINRStandard(Number(order.discount))}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-lg font-bold border-t dark:border-gray-700 pt-2 dark:text-gray-100">
                     <span>Total:</span>
-                    <span>₹{Number(order.total).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span>{formatINRStandard(Number(order.total))}</span>
                   </div>
                 </div>
               </div>

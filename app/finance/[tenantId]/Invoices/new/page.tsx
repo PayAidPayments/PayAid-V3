@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { INDIAN_STATES } from '@/lib/utils/indian-states'
 import { determineGSTType } from '@/lib/invoicing/gst-state'
 import { PageLoading } from '@/components/ui/loading'
+import { formatINRStandard } from '@/lib/utils/formatINR'
 
 // Invoice template options (matching settings page)
 const invoiceTemplates = [
@@ -891,7 +892,7 @@ export default function NewInvoicePage() {
                           <option value="">Select a product...</option>
                           {products.map((product: any) => (
                             <option key={product.id} value={product.id}>
-                              {product.name} - ₹{product.salePrice?.toLocaleString('en-IN') || '0'}
+                              {product.name} - {product.salePrice ? formatINRStandard(product.salePrice) : '₹0'}
                             </option>
                           ))}
                         </select>
@@ -1029,11 +1030,11 @@ export default function NewInvoicePage() {
                     
                     <div className="text-right text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Amount: </span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">₹{(item.quantity * item.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatINRStandard(item.quantity * item.rate)}</span>
                       {item.gstRate > 0 && (
                         <>
                           <span className="text-gray-600 dark:text-gray-400 ml-2">+ GST ({item.gstRate}%): </span>
-                          <span className="font-medium text-gray-900 dark:text-gray-100">₹{((item.quantity * item.rate * item.gstRate) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          <span className="font-medium text-gray-900 dark:text-gray-100">{formatINRStandard((item.quantity * item.rate * item.gstRate) / 100)}</span>
                         </>
                       )}
                     </div>
@@ -1157,7 +1158,7 @@ export default function NewInvoicePage() {
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{formatINRStandard(subtotal)}</span>
                 </div>
                 
                 {/* Discount */}
@@ -1205,7 +1206,7 @@ export default function NewInvoicePage() {
                   {formData.discount > 0 && (
                     <div className="flex justify-between text-sm text-red-600 dark:text-red-400">
                       <span>Discount Amount</span>
-                      <span>-₹{discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      <span>-{formatINRStandard(discountAmount)}</span>
                     </div>
                   )}
                 </div>
@@ -1302,7 +1303,7 @@ export default function NewInvoicePage() {
                   <div className="space-y-1 border-t dark:border-gray-700 pt-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">IGST ({itemsWithGST[0]?.gstRate || 18}%)</span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">₹{totalGST.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatINRStandard(totalGST)}</span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       Inter-state supply
@@ -1317,11 +1318,11 @@ export default function NewInvoicePage() {
                   <div className="space-y-1 border-t dark:border-gray-700 pt-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">CGST ({(itemsWithGST[0]?.gstRate || 18) / 2}%)</span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">₹{(totalGST / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatINRStandard(totalGST / 2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">SGST ({(itemsWithGST[0]?.gstRate || 18) / 2}%)</span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">₹{(totalGST / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatINRStandard(totalGST / 2)}</span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       Intra-state supply
@@ -1334,7 +1335,7 @@ export default function NewInvoicePage() {
                 
                 <div className="flex justify-between text-sm pt-2">
                   <span className="text-gray-600 dark:text-gray-400">Total GST</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">₹{totalGST.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{formatINRStandard(totalGST)}</span>
                 </div>
                 
                 {/* Discount */}
@@ -1344,7 +1345,7 @@ export default function NewInvoicePage() {
                       Discount {formData.discountType === 'percentage' ? `(${formData.discount}%)` : ''}
                     </span>
                     <span className="font-medium text-red-600 dark:text-red-400">
-                      -₹{discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      -{formatINRStandard(discountAmount)}
                     </span>
                   </div>
                 )}
@@ -1361,7 +1362,7 @@ export default function NewInvoicePage() {
                           ? 'text-red-600 dark:text-red-400' 
                           : 'text-green-600 dark:text-green-400'
                       }`}>
-                        {formData.tdsType === 'tds' ? '-' : '+'}₹{tdsAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        {formData.tdsType === 'tds' ? '-' : '+'}{formatINRStandard(tdsAmount)}
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -1378,7 +1379,7 @@ export default function NewInvoicePage() {
                   <div className="flex justify-between text-sm pt-2 border-t dark:border-gray-700">
                     <span className="text-gray-600 dark:text-gray-400">Adjustment</span>
                     <span className={`font-medium ${formData.adjustment >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {formData.adjustment >= 0 ? '+' : ''}₹{formData.adjustment.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      {formData.adjustment >= 0 ? '+' : ''}{formatINRStandard(formData.adjustment)}
                     </span>
                   </div>
                 )}
@@ -1394,7 +1395,7 @@ export default function NewInvoicePage() {
                 
                 <div className="border-t dark:border-gray-700 pt-3 flex justify-between text-lg font-bold">
                   <span className="text-gray-900 dark:text-gray-100">Total Amount</span>
-                  <span className="text-blue-600 dark:text-blue-400">₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-blue-600 dark:text-blue-400">{formatINRStandard(total)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -1442,7 +1443,7 @@ export default function NewInvoicePage() {
               Make Recurring
             </Link>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Total Amount: ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              Total Amount: {formatINRStandard(total)}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
               Total Quantity: {items.reduce((sum, item) => sum + item.quantity, 0)}

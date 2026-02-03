@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PageLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
 import { getDynamicTitle, getDynamicDescription } from '@/lib/utils/status-labels'
+import { formatINRStandard } from '@/lib/utils/formatINR'
 
 function getAuthHeaders() {
   const { token } = useAuthStore.getState()
@@ -242,15 +243,15 @@ export default function FinanceExpensesPage() {
                       </TableCell>
                       <TableCell className="dark:text-gray-300">{expense.vendor || '-'}</TableCell>
                       <TableCell className="text-right dark:text-gray-300">
-                        ₹{expense.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
+                        {formatINRStandard(expense.amount || 0)}
                       </TableCell>
                       <TableCell className="text-right dark:text-gray-300">
                         {expense.gstAmount
-                          ? `₹${expense.gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+                          ? formatINRStandard(expense.gstAmount)
                           : '-'}
                       </TableCell>
                       <TableCell className="text-right font-semibold dark:text-gray-100">
-                        ₹{((expense.amount || 0) + (expense.gstAmount || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        {formatINRStandard((expense.amount || 0) + (expense.gstAmount || 0))}
                       </TableCell>
                       <TableCell>
                         {expense.status === 'pending' && (

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { PageLoading } from '@/components/ui/loading'
 import { useAuthStore } from '@/lib/stores/auth'
+import { formatINRStandard } from '@/lib/utils/formatINR'
 
 interface GSTR3BData {
   filingPeriod: string
@@ -133,7 +134,7 @@ export default function FinanceGSTR3BPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold dark:text-gray-100">
-              ₹{((gstr3b?.summary.totalSales || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatINRStandard((gstr3b?.summary.totalSales || 0) / 1000)}
             </div>
           </CardContent>
         </Card>
@@ -143,7 +144,7 @@ export default function FinanceGSTR3BPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold dark:text-gray-100">
-              ₹{((gstr3b?.summary.totalPurchases || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatINRStandard((gstr3b?.summary.totalPurchases || 0) / 1000)}
             </div>
           </CardContent>
         </Card>
@@ -153,7 +154,7 @@ export default function FinanceGSTR3BPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              ₹{((gstr3b?.inputTaxCredit || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatINRStandard((gstr3b?.inputTaxCredit || 0) / 1000)}
             </div>
           </CardContent>
         </Card>
@@ -163,7 +164,7 @@ export default function FinanceGSTR3BPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-              ₹{((gstr3b?.summary.gstPayable || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatINRStandard((gstr3b?.summary.gstPayable || 0) / 1000)}
             </div>
           </CardContent>
         </Card>
@@ -179,13 +180,13 @@ export default function FinanceGSTR3BPage() {
             <div>
               <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Taxable Value</div>
               <div className="text-2xl font-bold dark:text-gray-100">
-                ₹{((gstr3b?.outwardSupplies.taxable || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatINRStandard((gstr3b?.outwardSupplies.taxable || 0) / 1000)}
               </div>
             </div>
             <div>
               <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">GST Collected</div>
               <div className="text-2xl font-bold dark:text-gray-100">
-                ₹{((gstr3b?.outwardSupplies.gst || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatINRStandard((gstr3b?.outwardSupplies.gst || 0) / 1000)}
               </div>
             </div>
           </div>
@@ -202,13 +203,13 @@ export default function FinanceGSTR3BPage() {
             <div>
               <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Taxable Value</div>
               <div className="text-2xl font-bold dark:text-gray-100">
-                ₹{((gstr3b?.inwardSupplies.taxable || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatINRStandard((gstr3b?.inwardSupplies.taxable || 0) / 1000)}
               </div>
             </div>
             <div>
               <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Input Tax Credit (ITC)</div>
               <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                ₹{((gstr3b?.inwardSupplies.gst || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatINRStandard((gstr3b?.inwardSupplies.gst || 0) / 1000)}
               </div>
             </div>
           </div>
@@ -227,19 +228,19 @@ export default function FinanceGSTR3BPage() {
             <div className="flex items-center justify-between">
               <div className="text-lg dark:text-gray-300">GST Collected (Outward Supplies)</div>
               <div className="text-lg font-semibold dark:text-gray-100">
-                ₹{((gstr3b?.outwardSupplies.gst || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatINRStandard((gstr3b?.outwardSupplies.gst || 0) / 1000)}
               </div>
             </div>
             <div className="flex items-center justify-between">
               <div className="text-lg dark:text-gray-300">Input Tax Credit (Inward Supplies)</div>
               <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                - ₹{((gstr3b?.inwardSupplies.gst || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                - {formatINRStandard((gstr3b?.inwardSupplies.gst || 0) / 1000)}
               </div>
             </div>
             <div className="border-t dark:border-gray-700 pt-4 flex items-center justify-between">
               <div className="text-xl font-bold dark:text-gray-100">Net GST Payable</div>
               <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                ₹{((gstr3b?.netGSTPayable || 0) / 1000).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatINRStandard((gstr3b?.netGSTPayable || 0) / 1000)}
               </div>
             </div>
           </div>

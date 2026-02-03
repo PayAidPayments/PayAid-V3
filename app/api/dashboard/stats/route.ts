@@ -535,13 +535,47 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    // Handle all other errors gracefully
+    // Handle all other errors gracefully - return fallback stats with arrays to prevent frontend crashes
     return NextResponse.json(
       { 
         error: 'Failed to get dashboard stats',
         message: errorMessage,
         code: error?.code,
-        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+        // Always return arrays to prevent "t.map is not a function" errors
+        counts: {
+          contacts: 0,
+          deals: 0,
+          orders: 0,
+          invoices: 0,
+          tasks: 0,
+        },
+        revenue: {
+          total: 0,
+          last7Days: 0,
+          last30Days: 0,
+          last90Days: 0,
+          allTime: 0,
+        },
+        pipeline: {
+          value: 0,
+          activeDeals: 0,
+        },
+        alerts: {
+          overdueInvoices: 0,
+          pendingTasks: 0,
+        },
+        recentActivity: {
+          contacts: [],
+          deals: [],
+          orders: [],
+        },
+        charts: {
+          salesTrend: [],
+          revenueTrend: [],
+          marketShare: [],
+          kpis: [],
+        },
       },
       { status: 500 }
     )
