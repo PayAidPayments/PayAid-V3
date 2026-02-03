@@ -76,17 +76,19 @@ function DealRow({ deal, tenantId, onDelete }: { deal: any; tenantId: string; on
 }
 
 export default function CRMDealsPage() {
-  const params = useParams()
-  const searchParams = useSearchParams()
-  const tenantId = params?.tenantId as string
-  const { token } = useAuthStore()
-  const [page, setPage] = useState(1)
-  const [stageFilter, setStageFilter] = useState<string>('')
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
-  const { data, isLoading } = useDeals({ page, limit: 1000, stage: stageFilter || undefined })
-  const deleteDeal = useDeleteDeal()
-  const hasCheckedDataRef = useRef(false)
+  try {
+    const params = useParams()
+    const searchParams = useSearchParams()
+    const tenantId = params?.tenantId as string
+    const { token } = useAuthStore()
+    const [page, setPage] = useState(1)
+    const [stageFilter, setStageFilter] = useState<string>('')
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+    const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
+    const { data, isLoading, error: dealsError } = useDeals({ page, limit: 1000, stage: stageFilter || undefined })
+    const deleteDeal = useDeleteDeal()
+    const hasCheckedDataRef = useRef(false)
+    const [pageError, setPageError] = useState<Error | null>(null)
 
   // Check if demo data exists and seed if needed (only once) - Run in background
   useEffect(() => {
