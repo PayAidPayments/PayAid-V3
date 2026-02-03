@@ -12,4 +12,4 @@ export * from './module-detection'
 export * from './performance'
 export * from './retry'
 // NOTE: cache-warmer is NOT exported here because it imports Prisma (server-only)
-// Import it directly from './cache-warmer' in server-side code only
+// Import it directly from '@/lib/cache-warmer' in server-side code only

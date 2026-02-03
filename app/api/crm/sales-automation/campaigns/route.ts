@@ -14,9 +14,64 @@ export async function GET(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    // For now, return empty array - campaigns will be stored in a new model
-    // In production, create SalesAutomationCampaign model
-    const campaigns: any[] = []
+    // Return sample campaigns data - in production, create SalesAutomationCampaign model
+    const campaigns = [
+      {
+        id: 'campaign-1',
+        name: 'Q1 Enterprise Outreach',
+        type: 'cold-email',
+        status: 'active',
+        prospectsCount: 45,
+        contactedCount: 38,
+        responseRate: 12.5,
+        conversionRate: 3.2,
+        createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 'campaign-2',
+        name: 'LinkedIn SMB Campaign',
+        type: 'linkedin',
+        status: 'active',
+        prospectsCount: 62,
+        contactedCount: 55,
+        responseRate: 18.3,
+        conversionRate: 4.8,
+        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 'campaign-3',
+        name: 'Multi-Channel Tech Outreach',
+        type: 'multi-channel',
+        status: 'paused',
+        prospectsCount: 28,
+        contactedCount: 20,
+        responseRate: 15.0,
+        conversionRate: 5.0,
+        createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 'campaign-4',
+        name: 'Cold Call Follow-up',
+        type: 'cold-call',
+        status: 'active',
+        prospectsCount: 35,
+        contactedCount: 30,
+        responseRate: 22.5,
+        conversionRate: 6.7,
+        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 'campaign-5',
+        name: 'Email Nurture Sequence',
+        type: 'cold-email',
+        status: 'completed',
+        prospectsCount: 120,
+        contactedCount: 120,
+        responseRate: 25.8,
+        conversionRate: 8.3,
+        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    ]
 
     return NextResponse.json({ campaigns })
   } catch (error: any) {

@@ -20,7 +20,8 @@ import {
   Edit,
   Trash2,
   Star,
-  TrendingUp
+  TrendingUp,
+  ExternalLink
 } from 'lucide-react'
 import { PageLoading } from '@/components/ui/loading'
 
@@ -48,6 +49,8 @@ export default function SalesEnablementPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState<string>('all')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showResourceModal, setShowResourceModal] = useState(false)
+  const [selectedResource, setSelectedResource] = useState<EnablementResource | null>(null)
 
   useEffect(() => {
     fetchResources()
@@ -234,7 +237,15 @@ export default function SalesEnablementPage() {
           {filteredResources.map((resource) => {
             const Icon = getTypeIcon(resource.type)
             return (
-              <Card key={resource.id} className="hover:shadow-lg transition-shadow">
+              <Card 
+                key={resource.id} 
+                className="hover:shadow-lg transition-shadow cursor-pointer group"
+                onClick={() => {
+                  // Show resource detail in modal
+                  setSelectedResource(resource)
+                  setShowResourceModal(true)
+                }}
+              >
                 <CardHeader>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
