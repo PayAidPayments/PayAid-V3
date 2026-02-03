@@ -255,9 +255,31 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        // Clear cookie
+        // Clear all auth-related storage
         if (typeof document !== 'undefined') {
+          // Clear cookies (all variations)
           document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+          document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax'
+          document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax; Secure'
+          
+          // Clear localStorage
+          try {
+            localStorage.removeItem('auth-storage')
+            localStorage.removeItem('token')
+            localStorage.removeItem('auth-token')
+            localStorage.removeItem('payaid_sso_token')
+          } catch (err) {
+            console.warn('[AUTH] Error clearing localStorage:', err)
+          }
+          
+          // Clear sessionStorage
+          try {
+            sessionStorage.removeItem('payaid_sso_token')
+            sessionStorage.removeItem('token')
+            sessionStorage.removeItem('auth-token')
+          } catch (err) {
+            console.warn('[AUTH] Error clearing sessionStorage:', err)
+          }
         }
         
         set({
