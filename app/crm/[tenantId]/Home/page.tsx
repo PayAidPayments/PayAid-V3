@@ -819,32 +819,68 @@ export default function CRMDashboardPage() {
         return []
       }
       
-      // Safely map with additional validation
-      const mapped = data
-        .filter((item: any) => {
-          // Filter out null/undefined items
-          if (!item || typeof item !== 'object') return false
-          return true
-        })
-        .map((item: any) => {
-          // Ensure each item has required properties
-          return {
-            name: String(item?.name || 'Unknown'),
-            leadsCount: Number(item?.leadsCount || 0),
-            conversionsCount: Number(item?.conversionsCount || 0),
-            totalValue: Number(item?.totalValue || 0),
-            conversionRate: Number(item?.conversionRate || 0),
-          }
-        })
-        .filter((item: any) => item.name !== 'Unknown' || item.leadsCount > 0)
-      
-      // Final check - ensure result is an array
-      if (!Array.isArray(mapped)) {
-        console.warn('[CRM_DASHBOARD] Mapped result is not an array:', typeof mapped)
+      // Safely map with additional validation - wrap each step in validation
+      let filtered: any[] = []
+      try {
+        // Step 1: Filter out null/undefined items
+        if (Array.isArray(data)) {
+          filtered = data.filter((item: any) => {
+            if (!item || typeof item !== 'object') return false
+            return true
+          })
+        } else {
+          console.warn('[CRM_DASHBOARD] Data is not an array before filter:', typeof data)
+          return []
+        }
+      } catch (filterErr) {
+        console.error('[CRM_DASHBOARD] Error filtering topLeadSources:', filterErr)
         return []
       }
       
-      return mapped
+      // Step 2: Map to normalized format
+      let mapped: any[] = []
+      try {
+        if (Array.isArray(filtered)) {
+          mapped = filtered.map((item: any) => {
+            // Ensure each item has required properties
+            return {
+              name: String(item?.name || 'Unknown'),
+              leadsCount: Number(item?.leadsCount || 0),
+              conversionsCount: Number(item?.conversionsCount || 0),
+              totalValue: Number(item?.totalValue || 0),
+              conversionRate: Number(item?.conversionRate || 0),
+            }
+          })
+        } else {
+          console.warn('[CRM_DASHBOARD] Filtered result is not an array:', typeof filtered)
+          return []
+        }
+      } catch (mapErr) {
+        console.error('[CRM_DASHBOARD] Error mapping topLeadSources:', mapErr)
+        return []
+      }
+      
+      // Step 3: Final filter
+      let finalResult: any[] = []
+      try {
+        if (Array.isArray(mapped)) {
+          finalResult = mapped.filter((item: any) => item.name !== 'Unknown' || item.leadsCount > 0)
+        } else {
+          console.warn('[CRM_DASHBOARD] Mapped result is not an array:', typeof mapped)
+          return []
+        }
+      } catch (finalFilterErr) {
+        console.error('[CRM_DASHBOARD] Error in final filter:', finalFilterErr)
+        return []
+      }
+      
+      // Final check - ensure result is an array
+      if (!Array.isArray(finalResult)) {
+        console.warn('[CRM_DASHBOARD] Final result is not an array:', typeof finalResult)
+        return []
+      }
+      
+      return finalResult
     } catch (err) {
       console.error('[CRM_DASHBOARD] Error preparing topLeadSourcesData:', err)
       return []
