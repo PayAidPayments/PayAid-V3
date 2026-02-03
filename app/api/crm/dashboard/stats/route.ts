@@ -4,6 +4,7 @@ import { prismaWithRetry } from '@/lib/db/connection-retry'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns'
+import { getTimePeriodBounds, type TimePeriod } from '@/lib/utils/crm-filters'
 
 // Helper function to get user role and build filter based on role
 async function getUserFilter(tenantId: string, userId?: string) {
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest) {
     
     // Get time period from query params (needed for sample data and rate limiting check)
     const searchParams = request.nextUrl.searchParams
-    const timePeriod = searchParams.get('period') || 'month'
+    const timePeriod = (searchParams.get('period') || 'month') as TimePeriod
     
     // Rate limiting: Check if tenant already has an active request
     // DISABLED: Too strict for dashboard which makes multiple requests
@@ -771,11 +772,31 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    // Always return valid JSON, even on unexpected errors
+    // Always return valid JSON with fallback stats structure, even on unexpected errors
+    // This prevents frontend from crashing with "t.map is not a function"
+    const fallbackStats = {
+      dealsCreatedThisMonth: 0,
+      revenueThisMonth: 0,
+      dealsClosingThisMonth: 0,
+      overdueTasks: 0,
+      totalTasks: 0,
+      completedTasks: 0,
+      totalMeetings: 0,
+      totalLeads: 0,
+      convertedLeads: 0,
+      conversionRate: 0,
+      quarterlyPerformance: [],
+      pipelineByStage: [],
+      monthlyLeadCreation: [],
+      topLeadSources: [],
+      periodLabel: 'This Month',
+    }
+    
     return NextResponse.json(
       { 
         error: 'Failed to fetch dashboard stats',
         message: errorMessage || 'An unexpected error occurred',
+        ...fallbackStats, // Include fallback stats to prevent frontend crashes
       },
       { 
         status: 500,
