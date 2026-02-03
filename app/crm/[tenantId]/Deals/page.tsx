@@ -162,20 +162,39 @@ export default function CRMDealsPage() {
 
   // Categorize deals
   const categorizedDeals = useMemo(() => {
-    if (!data?.deals) return {
-      created: [],
-      closing: [],
-      won: [],
-      lost: [],
-      allWon: [],
-      allLost: [],
-      byStage: {} as Record<string, any[]>,
-      all: []
+    if (!data?.deals) {
+      console.log('[DEALS_PAGE] No deals data:', { data, hasData: !!data, hasDeals: !!data?.deals })
+      return {
+        created: [],
+        closing: [],
+        won: [],
+        lost: [],
+        allWon: [],
+        allLost: [],
+        byStage: {} as Record<string, any[]>,
+        all: []
+      }
     }
 
     const period = getTimePeriodBounds()
     const periodStart = period.start
     const periodEnd = period.end
+    
+    // Debug logging
+    console.log('[DEALS_PAGE] Categorizing deals:', {
+      totalDeals: data.deals.length,
+      timePeriod,
+      periodStart: periodStart.toISOString(),
+      periodEnd: periodEnd.toISOString(),
+      sampleDeal: data.deals[0] ? {
+        id: data.deals[0].id,
+        name: data.deals[0].name,
+        stage: data.deals[0].stage,
+        createdAt: data.deals[0].createdAt,
+        expectedCloseDate: data.deals[0].expectedCloseDate,
+        actualCloseDate: data.deals[0].actualCloseDate,
+      } : null
+    })
 
     const created: any[] = []
     const closing: any[] = []
