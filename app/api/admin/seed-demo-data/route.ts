@@ -4,6 +4,11 @@ import * as bcrypt from 'bcryptjs'
 import { generateTenantId } from '@/lib/utils/tenant-id'
 import { seedAllModules } from '@/lib/seed/module-seeders'
 
+// Increase timeout for seed route (Vercel Pro: 60s, Hobby: 10s)
+// Note: On Hobby plan, this will still timeout at 10s, but we handle it gracefully
+export const maxDuration = 60
+export const runtime = 'nodejs'
+
 // Inline industry seeding functions
 async function seedIndustryDataInline(tenantId: string, contacts: any[]) {
   // Agriculture
@@ -141,6 +146,7 @@ export async function GET(request: NextRequest) {
  * This endpoint should be protected in production
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
   try {
     // Add basic authentication check (optional - can be enhanced)
     const authHeader = request.headers.get('authorization')
@@ -151,19 +157,46 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = await seedDemoData()
+    // Add timeout wrapper for Vercel Hobby plan (10s limit)
+    const SEED_TIMEOUT = 9000 // 9 seconds (leave 1s buffer for Vercel)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Seed operation timed out. This may take longer than 10 seconds on Vercel Hobby plan. Please try again or contact support.'))
+      }, SEED_TIMEOUT)
+    })
+
+    const result = await Promise.race([
+      seedDemoData(),
+      timeoutPromise,
+    ]) as any
+
+    const duration = Date.now() - startTime
+    console.log(`[SEED_DEMO_DATA] Completed in ${duration}ms`)
+    
     return NextResponse.json({
       success: true,
       message: 'Demo data seeded successfully',
+      duration: `${duration}ms`,
       ...result,
     })
   } catch (error: any) {
+    const duration = Date.now() - startTime
     console.error('[SEED_DEMO_DATA] POST Error:', error)
     console.error('[SEED_DEMO_DATA] Error stack:', error?.stack)
+    console.error(`[SEED_DEMO_DATA] Failed after ${duration}ms`)
+    
+    // Check if it's a timeout error
+    const isTimeout = error?.message?.includes('timeout') || duration >= 9000
+    
     return NextResponse.json(
       {
         error: 'Failed to seed demo data',
         message: error?.message || 'Unknown error occurred',
+        isTimeout,
+        duration: `${duration}ms`,
+        suggestion: isTimeout 
+          ? 'The seed operation timed out. On Vercel Hobby plan, operations are limited to 10 seconds. Consider upgrading to Pro plan or contact support.'
+          : 'Please check the server logs for more details.',
         details: process.env.NODE_ENV === 'development' ? error?.stack : undefined,
       },
       { status: 500 }
