@@ -551,6 +551,74 @@ async function seedDemoData() {
       }
     }
 
+    // ENHANCEMENT: Create additional contacts to reach 2000+ CRM records target
+    // Target: 800 contacts (to reach 2000+ total with deals, tasks, meetings)
+    const TARGET_CONTACTS = 800
+    const additionalContactsNeeded = Math.max(0, TARGET_CONTACTS - contacts.length)
+    
+    if (additionalContactsNeeded > 0) {
+      console.log(`[SEED] Creating ${additionalContactsNeeded} additional contacts to reach target...`)
+      const companies = ['Tech', 'Solutions', 'Services', 'Group', 'Corp', 'Ltd', 'Inc', 'Systems', 'Digital', 'Global']
+      const firstNames = ['Raj', 'Priya', 'Amit', 'Sneha', 'Vikram', 'Meera', 'Rahul', 'Anjali', 'Arjun', 'Kavya', 'Rohan', 'Divya', 'Suresh', 'Lakshmi', 'Kiran']
+      const lastNames = ['Kumar', 'Sharma', 'Patel', 'Reddy', 'Singh', 'Nair', 'Gupta', 'Mehta', 'Iyer', 'Rao', 'Joshi', 'Malhotra', 'Agarwal', 'Verma', 'Shah']
+      const stages = ['prospect', 'contact', 'customer'] as const
+      
+      for (let i = 0; i < additionalContactsNeeded; i += BATCH_SIZE) {
+        const batch = Array.from({ length: Math.min(BATCH_SIZE, additionalContactsNeeded - i) }, (_, idx) => {
+          const globalIdx = contacts.length + i + idx
+          const firstName = firstNames[globalIdx % firstNames.length]
+          const lastName = lastNames[globalIdx % lastNames.length]
+          const company = companies[globalIdx % companies.length]
+          const stage = stages[globalIdx % stages.length]
+          
+          return {
+            name: `${firstName} ${lastName}`,
+            email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}${globalIdx}@${company.toLowerCase()}.com`,
+            phone: `+91-987654${String(globalIdx % 10000).padStart(4, '0')}`,
+            stage,
+            company: `${company} ${globalIdx % 100}`,
+            leadScore: 50 + (globalIdx % 50),
+          }
+        })
+        
+        const batchContacts = await Promise.all(
+          batch.map((contact, batchIdx) => {
+            const globalIdx = contacts.length + i + batchIdx
+            const monthsAgo = globalIdx % 24 // Spread across 24 months
+            const createdAt = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1 + (globalIdx % 28))
+            
+            return prisma.contact.create({
+              data: {
+                tenantId,
+                name: contact.name,
+                email: contact.email,
+                phone: contact.phone,
+                company: contact.company,
+                type: contact.stage === 'customer' ? 'customer' : 'lead',
+                stage: contact.stage,
+                status: 'active',
+                country: 'India',
+                city: 'Bangalore',
+                state: 'Karnataka',
+                postalCode: '560001',
+                address: `${contact.company}, Bangalore`,
+                source: sourceNames[globalIdx % sourceNames.length],
+                leadScore: contact.leadScore,
+                lastContactedAt: contact.stage === 'customer' ? new Date(now.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000) : null,
+                createdAt,
+              },
+            })
+          })
+        )
+        contacts.push(...batchContacts)
+        
+        if (i + BATCH_SIZE < additionalContactsNeeded) {
+          await new Promise(resolve => setTimeout(resolve, 200))
+        }
+      }
+      console.log(`[SEED] Created ${additionalContactsNeeded} additional contacts`)
+    }
+    
     console.log(`✅ Total contacts: ${contacts.length} (${existingContactsCount < 30 ? 'created new' : 'preserved existing and added more'})`)
 
     // Calculate financial year quarters (Indian FY: Apr-Mar)
@@ -695,16 +763,59 @@ async function seedDemoData() {
     // Ensure we have at least 12 deals in current month for dashboard stats
     const currentMonthDealsNeeded = Math.max(0, 12 - currentMonthDealsCount)
     
-    // Only create new deals if we have fewer than 60 total
-    const totalDealsNeeded = 60
+    // ENHANCEMENT: Create more deals to reach 2000+ CRM records target
+    // Target: 600 deals (to reach 2000+ total with contacts, tasks, meetings)
+    const TARGET_DEALS = 600
+    const totalDealsNeeded = Math.max(60, TARGET_DEALS - existingDealsCount)
     const newDealsToCreate = Math.max(currentMonthDealsNeeded, totalDealsNeeded - existingDealsCount)
     
     if (newDealsToCreate > 0) {
       console.log(`[SEED] Creating ${newDealsToCreate} additional deals (${currentMonthDealsNeeded} for current month)`)
       
-      // Prioritize current month deals first
+      // ENHANCEMENT: Generate additional deals programmatically to reach target
+      const dealTemplates = [
+        'Enterprise Software License',
+        'Cloud Services Agreement',
+        'Consulting Services Contract',
+        'Support & Maintenance Deal',
+        'Annual Subscription Renewal',
+        'Custom Development Project',
+        'Data Analytics Platform',
+        'Security & Compliance Package',
+        'Training & Certification Deal',
+        'Integration Services Contract',
+        'Digital Transformation Deal',
+        'Business Process Automation',
+        'AI/ML Implementation',
+        'Mobile App Development',
+        'E-commerce Platform Setup',
+      ]
+      
+      const stages = ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost'] as const
+      const quarters = ['q1', 'q2', 'q3', 'q4', 'current'] as const
+      
+      // Generate additional deal data programmatically
+      const generatedDeals: typeof dealsData = []
+      for (let i = dealsData.length; i < newDealsToCreate; i++) {
+        const template = dealTemplates[i % dealTemplates.length]
+        const quarter = quarters[i % quarters.length]
+        const stage = stages[i % stages.length]
+        const value = 50000 + (i % 20) * 10000 + Math.floor(Math.random() * 50000) // ₹50K - ₹2.5L
+        const probability = stage === 'won' ? 100 : stage === 'lost' ? 0 : 20 + (i % 60)
+        
+        generatedDeals.push({
+          name: `${template} ${i + 1}`,
+          value,
+          stage,
+          probability,
+          contactIdx: i % contacts.length,
+          quarter,
+        })
+      }
+      
+      // Prioritize current month deals first, then others
       const currentMonthDeals = dealsData.filter(d => d.quarter === 'current')
-      const otherDeals = dealsData.filter(d => d.quarter !== 'current')
+      const otherDeals = [...dealsData.filter(d => d.quarter !== 'current'), ...generatedDeals]
       
       // Create current month deals first, then others
       const dealsToCreate = [
@@ -1039,15 +1150,55 @@ async function seedDemoData() {
     
     console.log(`[SEED] Found ${existingTasksCount} existing tasks - will add more`)
     
-    // Create additional tasks if we have fewer than 40
-    const totalTasksNeeded = 40
+    // ENHANCEMENT: Create more tasks to reach 2000+ CRM records target
+    // Target: 500 tasks (to reach 2000+ total with contacts, deals, meetings)
+    const TARGET_TASKS = 500
+    const totalTasksNeeded = Math.max(40, TARGET_TASKS - existingTasksCount)
     const newTasksToCreate = Math.max(0, totalTasksNeeded - existingTasksCount)
     const tasks: any[] = [...existingTasks]
     
     if (newTasksToCreate > 0) {
-      const tasksToCreate = tasksData.slice(0, newTasksToCreate)
+      // ENHANCEMENT: Generate additional tasks programmatically
+      const taskTemplates = [
+        'Follow up with',
+        'Prepare proposal for',
+        'Review contract with',
+        'Send quote to',
+        'Schedule demo for',
+        'Call back',
+        'Send contract to',
+        'Follow up on proposal -',
+        'Update CRM records for',
+        'Schedule meeting with',
+        'Send follow-up email to',
+        'Prepare quote for',
+        'Schedule discovery call with',
+        'Review proposal for',
+        'Follow up with',
+      ]
+      
+      const statuses = ['pending', 'in_progress', 'completed'] as const
+      const priorities = ['low', 'medium', 'high'] as const
+      
+      // Generate additional task data
+      const generatedTasks: typeof tasksData = []
+      for (let i = tasksData.length; i < newTasksToCreate; i++) {
+        const template = taskTemplates[i % taskTemplates.length]
+        const contactName = contacts[i % contacts.length]?.name || 'Contact'
+        const daysOffset = i % 30 - 15 // Mix of overdue (-15 to -1) and upcoming (1 to 14)
+        
+        generatedTasks.push({
+          title: `${template} ${contactName}`,
+          status: statuses[i % statuses.length],
+          priority: priorities[i % priorities.length],
+          contactIdx: i % contacts.length,
+          daysOffset,
+        })
+      }
+      
+      const allTasksToCreate = [...tasksData, ...generatedTasks].slice(0, newTasksToCreate)
       const newTasks = await Promise.all(
-        tasksToCreate.map((task) => {
+        allTasksToCreate.map((task) => {
           // Ensure tasks have proper due dates - some should be overdue, some today, some upcoming
           let dueDate = new Date(now.getTime() + task.daysOffset * 24 * 60 * 60 * 1000)
           // Ensure overdue tasks are actually in the past
@@ -1322,15 +1473,52 @@ async function seedDemoData() {
     
     console.log(`[SEED] Found ${existingMeetingsCount} existing meetings - will add more`)
     
-    // Create additional meetings if we have fewer than 20
-    const totalMeetingsNeeded = 20
+    // ENHANCEMENT: Create more meetings to reach 2000+ CRM records target
+    // Target: 100 meetings (to reach 2000+ total with contacts, deals, tasks)
+    const TARGET_MEETINGS = 100
+    const totalMeetingsNeeded = Math.max(20, TARGET_MEETINGS - existingMeetingsCount)
     const newMeetingsToCreate = Math.max(0, totalMeetingsNeeded - existingMeetingsCount)
     const meetings: any[] = [...existingMeetings]
     
     if (newMeetingsToCreate > 0) {
-      const meetingsToCreate = meetingsData.slice(0, newMeetingsToCreate)
+      // ENHANCEMENT: Generate additional meetings programmatically
+      const meetingTemplates = [
+        'Discovery Call',
+        'Product Demo',
+        'Proposal Review',
+        'Follow-up Meeting',
+        'Contract Discussion',
+        'Technical Deep Dive',
+        'Q&A Session',
+        'Onboarding Meeting',
+        'Quarterly Review',
+        'Strategy Session',
+        'Product Training',
+        'Support Call',
+        'Renewal Discussion',
+        'Expansion Meeting',
+        'Executive Briefing',
+      ]
+      
+      // Generate additional meeting data
+      const generatedMeetings: typeof meetingsData = []
+      for (let i = meetingsData.length; i < newMeetingsToCreate; i++) {
+        const template = meetingTemplates[i % meetingTemplates.length]
+        const contactName = contacts[i % contacts.length]?.name || 'Contact'
+        const daysOffset = i % 30 - 7 // Mix of past (-7 to -1) and future (1 to 22)
+        const duration = [30, 45, 60, 90][i % 4]
+        
+        generatedMeetings.push({
+          title: `${template} - ${contactName}`,
+          contactIdx: i % contacts.length,
+          daysOffset,
+          duration,
+        })
+      }
+      
+      const allMeetingsToCreate = [...meetingsData, ...generatedMeetings].slice(0, newMeetingsToCreate)
       const newMeetings = await Promise.all(
-        meetingsToCreate.map((meeting, idx) => {
+        allMeetingsToCreate.map((meeting, idx) => {
           const startTime = new Date(now.getTime() + meeting.daysOffset * 24 * 60 * 60 * 1000)
           startTime.setHours(10 + (idx % 6), (idx % 4) * 15, 0, 0) // Spread across day
           const endTime = new Date(startTime.getTime() + meeting.duration * 60 * 1000)
