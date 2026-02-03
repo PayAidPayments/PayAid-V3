@@ -897,53 +897,6 @@ async function seedDemoData() {
 
     console.log(`✅ Total tasks: ${tasks.length} (${existingTasksCount > 0 ? `${existingTasksCount} preserved, ${tasks.length - existingTasksCount} added` : 'all created'})`)
 
-    // Create sample meetings (15+ meetings)
-    const meetingsData = [
-      { title: 'Discovery Call - AI Tech Solutions', contactIdx: 20, daysOffset: 2, duration: 30 },
-      { title: 'Product Demo - Blockchain Innovations', contactIdx: 21, daysOffset: 5, duration: 60 },
-      { title: 'Proposal Review - FinTech Solutions', contactIdx: 23, daysOffset: 7, duration: 45 },
-      { title: 'Follow-up Meeting - Healthcare Tech', contactIdx: 24, daysOffset: 3, duration: 30 },
-      { title: 'Contract Discussion - SaaS Platform Inc', contactIdx: 27, daysOffset: 6, duration: 60 },
-      { title: 'Technical Deep Dive - Cloud Infrastructure', contactIdx: 32, daysOffset: 4, duration: 90 },
-      { title: 'Q&A Session - Data Science Labs', contactIdx: 33, daysOffset: 8, duration: 45 },
-      { title: 'Onboarding Meeting - Tech Solutions Inc', contactIdx: 0, daysOffset: 1, duration: 60 },
-      { title: 'Quarterly Review - Digital Marketing Pro', contactIdx: 1, daysOffset: 10, duration: 45 },
-      { title: 'Strategy Session - Acme Corporation', contactIdx: 2, daysOffset: 12, duration: 90 },
-      { title: 'Product Training - Corporate Ventures', contactIdx: 7, daysOffset: 9, duration: 60 },
-      { title: 'Support Call - Digital Solutions', contactIdx: 10, daysOffset: 2, duration: 30 },
-      { title: 'Renewal Discussion - Client Services Inc', contactIdx: 12, daysOffset: 11, duration: 45 },
-      { title: 'Expansion Meeting - Partner Network', contactIdx: 13, daysOffset: 6, duration: 60 },
-      { title: 'Executive Briefing - Global Solutions', contactIdx: 19, daysOffset: 14, duration: 90 },
-    ]
-
-    await prisma.meeting.deleteMany({ where: { tenantId } })
-    
-    const meetings = await Promise.all(
-      meetingsData.map((meeting, idx) => {
-        const startTime = new Date(now.getTime() + meeting.daysOffset * 24 * 60 * 60 * 1000)
-        startTime.setHours(10 + (idx % 6), (idx % 4) * 15, 0, 0) // Spread across day
-        const endTime = new Date(startTime.getTime() + meeting.duration * 60 * 1000)
-        const meetingCode = `MTG-${String(idx + 1).padStart(6, '0')}`
-        
-        return prisma.meeting.create({
-          data: {
-            tenantId,
-            title: meeting.title,
-            description: `Meeting with ${contacts[meeting.contactIdx]?.name || 'Contact'}`,
-            meetingCode,
-            startTime,
-            endTime,
-            status: meeting.daysOffset < 0 ? 'ended' : meeting.daysOffset === 0 ? 'in-progress' : 'scheduled',
-            hostId: adminUser.id,
-            participants: [contacts[meeting.contactIdx]?.id || contacts[0].id],
-            createdAt: startTime,
-          },
-        })
-      })
-    )
-
-    console.log(`✅ Created ${meetings.length} meetings`)
-
     // Create Lead Sources and assign to contacts
     const leadSourcesData = [
       { name: 'Google Search', type: 'organic' },
