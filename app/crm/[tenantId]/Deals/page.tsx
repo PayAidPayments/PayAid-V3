@@ -790,5 +790,22 @@ export default function CRMDealsPage() {
       </div>
     </div>
   )
+  } catch (error: any) {
+    console.error('[DEALS_PAGE] Component error:', error)
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="text-center py-12">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Error Loading Deals Page</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              {error?.message || 'An unexpected error occurred'}
+            </p>
+            <Button onClick={() => window.location.reload()}>Reload Page</Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 }
 
