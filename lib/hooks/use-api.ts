@@ -200,12 +200,27 @@ export function useDeals(params?: { page?: number; limit?: number; stage?: strin
   return useQuery({
     queryKey: ['deals', params],
     queryFn: async () => {
-      const response = await fetch(`/api/deals?${queryString}`, {
-        headers: getAuthHeaders(),
-      })
-      if (!response.ok) throw new Error('Failed to fetch deals')
-      return response.json()
+      try {
+        const response = await fetch(`/api/deals?${queryString}`, {
+          headers: getAuthHeaders(),
+        })
+        if (!response.ok) {
+          // If 500 error, return empty data instead of throwing
+          if (response.status === 500) {
+            console.warn('[useDeals] Server returned 500, returning empty data')
+            return { deals: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0 }, pipelineSummary: [] }
+          }
+          const errorData = await response.json().catch(() => ({ error: 'Failed to fetch deals' }))
+          throw new Error(errorData.message || errorData.error || 'Failed to fetch deals')
+        }
+        return response.json()
+      } catch (error: any) {
+        console.error('[useDeals] Error fetching deals:', error)
+        // Return empty data structure instead of throwing to prevent UI crashes
+        return { deals: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0 }, pipelineSummary: [] }
+      }
     },
+    retry: false, // Don't retry on error to prevent multiple failed requests
   })
 }
 

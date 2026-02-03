@@ -1558,11 +1558,13 @@ async function seedDemoData() {
       },
     }
   } catch (error) {
-    console.error('Seed demo data error:', error)
+    console.error('[SEED_DEMO_DATA] Seed demo data error:', error)
     const errorMessage = error instanceof Error ? error.message : String(error)
     const errorStack = error instanceof Error ? error.stack : undefined
+    console.error('[SEED_DEMO_DATA] Error stack:', errorStack)
     
-    throw new Error(`Failed to seed demo data: ${errorMessage}`)
+    // Re-throw with more context
+    throw new Error(`Failed to seed demo data: ${errorMessage}${errorStack ? `\nStack: ${errorStack}` : ''}`)
   }
 }
 
