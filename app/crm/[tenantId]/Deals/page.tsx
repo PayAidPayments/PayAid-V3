@@ -508,9 +508,9 @@ export default function CRMDealsPage() {
         </div>
 
         {/* Show filtered view when a stat card is clicked */}
-        {selectedCategory && displayedDeals && (
+        {selectedCategory && displayedDeals !== null && (
           <div className="space-y-4">
-            {displayedDeals.length > 0 ? (
+            {displayedDeals && Array.isArray(displayedDeals) && displayedDeals.length > 0 ? (
               <Card className={`${
                 selectedCategory === 'created' ? 'border-blue-200 ring-2 ring-blue-500' :
                 selectedCategory === 'closing' ? 'border-orange-200 ring-2 ring-orange-500' :
