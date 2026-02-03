@@ -781,21 +781,51 @@ export default function CRMDashboardPage() {
   const topLeadSourcesData = (() => {
     try {
       const data = safeStats.topLeadSources
-      if (!data) return []
+      
+      // Multiple defensive checks
+      if (!data) {
+        console.warn('[CRM_DASHBOARD] topLeadSources is null/undefined')
+        return []
+      }
+      
       if (!Array.isArray(data)) {
         console.warn('[CRM_DASHBOARD] topLeadSources is not an array:', typeof data, data)
         return []
       }
-      // Ensure each item has required properties
-      return data.map((item: any) => ({
-        name: item?.name || 'Unknown',
-        leadsCount: Number(item?.leadsCount || 0),
-        conversionsCount: Number(item?.conversionsCount || 0),
-        totalValue: Number(item?.totalValue || 0),
-        conversionRate: Number(item?.conversionRate || 0),
-      })).filter(item => item.name !== 'Unknown' || item.leadsCount > 0)
+      
+      // Ensure data is actually an array and has length
+      if (data.length === 0) {
+        return []
+      }
+      
+      // Safely map with additional validation
+      const mapped = data
+        .filter((item: any) => {
+          // Filter out null/undefined items
+          if (!item || typeof item !== 'object') return false
+          return true
+        })
+        .map((item: any) => {
+          // Ensure each item has required properties
+          return {
+            name: String(item?.name || 'Unknown'),
+            leadsCount: Number(item?.leadsCount || 0),
+            conversionsCount: Number(item?.conversionsCount || 0),
+            totalValue: Number(item?.totalValue || 0),
+            conversionRate: Number(item?.conversionRate || 0),
+          }
+        })
+        .filter((item: any) => item.name !== 'Unknown' || item.leadsCount > 0)
+      
+      // Final check - ensure result is an array
+      if (!Array.isArray(mapped)) {
+        console.warn('[CRM_DASHBOARD] Mapped result is not an array:', typeof mapped)
+        return []
+      }
+      
+      return mapped
     } catch (err) {
-      console.error('Error preparing topLeadSourcesData:', err)
+      console.error('[CRM_DASHBOARD] Error preparing topLeadSourcesData:', err)
       return []
     }
   })()
