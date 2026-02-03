@@ -529,8 +529,29 @@ export default function CRMDashboardPage() {
           const data = JSON.parse(text)
           // Ensure all array properties exist and are properly normalized to prevent .map() errors
           const normalizeArray = <T,>(arr: any, defaultValue: T[] = []): T[] => {
-            if (!Array.isArray(arr)) return defaultValue
-            return arr.map((item: any) => item).filter((item: any) => item !== null && item !== undefined)
+            // Multiple defensive checks
+            if (arr === null || arr === undefined) return defaultValue
+            if (!Array.isArray(arr)) {
+              console.warn('[CRM_DASHBOARD] normalizeArray received non-array:', typeof arr, arr)
+              return defaultValue
+            }
+            try {
+              // Safely map and filter
+              const result = arr
+                .filter((item: any) => item !== null && item !== undefined)
+                .map((item: any) => item)
+              
+              // Ensure result is still an array
+              if (!Array.isArray(result)) {
+                console.warn('[CRM_DASHBOARD] normalizeArray result is not an array:', typeof result)
+                return defaultValue
+              }
+              
+              return result as T[]
+            } catch (err) {
+              console.error('[CRM_DASHBOARD] Error in normalizeArray:', err)
+              return defaultValue
+            }
           }
           
           setStats({
