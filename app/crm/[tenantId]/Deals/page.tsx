@@ -646,15 +646,22 @@ export default function CRMDealsPage() {
                             alert('Please log in first')
                             return
                           }
-                          const response = await fetch('/api/admin/seed-demo-data', {
+                          // Use background mode to avoid timeout
+                          const response = await fetch('/api/admin/seed-demo-data?background=true', {
                             method: 'POST',
                             headers: { 'Authorization': `Bearer ${token}` },
                           })
                           if (response.ok) {
-                            alert('Demo data seeded successfully! Please refresh the page.')
-                            window.location.reload()
+                            const data = await response.json()
+                            if (data.background) {
+                              alert('Seed operation started in background. This may take 30-60 seconds. Please refresh the page in a minute.')
+                            } else {
+                              alert('Demo data seeded successfully! Please refresh the page.')
+                              window.location.reload()
+                            }
                           } else {
-                            alert('Failed to seed data. Please check console.')
+                            const errorData = await response.json().catch(() => ({}))
+                            alert(`Failed to seed data: ${errorData.message || 'Unknown error'}. ${errorData.suggestion || ''}`)
                           }
                         } catch (err) {
                           console.error('Seed error:', err)
