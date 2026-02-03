@@ -196,14 +196,30 @@ async function seedDemoData() {
         const tenantIdToDelete = tenant.id
         
         // Delete in transaction to ensure clean deletion
+        // IMPORTANT: Don't delete admin@demo.com user - we'll update its tenantId instead
         await prisma.$transaction(async (tx) => {
-          // Delete users first (they reference tenant)
-          await tx.user.deleteMany({ where: { tenantId: tenantIdToDelete } })
+          // Update admin user's tenantId to null temporarily (we'll set it to new tenant later)
+          await tx.user.updateMany({
+            where: { 
+              email: 'admin@demo.com',
+              tenantId: tenantIdToDelete 
+            },
+            data: { tenantId: null } // Temporarily set to null to break foreign key
+          })
+          
+          // Delete other users (not admin@demo.com)
+          await tx.user.deleteMany({ 
+            where: { 
+              tenantId: tenantIdToDelete,
+              email: { not: 'admin@demo.com' }
+            } 
+          })
+          
           // Delete tenant (cascade will handle related records)
           await tx.tenant.delete({ where: { id: tenantIdToDelete } })
         })
         
-        console.log(`   ✅ Deleted old tenant`)
+        console.log(`   ✅ Deleted old tenant (preserved admin user)`)
       }
       
       // Generate personalized tenant ID from business name
@@ -250,11 +266,12 @@ async function seedDemoData() {
     // Hash password for admin user
     const hashedPassword = await bcrypt.hash('Test@1234', 10)
 
-    // Ensure admin user exists
+    // Ensure admin user exists - CRITICAL: Update tenantId if tenant was recreated
     const adminUser = await prisma.user.upsert({
       where: { email: 'admin@demo.com' },
       update: {
         password: hashedPassword,
+        tenantId: tenantId, // Always update tenantId in case tenant was recreated
       },
       create: {
         email: 'admin@demo.com',
@@ -264,6 +281,19 @@ async function seedDemoData() {
         tenantId: tenantId,
       },
     })
+    
+    // Double-check: If user exists but has wrong tenantId, fix it
+    if (adminUser.tenantId !== tenantId) {
+      console.log(`⚠️  Admin user has wrong tenantId (${adminUser.tenantId}), updating to ${tenantId}...`)
+      await prisma.user.update({
+        where: { email: 'admin@demo.com' },
+        data: {
+          tenantId: tenantId,
+          password: hashedPassword, // Also reset password
+        },
+      })
+      console.log(`✅ Fixed admin user tenantId`)
+    }
 
     // Lead source names for assignment
     const sourceNames = [
