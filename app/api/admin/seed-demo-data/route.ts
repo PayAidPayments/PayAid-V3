@@ -142,6 +142,15 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Add basic authentication check (optional - can be enhanced)
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader && process.env.NODE_ENV === 'production') {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
     const result = await seedDemoData()
     return NextResponse.json({
       success: true,
@@ -150,10 +159,12 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[SEED_DEMO_DATA] POST Error:', error)
+    console.error('[SEED_DEMO_DATA] Error stack:', error?.stack)
     return NextResponse.json(
       {
         error: 'Failed to seed demo data',
-        message: error?.message,
+        message: error?.message || 'Unknown error occurred',
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined,
       },
       { status: 500 }
     )
