@@ -205,9 +205,9 @@ export default function CRMDealsPage() {
       // Won deals
       if (deal.stage === 'won') {
         allWon.push(deal)
-        // Won in period - prioritize closedAt, then updatedAt, then createdAt
-        // Only use createdAt if the deal was created and won in the same period (unlikely but possible)
-        const closedDate = deal.closedAt || deal.updatedAt || (deal.createdAt && deal.stage === 'won' ? deal.createdAt : null)
+        // Won in period - prioritize actualCloseDate, then closedAt, then updatedAt, then createdAt
+        // For revenue calculation, we need to check when the deal was actually closed/won
+        const closedDate = deal.actualCloseDate || deal.closedAt || deal.updatedAt || (deal.createdAt && deal.stage === 'won' ? deal.createdAt : null)
         if (closedDate) {
           try {
             const closed = new Date(closedDate)
@@ -224,6 +224,23 @@ export default function CRMDealsPage() {
           } catch (e) {
             // If date parsing fails, skip this deal for period filtering
             console.warn('Failed to parse closed date for deal:', deal.id, closedDate, e)
+          }
+        } else {
+          // If no close date but deal is won, include it if created in period (fallback)
+          if (deal.createdAt) {
+            try {
+              const created = new Date(deal.createdAt)
+              if (!isNaN(created.getTime())) {
+                const dateTime = created.getTime()
+                const startTime = periodStart.getTime()
+                const endTime = periodEnd.getTime()
+                if (dateTime >= startTime && dateTime <= endTime) {
+                  won.push(deal)
+                }
+              }
+            } catch (e) {
+              console.warn('Failed to parse created date for won deal:', deal.id, e)
+            }
           }
         }
       }

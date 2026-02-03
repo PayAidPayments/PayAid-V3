@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { useParams } from 'next/navigation'
+import { useState, useMemo, useEffect } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useTasks, useDeleteTask } from '@/lib/hooks/use-api'
 import { Button } from '@/components/ui/button'
@@ -79,12 +79,30 @@ function TaskRow({ task, tenantId, onDelete }: { task: any; tenantId: string; on
 
 export default function CRMTasksPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const tenantId = params?.tenantId as string
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [page, setPage] = useState(1)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const { data, isLoading } = useTasks({ page, limit: 1000, status: statusFilter || undefined })
   const deleteTask = useDeleteTask()
+
+  // Handle URL query parameters
+  useEffect(() => {
+    const filter = searchParams?.get('filter')
+    if (filter) {
+      // Map filter to category
+      if (filter === 'overdue') {
+        setSelectedCategory('overdue')
+      } else if (filter === 'today') {
+        setSelectedCategory('today')
+      } else if (filter === 'thisWeek') {
+        setSelectedCategory('thisWeek')
+      } else if (filter === 'completed') {
+        setSelectedCategory('completed')
+      }
+    }
+  }, [searchParams])
 
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this task?')) {
