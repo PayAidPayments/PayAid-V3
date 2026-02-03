@@ -595,13 +595,36 @@ async function seedDemoData() {
       })))
     }
     
+    // Check how many deals exist in current month
+    const currentMonthDealsCount = await prisma.deal.count({
+      where: {
+        tenantId,
+        createdAt: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
+      },
+    })
+    
+    // Ensure we have at least 12 deals in current month for dashboard stats
+    const currentMonthDealsNeeded = Math.max(0, 12 - currentMonthDealsCount)
+    
     // Only create new deals if we have fewer than 60 total
     const totalDealsNeeded = 60
-    const newDealsToCreate = Math.max(0, totalDealsNeeded - existingDealsCount)
+    const newDealsToCreate = Math.max(currentMonthDealsNeeded, totalDealsNeeded - existingDealsCount)
     
     if (newDealsToCreate > 0) {
-      console.log(`[SEED] Creating ${newDealsToCreate} additional deals`)
-      const dealsToCreate = dealsData.slice(0, newDealsToCreate)
+      console.log(`[SEED] Creating ${newDealsToCreate} additional deals (${currentMonthDealsNeeded} for current month)`)
+      
+      // Prioritize current month deals first
+      const currentMonthDeals = dealsData.filter(d => d.quarter === 'current')
+      const otherDeals = dealsData.filter(d => d.quarter !== 'current')
+      
+      // Create current month deals first, then others
+      const dealsToCreate = [
+        ...currentMonthDeals.slice(0, Math.min(currentMonthDealsNeeded, currentMonthDeals.length)),
+        ...otherDeals.slice(0, Math.max(0, newDealsToCreate - currentMonthDealsNeeded)),
+      ].slice(0, newDealsToCreate)
       
       for (let i = 0; i < dealsToCreate.length; i += DEAL_BATCH_SIZE) {
       const batch = dealsToCreate.slice(i, i + DEAL_BATCH_SIZE)
@@ -660,11 +683,15 @@ async function seedDemoData() {
             actualCloseDate = deal.stage === 'won' ? new Date(fyEndYear, monthInQ4, dayInMonth, 14, 0, 0) : undefined
             dealExpectedCloseDate = dealCreatedAt
           } else {
-            // Current month deals (for stat cards)
+            // Current month deals (for stat cards) - CRITICAL: These must be in CURRENT month
             if (deal.stage === 'won') {
               // Won deals this month: for "Revenue This Month"
               const dayInMonth = Math.min((idx % daysInMonth) + 1, daysInMonth)
               dealCreatedAt = new Date(now.getFullYear(), now.getMonth(), dayInMonth, 12, 0, 0)
+              // Ensure not in future
+              if (dealCreatedAt > now) {
+                dealCreatedAt = new Date(now.getFullYear(), now.getMonth(), Math.min(dayInMonth, now.getDate()), 12, 0, 0)
+              }
               actualCloseDate = dealCreatedAt
               dealExpectedCloseDate = dealCreatedAt
             } else if (deal.name.includes('Closing This Month')) {
@@ -672,14 +699,25 @@ async function seedDemoData() {
               const dayInMonth = Math.min((idx % daysInMonth) + 1, daysInMonth)
               dealCreatedAt = new Date(now.getFullYear(), now.getMonth() - 1, 15, 12, 0, 0) // Created last month
               dealExpectedCloseDate = new Date(now.getFullYear(), now.getMonth(), Math.min(dayInMonth + 5, daysInMonth), 12, 0, 0) // Closing this month
+              // Ensure expectedCloseDate is not in future
+              if (dealExpectedCloseDate > endOfMonth) {
+                dealExpectedCloseDate = new Date(now.getFullYear(), now.getMonth(), Math.min(dayInMonth + 5, daysInMonth), 12, 0, 0)
+              }
             } else {
               // Active deals created this month: for "Deals Created This Month" stat
-              // Ensure these are created in the CURRENT month (not future/past)
+              // CRITICAL: These MUST be created in the CURRENT month (not future/past)
               const dayInMonth = Math.min((idx % daysElapsed) + 1, daysElapsed)
               dealCreatedAt = new Date(now.getFullYear(), now.getMonth(), dayInMonth, 12, 0, 0)
-              // Ensure createdAt is not in the future
+              // Ensure createdAt is not in the future and is within current month
               if (dealCreatedAt > now) {
                 dealCreatedAt = new Date(now.getFullYear(), now.getMonth(), Math.min(dayInMonth, now.getDate()), 12, 0, 0)
+              }
+              // Ensure it's within the current month bounds
+              if (dealCreatedAt < startOfMonth) {
+                dealCreatedAt = new Date(now.getFullYear(), now.getMonth(), 1, 12, 0, 0)
+              }
+              if (dealCreatedAt > endOfMonth) {
+                dealCreatedAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0)
               }
               dealExpectedCloseDate = new Date(now.getFullYear(), now.getMonth() + 1, 15, 12, 0, 0) // Next month
             }
@@ -708,6 +746,52 @@ async function seedDemoData() {
     }
     } else {
       console.log(`[SEED] Sufficient deals exist (${existingDealsCount}), not creating more`)
+    }
+    
+    // CRITICAL: Ensure we have at least 12 deals in current month for dashboard stats
+    const finalCurrentMonthCount = await prisma.deal.count({
+      where: {
+        tenantId,
+        createdAt: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
+      },
+    })
+    
+    if (finalCurrentMonthCount < 12) {
+      console.log(`[SEED] Only ${finalCurrentMonthCount} deals in current month, creating ${12 - finalCurrentMonthCount} more...`)
+      const additionalNeeded = 12 - finalCurrentMonthCount
+      const currentMonthDeals = dealsData.filter(d => d.quarter === 'current' && !d.name.includes('Closing This Month') && d.stage !== 'won')
+      
+      for (let i = 0; i < Math.min(additionalNeeded, currentMonthDeals.length); i++) {
+        const deal = currentMonthDeals[i]
+        const dayInMonth = Math.min((i % daysElapsed) + 1, daysElapsed)
+        const dealCreatedAt = new Date(now.getFullYear(), now.getMonth(), dayInMonth, 12, 0, 0)
+        
+        // Ensure not in future
+        if (dealCreatedAt > now) {
+          dealCreatedAt.setDate(Math.min(dayInMonth, now.getDate()))
+        }
+        
+        try {
+          await prisma.deal.create({
+            data: {
+              tenantId,
+              name: `${deal.name} (Additional ${i + 1})`,
+              value: deal.value,
+              stage: deal.stage as any,
+              probability: deal.probability,
+              expectedCloseDate: new Date(now.getFullYear(), now.getMonth() + 1, 15, 12, 0, 0),
+              contactId: contacts[deal.contactIdx]?.id || contacts[0]?.id,
+              createdAt: dealCreatedAt,
+            },
+          })
+        } catch (err) {
+          console.warn(`[SEED] Failed to create additional deal ${i + 1}:`, err)
+        }
+      }
+      console.log(`[SEED] Created ${Math.min(additionalNeeded, currentMonthDeals.length)} additional deals for current month`)
     }
 
     console.log(`✅ Total deals: ${deals.length} (${existingDealsCount > 0 ? `${existingDealsCount} preserved, ${deals.length - existingDealsCount} added` : 'all created'})`)
@@ -877,22 +961,62 @@ async function seedDemoData() {
     if (newTasksToCreate > 0) {
       const tasksToCreate = tasksData.slice(0, newTasksToCreate)
       const newTasks = await Promise.all(
-        tasksToCreate.map((task) =>
-          prisma.task.create({
+        tasksToCreate.map((task) => {
+          // Ensure tasks have proper due dates - some should be overdue, some today, some upcoming
+          let dueDate = new Date(now.getTime() + task.daysOffset * 24 * 60 * 60 * 1000)
+          // Ensure overdue tasks are actually in the past
+          if (task.daysOffset < 0 && dueDate > now) {
+            dueDate = new Date(now.getTime() - Math.abs(task.daysOffset) * 24 * 60 * 60 * 1000)
+          }
+          
+          return prisma.task.create({
             data: {
               tenantId,
               title: task.title,
               description: `Task: ${task.title}`,
               status: task.status as any,
               priority: task.priority as any,
-              dueDate: new Date(now.getTime() + task.daysOffset * 24 * 60 * 60 * 1000),
+              dueDate,
               contactId: contacts[task.contactIdx]?.id || contacts[0]?.id,
               assignedToId: adminUser.id,
             },
           })
-        )
+        })
       )
       tasks.push(...newTasks)
+    }
+    
+    // CRITICAL: Ensure we have at least some overdue tasks for dashboard stats
+    const overdueTasksCount = await prisma.task.count({
+      where: {
+        tenantId,
+        dueDate: { lt: now },
+        status: { in: ['pending', 'in_progress'] },
+      },
+    })
+    
+    if (overdueTasksCount === 0 && tasks.length > 0) {
+      // Create at least 2-3 overdue tasks
+      console.log(`[SEED] No overdue tasks found, creating 3 overdue tasks...`)
+      const overdueTasksToCreate = tasksData.filter(t => t.daysOffset < 0).slice(0, 3)
+      for (const task of overdueTasksToCreate) {
+        try {
+          await prisma.task.create({
+            data: {
+              tenantId,
+              title: `Overdue: ${task.title}`,
+              description: `Overdue task: ${task.title}`,
+              status: 'pending' as any,
+              priority: task.priority as any,
+              dueDate: new Date(now.getTime() - Math.abs(task.daysOffset) * 24 * 60 * 60 * 1000),
+              contactId: contacts[task.contactIdx]?.id || contacts[0]?.id,
+              assignedToId: adminUser.id,
+            },
+          })
+        } catch (err) {
+          console.warn(`[SEED] Failed to create overdue task:`, err)
+        }
+      }
     }
 
     console.log(`✅ Total tasks: ${tasks.length} (${existingTasksCount > 0 ? `${existingTasksCount} preserved, ${tasks.length - existingTasksCount} added` : 'all created'})`)
