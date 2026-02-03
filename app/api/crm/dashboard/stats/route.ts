@@ -41,48 +41,7 @@ async function getUserFilter(tenantId: string, userId?: string) {
   }
 }
 
-// Helper function to get time period bounds
-function getTimePeriodBounds(timePeriod: string = 'month') {
-  const now = new Date()
-  
-  switch (timePeriod) {
-    case 'month':
-      return {
-        start: startOfMonth(now),
-        end: endOfMonth(now),
-        label: 'This Month'
-      }
-    case 'quarter':
-      return {
-        start: startOfQuarter(now),
-        end: endOfQuarter(now),
-        label: 'This Quarter'
-      }
-    case 'financial-year':
-      // Financial year in India runs from April 1 to March 31
-      const currentYear = now.getFullYear()
-      const currentMonth = now.getMonth() // 0-indexed (0=Jan, 3=Apr, 11=Dec)
-      const fyStartYear = currentMonth >= 3 ? currentYear : currentYear - 1
-      const fyEndYear = fyStartYear + 1
-      return {
-        start: new Date(fyStartYear, 3, 1), // April 1
-        end: new Date(fyEndYear, 2, 31, 23, 59, 59, 999), // March 31
-        label: 'This Financial Year'
-      }
-    case 'year':
-      return {
-        start: startOfYear(now),
-        end: endOfYear(now),
-        label: 'This Year'
-      }
-    default:
-      return {
-        start: startOfMonth(now),
-        end: endOfMonth(now),
-        label: 'This Month'
-      }
-  }
-}
+// Time period bounds now imported from shared utility
 
 // Rate limiting: Track active requests per tenant
 // For minimal data/users, allow 3 concurrent requests (dashboard may make multiple calls)
@@ -686,12 +645,12 @@ export async function GET(request: NextRequest) {
                         (Array.isArray(pipelineByStage) && pipelineByStage.length > 0) ||
                         (Array.isArray(quarterlyPerformance) && quarterlyPerformance.some(q => q.leadsCreated > 0 || q.dealsCreated > 0))
     
-    // ALWAYS show sample data for stat cards when values are zero to improve UX
-    // This ensures users always see meaningful data instead of zeros
+    // CRITICAL: NO HARDCODED VALUES - Only return real database data
+    // If there's no data, return 0. The UI should handle empty states gracefully.
     const stats = {
-      dealsCreatedThisMonth: (dealsCreatedInPeriod > 0) ? dealsCreatedInPeriod : 12,
-      revenueThisMonth: (revenueInPeriod > 0) ? revenueInPeriod : 450000,
-      dealsClosingThisMonth: (dealsClosingInPeriod > 0) ? dealsClosingInPeriod : 8,
+      dealsCreatedThisMonth: dealsCreatedInPeriod,
+      revenueThisMonth: revenueInPeriod,
+      dealsClosingThisMonth: dealsClosingInPeriod,
       overdueTasks: overdueTasks || 0,
       totalTasks: totalTasks || 0,
       completedTasks: completedTasks || 0,
@@ -700,90 +659,45 @@ export async function GET(request: NextRequest) {
       convertedLeads: convertedLeads || 0,
       conversionRate: totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0,
       quarterlyPerformance: (() => {
-        // Ensure array and normalize all values
-        const safe = Array.isArray(quarterlyPerformance) && quarterlyPerformance.length > 0 
-          ? quarterlyPerformance.map(q => ({
-              quarter: String(q?.quarter || ''),
-              leadsCreated: Number(q?.leadsCreated || 0),
-              dealsCreated: Number(q?.dealsCreated || 0),
-              dealsWon: Number(q?.dealsWon || 0),
-              revenue: Number(q?.revenue || 0),
-            }))
-          : [
-              { quarter: 'Q1', leadsCreated: 52, dealsCreated: 35, dealsWon: 15, revenue: 520000 },
-              { quarter: 'Q2', leadsCreated: 48, dealsCreated: 32, dealsWon: 14, revenue: 480000 },
-              { quarter: 'Q3', leadsCreated: 60, dealsCreated: 40, dealsWon: 18, revenue: 600000 },
-              { quarter: 'Q4', leadsCreated: 55, dealsCreated: 38, dealsWon: 16, revenue: 550000 },
-            ]
-        return Array.isArray(safe) ? safe : []
+        // CRITICAL: NO HARDCODED VALUES - Only return real database data
+        if (Array.isArray(quarterlyPerformance) && quarterlyPerformance.length > 0) {
+          return quarterlyPerformance.map(q => ({
+            quarter: String(q?.quarter || ''),
+            leadsCreated: Number(q?.leadsCreated || 0),
+            dealsCreated: Number(q?.dealsCreated || 0),
+            dealsWon: Number(q?.dealsWon || 0),
+            revenue: Number(q?.revenue || 0),
+          }))
+        }
+        return []
       })(),
       pipelineByStage: (() => {
-        // Ensure array and normalize all values (including value field)
-        const safe = Array.isArray(pipelineByStage) && pipelineByStage.length > 0 
-          ? pipelineByStage.map(item => ({
-              stage: String(item?.stage || 'Unknown'),
-              count: Number(item?.count || 0),
-              value: Number(item?.value || 0),
-            }))
-          : [
-              { stage: 'Lead', count: 25, value: 250000 },
-              { stage: 'Qualified', count: 18, value: 450000 },
-              { stage: 'Proposal', count: 12, value: 600000 },
-              { stage: 'Negotiation', count: 8, value: 800000 },
-              { stage: 'Won', count: 15, value: 1500000 },
-            ]
-        return Array.isArray(safe) ? safe : []
+        // CRITICAL: NO HARDCODED VALUES - Only return real database data
+        if (Array.isArray(pipelineByStage) && pipelineByStage.length > 0) {
+          return pipelineByStage.map(item => ({
+            stage: String(item?.stage || 'Unknown'),
+            count: Number(item?.count || 0),
+            value: Number(item?.value || 0),
+          }))
+        }
+        return []
       })(),
       monthlyLeadCreation: (() => {
-        // Ensure array and normalize all values
-        const safe = Array.isArray(monthlyLeadCreation) && monthlyLeadCreation.length >= 12
-          ? monthlyLeadCreation.map(item => ({
-              month: String(item?.month || ''),
-              count: Number(item?.count || 0),
-            }))
-          : (() => {
-              // Generate 12 months including Jan and Feb 2026
-              const months = []
-              const startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1)
-              for (let i = 0; i < 12; i++) {
-                const date = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1)
-                months.push({
-                  month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-                  count: 15 + Math.floor(Math.random() * 20), // Sample data: 15-35 leads per month
-                })
-              }
-              return months
-            })()
-        return Array.isArray(safe) ? safe : []
+        // CRITICAL: NO HARDCODED VALUES - Only return real database data
+        if (Array.isArray(monthlyLeadCreation) && monthlyLeadCreation.length > 0) {
+          return monthlyLeadCreation.map(item => ({
+            month: String(item?.month || ''),
+            count: Number(item?.count || 0),
+          }))
+        }
+        return []
       })(),
       topLeadSources: (() => {
-        // Ensure array and normalize all values - add extra defensive checks
+        // CRITICAL: NO HARDCODED VALUES - Only return real database data
         try {
-          // First, ensure topLeadSources is actually an array
-          if (!topLeadSources) {
-            return [
-              { name: 'Website', leadsCount: 45, conversionsCount: 12, totalValue: 450000, conversionRate: 26.7 },
-              { name: 'Referral', leadsCount: 32, conversionsCount: 10, totalValue: 320000, conversionRate: 31.3 },
-              { name: 'Social Media', leadsCount: 28, conversionsCount: 8, totalValue: 280000, conversionRate: 28.6 },
-              { name: 'Email Campaign', leadsCount: 22, conversionsCount: 6, totalValue: 220000, conversionRate: 27.3 },
-            ]
-          }
-          
-          // Double-check it's an array
-          if (!Array.isArray(topLeadSources)) {
-            console.warn('[CRM_STATS] topLeadSources is not an array:', typeof topLeadSources, topLeadSources)
-            return [
-              { name: 'Website', leadsCount: 45, conversionsCount: 12, totalValue: 450000, conversionRate: 26.7 },
-              { name: 'Referral', leadsCount: 32, conversionsCount: 10, totalValue: 320000, conversionRate: 31.3 },
-              { name: 'Social Media', leadsCount: 28, conversionsCount: 8, totalValue: 280000, conversionRate: 28.6 },
-              { name: 'Email Campaign', leadsCount: 22, conversionsCount: 6, totalValue: 220000, conversionRate: 27.3 },
-            ]
-          }
-          
-          // Now safely filter and map
-          if (topLeadSources.length > 0) {
+          if (Array.isArray(topLeadSources) && topLeadSources.length > 0) {
             const filtered = topLeadSources.filter((source: any) => source && (source.leadsCount || 0) > 0)
-            if (Array.isArray(filtered) && filtered.length > 0) {
+            if (filtered.length > 0) {
               return filtered.map((source: any) => ({
                 name: String(source?.name || 'Unknown'),
                 leadsCount: Number(source?.leadsCount || 0),
@@ -793,22 +707,10 @@ export async function GET(request: NextRequest) {
               }))
             }
           }
-          
-          // Fallback to sample data
-          return [
-            { name: 'Website', leadsCount: 45, conversionsCount: 12, totalValue: 450000, conversionRate: 26.7 },
-            { name: 'Referral', leadsCount: 32, conversionsCount: 10, totalValue: 320000, conversionRate: 31.3 },
-            { name: 'Social Media', leadsCount: 28, conversionsCount: 8, totalValue: 280000, conversionRate: 28.6 },
-            { name: 'Email Campaign', leadsCount: 22, conversionsCount: 6, totalValue: 220000, conversionRate: 27.3 },
-          ]
+          return []
         } catch (err) {
           console.error('[CRM_STATS] Error processing topLeadSources:', err)
-          return [
-            { name: 'Website', leadsCount: 45, conversionsCount: 12, totalValue: 450000, conversionRate: 26.7 },
-            { name: 'Referral', leadsCount: 32, conversionsCount: 10, totalValue: 320000, conversionRate: 31.3 },
-            { name: 'Social Media', leadsCount: 28, conversionsCount: 8, totalValue: 280000, conversionRate: 28.6 },
-            { name: 'Email Campaign', leadsCount: 22, conversionsCount: 6, totalValue: 220000, conversionRate: 27.3 },
-          ]
+          return []
         }
       })(),
       periodLabel: periodBounds.label,
