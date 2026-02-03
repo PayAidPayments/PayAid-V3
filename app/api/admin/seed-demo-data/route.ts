@@ -251,24 +251,6 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Seed data for a specific tenant ID
- */
-async function seedDemoDataForTenant(tenantId: string) {
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: tenantId },
-  })
-  
-  if (!tenant) {
-    throw new Error(`Tenant not found: ${tenantId}`)
-  }
-  
-  console.log(`[SEED_DEMO_DATA] Seeding for specific tenant: ${tenant.name} (${tenantId})`)
-  
-  // Use the existing seed logic but with the provided tenantId
-  return seedDemoDataInternal(tenantId, tenant)
-}
-
-/**
  * Seed data for a specific tenant ID (without recreating tenant)
  */
 async function seedDemoDataForTenant(tenantId: string) {
