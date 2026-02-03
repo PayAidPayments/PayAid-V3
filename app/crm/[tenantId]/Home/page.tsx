@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { 
   TrendingUp, 
   Calendar, 
@@ -744,42 +745,88 @@ export default function CRMDashboardPage() {
     return <DashboardLoading message="Loading CRM dashboard..." />
   }
 
-  // Ensure stats is never null - use default values if missing
-  const safeStats: DashboardStats = stats || {
-    dealsCreatedThisMonth: 0,
-    revenueThisMonth: 0,
-    dealsClosingThisMonth: 0,
-    overdueTasks: 0,
-    quarterlyPerformance: [],
-    pipelineByStage: [],
-    monthlyLeadCreation: [],
-    topLeadSources: [],
+  // CRITICAL: If we have an error and no stats, show error but don't crash
+  if (error && !stats) {
+    return (
+      <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-6">
+        <Card>
+          <CardContent className="text-center py-12">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Error Loading Dashboard</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>Reload Page</Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
+  // Ensure stats is never null - use default values if missing
+  // CRITICAL: Always ensure all array properties are arrays, never null/undefined
+  const safeStats: DashboardStats = (() => {
+    if (!stats) {
+      return {
+        dealsCreatedThisMonth: 0,
+        revenueThisMonth: 0,
+        dealsClosingThisMonth: 0,
+        overdueTasks: 0,
+        quarterlyPerformance: [],
+        pipelineByStage: [],
+        monthlyLeadCreation: [],
+        topLeadSources: [],
+      }
+    }
+    
+    // Normalize all array properties to ensure they're always arrays
+    return {
+      dealsCreatedThisMonth: Number(stats.dealsCreatedThisMonth || 0),
+      revenueThisMonth: Number(stats.revenueThisMonth || 0),
+      dealsClosingThisMonth: Number(stats.dealsClosingThisMonth || 0),
+      overdueTasks: Number(stats.overdueTasks || 0),
+      quarterlyPerformance: Array.isArray(stats.quarterlyPerformance) ? stats.quarterlyPerformance : [],
+      pipelineByStage: Array.isArray(stats.pipelineByStage) ? stats.pipelineByStage : [],
+      monthlyLeadCreation: Array.isArray(stats.monthlyLeadCreation) ? stats.monthlyLeadCreation : [],
+      topLeadSources: Array.isArray(stats.topLeadSources) ? stats.topLeadSources : [],
+    }
+  })()
+
   // Prepare chart data - ensure arrays before mapping with extra safety
+  // CRITICAL: Always return an array, never null/undefined
   const pipelineChartData = (() => {
     try {
-      const data = Array.isArray(safeStats.pipelineByStage) ? safeStats.pipelineByStage : []
-      return Array.isArray(data) ? data.map((item, idx) => ({
-        name: item?.stage ? item.stage.charAt(0).toUpperCase() + item.stage.slice(1) : `Stage ${idx + 1}`,
-        value: item?.count || 0,
+      if (!safeStats || !safeStats.pipelineByStage) return []
+      const data = safeStats.pipelineByStage
+      if (!Array.isArray(data)) {
+        console.warn('[CRM_DASHBOARD] pipelineByStage is not an array:', typeof data, data)
+        return []
+      }
+      const result = data.map((item, idx) => ({
+        name: item?.stage ? String(item.stage).charAt(0).toUpperCase() + String(item.stage).slice(1) : `Stage ${idx + 1}`,
+        value: Number(item?.count || 0),
         fill: CHART_COLORS[idx % CHART_COLORS.length]
-      })) : []
+      }))
+      return Array.isArray(result) ? result : []
     } catch (err) {
-      console.error('Error preparing pipelineChartData:', err)
+      console.error('[CRM_DASHBOARD] Error preparing pipelineChartData:', err)
       return []
     }
   })()
 
   const monthlyLeadData = (() => {
     try {
-      const data = Array.isArray(safeStats.monthlyLeadCreation) ? safeStats.monthlyLeadCreation : []
-      return Array.isArray(data) ? data.map(item => ({
-        month: item?.month || '',
-        leads: item?.count || 0
-      })) : []
+      if (!safeStats || !safeStats.monthlyLeadCreation) return []
+      const data = safeStats.monthlyLeadCreation
+      if (!Array.isArray(data)) {
+        console.warn('[CRM_DASHBOARD] monthlyLeadCreation is not an array:', typeof data, data)
+        return []
+      }
+      const result = data.map(item => ({
+        month: String(item?.month || ''),
+        leads: Number(item?.count || 0)
+      }))
+      return Array.isArray(result) ? result : []
     } catch (err) {
-      console.error('Error preparing monthlyLeadData:', err)
+      console.error('[CRM_DASHBOARD] Error preparing monthlyLeadData:', err)
       return []
     }
   })()
@@ -787,14 +834,20 @@ export default function CRMDashboardPage() {
   // Map quarterly performance data for the chart - use actual data from API
   const quarterlyRevenueData = (() => {
     try {
-      const data = Array.isArray(safeStats.quarterlyPerformance) ? safeStats.quarterlyPerformance : []
-      return Array.isArray(data) ? data.map(q => ({
-        quarter: q?.quarter || '',
-        revenue: (q?.revenue ?? 0) || 0,
-        deals: (q?.dealsWon ?? 0) || 0
-      })) : []
+      if (!safeStats || !safeStats.quarterlyPerformance) return []
+      const data = safeStats.quarterlyPerformance
+      if (!Array.isArray(data)) {
+        console.warn('[CRM_DASHBOARD] quarterlyPerformance is not an array:', typeof data, data)
+        return []
+      }
+      const result = data.map(q => ({
+        quarter: String(q?.quarter || ''),
+        revenue: Number(q?.revenue ?? 0) || 0,
+        deals: Number(q?.dealsWon ?? 0) || 0
+      }))
+      return Array.isArray(result) ? result : []
     } catch (err) {
-      console.error('Error preparing quarterlyRevenueData:', err)
+      console.error('[CRM_DASHBOARD] Error preparing quarterlyRevenueData:', err)
       return []
     }
   })()
@@ -1454,31 +1507,32 @@ export default function CRMDashboardPage() {
         </div>
 
         {/* AI-Powered Features Row - Lazy loaded for better performance */}
-        {stats && (
+        {stats && safeStats && (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 xl:mr-80 mt-6">
               {/* Smart Insights */}
-              <SmartInsights tenantId={tenantId} stats={stats} />
+              <SmartInsights tenantId={tenantId} stats={safeStats} />
               
               {/* Predictive Analytics */}
-              <PredictiveAnalytics tenantId={tenantId} stats={stats} />
+              <PredictiveAnalytics tenantId={tenantId} stats={safeStats} />
               
               {/* Health Monitoring */}
-              <HealthMonitoring tenantId={tenantId} stats={stats} />
+              <HealthMonitoring tenantId={tenantId} stats={safeStats} />
             </div>
 
             {/* AI Summary and Alerts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 xl:mr-80 mt-6">
               {/* Auto-Generated Summary */}
-              <AutoGeneratedSummary tenantId={tenantId} stats={stats} timePeriod={timePeriod} />
+              <AutoGeneratedSummary tenantId={tenantId} stats={safeStats} timePeriod={timePeriod} />
               
               {/* Intelligent Alerts */}
-              <IntelligentAlerts tenantId={tenantId} stats={stats} />
+              <IntelligentAlerts tenantId={tenantId} stats={safeStats} />
             </div>
           </>
         )}
 
-        {/* Charts Row - Modern Visualizations */}
+        {/* Charts Row - Modern Visualizations - Only render if we have valid stats */}
+        {safeStats && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 xl:mr-80 mt-6">
           {/* Pipeline by Stage - Pie Chart */}
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 bg-gradient-to-br from-white to-purple-50/30">
@@ -1487,12 +1541,12 @@ export default function CRMDashboardPage() {
                 <CardDescription>Distribution of deals across pipeline stages</CardDescription>
               </CardHeader>
             <CardContent>
-              {pipelineChartData.length > 0 ? (
+              {Array.isArray(pipelineChartData) && pipelineChartData.length > 0 ? (
                 <div className="h-64 w-full" style={{ minWidth: 0, minHeight: 256 }}>
                   <ResponsiveContainer width="100%" height={256} minWidth={0} minHeight={256}>
                     <PieChart>
                       <Pie
-                        data={pipelineChartData}
+                        data={Array.isArray(pipelineChartData) ? pipelineChartData : []}
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
@@ -1552,10 +1606,10 @@ export default function CRMDashboardPage() {
               <CardDescription>Lead generation trend over time</CardDescription>
             </CardHeader>
             <CardContent>
-              {monthlyLeadData.length > 0 ? (
+              {Array.isArray(monthlyLeadData) && monthlyLeadData.length > 0 ? (
                 <div className="h-64 w-full" style={{ minWidth: 0, minHeight: 256 }}>
                   <ResponsiveContainer width="100%" height={256} minWidth={0} minHeight={256}>
-                    <AreaChart data={monthlyLeadData}>
+                    <AreaChart data={Array.isArray(monthlyLeadData) ? monthlyLeadData : []}>
                       <defs>
                         <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor={PURPLE_PRIMARY} stopOpacity={0.8}/>
@@ -1608,10 +1662,10 @@ export default function CRMDashboardPage() {
               <CardDescription className="pl-5">Revenue and deals won by quarter (Q1-Q4)</CardDescription>
             </CardHeader>
             <CardContent className="pb-0 pl-5 pt-8">
-              {quarterlyRevenueData.length > 0 ? (
+              {Array.isArray(quarterlyRevenueData) && quarterlyRevenueData.length > 0 ? (
                 <div className="h-80 w-full" style={{ minWidth: 0, minHeight: 320 }}>
                   <ResponsiveContainer width="100%" height={320} minWidth={0} minHeight={320}>
-                    <BarChart data={quarterlyRevenueData}>
+                    <BarChart data={Array.isArray(quarterlyRevenueData) ? quarterlyRevenueData : []}>
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#f0f0f0'} />
                       <XAxis 
                         dataKey="quarter" 
@@ -1664,11 +1718,11 @@ export default function CRMDashboardPage() {
               <CardDescription>Best performing lead sources</CardDescription>
             </CardHeader>
             <CardContent>
-              {topLeadSourcesData.length > 0 ? (
+              {Array.isArray(topLeadSourcesData) && topLeadSourcesData.length > 0 ? (
                 <div className="h-[500px] w-full" style={{ minWidth: 0, minHeight: 500 }}>
                   <ResponsiveContainer width="100%" height={500} minWidth={0} minHeight={500}>
                     <BarChart 
-                      data={topLeadSourcesData} 
+                      data={Array.isArray(topLeadSourcesData) ? topLeadSourcesData : []} 
                       layout="vertical"
                       margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
                     >
@@ -1761,8 +1815,10 @@ export default function CRMDashboardPage() {
             </CardContent>
           </Card>
         </div>
+        )}
 
-        {/* Quarterly Performance Table - Enhanced */}
+        {/* Quarterly Performance Table - Enhanced - Only render if we have valid stats */}
+        {safeStats && (
         <Card className="border-0 shadow-lg">
           <CardHeader>
             <CardTitle className="text-lg font-semibold">Detailed Quarterly Metrics</CardTitle>
@@ -1809,6 +1865,7 @@ export default function CRMDashboardPage() {
             </div>
           </CardContent>
         </Card>
+        )}
           </>
         )}
       </div>
