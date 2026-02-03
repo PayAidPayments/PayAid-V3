@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useDeals, useDeleteDeal } from '@/lib/hooks/use-api'
+import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -613,15 +614,49 @@ export default function CRMDealsPage() {
               {deals.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-gray-600 dark:text-gray-400 mb-4">No deals found</p>
-                  <Link href={`/crm/${tenantId}/Deals/new`}>
-                    <Button>Create Your First Deal</Button>
-                  </Link>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {isLoading ? 'Loading deals...' : 'Deals will appear here once created. The seed script should create demo deals automatically.'}
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    <Link href={`/crm/${tenantId}/Deals/new`}>
+                      <Button>Create Your First Deal</Button>
+                    </Link>
+                    <Button 
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          const token = useAuthStore.getState().token
+                          if (!token) {
+                            alert('Please log in first')
+                            return
+                          }
+                          const response = await fetch('/api/admin/seed-demo-data', {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` },
+                          })
+                          if (response.ok) {
+                            alert('Demo data seeded successfully! Please refresh the page.')
+                            window.location.reload()
+                          } else {
+                            alert('Failed to seed data. Please check console.')
+                          }
+                        } catch (err) {
+                          console.error('Seed error:', err)
+                          alert('Error seeding data. Please check console.')
+                        }
+                      }}
+                    >
+                      Seed Demo Data
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {deals.map((deal: any) => (
+                  {Array.isArray(deals) ? deals.map((deal: any) => (
                     <DealRow key={deal.id} deal={deal} tenantId={tenantId} onDelete={handleDelete} />
-                  ))}
+                  )) : (
+                    <p className="text-gray-600 dark:text-gray-400">Deals data is not in the expected format</p>
+                  )}
                 </div>
               )}
             </CardContent>
