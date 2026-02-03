@@ -337,22 +337,33 @@ export async function GET(request: NextRequest) {
     
     await new Promise(resolve => setTimeout(resolve, 150))
     
-    // Query 5: Top lead sources
-    const topLeadSources = await prismaWithRetry(() =>
-      prisma.leadSource.findMany({
-        where: { tenantId },
-        orderBy: { leadsCount: 'desc' },
-        take: 10,
-        select: {
-          id: true,
-          name: true,
-          leadsCount: true,
-          conversionsCount: true,
-          totalValue: true,
-          conversionRate: true,
-        },
-      })
-    )
+    // Query 5: Top lead sources - ensure we always return an array
+    let topLeadSources: any[] = []
+    try {
+      topLeadSources = await prismaWithRetry(() =>
+        prisma.leadSource.findMany({
+          where: { tenantId },
+          orderBy: { leadsCount: 'desc' },
+          take: 10,
+          select: {
+            id: true,
+            name: true,
+            leadsCount: true,
+            conversionsCount: true,
+            totalValue: true,
+            conversionRate: true,
+          },
+        })
+      ) || []
+    } catch (err) {
+      console.error('[CRM_STATS] Error fetching top lead sources:', err)
+      topLeadSources = []
+    }
+    
+    // Ensure it's always an array
+    if (!Array.isArray(topLeadSources)) {
+      topLeadSources = []
+    }
     
     await new Promise(resolve => setTimeout(resolve, 150))
     

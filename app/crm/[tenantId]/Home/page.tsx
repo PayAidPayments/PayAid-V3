@@ -780,7 +780,20 @@ export default function CRMDashboardPage() {
 
   const topLeadSourcesData = (() => {
     try {
-      return Array.isArray(safeStats.topLeadSources) ? safeStats.topLeadSources : []
+      const data = safeStats.topLeadSources
+      if (!data) return []
+      if (!Array.isArray(data)) {
+        console.warn('[CRM_DASHBOARD] topLeadSources is not an array:', typeof data, data)
+        return []
+      }
+      // Ensure each item has required properties
+      return data.map((item: any) => ({
+        name: item?.name || 'Unknown',
+        leadsCount: Number(item?.leadsCount || 0),
+        conversionsCount: Number(item?.conversionsCount || 0),
+        totalValue: Number(item?.totalValue || 0),
+        conversionRate: Number(item?.conversionRate || 0),
+      })).filter(item => item.name !== 'Unknown' || item.leadsCount > 0)
     } catch (err) {
       console.error('Error preparing topLeadSourcesData:', err)
       return []
@@ -1611,7 +1624,7 @@ export default function CRMDashboardPage() {
                             return (
                               <div className="bg-white dark:bg-gray-800 border border-purple-600 rounded-lg p-3 shadow-lg">
                                 <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">{label}</p>
-                                {sortedPayload.map((entry: any, index: number) => {
+                                {Array.isArray(sortedPayload) && sortedPayload.length > 0 ? sortedPayload.map((entry: any, index: number) => {
                                   let label = entry.name
                                   let value = entry.value
                                   
@@ -1634,7 +1647,7 @@ export default function CRMDashboardPage() {
                                       <span className="font-medium">{label}:</span> {value}
                                     </p>
                                   )
-                                })}
+                                }) : null}
                               </div>
                             )
                           }
