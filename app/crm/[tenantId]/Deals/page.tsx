@@ -109,17 +109,19 @@ export default function CRMDealsPage() {
           if (!dealsData.deals || dealsData.deals.length === 0) {
             console.log('[DEALS_PAGE] No deals found, seeding demo data in background...')
             try {
-              // Don't await - let it run in background
-              fetch('/api/admin/seed-demo-data', {
+              // Use background mode to avoid timeout - don't await
+              fetch('/api/admin/seed-demo-data?background=true', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
               }).then(seedResponse => {
                 if (seedResponse.ok) {
-                  console.log('[DEALS_PAGE] Demo data seeded in background')
-                  // Reload page after seeding
+                  console.log('[DEALS_PAGE] Demo data seeding started in background')
+                  // Reload page after longer delay (background seeding takes 30-60 seconds)
                   setTimeout(() => {
                     window.location.reload()
-                  }, 2000)
+                  }, 60000) // Wait 60 seconds for background seeding
+                } else {
+                  console.error('[DEALS_PAGE] Failed to start seed:', seedResponse.status)
                 }
               }).catch(seedError => {
                 console.error('[DEALS_PAGE] Failed to seed demo data:', seedError)
