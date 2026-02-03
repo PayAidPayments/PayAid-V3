@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useDeals, useDeleteDeal } from '@/lib/hooks/use-api'
@@ -79,12 +79,65 @@ export default function CRMDealsPage() {
   const params = useParams()
   const searchParams = useSearchParams()
   const tenantId = params?.tenantId as string
+  const { token } = useAuthStore()
   const [page, setPage] = useState(1)
   const [stageFilter, setStageFilter] = useState<string>('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
   const { data, isLoading } = useDeals({ page, limit: 1000, stage: stageFilter || undefined })
   const deleteDeal = useDeleteDeal()
+  const hasCheckedDataRef = useRef(false)
+
+  // Check if demo data exists and seed if needed (only once) - Run in background
+  useEffect(() => {
+    if (!tenantId || !token || hasCheckedDataRef.current) return
+    
+    hasCheckedDataRef.current = true // Mark as checked to prevent multiple checks
+    
+    // Run in background after initial render - don't block UI
+    const checkAndSeedData = async () => {
+      try {
+        // Check if deals exist
+        const dealsResponse = await fetch(`/api/deals?limit=1`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+        
+        if (dealsResponse.ok) {
+          const dealsData = await dealsResponse.json()
+          
+          // If no deals, seed it automatically in background
+          if (!dealsData.deals || dealsData.deals.length === 0) {
+            console.log('[DEALS_PAGE] No deals found, seeding demo data in background...')
+            try {
+              // Don't await - let it run in background
+              fetch('/api/admin/seed-demo-data', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+              }).then(seedResponse => {
+                if (seedResponse.ok) {
+                  console.log('[DEALS_PAGE] Demo data seeded in background')
+                  // Reload page after seeding
+                  setTimeout(() => {
+                    window.location.reload()
+                  }, 2000)
+                }
+              }).catch(seedError => {
+                console.error('[DEALS_PAGE] Failed to seed demo data:', seedError)
+              })
+            } catch (seedError) {
+              console.error('[DEALS_PAGE] Failed to seed demo data:', seedError)
+            }
+          }
+        }
+      } catch (checkError) {
+        console.error('[DEALS_PAGE] Failed to check deals data:', checkError)
+      }
+    }
+    
+    // Run after initial render - don't block
+    const timeoutId = setTimeout(checkAndSeedData, 1000)
+    return () => clearTimeout(timeoutId)
+  }, [tenantId, token])
 
   // Handle URL query parameters
   useEffect(() => {
