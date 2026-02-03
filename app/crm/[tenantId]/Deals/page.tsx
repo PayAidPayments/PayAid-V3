@@ -1,5 +1,9 @@
 'use client'
 
+// Force client-side only rendering
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
