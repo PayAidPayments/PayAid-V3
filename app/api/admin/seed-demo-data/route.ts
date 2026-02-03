@@ -157,11 +157,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if background mode is requested
+    const searchParams = request.nextUrl.searchParams
+    const background = searchParams.get('background') === 'true'
+
+    if (background) {
+      // Start seeding in background and return immediately
+      seedDemoData().catch((err) => {
+        console.error('[SEED_DEMO_DATA] Background seed error:', err)
+      })
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Seed operation started in background. This may take 30-60 seconds. Please refresh the page in a minute.',
+        background: true,
+      })
+    }
+
     // Add timeout wrapper for Vercel Hobby plan (10s limit)
-    const SEED_TIMEOUT = 9000 // 9 seconds (leave 1s buffer for Vercel)
+    const SEED_TIMEOUT = 8500 // 8.5 seconds (leave 1.5s buffer for Vercel)
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => {
-        reject(new Error('Seed operation timed out. This may take longer than 10 seconds on Vercel Hobby plan. Please try again or contact support.'))
+        reject(new Error('Seed operation timed out. The seed process takes longer than 10 seconds on Vercel Hobby plan. Please use ?background=true parameter or upgrade to Pro plan.'))
       }, SEED_TIMEOUT)
     })
 
@@ -186,7 +203,7 @@ export async function POST(request: NextRequest) {
     console.error(`[SEED_DEMO_DATA] Failed after ${duration}ms`)
     
     // Check if it's a timeout error
-    const isTimeout = error?.message?.includes('timeout') || duration >= 9000
+    const isTimeout = error?.message?.includes('timeout') || duration >= 8500
     
     return NextResponse.json(
       {
@@ -195,8 +212,9 @@ export async function POST(request: NextRequest) {
         isTimeout,
         duration: `${duration}ms`,
         suggestion: isTimeout 
-          ? 'The seed operation timed out. On Vercel Hobby plan, operations are limited to 10 seconds. Consider upgrading to Pro plan or contact support.'
+          ? 'The seed operation timed out. Try using ?background=true parameter or upgrade to Vercel Pro plan for longer execution times.'
           : 'Please check the server logs for more details.',
+        backgroundOption: 'You can use POST /api/admin/seed-demo-data?background=true to run in background',
         details: process.env.NODE_ENV === 'development' ? error?.stack : undefined,
       },
       { status: 500 }
