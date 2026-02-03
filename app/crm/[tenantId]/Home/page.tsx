@@ -1521,7 +1521,7 @@ export default function CRMDashboardPage() {
                         }}
                         labelLine={false}
                       >
-                        {pipelineChartData.map((entry, index) => (
+                        {Array.isArray(pipelineChartData) && pipelineChartData.length > 0 ? pipelineChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))}
                       </Pie>

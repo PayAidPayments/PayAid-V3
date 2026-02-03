@@ -621,14 +621,48 @@ export default function CRMDealsPage() {
             ) : (
               <Card>
                 <CardContent className="text-center py-12">
-                  <p className="text-gray-600 dark:text-gray-400 mb-2">No deals found in this category</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setSelectedCategory(null)}
-                  >
-                    Show All Deals
-                  </Button>
+                  <p className="text-gray-600 dark:text-gray-400 mb-2">
+                    No deals found in this category for {stats.periodLabel.toLowerCase()}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Total deals in database: {deals.length}. Try changing the time period filter or seed demo data.
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setSelectedCategory(null)}
+                    >
+                      Show All Deals
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          if (!token) {
+                            alert('Please log in first')
+                            return
+                          }
+                          const response = await fetch('/api/admin/seed-demo-data', {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` },
+                          })
+                          if (response.ok) {
+                            alert('Demo data seeded successfully! Please refresh the page.')
+                            window.location.reload()
+                          } else {
+                            alert('Failed to seed data. Please check console.')
+                          }
+                        } catch (err) {
+                          console.error('Seed error:', err)
+                          alert('Error seeding data. Please check console.')
+                        }
+                      }}
+                    >
+                      Seed Demo Data
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}
