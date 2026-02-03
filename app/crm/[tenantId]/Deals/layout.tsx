@@ -10,20 +10,21 @@ export default function CRMDealsLayout({
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
-  const tenantId = useTenantId()
+  try {
+    const router = useRouter()
+    const tenantId = useTenantId()
 
-  // Redirect if tenantId is not available
-  useEffect(() => {
-    if (!tenantId) {
-      router.replace('/crm')
+    // Redirect if tenantId is not available
+    useEffect(() => {
+      if (!tenantId) {
+        router.replace('/crm')
+      }
+    }, [tenantId, router])
+
+    // Don't render if tenantId is not available
+    if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
+      return null
     }
-  }, [tenantId, router])
-
-  // Don't render if tenantId is not available
-  if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
-    return null
-  }
 
   const topBarItems = [
     { name: 'Home', href: `/crm/${tenantId}/Home` },
