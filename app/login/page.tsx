@@ -39,9 +39,43 @@ export default function LoginPage() {
     }
   }, [])
 
+  // Clear all auth-related storage before login attempt
+  const clearAuthStorage = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        // Clear localStorage auth data
+        localStorage.removeItem('auth-storage')
+        localStorage.removeItem('token')
+        localStorage.removeItem('auth-token')
+        localStorage.removeItem('payaid_sso_token')
+        
+        // Clear sessionStorage
+        sessionStorage.removeItem('payaid_sso_token')
+        sessionStorage.removeItem('token')
+        sessionStorage.removeItem('auth-token')
+        
+        // Clear cookies
+        document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+        document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax'
+        document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax; Secure'
+        
+        // Clear Zustand store
+        const { logout } = useAuthStore.getState()
+        logout()
+        
+        console.log('[LOGIN] Cleared all auth storage')
+      } catch (err) {
+        console.warn('[LOGIN] Error clearing storage:', err)
+      }
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    
+    // Clear any stale auth data before attempting login
+    clearAuthStorage()
 
     try {
       // Login and get tenant data directly from response
@@ -292,6 +326,22 @@ export default function LoginPage() {
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
                 <div className="font-medium mb-1">Login Failed</div>
                 <div>{error}</div>
+                <div className="mt-3 pt-3 border-t border-red-200">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      clearAuthStorage()
+                      setError('')
+                      // Force page reload to clear all state
+                      window.location.reload()
+                    }}
+                    className="w-full text-xs"
+                  >
+                    Clear Cache & Retry
+                  </Button>
+                </div>
                 {process.env.NODE_ENV === 'development' && (
                   <div className="mt-2 text-xs text-red-500">
                     Check the browser console (F12) for more details.
