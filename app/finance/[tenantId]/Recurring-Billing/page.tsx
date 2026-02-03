@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -12,12 +11,17 @@ import {
   RefreshCw, 
   Plus,
   Calendar,
-  DollarSign,
+  IndianRupee,
   CheckCircle2,
   Clock,
-  FileText
+  FileText,
+  Repeat
 } from 'lucide-react'
 import Link from 'next/link'
+import { formatINRStandard } from '@/lib/utils/formatINR'
+import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
+import { GlassCard } from '@/components/modules/GlassCard'
+import { getModuleConfig } from '@/lib/modules/module-config'
 
 interface RecurringInvoice {
   id: string
@@ -53,6 +57,7 @@ export default function FinanceRecurringBillingPage() {
   const [loading, setLoading] = useState(true)
   const [invoices, setInvoices] = useState<RecurringInvoice[]>([])
   const [dunningAttempts, setDunningAttempts] = useState<DunningAttempt[]>([])
+  const moduleConfig = getModuleConfig('finance')
 
   useEffect(() => {
     fetchData()
@@ -120,32 +125,67 @@ export default function FinanceRecurringBillingPage() {
     return <PageLoading message="Loading recurring billing..." fullScreen={false} />
   }
 
+  const totalRecurringAmount = invoices.reduce((sum, inv) => sum + inv.total, 0)
+  const activeInvoices = invoices.filter(inv => inv.status === 'active' || inv.status === 'paid').length
+  const totalDunningAmount = dunningAttempts.reduce((sum, att) => sum + att.amount, 0)
+  const pendingAttempts = dunningAttempts.filter(att => att.status === 'pending').length
+
+  const heroMetrics = [
+    {
+      label: 'Recurring Invoices',
+      value: invoices.length.toString(),
+      icon: Repeat,
+      href: `#invoices`,
+    },
+    {
+      label: 'Total Amount',
+      value: formatINRStandard(totalRecurringAmount),
+      icon: IndianRupee,
+      href: `#invoices`,
+    },
+    {
+      label: 'Active Invoices',
+      value: activeInvoices.toString(),
+      icon: CheckCircle2,
+      href: `#invoices`,
+    },
+    {
+      label: 'Dunning Attempts',
+      value: dunningAttempts.length.toString(),
+      icon: Clock,
+      href: `#dunning`,
+    },
+  ]
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Recurring Billing</h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
-              Manage recurring invoices and payment retries
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href={`/finance/${tenantId}/Invoices/New?recurring=true`}>
-              <Button className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#3F1F62] hover:to-[#E0B200] text-white">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Recurring Invoice
-              </Button>
-            </Link>
-            <Button
-              variant="outline"
-              onClick={fetchData}
-              className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
+    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>
+      {/* Universal Module Hero */}
+      <UniversalModuleHero
+        moduleName="Recurring Billing"
+        moduleIcon={<moduleConfig.icon className="w-8 h-8" />}
+        gradientFrom={moduleConfig.gradientFrom}
+        gradientTo={moduleConfig.gradientTo}
+        metrics={heroMetrics}
+      />
+
+      {/* Content Sections - 32px gap */}
+      <div className="p-6 space-y-8 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end gap-3">
+          <Link href={`/finance/${tenantId}/Invoices/New?recurring=true`}>
+            <Button className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#3F1F62] hover:to-[#E0B200] text-white">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Recurring Invoice
             </Button>
-          </div>
+          </Link>
+          <Button
+            variant="outline"
+            onClick={fetchData}
+            className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -160,8 +200,8 @@ export default function FinanceRecurringBillingPage() {
 
           <TabsContent value="invoices" className="space-y-6">
             {invoices.length === 0 ? (
-              <Card className="text-center py-12 dark:bg-gray-800 dark:border-gray-700">
-                <CardContent>
+              <GlassCard>
+                <div className="text-center py-12">
                   <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">No Recurring Invoices</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
@@ -173,13 +213,13 @@ export default function FinanceRecurringBillingPage() {
                       Create Recurring Invoice
                     </Button>
                   </Link>
-                </CardContent>
-              </Card>
+                </div>
+              </GlassCard>
             ) : (
               <div className="space-y-4">
                 {invoices.map((invoice) => (
-                  <Card key={invoice.id} className="dark:bg-gray-800 dark:border-gray-700">
-                    <CardContent className="pt-6">
+                  <GlassCard key={invoice.id}>
+                    <div className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
@@ -210,9 +250,9 @@ export default function FinanceRecurringBillingPage() {
                               <div>Email: {invoice.customerEmail}</div>
                             )}
                             <div className="flex items-center gap-2">
-                              <DollarSign className="w-4 h-4" />
+                              <IndianRupee className="w-4 h-4" />
                               <span className="font-semibold text-gray-900 dark:text-gray-100">
-                                ₹{invoice.total.toLocaleString()}
+                                {formatINRStandard(invoice.total)}
                               </span>
                             </div>
                           </div>
@@ -238,8 +278,8 @@ export default function FinanceRecurringBillingPage() {
                           </Link>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </GlassCard>
                 ))}
               </div>
             )}
@@ -247,20 +287,20 @@ export default function FinanceRecurringBillingPage() {
 
           <TabsContent value="dunning" className="space-y-6">
             {dunningAttempts.length === 0 ? (
-              <Card className="text-center py-12 dark:bg-gray-800 dark:border-gray-700">
-                <CardContent>
+              <GlassCard>
+                <div className="text-center py-12">
                   <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">No Dunning Attempts</h3>
                   <p className="text-gray-600 dark:text-gray-400">
                     All payments are up to date
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </GlassCard>
             ) : (
               <div className="space-y-4">
                 {dunningAttempts.map((attempt) => (
-                  <Card key={attempt.id} className="dark:bg-gray-800 dark:border-gray-700">
-                    <CardContent className="pt-6">
+                  <GlassCard key={attempt.id}>
+                    <div className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
@@ -294,9 +334,9 @@ export default function FinanceRecurringBillingPage() {
                               </>
                             )}
                             <div className="flex items-center gap-2">
-                              <DollarSign className="w-4 h-4" />
+                              <IndianRupee className="w-4 h-4" />
                               <span className="font-semibold text-gray-900 dark:text-gray-100">
-                                ₹{Number(attempt.amount).toLocaleString()}
+                                {formatINRStandard(Number(attempt.amount))}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -306,8 +346,8 @@ export default function FinanceRecurringBillingPage() {
                           </div>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </GlassCard>
                 ))}
               </div>
             )}

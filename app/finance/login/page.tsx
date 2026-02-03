@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageLoading } from '@/components/ui/loading'
-import { DollarSign } from 'lucide-react'
+import { IndianRupee } from 'lucide-react'
 
 /**
  * Finance Module Login Page
@@ -66,7 +66,7 @@ export default function FinanceLoginPage() {
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
             <div className="p-3 bg-yellow-600 rounded-full">
-              <DollarSign className="w-8 h-8 text-white" />
+              <IndianRupee className="w-8 h-8 text-white" />
             </div>
           </div>
           <div className="flex items-center justify-between mb-2">

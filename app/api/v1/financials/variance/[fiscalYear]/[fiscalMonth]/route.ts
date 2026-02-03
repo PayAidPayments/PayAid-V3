@@ -11,13 +11,15 @@ import { VarianceDetectionService } from '@/lib/services/financial/variance-dete
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { fiscalYear: string; fiscalMonth: string } }
+  { params }: { params: Promise<{ fiscalYear: string; fiscalMonth: string }> | { fiscalYear: string; fiscalMonth: string } }
 ) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'finance')
 
-    const fiscalYear = parseInt(params.fiscalYear)
-    const fiscalMonth = parseInt(params.fiscalMonth)
+    // Handle both Promise and direct params (Next.js 15 vs 14)
+    const resolvedParams = params instanceof Promise ? await params : params
+    const fiscalYear = parseInt(resolvedParams.fiscalYear)
+    const fiscalMonth = parseInt(resolvedParams.fiscalMonth)
 
     if (isNaN(fiscalYear) || isNaN(fiscalMonth) || fiscalMonth < 1 || fiscalMonth > 12) {
       return NextResponse.json(

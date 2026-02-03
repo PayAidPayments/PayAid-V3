@@ -142,17 +142,31 @@ export default function ProjectsDashboardPage() {
   // Get module configuration
   const moduleConfig = getModuleConfig('projects')
 
-  // Prepare chart data
-  const projectsByStatusData = stats?.projectsByStatus.map((item, idx) => ({
-    name: item.status.replace('_', ' '),
-    value: item.count,
-    fill: CHART_COLORS[idx % CHART_COLORS.length]
-  })) || []
+  // Prepare chart data with defensive checks
+  const projectsByStatusData = (() => {
+    if (!stats?.projectsByStatus) return []
+    if (!Array.isArray(stats.projectsByStatus)) {
+      console.warn('[Projects Dashboard] projectsByStatus is not an array:', typeof stats.projectsByStatus)
+      return []
+    }
+    return stats.projectsByStatus.map((item, idx) => ({
+      name: item?.status ? item.status.replace('_', ' ') : 'Unknown',
+      value: item?.count || 0,
+      fill: CHART_COLORS[idx % CHART_COLORS.length]
+    }))
+  })()
 
-  const monthlyProjectData = stats?.monthlyProjectCreation.map(item => ({
-    month: item.month,
-    projects: item.count
-  })) || []
+  const monthlyProjectData = (() => {
+    if (!stats?.monthlyProjectCreation) return []
+    if (!Array.isArray(stats.monthlyProjectCreation)) {
+      console.warn('[Projects Dashboard] monthlyProjectCreation is not an array:', typeof stats.monthlyProjectCreation)
+      return []
+    }
+    return stats.monthlyProjectCreation.map(item => ({
+      month: item?.month || '',
+      projects: item?.count || 0
+    }))
+  })()
 
   const completionRate = stats && stats.totalTasks > 0 
     ? Math.round((stats.completedTasks / stats.totalTasks) * 100) 
@@ -230,7 +244,7 @@ export default function ProjectsDashboardPage() {
                       dataKey="value"
                       label={({ name, percent }) => `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`}
                     >
-                      {projectsByStatusData.map((entry, index) => (
+                      {Array.isArray(projectsByStatusData) && projectsByStatusData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                       ))}
                     </Pie>
@@ -300,7 +314,7 @@ export default function ProjectsDashboardPage() {
           <GlassCard delay={0.2}>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Recent Projects</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Latest projects created</p>
-            {stats?.recentProjects && stats.recentProjects.length > 0 ? (
+            {stats?.recentProjects && Array.isArray(stats.recentProjects) && stats.recentProjects.length > 0 ? (
               <div className="space-y-3">
                 {stats.recentProjects.map((project) => (
                   <div key={project.id} className="flex items-center justify-between p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg hover:bg-white/70 dark:hover:bg-gray-800/70 transition-colors">

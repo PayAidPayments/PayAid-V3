@@ -162,18 +162,32 @@ export default function FinanceDashboardPage() {
     return <PageLoading message="Loading Finance dashboard..." fullScreen={true} />
   }
 
-  // Prepare chart data
-  const invoicesByStatusData = stats?.invoicesByStatus.map((item, idx) => ({
-    name: item.status.charAt(0).toUpperCase() + item.status.slice(1),
-    value: item.count,
-    revenue: item.total,
-    fill: CHART_COLORS[idx % CHART_COLORS.length]
-  })) || []
+  // Prepare chart data with defensive checks
+  const invoicesByStatusData = (() => {
+    if (!stats?.invoicesByStatus) return []
+    if (!Array.isArray(stats.invoicesByStatus)) {
+      console.warn('[Finance Dashboard] invoicesByStatus is not an array:', typeof stats.invoicesByStatus)
+      return []
+    }
+    return stats.invoicesByStatus.map((item, idx) => ({
+      name: item?.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : 'Unknown',
+      value: item?.count || 0,
+      revenue: item?.total || 0,
+      fill: CHART_COLORS[idx % CHART_COLORS.length]
+    }))
+  })()
 
-  const monthlyRevenueData = stats?.monthlyRevenue.map(item => ({
-    month: item.month,
-    revenue: item.revenue
-  })) || []
+  const monthlyRevenueData = (() => {
+    if (!stats?.monthlyRevenue) return []
+    if (!Array.isArray(stats.monthlyRevenue)) {
+      console.warn('[Finance Dashboard] monthlyRevenue is not an array:', typeof stats.monthlyRevenue)
+      return []
+    }
+    return stats.monthlyRevenue.map(item => ({
+      month: item?.month || '',
+      revenue: item?.revenue || 0
+    }))
+  })()
 
   // Profit/Loss indicator
   const isProfit = (stats?.profit || 0) >= 0
@@ -371,7 +385,7 @@ export default function FinanceDashboardPage() {
               <CardDescription>Latest invoices created</CardDescription>
             </CardHeader>
             <CardContent>
-              {stats?.recentInvoices && stats.recentInvoices.length > 0 ? (
+              {stats?.recentInvoices && Array.isArray(stats.recentInvoices) && stats.recentInvoices.length > 0 ? (
                 <div className="space-y-3">
                   {stats.recentInvoices.map((invoice) => (
                     <div key={invoice.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">

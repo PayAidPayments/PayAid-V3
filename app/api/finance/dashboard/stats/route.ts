@@ -257,17 +257,21 @@ export async function GET(request: NextRequest) {
       purchaseOrders,
       purchaseOrdersThisMonth,
       gstReports,
-      recentInvoices,
-      recentPurchaseOrders,
-      monthlyRevenue: monthlyRevenue.map((r: any) => ({
-        month: r.month,
-        revenue: Number(r.revenue) || 0,
-      })),
-      invoicesByStatus: invoicesByStatus.map((i: any) => ({
-        status: i.status,
-        count: i._count.id || 0,
-        total: Number(i._sum.total) || 0,
-      })),
+      recentInvoices: Array.isArray(recentInvoices) ? recentInvoices : [],
+      recentPurchaseOrders: Array.isArray(recentPurchaseOrders) ? recentPurchaseOrders : [],
+      monthlyRevenue: Array.isArray(monthlyRevenue) 
+        ? monthlyRevenue.map((r: any) => ({
+            month: r?.month || '',
+            revenue: Number(r?.revenue) || 0,
+          }))
+        : [],
+      invoicesByStatus: Array.isArray(invoicesByStatus)
+        ? invoicesByStatus.map((i: any) => ({
+            status: i?.status || '',
+            count: i?._count?.id || 0,
+            total: Number(i?._sum?.total) || 0,
+          }))
+        : [],
     })
   } catch (error: any) {
     console.error('Finance dashboard stats error:', error)
@@ -276,8 +280,35 @@ export async function GET(request: NextRequest) {
       return handleLicenseError(error)
     }
 
+    // Return fallback stats with arrays to prevent frontend crashes
     return NextResponse.json(
-      { error: 'Failed to fetch finance dashboard stats', message: error?.message },
+      { 
+        error: 'Failed to fetch finance dashboard stats', 
+        message: error?.message,
+        // Always return arrays to prevent "t.map is not a function" errors
+        totalInvoices: 0,
+        invoicesThisMonth: 0,
+        invoicesLastMonth: 0,
+        invoiceGrowth: 0,
+        paidInvoices: 0,
+        overdueInvoices: 0,
+        pendingInvoices: 0,
+        totalRevenue: 0,
+        revenueThisMonth: 0,
+        revenueLastMonth: 0,
+        revenueGrowth: 0,
+        totalExpenses: 0,
+        expensesThisMonth: 0,
+        profit: 0,
+        profitMargin: 0,
+        purchaseOrders: 0,
+        purchaseOrdersThisMonth: 0,
+        gstReports: 0,
+        recentInvoices: [],
+        recentPurchaseOrders: [],
+        monthlyRevenue: [],
+        invoicesByStatus: [],
+      },
       { status: 500 }
     )
   }

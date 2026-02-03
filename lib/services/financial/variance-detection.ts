@@ -92,10 +92,13 @@ export class VarianceDetectionService {
 
       // Calculate variance
       const varianceAmount = actualAmount - budgetedAmount
-      const variancePct =
+      let variancePct =
         budgetedAmount !== 0
           ? (varianceAmount / budgetedAmount) * 100
           : 0
+      
+      // Cap variance percentage to fit Decimal(5, 2) constraint (-999.99 to 999.99)
+      variancePct = Math.max(-999.99, Math.min(999.99, variancePct))
 
       // Determine if variance is favorable
       // For revenue: actual > budget (positive variance) is favorable
@@ -171,6 +174,29 @@ export class VarianceDetectionService {
     fiscalYear: number,
     fiscalMonth: number
   ): Promise<VarianceSummary> {
+    // Validate inputs
+    if (!fiscalYear || isNaN(fiscalYear)) {
+      throw new Error('Invalid fiscal year')
+    }
+    if (!fiscalMonth || isNaN(fiscalMonth) || fiscalMonth < 1 || fiscalMonth > 12) {
+      throw new Error('Invalid fiscal month')
+    }
+
+    // Verify period exists
+    const period = await prisma.financialPeriod.findUnique({
+      where: {
+        tenantId_fiscalYear_fiscalMonth: {
+          tenantId: this.tenantId,
+          fiscalYear,
+          fiscalMonth,
+        },
+      },
+    })
+
+    if (!period) {
+      throw new Error(`No fiscal period found for ${fiscalYear}-${fiscalMonth}`)
+    }
+
     const variances = await this.computePeriodVariance(fiscalYear, fiscalMonth)
 
     const favorable = variances.filter((v) => v.varianceType === 'favorable')

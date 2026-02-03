@@ -319,6 +319,11 @@ export class PLComputationService {
     }>
     currency: string
   }> {
+    // Validate fiscal year
+    if (!fiscalYear || isNaN(fiscalYear)) {
+      throw new Error('Invalid fiscal year')
+    }
+
     // Get all periods for this fiscal year
     const periods = await prisma.financialPeriod.findMany({
       where: {
@@ -329,6 +334,10 @@ export class PLComputationService {
         fiscalMonth: 'asc',
       },
     })
+
+    if (periods.length === 0) {
+      throw new Error(`No fiscal periods found for fiscal year ${fiscalYear}`)
+    }
 
     const trendData = []
 

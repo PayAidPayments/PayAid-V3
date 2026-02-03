@@ -5,6 +5,11 @@ import { useParams } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import Link from 'next/link'
 import { PageLoading } from '@/components/ui/loading'
+import { formatINRStandard, formatINRForDisplay } from '@/lib/utils/formatINR'
+import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
+import { GlassCard } from '@/components/modules/GlassCard'
+import { getModuleConfig } from '@/lib/modules/module-config'
+import { CreditCard, IndianRupee, Package, CheckCircle2 } from 'lucide-react'
 
 interface Subscription {
   id: string
@@ -69,16 +74,53 @@ export default function FinanceBillingPage() {
     analytics: '📊',
   }
 
+  const moduleConfig = getModuleConfig('finance')
+
+  const heroMetrics = [
+    {
+      label: 'Current Plan',
+      value: subscription?.tier?.toUpperCase() || 'FREE',
+      icon: Package,
+      href: '#',
+    },
+    {
+      label: 'Monthly Price',
+      value: subscription ? formatINRForDisplay(subscription.monthlyPrice) : '₹0',
+      icon: IndianRupee,
+      href: '#',
+    },
+    {
+      label: 'Licensed Modules',
+      value: subscription?.modules?.length?.toString() || '0',
+      icon: CheckCircle2,
+      href: '#',
+    },
+    {
+      label: 'Payment History',
+      value: orders.length.toString(),
+      icon: CreditCard,
+      href: '#',
+    },
+  ]
+
   if (loading) {
     return <PageLoading message="Loading billing information..." fullScreen={false} />
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-8">Billing & Subscription</h1>
+    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>
+      {/* Universal Module Hero */}
+      <UniversalModuleHero
+        moduleName="Billing & Subscription"
+        moduleIcon={<moduleConfig.icon className="w-8 h-8" />}
+        gradientFrom={moduleConfig.gradientFrom}
+        gradientTo={moduleConfig.gradientTo}
+        metrics={heroMetrics}
+      />
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+      {/* Content Sections - 32px gap */}
+      <div className="p-6 space-y-8 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
+        <GlassCard>
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Current Plan</h2>
           {subscription ? (
             <div className="space-y-4">
@@ -86,7 +128,7 @@ export default function FinanceBillingPage() {
                 <div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 capitalize">{subscription.tier}</p>
                   <p className="text-gray-600 dark:text-gray-400">
-                    ₹{subscription.monthlyPrice.toLocaleString()}/month
+                    {formatINRStandard(subscription.monthlyPrice)}/month
                   </p>
                 </div>
                 <Link
@@ -128,10 +170,11 @@ export default function FinanceBillingPage() {
               </Link>
             </div>
           )}
-        </div>
+        </GlassCard>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Payment History</h2>
+        <GlassCard>
+          <div className="p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Payment History</h2>
           {orders.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -152,7 +195,7 @@ export default function FinanceBillingPage() {
                         {new Date(order.createdAt).toLocaleDateString()}
                       </td>
                       <td className="py-3 text-gray-900 dark:text-gray-100">
-                        ₹{order.total.toLocaleString()}
+                        {formatINRStandard(order.total)}
                       </td>
                       <td className="py-3">
                         <span className={`px-2 py-1 rounded text-sm ${
@@ -183,7 +226,8 @@ export default function FinanceBillingPage() {
           ) : (
             <p className="text-gray-600 dark:text-gray-400 text-center py-8">No payment history yet</p>
           )}
-        </div>
+          </div>
+        </GlassCard>
       </div>
     </div>
   )

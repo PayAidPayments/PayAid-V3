@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
+import { formatINRStandard } from '@/lib/utils/formatINR'
 
 // Number to words converter for Indian currency
 function numberToWords(amount: number): string {
@@ -331,8 +332,8 @@ export default function FinanceInvoiceDetailPage() {
                       <td className="p-3 border-b border-gray-200 dark:border-gray-700 dark:text-gray-100">Goods/Services</td>
                       <td className="p-3 border-b border-gray-200 dark:border-gray-700 text-center dark:text-gray-100">{invoice.hsnCode || '-'}</td>
                       <td className="p-3 border-b border-gray-200 dark:border-gray-700 text-center dark:text-gray-100">1</td>
-                      <td className="p-3 border-b border-gray-200 dark:border-gray-700 text-right dark:text-gray-100">₹{invoice.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                      <td className="p-3 border-b border-gray-200 dark:border-gray-700 text-right font-medium dark:text-gray-100">₹{invoice.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td className="p-3 border-b border-gray-200 dark:border-gray-700 text-right dark:text-gray-100">{formatINRStandard(invoice.subtotal)}</td>
+                      <td className="p-3 border-b border-gray-200 dark:border-gray-700 text-right font-medium dark:text-gray-100">{formatINRStandard(invoice.subtotal)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -342,7 +343,7 @@ export default function FinanceInvoiceDetailPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                  <span className="font-medium dark:text-gray-100">₹{invoice.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-medium dark:text-gray-100">{formatINRStandard(invoice.subtotal)}</span>
                 </div>
                 
                 {/* Discount */}
@@ -356,7 +357,7 @@ export default function FinanceInvoiceDetailPage() {
                         const discountAmount = invoice.discountType === 'percentage' 
                           ? (invoice.subtotal * invoice.discount) / 100 
                           : invoice.discount
-                        return discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })
+                        return formatINRStandard(discountAmount)
                       })()}
                     </span>
                   </div>
@@ -372,7 +373,7 @@ export default function FinanceInvoiceDetailPage() {
                           ? (invoice.subtotal * invoice.discount) / 100 
                           : invoice.discount
                         const subtotalAfterDiscount = Math.max(0, invoice.subtotal - discountAmount)
-                        return subtotalAfterDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2 })
+                        return formatINRStandard(subtotalAfterDiscount)
                       })()}
                     </span>
                   </div>
@@ -393,7 +394,7 @@ export default function FinanceInvoiceDetailPage() {
                       <div className="space-y-1">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600 dark:text-gray-400">IGST ({gstRate}%)</span>
-                          <span className="font-medium dark:text-gray-100">₹{igst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          <span className="font-medium dark:text-gray-100">{formatINRStandard(igst)}</span>
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           Inter-state supply
@@ -408,11 +409,11 @@ export default function FinanceInvoiceDetailPage() {
                       <div className="space-y-1">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600 dark:text-gray-400">CGST ({gstRate / 2}%)</span>
-                          <span className="font-medium dark:text-gray-100">₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          <span className="font-medium dark:text-gray-100">{formatINRStandard(cgst)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600 dark:text-gray-400">SGST ({gstRate / 2}%)</span>
-                          <span className="font-medium dark:text-gray-100">₹{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          <span className="font-medium dark:text-gray-100">{formatINRStandard(sgst)}</span>
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">Intra-state supply</p>
                       </div>
@@ -422,7 +423,7 @@ export default function FinanceInvoiceDetailPage() {
                 
                 <div className="flex justify-between text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
                   <span className="text-gray-600 dark:text-gray-400">Total GST</span>
-                  <span className="font-medium dark:text-gray-100">₹{(invoice.gstAmount || invoice.tax || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-medium dark:text-gray-100">{formatINRStandard(invoice.gstAmount || invoice.tax || 0)}</span>
                 </div>
                 
                 {/* TDS/TCS */}
@@ -435,7 +436,7 @@ export default function FinanceInvoiceDetailPage() {
                       })()}
                     </span>
                     <span className={`font-medium ${invoice.tdsType === 'tds' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                      {invoice.tdsType === 'tds' ? '-' : '+'}₹{invoice.tdsAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      {invoice.tdsType === 'tds' ? '-' : '+'}{formatINRStandard(invoice.tdsAmount)}
                     </span>
                   </div>
                 )}
@@ -445,14 +446,14 @@ export default function FinanceInvoiceDetailPage() {
                   <div className="flex justify-between text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
                     <span className="text-gray-600 dark:text-gray-400">Adjustment</span>
                     <span className={`font-medium ${invoice.adjustment >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {invoice.adjustment >= 0 ? '+' : ''}₹{invoice.adjustment.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      {invoice.adjustment >= 0 ? '+' : ''}{formatINRStandard(invoice.adjustment)}
                     </span>
                   </div>
                 )}
                 
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
                   <span className="dark:text-gray-100">Total Amount</span>
-                  <span className="text-blue-600 dark:text-blue-400">₹{invoice.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-blue-600 dark:text-blue-400">{formatINRStandard(invoice.total)}</span>
                 </div>
               </div>
 
