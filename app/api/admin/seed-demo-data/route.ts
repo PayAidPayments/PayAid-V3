@@ -176,15 +176,9 @@ export async function POST(request: NextRequest) {
  */
 async function seedDemoData() {
   try {
-    // Disconnect any existing connections to free up the pool
-    try {
-      await prisma.$disconnect()
-      // Wait a moment for connections to close
-      await new Promise(resolve => setTimeout(resolve, 1000))
-    } catch (disconnectError) {
-      // Ignore disconnect errors - connections may already be closed
-      console.warn('Disconnect warning (non-critical):', disconnectError)
-    }
+    // Don't disconnect Prisma - it's managed globally and disconnecting can cause issues
+    // The connection pool will handle connections automatically
+    console.log('[SEED_DEMO_DATA] Starting seed process...')
 
     // Get or create demo tenant with personalized ID
     let tenant = await prisma.tenant.findFirst({
