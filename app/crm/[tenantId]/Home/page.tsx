@@ -1523,7 +1523,7 @@ export default function CRMDashboardPage() {
                       >
                         {Array.isArray(pipelineChartData) && pipelineChartData.length > 0 ? pipelineChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
+                        )) : null}
                       </Pie>
                       <Tooltip 
                         formatter={(value: any) => [value, 'Deals']}
