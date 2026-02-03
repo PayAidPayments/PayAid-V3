@@ -367,30 +367,41 @@ async function testResponsive() {
 
 async function checkServer() {
   try {
-    // Use a simple HTTP request to check if server is running
-    const http = await import('http')
-    return new Promise<boolean>((resolve) => {
-      const url = new URL(BASE_URL)
-      const req = http.request({
-        hostname: url.hostname,
-        port: url.port || (url.protocol === 'https:' ? 443 : 80),
-        path: '/',
-        method: 'GET',
-        timeout: 5000,
-      }, (res) => {
-        resolve(res.statusCode !== undefined && res.statusCode < 500)
-      })
-      
-      req.on('error', () => resolve(false))
-      req.on('timeout', () => {
-        req.destroy()
-        resolve(false)
-      })
-      
-      req.end()
-    })
+    // Use fetch to check if server is running
+    const response = await fetch(BASE_URL, {
+      method: 'GET',
+      signal: AbortSignal.timeout(5000),
+    }).catch(() => null)
+    
+    return response !== null && response.status < 500
   } catch (error) {
-    return false
+    // Try alternative method with http module
+    try {
+      const http = await import('http')
+      return new Promise<boolean>((resolve) => {
+        const url = new URL(BASE_URL)
+        const port = url.port || (url.protocol === 'https:' ? 443 : 3000)
+        const req = http.request({
+          hostname: url.hostname,
+          port: port,
+          path: '/',
+          method: 'GET',
+          timeout: 5000,
+        }, (res) => {
+          resolve(res.statusCode !== undefined && res.statusCode < 500)
+        })
+        
+        req.on('error', () => resolve(false))
+        req.on('timeout', () => {
+          req.destroy()
+          resolve(false)
+        })
+        
+        req.end()
+      })
+    } catch (httpError) {
+      return false
+    }
   }
 }
 
