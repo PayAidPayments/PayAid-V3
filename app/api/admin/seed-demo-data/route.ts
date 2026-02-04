@@ -14,6 +14,84 @@ import { isSeedRunning, startSeedTracking, stopSeedTracking } from '@/lib/utils/
 
 const SEED_TIMEOUT_MS = 300000 // 5 minutes max for comprehensive seed
 
+/**
+ * GET /api/admin/seed-demo-data
+ * Check seed status and data counts for a tenant
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const tenantId = searchParams.get('tenantId')
+    const checkStatus = searchParams.get('checkStatus') === 'true'
+    const checkData = searchParams.get('checkData') === 'true'
+    
+    // If checking status only
+    if (checkStatus && tenantId) {
+      const seedStatus = isSeedRunning(tenantId)
+      return NextResponse.json({
+        running: seedStatus.running,
+        elapsed: seedStatus.elapsed,
+        elapsedSeconds: seedStatus.elapsed ? Math.floor(seedStatus.elapsed / 1000) : 0,
+        elapsedMinutes: seedStatus.elapsed ? Math.floor(seedStatus.elapsed / 60000) : 0,
+      })
+    }
+    
+    // If checking data counts
+    if (checkData && tenantId) {
+      try {
+        const [contacts, deals, tasks, invoices, orders] = await Promise.all([
+          prisma.contact.count({ where: { tenantId } }).catch(() => 0),
+          prisma.deal.count({ where: { tenantId } }).catch(() => 0),
+          prisma.task.count({ where: { tenantId } }).catch(() => 0),
+          prisma.invoice.count({ where: { tenantId } }).catch(() => 0),
+          prisma.order.count({ where: { tenantId } }).catch(() => 0),
+        ])
+        
+        const totalData = contacts + deals + tasks + invoices + orders
+        const hasData = totalData > 0
+        
+        return NextResponse.json({
+          tenantId,
+          hasData,
+          counts: {
+            contacts,
+            deals,
+            tasks,
+            invoices,
+            orders,
+            total: totalData,
+          },
+          seedStatus: isSeedRunning(tenantId),
+        })
+      } catch (error: any) {
+        console.error('[SEED_DEMO_DATA] Error checking data:', error)
+        return NextResponse.json(
+          {
+            error: 'Failed to check data',
+            message: error?.message || 'Unknown error',
+            tenantId,
+          },
+          { status: 500 }
+        )
+      }
+    }
+    
+    // Default: return seed status for all tenants
+    return NextResponse.json({
+      message: 'Use ?checkStatus=true&tenantId=xxx or ?checkData=true&tenantId=xxx',
+    })
+  } catch (error: any) {
+    console.error('[SEED_DEMO_DATA] GET error:', error)
+    return NextResponse.json(
+      {
+        error: 'Failed to check seed status',
+        message: error?.message || 'Unknown error',
+      },
+      { status: 500 }
+    )
+  }
+}
+
 // Inline industry seeding functions
 async function seedIndustryDataInline(tenantId: string, contacts: any[]) {
   // Agriculture
@@ -330,16 +408,28 @@ export async function POST(request: NextRequest) {
           }
           
           // Verify data was created
-          const [contacts, deals, tasks] = await Promise.all([
+          const [contacts, deals, tasks, invoices, orders] = await Promise.all([
             prisma.contact.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
             prisma.deal.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
             prisma.task.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
+            prisma.invoice.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
+            prisma.order.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
           ])
           
-          console.log(`[SEED_DEMO_DATA] Seed completed. Created: ${contacts} contacts, ${deals} deals, ${tasks} tasks`)
+          const totalData = contacts + deals + tasks + invoices + orders
+          const elapsedSeconds = Math.floor((Date.now() - Date.now()) / 1000)
           
-          if (contacts === 0 && deals === 0 && tasks === 0) {
-            console.warn(`[SEED_DEMO_DATA] WARNING: Seed completed but no data was created for tenant ${seedTenantId}`)
+          console.log(`[SEED_DEMO_DATA] ✅ Seed completed for tenant ${seedTenantId}`)
+          console.log(`[SEED_DEMO_DATA] 📊 Data created: ${contacts} contacts, ${deals} deals, ${tasks} tasks, ${invoices} invoices, ${orders} orders`)
+          console.log(`[SEED_DEMO_DATA] 📈 Total records: ${totalData}`)
+          
+          if (totalData === 0) {
+            console.error(`[SEED_DEMO_DATA] ❌ WARNING: Seed completed but NO data was created for tenant ${seedTenantId}`)
+            console.error(`[SEED_DEMO_DATA] This may indicate a database connection issue or seed function error`)
+          } else if (totalData < 10) {
+            console.warn(`[SEED_DEMO_DATA] ⚠️  WARNING: Seed completed but very little data was created (${totalData} records)`)
+          } else {
+            console.log(`[SEED_DEMO_DATA] ✅ Seed successful! Dashboard should now show data.`)
           }
         } catch (err: any) {
           console.error('[SEED_DEMO_DATA] Background seed error:', err)
