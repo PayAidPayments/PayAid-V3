@@ -10,8 +10,8 @@ import { seedDemoBusiness } from '@/prisma/seeds/demo/demo-business-master-seed'
 export const maxDuration = 60
 export const runtime = 'nodejs'
 
-// Track ongoing seed operations to prevent concurrent seeding
-const ongoingSeeds = new Map<string, { startTime: number; promise: Promise<any> }>()
+import { isSeedRunning, startSeedTracking, stopSeedTracking } from '@/lib/utils/seed-status'
+
 const SEED_TIMEOUT_MS = 300000 // 5 minutes max for comprehensive seed
 
 // Inline industry seeding functions
@@ -240,25 +240,19 @@ export async function POST(request: NextRequest) {
       }
       
       // Check if seed is already running for this tenant
-      if (seedTenantId && ongoingSeeds.has(seedTenantId)) {
-        const ongoingSeed = ongoingSeeds.get(seedTenantId)!
-        const elapsed = Date.now() - ongoingSeed.startTime
-        
-        // If seed is still running and hasn't timed out, return status
-        if (elapsed < SEED_TIMEOUT_MS) {
+      if (seedTenantId) {
+        const seedStatus = isSeedRunning(seedTenantId)
+        if (seedStatus.running && seedStatus.elapsed) {
+          const elapsedSeconds = Math.floor(seedStatus.elapsed / 1000)
           return NextResponse.json({
             success: true,
-            message: `Seed operation already in progress for this tenant. Started ${Math.floor(elapsed / 1000)} seconds ago. Please wait for it to complete.`,
+            message: `Seed operation already in progress for this tenant. Started ${elapsedSeconds} seconds ago. Please wait for it to complete.`,
             background: true,
             comprehensive: !!comprehensive,
             tenantId: seedTenantId,
             alreadyRunning: true,
-            elapsedSeconds: Math.floor(elapsed / 1000),
+            elapsedSeconds,
           })
-        } else {
-          // Seed timed out, remove from tracking
-          console.warn(`[SEED_DEMO_DATA] Seed for tenant ${seedTenantId} timed out, removing from tracking`)
-          ongoingSeeds.delete(seedTenantId)
         }
       }
       
@@ -297,17 +291,14 @@ export async function POST(request: NextRequest) {
         } finally {
           // Clean up tracking after seed completes or fails
           if (seedTenantId) {
-            ongoingSeeds.delete(seedTenantId)
+            stopSeedTracking(seedTenantId)
           }
         }
       })()
       
       // Track ongoing seed
       if (seedTenantId) {
-        ongoingSeeds.set(seedTenantId, {
-          startTime: Date.now(),
-          promise: seedPromise,
-        })
+        startSeedTracking(seedTenantId, seedPromise)
       }
       
       // Don't await - let it run in background

@@ -455,20 +455,32 @@ export function ModuleSwitcher() {
               {module.badge > 99 ? '99+' : module.badge}
             </Badge>
           )}
-          <button
-            onClick={(e) => handleTogglePin(e, module.id)}
+          <div
+            onClick={(e) => {
+              e.stopPropagation()
+              handleTogglePin(e, module.id)
+            }}
             className={cn(
-              'opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600',
+              'opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer',
               isPinned && 'opacity-100'
             )}
             title={isPinned ? 'Unpin' : 'Pin'}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                e.stopPropagation()
+                handleTogglePin(e as any, module.id)
+              }
+            }}
           >
             {isPinned ? (
               <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
             ) : (
               <StarOff className="h-4 w-4 text-gray-400" />
             )}
-          </button>
+          </div>
         </div>
       </button>
     )

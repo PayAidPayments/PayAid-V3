@@ -80,6 +80,35 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const timePeriod = (searchParams.get('period') || 'month') as TimePeriod
     
+    // Check if seed is running (may cause connection pool exhaustion)
+    try {
+      const { isSeedRunning } = await import('@/lib/utils/seed-status')
+      const seedStatus = isSeedRunning(tenantId)
+      if (seedStatus.running) {
+        const elapsedMinutes = Math.floor((seedStatus.elapsed || 0) / 60000)
+        console.warn(`[CRM_STATS] Seed is running for tenant ${tenantId}, elapsed: ${elapsedMinutes} minutes`)
+        return NextResponse.json(
+          {
+            error: 'Database seeding in progress',
+            message: `A data seeding operation is currently running (started ${elapsedMinutes} minute${elapsedMinutes !== 1 ? 's' : ''} ago). This may temporarily affect database performance. Please wait 1-2 minutes and refresh the page.`,
+            seedRunning: true,
+            elapsedMinutes,
+            retryAfter: 60,
+          },
+          {
+            status: 503,
+            headers: {
+              'Retry-After': '60',
+              'Cache-Control': 'no-store',
+            },
+          }
+        )
+      }
+    } catch (importError) {
+      // If we can't import the function, continue normally
+      console.warn('[CRM_STATS] Could not check seed status:', importError)
+    }
+    
     // Rate limiting: if too many concurrent requests, return a real error (NO sample/demo data)
     const activeCount = activeRequests.get(tenantId) || 0
     if (activeCount >= MAX_CONCURRENT_REQUESTS_PER_TENANT) {
