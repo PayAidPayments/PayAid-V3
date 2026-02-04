@@ -217,8 +217,9 @@ async function handleLogin(request: NextRequest) {
         throw new Error('Database table not found. Please run database migrations.')
       } else if (errorCode === 'P1000' || errorMessage.includes('Authentication failed')) {
         throw new Error('Database authentication failed. Please check your database credentials.')
-      } else if (errorCode === 'P1002' || errorMessage.includes('Pooler timeout') || errorMessage.includes('max clients')) {
-        throw new Error('Database connection pool is full. Please try again in a moment.')
+      } else if (errorCode === 'P1002' || errorMessage.includes('Pooler timeout') || errorMessage.includes('max clients') || errorMessage.includes('MaxClientsInSessionMode') || errorMessage.includes('connection pool')) {
+        // Connection pool exhaustion - provide helpful message with wait time
+        throw new Error('Database is temporarily unavailable due to high load. The connection pool is managing itself. Please wait 1-2 minutes and try again.')
       }
       
       throw new Error(`Database error: ${errorMessage}`)
