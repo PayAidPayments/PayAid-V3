@@ -105,6 +105,18 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const trigger = searchParams.get('trigger') === 'true'
+    const checkStatus = searchParams.get('checkStatus') === 'true'
+    const tenantId = searchParams.get('tenantId')
+    
+    // If checkStatus=true, return seed status
+    if (checkStatus) {
+      const seedStatus = isSeedRunning(tenantId || undefined)
+      return NextResponse.json({
+        running: seedStatus.running,
+        elapsed: seedStatus.elapsed,
+        elapsedMinutes: seedStatus.elapsed ? Math.floor(seedStatus.elapsed / 60000) : 0,
+      })
+    }
     
     // If trigger=true, actually seed the data
     if (trigger) {

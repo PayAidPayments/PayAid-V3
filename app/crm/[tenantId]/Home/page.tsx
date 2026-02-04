@@ -196,6 +196,31 @@ export default function CRMDashboardPage() {
     // Run in background after initial render - don't block UI
     const checkAndSeedData = async () => {
       try {
+        // First, check if a seed is already running
+        try {
+          const seedStatusResponse = await fetch(`/api/admin/seed-demo-data?checkStatus=true&tenantId=${tenantId}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          })
+          if (seedStatusResponse.ok) {
+            const seedStatus = await seedStatusResponse.json()
+            if (seedStatus.running) {
+              const elapsedMinutes = Math.floor((seedStatus.elapsed || 0) / 60000)
+              console.log(`[CRM_DASHBOARD] Seed already running (${elapsedMinutes} minutes ago). Skipping new seed trigger.`)
+              // Schedule a refresh after seed completes
+              setTimeout(() => {
+                if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+                  console.log('[CRM_DASHBOARD] Refreshing stats after seed completes...')
+                  fetchDashboardStats(abortControllerRef.current.signal)
+                }
+              }, 120000) // Wait 2 minutes for seed to complete
+              return // Don't trigger another seed
+            }
+          }
+        } catch (statusError) {
+          // If status check fails, continue with data check
+          console.warn('[CRM_DASHBOARD] Could not check seed status:', statusError)
+        }
+        
         // Check if data exists
         const checkResponse = await fetch('/api/admin/check-dashboard-data', {
           headers: { 'Authorization': `Bearer ${token}` },
@@ -216,6 +241,10 @@ export default function CRMDashboardPage() {
                 if (seedResponse.ok) {
                   seedResponse.json().then(data => {
                     console.log('[CRM_DASHBOARD] Comprehensive seed started in background:', data)
+                    // Check if seed was already running
+                    if (data.alreadyRunning) {
+                      console.log(`[CRM_DASHBOARD] Seed already in progress (${data.elapsedSeconds}s). Waiting for completion...`)
+                    }
                     // Reload stats after longer delay (comprehensive seed takes 30-60 seconds)
                     setTimeout(() => {
                       if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
@@ -227,6 +256,15 @@ export default function CRMDashboardPage() {
                 } else {
                   seedResponse.json().then(errorData => {
                     console.error('[CRM_DASHBOARD] Seed failed:', errorData)
+                    // If seed is already running, that's okay - just wait
+                    if (errorData.message?.includes('already in progress')) {
+                      console.log('[CRM_DASHBOARD] Seed already running, will wait for completion')
+                      setTimeout(() => {
+                        if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+                          fetchDashboardStats(abortControllerRef.current.signal)
+                        }
+                      }, 120000)
+                    }
                   }).catch(() => {
                     console.error('[CRM_DASHBOARD] Seed failed with status:', seedResponse.status)
                   })
