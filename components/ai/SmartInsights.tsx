@@ -42,7 +42,14 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
 
         if (response.ok) {
           const data = await response.json()
-          setInsights(data.insights || [])
+          // CRITICAL: Ensure insights is always an array to prevent .map() errors
+          const insightsData = data?.insights
+          if (Array.isArray(insightsData)) {
+            setInsights(insightsData)
+          } else {
+            console.warn('[SmartInsights] insights is not an array:', typeof insightsData, insightsData)
+            setInsights([])
+          }
         } else {
           // Generate mock insights based on stats
           generateMockInsights()
@@ -119,7 +126,8 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
         }
       }
 
-      setInsights(mockInsights)
+      // CRITICAL: Ensure mockInsights is always an array
+      setInsights(Array.isArray(mockInsights) ? mockInsights : [])
     }
 
     fetchInsights()
@@ -180,7 +188,8 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
     )
   }
 
-  if (insights.length === 0) {
+  // CRITICAL: Check if insights is an array and has length before rendering
+  if (!Array.isArray(insights) || insights.length === 0) {
     return (
       <Card className="border-0 shadow-md">
         <CardHeader>
@@ -198,6 +207,9 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
     )
   }
 
+  // CRITICAL: Normalize insights to always be an array to prevent .map() errors
+  const safeInsights = Array.isArray(insights) ? insights : []
+
   return (
     <Card className="border-0 shadow-md">
       <CardHeader>
@@ -209,7 +221,7 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
       <CardContent>
         <div className="space-y-3">
           <AnimatePresence>
-            {(Array.isArray(insights) ? insights : []).map((insight, index) => (
+            {safeInsights.map((insight, index) => (
               <motion.div
                 key={insight.id}
                 initial={{ opacity: 0, y: 10 }}
