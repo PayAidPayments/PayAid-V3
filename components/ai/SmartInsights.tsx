@@ -209,7 +209,7 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
       <CardContent>
         <div className="space-y-3">
           <AnimatePresence>
-            {insights.map((insight, index) => (
+            {(Array.isArray(insights) ? insights : []).map((insight, index) => (
               <motion.div
                 key={insight.id}
                 initial={{ opacity: 0, y: 10 }}

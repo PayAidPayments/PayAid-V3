@@ -221,7 +221,7 @@ export function FloatingAIAssistant({ tenantId }: FloatingAIAssistantProps) {
               <>
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-                  {messages.map((message) => (
+                  {(Array.isArray(messages) ? messages : []).map((message) => (
                     <motion.div
                       key={message.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -268,7 +268,7 @@ export function FloatingAIAssistant({ tenantId }: FloatingAIAssistantProps) {
                   <div className="px-4 py-2 border-t border-gray-200 bg-gray-50">
                     <p className="text-xs text-gray-600 mb-2 font-medium">Quick Actions:</p>
                     <div className="flex flex-wrap gap-2">
-                      {quickActions.map((action) => (
+                      {(Array.isArray(quickActions) ? quickActions : []).map((action) => (
                         <button
                           key={action.label}
                           onClick={() => {
