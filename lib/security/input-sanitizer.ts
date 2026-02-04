@@ -3,17 +3,26 @@
  * Zero-cost enhancement for security
  */
 
-import createDOMPurify from 'isomorphic-dompurify'
-const DOMPurify = createDOMPurify()
+/**
+ * IMPORTANT:
+ * Avoid DOMPurify/jsdom on the server in Vercel serverless runtime because recent jsdom versions
+ * require a newer Node minor and pull ESM-only deps that can crash production ("require() of ES Module").
+ *
+ * Instead, we enforce a strict policy: store/render plain text by default.
+ * If rich-text HTML is needed later, we should reintroduce a server-safe sanitizer with a vetted dependency.
+ */
 
 /**
  * Sanitize HTML content
  */
 export function sanitizeHtml(html: string): string {
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'h1', 'h2', 'h3'],
-    ALLOWED_ATTR: ['href', 'target'],
-  })
+  // Strip all tags; keep just text.
+  // This prevents stored XSS and avoids server-side DOM dependencies.
+  return String(html || '')
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .trim()
 }
 
 /**

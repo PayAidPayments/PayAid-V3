@@ -4,7 +4,6 @@
  */
 
 import { z } from 'zod'
-import DOMPurify from 'isomorphic-dompurify'
 
 // Common validation schemas
 export const emailSchema = z.string().email().toLowerCase().trim()
@@ -36,15 +35,18 @@ export const invoiceSchema = z.object({
 
 // Sanitize HTML to prevent XSS
 export function sanitizeHtml(html: string): string {
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br'],
-    ALLOWED_ATTR: ['href'],
-  })
+  // Server-safe sanitization: strip all tags and store as plain text.
+  // Avoid jsdom/DOMPurify in serverless runtime (can crash prod due to ESM-only deps).
+  return String(html || '')
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .trim()
 }
 
 // Sanitize text input
 export function sanitizeText(text: string): string {
-  return DOMPurify.sanitize(text, { ALLOWED_TAGS: [] })
+  return sanitizeHtml(text)
 }
 
 // Validate and sanitize input
