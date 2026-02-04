@@ -26,6 +26,8 @@
     "db:seed-campaigns": "npx tsx prisma/seed-campaigns.ts",
     "db:seed-all": "npx tsx prisma/seed-all-sample-data.ts",
     "db:seed-news": "npx tsx prisma/seed-news-items.ts",
+    "seed:demo-business": "npx tsx prisma/seeds/demo/run-demo-business-seed.ts",
+    "validate:demo-data": "npx tsx prisma/seeds/demo/validate-demo-data.ts",
     "enable-all-modules": "npx tsx scripts/enable-all-modules.ts",
     "test:crm": "npx tsx scripts/test-crm-dashboard.ts",
     "type-check": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc --noEmit",
