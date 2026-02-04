@@ -5,6 +5,7 @@ import { requireModuleAccess, handleLicenseError, authenticateRequest } from '@/
 
 // GET /api/crm/dashboard/activity-feed - Get chronological activity feed
 export async function GET(request: NextRequest) {
+  const startTime = Date.now()
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const user = await authenticateRequest(request)
@@ -201,9 +202,19 @@ export async function GET(request: NextRequest) {
     // Limit to requested number
     const limitedActivities = activities.slice(0, limit)
 
+    const durationMs = Date.now() - startTime
+    console.log(`[CRM_ACTIVITY_FEED] tenant=${tenantId} user=${user?.userId || 'unknown'} type=${type || 'all'} limit=${limit} duration=${durationMs}ms`)
+
     return NextResponse.json({
       activities: limitedActivities,
       total: activities.length,
+    }, {
+      headers: {
+        // User-specific / role-filtered: private caching only
+        'Cache-Control': 'private, max-age=10, stale-while-revalidate=20',
+        Vary: 'Authorization',
+        'Server-Timing': `app;dur=${durationMs}`,
+      },
     })
   } catch (error: any) {
     if (error && typeof error === 'object' && 'moduleId' in error) {
