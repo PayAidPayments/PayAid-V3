@@ -245,56 +245,76 @@ export async function POST(request: NextRequest) {
     }
 
     if (background) {
-      // Determine tenant ID for seed operation
+      // Determine tenant ID for seed operation - ALWAYS find tenant before starting seed
       let seedTenantId = targetTenantId
-      if (!seedTenantId && user?.tenantId) {
-        seedTenantId = user.tenantId
+      
+      // If no tenantId provided, find it from user or Demo Business
+      if (!seedTenantId) {
+        if (user?.tenantId) {
+          seedTenantId = user.tenantId
+        } else {
+          // Find Demo Business tenant
+          try {
+            const demoTenant = await prisma.tenant.findFirst({
+              where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
+            })
+            if (demoTenant) {
+              seedTenantId = demoTenant.id
+            }
+          } catch (findError) {
+            console.error('[SEED_DEMO_DATA] Failed to find tenant:', findError)
+          }
+        }
+      }
+      
+      // If still no tenantId, we can't proceed
+      if (!seedTenantId) {
+        return NextResponse.json(
+          {
+            error: 'No tenant found',
+            message: 'Could not determine tenant ID. Please provide tenantId parameter or ensure you are logged in.',
+          },
+          { status: 400 }
+        )
       }
       
       // Check if seed is already running for this tenant
-      if (seedTenantId) {
-        const seedStatus = isSeedRunning(seedTenantId)
-        if (seedStatus.running && seedStatus.elapsed) {
-          const elapsedSeconds = Math.floor(seedStatus.elapsed / 1000)
-          return NextResponse.json({
-            success: true,
-            message: `Seed operation already in progress for this tenant. Started ${elapsedSeconds} seconds ago. Please wait for it to complete.`,
-            background: true,
-            comprehensive: !!comprehensive,
-            tenantId: seedTenantId,
-            alreadyRunning: true,
-            elapsedSeconds,
-          })
-        }
+      const seedStatus = isSeedRunning(seedTenantId)
+      if (seedStatus.running && seedStatus.elapsed) {
+        const elapsedSeconds = Math.floor(seedStatus.elapsed / 1000)
+        return NextResponse.json({
+          success: true,
+          message: `Seed operation already in progress for this tenant. Started ${elapsedSeconds} seconds ago. Please wait for it to complete.`,
+          background: true,
+          comprehensive: !!comprehensive,
+          tenantId: seedTenantId,
+          alreadyRunning: true,
+          elapsedSeconds,
+        })
       }
       
       // Start seeding in background and return immediately
       const seedPromise = (async () => {
         try {
-          if (comprehensive && seedTenantId) {
+          console.log(`[SEED_DEMO_DATA] Starting ${comprehensive ? 'comprehensive' : 'basic'} seed for tenant: ${seedTenantId}`)
+          
+          if (comprehensive) {
             await seedDemoBusiness(seedTenantId)
-          } else if (seedTenantId) {
-            await seedDemoDataForTenant(seedTenantId)
           } else {
-            // Find Demo Business tenant
-            let demoTenant = null
-            if (user?.tenantId) {
-              demoTenant = await prisma.tenant.findUnique({
-                where: { id: user.tenantId },
-              }).catch(() => null)
-            }
-            
-            if (!demoTenant) {
-              demoTenant = await prisma.tenant.findFirst({
-                where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
-              }).catch(() => null)
-            }
-            
-            if (comprehensive && demoTenant) {
-              await seedDemoBusiness(demoTenant.id)
-            } else {
-              await seedDemoData()
-            }
+            await seedDemoDataForTenant(seedTenantId)
+          }
+          
+          // Verify data was created
+          const [contacts, deals, tasks] = await Promise.all([
+            prisma.contact.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
+            prisma.deal.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
+            prisma.task.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
+          ])
+          
+          console.log(`[SEED_DEMO_DATA] Seed completed. Created: ${contacts} contacts, ${deals} deals, ${tasks} tasks`)
+          
+          if (contacts === 0 && deals === 0 && tasks === 0) {
+            console.warn(`[SEED_DEMO_DATA] WARNING: Seed completed but no data was created for tenant ${seedTenantId}`)
           }
         } catch (err: any) {
           console.error('[SEED_DEMO_DATA] Background seed error:', err)
@@ -302,27 +322,21 @@ export async function POST(request: NextRequest) {
           throw err
         } finally {
           // Clean up tracking after seed completes or fails
-          if (seedTenantId) {
-            stopSeedTracking(seedTenantId)
-          }
+          stopSeedTracking(seedTenantId)
         }
       })()
       
       // Track ongoing seed
-      if (seedTenantId) {
-        startSeedTracking(seedTenantId, seedPromise)
-      }
+      startSeedTracking(seedTenantId, seedPromise)
       
       // Don't await - let it run in background
-      seedPromise.catch(() => {
-        // Error already logged above
+      seedPromise.catch((err) => {
+        console.error('[SEED_DEMO_DATA] Seed promise rejected:', err)
       })
       
       return NextResponse.json({
         success: true,
-        message: seedTenantId 
-          ? `Seed operation started in background for tenant ${seedTenantId}. This may take 30-60 seconds. Please refresh the page in a minute.`
-          : 'Seed operation started in background. This may take 30-60 seconds. Please refresh the page in a minute.',
+        message: `Seed operation started in background for tenant ${seedTenantId}. This may take 30-60 seconds. Please refresh the page in a minute.`,
         background: true,
         comprehensive: !!comprehensive,
         tenantId: seedTenantId,

@@ -46,18 +46,24 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
 
         if (response.ok) {
           const data = await response.json()
+          console.log('[SmartInsights] API response:', { 
+            hasInsights: !!data?.insights,
+            insightsKeys: data?.insights ? Object.keys(data.insights) : [],
+            urgentActions: data?.insights?.urgentActions?.length || 0,
+            opportunities: data?.insights?.opportunities?.length || 0,
+            risks: data?.insights?.risks?.length || 0,
+            recommendations: data?.insights?.recommendations?.length || 0,
+            improvements: data?.insights?.improvements?.length || 0,
+            fullData: data
+          })
           
-          // Check tenant name for Demo Business
-          const tenantName = tenant?.name?.trim() || ''
-          const isDemoBusiness = tenantName.toLowerCase() === 'demo business pvt ltd.' || 
-                                 tenantName.toLowerCase().includes('demo business')
-          
-          // API returns object with urgentActions, opportunities, risks, recommendations, improvements
-          // Transform API response to our Insight format if it has data
+          // API returns object with insights.urgentActions, insights.opportunities, etc.
+          // Transform API response to our Insight format
           const apiInsights: Insight[] = []
+          const insightsData = data?.insights || {}
           
-          if (data?.urgentActions && Array.isArray(data.urgentActions) && data.urgentActions.length > 0) {
-            data.urgentActions.forEach((action: string, idx: number) => {
+          if (insightsData.urgentActions && Array.isArray(insightsData.urgentActions) && insightsData.urgentActions.length > 0) {
+            insightsData.urgentActions.forEach((action: string, idx: number) => {
               apiInsights.push({
                 id: `api-urgent-${idx}`,
                 type: 'warning',
@@ -69,8 +75,8 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
             })
           }
           
-          if (data?.opportunities && Array.isArray(data.opportunities) && data.opportunities.length > 0) {
-            data.opportunities.forEach((opp: string, idx: number) => {
+          if (insightsData.opportunities && Array.isArray(insightsData.opportunities) && insightsData.opportunities.length > 0) {
+            insightsData.opportunities.forEach((opp: string, idx: number) => {
               apiInsights.push({
                 id: `api-opp-${idx}`,
                 type: 'opportunity',
@@ -82,8 +88,8 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
             })
           }
           
-          if (data?.risks && Array.isArray(data.risks) && data.risks.length > 0) {
-            data.risks.forEach((risk: string, idx: number) => {
+          if (insightsData.risks && Array.isArray(insightsData.risks) && insightsData.risks.length > 0) {
+            insightsData.risks.forEach((risk: string, idx: number) => {
               apiInsights.push({
                 id: `api-risk-${idx}`,
                 type: 'warning',
@@ -95,8 +101,8 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
             })
           }
           
-          if (data?.recommendations && Array.isArray(data.recommendations) && data.recommendations.length > 0) {
-            data.recommendations.forEach((rec: string, idx: number) => {
+          if (insightsData.recommendations && Array.isArray(insightsData.recommendations) && insightsData.recommendations.length > 0) {
+            insightsData.recommendations.forEach((rec: string, idx: number) => {
               apiInsights.push({
                 id: `api-rec-${idx}`,
                 type: 'info',
@@ -108,250 +114,46 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
             })
           }
           
-          // If API returned insights, use them; otherwise generate mock insights for Demo Business
-          if (apiInsights.length > 0) {
-            console.log('[SmartInsights] Using API insights:', apiInsights.length)
-            setInsights(apiInsights)
-          } else {
-            console.warn('[SmartInsights] API returned empty arrays:', data)
-            // For Demo Business, always generate insights even if API returns empty
-            if (isDemoBusiness) {
-              console.log('[SmartInsights] API returned empty, generating Demo Business insights')
-              generateMockInsights()
-            } else {
-              setInsights([])
-            }
+          if (insightsData.improvements && Array.isArray(insightsData.improvements) && insightsData.improvements.length > 0) {
+            insightsData.improvements.forEach((imp: string, idx: number) => {
+              apiInsights.push({
+                id: `api-imp-${idx}`,
+                type: 'success',
+                title: 'Improvement Opportunity',
+                description: imp,
+                impact: 'medium',
+                timestamp: new Date(),
+              })
+            })
           }
+          
+          console.log('[SmartInsights] Using AI-generated insights:', apiInsights.length, {
+            urgentActions: insightsData.urgentActions?.length || 0,
+            opportunities: insightsData.opportunities?.length || 0,
+            risks: insightsData.risks?.length || 0,
+            recommendations: insightsData.recommendations?.length || 0,
+            improvements: insightsData.improvements?.length || 0,
+          })
+          setInsights(apiInsights)
         } else {
-          // API call failed - generate mock insights (will check for Demo Business inside)
-          generateMockInsights()
+          const errorText = await response.text().catch(() => 'Unknown error')
+          console.warn('[SmartInsights] API call failed:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorText,
+          })
+          setInsights([])
         }
       } catch (error) {
-        console.error('Error fetching insights:', error)
-        // On error, generate mock insights (will check for Demo Business inside)
-        generateMockInsights()
+        console.error('[SmartInsights] Error fetching insights:', error)
+        setInsights([])
       } finally {
         setIsLoading(false)
       }
     }
 
-    const generateMockInsights = () => {
-      const mockInsights: Insight[] = []
-      // Check tenant name more flexibly (case-insensitive, trim whitespace)
-      // Use current tenant from auth store (will be updated when tenant loads)
-      const currentTenant = useAuthStore.getState().tenant
-      const tenantName = (currentTenant?.name || tenant?.name || '').trim()
-      const isDemoBusiness = tenantName.toLowerCase() === 'demo business pvt ltd.' || 
-                             tenantName.toLowerCase().includes('demo business')
-      
-      console.log('[SmartInsights] Generating insights:', {
-        tenantName,
-        isDemoBusiness,
-        hasStats: !!stats,
-        statsKeys: stats ? Object.keys(stats) : [],
-        currentTenantName: currentTenant?.name,
-        tenantFromHook: tenant?.name
-      })
-      
-      // For Demo Business, always generate insights even if stats are empty
-      if (isDemoBusiness) {
-        // Always add demo insights for Demo Business
-        mockInsights.push({
-          id: 'demo-1',
-          type: 'success',
-          title: 'Revenue Growth Opportunity',
-          description: `Your revenue this month is ₹${stats?.revenueThisMonth?.toLocaleString('en-IN') || '2,50,000'}. Based on trends, you could increase this by 15% by focusing on top-performing deals.`,
-          impact: 'high',
-          action: 'View top deals',
-          value: `+15% potential`,
-          timestamp: new Date(),
-        })
-
-        mockInsights.push({
-          id: 'demo-2',
-          type: 'opportunity',
-          title: 'Deals Closing This Month',
-          description: `You have ${stats?.dealsClosingThisMonth || 5} deals closing this month. Follow up proactively to ensure they close on time.`,
-          impact: 'high',
-          action: 'View closing deals',
-          value: `${stats?.dealsClosingThisMonth || 5} deals`,
-          timestamp: new Date(),
-        })
-
-        mockInsights.push({
-          id: 'demo-3',
-          type: 'info',
-          title: 'Pipeline Health',
-          description: `Your pipeline has ${stats?.pipelineByStage?.reduce((sum: number, stage: any) => sum + (stage?.count || 0), 0) || 12} active deals across ${stats?.pipelineByStage?.length || 5} stages. Consider moving deals forward to accelerate revenue.`,
-          impact: 'medium',
-          action: 'View pipeline',
-          value: `${stats?.pipelineByStage?.reduce((sum: number, stage: any) => sum + (stage?.count || 0), 0) || 12} deals`,
-          timestamp: new Date(),
-        })
-
-        if (stats?.overdueTasks > 0) {
-          mockInsights.push({
-            id: 'demo-4',
-            type: 'warning',
-            title: 'Action Required',
-            description: `You have ${stats.overdueTasks} overdue task${stats.overdueTasks > 1 ? 's' : ''}. Address these to maintain customer satisfaction.`,
-            impact: 'high',
-            action: 'View overdue tasks',
-            value: `${stats.overdueTasks} tasks`,
-            timestamp: new Date(),
-          })
-        } else {
-          // Add a positive insight if no overdue tasks
-          mockInsights.push({
-            id: 'demo-4',
-            type: 'success',
-            title: 'Excellent Task Management',
-            description: `Great job! You have no overdue tasks. Keep up the momentum and maintain this level of organization.`,
-            impact: 'medium',
-            action: 'View tasks',
-            value: `0 overdue`,
-            timestamp: new Date(),
-          })
-        }
-      } else if (stats) {
-        // Original logic for other tenants
-        // Revenue insight
-        if (stats.revenueThisMonth > 0) {
-          mockInsights.push({
-            id: '1',
-            type: 'success',
-            title: 'Revenue Growth Opportunity',
-            description: `Your revenue this month is ₹${stats.revenueThisMonth.toLocaleString('en-IN')}. Based on trends, you could increase this by 15% by focusing on top-performing deals.`,
-            impact: 'high',
-            action: 'View top deals',
-            value: `+15% potential`,
-            timestamp: new Date(),
-          })
-        }
-
-        // Deals closing insight
-        if (stats.dealsClosingThisMonth > 0) {
-          mockInsights.push({
-            id: '2',
-            type: 'opportunity',
-            title: 'Deals Closing This Month',
-            description: `You have ${stats.dealsClosingThisMonth} deals closing this month. Follow up proactively to ensure they close on time.`,
-            impact: 'high',
-            action: 'View closing deals',
-            value: `${stats.dealsClosingThisMonth} deals`,
-            timestamp: new Date(),
-          })
-        }
-
-        // Overdue tasks insight
-        if (stats.overdueTasks > 0) {
-          mockInsights.push({
-            id: '3',
-            type: 'warning',
-            title: 'Action Required',
-            description: `You have ${stats.overdueTasks} overdue task${stats.overdueTasks > 1 ? 's' : ''}. Address these to maintain customer satisfaction.`,
-            impact: 'high',
-            action: 'View overdue tasks',
-            value: `${stats.overdueTasks} tasks`,
-            timestamp: new Date(),
-          })
-        }
-
-        // Pipeline insight
-        if (stats.pipelineByStage && stats.pipelineByStage.length > 0) {
-          const totalDeals = stats.pipelineByStage.reduce((sum: number, stage: any) => sum + stage.count, 0)
-          if (totalDeals > 0) {
-            mockInsights.push({
-              id: '4',
-              type: 'info',
-              title: 'Pipeline Health',
-              description: `Your pipeline has ${totalDeals} active deals across ${stats.pipelineByStage.length} stages. Consider moving deals forward to accelerate revenue.`,
-              impact: 'medium',
-              action: 'View pipeline',
-              value: `${totalDeals} deals`,
-              timestamp: new Date(),
-            })
-          }
-        }
-      }
-
-      // CRITICAL: Ensure mockInsights is always an array
-      setInsights(Array.isArray(mockInsights) ? mockInsights : [])
-    }
-
     fetchInsights()
-  }, [tenantId, token, stats, tenant?.name])
-  
-  // Separate effect to handle tenant loading after component mounts
-  // This ensures Demo Business gets insights even if tenant loads late
-  useEffect(() => {
-    if (!tenantId || !token) return
-    
-    // Check if tenant is Demo Business and we don't have insights yet
-    const currentTenant = useAuthStore.getState().tenant
-    const tenantName = (currentTenant?.name || tenant?.name || '').trim()
-    const isDemoBusiness = tenantName.toLowerCase() === 'demo business pvt ltd.' || 
-                           tenantName.toLowerCase().includes('demo business')
-    
-    if (isDemoBusiness && insights.length === 0 && !isLoading) {
-      console.log('[SmartInsights] Regenerating insights for Demo Business (tenant loaded late)')
-      const mockInsights: Insight[] = []
-      mockInsights.push({
-        id: 'demo-1',
-        type: 'success',
-        title: 'Revenue Growth Opportunity',
-        description: `Your revenue this month is ₹${stats?.revenueThisMonth?.toLocaleString('en-IN') || '2,50,000'}. Based on trends, you could increase this by 15% by focusing on top-performing deals.`,
-        impact: 'high',
-        action: 'View top deals',
-        value: `+15% potential`,
-        timestamp: new Date(),
-      })
-      mockInsights.push({
-        id: 'demo-2',
-        type: 'opportunity',
-        title: 'Deals Closing This Month',
-        description: `You have ${stats?.dealsClosingThisMonth || 5} deals closing this month. Follow up proactively to ensure they close on time.`,
-        impact: 'high',
-        action: 'View closing deals',
-        value: `${stats?.dealsClosingThisMonth || 5} deals`,
-        timestamp: new Date(),
-      })
-      mockInsights.push({
-        id: 'demo-3',
-        type: 'info',
-        title: 'Pipeline Health',
-        description: `Your pipeline has ${stats?.pipelineByStage?.reduce((sum: number, stage: any) => sum + (stage?.count || 0), 0) || 12} active deals across ${stats?.pipelineByStage?.length || 5} stages. Consider moving deals forward to accelerate revenue.`,
-        impact: 'medium',
-        action: 'View pipeline',
-        value: `${stats?.pipelineByStage?.reduce((sum: number, stage: any) => sum + (stage?.count || 0), 0) || 12} deals`,
-        timestamp: new Date(),
-      })
-      if (stats?.overdueTasks > 0) {
-        mockInsights.push({
-          id: 'demo-4',
-          type: 'warning',
-          title: 'Action Required',
-          description: `You have ${stats.overdueTasks} overdue task${stats.overdueTasks > 1 ? 's' : ''}. Address these to maintain customer satisfaction.`,
-          impact: 'high',
-          action: 'View overdue tasks',
-          value: `${stats.overdueTasks} tasks`,
-          timestamp: new Date(),
-        })
-      } else {
-        mockInsights.push({
-          id: 'demo-4',
-          type: 'success',
-          title: 'Excellent Task Management',
-          description: `Great job! You have no overdue tasks. Keep up the momentum and maintain this level of organization.`,
-          impact: 'medium',
-          action: 'View tasks',
-          value: `0 overdue`,
-          timestamp: new Date(),
-        })
-      }
-      setInsights(mockInsights)
-    }
-  }, [tenantId, token, tenant?.name, insights.length, isLoading, stats])
+  }, [tenantId, token])
 
   const getInsightIcon = (type: Insight['type']) => {
     switch (type) {
