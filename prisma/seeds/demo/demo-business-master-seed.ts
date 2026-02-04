@@ -123,43 +123,63 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
   console.log(`📅 Date Range: ${DEMO_DATE_RANGE.start.toISOString().split('T')[0]} to ${DEMO_DATE_RANGE.end.toISOString().split('T')[0]}`)
   console.log('')
 
-  // 1. Get or create Demo Business tenant
-  let tenant = await prisma.tenant.findUnique({
-    where: { subdomain: 'demo' },
-  })
+  // 1. Get tenant - use provided tenantId if available, otherwise find by subdomain
+  let tenant: any = null
+  let tenantId: string
 
-  if (!tenant) {
-    console.log('📋 Creating Demo Business tenant...')
-    tenant = await prisma.tenant.create({
-      data: {
-        name: 'Demo Business Pvt Ltd',
-        subdomain: 'demo',
-        plan: 'professional',
-        status: 'active',
-        maxContacts: 10000,
-        maxInvoices: 10000,
-        maxUsers: 50,
-        maxStorage: 102400,
-        gstin: '29ABCDE1234F1Z5',
-        address: '123 Business Park, MG Road',
-        city: 'Bangalore',
-        state: 'Karnataka',
-        postalCode: '560001',
-        country: 'India',
-        phone: '+91-80-12345678',
-        email: 'contact@demobusiness.com',
-        website: 'https://demobusiness.com',
-        industry: 'service-business',
-        industrySettings: {
-          setForDemo: true,
-          setAt: new Date().toISOString(),
-        },
-      },
+  if (demoTenantId) {
+    // Use the provided tenantId directly
+    console.log(`📋 Using provided tenantId: ${demoTenantId}`)
+    tenant = await prisma.tenant.findUnique({
+      where: { id: demoTenantId },
     })
-  }
+    
+    if (!tenant) {
+      throw new Error(`Tenant not found with ID: ${demoTenantId}`)
+    }
+    
+    tenantId = demoTenantId
+    console.log(`✅ Found tenant: ${tenant.name} (${tenantId})`)
+  } else {
+    // Fallback: find by subdomain
+    tenant = await prisma.tenant.findUnique({
+      where: { subdomain: 'demo' },
+    })
 
-  const tenantId = demoTenantId || tenant.id
-  console.log(`✅ Using tenant: ${tenant.name} (${tenantId})`)
+    if (!tenant) {
+      console.log('📋 Creating Demo Business tenant...')
+      tenant = await prisma.tenant.create({
+        data: {
+          name: 'Demo Business Pvt Ltd',
+          subdomain: 'demo',
+          plan: 'professional',
+          status: 'active',
+          maxContacts: 10000,
+          maxInvoices: 10000,
+          maxUsers: 50,
+          maxStorage: 102400,
+          gstin: '29ABCDE1234F1Z5',
+          address: '123 Business Park, MG Road',
+          city: 'Bangalore',
+          state: 'Karnataka',
+          postalCode: '560001',
+          country: 'India',
+          phone: '+91-80-12345678',
+          email: 'contact@demobusiness.com',
+          website: 'https://demobusiness.com',
+          industry: 'service-business',
+          industrySettings: {
+            setForDemo: true,
+            setAt: new Date().toISOString(),
+          },
+        },
+      })
+    }
+
+    tenantId = tenant.id
+    console.log(`✅ Using tenant: ${tenant.name} (${tenantId})`)
+  }
+  
   console.log('')
 
   // 2. Get or create admin user
