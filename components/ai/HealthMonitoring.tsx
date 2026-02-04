@@ -196,7 +196,7 @@ export function HealthMonitoring({ tenantId, stats }: HealthMonitoringProps) {
 
         {/* Individual Metrics */}
         <div className="space-y-3">
-          {metrics.map((metric, index) => (
+          {(Array.isArray(metrics) ? metrics : []).map((metric, index) => (
             <motion.div
               key={metric.id}
               initial={{ opacity: 0, y: 10 }}

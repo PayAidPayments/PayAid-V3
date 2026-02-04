@@ -149,7 +149,7 @@ export function PredictiveAnalytics({ tenantId, stats }: PredictiveAnalyticsProp
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {predictions.map((prediction, index) => (
+          {(Array.isArray(predictions) ? predictions : []).map((prediction, index) => (
             <motion.div
               key={prediction.id}
               initial={{ opacity: 0, x: -20 }}

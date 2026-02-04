@@ -94,13 +94,13 @@ export function IntelligentAlerts({ tenantId, stats }: IntelligentAlertsProps) {
 
   const markAsRead = (id: string) => {
     setAlerts((prev) =>
-      prev.map((alert) => (alert.id === id ? { ...alert, read: true } : alert))
+      Array.isArray(prev) ? prev.map((alert) => (alert.id === id ? { ...alert, read: true } : alert)) : []
     )
     setUnreadCount((prev) => Math.max(0, prev - 1))
   }
 
   const markAllAsRead = () => {
-    setAlerts((prev) => prev.map((alert) => ({ ...alert, read: true })))
+    setAlerts((prev) => Array.isArray(prev) ? prev.map((alert) => ({ ...alert, read: true })) : [])
     setUnreadCount(0)
   }
 
@@ -171,7 +171,7 @@ export function IntelligentAlerts({ tenantId, stats }: IntelligentAlertsProps) {
         ) : (
           <div className="space-y-3">
             <AnimatePresence>
-              {alerts.map((alert, index) => (
+              {(Array.isArray(alerts) ? alerts : []).map((alert, index) => (
                 <motion.div
                   key={alert.id}
                   initial={{ opacity: 0, y: 10 }}
