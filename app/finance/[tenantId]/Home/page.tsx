@@ -32,10 +32,25 @@ import { GlassCard } from '@/components/modules/GlassCard'
 import { getModuleConfig } from '@/lib/modules/module-config'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { QuickActionsPanel } from '@/components/finance/QuickActionsPanel'
-import { FinancialAlerts } from '@/components/finance/FinancialAlerts'
-import { CashFlowManagement } from '@/components/finance/CashFlowManagement'
-import { FinancialForecasting } from '@/components/finance/FinancialForecasting'
-import { FinancialAnalytics } from '@/components/finance/FinancialAnalytics'
+// Lazy load heavy financial components for better performance
+import dynamic from 'next/dynamic'
+
+const FinancialAlerts = dynamic(
+  () => import('@/components/finance/FinancialAlerts').then(mod => ({ default: mod.FinancialAlerts })),
+  { ssr: false, loading: () => null }
+)
+const CashFlowManagement = dynamic(
+  () => import('@/components/finance/CashFlowManagement').then(mod => ({ default: mod.CashFlowManagement })),
+  { ssr: false, loading: () => null }
+)
+const FinancialForecasting = dynamic(
+  () => import('@/components/finance/FinancialForecasting').then(mod => ({ default: mod.FinancialForecasting })),
+  { ssr: false, loading: () => null }
+)
+const FinancialAnalytics = dynamic(
+  () => import('@/components/finance/FinancialAnalytics').then(mod => ({ default: mod.FinancialAnalytics })),
+  { ssr: false, loading: () => null }
+)
 
 interface FinanceDashboardStats {
   totalInvoices: number
@@ -444,18 +459,18 @@ export default function FinanceDashboardPage() {
             </CardContent>
           </GlassCard>
 
-          {/* Financial Alerts */}
-          <FinancialAlerts tenantId={tenantId} />
+          {/* Financial Alerts - Lazy loaded */}
+          {stats && <FinancialAlerts tenantId={tenantId} />}
         </div>
 
-        {/* Cash Flow Management */}
-        <CashFlowManagement tenantId={tenantId} />
+        {/* Cash Flow Management - Lazy loaded */}
+        {stats && <CashFlowManagement tenantId={tenantId} />}
 
-        {/* Financial Forecasting */}
-        <FinancialForecasting tenantId={tenantId} />
+        {/* Financial Forecasting - Lazy loaded */}
+        {stats && <FinancialForecasting tenantId={tenantId} />}
 
-        {/* Financial Analytics */}
-        <FinancialAnalytics tenantId={tenantId} />
+        {/* Financial Analytics - Lazy loaded */}
+        {stats && <FinancialAnalytics tenantId={tenantId} />}
       </div>
 
       {/* Quick Actions Panel - Floating */}
