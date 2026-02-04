@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Verify tenantId exists in database
+    // Verify tenantId exists in database and test connection
     try {
       const tenantExists = await prisma.tenant.findUnique({
         where: { id: tenantId },
@@ -36,7 +36,38 @@ export async function GET(request: NextRequest) {
       console.log('[PROJECTS_DASHBOARD] Tenant verified:', tenantExists.name)
     } catch (tenantCheckError: any) {
       console.error('[PROJECTS_DASHBOARD] Error checking tenant:', tenantCheckError)
-      // Continue anyway - might be a database connection issue
+      
+      // Check if it's a database connection error
+      const errorMessage = tenantCheckError?.message || String(tenantCheckError || '')
+      const isConnectionError = tenantCheckError?.code?.startsWith('P1') ||
+                               errorMessage.toLowerCase().includes('can\'t reach') ||
+                               errorMessage.toLowerCase().includes('connect') ||
+                               errorMessage.toLowerCase().includes('enotfound') ||
+                               errorMessage.toLowerCase().includes('econnrefused')
+      
+      if (isConnectionError) {
+        console.error('[PROJECTS_DASHBOARD] Database connection failed during tenant check')
+        return NextResponse.json(
+          { 
+            error: 'Database connection failed',
+            message: 'Unable to connect to database. Please check your DATABASE_URL configuration in Vercel. If using Supabase, check if your project is paused.',
+            code: tenantCheckError?.code,
+            troubleshooting: {
+              steps: [
+                '1. Check if DATABASE_URL is set in Vercel environment variables',
+                '2. If using Supabase, check if your project is paused: https://supabase.com/dashboard',
+                '3. Resume the Supabase project if paused (free tier pauses after inactivity)',
+                '4. Wait 1-2 minutes after resuming for the database to activate',
+                '5. Verify the database connection string is correct',
+              ],
+              healthCheck: '/api/health/db',
+            },
+          },
+          { status: 503 }
+        )
+      }
+      
+      // Continue anyway for other errors
     }
 
     // Get current date for calculations
