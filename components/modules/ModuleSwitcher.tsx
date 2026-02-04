@@ -312,11 +312,17 @@ export function ModuleSwitcher() {
         category: 'core',
         color: '#53328A'
       },
-      ...moduleConfigs.filter(
-        config => 
-          (config.status === 'active' || config.status === 'beta') && 
-          config.category !== 'industry'
-      )
+      ...moduleConfigs
+        .filter(
+          config => 
+            (config.status === 'active' || config.status === 'beta') && 
+            config.category !== 'industry'
+        )
+        .map(config => ({
+          ...config,
+          // Update URL to include tenantId if available
+          url: tenantId ? `/${config.id}/${tenantId}/Home/` : config.url
+        }))
     ]
 
     return modules.filter(m => 
@@ -400,6 +406,7 @@ export function ModuleSwitcher() {
       document.cookie = `token=${currentState.token}; expires=${expires.toUTCString()}; path=/; SameSite=Lax${isSecure ? '; Secure' : ''}`
     }
 
+    // Use module.url which already includes tenantId if available (constructed in allModules)
     router.push(module.url)
     setIsOpen(false)
     setSearchQuery('')
