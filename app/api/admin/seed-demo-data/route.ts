@@ -361,46 +361,107 @@ export async function POST(request: NextRequest) {
       }
       
       // Start seeding in background and return immediately
+      const seedStartTime = Date.now()
       const seedPromise = (async () => {
         try {
-          console.log(`[SEED_DEMO_DATA] Starting ${comprehensive ? 'comprehensive' : 'basic'} seed for tenant: ${seedTenantId}`)
+          console.log(`[SEED_DEMO_DATA] 🚀 Starting ${comprehensive ? 'comprehensive' : 'basic'} seed for tenant: ${seedTenantId}`)
+          console.log(`[SEED_DEMO_DATA] ⏰ Start time: ${new Date().toISOString()}`)
           
+          let seedResult: any = null
           if (comprehensive) {
-            await seedDemoBusiness(seedTenantId)
+            console.log(`[SEED_DEMO_DATA] 📦 Running comprehensive seed (seedDemoBusiness)...`)
+            seedResult = await seedDemoBusiness(seedTenantId)
+            console.log(`[SEED_DEMO_DATA] ✅ Comprehensive seed function completed`)
           } else {
-            await seedDemoDataForTenant(seedTenantId)
+            console.log(`[SEED_DEMO_DATA] 📦 Running basic seed (seedDemoDataForTenant)...`)
+            seedResult = await seedDemoDataForTenant(seedTenantId)
+            console.log(`[SEED_DEMO_DATA] ✅ Basic seed function completed`)
           }
           
+          // Wait a moment for database to sync
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          
           // Verify data was created
+          console.log(`[SEED_DEMO_DATA] 🔍 Verifying data creation for tenant: ${seedTenantId}`)
           const [contacts, deals, tasks, invoices, orders] = await Promise.all([
-            prisma.contact.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
-            prisma.deal.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
-            prisma.task.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
-            prisma.invoice.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
-            prisma.order.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
+            prisma.contact.count({ where: { tenantId: seedTenantId } }).catch((e) => {
+              console.error(`[SEED_DEMO_DATA] Error counting contacts:`, e)
+              return 0
+            }),
+            prisma.deal.count({ where: { tenantId: seedTenantId } }).catch((e) => {
+              console.error(`[SEED_DEMO_DATA] Error counting deals:`, e)
+              return 0
+            }),
+            prisma.task.count({ where: { tenantId: seedTenantId } }).catch((e) => {
+              console.error(`[SEED_DEMO_DATA] Error counting tasks:`, e)
+              return 0
+            }),
+            prisma.invoice.count({ where: { tenantId: seedTenantId } }).catch((e) => {
+              console.error(`[SEED_DEMO_DATA] Error counting invoices:`, e)
+              return 0
+            }),
+            prisma.order.count({ where: { tenantId: seedTenantId } }).catch((e) => {
+              console.error(`[SEED_DEMO_DATA] Error counting orders:`, e)
+              return 0
+            }),
           ])
           
           const totalData = contacts + deals + tasks + invoices + orders
-          const elapsedSeconds = Math.floor((Date.now() - Date.now()) / 1000)
+          const elapsedSeconds = Math.floor((Date.now() - seedStartTime) / 1000)
           
+          console.log(`[SEED_DEMO_DATA] ⏰ Seed completed in ${elapsedSeconds} seconds`)
           console.log(`[SEED_DEMO_DATA] ✅ Seed completed for tenant ${seedTenantId}`)
-          console.log(`[SEED_DEMO_DATA] 📊 Data created: ${contacts} contacts, ${deals} deals, ${tasks} tasks, ${invoices} invoices, ${orders} orders`)
+          console.log(`[SEED_DEMO_DATA] 📊 Data verification:`)
+          console.log(`[SEED_DEMO_DATA]   - Contacts: ${contacts}`)
+          console.log(`[SEED_DEMO_DATA]   - Deals: ${deals}`)
+          console.log(`[SEED_DEMO_DATA]   - Tasks: ${tasks}`)
+          console.log(`[SEED_DEMO_DATA]   - Invoices: ${invoices}`)
+          console.log(`[SEED_DEMO_DATA]   - Orders: ${orders}`)
           console.log(`[SEED_DEMO_DATA] 📈 Total records: ${totalData}`)
           
+          if (seedResult) {
+            console.log(`[SEED_DEMO_DATA] 📋 Seed result:`, JSON.stringify(seedResult, null, 2))
+          }
+          
           if (totalData === 0) {
-            console.error(`[SEED_DEMO_DATA] ❌ WARNING: Seed completed but NO data was created for tenant ${seedTenantId}`)
-            console.error(`[SEED_DEMO_DATA] This may indicate a database connection issue or seed function error`)
+            console.error(`[SEED_DEMO_DATA] ❌ CRITICAL: Seed completed but NO data was created for tenant ${seedTenantId}`)
+            console.error(`[SEED_DEMO_DATA] Possible causes:`)
+            console.error(`[SEED_DEMO_DATA]   1. Database connection issue`)
+            console.error(`[SEED_DEMO_DATA]   2. Seed function error (check logs above)`)
+            console.error(`[SEED_DEMO_DATA]   3. Wrong tenantId used in seed function`)
+            console.error(`[SEED_DEMO_DATA]   4. Database transaction rollback`)
           } else if (totalData < 10) {
             console.warn(`[SEED_DEMO_DATA] ⚠️  WARNING: Seed completed but very little data was created (${totalData} records)`)
+            console.warn(`[SEED_DEMO_DATA] Expected: 150+ contacts, 200+ deals for comprehensive seed`)
           } else {
             console.log(`[SEED_DEMO_DATA] ✅ Seed successful! Dashboard should now show data.`)
+            console.log(`[SEED_DEMO_DATA] 💡 Users should refresh the dashboard page to see the data.`)
           }
         } catch (err: any) {
-          console.error('[SEED_DEMO_DATA] Background seed error:', err)
-          console.error('[SEED_DEMO_DATA] Error details:', err?.message, err?.stack)
+          const elapsedSeconds = Math.floor((Date.now() - seedStartTime) / 1000)
+          console.error(`[SEED_DEMO_DATA] ❌ Background seed FAILED after ${elapsedSeconds} seconds`)
+          console.error(`[SEED_DEMO_DATA] Error type: ${err?.constructor?.name || typeof err}`)
+          console.error(`[SEED_DEMO_DATA] Error message: ${err?.message || String(err)}`)
+          console.error(`[SEED_DEMO_DATA] Error code: ${err?.code || 'N/A'}`)
+          console.error(`[SEED_DEMO_DATA] Error stack:`, err?.stack)
+          console.error(`[SEED_DEMO_DATA] Full error object:`, JSON.stringify(err, Object.getOwnPropertyNames(err), 2))
+          
+          // Try to verify if any data was created despite the error
+          try {
+            const [contacts, deals] = await Promise.all([
+              prisma.contact.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
+              prisma.deal.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
+            ])
+            console.error(`[SEED_DEMO_DATA] Partial data check: ${contacts} contacts, ${deals} deals created before error`)
+          } catch (verifyError) {
+            console.error(`[SEED_DEMO_DATA] Could not verify partial data:`, verifyError)
+          }
+          
           throw err
         } finally {
           // Clean up tracking after seed completes or fails
+          const totalElapsed = Math.floor((Date.now() - seedStartTime) / 1000)
+          console.log(`[SEED_DEMO_DATA] 🏁 Seed process finished (total time: ${totalElapsed}s)`)
           stopSeedTracking(seedTenantId)
         }
       })()
@@ -408,10 +469,15 @@ export async function POST(request: NextRequest) {
       // Track ongoing seed
       startSeedTracking(seedTenantId, seedPromise)
       
-      // Don't await - let it run in background
-      seedPromise.catch((err) => {
-        console.error('[SEED_DEMO_DATA] Seed promise rejected:', err)
-      })
+      // Don't await - let it run in background, but log completion/failure
+      seedPromise
+        .then(() => {
+          console.log(`[SEED_DEMO_DATA] ✅ Background seed promise resolved successfully for tenant ${seedTenantId}`)
+        })
+        .catch((err) => {
+          console.error(`[SEED_DEMO_DATA] ❌ Background seed promise REJECTED for tenant ${seedTenantId}:`, err)
+          console.error(`[SEED_DEMO_DATA] This means the seed failed. Check logs above for details.`)
+        })
       
       return NextResponse.json({
         success: true,
