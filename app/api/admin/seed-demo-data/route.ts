@@ -196,14 +196,16 @@ export async function POST(request: NextRequest) {
     
     // Try to authenticate via session if no auth header
     let isAuthenticated = !!authHeader
+    let user = null
     if (!authHeader) {
       try {
         const { authenticateRequest } = await import('@/lib/middleware/auth')
-        const user = await authenticateRequest(request).catch(() => null)
+        user = await authenticateRequest(request).catch(() => null)
         isAuthenticated = !!user
       } catch (authError) {
         // If auth fails, check if we're in development
         isAuthenticated = process.env.NODE_ENV !== 'production'
+        console.warn('[SEED_DEMO_DATA] Auth check failed, allowing in dev mode:', authError)
       }
     }
     
@@ -218,8 +220,13 @@ export async function POST(request: NextRequest) {
     // Check if background mode is requested
     const searchParams = request.nextUrl.searchParams
     const background = searchParams.get('background') === 'true'
-    const targetTenantId = searchParams.get('tenantId') // Allow specifying tenant ID
+    let targetTenantId = searchParams.get('tenantId') // Allow specifying tenant ID
     const comprehensive = searchParams.get('comprehensive') === 'true' // Use comprehensive seed
+    
+    // Use authenticated user's tenantId if no tenantId specified
+    if (!targetTenantId && user?.tenantId) {
+      targetTenantId = user.tenantId
+    }
 
     if (background) {
       // Start seeding in background and return immediately
@@ -228,10 +235,12 @@ export async function POST(request: NextRequest) {
         if (comprehensive) {
           seedDemoBusiness(targetTenantId).catch((err) => {
             console.error('[SEED_DEMO_DATA] Background comprehensive seed error for tenant:', err)
+            console.error('[SEED_DEMO_DATA] Error details:', err?.message, err?.stack)
           })
         } else {
           seedDemoDataForTenant(targetTenantId).catch((err) => {
             console.error('[SEED_DEMO_DATA] Background seed error for tenant:', err)
+            console.error('[SEED_DEMO_DATA] Error details:', err?.message, err?.stack)
           })
         }
         return NextResponse.json({
@@ -242,23 +251,41 @@ export async function POST(request: NextRequest) {
           tenantId: targetTenantId,
         })
       } else {
+        // Use tenant from authenticated user if available
+        const tenantId = user?.tenantId || targetTenantId
+        
         if (comprehensive) {
           // Find Demo Business tenant and use comprehensive seed
-          const demoTenant = await prisma.tenant.findFirst({
-            where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
-          })
+          let demoTenant = null
+          if (tenantId) {
+            demoTenant = await prisma.tenant.findUnique({
+              where: { id: tenantId },
+            }).catch(() => null)
+          }
+          
+          if (!demoTenant) {
+            demoTenant = await prisma.tenant.findFirst({
+              where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
+            }).catch(() => null)
+          }
+          
           if (demoTenant) {
             seedDemoBusiness(demoTenant.id).catch((err) => {
               console.error('[SEED_DEMO_DATA] Background comprehensive seed error:', err)
+              console.error('[SEED_DEMO_DATA] Error details:', err?.message, err?.stack)
             })
           } else {
+            // Fallback to basic seed if tenant not found
+            console.warn('[SEED_DEMO_DATA] Demo Business tenant not found, using basic seed')
             seedDemoData().catch((err) => {
               console.error('[SEED_DEMO_DATA] Background seed error:', err)
+              console.error('[SEED_DEMO_DATA] Error details:', err?.message, err?.stack)
             })
           }
         } else {
           seedDemoData().catch((err) => {
             console.error('[SEED_DEMO_DATA] Background seed error:', err)
+            console.error('[SEED_DEMO_DATA] Error details:', err?.message, err?.stack)
           })
         }
         return NextResponse.json({
