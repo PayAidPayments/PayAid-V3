@@ -474,7 +474,14 @@ export default function CRMDashboardPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setActivityFeedData(data.activities || [])
+        // CRITICAL: Ensure activities is always an array to prevent .map() errors
+        const activities = data?.activities
+        if (Array.isArray(activities)) {
+          setActivityFeedData(activities)
+        } else {
+          console.warn('[CRM_DASHBOARD] activities is not an array:', typeof activities, activities)
+          setActivityFeedData([])
+        }
       }
     } catch (err: any) {
       // Ignore abort errors
@@ -854,6 +861,11 @@ export default function CRMDashboardPage() {
 
   const topLeadSourcesData = (() => {
     try {
+      // CRITICAL: Ensure safeStats exists before accessing properties
+      if (!safeStats) {
+        console.warn('[CRM_DASHBOARD] safeStats is null/undefined in topLeadSourcesData')
+        return []
+      }
       const data = safeStats.topLeadSources
       
       // Multiple defensive checks
@@ -1034,7 +1046,7 @@ export default function CRMDashboardPage() {
               <CardContent>
                 {Array.isArray(tasksViewData?.myOpenActivitiesToday) && tasksViewData.myOpenActivitiesToday.length > 0 ? (
                   <div className="space-y-2">
-                    {tasksViewData.myOpenActivitiesToday.map((activity) => (
+                    {(Array.isArray(tasksViewData.myOpenActivitiesToday) ? tasksViewData.myOpenActivitiesToday : []).map((activity) => (
                       <div key={activity.id} className="p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                         <div className="flex items-center justify-between">
                           <div>
@@ -1068,7 +1080,7 @@ export default function CRMDashboardPage() {
               <CardContent>
                 {Array.isArray(tasksViewData?.myOpenTasks) && tasksViewData.myOpenTasks.length > 0 ? (
                   <div className="space-y-2">
-                    {tasksViewData.myOpenTasks.map((task) => (
+                    {(Array.isArray(tasksViewData.myOpenTasks) ? tasksViewData.myOpenTasks : []).map((task) => (
                       <div key={task.id} className="p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                         <div className="flex items-center justify-between">
                           <div>
@@ -1101,7 +1113,7 @@ export default function CRMDashboardPage() {
               <CardContent>
                 {Array.isArray(tasksViewData?.myMeetingsToday) && tasksViewData.myMeetingsToday.length > 0 ? (
                   <div className="space-y-2">
-                    {tasksViewData.myMeetingsToday.map((meeting) => (
+                    {(Array.isArray(tasksViewData.myMeetingsToday) ? tasksViewData.myMeetingsToday : []).map((meeting) => (
                       <div key={meeting.id} className="p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                         <div className="flex items-center justify-between">
                           <div>
@@ -1135,7 +1147,7 @@ export default function CRMDashboardPage() {
               <CardContent>
                 {Array.isArray(tasksViewData?.myLeads) && tasksViewData.myLeads.length > 0 ? (
                   <div className="space-y-2">
-                    {tasksViewData.myLeads.map((lead) => (
+                    {(Array.isArray(tasksViewData.myLeads) ? tasksViewData.myLeads : []).map((lead) => (
                       <div key={lead.id} className="p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                         <div className="flex items-center justify-between">
                           <div>
@@ -1168,7 +1180,7 @@ export default function CRMDashboardPage() {
               <CardContent>
                 {Array.isArray(tasksViewData?.myPipelineDealsByStage) && tasksViewData.myPipelineDealsByStage.length > 0 ? (
                   <div className="space-y-2">
-                    {tasksViewData.myPipelineDealsByStage.map((stage) => (
+                    {(Array.isArray(tasksViewData.myPipelineDealsByStage) ? tasksViewData.myPipelineDealsByStage : []).map((stage) => (
                       <div key={stage.stage} className="p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                         <div className="flex items-center justify-between">
                           <div>
@@ -1197,7 +1209,7 @@ export default function CRMDashboardPage() {
               <CardContent>
                 {Array.isArray(tasksViewData?.myDealsClosingThisMonth) && tasksViewData.myDealsClosingThisMonth.length > 0 ? (
                   <div className="space-y-2">
-                    {tasksViewData.myDealsClosingThisMonth.map((deal) => (
+                    {(Array.isArray(tasksViewData.myDealsClosingThisMonth) ? tasksViewData.myDealsClosingThisMonth : []).map((deal) => (
                       <div key={deal.id} className="p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                         <div className="flex items-center justify-between">
                           <div>
@@ -1259,7 +1271,7 @@ export default function CRMDashboardPage() {
               <CardContent>
                 {Array.isArray(activityFeedData) && activityFeedData.length > 0 ? (
                   <div className="space-y-4">
-                    {activityFeedData.map((activity, index) => (
+                    {(Array.isArray(activityFeedData) ? activityFeedData : []).map((activity, index) => (
                       <div
                         key={activity.id}
                         className="flex gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
