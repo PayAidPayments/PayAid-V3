@@ -1533,14 +1533,14 @@ export default function CRMDashboardPage() {
 
         {/* Charts Row - Modern Visualizations - Only render if we have valid stats */}
         {safeStats && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 xl:mr-80 mt-6">
-          {/* Pipeline by Stage - Pie Chart */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 xl:mr-80 mt-6">
+            {/* Pipeline by Stage - Pie Chart */}
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 bg-gradient-to-br from-white to-purple-50/30">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold text-purple-900">Pipeline by Stage</CardTitle>
                 <CardDescription>Distribution of deals across pipeline stages</CardDescription>
               </CardHeader>
-            <CardContent>
+              <CardContent>
               {Array.isArray(pipelineChartData) && pipelineChartData.length > 0 ? (
                 <div className="h-64 w-full" style={{ minWidth: 0, minHeight: 256 }}>
                   <ResponsiveContainer width="100%" height={256} minWidth={0} minHeight={256}>
@@ -1596,16 +1596,16 @@ export default function CRMDashboardPage() {
                   <p>No pipeline data available</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Monthly Lead Creation - Area Chart */}
-          <Card className="border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold">Monthly Lead Creation</CardTitle>
-              <CardDescription>Lead generation trend over time</CardDescription>
-            </CardHeader>
-            <CardContent>
+            {/* Monthly Lead Creation - Area Chart */}
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Monthly Lead Creation</CardTitle>
+                <CardDescription>Lead generation trend over time</CardDescription>
+              </CardHeader>
+              <CardContent>
               {Array.isArray(monthlyLeadData) && monthlyLeadData.length > 0 ? (
                 <div className="h-64 w-full" style={{ minWidth: 0, minHeight: 256 }}>
                   <ResponsiveContainer width="100%" height={256} minWidth={0} minHeight={256}>
@@ -1649,19 +1649,21 @@ export default function CRMDashboardPage() {
                   <p>No lead creation data available</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-          {/* Quarterly Performance and TOP 10 Lead Sources - Side by Side */}
+        {/* Quarterly Performance and TOP 10 Lead Sources - Side by Side */}
+        {safeStats && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 xl:mr-80 mt-6">
             {/* Quarterly Performance - Bar Chart */}
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 bg-gradient-to-br from-white to-purple-50/20">
-            <CardHeader className="pb-1">
-              <CardTitle className="text-lg font-semibold pl-5 text-purple-900">Quarterly Performance Overview</CardTitle>
-              <CardDescription className="pl-5">Revenue and deals won by quarter (Q1-Q4)</CardDescription>
-            </CardHeader>
-            <CardContent className="pb-0 pl-5 pt-8">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-lg font-semibold pl-5 text-purple-900">Quarterly Performance Overview</CardTitle>
+                <CardDescription className="pl-5">Revenue and deals won by quarter (Q1-Q4)</CardDescription>
+              </CardHeader>
+              <CardContent className="pb-0 pl-5 pt-8">
               {Array.isArray(quarterlyRevenueData) && quarterlyRevenueData.length > 0 ? (
                 <div className="h-80 w-full" style={{ minWidth: 0, minHeight: 320 }}>
                   <ResponsiveContainer width="100%" height={320} minWidth={0} minHeight={320}>
@@ -1708,16 +1710,16 @@ export default function CRMDashboardPage() {
                   <p>No quarterly performance data available</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* TOP 10 Lead Sources */}
-          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 bg-gradient-to-br from-white to-gold-50/20">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-purple-900">TOP 10 Lead Sources</CardTitle>
-              <CardDescription>Best performing lead sources</CardDescription>
-            </CardHeader>
-            <CardContent>
+            {/* TOP 10 Lead Sources */}
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 bg-gradient-to-br from-white to-gold-50/20">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-purple-900">TOP 10 Lead Sources</CardTitle>
+                <CardDescription>Best performing lead sources</CardDescription>
+              </CardHeader>
+              <CardContent>
               {Array.isArray(topLeadSourcesData) && topLeadSourcesData.length > 0 ? (
                 <div className="h-[500px] w-full" style={{ minWidth: 0, minHeight: 500 }}>
                   <ResponsiveContainer width="100%" height={500} minWidth={0} minHeight={500}>
@@ -1812,8 +1814,8 @@ export default function CRMDashboardPage() {
                   <p>No lead source data available</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
           </div>
         )}
 
