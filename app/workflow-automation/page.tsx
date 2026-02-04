@@ -26,8 +26,8 @@ export default function WorkflowAutomationModulePage() {
     }
 
     if (tenant?.id) {
-      // Redirect to workflows dashboard (workflows are managed in /dashboard/workflows)
-      router.push('/dashboard/workflows')
+      // Redirect to tenant-specific Workflow Automation dashboard
+      router.push(`/workflow-automation/${tenant.id}/Home/`)
     } else {
       // Fallback if tenant is not available
       router.push('/dashboard')
