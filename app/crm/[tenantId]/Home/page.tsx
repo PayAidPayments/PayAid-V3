@@ -206,21 +206,30 @@ export default function CRMDashboardPage() {
           
           // If no data, seed it automatically in background
           if (!checkData.hasData) {
-            console.log('[CRM_DASHBOARD] No data found, seeding demo data in background...')
+            console.log('[CRM_DASHBOARD] No data found, seeding comprehensive demo data in background...')
             try {
-              // Don't await - let it run in background
-              fetch('/api/admin/seed-demo-data', {
+              // Use background mode and comprehensive seed to avoid timeout and get full data
+              fetch('/api/admin/seed-demo-data?background=true&comprehensive=true', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
               }).then(seedResponse => {
                 if (seedResponse.ok) {
-                  console.log('[CRM_DASHBOARD] Demo data seeded in background')
-                  // Reload stats after seeding (non-blocking)
-                  setTimeout(() => {
-                    if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                      fetchDashboardStats(abortControllerRef.current.signal)
-                    }
-                  }, 500) // Reduced delay
+                  seedResponse.json().then(data => {
+                    console.log('[CRM_DASHBOARD] Comprehensive seed started in background:', data)
+                    // Reload stats after longer delay (comprehensive seed takes 30-60 seconds)
+                    setTimeout(() => {
+                      if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+                        console.log('[CRM_DASHBOARD] Refreshing stats after seeding...')
+                        fetchDashboardStats(abortControllerRef.current.signal)
+                      }
+                    }, 60000) // Wait 60 seconds for comprehensive seed
+                  })
+                } else {
+                  seedResponse.json().then(errorData => {
+                    console.error('[CRM_DASHBOARD] Seed failed:', errorData)
+                  }).catch(() => {
+                    console.error('[CRM_DASHBOARD] Seed failed with status:', seedResponse.status)
+                  })
                 }
               }).catch(seedError => {
                 console.error('[CRM_DASHBOARD] Failed to seed demo data:', seedError)
