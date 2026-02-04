@@ -16,7 +16,7 @@ const SEED_TIMEOUT_MS = 300000 // 5 minutes max for comprehensive seed
 
 /**
  * GET /api/admin/seed-demo-data
- * Check seed status and data counts for a tenant
+ * Check seed status, data counts, trigger seeding, or show instructions
  */
 export async function GET(request: NextRequest) {
   try {
@@ -24,10 +24,11 @@ export async function GET(request: NextRequest) {
     const tenantId = searchParams.get('tenantId')
     const checkStatus = searchParams.get('checkStatus') === 'true'
     const checkData = searchParams.get('checkData') === 'true'
+    const trigger = searchParams.get('trigger') === 'true'
     
     // If checking status only
-    if (checkStatus && tenantId) {
-      const seedStatus = isSeedRunning(tenantId)
+    if (checkStatus) {
+      const seedStatus = isSeedRunning(tenantId || undefined)
       return NextResponse.json({
         running: seedStatus.running,
         elapsed: seedStatus.elapsed,
@@ -76,15 +77,80 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // Default: return seed status for all tenants
+    // If trigger=true, actually seed the data
+    if (trigger) {
+      const comprehensive = searchParams.get('comprehensive') === 'true'
+      const background = searchParams.get('background') === 'true'
+      
+      // If background mode, start in background
+      if (background) {
+        const demoTenant = await prisma.tenant.findFirst({
+          where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
+        })
+        if (comprehensive && demoTenant) {
+          seedDemoBusiness(demoTenant.id).catch((err) => {
+            console.error('[SEED_DEMO_DATA] Background comprehensive seed error:', err)
+          })
+        } else {
+          seedDemoData().catch((err) => {
+            console.error('[SEED_DEMO_DATA] Background seed error:', err)
+          })
+        }
+        return NextResponse.json({
+          success: true,
+          message: 'Seed operation started in background. This may take 30-60 seconds. Please refresh the page in a minute.',
+          background: true,
+          comprehensive: !!comprehensive,
+        })
+      }
+      
+      // Otherwise, call the POST handler logic
+      let result
+      if (comprehensive) {
+        const demoTenant = await prisma.tenant.findFirst({
+          where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
+        })
+        if (demoTenant) {
+          result = await seedDemoBusiness(demoTenant.id)
+        } else {
+          result = await seedDemoData()
+        }
+      } else {
+        result = await seedDemoData()
+      }
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Demo data seeded successfully',
+        comprehensive: !!comprehensive,
+        ...result,
+      })
+    }
+    
+    // Default: show instructions
     return NextResponse.json({
-      message: 'Use ?checkStatus=true&tenantId=xxx or ?checkData=true&tenantId=xxx',
+      message: 'Demo Data Seeding Endpoint',
+      instructions: [
+        'To seed demo data, use one of these methods:',
+        '1. Basic seed: Visit /api/admin/seed-demo-data?trigger=true',
+        '2. Comprehensive seed (150+ contacts, 200+ deals): Visit /api/admin/seed-demo-data?trigger=true&comprehensive=true',
+        '3. Background seed: Add ?background=true to run without timeout',
+        '4. Use POST request: curl -X POST https://payaid-v3.vercel.app/api/admin/seed-demo-data?comprehensive=true',
+        '5. Use browser console: fetch("/api/admin/seed-demo-data?comprehensive=true", {method: "POST"})',
+      ],
+      quickSeed: 'Visit: /api/admin/seed-demo-data?trigger=true&comprehensive=true',
+      comprehensiveSeed: 'Visit: /api/admin/seed-demo-data?trigger=true&comprehensive=true&background=true',
+      note: 'Comprehensive seed creates 150+ contacts, 200+ deals, 300+ tasks, and data across all modules (Mar 2025 - Feb 2026).',
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
   } catch (error: any) {
     console.error('[SEED_DEMO_DATA] GET error:', error)
     return NextResponse.json(
       {
-        error: 'Failed to check seed status',
+        error: 'Failed to process request',
         message: error?.message || 'Unknown error',
       },
       { status: 500 }
@@ -172,108 +238,6 @@ async function seedIndustryDataInline(tenantId: string, contacts: any[]) {
         },
       })
     }
-  }
-}
-
-/**
- * GET /api/admin/seed-demo-data
- * Shows instructions or triggers seeding (for browser access)
- */
-export async function GET(request: NextRequest) {
-  try {
-    const searchParams = request.nextUrl.searchParams
-    const trigger = searchParams.get('trigger') === 'true'
-    const checkStatus = searchParams.get('checkStatus') === 'true'
-    const tenantId = searchParams.get('tenantId')
-    
-    // If checkStatus=true, return seed status
-    if (checkStatus) {
-      const seedStatus = isSeedRunning(tenantId || undefined)
-      return NextResponse.json({
-        running: seedStatus.running,
-        elapsed: seedStatus.elapsed,
-        elapsedMinutes: seedStatus.elapsed ? Math.floor(seedStatus.elapsed / 60000) : 0,
-      })
-    }
-    
-    // If trigger=true, actually seed the data
-    if (trigger) {
-      const comprehensive = searchParams.get('comprehensive') === 'true'
-      const background = searchParams.get('background') === 'true'
-      
-      // If background mode, start in background
-      if (background) {
-        const demoTenant = await prisma.tenant.findFirst({
-          where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
-        })
-        if (comprehensive && demoTenant) {
-          seedDemoBusiness(demoTenant.id).catch((err) => {
-            console.error('[SEED_DEMO_DATA] Background comprehensive seed error:', err)
-          })
-        } else {
-          seedDemoData().catch((err) => {
-            console.error('[SEED_DEMO_DATA] Background seed error:', err)
-          })
-        }
-        return NextResponse.json({
-          success: true,
-          message: 'Seed operation started in background. This may take 30-60 seconds. Please refresh the page in a minute.',
-          background: true,
-          comprehensive: !!comprehensive,
-        })
-      }
-      
-      // Otherwise, call the POST handler logic
-      let result
-      if (comprehensive) {
-        const demoTenant = await prisma.tenant.findFirst({
-          where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
-        })
-        if (demoTenant) {
-          result = await seedDemoBusiness(demoTenant.id)
-        } else {
-          result = await seedDemoData()
-        }
-      } else {
-        result = await seedDemoData()
-      }
-      
-      return NextResponse.json({
-        success: true,
-        message: 'Demo data seeded successfully',
-        comprehensive: !!comprehensive,
-        ...result,
-      })
-    }
-    
-    // Otherwise, show instructions
-    return NextResponse.json({
-      message: 'Demo Data Seeding Endpoint',
-      instructions: [
-        'To seed demo data, use one of these methods:',
-        '1. Basic seed: Visit /api/admin/seed-demo-data?trigger=true',
-        '2. Comprehensive seed (150+ contacts, 200+ deals): Visit /api/admin/seed-demo-data?trigger=true&comprehensive=true',
-        '3. Background seed: Add ?background=true to run without timeout',
-        '4. Use POST request: curl -X POST https://payaid-v3.vercel.app/api/admin/seed-demo-data?comprehensive=true',
-        '5. Use browser console: fetch("/api/admin/seed-demo-data?comprehensive=true", {method: "POST"})',
-      ],
-      quickSeed: 'Visit: /api/admin/seed-demo-data?trigger=true&comprehensive=true',
-      comprehensiveSeed: 'Visit: /api/admin/seed-demo-data?trigger=true&comprehensive=true&background=true',
-      note: 'Comprehensive seed creates 150+ contacts, 200+ deals, 300+ tasks, and data across all modules (Mar 2025 - Feb 2026).',
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-  } catch (error: any) {
-    console.error('[SEED_DEMO_DATA] GET Error:', error)
-    return NextResponse.json(
-      {
-        error: 'Failed to seed demo data',
-        message: error?.message,
-      },
-      { status: 500 }
-    )
   }
 }
 
