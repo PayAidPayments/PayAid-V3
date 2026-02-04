@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma'
 import * as bcrypt from 'bcryptjs'
 import { generateTenantId } from '@/lib/utils/tenant-id'
 import { seedAllModules } from '@/lib/seed/module-seeders'
+import { seedDemoBusiness } from '@/prisma/seeds/demo/demo-business-master-seed'
 
 // Increase timeout for seed route (Vercel Pro: 60s, Hobby: 10s)
 // Note: On Hobby plan, this will still timeout at 10s, but we handle it gracefully
@@ -103,11 +104,50 @@ export async function GET(request: NextRequest) {
     
     // If trigger=true, actually seed the data
     if (trigger) {
-      // Call the POST handler logic
-      const result = await seedDemoData()
+      const comprehensive = searchParams.get('comprehensive') === 'true'
+      const background = searchParams.get('background') === 'true'
+      
+      // If background mode, start in background
+      if (background) {
+        const demoTenant = await prisma.tenant.findFirst({
+          where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
+        })
+        if (comprehensive && demoTenant) {
+          seedDemoBusiness(demoTenant.id).catch((err) => {
+            console.error('[SEED_DEMO_DATA] Background comprehensive seed error:', err)
+          })
+        } else {
+          seedDemoData().catch((err) => {
+            console.error('[SEED_DEMO_DATA] Background seed error:', err)
+          })
+        }
+        return NextResponse.json({
+          success: true,
+          message: 'Seed operation started in background. This may take 30-60 seconds. Please refresh the page in a minute.',
+          background: true,
+          comprehensive: !!comprehensive,
+        })
+      }
+      
+      // Otherwise, call the POST handler logic
+      let result
+      if (comprehensive) {
+        const demoTenant = await prisma.tenant.findFirst({
+          where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
+        })
+        if (demoTenant) {
+          result = await seedDemoBusiness(demoTenant.id)
+        } else {
+          result = await seedDemoData()
+        }
+      } else {
+        result = await seedDemoData()
+      }
+      
       return NextResponse.json({
         success: true,
         message: 'Demo data seeded successfully',
+        comprehensive: !!comprehensive,
         ...result,
       })
     }
@@ -117,12 +157,15 @@ export async function GET(request: NextRequest) {
       message: 'Demo Data Seeding Endpoint',
       instructions: [
         'To seed demo data, use one of these methods:',
-        '1. Visit this URL with ?trigger=true parameter',
-        '2. Use POST request: curl -X POST https://payaid-v3.vercel.app/api/admin/seed-demo-data',
-        '3. Use browser console: fetch("/api/admin/seed-demo-data", {method: "POST"})',
+        '1. Basic seed: Visit /api/admin/seed-demo-data?trigger=true',
+        '2. Comprehensive seed (150+ contacts, 200+ deals): Visit /api/admin/seed-demo-data?trigger=true&comprehensive=true',
+        '3. Background seed: Add ?background=true to run without timeout',
+        '4. Use POST request: curl -X POST https://payaid-v3.vercel.app/api/admin/seed-demo-data?comprehensive=true',
+        '5. Use browser console: fetch("/api/admin/seed-demo-data?comprehensive=true", {method: "POST"})',
       ],
-      quickSeed: 'Visit: /api/admin/seed-demo-data?trigger=true',
-      note: 'This will create contacts, deals, tasks, and lead sources for your tenant.',
+      quickSeed: 'Visit: /api/admin/seed-demo-data?trigger=true&comprehensive=true',
+      comprehensiveSeed: 'Visit: /api/admin/seed-demo-data?trigger=true&comprehensive=true&background=true',
+      note: 'Comprehensive seed creates 150+ contacts, 200+ deals, 300+ tasks, and data across all modules (Mar 2025 - Feb 2026).',
     }, {
       headers: {
         'Content-Type': 'application/json',
@@ -176,28 +219,53 @@ export async function POST(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const background = searchParams.get('background') === 'true'
     const targetTenantId = searchParams.get('tenantId') // Allow specifying tenant ID
+    const comprehensive = searchParams.get('comprehensive') === 'true' // Use comprehensive seed
 
     if (background) {
       // Start seeding in background and return immediately
       // If tenantId is provided, seed for that specific tenant
       if (targetTenantId) {
-        seedDemoDataForTenant(targetTenantId).catch((err) => {
-          console.error('[SEED_DEMO_DATA] Background seed error for tenant:', err)
-        })
+        if (comprehensive) {
+          seedDemoBusiness(targetTenantId).catch((err) => {
+            console.error('[SEED_DEMO_DATA] Background comprehensive seed error for tenant:', err)
+          })
+        } else {
+          seedDemoDataForTenant(targetTenantId).catch((err) => {
+            console.error('[SEED_DEMO_DATA] Background seed error for tenant:', err)
+          })
+        }
         return NextResponse.json({
           success: true,
           message: `Seed operation started in background for tenant ${targetTenantId}. This may take 30-60 seconds. Please refresh the page in a minute.`,
           background: true,
+          comprehensive: !!comprehensive,
           tenantId: targetTenantId,
         })
       } else {
-        seedDemoData().catch((err) => {
-          console.error('[SEED_DEMO_DATA] Background seed error:', err)
-        })
+        if (comprehensive) {
+          // Find Demo Business tenant and use comprehensive seed
+          const demoTenant = await prisma.tenant.findFirst({
+            where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
+          })
+          if (demoTenant) {
+            seedDemoBusiness(demoTenant.id).catch((err) => {
+              console.error('[SEED_DEMO_DATA] Background comprehensive seed error:', err)
+            })
+          } else {
+            seedDemoData().catch((err) => {
+              console.error('[SEED_DEMO_DATA] Background seed error:', err)
+            })
+          }
+        } else {
+          seedDemoData().catch((err) => {
+            console.error('[SEED_DEMO_DATA] Background seed error:', err)
+          })
+        }
         return NextResponse.json({
           success: true,
           message: 'Seed operation started in background. This may take 30-60 seconds. Please refresh the page in a minute.',
           background: true,
+          comprehensive: !!comprehensive,
         })
       }
     }
@@ -210,8 +278,28 @@ export async function POST(request: NextRequest) {
       }, SEED_TIMEOUT)
     })
 
+    // Use comprehensive seed if requested
+    let seedPromise: Promise<any>
+    if (comprehensive) {
+      if (targetTenantId) {
+        seedPromise = seedDemoBusiness(targetTenantId)
+      } else {
+        // Find Demo Business tenant
+        const demoTenant = await prisma.tenant.findFirst({
+          where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
+        })
+        if (demoTenant) {
+          seedPromise = seedDemoBusiness(demoTenant.id)
+        } else {
+          seedPromise = seedDemoData()
+        }
+      }
+    } else {
+      seedPromise = targetTenantId ? seedDemoDataForTenant(targetTenantId) : seedDemoData()
+    }
+
     const result = await Promise.race([
-      seedDemoData(),
+      seedPromise,
       timeoutPromise,
     ]) as any
 
