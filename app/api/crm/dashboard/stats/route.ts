@@ -92,10 +92,11 @@ export async function GET(request: NextRequest) {
     const timePeriod = (searchParams.get('period') || 'month') as TimePeriod
     
     // Check if seed is running (may cause connection pool exhaustion)
+    // Only block if seed is actually running and recent (less than 5 minutes)
     try {
       const { isSeedRunning } = await import('@/lib/utils/seed-status')
       const seedStatus = isSeedRunning(tenantId)
-      if (seedStatus.running) {
+      if (seedStatus.running && seedStatus.elapsed && seedStatus.elapsed < 300000) { // Only block if less than 5 minutes
         const elapsedMinutes = Math.floor((seedStatus.elapsed || 0) / 60000)
         console.warn(`[CRM_STATS] Seed is running for tenant ${tenantId}, elapsed: ${elapsedMinutes} minutes`)
         return NextResponse.json(
@@ -114,6 +115,9 @@ export async function GET(request: NextRequest) {
             },
           }
         )
+      } else if (seedStatus.running && seedStatus.elapsed && seedStatus.elapsed >= 300000) {
+        // Seed has been running too long, likely stuck - log warning but don't block
+        console.warn(`[CRM_STATS] Seed appears stuck for tenant ${tenantId}, elapsed: ${Math.floor(seedStatus.elapsed / 60000)} minutes. Continuing anyway.`)
       }
     } catch (importError) {
       // If we can't import the function, continue normally

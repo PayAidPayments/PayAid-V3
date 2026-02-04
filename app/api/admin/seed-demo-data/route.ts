@@ -213,11 +213,36 @@ export async function POST(request: NextRequest) {
     // Try to authenticate via session if no auth header
     let isAuthenticated = !!authHeader
     let user = null
+    let tenantIdFromToken: string | null = null
+    
+    // Extract tenantId from JWT token if auth header is present
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const { verifyToken } = await import('@/lib/auth/jwt')
+        const token = authHeader.substring(7)
+        const payload = verifyToken(token)
+        tenantIdFromToken = payload.tenantId || null
+        // Also try to get user object
+        try {
+          const { authenticateRequest } = await import('@/lib/middleware/auth')
+          user = await authenticateRequest(request).catch(() => null)
+        } catch {
+          // User extraction failed, but we have tenantId from token
+        }
+        isAuthenticated = true
+      } catch (tokenError) {
+        console.warn('[SEED_DEMO_DATA] Token verification failed:', tokenError)
+      }
+    }
+    
     if (!authHeader) {
       try {
         const { authenticateRequest } = await import('@/lib/middleware/auth')
         user = await authenticateRequest(request).catch(() => null)
         isAuthenticated = !!user
+        if (user?.tenantId) {
+          tenantIdFromToken = user.tenantId
+        }
       } catch (authError) {
         // If auth fails, check if we're in development
         isAuthenticated = process.env.NODE_ENV !== 'production'
@@ -239,9 +264,9 @@ export async function POST(request: NextRequest) {
     let targetTenantId = searchParams.get('tenantId') // Allow specifying tenant ID
     const comprehensive = searchParams.get('comprehensive') === 'true' // Use comprehensive seed
     
-    // Use authenticated user's tenantId if no tenantId specified
-    if (!targetTenantId && user?.tenantId) {
-      targetTenantId = user.tenantId
+    // Use tenantId from token, then user object, then query param
+    if (!targetTenantId) {
+      targetTenantId = tenantIdFromToken || user?.tenantId || null
     }
 
     if (background) {
