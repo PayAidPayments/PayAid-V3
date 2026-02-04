@@ -59,6 +59,17 @@ export async function GET(request: NextRequest) {
     try {
       const access = await requireModuleAccess(request, 'crm')
       tenantId = access.tenantId
+      
+      // Log tenantId for debugging production issues
+      console.log('[CRM_DASHBOARD] Fetching stats for tenantId:', tenantId)
+      
+      if (!tenantId) {
+        console.error('[CRM_DASHBOARD] No tenantId found in request')
+        return NextResponse.json(
+          { error: 'No tenantId found in request' },
+          { status: 400 }
+        )
+      }
     } catch (licenseError) {
       // If it's a license error, return proper JSON response
       if (licenseError && typeof licenseError === 'object' && 'moduleId' in licenseError) {
@@ -133,6 +144,27 @@ export async function GET(request: NextRequest) {
     activeRequests.set(tenantId, activeCount + 1)
     
     try {
+      // Verify tenantId exists in database
+      try {
+        const tenantExists = await prisma.tenant.findUnique({
+          where: { id: tenantId },
+          select: { id: true, name: true },
+        })
+        
+        if (!tenantExists) {
+          console.error('[CRM_DASHBOARD] Tenant not found in database:', tenantId)
+          return NextResponse.json(
+            { error: `Tenant ${tenantId} not found in database` },
+            { status: 404 }
+          )
+        }
+        
+        console.log('[CRM_DASHBOARD] Tenant verified:', tenantExists.name)
+      } catch (tenantCheckError: any) {
+        console.error('[CRM_DASHBOARD] Error checking tenant:', tenantCheckError)
+        // Continue anyway - might be a database connection issue
+      }
+      
       const userFilter = await getUserFilter(tenantId, user?.userId)
 
     // Get current date for calculations

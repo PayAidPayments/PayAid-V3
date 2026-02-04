@@ -6,6 +6,38 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 export async function GET(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'finance')
+    
+    // Log tenantId for debugging production issues
+    console.log('[FINANCE_DASHBOARD] Fetching stats for tenantId:', tenantId)
+    
+    if (!tenantId) {
+      console.error('[FINANCE_DASHBOARD] No tenantId found in request')
+      return NextResponse.json(
+        { error: 'No tenantId found in request' },
+        { status: 400 }
+      )
+    }
+
+    // Verify tenantId exists in database
+    try {
+      const tenantExists = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { id: true, name: true },
+      })
+      
+      if (!tenantExists) {
+        console.error('[FINANCE_DASHBOARD] Tenant not found in database:', tenantId)
+        return NextResponse.json(
+          { error: `Tenant ${tenantId} not found in database` },
+          { status: 404 }
+        )
+      }
+      
+      console.log('[FINANCE_DASHBOARD] Tenant verified:', tenantExists.name)
+    } catch (tenantCheckError: any) {
+      console.error('[FINANCE_DASHBOARD] Error checking tenant:', tenantCheckError)
+      // Continue anyway - might be a database connection issue
+    }
 
     // Get current date for calculations
     const now = new Date()
@@ -36,7 +68,10 @@ export async function GET(request: NextRequest) {
       // Total invoices
       prisma.invoice.count({
         where: { tenantId },
-      }).catch(() => 0),
+      }).catch((err) => {
+        console.error('[FINANCE_DASHBOARD] Error counting total invoices:', err)
+        return 0
+      }),
       
       // Invoices this month
       prisma.invoice.count({
@@ -47,7 +82,10 @@ export async function GET(request: NextRequest) {
             lte: endOfMonth,
           },
         },
-      }).catch(() => 0),
+      }).catch((err) => {
+        console.error('[FINANCE_DASHBOARD] Error counting invoices this month:', err)
+        return 0
+      }),
       
       // Invoices last month
       prisma.invoice.count({
@@ -238,6 +276,14 @@ export async function GET(request: NextRequest) {
       ? (profit / revenueThisMonthValue) * 100
       : 0
 
+    // Log results for debugging
+    console.log('[FINANCE_DASHBOARD] Stats fetched successfully:', {
+      tenantId,
+      totalInvoices,
+      totalRevenue: totalRevenue._sum.total || 0,
+      purchaseOrders,
+    })
+    
     return NextResponse.json({
       totalInvoices,
       invoicesThisMonth,
@@ -274,10 +320,43 @@ export async function GET(request: NextRequest) {
         : [],
     })
   } catch (error: any) {
-    console.error('Finance dashboard stats error:', error)
+    console.error('[FINANCE_DASHBOARD] Error fetching stats:', {
+      message: error?.message,
+      code: error?.code,
+      stack: error?.stack,
+      name: error?.name,
+      tenantId: error?.tenantId,
+    })
     
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
+    }
+
+    // Check for database connection errors
+    const errorMessage = error?.message || String(error || 'Unknown error')
+    const isDatabaseError = error?.code?.startsWith('P1') ||
+                           errorMessage.toLowerCase().includes('connect') ||
+                           errorMessage.toLowerCase().includes('database') ||
+                           errorMessage.toLowerCase().includes('prisma') ||
+                           errorMessage.toLowerCase().includes('enotfound') ||
+                           errorMessage.toLowerCase().includes('econnrefused') ||
+                           errorMessage.toLowerCase().includes('pool') ||
+                           errorMessage.toLowerCase().includes('timeout')
+    
+    if (isDatabaseError) {
+      console.error('[FINANCE_DASHBOARD] Database error detected:', {
+        code: error?.code,
+        message: errorMessage,
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+      })
+      return NextResponse.json(
+        { 
+          error: 'Database connection error', 
+          message: 'Unable to connect to database. Please check your database configuration.',
+          code: error?.code,
+        },
+        { status: 503 }
+      )
     }
 
     // Return fallback stats with arrays to prevent frontend crashes
