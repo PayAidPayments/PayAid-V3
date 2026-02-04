@@ -14,7 +14,50 @@ import { seedMarketingModule, MarketingSeedResult } from './seed-marketing'
 import { seedSupportModule, SupportSeedResult } from './seed-support'
 import { seedOperationsModule, OperationsSeedResult } from './seed-operations'
 
-const prisma = new PrismaClient()
+// Create PrismaClient with reduced connection limit to prevent pool exhaustion
+// Use direct connection if available, otherwise use pooler with minimal connections
+function createSeedPrismaClient(): PrismaClient {
+  const databaseUrl = process.env.DATABASE_DIRECT_URL || process.env.DATABASE_URL
+  
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL environment variable is not set')
+  }
+
+  // Parse and enhance DATABASE_URL with minimal connection pool for seeding
+  const url = new URL(databaseUrl)
+  
+  // Use only 1-2 connections for seeding to avoid exhausting the pool
+  if (!url.searchParams.has('connection_limit')) {
+    url.searchParams.set('connection_limit', '2') // Minimal connections for seeding
+  }
+  
+  if (!url.searchParams.has('pool_timeout')) {
+    url.searchParams.set('pool_timeout', '10') // 10 seconds timeout
+  }
+  
+  if (!url.searchParams.has('connect_timeout')) {
+    url.searchParams.set('connect_timeout', '5') // 5 seconds connection timeout
+  }
+
+  // For Supabase pooler, ensure proper configuration
+  if (url.hostname.includes('pooler.supabase.com')) {
+    if (!url.searchParams.has('pgbouncer')) {
+      url.searchParams.set('pgbouncer', 'true')
+    }
+  }
+
+  const enhancedDatabaseUrl = url.toString()
+
+  return new PrismaClient({
+    datasources: {
+      db: {
+        url: enhancedDatabaseUrl,
+      },
+    },
+  })
+}
+
+const prisma = createSeedPrismaClient()
 
 export interface DemoBusinessSeedResult {
   crm: CRMSeedResult
