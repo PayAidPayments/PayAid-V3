@@ -10,6 +10,10 @@ import { seedDemoBusiness } from '@/prisma/seeds/demo/demo-business-master-seed'
 export const maxDuration = 60
 export const runtime = 'nodejs'
 
+// Track ongoing seed operations to prevent concurrent seeding
+const ongoingSeeds = new Map<string, { startTime: number; promise: Promise<any> }>()
+const SEED_TIMEOUT_MS = 300000 // 5 minutes max for comprehensive seed
+
 // Inline industry seeding functions
 async function seedIndustryDataInline(tenantId: string, contacts: any[]) {
   // Agriculture
@@ -229,72 +233,97 @@ export async function POST(request: NextRequest) {
     }
 
     if (background) {
-      // Start seeding in background and return immediately
-      // If tenantId is provided, seed for that specific tenant
-      if (targetTenantId) {
-        if (comprehensive) {
-          seedDemoBusiness(targetTenantId).catch((err) => {
-            console.error('[SEED_DEMO_DATA] Background comprehensive seed error for tenant:', err)
-            console.error('[SEED_DEMO_DATA] Error details:', err?.message, err?.stack)
-          })
-        } else {
-          seedDemoDataForTenant(targetTenantId).catch((err) => {
-            console.error('[SEED_DEMO_DATA] Background seed error for tenant:', err)
-            console.error('[SEED_DEMO_DATA] Error details:', err?.message, err?.stack)
-          })
-        }
-        return NextResponse.json({
-          success: true,
-          message: `Seed operation started in background for tenant ${targetTenantId}. This may take 30-60 seconds. Please refresh the page in a minute.`,
-          background: true,
-          comprehensive: !!comprehensive,
-          tenantId: targetTenantId,
-        })
-      } else {
-        // Use tenant from authenticated user if available
-        const tenantId = user?.tenantId || targetTenantId
+      // Determine tenant ID for seed operation
+      let seedTenantId = targetTenantId
+      if (!seedTenantId && user?.tenantId) {
+        seedTenantId = user.tenantId
+      }
+      
+      // Check if seed is already running for this tenant
+      if (seedTenantId && ongoingSeeds.has(seedTenantId)) {
+        const ongoingSeed = ongoingSeeds.get(seedTenantId)!
+        const elapsed = Date.now() - ongoingSeed.startTime
         
-        if (comprehensive) {
-          // Find Demo Business tenant and use comprehensive seed
-          let demoTenant = null
-          if (tenantId) {
-            demoTenant = await prisma.tenant.findUnique({
-              where: { id: tenantId },
-            }).catch(() => null)
-          }
-          
-          if (!demoTenant) {
-            demoTenant = await prisma.tenant.findFirst({
-              where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
-            }).catch(() => null)
-          }
-          
-          if (demoTenant) {
-            seedDemoBusiness(demoTenant.id).catch((err) => {
-              console.error('[SEED_DEMO_DATA] Background comprehensive seed error:', err)
-              console.error('[SEED_DEMO_DATA] Error details:', err?.message, err?.stack)
-            })
-          } else {
-            // Fallback to basic seed if tenant not found
-            console.warn('[SEED_DEMO_DATA] Demo Business tenant not found, using basic seed')
-            seedDemoData().catch((err) => {
-              console.error('[SEED_DEMO_DATA] Background seed error:', err)
-              console.error('[SEED_DEMO_DATA] Error details:', err?.message, err?.stack)
-            })
-          }
-        } else {
-          seedDemoData().catch((err) => {
-            console.error('[SEED_DEMO_DATA] Background seed error:', err)
-            console.error('[SEED_DEMO_DATA] Error details:', err?.message, err?.stack)
+        // If seed is still running and hasn't timed out, return status
+        if (elapsed < SEED_TIMEOUT_MS) {
+          return NextResponse.json({
+            success: true,
+            message: `Seed operation already in progress for this tenant. Started ${Math.floor(elapsed / 1000)} seconds ago. Please wait for it to complete.`,
+            background: true,
+            comprehensive: !!comprehensive,
+            tenantId: seedTenantId,
+            alreadyRunning: true,
+            elapsedSeconds: Math.floor(elapsed / 1000),
           })
+        } else {
+          // Seed timed out, remove from tracking
+          console.warn(`[SEED_DEMO_DATA] Seed for tenant ${seedTenantId} timed out, removing from tracking`)
+          ongoingSeeds.delete(seedTenantId)
         }
-        return NextResponse.json({
-          success: true,
-          message: 'Seed operation started in background. This may take 30-60 seconds. Please refresh the page in a minute.',
-          background: true,
-          comprehensive: !!comprehensive,
+      }
+      
+      // Start seeding in background and return immediately
+      const seedPromise = (async () => {
+        try {
+          if (comprehensive && seedTenantId) {
+            await seedDemoBusiness(seedTenantId)
+          } else if (seedTenantId) {
+            await seedDemoDataForTenant(seedTenantId)
+          } else {
+            // Find Demo Business tenant
+            let demoTenant = null
+            if (user?.tenantId) {
+              demoTenant = await prisma.tenant.findUnique({
+                where: { id: user.tenantId },
+              }).catch(() => null)
+            }
+            
+            if (!demoTenant) {
+              demoTenant = await prisma.tenant.findFirst({
+                where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
+              }).catch(() => null)
+            }
+            
+            if (comprehensive && demoTenant) {
+              await seedDemoBusiness(demoTenant.id)
+            } else {
+              await seedDemoData()
+            }
+          }
+        } catch (err: any) {
+          console.error('[SEED_DEMO_DATA] Background seed error:', err)
+          console.error('[SEED_DEMO_DATA] Error details:', err?.message, err?.stack)
+          throw err
+        } finally {
+          // Clean up tracking after seed completes or fails
+          if (seedTenantId) {
+            ongoingSeeds.delete(seedTenantId)
+          }
+        }
+      })()
+      
+      // Track ongoing seed
+      if (seedTenantId) {
+        ongoingSeeds.set(seedTenantId, {
+          startTime: Date.now(),
+          promise: seedPromise,
         })
       }
+      
+      // Don't await - let it run in background
+      seedPromise.catch(() => {
+        // Error already logged above
+      })
+      
+      return NextResponse.json({
+        success: true,
+        message: seedTenantId 
+          ? `Seed operation started in background for tenant ${seedTenantId}. This may take 30-60 seconds. Please refresh the page in a minute.`
+          : 'Seed operation started in background. This may take 30-60 seconds. Please refresh the page in a minute.',
+        background: true,
+        comprehensive: !!comprehensive,
+        tenantId: seedTenantId,
+      })
     }
 
     // Add timeout wrapper for Vercel Hobby plan (10s limit)
