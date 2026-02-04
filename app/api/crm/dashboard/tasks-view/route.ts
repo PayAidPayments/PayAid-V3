@@ -51,6 +51,7 @@ function buildTaskFilter(tenantId: string, userId?: string, userRole?: string) {
 
 // GET /api/crm/dashboard/tasks-view - Get Tasks view data for user
 export async function GET(request: NextRequest) {
+  const startTime = Date.now()
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const user = await authenticateRequest(request)
@@ -214,6 +215,9 @@ export async function GET(request: NextRequest) {
       totalValue: item._sum.value || 0,
     }))
 
+    const durationMs = Date.now() - startTime
+    console.log(`[CRM_TASKS_VIEW] tenant=${tenantId} user=${user?.userId || 'unknown'} duration=${durationMs}ms`)
+
     return NextResponse.json({
       myOpenActivitiesToday: myOpenActivitiesToday.map(task => ({
         id: task.id,
@@ -253,6 +257,13 @@ export async function GET(request: NextRequest) {
         probability: deal.probability,
         contact: deal.contact,
       })),
+    }, {
+      headers: {
+        // User-specific data: keep caching private
+        'Cache-Control': 'private, max-age=15, stale-while-revalidate=30',
+        Vary: 'Authorization',
+        'Server-Timing': `app;dur=${durationMs}`,
+      },
     })
   } catch (error: any) {
     if (error && typeof error === 'object' && 'moduleId' in error) {

@@ -52,6 +52,7 @@ const MAX_CONCURRENT_REQUESTS_PER_TENANT = 3 // Increased from 1 to 3 for minima
 // GET /api/crm/dashboard/stats - Get CRM dashboard statistics
 export async function GET(request: NextRequest) {
   let tenantId: string | undefined
+  const startTime = Date.now()
   
   try {
     // Try to get module access - handle errors gracefully
@@ -79,62 +80,24 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const timePeriod = (searchParams.get('period') || 'month') as TimePeriod
     
-    // Rate limiting: Check if tenant already has an active request
-    // DISABLED: Too strict for dashboard which makes multiple requests
-    // Instead, return sample data immediately if there are too many requests
+    // Rate limiting: if too many concurrent requests, return a real error (NO sample/demo data)
     const activeCount = activeRequests.get(tenantId) || 0
     if (activeCount >= MAX_CONCURRENT_REQUESTS_PER_TENANT) {
-      console.warn(`[CRM_STATS] Rate limit: Tenant ${tenantId} has ${activeCount} active requests - returning sample data`)
-      // Return sample data instead of error to prevent blocking the UI
-      const now = new Date()
-      const periodBounds = getTimePeriodBounds(timePeriod)
-      return NextResponse.json({
-        dealsCreatedThisMonth: 12,
-        revenueThisMonth: 450000,
-        dealsClosingThisMonth: 8,
-        overdueTasks: 0,
-        totalTasks: 30,
-        completedTasks: 18,
-        totalMeetings: 15,
-        totalLeads: 35,
-        convertedLeads: 15,
-        conversionRate: 42.9,
-        quarterlyPerformance: [
-          { quarter: 'Q1', leadsCreated: 52, dealsCreated: 35, dealsWon: 15, revenue: 520000 },
-          { quarter: 'Q2', leadsCreated: 48, dealsCreated: 32, dealsWon: 14, revenue: 480000 },
-          { quarter: 'Q3', leadsCreated: 60, dealsCreated: 40, dealsWon: 18, revenue: 600000 },
-          { quarter: 'Q4', leadsCreated: 55, dealsCreated: 38, dealsWon: 16, revenue: 550000 },
-        ],
-        pipelineByStage: [
-          { stage: 'Lead', count: 25, value: 250000 },
-          { stage: 'Qualified', count: 18, value: 450000 },
-          { stage: 'Proposal', count: 12, value: 600000 },
-          { stage: 'Negotiation', count: 8, value: 800000 },
-          { stage: 'Won', count: 15, value: 1500000 },
-        ],
-        monthlyLeadCreation: (() => {
-          // Generate 12 months including Jan and Feb 2026
-          const months = []
-          const currentDate = new Date(now.getFullYear(), now.getMonth(), 1)
-          
-          // Start from 11 months ago and go forward to include future months
-          for (let i = 11; i >= 0; i--) {
-            const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1)
-            months.push({
-              month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-              count: 15 + Math.floor(Math.random() * 20),
-            })
-          }
-          return months
-        })(),
-        topLeadSources: [
-          { name: 'Website', leadsCount: 45, conversionsCount: 12, totalValue: 450000, conversionRate: 26.7 },
-          { name: 'Referral', leadsCount: 32, conversionsCount: 10, totalValue: 320000, conversionRate: 31.3 },
-          { name: 'Social Media', leadsCount: 28, conversionsCount: 8, totalValue: 280000, conversionRate: 28.6 },
-          { name: 'Email Campaign', leadsCount: 22, conversionsCount: 6, totalValue: 220000, conversionRate: 27.3 },
-        ],
-        periodLabel: periodBounds.label,
-      })
+      console.warn(`[CRM_STATS] Rate limit: Tenant ${tenantId} has ${activeCount} active requests`)
+      return NextResponse.json(
+        {
+          error: 'Too many concurrent requests',
+          message: 'Please wait a moment and retry.',
+          retryAfter: 2,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': '2',
+            'Cache-Control': 'no-store',
+          },
+        }
+      )
     }
     
     // Increment active request count
@@ -188,119 +151,103 @@ export async function GET(request: NextRequest) {
       ? { tenantId, assignedToId: userFilter.assignedToId }
       : { tenantId }
 
-    // OPTIMIZATION: Fully sequential queries to prevent connection pool exhaustion
-    // Execute queries one at a time with delays to ensure connection pool recovery
-    // This is slower but prevents "Too many concurrent requests" errors
+    // PERFORMANCE OPTIMIZATION: Parallelize queries in batches for maximum speed
+    // Removed all artificial delays - they were causing 4+ seconds of unnecessary wait time
+    // Batch queries that can run independently in parallel
     
-    // Query 1: Deals created
-    const dealsCreatedInPeriod = await prismaWithRetry(() =>
-      prisma.deal.count({
-        where: {
-          ...dealFilter,
-          createdAt: { gte: periodStart, lte: periodEnd },
-        },
-      })
-    )
-    
-    // Small delay between queries
-    await new Promise(resolve => setTimeout(resolve, 150))
-    
-    // Query 2: Deals closing
-    const dealsClosingInPeriod = await prismaWithRetry(() =>
-      prisma.deal.count({
-        where: {
-          ...dealFilter,
-          expectedCloseDate: { gte: periodStart, lte: periodEnd },
-          stage: { not: 'lost' },
-        },
-      })
-    )
-    
-    await new Promise(resolve => setTimeout(resolve, 150))
-    
-    // Query 3: Overdue tasks
-    const overdueTasks = await prismaWithRetry(() =>
-      prisma.task.count({
-        where: {
-          ...userFilter,
-          dueDate: { lt: now },
-          status: { in: ['pending', 'in_progress'] },
-        },
-      })
-    )
-    
-    await new Promise(resolve => setTimeout(resolve, 150))
-
-    // Query 3.5: Total tasks and completed tasks
-    const totalTasks = await prismaWithRetry(() =>
-      prisma.task.count({
-        where: userFilter,
-      })
-    )
-    
-    await new Promise(resolve => setTimeout(resolve, 100))
-    
-    const completedTasks = await prismaWithRetry(() =>
-      prisma.task.count({
-        where: {
-          ...userFilter,
-          status: 'completed',
-        },
-      })
-    )
-    
-    await new Promise(resolve => setTimeout(resolve, 100))
-    
-    // Query 3.6: Total meetings
-    const totalMeetings = await prismaWithRetry(() =>
-      prisma.meeting.count({
-        where: { tenantId },
-      })
-    )
-    
-    await new Promise(resolve => setTimeout(resolve, 100))
-    
-    // Query 3.7: Total leads and converted leads
-    const totalLeads = await prismaWithRetry(() =>
-      prisma.contact.count({
-        where: {
-          ...contactFilter,
-          stage: { in: ['prospect', 'contact'] },
-        },
-      })
-    )
-    
-    await new Promise(resolve => setTimeout(resolve, 100))
-    
-    const convertedLeads = await prismaWithRetry(() =>
-      prisma.contact.count({
-        where: {
-          ...contactFilter,
-          stage: 'customer',
-        },
-      })
-    )
-    
-    await new Promise(resolve => setTimeout(resolve, 150))
-
-    // Query 4: Pipeline by stage (with values)
-    const pipelineByStageData = await prismaWithRetry(() =>
-      prisma.deal.groupBy({
-        by: ['stage'],
-        where: dealFilter,
-        _count: { id: true },
-        _sum: { value: true },
-      })
-    )
-    
-    await new Promise(resolve => setTimeout(resolve, 100))
-    
-    await new Promise(resolve => setTimeout(resolve, 150))
-    
-    // Query 5: Top lead sources - ensure we always return an array
-    let topLeadSources: any[] = []
-    try {
-      topLeadSources = await prismaWithRetry(() =>
+    // Batch 1: Core stats (all independent - run in parallel)
+    const [
+      dealsCreatedInPeriod,
+      dealsClosingInPeriod,
+      overdueTasks,
+      totalTasks,
+      completedTasks,
+      totalMeetings,
+      totalLeads,
+      convertedLeads,
+      pipelineByStageData,
+      topLeadSourcesRaw,
+      wonDealsForQuarters,
+    ] = await Promise.all([
+      // Query 1: Deals created
+      prismaWithRetry(() =>
+        prisma.deal.count({
+          where: {
+            ...dealFilter,
+            createdAt: { gte: periodStart, lte: periodEnd },
+          },
+        })
+      ),
+      // Query 2: Deals closing
+      prismaWithRetry(() =>
+        prisma.deal.count({
+          where: {
+            ...dealFilter,
+            expectedCloseDate: { gte: periodStart, lte: periodEnd },
+            stage: { not: 'lost' },
+          },
+        })
+      ),
+      // Query 3: Overdue tasks
+      prismaWithRetry(() =>
+        prisma.task.count({
+          where: {
+            ...userFilter,
+            dueDate: { lt: now },
+            status: { in: ['pending', 'in_progress'] },
+          },
+        })
+      ),
+      // Query 4: Total tasks
+      prismaWithRetry(() =>
+        prisma.task.count({
+          where: userFilter,
+        })
+      ),
+      // Query 5: Completed tasks
+      prismaWithRetry(() =>
+        prisma.task.count({
+          where: {
+            ...userFilter,
+            status: 'completed',
+          },
+        })
+      ),
+      // Query 6: Total meetings
+      prismaWithRetry(() =>
+        prisma.meeting.count({
+          where: { tenantId },
+        })
+      ),
+      // Query 7: Total leads
+      prismaWithRetry(() =>
+        prisma.contact.count({
+          where: {
+            ...contactFilter,
+            stage: { in: ['prospect', 'contact'] },
+          },
+        })
+      ),
+      // Query 8: Converted leads
+      prismaWithRetry(() =>
+        prisma.contact.count({
+          where: {
+            ...contactFilter,
+            stage: 'customer',
+          },
+        })
+      ),
+      // Query 9: Pipeline by stage (with values)
+      prismaWithRetry(() =>
+        prisma.deal.groupBy({
+          by: ['stage'],
+          where: dealFilter,
+          _count: { id: true },
+          _sum: { value: true },
+        })
+      ),
+      // Query 10: Top lead sources
+      prismaWithRetry(() =>
         prisma.leadSource.findMany({
           where: { tenantId },
           orderBy: { leadsCount: 'desc' },
@@ -313,139 +260,131 @@ export async function GET(request: NextRequest) {
             totalValue: true,
             conversionRate: true,
           },
+        }).catch(() => [])
+      ),
+      // Query 11: Won deals (for revenue calculation) - optimized to only fetch needed fields
+      prismaWithRetry(() =>
+        prisma.deal.findMany({
+          where: {
+            ...dealFilter,
+            stage: 'won',
+          },
+          select: {
+            value: true,
+            actualCloseDate: true,
+            updatedAt: true,
+            createdAt: true,
+          },
         })
-      ) || []
+      ),
+    ])
+
+    // Ensure topLeadSources is always an array
+    let topLeadSources: any[] = []
+    try {
+      if (Array.isArray(topLeadSourcesRaw)) {
+        topLeadSources = topLeadSourcesRaw
+      }
     } catch (err) {
-      console.error('[CRM_STATS] Error fetching top lead sources:', err)
+      console.error('[CRM_STATS] Error processing top lead sources:', err)
       topLeadSources = []
     }
-    
-    // Ensure it's always an array
-    if (!Array.isArray(topLeadSources)) {
-      topLeadSources = []
-    }
-    
-    await new Promise(resolve => setTimeout(resolve, 150))
-    
-    // Query 6: Won deals (for revenue calculation)
-    const wonDealsForQuarters = await prismaWithRetry(() =>
-      prisma.deal.findMany({
-        where: {
-          ...dealFilter,
-          stage: 'won',
-        },
-        select: {
-          value: true,
-          actualCloseDate: true,
-          updatedAt: true,
-          createdAt: true,
-        },
-      })
-    )
-    
-    await new Promise(resolve => setTimeout(resolve, 150))
 
-    // Small delay before quarterly queries
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // Batch 2: Quarterly data (all 4 quarters in parallel - 8 queries total)
+    const [
+      q1DealsCreated,
+      q1LeadsCreated,
+      q2DealsCreated,
+      q2LeadsCreated,
+      q3DealsCreated,
+      q3LeadsCreated,
+      q4DealsCreated,
+      q4LeadsCreated,
+    ] = await Promise.all([
+      prismaWithRetry(() =>
+        prisma.deal.count({
+          where: {
+            ...dealFilter,
+            createdAt: { gte: quarters[0].start, lte: quarters[0].end },
+          },
+        })
+      ),
+      prismaWithRetry(() =>
+        prisma.contact.count({
+          where: {
+            ...contactFilter,
+            createdAt: { gte: quarters[0].start, lte: quarters[0].end },
+          },
+        })
+      ),
+      prismaWithRetry(() =>
+        prisma.deal.count({
+          where: {
+            ...dealFilter,
+            createdAt: { gte: quarters[1].start, lte: quarters[1].end },
+          },
+        })
+      ),
+      prismaWithRetry(() =>
+        prisma.contact.count({
+          where: {
+            ...contactFilter,
+            createdAt: { gte: quarters[1].start, lte: quarters[1].end },
+          },
+        })
+      ),
+      prismaWithRetry(() =>
+        prisma.deal.count({
+          where: {
+            ...dealFilter,
+            createdAt: { gte: quarters[2].start, lte: quarters[2].end },
+          },
+        })
+      ),
+      prismaWithRetry(() =>
+        prisma.contact.count({
+          where: {
+            ...contactFilter,
+            createdAt: { gte: quarters[2].start, lte: quarters[2].end },
+          },
+        })
+      ),
+      prismaWithRetry(() =>
+        prisma.deal.count({
+          where: {
+            ...dealFilter,
+            createdAt: { gte: quarters[3].start, lte: quarters[3].end },
+          },
+        })
+      ),
+      prismaWithRetry(() =>
+        prisma.contact.count({
+          where: {
+            ...contactFilter,
+            createdAt: { gte: quarters[3].start, lte: quarters[3].end },
+          },
+        })
+      ),
+    ])
 
-    // Batch 2: Quarterly data (fetch one quarter at a time to avoid pool exhaustion)
-    const q1DealsCreated = await prismaWithRetry(() =>
-      prisma.deal.count({
-        where: {
-          ...dealFilter,
-          createdAt: { gte: quarters[0].start, lte: quarters[0].end },
-        },
-      })
-    )
-    const q1LeadsCreated = await prismaWithRetry(() =>
-      prisma.contact.count({
-        where: {
-          ...contactFilter,
-          createdAt: { gte: quarters[0].start, lte: quarters[0].end },
-        },
-      })
-    )
-
-    await new Promise(resolve => setTimeout(resolve, 100))
-
-    const q2DealsCreated = await prismaWithRetry(() =>
-      prisma.deal.count({
-        where: {
-          ...dealFilter,
-          createdAt: { gte: quarters[1].start, lte: quarters[1].end },
-        },
-      })
-    )
-    const q2LeadsCreated = await prismaWithRetry(() =>
-      prisma.contact.count({
-        where: {
-          ...contactFilter,
-          createdAt: { gte: quarters[1].start, lte: quarters[1].end },
-        },
-      })
-    )
-
-    await new Promise(resolve => setTimeout(resolve, 100))
-
-    const q3DealsCreated = await prismaWithRetry(() =>
-      prisma.deal.count({
-        where: {
-          ...dealFilter,
-          createdAt: { gte: quarters[2].start, lte: quarters[2].end },
-        },
-      })
-    )
-    const q3LeadsCreated = await prismaWithRetry(() =>
-      prisma.contact.count({
-        where: {
-          ...contactFilter,
-          createdAt: { gte: quarters[2].start, lte: quarters[2].end },
-        },
-      })
-    )
-
-    await new Promise(resolve => setTimeout(resolve, 100))
-
-    const q4DealsCreated = await prismaWithRetry(() =>
-      prisma.deal.count({
-        where: {
-          ...dealFilter,
-          createdAt: { gte: quarters[3].start, lte: quarters[3].end },
-        },
-      })
-    )
-    const q4LeadsCreated = await prismaWithRetry(() =>
-      prisma.contact.count({
-        where: {
-          ...contactFilter,
-          createdAt: { gte: quarters[3].start, lte: quarters[3].end },
-        },
-      })
-    )
-
-    // Small delay before monthly queries
-    await new Promise(resolve => setTimeout(resolve, 100))
-
-    // Batch 3: Monthly lead creation - fetch sequentially (one at a time) to avoid pool exhaustion
-    const monthlyCounts: number[] = []
+    // Batch 3: Monthly lead creation - parallelize all 12 months at once
+    const monthlyQueries = []
     for (let i = 0; i < 12; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const monthStart = new Date(date.getFullYear(), date.getMonth(), 1)
       const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999)
-      const count = await prismaWithRetry(() =>
-        prisma.contact.count({
-          where: {
-            ...contactFilter,
-            createdAt: { gte: monthStart, lte: monthEnd },
-          },
-        })
+      monthlyQueries.push(
+        prismaWithRetry(() =>
+          prisma.contact.count({
+            where: {
+              ...contactFilter,
+              createdAt: { gte: monthStart, lte: monthEnd },
+            },
+          })
+        )
       )
-      monthlyCounts.push(count)
-      // Small delay every 3 queries to allow connection pool to recover
-      if ((i + 1) % 3 === 0 && i < 11) {
-        await new Promise(resolve => setTimeout(resolve, 100))
-      }
     }
+    const monthlyCounts = await Promise.all(monthlyQueries)
 
     // Calculate revenue from won deals in the period
     // Reuse wonDealsForQuarters that we already fetched
@@ -460,14 +399,6 @@ export async function GET(request: NextRequest) {
         return dateTime >= periodStart.getTime() && dateTime <= periodEnd.getTime()
       })
       .reduce((sum, deal) => sum + (deal?.value || 0), 0)
-
-    // Sample data for quarters when real data is missing
-    const sampleQuarterData = [
-      { quarter: 1, leadsCreated: 52, dealsCreated: 35, dealsWon: 15, revenue: 520000 },
-      { quarter: 2, leadsCreated: 48, dealsCreated: 32, dealsWon: 14, revenue: 480000 },
-      { quarter: 3, leadsCreated: 60, dealsCreated: 40, dealsWon: 18, revenue: 600000 },
-      { quarter: 4, leadsCreated: 55, dealsCreated: 38, dealsWon: 16, revenue: 550000 },
-    ]
 
     // Helper function to filter won deals by quarter date
     const filterWonDealsByQuarter = (wonDeals: any[], quarter: typeof quarters[0]) => {
@@ -529,36 +460,16 @@ export async function GET(request: NextRequest) {
       },
     ]
     
-    // Ensure quarterlyPerformanceArray is an array before mapping
-    const quarterlyPerformance = Array.isArray(quarterlyPerformanceArray) ? quarterlyPerformanceArray.map((data, index) => {
-      // Ensure all properties exist
-      const safeData = {
-        quarter: data?.quarter || '',
-        leadsCreated: data?.leadsCreated || 0,
-        dealsCreated: data?.dealsCreated || 0,
-        dealsWon: data?.dealsWon || 0,
-        revenue: data?.revenue || 0,
-      }
-      
-      // Use sample data for all quarters (Q1-Q4) if real data is zero or missing
-      const hasRealData = safeData.leadsCreated > 0 || safeData.dealsCreated > 0 || safeData.dealsWon > 0 || safeData.revenue > 0
-      const quarterNum = index + 1
-      
-      if (!hasRealData) {
-        const sample = sampleQuarterData.find(s => s.quarter === quarterNum)
-        if (sample) {
-          return {
-            quarter: safeData.quarter,
-            leadsCreated: sample.leadsCreated,
-            dealsCreated: sample.dealsCreated,
-            dealsWon: sample.dealsWon,
-            revenue: sample.revenue,
-          }
-        }
-      }
-      
-      return safeData
-    }) : []
+    // Ensure quarterlyPerformanceArray is an array before mapping (NO sample/demo fallback)
+    const quarterlyPerformance = Array.isArray(quarterlyPerformanceArray)
+      ? quarterlyPerformanceArray.map((data) => ({
+          quarter: data?.quarter || '',
+          leadsCreated: data?.leadsCreated || 0,
+          dealsCreated: data?.dealsCreated || 0,
+          dealsWon: data?.dealsWon || 0,
+          revenue: data?.revenue || 0,
+        }))
+      : []
 
     // Calculate pipeline by stage from groupBy result (with values)
     const pipelineStages = ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
@@ -600,46 +511,9 @@ export async function GET(request: NextRequest) {
         }
       })
     
-    // Ensure we have exactly 12 months including Jan and Feb 2026 if we're in 2025
-    // If monthlyLeadCreation is incomplete, generate sample data for all 12 months
-    if (monthlyLeadCreation.length < 12) {
-      const allMonths = []
-      const startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1)
-      for (let i = 0; i < 12; i++) {
-        const date = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1)
-        const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-        const existing = monthlyLeadCreation.find(m => m.month === monthKey)
-        allMonths.push(existing || {
-          month: monthKey,
-          count: 15 + Math.floor(Math.random() * 20), // Sample data: 15-35 leads per month
-        })
-      }
-      // Replace with complete list
-      monthlyLeadCreation.length = 0
-      monthlyLeadCreation.push(...allMonths)
-    }
+    // NOTE: No sample/demo monthly data. If some months are missing, UI should handle gaps/zeros.
 
-    // Add March 2025 data if not already included
-    const march2025 = new Date(2025, 2, 1)
-    const march2025Start = new Date(2025, 2, 1)
-    const march2025End = new Date(2025, 2, 31, 23, 59, 59, 999)
-    const hasMarch2025 = monthlyLeadCreation.some(m => m.month.includes('Mar 2025'))
-    if (!hasMarch2025) {
-      const march2025Count = await prismaWithRetry(() =>
-        prisma.contact.count({
-          where: {
-            ...contactFilter,
-            createdAt: { gte: march2025Start, lte: march2025End },
-          },
-        })
-      )
-      if (march2025Count > 0) {
-        monthlyLeadCreation.push({
-          month: 'Mar 2025',
-          count: march2025Count,
-        })
-      }
-    }
+    // Note: March 2025 data is already included in monthly queries above
 
     // Check if we have any real data - if not, use sample data for better UX
     const hasRealData = dealsCreatedInPeriod > 0 || revenueInPeriod > 0 || dealsClosingInPeriod > 0 || 
@@ -717,7 +591,17 @@ export async function GET(request: NextRequest) {
       periodLabel: periodBounds.label,
     }
 
-      return NextResponse.json(stats)
+    const durationMs = Date.now() - startTime
+    console.log(`[CRM_STATS] tenant=${tenantId} period=${timePeriod} duration=${durationMs}ms`)
+
+    // Safe caching: response is user-context sensitive. Use private cache + Vary: Authorization.
+    return NextResponse.json(stats, {
+      headers: {
+        'Cache-Control': 'private, max-age=30, stale-while-revalidate=60',
+        Vary: 'Authorization',
+        'Server-Timing': `app;dur=${durationMs}`,
+      },
+    })
     } finally {
       // Decrement active request count
       const currentCount = activeRequests.get(tenantId) || 0
