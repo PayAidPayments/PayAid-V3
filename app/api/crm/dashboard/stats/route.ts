@@ -92,32 +92,33 @@ export async function GET(request: NextRequest) {
     const timePeriod = (searchParams.get('period') || 'month') as TimePeriod
     
     // Check if seed is running (may cause connection pool exhaustion)
-    // Only block if seed is actually running and recent (less than 5 minutes)
+    // Only block if seed is very recent (less than 30 seconds) to avoid blocking during normal operation
     try {
       const { isSeedRunning } = await import('@/lib/utils/seed-status')
       const seedStatus = isSeedRunning(tenantId)
-      if (seedStatus.running && seedStatus.elapsed && seedStatus.elapsed < 300000) { // Only block if less than 5 minutes
-        const elapsedMinutes = Math.floor((seedStatus.elapsed || 0) / 60000)
-        console.warn(`[CRM_STATS] Seed is running for tenant ${tenantId}, elapsed: ${elapsedMinutes} minutes`)
+      if (seedStatus.running && seedStatus.elapsed && seedStatus.elapsed < 30000) { // Only block if less than 30 seconds
+        const elapsedSeconds = Math.floor((seedStatus.elapsed || 0) / 1000)
+        console.warn(`[CRM_STATS] Seed just started for tenant ${tenantId}, elapsed: ${elapsedSeconds} seconds. Blocking request briefly.`)
         return NextResponse.json(
           {
             error: 'Database seeding in progress',
-            message: `A data seeding operation is currently running (started ${elapsedMinutes} minute${elapsedMinutes !== 1 ? 's' : ''} ago). This may temporarily affect database performance. Please wait 1-2 minutes and refresh the page.`,
+            message: `A data seeding operation just started. Please wait a few seconds and refresh the page.`,
             seedRunning: true,
-            elapsedMinutes,
-            retryAfter: 60,
+            elapsedSeconds,
+            retryAfter: 10,
           },
           {
             status: 503,
             headers: {
-              'Retry-After': '60',
+              'Retry-After': '10',
               'Cache-Control': 'no-store',
             },
           }
         )
-      } else if (seedStatus.running && seedStatus.elapsed && seedStatus.elapsed >= 300000) {
-        // Seed has been running too long, likely stuck - log warning but don't block
-        console.warn(`[CRM_STATS] Seed appears stuck for tenant ${tenantId}, elapsed: ${Math.floor(seedStatus.elapsed / 60000)} minutes. Continuing anyway.`)
+      } else if (seedStatus.running) {
+        // Seed is running but > 30 seconds old - log warning but allow request through
+        const elapsedSeconds = Math.floor((seedStatus.elapsed || 0) / 1000)
+        console.log(`[CRM_STATS] Seed is running for tenant ${tenantId}, elapsed: ${elapsedSeconds} seconds. Allowing request through.`)
       }
     } catch (importError) {
       // If we can't import the function, continue normally
