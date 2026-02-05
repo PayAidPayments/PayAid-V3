@@ -14,10 +14,11 @@ import { seedMarketingModule, MarketingSeedResult } from './seed-marketing'
 import { seedSupportModule, SupportSeedResult } from './seed-support'
 import { seedOperationsModule, OperationsSeedResult } from './seed-operations'
 
-// Create PrismaClient with reduced connection limit to prevent pool exhaustion
-// Use direct connection if available, otherwise use pooler with minimal connections
+// Create PrismaClient with minimal connections for seeding
+// CRITICAL: Use direct connection or transaction mode to avoid PgBouncer session mode limits
 function createSeedPrismaClient(): PrismaClient {
-  const databaseUrl = process.env.DATABASE_DIRECT_URL || process.env.DATABASE_URL
+  // Priority: 1. Direct connection, 2. Transaction mode pooler, 3. Regular pooler
+  let databaseUrl = process.env.DATABASE_DIRECT_URL || process.env.DATABASE_URL
   
   if (!databaseUrl) {
     throw new Error('DATABASE_URL environment variable is not set')
@@ -26,27 +27,32 @@ function createSeedPrismaClient(): PrismaClient {
   // Parse and enhance DATABASE_URL with minimal connection pool for seeding
   const url = new URL(databaseUrl)
   
-  // Use only 1-2 connections for seeding to avoid exhausting the pool
-  if (!url.searchParams.has('connection_limit')) {
-    url.searchParams.set('connection_limit', '2') // Minimal connections for seeding
-  }
+  // CRITICAL: Use only 1 connection for seeding to avoid pool exhaustion
+  url.searchParams.set('connection_limit', '1')
   
-  if (!url.searchParams.has('pool_timeout')) {
-    url.searchParams.set('pool_timeout', '10') // 10 seconds timeout
-  }
-  
-  if (!url.searchParams.has('connect_timeout')) {
-    url.searchParams.set('connect_timeout', '5') // 5 seconds connection timeout
-  }
+  // Faster timeouts for seeding
+  url.searchParams.set('pool_timeout', '10')
+  url.searchParams.set('connect_timeout', '5')
 
-  // For Supabase pooler, ensure proper configuration
+  // For Supabase pooler, convert to TRANSACTION mode (not session mode)
+  // Transaction mode allows more concurrent connections
   if (url.hostname.includes('pooler.supabase.com')) {
-    if (!url.searchParams.has('pgbouncer')) {
-      url.searchParams.set('pgbouncer', 'true')
+    // Ensure we're using transaction mode (port 6543 with pgbouncer=true)
+    // Session mode has strict limits, transaction mode is more flexible
+    url.searchParams.set('pgbouncer', 'true')
+    
+    // If port is 5432 (session mode), change to 6543 (transaction mode)
+    if (url.port === '5432' || !url.port) {
+      url.port = '6543'
     }
   }
+  
+  // For direct connection (db.*.supabase.co), use as-is
+  // Direct connections bypass pooler entirely
 
   const enhancedDatabaseUrl = url.toString()
+  
+  console.log(`[SEED_PRISMA] Using connection: ${url.hostname}:${url.port} (${url.hostname.includes('pooler') ? 'pooler' : 'direct'})`)
 
   return new PrismaClient({
     datasources: {
