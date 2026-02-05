@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
         
         // Try without gstin (might not exist in some schemas)
         try {
-          contacts = await prismaRead.contact.findMany({
+          contacts = await prisma.contact.findMany({
             where,
             skip: (page - 1) * limit,
             take: limit,

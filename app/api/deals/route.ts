@@ -115,8 +115,8 @@ export async function GET(request: NextRequest) {
             },
           },
         }),
-        prismaRead.deal.count({ where }),
-        prismaRead.deal.groupBy({
+        prisma.deal.count({ where }),
+        prisma.deal.groupBy({
           by: ['stage'],
           where: { tenantId: tenantId },
           _sum: {
