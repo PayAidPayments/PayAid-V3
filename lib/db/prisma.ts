@@ -54,13 +54,14 @@ function createPrismaClient(): PrismaClient {
   // Add connection pool parameters if not already present
   // These parameters are passed to the underlying PostgreSQL driver
   if (!url.searchParams.has('connection_limit')) {
-    // Optimized for minimal data/users: Use smaller pool but with faster timeouts
-    // For serverless (Vercel), use smaller pool (5 connections for minimal load)
-    // For long-running processes, use 5-10 connections
-    // Supabase free tier has limited connections, but we optimize for speed over pool size
+    // Optimized for serverless (Vercel): Use minimal connections
+    // With transaction mode, we can use more connections, but keep it conservative
+    // For session mode, use 1-2 connections max
+    // For transaction mode, use 3-5 connections
+    const isTransactionMode = url.hostname.includes('pooler.supabase.com') && (url.port === '6543' || url.port === '')
     const connectionLimit = process.env.DATABASE_CONNECTION_LIMIT 
       ? parseInt(process.env.DATABASE_CONNECTION_LIMIT, 10)
-      : (isProduction() ? 5 : 3) // Reduced to 3-5 for faster connection establishment
+      : (isTransactionMode ? 3 : 1) // Transaction mode: 3, Session mode: 1 (very limited)
     url.searchParams.set('connection_limit', connectionLimit.toString())
   }
   
@@ -76,11 +77,19 @@ function createPrismaClient(): PrismaClient {
     url.searchParams.set('connect_timeout', '3') // 3 seconds - faster connection
   }
 
-  // For Supabase pooler, ensure proper configuration
+  // For Supabase pooler, switch to TRANSACTION mode (port 6543) to avoid connection limits
+  // Session mode (port 5432) has strict limits (typically 1-5 connections per user)
+  // Transaction mode allows more concurrent connections
   if (url.hostname.includes('pooler.supabase.com')) {
-    // Supabase pooler works best with these settings
+    // CRITICAL: Use transaction mode instead of session mode
+    // Transaction mode (port 6543) allows more concurrent connections
+    // Session mode (port 5432) has strict limits that cause "MaxClientsInSessionMode" errors
+    if (url.port === '5432' || !url.port) {
+      url.port = '6543' // Switch to transaction mode
+    }
+    
+    // Ensure pgbouncer is enabled for transaction mode
     if (!url.searchParams.has('pgbouncer')) {
-      // Use transaction mode for better compatibility
       url.searchParams.set('pgbouncer', 'true')
     }
   }
