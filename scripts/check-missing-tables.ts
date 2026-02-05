@@ -7,7 +7,7 @@
  *   npx tsx scripts/check-missing-tables.ts
  */
 
-import { prisma } from '../lib/db/prisma'
+import { prisma } from './prisma-client'
 
 // List of critical models to check
 const criticalModels = [
