@@ -123,24 +123,37 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
   console.log(`📅 Date Range: ${DEMO_DATE_RANGE.start.toISOString().split('T')[0]} to ${DEMO_DATE_RANGE.end.toISOString().split('T')[0]}`)
   console.log('')
 
-  // 1. Get tenant - use provided tenantId if available, otherwise find by subdomain
-  let tenant: any = null
-  let tenantId: string
+  try {
+    // 1. Get tenant - use provided tenantId if available, otherwise find by subdomain
+    let tenant: any = null
+    let tenantId: string
 
-  if (demoTenantId) {
-    // Use the provided tenantId directly
-    console.log(`📋 Using provided tenantId: ${demoTenantId}`)
-    tenant = await prisma.tenant.findUnique({
-      where: { id: demoTenantId },
-    })
-    
-    if (!tenant) {
-      throw new Error(`Tenant not found with ID: ${demoTenantId}`)
-    }
-    
-    tenantId = demoTenantId
-    console.log(`✅ Found tenant: ${tenant.name} (${tenantId})`)
-  } else {
+    if (demoTenantId) {
+      // Use the provided tenantId directly
+      console.log(`📋 Using provided tenantId: ${demoTenantId}`)
+      try {
+        tenant = await prisma.tenant.findUnique({
+          where: { id: demoTenantId },
+        })
+        
+        if (!tenant) {
+          const error = new Error(`Tenant not found with ID: ${demoTenantId}`)
+          console.error(`❌ ${error.message}`)
+          throw error
+        }
+        
+        tenantId = demoTenantId
+        console.log(`✅ Found tenant: ${tenant.name} (${tenantId})`)
+      } catch (tenantError: any) {
+        console.error(`❌ Error looking up tenant ${demoTenantId}:`, tenantError?.message || tenantError)
+        console.error(`❌ Error details:`, {
+          code: tenantError?.code,
+          name: tenantError?.name,
+          stack: tenantError?.stack,
+        })
+        throw new Error(`Failed to find tenant ${demoTenantId}: ${tenantError?.message || String(tenantError)}`)
+      }
+    } else {
     // Fallback: find by subdomain
     tenant = await prisma.tenant.findUnique({
       where: { subdomain: 'demo' },
