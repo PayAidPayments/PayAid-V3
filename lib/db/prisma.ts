@@ -84,13 +84,17 @@ function createPrismaClient(): PrismaClient {
     // CRITICAL: Use transaction mode instead of session mode
     // Transaction mode (port 6543) allows more concurrent connections
     // Session mode (port 5432) has strict limits that cause "MaxClientsInSessionMode" errors
-    if (url.port === '5432' || !url.port) {
-      url.port = '6543' // Switch to transaction mode
-    }
+    // Always switch to transaction mode regardless of what port is in DATABASE_URL
+    url.port = '6543' // Force transaction mode
     
     // Ensure pgbouncer is enabled for transaction mode
     if (!url.searchParams.has('pgbouncer')) {
       url.searchParams.set('pgbouncer', 'true')
+    }
+    
+    // Log the change for debugging
+    if (isDevelopment()) {
+      console.log(`[PRISMA] Switched Supabase pooler to transaction mode (port 6543)`)
     }
   }
 
