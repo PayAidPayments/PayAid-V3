@@ -80,14 +80,15 @@ export async function GET(request: NextRequest) {
     if (stage) where.stage = stage
     if (contactId) where.contactId = contactId
 
-    // Use read replica for GET requests, fallback to primary if read replica fails
+    // Use main Prisma client to ensure we get the latest data (read replica may lag)
+    // This is especially important after seeding
     let deals: any[] = []
     let total = 0
     let pipelineSummary: any[] = []
     
     try {
       [deals, total, pipelineSummary] = await Promise.all([
-        prismaRead.deal.findMany({
+        prisma.deal.findMany({
           where,
           skip: (page - 1) * limit,
           take: limit,
