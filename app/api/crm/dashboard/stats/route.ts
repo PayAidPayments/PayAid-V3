@@ -45,9 +45,10 @@ async function getUserFilter(tenantId: string, userId?: string) {
 // Time period bounds now imported from shared utility
 
 // Rate limiting: Track active requests per tenant
-// For minimal data/users, allow 3 concurrent requests (dashboard may make multiple calls)
+// With transaction mode, we can handle more concurrent requests
+// Dashboard makes multiple parallel calls (stats, notifications, AI insights, etc.)
 const activeRequests = new Map<string, number>()
-const MAX_CONCURRENT_REQUESTS_PER_TENANT = 3 // Increased from 1 to 3 for minimal data
+const MAX_CONCURRENT_REQUESTS_PER_TENANT = 10 // Increased for transaction mode support
 
 // GET /api/crm/dashboard/stats - Get CRM dashboard statistics
 export async function GET(request: NextRequest) {
