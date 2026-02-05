@@ -309,19 +309,6 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
     console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     throw error
   }
-} catch (error: any) {
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.error('❌ Demo Business Seeding FAILED!')
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.error('Error type:', error?.constructor?.name || typeof error)
-    console.error('Error message:', error?.message || String(error))
-    console.error('Error code:', error?.code || 'N/A')
-    if (error?.stack) {
-      console.error('Error stack:', error.stack)
-    }
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    throw error
-  }
 }
 
 // CLI entry point
