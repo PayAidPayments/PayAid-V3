@@ -44,11 +44,12 @@ async function getUserFilter(tenantId: string, userId?: string) {
 
 // Time period bounds now imported from shared utility
 
-// Rate limiting: Track active requests per tenant
-// With transaction mode, we can handle more concurrent requests
-// Dashboard makes multiple parallel calls (stats, notifications, AI insights, etc.)
+// NOTE: In-memory rate limiting doesn't work well in serverless (Vercel)
+// Each function invocation may be a new instance, so the Map won't persist
+// Transaction mode (port 6543) should handle concurrent requests better
+// Keeping this for logging purposes only, but not blocking requests
 const activeRequests = new Map<string, number>()
-const MAX_CONCURRENT_REQUESTS_PER_TENANT = 10 // Increased for transaction mode support
+const MAX_CONCURRENT_REQUESTS_PER_TENANT = 100 // Effectively disabled - rely on transaction mode
 
 // GET /api/crm/dashboard/stats - Get CRM dashboard statistics
 export async function GET(request: NextRequest) {
@@ -126,27 +127,13 @@ export async function GET(request: NextRequest) {
       console.warn('[CRM_STATS] Could not check seed status:', importError)
     }
     
-    // Rate limiting: if too many concurrent requests, return a real error (NO sample/demo data)
+    // Log concurrent requests (for debugging, but don't block in serverless)
     const activeCount = activeRequests.get(tenantId) || 0
-    if (activeCount >= MAX_CONCURRENT_REQUESTS_PER_TENANT) {
-      console.warn(`[CRM_STATS] Rate limit: Tenant ${tenantId} has ${activeCount} active requests`)
-      return NextResponse.json(
-        {
-          error: 'Too many concurrent requests',
-          message: 'Please wait a moment and retry.',
-          retryAfter: 2,
-        },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': '2',
-            'Cache-Control': 'no-store',
-          },
-        }
-      )
+    if (activeCount > 0) {
+      console.log(`[CRM_STATS] Tenant ${tenantId} has ${activeCount} tracked active requests (serverless - may not be accurate)`)
     }
     
-    // Increment active request count
+    // Increment active request count (for logging only)
     activeRequests.set(tenantId, activeCount + 1)
     
     try {
@@ -249,11 +236,9 @@ export async function GET(request: NextRequest) {
       ? { tenantId, assignedToId: userFilter.assignedToId }
       : { tenantId }
 
-    // PERFORMANCE OPTIMIZATION: Parallelize queries in batches for maximum speed
-    // Removed all artificial delays - they were causing 4+ seconds of unnecessary wait time
-    // Batch queries that can run independently in parallel
-    
-    // Batch 1: Core stats (all independent - run in parallel)
+    // PERFORMANCE OPTIMIZATION: Parallelize queries in smaller batches to avoid connection pool exhaustion
+    // With transaction mode, we can run more queries in parallel, but still batch them to be safe
+    // Batch 1: Core stats (run in parallel, but limit to 6 at a time to avoid pool exhaustion)
     const [
       dealsCreatedInPeriod,
       dealsClosingInPeriod,
@@ -261,11 +246,6 @@ export async function GET(request: NextRequest) {
       totalTasks,
       completedTasks,
       totalMeetings,
-      totalLeads,
-      convertedLeads,
-      pipelineByStageData,
-      topLeadSourcesRaw,
-      wonDealsForQuarters,
     ] = await Promise.all([
       // Query 1: Deals created
       prismaWithRetry(() =>
@@ -317,6 +297,17 @@ export async function GET(request: NextRequest) {
           where: { tenantId },
         })
       ),
+    ])
+    
+    // Batch 2: Leads and contacts (6 queries)
+    const [
+      totalLeads,
+      convertedLeads,
+      contactsCreatedInPeriod,
+      pipelineByStageData,
+      topLeadSourcesRaw,
+      wonDealsForQuarters,
+    ] = await Promise.all([
       // Query 7: Total leads
       prismaWithRetry(() =>
         prisma.contact.count({
@@ -332,6 +323,15 @@ export async function GET(request: NextRequest) {
           where: {
             ...contactFilter,
             stage: 'customer',
+          },
+        })
+      ),
+      // Query 8b: Contacts created in period
+      prismaWithRetry(() =>
+        prisma.contact.count({
+          where: {
+            ...contactFilter,
+            createdAt: { gte: periodStart, lte: periodEnd },
           },
         })
       ),
@@ -630,6 +630,8 @@ export async function GET(request: NextRequest) {
       totalMeetings: totalMeetings || 0,
       totalLeads: totalLeads || 0,
       convertedLeads: convertedLeads || 0,
+      contactsCreatedThisMonth: contactsCreatedInPeriod || 0,
+      activeCustomers: convertedLeads || 0,
       conversionRate: totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0,
       quarterlyPerformance: (() => {
         // CRITICAL: NO HARDCODED VALUES - Only return real database data
@@ -737,18 +739,40 @@ export async function GET(request: NextRequest) {
                             errorCode === 'CIRCUIT_OPEN' ||
                             error?.isCircuitBreaker
     
+    // Log detailed error information for debugging
+    console.error('[CRM_STATS] Error details:', {
+      message: errorMessage,
+      code: errorCode,
+      name: error?.name,
+      isPoolExhausted,
+      stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined,
+    })
+    
     if (isPoolExhausted) {
       console.warn('[CRM_STATS] Database connection pool exhausted')
+      console.warn('[CRM_STATS] This suggests DATABASE_URL may still be using port 5432 (session mode)')
+      console.warn('[CRM_STATS] Please verify DATABASE_URL in Vercel uses port 6543 (transaction mode)')
       return NextResponse.json(
         { 
-          error: 'Database temporarily unavailable',
-          message: 'Too many concurrent requests. Please try again in a moment.',
+          error: 'Database connection pool exhausted',
+          message: 'Too many concurrent database connections. The system is using transaction mode, but you may need to update DATABASE_URL in Vercel to use port 6543.',
           retryAfter: 5,
+          troubleshooting: {
+            issue: 'Connection pool exhausted - likely still using session mode (port 5432)',
+            solution: 'Update DATABASE_URL in Vercel environment variables to use port 6543',
+            steps: [
+              '1. Go to Vercel Dashboard → Project Settings → Environment Variables',
+              '2. Find DATABASE_URL',
+              '3. Change port from 5432 to 6543',
+              '4. Redeploy the application',
+            ],
+          },
         },
         { 
           status: 503,
           headers: {
             'Content-Type': 'application/json',
+            'Retry-After': '5',
           }
         }
       )
