@@ -62,8 +62,8 @@ export async function GET(request: NextRequest) {
       const access = await requireModuleAccess(request, 'crm')
       tenantId = access.tenantId
       
-      // Log tenantId for debugging production issues
-      console.log('[CRM_DASHBOARD] Fetching stats for tenantId:', tenantId)
+    // Log tenantId for debugging production issues
+    console.log('[CRM_DASHBOARD] Fetching stats for tenantId:', tenantId)
       
       if (!tenantId) {
         console.error('[CRM_DASHBOARD] No tenantId found in request')
@@ -94,11 +94,12 @@ export async function GET(request: NextRequest) {
     const timePeriod = (searchParams.get('period') || 'month') as TimePeriod
     
     // Check if seed is running (may cause connection pool exhaustion)
-    // Only block if seed is very recent (less than 30 seconds) to avoid blocking during normal operation
+    // Only block if seed is VERY recent (less than 5 seconds) to avoid blocking during normal operation
+    // In serverless, the seed status Map may not persist across invocations, so be lenient
     try {
       const { isSeedRunning } = await import('@/lib/utils/seed-status')
       const seedStatus = isSeedRunning(tenantId)
-      if (seedStatus.running && seedStatus.elapsed && seedStatus.elapsed < 30000) { // Only block if less than 30 seconds
+      if (seedStatus.running && seedStatus.elapsed && seedStatus.elapsed < 5000) { // Only block if less than 5 seconds
         const elapsedSeconds = Math.floor((seedStatus.elapsed || 0) / 1000)
         console.warn(`[CRM_STATS] Seed just started for tenant ${tenantId}, elapsed: ${elapsedSeconds} seconds. Blocking request briefly.`)
         return NextResponse.json(
@@ -107,20 +108,21 @@ export async function GET(request: NextRequest) {
             message: `A data seeding operation just started. Please wait a few seconds and refresh the page.`,
             seedRunning: true,
             elapsedSeconds,
-            retryAfter: 10,
+            retryAfter: 5,
           },
           {
             status: 503,
             headers: {
-              'Retry-After': '10',
+              'Retry-After': '5',
               'Cache-Control': 'no-store',
             },
           }
         )
       } else if (seedStatus.running) {
-        // Seed is running but > 30 seconds old - log warning but allow request through
+        // Seed is running but > 5 seconds old - log warning but allow request through
+        // This prevents blocking requests unnecessarily in serverless where status may not persist
         const elapsedSeconds = Math.floor((seedStatus.elapsed || 0) / 1000)
-        console.log(`[CRM_STATS] Seed is running for tenant ${tenantId}, elapsed: ${elapsedSeconds} seconds. Allowing request through.`)
+        console.log(`[CRM_STATS] Seed is running for tenant ${tenantId}, elapsed: ${elapsedSeconds} seconds. Allowing request through (lenient mode).`)
       }
     } catch (importError) {
       // If we can't import the function, continue normally
@@ -138,6 +140,7 @@ export async function GET(request: NextRequest) {
     
     try {
       // Verify tenantId exists in database and test connection
+      // Note: During seeding, tenant might not exist yet, so we'll proceed anyway
       try {
         const tenantExists = await prisma.tenant.findUnique({
           where: { id: tenantId },
@@ -145,14 +148,13 @@ export async function GET(request: NextRequest) {
         })
         
         if (!tenantExists) {
-          console.error('[CRM_DASHBOARD] Tenant not found in database:', tenantId)
-          return NextResponse.json(
-            { error: `Tenant ${tenantId} not found in database` },
-            { status: 404 }
-          )
+          console.warn('[CRM_DASHBOARD] Tenant not found in database, but proceeding (may be seeding):', tenantId)
+          // Don't return 404 - allow stats to be fetched even if tenant doesn't exist yet
+          // This allows the dashboard to work during initial setup/seeding
+          // The stats will just return empty/zero values
+        } else {
+          console.log('[CRM_DASHBOARD] Tenant verified:', tenantExists.name)
         }
-        
-        console.log('[CRM_DASHBOARD] Tenant verified:', tenantExists.name)
       } catch (tenantCheckError: any) {
         console.error('[CRM_DASHBOARD] Error checking tenant:', tenantCheckError)
         
@@ -166,18 +168,34 @@ export async function GET(request: NextRequest) {
         
         if (isConnectionError) {
           console.error('[CRM_DASHBOARD] Database connection failed during tenant check')
+          const isVercel = process.env.VERCEL === '1'
+          const hasDatabaseUrl = !!process.env.DATABASE_URL
+          
           return NextResponse.json(
             { 
               error: 'Database connection failed',
-              message: 'Unable to connect to database. Please check your DATABASE_URL configuration in Vercel. If using Supabase, check if your project is paused.',
+              message: isVercel
+                ? 'Unable to connect to database. Please check your DATABASE_URL configuration in Vercel. If using Supabase, check if your project is paused.'
+                : hasDatabaseUrl
+                  ? 'Unable to connect to database. Please check your DATABASE_URL in .env.local file. Verify your connection string and ensure Supabase project is active.'
+                  : 'DATABASE_URL is not set. Please add DATABASE_URL to your .env.local file.',
               code: tenantCheckError?.code,
+              environment: isVercel ? 'vercel' : 'localhost',
+              hasDatabaseUrl,
               troubleshooting: {
-                steps: [
+                steps: isVercel ? [
                   '1. Check if DATABASE_URL is set in Vercel environment variables',
                   '2. If using Supabase, check if your project is paused: https://supabase.com/dashboard',
                   '3. Resume the Supabase project if paused (free tier pauses after inactivity)',
                   '4. Wait 1-2 minutes after resuming for the database to activate',
                   '5. Verify the database connection string is correct',
+                ] : [
+                  '1. Check if DATABASE_URL exists in .env.local file',
+                  '2. Verify DATABASE_URL format: postgresql://user:password@host:port/database',
+                  '3. If using Supabase, get connection string from: Project Settings → Database → Connection String',
+                  '4. Ensure Supabase project is active (not paused)',
+                  '5. Restart your development server after updating .env.local',
+                  '6. Check console logs for detailed error messages',
                 ],
                 healthCheck: '/api/health/db',
               },
@@ -189,13 +207,46 @@ export async function GET(request: NextRequest) {
         // Continue anyway for other errors
       }
       
-      const userFilter = await getUserFilter(tenantId, user?.userId)
+    const userFilter = await getUserFilter(tenantId, user?.userId)
+    console.log('[CRM_DASHBOARD] User filter:', JSON.stringify(userFilter))
+    console.log('[CRM_DASHBOARD] User:', user ? { userId: user.userId, email: user.email } : 'No user')
 
     // Get current date for calculations
     const now = new Date()
     const periodBounds = getTimePeriodBounds(timePeriod)
     const periodStart = periodBounds.start
     const periodEnd = periodBounds.end
+    
+    // Quick data check - verify if any data exists for this tenant (for debugging)
+    try {
+      const [contactCount, dealCount, taskCount] = await Promise.all([
+        prisma.contact.count({ where: { tenantId } }).catch(() => 0),
+        prisma.deal.count({ where: { tenantId } }).catch(() => 0),
+        prisma.task.count({ where: { tenantId } }).catch(() => 0),
+      ])
+      console.log('[CRM_DASHBOARD] Data check - Total counts:', {
+        contacts: contactCount,
+        deals: dealCount,
+        tasks: taskCount,
+        tenantId,
+      })
+      
+      // Check deals created this month
+      const dealsThisMonth = await prisma.deal.count({
+        where: {
+          tenantId,
+          createdAt: { gte: periodStart, lte: periodEnd },
+        },
+      }).catch(() => 0)
+      console.log('[CRM_DASHBOARD] Data check - Deals in period:', {
+        count: dealsThisMonth,
+        periodStart: periodStart.toISOString(),
+        periodEnd: periodEnd.toISOString(),
+        period: timePeriod,
+      })
+    } catch (dataCheckError) {
+      console.warn('[CRM_DASHBOARD] Data check failed (non-critical):', dataCheckError)
+    }
 
     // Calculate quarters - Q1 to Q4 of current fiscal year (April to March)
     const getQuarter = (date: Date) => {
@@ -237,15 +288,12 @@ export async function GET(request: NextRequest) {
       : { tenantId }
 
     // PERFORMANCE OPTIMIZATION: Parallelize queries in smaller batches to avoid connection pool exhaustion
-    // With transaction mode, we can run more queries in parallel, but still batch them to be safe
-    // Batch 1: Core stats (run in parallel, but limit to 6 at a time to avoid pool exhaustion)
+    // Reduced batch sizes to prevent "Too many concurrent connections" errors
+    // Batch 1: Core stats (split into 2 batches of 3 queries each)
     const [
       dealsCreatedInPeriod,
       dealsClosingInPeriod,
       overdueTasks,
-      totalTasks,
-      completedTasks,
-      totalMeetings,
     ] = await Promise.all([
       // Query 1: Deals created
       prismaWithRetry(() =>
@@ -276,6 +324,17 @@ export async function GET(request: NextRequest) {
           },
         })
       ),
+    ])
+    
+    // Small delay between batches
+    await new Promise(resolve => setTimeout(resolve, 50))
+    
+    // Batch 1b: Remaining core stats (3 queries)
+    const [
+      totalTasks,
+      completedTasks,
+      totalMeetings,
+    ] = await Promise.all([
       // Query 4: Total tasks
       prismaWithRetry(() =>
         prisma.task.count({
@@ -299,14 +358,15 @@ export async function GET(request: NextRequest) {
       ),
     ])
     
-    // Batch 2: Leads and contacts (6 queries)
+    // Small delay between batches
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    // Batch 2: Leads and contacts (split into 2 batches of 3 queries each)
+    // Batch 2a: First 3 queries
     const [
       totalLeads,
       convertedLeads,
       contactsCreatedInPeriod,
-      pipelineByStageData,
-      topLeadSourcesRaw,
-      wonDealsForQuarters,
     ] = await Promise.all([
       // Query 7: Total leads
       prismaWithRetry(() =>
@@ -335,6 +395,17 @@ export async function GET(request: NextRequest) {
           },
         })
       ),
+    ])
+    
+    // Small delay between batches
+    await new Promise(resolve => setTimeout(resolve, 50))
+    
+    // Batch 2b: Remaining queries (3 queries)
+    const [
+      pipelineByStageData,
+      topLeadSourcesRaw,
+      wonDealsForQuarters,
+    ] = await Promise.all([
       // Query 9: Pipeline by stage (with values)
       prismaWithRetry(() =>
         prisma.deal.groupBy({
@@ -376,28 +447,52 @@ export async function GET(request: NextRequest) {
         })
       ),
     ])
+    
+    // Small delay between batches to allow connection pool recovery
+    await new Promise(resolve => setTimeout(resolve, 50))
 
     // Ensure topLeadSources is always an array
     let topLeadSources: any[] = []
     try {
       if (Array.isArray(topLeadSourcesRaw)) {
         topLeadSources = topLeadSourcesRaw
+        console.log('[CRM_STATS] Fetched lead sources:', {
+          count: topLeadSources.length,
+          sources: topLeadSources.map(s => ({ name: s?.name, leadsCount: s?.leadsCount })),
+        })
+      } else {
+        console.warn('[CRM_STATS] topLeadSourcesRaw is not an array:', typeof topLeadSourcesRaw, topLeadSourcesRaw)
       }
     } catch (err) {
       console.error('[CRM_STATS] Error processing top lead sources:', err)
       topLeadSources = []
     }
+    
+    // If no lead sources found, try to fetch them directly (fallback)
+    if (topLeadSources.length === 0) {
+      console.log('[CRM_STATS] No lead sources from query, trying direct fetch...')
+      try {
+        const directSources = await prisma.leadSource.findMany({
+          where: { tenantId },
+          orderBy: { leadsCount: 'desc' },
+          take: 10,
+        })
+        if (directSources.length > 0) {
+          console.log('[CRM_STATS] Found lead sources via direct fetch:', directSources.length)
+          topLeadSources = directSources
+        }
+      } catch (directError) {
+        console.error('[CRM_STATS] Direct lead source fetch failed:', directError)
+      }
+    }
 
-    // Batch 2: Quarterly data (all 4 quarters in parallel - 8 queries total)
+    // Batch 2: Quarterly data - split into 2 batches of 4 queries each to reduce concurrent load
+    // First batch: Q1 and Q2 (4 queries)
     const [
       q1DealsCreated,
       q1LeadsCreated,
       q2DealsCreated,
       q2LeadsCreated,
-      q3DealsCreated,
-      q3LeadsCreated,
-      q4DealsCreated,
-      q4LeadsCreated,
     ] = await Promise.all([
       prismaWithRetry(() =>
         prisma.deal.count({
@@ -431,6 +526,18 @@ export async function GET(request: NextRequest) {
           },
         })
       ),
+    ])
+    
+    // Small delay to allow connection pool recovery
+    await new Promise(resolve => setTimeout(resolve, 50))
+    
+    // Second batch: Q3 and Q4 (4 queries)
+    const [
+      q3DealsCreated,
+      q3LeadsCreated,
+      q4DealsCreated,
+      q4LeadsCreated,
+    ] = await Promise.all([
       prismaWithRetry(() =>
         prisma.deal.count({
           where: {
@@ -465,24 +572,35 @@ export async function GET(request: NextRequest) {
       ),
     ])
 
-    // Batch 3: Monthly lead creation - parallelize all 12 months at once
-    const monthlyQueries = []
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1)
-      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999)
-      monthlyQueries.push(
-        prismaWithRetry(() =>
-          prisma.contact.count({
-            where: {
-              ...contactFilter,
-              createdAt: { gte: monthStart, lte: monthEnd },
-            },
-          })
+    // Batch 3: Monthly lead creation - split into 3 batches of 4 months each to reduce concurrent load
+    const monthlyCounts: number[] = []
+    
+    // Process months in batches of 4
+    for (let batchStart = 0; batchStart < 12; batchStart += 4) {
+      const batchQueries = []
+      for (let i = batchStart; i < Math.min(batchStart + 4, 12); i++) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+        const monthStart = new Date(date.getFullYear(), date.getMonth(), 1)
+        const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999)
+        batchQueries.push(
+          prismaWithRetry(() =>
+            prisma.contact.count({
+              where: {
+                ...contactFilter,
+                createdAt: { gte: monthStart, lte: monthEnd },
+              },
+            })
+          )
         )
-      )
+      }
+      const batchResults = await Promise.all(batchQueries)
+      monthlyCounts.push(...batchResults)
+      
+      // Small delay between batches to allow connection pool recovery
+      if (batchStart + 4 < 12) {
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
     }
-    const monthlyCounts = await Promise.all(monthlyQueries)
 
     // Calculate revenue from won deals in the period
     // Reuse wonDealsForQuarters that we already fetched
@@ -671,9 +789,16 @@ export async function GET(request: NextRequest) {
         // CRITICAL: NO HARDCODED VALUES - Only return real database data
         try {
           if (Array.isArray(topLeadSources) && topLeadSources.length > 0) {
-            const filtered = topLeadSources.filter((source: any) => source && (source.leadsCount || 0) > 0)
-            if (filtered.length > 0) {
-              return filtered.map((source: any) => ({
+            // Include sources even if leadsCount is 0 (they might have been seeded but not assigned yet)
+            // But prioritize sources with actual leadsCount > 0
+            const withLeads = topLeadSources.filter((source: any) => source && (source.leadsCount || 0) > 0)
+            const withoutLeads = topLeadSources.filter((source: any) => source && (source.leadsCount || 0) === 0)
+            
+            // Return sources with leads first, then sources without leads (up to 10 total)
+            const allSources = [...withLeads, ...withoutLeads].slice(0, 10)
+            
+            if (allSources.length > 0) {
+              return allSources.map((source: any) => ({
                 name: String(source?.name || 'Unknown'),
                 leadsCount: Number(source?.leadsCount || 0),
                 conversionsCount: Number(source?.conversionsCount || 0),
@@ -691,6 +816,23 @@ export async function GET(request: NextRequest) {
       periodLabel: periodBounds.label,
     }
 
+    // Log query results for debugging
+    console.log('[CRM_DASHBOARD] Query results:', {
+      dealsCreatedInPeriod,
+      totalLeads,
+      convertedLeads,
+      contactsCreatedInPeriod,
+      totalTasks,
+      completedTasks,
+      overdueTasks,
+      revenueThisMonth: revenueInPeriod,
+      tenantId,
+      periodStart: periodStart.toISOString(),
+      periodEnd: periodEnd.toISOString(),
+      hasRealData,
+      topLeadSourcesCount: topLeadSources?.length || 0,
+    })
+    
     const durationMs = Date.now() - startTime
     console.log(`[CRM_STATS] tenant=${tenantId} period=${timePeriod} duration=${durationMs}ms`)
 
@@ -749,23 +891,37 @@ export async function GET(request: NextRequest) {
     })
     
     if (isPoolExhausted) {
+      const isVercel = process.env.VERCEL === '1'
       console.warn('[CRM_STATS] Database connection pool exhausted')
       console.warn('[CRM_STATS] This suggests DATABASE_URL may still be using port 5432 (session mode)')
-      console.warn('[CRM_STATS] Please verify DATABASE_URL in Vercel uses port 6543 (transaction mode)')
+      
+      const troubleshootingSteps = isVercel ? [
+        '1. Go to Vercel Dashboard → Project Settings → Environment Variables',
+        '2. Find DATABASE_URL',
+        '3. Change port from 5432 to 6543',
+        '4. Redeploy the application',
+      ] : [
+        '1. Check your .env.local file',
+        '2. Ensure DATABASE_URL uses port 6543 (transaction mode)',
+        '3. Format: postgresql://user:password@host:6543/database?pgbouncer=true',
+        '4. Restart your development server after updating',
+        '5. If using Supabase, get connection string from Project Settings → Database',
+      ]
+      
       return NextResponse.json(
         { 
           error: 'Database connection pool exhausted',
-          message: 'Too many concurrent database connections. The system is using transaction mode, but you may need to update DATABASE_URL in Vercel to use port 6543.',
+          message: isVercel
+            ? 'Too many concurrent database connections. The system is using transaction mode, but you may need to update DATABASE_URL in Vercel to use port 6543.'
+            : 'Too many concurrent database connections. Please check your DATABASE_URL in .env.local - ensure it uses port 6543 (transaction mode) instead of 5432 (session mode).',
           retryAfter: 5,
+          environment: isVercel ? 'vercel' : 'localhost',
           troubleshooting: {
             issue: 'Connection pool exhausted - likely still using session mode (port 5432)',
-            solution: 'Update DATABASE_URL in Vercel environment variables to use port 6543',
-            steps: [
-              '1. Go to Vercel Dashboard → Project Settings → Environment Variables',
-              '2. Find DATABASE_URL',
-              '3. Change port from 5432 to 6543',
-              '4. Redeploy the application',
-            ],
+            solution: isVercel 
+              ? 'Update DATABASE_URL in Vercel environment variables to use port 6543'
+              : 'Update DATABASE_URL in .env.local to use port 6543 (transaction mode)',
+            steps: troubleshootingSteps,
           },
         },
         { 

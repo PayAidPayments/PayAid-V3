@@ -45,9 +45,10 @@ export async function GET(request: NextRequest) {
     if (assignedToId) where.assignedToId = assignedToId
     if (contactId) where.contactId = contactId
 
-    // Use read replica for GET requests
+    // Use main Prisma client to ensure we get the latest data (read replica may lag)
+    // This is especially important after seeding
     const [tasks, total] = await Promise.all([
-      prismaRead.task.findMany({
+      prisma.task.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prismaRead.task.count({ where }),
+      prisma.task.count({ where }),
     ])
 
     const result = {
