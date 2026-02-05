@@ -1,7 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db/prisma'
+import { PrismaClient } from '@prisma/client'
 import { seedDemoBusiness } from '@/prisma/seeds/demo/demo-business-master-seed'
 import { authenticateRequest } from '@/lib/middleware/auth'
+
+/**
+ * Create optimized Prisma client for seed operations
+ * Uses transaction mode and minimal connections to avoid pool exhaustion
+ */
+function createSeedPrismaClient(): PrismaClient {
+  // Priority: 1. Direct connection, 2. Transaction mode pooler, 3. Regular pooler
+  let databaseUrl = process.env.DATABASE_DIRECT_URL || process.env.DATABASE_URL
+  
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL environment variable is not set')
+  }
+
+  // Parse and enhance DATABASE_URL with minimal connection pool for seeding
+  const url = new URL(databaseUrl)
+  
+  // CRITICAL: Use only 1 connection to avoid pool exhaustion
+  url.searchParams.set('connection_limit', '1')
+  
+  // Faster timeouts
+  url.searchParams.set('pool_timeout', '10')
+  url.searchParams.set('connect_timeout', '5')
+
+  // For Supabase pooler, convert to TRANSACTION mode (not session mode)
+  // Transaction mode allows more concurrent connections
+  if (url.hostname.includes('pooler.supabase.com')) {
+    url.searchParams.set('pgbouncer', 'true')
+    
+    // If port is 5432 (session mode), change to 6543 (transaction mode)
+    if (url.port === '5432' || !url.port) {
+      url.port = '6543'
+    }
+  }
+
+  const enhancedDatabaseUrl = url.toString()
+
+  return new PrismaClient({
+    datasources: {
+      db: {
+        url: enhancedDatabaseUrl,
+      },
+    },
+  })
+}
+
+// Use optimized Prisma client for this endpoint
+const prisma = createSeedPrismaClient()
 
 /**
  * POST /api/admin/seed-now
@@ -184,6 +231,11 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     )
+  } finally {
+    // Disconnect the optimized Prisma client
+    await prisma.$disconnect().catch(() => {
+      // Ignore disconnect errors
+    })
   }
 }
 
