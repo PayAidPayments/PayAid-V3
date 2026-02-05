@@ -244,6 +244,65 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
   const contacts = await prisma.contact.findMany({ where: { tenantId }, take: 200 })
   const deals = await prisma.deal.findMany({ where: { tenantId }, take: 200 })
 
+  // 5.5. Initialize Chart of Accounts (needed for Finance module)
+  console.log('📊 Initializing Chart of Accounts...')
+  try {
+    const defaultAccounts = [
+      // Assets
+      { code: '101', name: 'Bank Account', type: 'asset', subType: 'cash', group: 'Current Assets' },
+      { code: '120', name: 'Accounts Receivable', type: 'asset', subType: 'current_asset', group: 'Current Assets' },
+      // Revenue
+      { code: '401', name: 'Sales Revenue', type: 'revenue', group: 'Revenue' },
+      // Expenses
+      { code: '501', name: 'Travel Expenses', type: 'expense', group: 'Travel' },
+      { code: '502', name: 'Office Expenses', type: 'expense', group: 'Office' },
+      { code: '503', name: 'Marketing Expenses', type: 'expense', group: 'Marketing' },
+      { code: '504', name: 'Utilities', type: 'expense', group: 'Utilities' },
+      { code: '505', name: 'Rent', type: 'expense', group: 'Rent' },
+      { code: '599', name: 'Other Expenses', type: 'expense', group: 'Other' },
+    ]
+
+    for (const account of defaultAccounts) {
+      try {
+        await prisma.chartOfAccounts.upsert({
+          where: {
+            tenantId_accountCode: {
+              tenantId,
+              accountCode: account.code,
+            },
+          },
+          create: {
+            tenantId,
+            accountCode: account.code,
+            accountName: account.name,
+            accountType: account.type as any,
+            subType: account.subType as any,
+            accountGroup: account.group,
+            currency: 'INR',
+            isActive: true,
+          },
+          update: {
+            accountName: account.name,
+            isActive: true,
+          },
+        })
+      } catch (accountError: any) {
+        // If table doesn't exist, log warning and continue
+        if (accountError?.code === 'P2021') {
+          console.warn(`  ⚠️  Chart of Accounts table does not exist. Skipping account initialization.`)
+          console.warn(`  ⚠️  Run database migrations to create the table.`)
+          break
+        }
+        throw accountError
+      }
+    }
+    console.log(`  ✓ Initialized chart of accounts`)
+  } catch (chartError: any) {
+    console.warn(`  ⚠️  Failed to initialize chart of accounts:`, chartError?.message || chartError)
+    console.warn(`  ⚠️  Finance module may not work correctly until chart_of_accounts table is created.`)
+  }
+  console.log('')
+
   // 6. Seed Sales & Billing Module
   console.log('💰 Seeding Sales & Billing Module...')
   const salesBillingResult = await seedSalesAndBillingModule(tenantId, contacts, products, DEMO_DATE_RANGE, prisma)
