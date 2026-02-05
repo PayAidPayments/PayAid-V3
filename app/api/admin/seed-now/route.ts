@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { seedDemoBusiness } from '@/prisma/seeds/demo/demo-business-master-seed'
 import { authenticateRequest } from '@/lib/middleware/auth'
+import { isSeedRunning, startSeedTracking, stopSeedTracking } from '@/lib/utils/seed-status'
 
 /**
  * Create optimized Prisma client for seed operations
@@ -52,8 +53,9 @@ const prisma = createSeedPrismaClient()
 
 /**
  * POST /api/admin/seed-now
- * Direct, synchronous seed endpoint for production
- * This endpoint runs the seed and waits for completion, returning detailed results
+ * Seed endpoint for production
+ * By default runs in background to avoid timeout issues
+ * Use ?wait=true to wait for completion (may timeout on large seeds)
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
@@ -77,6 +79,8 @@ export async function POST(request: NextRequest) {
     
     const searchParams = request.nextUrl.searchParams
     const tenantId = searchParams.get('tenantId') || user?.tenantId
+    const wait = searchParams.get('wait') === 'true' // Option to wait for completion (may timeout)
+    const checkStatus = searchParams.get('checkStatus') === 'true'
     
     if (!tenantId) {
       return NextResponse.json(
@@ -86,6 +90,25 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       )
+    }
+    
+    // Check status if requested
+    if (checkStatus) {
+      const seedStatus = isSeedRunning(tenantId)
+      const [contacts, deals, tasks] = await Promise.all([
+        prisma.contact.count({ where: { tenantId } }).catch(() => 0),
+        prisma.deal.count({ where: { tenantId } }).catch(() => 0),
+        prisma.task.count({ where: { tenantId } }).catch(() => 0),
+      ])
+      
+      return NextResponse.json({
+        tenantId,
+        seedRunning: seedStatus.running,
+        elapsedSeconds: seedStatus.elapsed ? Math.floor(seedStatus.elapsed / 1000) : 0,
+        elapsedMinutes: seedStatus.elapsed ? Math.floor(seedStatus.elapsed / 60000) : 0,
+        currentData: { contacts, deals, tasks },
+        hasData: contacts > 0 || deals > 0 || tasks > 0,
+      })
     }
     
     // Verify tenant exists
@@ -104,8 +127,20 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    console.log(`[SEED_NOW] 🚀 Starting direct seed for tenant: ${tenant.name} (${tenantId})`)
-    console.log(`[SEED_NOW] ⏰ Start time: ${new Date().toISOString()}`)
+    // Check if seed is already running
+    const seedStatus = isSeedRunning(tenantId)
+    if (seedStatus.running) {
+      const elapsedSeconds = Math.floor((seedStatus.elapsed || 0) / 1000)
+      return NextResponse.json({
+        success: true,
+        message: `Seed operation already in progress. Started ${elapsedSeconds} seconds ago.`,
+        alreadyRunning: true,
+        tenantId,
+        tenantName: tenant.name,
+        elapsedSeconds,
+        checkStatus: `/api/admin/seed-now?tenantId=${tenantId}&checkStatus=true`,
+      })
+    }
     
     // Check current data counts before seeding
     const [beforeContacts, beforeDeals, beforeTasks] = await Promise.all([
@@ -114,108 +149,118 @@ export async function POST(request: NextRequest) {
       prisma.task.count({ where: { tenantId } }).catch(() => 0),
     ])
     
+    console.log(`[SEED_NOW] 🚀 Starting seed for tenant: ${tenant.name} (${tenantId})`)
+    console.log(`[SEED_NOW] ⏰ Start time: ${new Date().toISOString()}`)
     console.log(`[SEED_NOW] 📊 Data before seed: ${beforeContacts} contacts, ${beforeDeals} deals, ${beforeTasks} tasks`)
+    console.log(`[SEED_NOW] Mode: ${wait ? 'WAIT (synchronous)' : 'BACKGROUND (async)'}`)
     
-    // Run the seed
-    let seedResult
-    try {
-      seedResult = await seedDemoBusiness(tenantId)
-      console.log(`[SEED_NOW] ✅ Seed function completed successfully`)
-    } catch (seedError: any) {
-      console.error(`[SEED_NOW] ❌ Seed function failed:`, seedError)
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Seed function failed',
-          message: seedError?.message || String(seedError),
-          stack: process.env.NODE_ENV === 'development' ? seedError?.stack : undefined,
-          tenantId,
-          tenantName: tenant.name,
-        },
-        { status: 500 }
-      )
-    }
-    
-    // Wait a moment for database to sync
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    // Verify data was created
-    console.log(`[SEED_NOW] 🔍 Verifying data creation...`)
-    const [afterContacts, afterDeals, afterTasks, invoices, orders] = await Promise.all([
-      prisma.contact.count({ where: { tenantId } }).catch(() => 0),
-      prisma.deal.count({ where: { tenantId } }).catch(() => 0),
-      prisma.task.count({ where: { tenantId } }).catch(() => 0),
-      prisma.invoice.count({ where: { tenantId } }).catch(() => 0),
-      prisma.order.count({ where: { tenantId } }).catch(() => 0),
-    ])
-    
-    const contactsCreated = afterContacts - beforeContacts
-    const dealsCreated = afterDeals - beforeDeals
-    const tasksCreated = afterTasks - beforeTasks
-    const totalCreated = contactsCreated + dealsCreated + tasksCreated + invoices + orders
-    
-    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
-    
-    console.log(`[SEED_NOW] ⏰ Seed completed in ${elapsedSeconds} seconds`)
-    console.log(`[SEED_NOW] 📊 Data after seed:`)
-    console.log(`[SEED_NOW]   - Contacts: ${afterContacts} (created: ${contactsCreated})`)
-    console.log(`[SEED_NOW]   - Deals: ${afterDeals} (created: ${dealsCreated})`)
-    console.log(`[SEED_NOW]   - Tasks: ${afterTasks} (created: ${tasksCreated})`)
-    console.log(`[SEED_NOW]   - Invoices: ${invoices}`)
-    console.log(`[SEED_NOW]   - Orders: ${orders}`)
-    console.log(`[SEED_NOW] 📈 Total records: ${totalCreated}`)
-    
-    if (totalCreated === 0) {
-      console.error(`[SEED_NOW] ❌ CRITICAL: No data was created!`)
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'No data created',
-          message: 'Seed completed but no data was created. This may indicate a database connection issue or seed function error.',
+    // If wait=true, run synchronously (may timeout on large seeds)
+    if (wait) {
+      try {
+        const seedResult = await seedDemoBusiness(tenantId)
+        console.log(`[SEED_NOW] ✅ Seed function completed successfully`)
+        
+        // Wait a moment for database to sync
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+        // Verify data was created
+        const [afterContacts, afterDeals, afterTasks, invoices, orders] = await Promise.all([
+          prisma.contact.count({ where: { tenantId } }).catch(() => 0),
+          prisma.deal.count({ where: { tenantId } }).catch(() => 0),
+          prisma.task.count({ where: { tenantId } }).catch(() => 0),
+          prisma.invoice.count({ where: { tenantId } }).catch(() => 0),
+          prisma.order.count({ where: { tenantId } }).catch(() => 0),
+        ])
+        
+        const totalCreated = (afterContacts - beforeContacts) + (afterDeals - beforeDeals) + (afterTasks - beforeTasks) + invoices + orders
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
+        
+        return NextResponse.json({
+          success: true,
+          message: `Seed completed successfully! Created ${totalCreated} records.`,
           tenantId,
           tenantName: tenant.name,
           elapsedSeconds,
-          before: { contacts: beforeContacts, deals: beforeDeals, tasks: beforeTasks },
-          after: { contacts: afterContacts, deals: afterDeals, tasks: afterTasks, invoices, orders },
+          dataCreated: {
+            contacts: afterContacts - beforeContacts,
+            deals: afterDeals - beforeDeals,
+            tasks: afterTasks - beforeTasks,
+            invoices,
+            orders,
+            total: totalCreated,
+          },
           seedResult,
-          troubleshooting: [
-            'Check database connection: /api/health/db',
-            'Check Vercel function logs for errors',
-            'Verify DATABASE_URL is set correctly in Vercel',
-            'Check if Supabase project is paused',
-          ],
-        },
-        { status: 500 }
-      )
+        })
+      } catch (seedError: any) {
+        console.error(`[SEED_NOW] ❌ Seed function failed:`, seedError)
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Seed function failed',
+            message: seedError?.message || String(seedError),
+            tenantId,
+            tenantName: tenant.name,
+          },
+          { status: 500 }
+        )
+      }
     }
     
+    // Default: Run in background (recommended to avoid timeouts)
+    const seedStartTime = Date.now()
+    const seedPromise = (async () => {
+      try {
+        console.log(`[SEED_NOW] 🚀 Starting background seed for tenant: ${tenantId}`)
+        const seedResult = await seedDemoBusiness(tenantId)
+        console.log(`[SEED_NOW] ✅ Background seed completed`)
+        
+        // Wait a moment for database to sync
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+        // Verify data
+        const [contacts, deals, tasks, invoices, orders] = await Promise.all([
+          prisma.contact.count({ where: { tenantId } }).catch(() => 0),
+          prisma.deal.count({ where: { tenantId } }).catch(() => 0),
+          prisma.task.count({ where: { tenantId } }).catch(() => 0),
+          prisma.invoice.count({ where: { tenantId } }).catch(() => 0),
+          prisma.order.count({ where: { tenantId } }).catch(() => 0),
+        ])
+        
+        const totalData = contacts + deals + tasks + invoices + orders
+        const elapsedSeconds = Math.floor((Date.now() - seedStartTime) / 1000)
+        
+        console.log(`[SEED_NOW] ⏰ Background seed completed in ${elapsedSeconds} seconds`)
+        console.log(`[SEED_NOW] 📊 Data created: ${contacts} contacts, ${deals} deals, ${tasks} tasks, ${invoices} invoices, ${orders} orders`)
+        console.log(`[SEED_NOW] 📈 Total: ${totalData} records`)
+        
+        if (totalData === 0) {
+          console.error(`[SEED_NOW] ❌ WARNING: Seed completed but NO data was created`)
+        } else if (totalData < 10) {
+          console.warn(`[SEED_NOW] ⚠️  WARNING: Very little data created (${totalData} records)`)
+        } else {
+          console.log(`[SEED_NOW] ✅ Seed successful!`)
+        }
+      } catch (err: any) {
+        const elapsedSeconds = Math.floor((Date.now() - seedStartTime) / 1000)
+        console.error(`[SEED_NOW] ❌ Background seed FAILED after ${elapsedSeconds} seconds:`, err)
+        throw err
+      } finally {
+        stopSeedTracking(tenantId)
+      }
+    })()
+    
+    // Track the seed
+    startSeedTracking(tenantId, seedPromise)
+    
+    // Don't await - return immediately
     return NextResponse.json({
       success: true,
-      message: `Seed completed successfully! Created ${totalCreated} records.`,
+      message: 'Seed operation started in background. This may take 1-3 minutes. Use ?checkStatus=true to monitor progress.',
+      background: true,
       tenantId,
       tenantName: tenant.name,
-      elapsedSeconds,
-      dataCreated: {
-        contacts: contactsCreated,
-        deals: dealsCreated,
-        tasks: tasksCreated,
-        invoices,
-        orders,
-        total: totalCreated,
-      },
-      currentCounts: {
-        contacts: afterContacts,
-        deals: afterDeals,
-        tasks: afterTasks,
-        invoices,
-        orders,
-      },
-      seedResult,
-      nextSteps: [
-        'Refresh the dashboard page to see the data',
-        'Data should appear within 30 seconds',
-        'If data still doesn\'t show, check browser console for errors',
-      ],
+      checkStatus: `/api/admin/seed-now?tenantId=${tenantId}&checkStatus=true`,
+      note: 'Background seeding avoids Vercel timeout limits. Check status or refresh the page in 1-2 minutes.',
     })
   } catch (error: any) {
     const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
@@ -241,22 +286,46 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/admin/seed-now
- * Check if seed is needed and show instructions
+ * Check seed status, data counts, or show instructions
  */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const tenantId = searchParams.get('tenantId')
+    const checkStatus = searchParams.get('checkStatus') === 'true'
     
     if (!tenantId) {
       return NextResponse.json({
-        message: 'Seed Now - Direct Production Seeding',
+        message: 'Seed Now - Production Seeding Endpoint',
         instructions: [
-          'This endpoint runs seed synchronously and returns detailed results',
-          'POST /api/admin/seed-now?tenantId=YOUR_TENANT_ID',
-          'Or log in and POST /api/admin/seed-now (will use your tenantId)',
+          'POST /api/admin/seed-now?tenantId=YOUR_TENANT_ID (runs in background by default)',
+          'POST /api/admin/seed-now?tenantId=YOUR_TENANT_ID&wait=true (waits for completion, may timeout)',
+          'GET /api/admin/seed-now?tenantId=YOUR_TENANT_ID&checkStatus=true (check seed progress)',
         ],
-        example: 'curl -X POST "https://payaid-v3.vercel.app/api/admin/seed-now?tenantId=cmjptk2mw0000aocw31u48n64" -H "Authorization: Bearer YOUR_TOKEN"',
+        examples: [
+          'Browser: fetch("/api/admin/seed-now?tenantId=cmjptk2mw0000aocw31u48n64", {method: "POST"})',
+          'Check status: fetch("/api/admin/seed-now?tenantId=cmjptk2mw0000aocw31u48n64&checkStatus=true")',
+        ],
+        note: 'Background mode (default) avoids Vercel timeout limits. Use checkStatus to monitor progress.',
+      })
+    }
+    
+    // If checking status
+    if (checkStatus) {
+      const seedStatus = isSeedRunning(tenantId)
+      const [contacts, deals, tasks] = await Promise.all([
+        prisma.contact.count({ where: { tenantId } }).catch(() => 0),
+        prisma.deal.count({ where: { tenantId } }).catch(() => 0),
+        prisma.task.count({ where: { tenantId } }).catch(() => 0),
+      ])
+      
+      return NextResponse.json({
+        tenantId,
+        seedRunning: seedStatus.running,
+        elapsedSeconds: seedStatus.elapsed ? Math.floor(seedStatus.elapsed / 1000) : 0,
+        elapsedMinutes: seedStatus.elapsed ? Math.floor(seedStatus.elapsed / 60000) : 0,
+        currentData: { contacts, deals, tasks },
+        hasData: contacts > 0 || deals > 0 || tasks > 0,
       })
     }
     
@@ -268,14 +337,18 @@ export async function GET(request: NextRequest) {
     ])
     
     const hasData = contacts > 0 || deals > 0 || tasks > 0
+    const seedStatus = isSeedRunning(tenantId)
     
     return NextResponse.json({
       tenantId,
       hasData,
       currentCounts: { contacts, deals, tasks },
       needsSeeding: !hasData,
+      seedRunning: seedStatus.running,
       action: hasData 
         ? 'Data exists. No seeding needed.'
+        : seedStatus.running
+        ? `Seed in progress (${Math.floor((seedStatus.elapsed || 0) / 1000)}s elapsed). Check status: ?checkStatus=true`
         : 'POST to /api/admin/seed-now?tenantId=' + tenantId + ' to seed data',
     })
   } catch (error: any) {
