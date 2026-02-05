@@ -8,13 +8,14 @@
  *   npx tsx scripts/run-migrations-vercel.ts
  * 
  * Or via Vercel CLI:
- *   vercel env pull .env.production
+ *   vercel env pull .env.production --environment=production
  *   npx tsx scripts/run-migrations-vercel.ts
  */
 
 import { execSync } from 'child_process'
 import { existsSync } from 'fs'
 import { join } from 'path'
+import { prisma } from './prisma-client'
 
 async function main() {
   console.log('🚀 Starting database migrations for Vercel...\n')
@@ -78,8 +79,6 @@ async function main() {
     // Step 3: Verify critical tables exist
     console.log('🔍 Step 3: Verifying critical tables...')
     try {
-      const { prisma } = await import('../lib/db/prisma')
-      
       const criticalTables = [
         { name: 'Tenant', model: prisma.tenant },
         { name: 'User', model: prisma.user },
