@@ -95,29 +95,49 @@ export async function GET(request: NextRequest) {
     })
 
     // Calculate working capital
-    const currentAssets = await prisma.financialTransaction.aggregate({
-      where: {
-        tenantId,
-        transactionType: 'income',
-        transactionDate: {
-          gte: startOfMonth,
-          lte: endOfMonth,
+    // Handle case where financial_transactions table doesn't exist yet
+    let currentAssets: any = { _sum: { amountInBaseCurrency: 0 } }
+    let currentLiabilities: any = { _sum: { amountInBaseCurrency: 0 } }
+    
+    try {
+      currentAssets = await prisma.financialTransaction.aggregate({
+        where: {
+          tenantId,
+          transactionType: 'income',
+          transactionDate: {
+            gte: startOfMonth,
+            lte: endOfMonth,
+          },
         },
-      },
-      _sum: { amountInBaseCurrency: true },
-    }).catch(() => ({ _sum: { amountInBaseCurrency: 0 } }))
+        _sum: { amountInBaseCurrency: true },
+      })
+    } catch (error: any) {
+      if (error?.code === 'P2021') {
+        console.warn('[CASH_FLOW] financial_transactions table does not exist. Using default values.')
+      } else {
+        console.error('[CASH_FLOW] Error aggregating current assets:', error)
+      }
+    }
 
-    const currentLiabilities = await prisma.financialTransaction.aggregate({
-      where: {
-        tenantId,
-        transactionType: 'expense',
-        transactionDate: {
-          gte: startOfMonth,
-          lte: endOfMonth,
+    try {
+      currentLiabilities = await prisma.financialTransaction.aggregate({
+        where: {
+          tenantId,
+          transactionType: 'expense',
+          transactionDate: {
+            gte: startOfMonth,
+            lte: endOfMonth,
+          },
         },
-      },
-      _sum: { amountInBaseCurrency: true },
-    }).catch(() => ({ _sum: { amountInBaseCurrency: 0 } }))
+        _sum: { amountInBaseCurrency: true },
+      })
+    } catch (error: any) {
+      if (error?.code === 'P2021') {
+        console.warn('[CASH_FLOW] financial_transactions table does not exist. Using default values.')
+      } else {
+        console.error('[CASH_FLOW] Error aggregating current liabilities:', error)
+      }
+    }
 
     const workingCapital = Number(currentAssets._sum.amountInBaseCurrency || 0) - 
                           Number(currentLiabilities._sum.amountInBaseCurrency || 0)
