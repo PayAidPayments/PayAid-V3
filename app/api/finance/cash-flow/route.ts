@@ -15,14 +15,26 @@ export async function GET(request: NextRequest) {
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
 
     // Get current cash position (from bank accounts and cash)
-    const bankAccounts = await prisma.chartOfAccounts.findMany({
-      where: {
-        tenantId,
-        accountType: 'asset',
-        subType: 'cash',
-        isActive: true,
-      },
-    })
+    // Handle case where chart_of_accounts table doesn't exist yet
+    let bankAccounts: any[] = []
+    try {
+      bankAccounts = await prisma.chartOfAccounts.findMany({
+        where: {
+          tenantId,
+          accountType: 'asset',
+          subType: 'cash',
+          isActive: true,
+        },
+      })
+    } catch (error: any) {
+      // If table doesn't exist (P2021), return empty array and continue
+      if (error?.code === 'P2021') {
+        console.warn('[CASH_FLOW] chart_of_accounts table does not exist. Returning default values.')
+        bankAccounts = []
+      } else {
+        throw error
+      }
+    }
 
     // Calculate current cash (simplified - should use actual transaction balances)
     const currentCash = 2500000 // Mock value - should calculate from transactions
