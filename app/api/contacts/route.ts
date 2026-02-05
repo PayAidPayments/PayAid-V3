@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
         } catch (error1: any) {
           // Try without postalCode
           try {
-            contacts = await prismaRead.contact.findMany({
+            contacts = await prisma.contact.findMany({
               where,
               skip: (page - 1) * limit,
               take: limit,
@@ -177,7 +177,7 @@ export async function GET(request: NextRequest) {
           } catch (error2: any) {
             // Last resort: absolute minimum
             try {
-              contacts = await prismaRead.contact.findMany({
+              contacts = await prisma.contact.findMany({
                 where,
                 skip: (page - 1) * limit,
                 take: limit,
