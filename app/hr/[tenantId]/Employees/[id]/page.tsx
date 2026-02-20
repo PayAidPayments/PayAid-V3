@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PageLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
+import { FlightRiskCard } from '@/components/hr/FlightRiskCard'
+import { useAuthStore } from '@/lib/stores/auth'
 
 interface Employee {
   id: string
@@ -42,6 +44,7 @@ export default function HREmployeeDetailPage() {
   const params = useParams()
   const tenantId = params.tenantId as string
   const id = params.id as string
+  const { token } = useAuthStore()
 
   const { data: employee, isLoading } = useQuery<Employee>({
     queryKey: ['employee', id],
@@ -296,6 +299,11 @@ export default function HREmployeeDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Flight Risk Assessment */}
+      {employee.status === 'ACTIVE' && (
+        <FlightRiskCard employeeId={id} tenantId={tenantId} token={token} />
+      )}
 
       {employee.reports && employee.reports.length > 0 && (
         <Card className="dark:bg-gray-800 dark:border-gray-700">

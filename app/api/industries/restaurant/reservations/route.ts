@@ -30,7 +30,7 @@ const updateReservationSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const user = await authenticateRequest(request)
-    if (!user) {
+    if (!user || !user.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -139,6 +139,10 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
+    }
+
+    if (!user.tenantId) {
+      return NextResponse.json({ error: 'Tenant ID is required' }, { status: 400 })
     }
 
     const reservation = await prisma.restaurantReservation.create({

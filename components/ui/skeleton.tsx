@@ -23,13 +23,6 @@ export function Skeleton({
     rectangular: 'rounded-none',
   }
 
-  const content = (
-    <div
-      className={cn(baseClasses, variantClasses[variant], className)}
-      {...props}
-    />
-  )
-
   if (animate) {
     return (
       <motion.div
@@ -41,12 +34,17 @@ export function Skeleton({
           ease: 'easeInOut',
         }}
         className={cn(baseClasses, variantClasses[variant], className)}
-        {...props}
+        {...(props as any)}
       />
     )
   }
 
-  return content
+  return (
+    <div
+      className={cn(baseClasses, variantClasses[variant], className)}
+      {...props}
+    />
+  )
 }
 
 export function SkeletonText({ lines = 3, className }: { lines?: number; className?: string }) {

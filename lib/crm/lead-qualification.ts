@@ -191,10 +191,7 @@ async function enrollInNurtureSequence(
     // Find appropriate nurture template based on score
     // In production, you'd have multiple templates
     const template = await prisma.nurtureTemplate.findFirst({
-      where: {
-        tenantId,
-        isActive: true,
-      },
+      where: { tenantId },
       orderBy: { createdAt: 'desc' },
     })
 

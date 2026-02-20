@@ -162,6 +162,7 @@ async function handleLogin(request: NextRequest) {
                 plan: true,
                 licensedModules: true,
                 subscriptionTier: true,
+                defaultCurrency: true,
               }
             }
           },
@@ -393,6 +394,7 @@ async function handleLogin(request: NextRequest) {
         plan: user.tenant.plan,
         licensedModules: user.tenant.licensedModules || [],
         subscriptionTier: user.tenant.subscriptionTier || 'free',
+        defaultCurrency: user.tenant.defaultCurrency || 'INR',
       } : null,
       token,
       refreshToken,

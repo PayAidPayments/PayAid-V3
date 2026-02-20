@@ -252,12 +252,17 @@ export async function forecastRevenue(
           confidence: response.data.confidence,
           confidenceIntervals: response.data.confidence_intervals
             ? {
-                lower80: response.data.confidence_intervals.lower_80,
-                upper80: response.data.confidence_intervals.upper_80,
-                lower95: response.data.confidence_intervals.lower_95,
-                upper95: response.data.confidence_intervals.upper_95,
+                lower80: response.data.confidence_intervals.lower_80 || [],
+                upper80: response.data.confidence_intervals.upper_80 || [],
+                lower95: response.data.confidence_intervals.lower_95 || [],
+                upper95: response.data.confidence_intervals.upper_95 || [],
               }
-            : undefined,
+            : {
+                lower80: [],
+                upper80: [],
+                lower95: [],
+                upper95: [],
+              },
           summary: {
             total90Day: response.data.summary.total_90day,
             dailyAverage: response.data.summary.daily_average,

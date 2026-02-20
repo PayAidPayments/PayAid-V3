@@ -27,13 +27,16 @@ class GroqClient {
   private config: GroqConfig
 
   constructor() {
-    const apiKey = process.env.GROQ_API_KEY || ''
+    // Trim whitespace from API key (common issue when copying/pasting)
+    const apiKey = (process.env.GROQ_API_KEY || '').trim()
     const model = process.env.GROQ_MODEL || 'llama-3.1-8b-instant'
     
     console.log('🔧 GroqClient initialized:', {
       hasApiKey: !!apiKey,
       apiKeyLength: apiKey.length,
+      apiKeyPrefix: apiKey.substring(0, 8) + '...' || 'none',
       model,
+      nodeEnv: process.env.NODE_ENV,
     })
     
     this.config = {
@@ -43,8 +46,15 @@ class GroqClient {
   }
 
   async chat(messages: ChatMessage[]): Promise<ChatResponse> {
-    if (!this.config.apiKey) {
-      throw new Error('Groq API key not configured - set GROQ_API_KEY in .env file')
+    if (!this.config.apiKey || this.config.apiKey.trim() === '') {
+      const errorMsg = 'Groq API key not configured - set GROQ_API_KEY in .env file (or Vercel environment variables for production)'
+      console.error('❌', errorMsg)
+      throw new Error(errorMsg)
+    }
+
+    // Validate API key format (Groq keys typically start with 'gsk_')
+    if (!this.config.apiKey.startsWith('gsk_')) {
+      console.warn('⚠️ Groq API key format may be incorrect. Expected format: gsk_...')
     }
 
     try {

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Plus, FileText, Users, Briefcase, CheckSquare } from 'lucide-react'
 
@@ -80,14 +81,25 @@ export function EmptyState({
         {description || config.description}
       </p>
       {(actionHref || onAction) && (
-        <Button
-          onClick={onAction}
-          href={actionHref}
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          {actionLabel || config.actionLabel}
-        </Button>
+        actionHref ? (
+          <Link href={actionHref}>
+            <Button
+              onClick={onAction}
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              {actionLabel || config.actionLabel}
+            </Button>
+          </Link>
+        ) : (
+          <Button
+            onClick={onAction}
+            className="flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            {actionLabel || config.actionLabel}
+          </Button>
+        )
       )}
     </div>
   )

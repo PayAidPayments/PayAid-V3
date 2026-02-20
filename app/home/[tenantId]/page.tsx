@@ -19,12 +19,10 @@ export default function TenantHomePage() {
   useEffect(() => {
     setMounted(true);
     
-    // Wait a bit for Zustand to rehydrate before checking auth
     const checkAuth = () => {
       if (hasCheckedAuth) return;
       setHasCheckedAuth(true);
 
-      // Check localStorage directly as fallback
       let tokenFromStorage: string | null = null;
       let tenantFromStorage: any = null;
       
@@ -41,44 +39,30 @@ export default function TenantHomePage() {
         }
       }
 
-      // Use Zustand state if available, otherwise fall back to localStorage
       const currentState = useAuthStore.getState();
       const finalIsAuthenticated = currentState.isAuthenticated || !!tokenFromStorage;
       const finalTenant = currentState.tenant || tenantFromStorage;
 
-      // Only redirect if we're CERTAIN user is not authenticated (after rehydration)
       if (!finalIsAuthenticated && !tokenFromStorage) {
-        // Definitely not authenticated - redirect to login
-        console.log('[HOME] No auth found, redirecting to login');
         router.replace('/login');
         return;
       }
 
-      // Verify tenant ID matches authenticated tenant
       if (finalIsAuthenticated && finalTenant?.id && tenantId !== finalTenant.id) {
-        // Redirect to correct tenant home page
-        console.log(`[HOME] Tenant ID mismatch, redirecting to /home/${finalTenant.id}`);
         router.replace(`/home/${finalTenant.id}`);
         return;
       }
 
-      // If authenticated but no tenant ID in URL, and we have tenant, redirect to correct URL
       if (finalIsAuthenticated && finalTenant?.id && !tenantId) {
-        console.log(`[HOME] No tenantId in URL, redirecting to /home/${finalTenant.id}`);
         router.replace(`/home/${finalTenant.id}`);
         return;
       }
     };
 
-    // Small delay to allow Zustand to rehydrate
     const timeoutId = setTimeout(checkAuth, 200);
+    return () => clearTimeout(timeoutId);
+  }, [tenantId, router]);
 
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [tenantId, router]); // Don't depend on tenant/isAuthenticated to avoid re-running on rehydration
-
-  // Show loading while verifying tenant (but don't block if we've already checked)
   if (!mounted || (!hasCheckedAuth && isAuthenticated && tenant?.id !== tenantId)) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -95,7 +79,6 @@ export default function TenantHomePage() {
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             All-in-One Business Platform
@@ -109,14 +92,12 @@ export default function TenantHomePage() {
             Trusted by 500+ Indian Businesses
           </p>
           <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
-            Manage your entire business with 34 powerful modules. From CRM and Finance to AI-powered insights, everything you need in one place.
+            Manage your entire business with 28 powerful modules. From CRM and Finance to AI-powered insights, everything you need in one place.
           </p>
         </div>
 
-        {/* Module Grid */}
         <ModuleGrid />
 
-        {/* Footer Section */}
         <footer className="mt-20 border-t border-gray-200 dark:border-gray-700 pt-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
@@ -158,7 +139,6 @@ export default function TenantHomePage() {
         </footer>
       </main>
       
-      {/* News Sidebar - Right Side */}
       <NewsSidebar />
     </div>
   );

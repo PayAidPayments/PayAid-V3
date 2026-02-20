@@ -313,21 +313,17 @@ export default function LandingPage() {
     'Wrench': Wrench,
   }
 
-  // All available modules for selection
-  const allAvailableModules = [
-    { id: 'crm', name: 'CRM', description: 'Manage contacts, leads, and customer relationships', icon: Users },
-    { id: 'sales', name: 'Sales', description: 'Track sales, deals, and revenue', icon: ShoppingCart },
-    { id: 'marketing', name: 'Marketing', description: 'Run campaigns, email marketing, and social media', icon: MessageSquare },
-    { id: 'finance', name: 'Finance & Accounting', description: 'Accounting, invoicing, and financial management', icon: IndianRupee },
-    { id: 'hr', name: 'HR & Payroll', description: 'Employee management, payroll, and HR operations', icon: UserCircle },
-    { id: 'communication', name: 'Communication', description: 'Email, SMS, WhatsApp, and team communication', icon: MessageSquare },
-    { id: 'inventory', name: 'Inventory', description: 'Stock management and tracking', icon: Package },
-    { id: 'projects', name: 'Projects', description: 'Project management, tasks, and time tracking', icon: FileText },
-    { id: 'analytics', name: 'Analytics', description: 'Business intelligence and reporting', icon: BarChart3 },
-    { id: 'productivity', name: 'Productivity Suite', description: 'Docs, spreadsheets, presentations, and collaboration', icon: FileEdit },
-    { id: 'workflow', name: 'Workflow Automation', description: 'Automate business processes and workflows', icon: Zap },
-    { id: 'ai-studio', name: 'AI Studio', description: 'AI-powered automation and insights', icon: Sparkles },
-  ]
+  // All available modules for selection - use modules from config, excluding industries
+  const allAvailableModules = allModules.map(module => {
+    // Map icon names to icon components
+    const IconComponent = moduleIconMap[module.icon] || FileText
+    return {
+      id: module.id,
+      name: module.name,
+      description: module.description,
+      icon: IconComponent,
+    }
+  })
 
   // Deprecated modules to exclude
   const deprecatedModules = ['invoicing', 'accounting']
@@ -643,6 +639,7 @@ export default function LandingPage() {
                 src="/hero-digital-specialists.png"
                 alt="Digital Specialists Ready to Transform Your Business"
                 fill
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-contain"
                 priority
               />
@@ -774,7 +771,7 @@ export default function LandingPage() {
                     const annualPrice = modulePricing && monthlyPrice > 0
                       ? Math.round(monthlyPrice * 12 * 0.8) // 20% discount on annual
                       : 0
-                    const IconComponent = module.icon
+                    const IconComponent = module.icon // This is now a React component
                         
                     return (
                       <Card 
@@ -797,7 +794,7 @@ export default function LandingPage() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                                  <IconComponent className="h-5 w-5 text-[#53328A]" />
+                                  {IconComponent && <IconComponent className="h-5 w-5 text-[#53328A]" />}
                                 </div>
                                 <h4 className="font-semibold text-lg text-gray-900">
                                   {module.name}
@@ -1128,6 +1125,7 @@ export default function LandingPage() {
                 src="/CRM-Dashboard.png"
                 alt="CRM Dashboard"
                 fill
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className={`object-contain transition-opacity duration-500 ${
                   activeTab === 'crm' ? 'opacity-100' : 'opacity-0 absolute'
                 }`}
@@ -1137,6 +1135,7 @@ export default function LandingPage() {
                 src="/Invoicing.png"
                 alt="Invoicing Dashboard"
                 fill
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className={`object-contain transition-opacity duration-500 ${
                   activeTab === 'invoicing' ? 'opacity-100' : 'opacity-0 absolute'
                 }`}
@@ -1146,6 +1145,7 @@ export default function LandingPage() {
                 src="/Inventory.png"
                 alt="Inventory Dashboard"
                 fill
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className={`object-contain transition-opacity duration-500 ${
                   activeTab === 'inventory' ? 'opacity-100' : 'opacity-0 absolute'
                 }`}
@@ -1155,6 +1155,7 @@ export default function LandingPage() {
                 src="/Analytics.png"
                 alt="Analytics Dashboard"
                 fill
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className={`object-contain transition-opacity duration-500 ${
                   activeTab === 'analytics' ? 'opacity-100' : 'opacity-0 absolute'
                 }`}
@@ -1165,309 +1166,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-
-      {/* Core Features Section */}
-      <motion.section 
-        id="features" 
-        className="py-20 bg-white"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: '-100px' }}
-        variants={{
-          visible: { opacity: 1 },
-          hidden: { opacity: 0 }
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4">
-          <motion.div 
-            className="text-center mb-16"
-            variants={{
-              visible: { opacity: 1, y: 0 },
-              hidden: { opacity: 0, y: 20 }
-            }}
-          >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Core Features
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-2">
-              Everything you need to run and grow your business efficiently
-            </p>
-            <div className="inline-flex items-center gap-2 bg-purple-100 text-[#53328A] px-4 py-2 rounded-full text-sm font-semibold">
-              <span>{allModules.length}+ Modules</span>
-              <span>•</span>
-              <span>200+ Features</span>
-          </div>
-          </motion.div>
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-            variants={{
-              visible: { opacity: 1 },
-              hidden: { opacity: 0 }
-            }}
-            transition={{ staggerChildren: 0.1 }}
-          >
-            {/* CRM */}
-            <div className="group bg-gradient-to-br from-purple-50 to-white rounded-xl p-6 border-2 border-purple-100 hover:border-[#53328A] hover:shadow-xl transition-all cursor-pointer">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#53328A] to-[#6B42A3] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Users className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">CRM</h3>
-              <ul className="space-y-1 text-sm text-gray-600">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#53328A]" />
-                  Contacts & Leads
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#53328A]" />
-                  Sales Pipeline
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#53328A]" />
-                  Deals & Orders
-                </li>
-              </ul>
-            </div>
-
-            {/* Finance & Accounting */}
-            <div className="group bg-gradient-to-br from-green-50 to-white rounded-xl p-6 border-2 border-green-100 hover:border-green-500 hover:shadow-xl transition-all cursor-pointer">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <IndianRupee className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Finance & Accounting</h3>
-              <ul className="space-y-1 text-sm text-gray-600">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  Invoicing & GST
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  Expense Tracking
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  Financial Reports
-                </li>
-              </ul>
-            </div>
-
-            {/* Inventory */}
-            <div className="group bg-gradient-to-br from-blue-50 to-white rounded-xl p-6 border-2 border-blue-100 hover:border-blue-500 hover:shadow-xl transition-all cursor-pointer">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Package className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Inventory</h3>
-              <ul className="space-y-1 text-sm text-gray-600">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-blue-600" />
-                  Multi-location
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-blue-600" />
-                  Stock Tracking
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-blue-600" />
-                  Low Stock Alerts
-                </li>
-              </ul>
-            </div>
-
-            {/* HR & Payroll */}
-            <div className="group bg-gradient-to-br from-orange-50 to-white rounded-xl p-6 border-2 border-orange-100 hover:border-orange-500 hover:shadow-xl transition-all cursor-pointer">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <UserCircle className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">HR & Payroll</h3>
-              <ul className="space-y-1 text-sm text-gray-600">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-orange-600" />
-                  Employee Management
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-orange-600" />
-                  Payroll & Compliance
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-orange-600" />
-                  Attendance & Leave
-                </li>
-              </ul>
-            </div>
-
-            {/* Marketing */}
-            <div className="group bg-gradient-to-br from-pink-50 to-white rounded-xl p-6 border-2 border-pink-100 hover:border-pink-500 hover:shadow-xl transition-all cursor-pointer">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <MessageSquare className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Marketing</h3>
-              <ul className="space-y-1 text-sm text-gray-600">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-pink-600" />
-                  Email Campaigns
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-pink-600" />
-                  Social Media
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-pink-600" />
-                  WhatsApp Integration
-                </li>
-              </ul>
-            </div>
-
-            {/* Analytics */}
-            <div className="group bg-gradient-to-br from-indigo-50 to-white rounded-xl p-6 border-2 border-indigo-100 hover:border-indigo-500 hover:shadow-xl transition-all cursor-pointer">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <BarChart3 className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Analytics</h3>
-              <ul className="space-y-1 text-sm text-gray-600">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-indigo-600" />
-                  Custom Reports
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-indigo-600" />
-                  Business Insights
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-indigo-600" />
-                  Real-time Dashboards
-                </li>
-              </ul>
-            </div>
-
-            {/* Projects */}
-            <div className="group bg-gradient-to-br from-teal-50 to-white rounded-xl p-6 border-2 border-teal-100 hover:border-teal-500 hover:shadow-xl transition-all cursor-pointer">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <FileText className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Projects</h3>
-              <ul className="space-y-1 text-sm text-gray-600">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-teal-600" />
-                  Task Management
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-teal-600" />
-                  Time Tracking
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-teal-600" />
-                  Team Collaboration
-                </li>
-              </ul>
-            </div>
-
-            {/* Workflow Automation */}
-            <div className="group bg-gradient-to-br from-yellow-50 to-white rounded-xl p-6 border-2 border-yellow-100 hover:border-yellow-500 hover:shadow-xl transition-all cursor-pointer">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Zap className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Workflow Automation</h3>
-              <ul className="space-y-1 text-sm text-gray-600">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-yellow-600" />
-                  Visual Builder
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-yellow-600" />
-                  AI-Powered
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-yellow-600" />
-                  Multi-step Workflows
-                </li>
-              </ul>
-            </div>
-          </motion.div>
-        </div>
-      </motion.section>
-
-      {/* Productivity Suite Section */}
-      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Replace Office & Workspace
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-2">
-              Complete productivity suite included. All tools you need in one place.
-            </p>
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#53328A] to-[#F5C700] text-white px-6 py-3 rounded-full text-lg font-semibold">
-              <span>Save 50% vs Competitors</span>
-            </div>
-            </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {[
-              { name: 'Documents', icon: FileText, desc: 'Word processor with collaboration', color: 'from-blue-500 to-blue-600' },
-              { name: 'Spreadsheets', icon: BarChart3, desc: 'Excel-compatible with formulas', color: 'from-green-500 to-green-600' },
-              { name: 'Presentations', icon: Presentation, desc: 'PowerPoint-style slides', color: 'from-orange-500 to-orange-600' },
-              { name: 'Drive', icon: Folder, desc: 'Cloud storage & file management', color: 'from-purple-500 to-purple-600' },
-              { name: 'Video Calls', icon: Video, desc: 'Meet & conference calls', color: 'from-red-500 to-red-600' },
-              { name: 'PDF Tools', icon: FileEdit, desc: 'Reader, Editor, Merge, Split, Compress', color: 'from-indigo-500 to-indigo-600', highlight: true },
-            ].map((tool, idx) => (
-              <div
-                key={idx}
-                className={`group bg-white rounded-xl p-6 border-2 ${tool.highlight ? 'border-[#53328A] shadow-lg' : 'border-gray-200'} hover:border-[#53328A] hover:shadow-xl transition-all cursor-pointer relative`}
-              >
-                {tool.highlight && (
-                  <div className="absolute -top-3 right-4 bg-gradient-to-r from-[#53328A] to-[#F5C700] text-white px-3 py-1 rounded-full text-xs font-bold">
-                    Popular
-              </div>
-                )}
-                <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${tool.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <tool.icon className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{tool.name}</h3>
-                <p className="text-sm text-gray-600">{tool.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-white rounded-2xl p-8 border-2 border-purple-200 shadow-lg">
-            <div className="flex flex-wrap justify-center items-center gap-6 md:gap-8 text-center">
-              <div className="flex-1 min-w-[180px]">
-                <div className="text-4xl font-bold bg-gradient-to-r from-[#53328A] to-[#F5C700] bg-clip-text text-transparent mb-2">
-                  ₹1,999
-                </div>
-                <div className="text-sm text-gray-600">Starter / Month</div>
-                <div className="text-xs text-gray-500 mt-1">Up to 5 users</div>
-              </div>
-              <div className="flex-1 min-w-[180px]">
-                <div className="text-4xl font-bold bg-gradient-to-r from-[#53328A] to-[#F5C700] bg-clip-text text-transparent mb-2">
-                  ₹3,999
-                </div>
-                <div className="text-sm text-gray-600">Professional / Month</div>
-                <div className="text-xs text-gray-500 mt-1">Unlimited users</div>
-              </div>
-              <div className="flex-1 min-w-[180px]">
-                <div className="text-4xl font-bold text-green-600 mb-2">
-                  20%
-                </div>
-                <div className="text-sm text-gray-600">Annual Savings</div>
-                <div className="text-xs text-gray-500 mt-1">Pay yearly and save</div>
-              </div>
-              <div className="flex-1 min-w-[180px]">
-                <div className="text-4xl font-bold text-green-600 mb-2">
-                  50%
-                </div>
-                <div className="text-sm text-gray-600">Savings vs Individual Tools</div>
-                <div className="text-xs text-gray-500 mt-1">Plus AI features</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Visual Module Grid */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              {allModules.length}+ Modules, One Platform
+              {allModules.length} Modules, One Platform
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Choose what you need, scale as you grow. Mix and match modules or choose an industry package.

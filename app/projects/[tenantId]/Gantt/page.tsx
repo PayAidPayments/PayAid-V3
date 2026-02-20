@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 // ModuleTopBar is now in layout.tsx
 import { useAuthStore } from '@/lib/stores/auth'
 import { PageLoading } from '@/components/ui/loading'
@@ -134,19 +134,18 @@ export default function ProjectsGanttPage() {
             <p className="mt-2 text-gray-600">Visualize project timelines and dependencies</p>
           </div>
           <div className="flex items-center gap-3">
-            <Select value={selectedProject} onValueChange={setSelectedProject}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Projects</SelectItem>
+            <CustomSelect value={selectedProject} onValueChange={setSelectedProject} placeholder="Select project">
+              <CustomSelectTrigger className="w-48">
+              </CustomSelectTrigger>
+              <CustomSelectContent>
+                <CustomSelectItem value="all">All Projects</CustomSelectItem>
                 {projects.map((project: any) => (
-                  <SelectItem key={project.id} value={project.id}>
+                  <CustomSelectItem key={project.id} value={project.id}>
                     {project.name}
-                  </SelectItem>
+                  </CustomSelectItem>
                 ))}
-              </SelectContent>
-            </Select>
+              </CustomSelectContent>
+            </CustomSelect>
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh

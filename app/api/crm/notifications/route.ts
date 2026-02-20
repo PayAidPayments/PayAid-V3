@@ -8,25 +8,33 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/licens
  */
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId, user } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
-    // Fetch notifications for the user
-    const notifications = await prisma.notification.findMany({
+    // Fetch alerts as notifications for the user
+    // Note: Alert uses repId (SalesRep), need to find SalesRep by userId first
+    const salesRep = await prisma.salesRep.findFirst({
       where: {
+        userId: userId,
         tenantId,
-        userId: user?.userId,
+      },
+    })
+
+    const notifications = salesRep ? await prisma.alert.findMany({
+      where: {
+        repId: salesRep.id,
+        tenantId,
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
-    })
+    }) : []
 
-    const unreadCount = await prisma.notification.count({
+    const unreadCount = salesRep ? await prisma.alert.count({
       where: {
+        repId: salesRep.id,
         tenantId,
-        userId: user?.userId,
-        read: false,
+        isRead: false,
       },
-    })
+    }) : 0
 
     return NextResponse.json({
       notifications: notifications.map(n => ({
@@ -35,8 +43,8 @@ export async function GET(request: NextRequest) {
         title: n.title,
         message: n.message || n.title,
         timestamp: n.createdAt,
-        read: n.read,
-        actionUrl: n.actionUrl,
+        read: n.isRead,
+        actionUrl: null,
       })),
       unreadCount,
     })

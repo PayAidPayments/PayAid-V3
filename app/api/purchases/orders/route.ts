@@ -47,7 +47,9 @@ export async function GET(request: NextRequest) {
       where.vendorId = vendorId
     }
 
-    const [orders, total] = await Promise.all([
+    const tenantWhere = { tenantId }
+
+    const [orders, total, totalOrders, approvedCount, pendingCount, totalAmountResult] = await Promise.all([
       prisma.purchaseOrder.findMany({
         where,
         include: {
@@ -86,6 +88,10 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       prisma.purchaseOrder.count({ where }),
+      prisma.purchaseOrder.count({ where: tenantWhere }),
+      prisma.purchaseOrder.count({ where: { ...tenantWhere, status: 'APPROVED' } }),
+      prisma.purchaseOrder.count({ where: { ...tenantWhere, status: 'PENDING_APPROVAL' } }),
+      prisma.purchaseOrder.aggregate({ where: tenantWhere, _sum: { total: true } }),
     ])
 
     return NextResponse.json({
@@ -95,6 +101,12 @@ export async function GET(request: NextRequest) {
         limit,
         total,
         totalPages: Math.ceil(total / limit),
+      },
+      summary: {
+        totalOrders,
+        approvedCount,
+        pendingCount,
+        totalAmount: Number(totalAmountResult._sum?.total ?? 0),
       },
     })
   } catch (error: any) {

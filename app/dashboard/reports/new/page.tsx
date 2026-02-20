@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { getAuthHeaders } from '@/lib/api/client'
 
 const DATA_SOURCES = [
@@ -134,19 +134,19 @@ export default function NewReportPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="type">Report Type</Label>
-                <Select
+                <CustomSelect
                   value={formData.type}
                   onValueChange={(value) => setFormData({ ...formData, type: value })}
+                  placeholder="Select type"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="custom">Custom</SelectItem>
-                    <SelectItem value="template">Template</SelectItem>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <CustomSelectTrigger>
+                  </CustomSelectTrigger>
+                  <CustomSelectContent>
+                    <CustomSelectItem value="custom">Custom</CustomSelectItem>
+                    <CustomSelectItem value="template">Template</CustomSelectItem>
+                    <CustomSelectItem value="scheduled">Scheduled</CustomSelectItem>
+                  </CustomSelectContent>
+                </CustomSelect>
               </div>
             </div>
 
@@ -163,7 +163,7 @@ export default function NewReportPage() {
 
             <div className="space-y-2">
               <Label htmlFor="dataSource">Data Source *</Label>
-              <Select
+              <CustomSelect
                 value={formData.dataSource}
                 onValueChange={(value) => {
                   setFormData({
@@ -172,18 +172,18 @@ export default function NewReportPage() {
                     selectedFields: [], // Reset fields when data source changes
                   })
                 }}
+                placeholder="Select a data source"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a data source" />
-                </SelectTrigger>
-                <SelectContent>
+                <CustomSelectTrigger>
+                </CustomSelectTrigger>
+                <CustomSelectContent>
                   {DATA_SOURCES.map((source) => (
-                    <SelectItem key={source.value} value={source.value}>
+                    <CustomSelectItem key={source.value} value={source.value}>
                       {source.label}
-                    </SelectItem>
+                    </CustomSelectItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </CustomSelectContent>
+              </CustomSelect>
             </div>
           </CardContent>
         </Card>

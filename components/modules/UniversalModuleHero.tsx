@@ -21,8 +21,9 @@ interface UniversalModuleHeroProps {
   moduleIcon?: React.ReactNode
   gradientFrom: string // Tailwind color class (e.g., 'from-purple-500')
   gradientTo: string // Tailwind color class (e.g., 'to-purple-700')
-  metrics: MetricCard[]
+  metrics?: MetricCard[]
   subtitle?: string
+  description?: string
 }
 
 export function UniversalModuleHero({
@@ -114,7 +115,7 @@ export function UniversalModuleHero({
 
       {/* 4 Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metrics.map((metric, index) => {
+        {metrics?.map((metric, index) => {
           const colors = getMetricColor(metric.color)
           const isClickable = metric.href || metric.onClick
 

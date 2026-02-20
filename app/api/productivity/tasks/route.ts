@@ -44,10 +44,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       status: task.status as Task['status'],
       assignedTo: task.assignedToId ? [task.assignedToId] : [],
       dueDate: task.dueDate || undefined,
-      estimatedHours: undefined, // Task model doesn't have estimatedHours
-      subtasks: [],
-      attachments: [],
-      comments: [],
+      tags: [],
+      updatedAt: task.updatedAt,
       createdAt: task.createdAt,
     },
     meta: {
@@ -116,18 +114,18 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const formattedTasks: Task[] = tasks.map((task) => ({
     id: task.id,
     organizationId: task.tenantId,
-    projectId: task.projectId || undefined,
+    projectId: undefined,
     title: task.title,
-    description: task.description,
+    description: task.description || undefined,
     priority: task.priority as Task['priority'],
     status: task.status as Task['status'],
-    assignedTo: task.assignedTo as string[],
+    assignedTo: task.assignedToId ? [task.assignedToId] : [],
     dueDate: task.dueDate || undefined,
-    estimatedHours: task.estimatedHours || undefined,
-    actualHoursSpent: task.actualHoursSpent || undefined,
     subtasks: [],
     attachments: [],
     comments: [],
+    tags: [],
+    updatedAt: task.updatedAt,
     createdAt: task.createdAt,
   }))
 

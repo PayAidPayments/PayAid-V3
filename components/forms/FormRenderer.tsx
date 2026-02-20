@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
@@ -171,29 +171,27 @@ export function FormRenderer({ slug, onSubmit }: FormRendererProps) {
           )}
 
           {field.type === 'select' && (
-            <Select
+            <CustomSelect
               value={formData[field.id] || ''}
-              onValueChange={(value) => setFormData({ ...formData, [field.id]: value })}
-              required={field.required}
+              onValueChange={(value: string) => setFormData({ ...formData, [field.id]: value })}
+              placeholder={field.placeholder || 'Select an option'}
             >
-              <SelectTrigger>
-                <SelectValue placeholder={field.placeholder || 'Select an option'} />
-              </SelectTrigger>
-              <SelectContent>
+              <CustomSelectTrigger>
+              </CustomSelectTrigger>
+              <CustomSelectContent>
                 {field.options?.map((option) => (
-                  <SelectItem key={option} value={option}>
+                  <CustomSelectItem key={option} value={option}>
                     {option}
-                  </SelectItem>
+                  </CustomSelectItem>
                 ))}
-              </SelectContent>
-            </Select>
+              </CustomSelectContent>
+            </CustomSelect>
           )}
 
           {field.type === 'radio' && (
             <RadioGroup
               value={formData[field.id] || ''}
               onValueChange={(value) => setFormData({ ...formData, [field.id]: value })}
-              required={field.required}
             >
               {field.options?.map((option) => (
                 <div key={option} className="flex items-center space-x-2">

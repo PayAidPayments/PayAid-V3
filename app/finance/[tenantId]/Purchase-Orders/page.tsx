@@ -48,6 +48,7 @@ export default function FinancePurchaseOrdersPage() {
   const { data, isLoading } = useQuery<{
     orders: PurchaseOrder[]
     pagination: { page: number; limit: number; total: number; totalPages: number }
+    summary?: { totalOrders: number; approvedCount: number; pendingCount: number; totalAmount: number }
   }>({
     queryKey: ['purchase-orders', page, statusFilter],
     queryFn: async () => {
@@ -90,44 +91,50 @@ export default function FinancePurchaseOrdersPage() {
 
   const orders = data?.orders || []
   const pagination = data?.pagination
+  const summary = data?.summary
   const moduleConfig = getModuleConfig('finance')
   
   const dynamicTitle = getDynamicTitle('Purchase Orders', statusFilter)
   const dynamicDescription = getDynamicDescription('Purchase Orders', statusFilter)
 
-  const totalAmount = orders.reduce((sum, order) => sum + (order.total || 0), 0)
-  const approvedOrders = orders.filter(order => order.status === 'APPROVED').length
-  const pendingOrders = orders.filter(order => order.status === 'PENDING_APPROVAL').length
+  const totalOrders = summary?.totalOrders ?? pagination?.total ?? 0
+  const approvedCount = summary?.approvedCount ?? 0
+  const pendingCount = summary?.pendingCount ?? 0
+  const totalAmount = summary?.totalAmount ?? 0
 
   const heroMetrics = [
     {
       label: 'Total Orders',
-      value: pagination?.total?.toString() || orders.length.toString(),
-      icon: ShoppingCart,
+      value: String(totalOrders),
+      icon: <ShoppingCart className="w-5 h-5" />,
       href: '#',
     },
     {
       label: 'Total Amount',
       value: formatINRForDisplay(totalAmount),
-      icon: IndianRupee,
+      icon: <IndianRupee className="w-5 h-5" />,
       href: '#',
     },
     {
       label: 'Approved',
-      value: approvedOrders.toString(),
-      icon: CheckCircle2,
+      value: String(approvedCount),
+      icon: <CheckCircle2 className="w-5 h-5" />,
       href: '#',
     },
     {
       label: 'Pending',
-      value: pendingOrders.toString(),
-      icon: Package,
+      value: String(pendingCount),
+      icon: <Package className="w-5 h-5" />,
       href: '#',
     },
   ]
 
   if (isLoading) {
     return <PageLoading message="Loading purchase orders..." fullScreen={false} />
+  }
+
+  if (!moduleConfig) {
+    return <div>Module configuration not found</div>
   }
 
   return (

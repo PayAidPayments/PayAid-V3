@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/prisma'
-import { Contact, Deal, Interaction, EmailMessage, EmailTracking } from '@prisma/client'
+import { Contact, Deal, Interaction, EmailMessage } from '@prisma/client'
 
 /**
  * Churn Risk Predictor
@@ -119,35 +119,29 @@ async function calculateRiskFactors(
       : 0
 
   // 2. Engagement Drop (email opens/clicks)
+  // Note: EmailMessage doesn't have tenantId or tracking relation in schema
   const recentEmails = await prisma.emailMessage.findMany({
     where: {
-      tenantId,
       contactId: contact.id,
       createdAt: { gte: thirtyDaysAgo },
-    },
-    include: {
-      tracking: true,
     },
   })
 
   const previousEmails = await prisma.emailMessage.findMany({
     where: {
-      tenantId,
       contactId: contact.id,
       createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
     },
-    include: {
-      tracking: true,
-    },
   })
 
+  // Use isRead as proxy for engagement (EmailMessage has isRead field)
   const recentOpenRate =
     recentEmails.length > 0
-      ? (recentEmails.filter((e) => e.tracking?.openedAt).length / recentEmails.length) * 100
+      ? (recentEmails.filter((e) => e.isRead).length / recentEmails.length) * 100
       : 0
   const previousOpenRate =
     previousEmails.length > 0
-      ? (previousEmails.filter((e) => e.tracking?.openedAt).length / previousEmails.length) * 100
+      ? (previousEmails.filter((e) => e.isRead).length / previousEmails.length) * 100
       : 0
 
   const engagementDrop = previousOpenRate > 0

@@ -128,6 +128,8 @@ export function ModuleGrid() {
         filteredForCount = allNonIndustryModules.filter((m: any) => {
           // Always show AI Studio
           if (m.id === 'ai-studio') return true;
+          // Always show App Store / Marketplace
+          if (m.id === 'marketplace') return true;
           
           // If module is directly licensed
           if (licensedModules.includes(m.id)) return true;
@@ -194,6 +196,8 @@ export function ModuleGrid() {
         filteredModules = filteredModules.filter((m: any) => {
           // Always show AI Studio
           if (m.id === 'ai-studio') return true;
+          // Always show App Store / Marketplace
+          if (m.id === 'marketplace') return true;
           
           // If module is directly licensed
           if (allowedModules.includes(m.id)) return true;

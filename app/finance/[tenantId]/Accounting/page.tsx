@@ -17,28 +17,32 @@ export default function FinanceAccountingPage() {
     {
       label: 'Expenses',
       value: 'Track & Manage',
-      icon: Receipt,
+      icon: <Receipt className="w-5 h-5" />,
       href: `/finance/${tenantId}/Accounting/Expenses`,
     },
     {
       label: 'Reports',
       value: 'P&L & Balance Sheet',
-      icon: FileText,
+      icon: <FileText className="w-5 h-5" />,
       href: `/finance/${tenantId}/Accounting/Reports`,
     },
     {
       label: 'Quick Action',
       value: 'Record Expense',
-      icon: Plus,
+      icon: <Plus className="w-5 h-5" />,
       href: `/finance/${tenantId}/Accounting/Expenses/New`,
     },
     {
       label: 'Insights',
       value: 'Financial Analytics',
-      icon: TrendingUp,
+      icon: <TrendingUp className="w-5 h-5" />,
       href: `/finance/${tenantId}/Accounting/Reports`,
     },
   ]
+
+  if (!moduleConfig) {
+    return <div>Module configuration not found</div>
+  }
 
   return (
     <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>

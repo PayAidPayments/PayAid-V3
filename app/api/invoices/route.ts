@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
-import { prismaRead } from '@/lib/db/prisma-read'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { checkTenantLimits } from '@/lib/middleware/tenant'
 import { calculateGST, getGSTRate, getHSNCode } from '@/lib/invoicing/gst'
 import { determineGSTType } from '@/lib/invoicing/gst-state'
 import { generateInvoicePDF } from '@/lib/invoicing/pdf'
 import { multiLayerCache } from '@/lib/cache/multi-layer'
+import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
 import { z } from 'zod'
 import { mediumPriorityQueue } from '@/lib/queue/bull'
 
@@ -34,6 +34,7 @@ const createInvoiceSchema = z.object({
   tdsType: z.enum(['tds', 'tcs']).optional(),
   tdsTax: z.string().optional(),
   adjustment: z.number().default(0),
+  currency: z.string().default('INR'),
   invoiceDate: z.string().datetime().optional(),
   dueDate: z.string().datetime().optional(),
   items: z.array(z.object({
@@ -44,6 +45,8 @@ const createInvoiceSchema = z.object({
     hsnCode: z.string().optional(),
     sacCode: z.string().optional(),
     gstRate: z.number().min(0).max(100).default(18),
+    taxRuleId: z.string().optional(),
+    isExempt: z.boolean().default(false),
   })),
   notes: z.string().optional(),
 })
@@ -67,7 +70,9 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status
     if (customerId) where.customerId = customerId
 
-    const [invoices, total] = await Promise.all([
+    const tenantWhere = { tenantId }
+
+    const [invoices, total, totalInvoices, paidCount, overdueCount, pendingCount, totalAmountResult] = await Promise.all([
       prisma.invoice.findMany({
         where,
         skip: (page - 1) * limit,
@@ -83,7 +88,12 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prismaRead.invoice.count({ where }),
+      prisma.invoice.count({ where }),
+      prisma.invoice.count({ where: tenantWhere }),
+      prisma.invoice.count({ where: { ...tenantWhere, status: 'paid' } }),
+      prisma.invoice.count({ where: { ...tenantWhere, status: 'overdue' } }),
+      prisma.invoice.count({ where: { ...tenantWhere, status: { in: ['draft', 'sent'] } } }),
+      prisma.invoice.aggregate({ where: tenantWhere, _sum: { total: true } }),
     ])
 
     const result = {
@@ -93,6 +103,13 @@ export async function GET(request: NextRequest) {
         limit,
         total,
         totalPages: Math.ceil(total / limit),
+      },
+      summary: {
+        totalInvoices,
+        paidCount,
+        overdueCount,
+        pendingCount,
+        totalAmount: Number(totalAmountResult._sum?.total ?? 0),
       },
     }
 
@@ -187,7 +204,7 @@ export async function POST(request: NextRequest) {
       const gstRate = item.gstRate || getGSTRate(item.category)
       const hsnCode = item.hsnCode || (item.sacCode ? undefined : getHSNCode(item.category))
       
-      return {
+      const itemData: any = {
         description: item.description,
         quantity: item.quantity,
         rate: item.rate,
@@ -196,6 +213,16 @@ export async function POST(request: NextRequest) {
         sacCode: item.sacCode,
         gstRate,
       }
+      
+      // Add tax rule fields if provided
+      if (item.taxRuleId) {
+        itemData.taxRuleId = item.taxRuleId
+      }
+      if (item.isExempt) {
+        itemData.isExempt = item.isExempt
+      }
+      
+      return itemData
     })
 
     // Determine GST type based on seller and buyer states
@@ -263,6 +290,7 @@ export async function POST(request: NextRequest) {
       tdsTax: validated.tdsTax || null,
       tdsAmount: null, // TDS amount calculation can be added later if needed
       adjustment: validated.adjustment || 0,
+      currency: validated.currency || tenant.defaultCurrency || 'INR',
       notes: validated.notes || null,
       items: invoiceItems, // Store invoice items as JSON
       invoiceDate: validated.invoiceDate ? new Date(validated.invoiceDate) : new Date(),
@@ -340,6 +368,29 @@ export async function POST(request: NextRequest) {
     })
     await multiLayerCache.delete(`dashboard:stats:${tenantId}`).catch(() => {
       // Ignore cache errors - not critical
+    })
+
+    // Trigger workflow automation (e.g. send confirmation, create task)
+    triggerWorkflowsByEvent({
+      tenantId,
+      event: 'invoice.created',
+      entity: 'invoice',
+      entityId: invoice.id,
+      data: {
+        invoice: {
+          id: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          total: invoice.total,
+          dueDate: invoice.dueDate,
+          status: invoice.status,
+        },
+        customer: {
+          id: invoice.customerId,
+          name: invoice.customerName,
+          email: invoice.customerEmail,
+          phone: invoice.customerPhone,
+        },
+      },
     })
 
     return NextResponse.json(invoice, { status: 201 })

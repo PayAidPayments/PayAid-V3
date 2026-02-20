@@ -107,7 +107,7 @@ async function getCurrentState(tenantId: string): Promise<ScenarioResult['curren
     prisma.deal.findMany({
       where: {
         tenantId,
-        status: { notIn: ['won', 'lost'] },
+        stage: { notIn: ['won', 'lost'] },
       },
     }),
     prisma.contact.findMany({
@@ -207,7 +207,7 @@ async function scenarioLoseCustomers(
         where: {
           tenantId: input.tenantId,
           contactId,
-          status: { notIn: ['won', 'lost'] },
+          stage: { notIn: ['won', 'lost'] },
         },
       })
 
@@ -302,7 +302,7 @@ async function scenarioImproveClosureRate(
   const deals = await prisma.deal.findMany({
     where: {
       tenantId: input.tenantId,
-      status: { notIn: ['won', 'lost'] },
+      stage: { notIn: ['won', 'lost'] },
     },
   })
 

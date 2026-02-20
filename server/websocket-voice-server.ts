@@ -16,7 +16,7 @@ config({ path: resolve(process.cwd(), '.env') })
 
 import { WebSocketServer, WebSocket } from 'ws'
 import { VoiceAgentOrchestrator } from '../lib/voice-agent/orchestrator'
-import { prisma } from '../lib/db/prisma'
+import { prisma } from './db-prisma'
 import { verify } from 'jsonwebtoken'
 import { VoiceActivityDetector } from '../lib/voice-agent/vad'
 

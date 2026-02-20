@@ -194,11 +194,11 @@ async function deleteEmployeeData(
         },
       })
 
-      // Anonymize related records
+      // Anonymize related time entries (TimeEntry uses userId)
       await prisma.timeEntry.updateMany({
-        where: { employeeId: entityId, tenantId },
+        where: { userId: entityId },
         data: {
-          // Anonymize or delete
+          description: '[anonymized]',
         },
       })
 
@@ -260,9 +260,9 @@ async function deleteAllUserData(tenantId: string, userId: string): Promise<numb
   })
   deleted += tasks.count
 
-  // Delete user's time entries
+  // Delete user's time entries (TimeEntry has userId, no tenantId)
   const timeEntries = await prisma.timeEntry.deleteMany({
-    where: { userId, tenantId },
+    where: { userId },
   })
   deleted += timeEntries.count
 

@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/prisma'
-import { Deal, Interaction } from '@prisma/client'
+import { Deal, Interaction, Contact } from '@prisma/client'
 import { calculateDealClosureProbability } from './deal-closure-probability'
 
 export interface PipelineHealthMetrics {
@@ -27,12 +27,16 @@ export async function calculatePipelineHealth(
   const deals = await prisma.deal.findMany({
     where: {
       tenantId,
-      status: { notIn: ['won', 'lost'] },
+      stage: { notIn: ['won', 'lost'] },
     },
     include: {
-      interactions: {
-        orderBy: { createdAt: 'desc' },
-        take: 1,
+      contact: {
+        include: {
+          interactions: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
       },
     },
   })
@@ -47,7 +51,7 @@ export async function calculatePipelineHealth(
   const stuckDeals = findStuckDeals(deals)
 
   // Find deals ready to move to next stage
-  const readyToMove = findDealsReadyToMove(deals, tenantId)
+  const readyToMove = await findDealsReadyToMove(deals, tenantId)
 
   // Generate recommended actions
   const recommendedActions = generateRecommendedActions(
@@ -73,7 +77,7 @@ export async function calculatePipelineHealth(
  * Calculate projected close rate for this month
  */
 async function calculateProjectedCloseRate(
-  deals: Array<Deal & { interactions: Interaction[] }>,
+  deals: Array<Deal & { contact: (Contact & { interactions: Interaction[] }) | null }>,
   tenantId: string
 ): Promise<number> {
   if (deals.length === 0) return 0
@@ -116,7 +120,7 @@ async function calculateLastMonthCloseRate(tenantId: string): Promise<number> {
   const lastMonthDeals = await prisma.deal.findMany({
     where: {
       tenantId,
-      status: { in: ['won', 'lost'] },
+      stage: { in: ['won', 'lost'] },
       actualCloseDate: {
         gte: lastMonthStart,
         lte: lastMonthEnd,
@@ -124,7 +128,7 @@ async function calculateLastMonthCloseRate(tenantId: string): Promise<number> {
     },
   })
 
-  const wonDeals = lastMonthDeals.filter((d) => d.status === 'won')
+  const wonDeals = lastMonthDeals.filter((d) => d.stage === 'won')
   return lastMonthDeals.length > 0
     ? (wonDeals.length / lastMonthDeals.length) * 100
     : 0
@@ -134,7 +138,7 @@ async function calculateLastMonthCloseRate(tenantId: string): Promise<number> {
  * Find stuck deals (no activity for >14 days)
  */
 function findStuckDeals(
-  deals: Array<Deal & { interactions: Interaction[] }>
+  deals: Array<Deal & { contact: (Contact & { interactions: Interaction[] }) | null }>
 ): PipelineHealthMetrics['stuckDeals'] {
   const fourteenDaysAgo = new Date()
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
@@ -142,7 +146,7 @@ function findStuckDeals(
   const stuck: Array<{ id: string; name: string; stage: string; daysStuck: number }> = []
 
   for (const deal of deals) {
-    const lastActivity = deal.interactions[0]?.createdAt || deal.createdAt
+    const lastActivity = deal.contact?.interactions[0]?.createdAt || deal.createdAt
     const daysSinceActivity = (Date.now() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
 
     if (daysSinceActivity > 14) {
@@ -165,7 +169,7 @@ function findStuckDeals(
  * Find deals ready to move to next stage
  */
 async function findDealsReadyToMove(
-  deals: Array<Deal & { interactions: Interaction[] }>,
+  deals: Array<Deal & { contact: (Contact & { interactions: Interaction[] }) | null }>,
   tenantId: string
 ): Promise<PipelineHealthMetrics['readyToMove']> {
   const ready: Array<{ id: string; name: string; currentStage: string; nextStage: string }> = []
@@ -186,7 +190,7 @@ async function findDealsReadyToMove(
     // Check if deal has recent activity (ready to move)
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    const hasRecentActivity = deal.interactions.some((i) => i.createdAt >= sevenDaysAgo)
+    const hasRecentActivity = deal.contact?.interactions.some((i) => i.createdAt >= sevenDaysAgo) || false
 
     if (hasRecentActivity) {
       try {
@@ -220,7 +224,7 @@ async function findDealsReadyToMove(
  * Generate recommended actions
  */
 function generateRecommendedActions(
-  deals: Deal[],
+  deals: Array<Deal & { contact: (Contact & { interactions: Interaction[] }) | null }>,
   stuckDeals: PipelineHealthMetrics['stuckDeals'],
   readyToMove: PipelineHealthMetrics['readyToMove']
 ): string[] {

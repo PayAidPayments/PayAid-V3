@@ -62,7 +62,7 @@ export async function processDecisionBatch(
           where: { id: decision.id },
           data: {
             status: executionResult.success ? 'executed' : 'failed',
-            executionResult: executionResult,
+            executionResult: executionResult as any,
             executedAt: new Date(),
           },
         })

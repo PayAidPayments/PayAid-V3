@@ -50,7 +50,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(
           { 
             error: 'Database connection failed',
-            message: 'Unable to connect to database. Please check your DATABASE_URL configuration in Vercel. If using Supabase, check if your project is paused.',
+            message: process.env.VERCEL === '1'
+              ? 'Unable to connect to database. Please check your DATABASE_URL configuration in Vercel. If using Supabase, check if your project is paused.'
+              : !process.env.DATABASE_URL
+                ? 'DATABASE_URL is not set. Please add DATABASE_URL to your .env.local file.'
+                : 'Unable to connect to database. Please check your DATABASE_URL in .env.local file. Verify your connection string and ensure Supabase project is active.',
             code: tenantCheckError?.code,
             troubleshooting: {
               steps: [

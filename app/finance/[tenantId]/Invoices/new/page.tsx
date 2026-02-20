@@ -14,6 +14,11 @@ import { INDIAN_STATES } from '@/lib/utils/indian-states'
 import { determineGSTType } from '@/lib/invoicing/gst-state'
 import { PageLoading } from '@/components/ui/loading'
 import { formatINRStandard } from '@/lib/utils/formatINR'
+import { CurrencySelector } from '@/components/currency/CurrencySelector'
+import { CurrencyDisplay } from '@/components/currency/CurrencyDisplay'
+import { TaxRuleSelector } from '@/components/tax/TaxRuleSelector'
+import { TaxBreakdown } from '@/components/tax/TaxBreakdown'
+import { getAuthHeaders } from '@/lib/api/client'
 
 // Invoice template options (matching settings page)
 const invoiceTemplates = [
@@ -34,6 +39,8 @@ interface InvoiceItem {
   gstRate: number
   itemType: 'goods' | 'services' // Goods use HSN, Services use SAC
   selectedProductId?: string // Track which product is selected
+  taxRuleId?: string // Tax rule ID for flexible tax engine
+  isExempt?: boolean // Tax exemption flag
 }
 
 export default function NewInvoicePage() {
@@ -88,13 +95,56 @@ export default function NewInvoicePage() {
     tdsType: '' as '' | 'tds' | 'tcs', // TDS or TCS
     tdsTax: '', // TDS/TCS tax selection
     adjustment: 0, // Adjustment amount
+    currency: 'INR', // Currency code (default: INR)
     invoiceDate: new Date().toISOString().split('T')[0],
     dueDate: '',
     notes: '',
   })
   const [items, setItems] = useState<InvoiceItem[]>([
-    { description: '', quantity: 1, rate: 0, category: 'standard', hsnCode: '', sacCode: '', gstRate: 18, itemType: 'goods', selectedProductId: '' },
+    { description: '', quantity: 1, rate: 0, category: 'standard', hsnCode: '', sacCode: '', gstRate: 18, itemType: 'goods', selectedProductId: '', taxRuleId: '', isExempt: false },
   ])
+  
+  // Fetch tenant default currency
+  useEffect(() => {
+    if (tenantData?.defaultCurrency) {
+      setFormData(prev => ({
+        ...prev,
+        currency: tenantData.defaultCurrency || 'INR',
+      }))
+    }
+  }, [tenantData])
+  
+  // Fetch tax calculation when items change (using flexible tax engine)
+  const { data: taxCalculation } = useQuery({
+    queryKey: ['tax-calculation', JSON.stringify(items), formData.customerId],
+    queryFn: async () => {
+      const { token } = useAuthStore.getState()
+      const res = await fetch('/api/tax/calculate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          items: items
+            .filter(item => item.description && item.rate > 0)
+            .map(item => ({
+              name: item.description,
+              quantity: item.quantity,
+              unitPrice: item.rate,
+              taxRuleId: item.taxRuleId || undefined,
+              taxType: item.taxRuleId ? undefined : 'GST',
+              taxRate: item.taxRuleId ? undefined : item.gstRate,
+              isExempt: item.isExempt,
+            })),
+          customerId: formData.customerId || undefined,
+        }),
+      })
+      if (!res.ok) return null
+      return res.json()
+    },
+    enabled: items.length > 0 && items.some(item => item.description && item.rate > 0),
+  })
   const [error, setError] = useState('')
   const [attachments, setAttachments] = useState<File[]>([])
   
@@ -312,6 +362,7 @@ export default function NewInvoicePage() {
         tdsType: formData.tdsType || undefined,
         tdsTax: formData.tdsTax || undefined,
         adjustment: formData.adjustment || 0,
+        currency: formData.currency || 'INR',
         notes: formData.notes || undefined,
         items: items.map(item => ({
           description: item.description,
@@ -321,6 +372,8 @@ export default function NewInvoicePage() {
           hsnCode: item.itemType === 'goods' ? (item.hsnCode || undefined) : undefined,
           sacCode: item.itemType === 'services' ? (item.sacCode || undefined) : undefined,
           gstRate: item.gstRate,
+          taxRuleId: item.taxRuleId || undefined,
+          isExempt: item.isExempt || false,
         })),
       }
 
@@ -366,14 +419,14 @@ export default function NewInvoicePage() {
     })
   }
 
-  const handleItemChange = (index: number, field: keyof InvoiceItem, value: string | number) => {
+  const handleItemChange = (index: number, field: keyof InvoiceItem, value: string | number | boolean) => {
     const newItems = [...items]
     newItems[index] = { ...newItems[index], [field]: value }
     setItems(newItems)
   }
 
   const addItem = () => {
-    setItems([...items, { description: '', quantity: 1, rate: 0, category: 'standard', hsnCode: '', sacCode: '', gstRate: 18, itemType: 'goods', selectedProductId: '' }])
+    setItems([...items, { description: '', quantity: 1, rate: 0, category: 'standard', hsnCode: '', sacCode: '', gstRate: 18, itemType: 'goods', selectedProductId: '', taxRuleId: '', isExempt: false }])
   }
 
   const removeItem = (index: number) => {
@@ -383,10 +436,21 @@ export default function NewInvoicePage() {
   // Calculate totals with proper GST
   const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.rate), 0)
   
-  // Calculate GST per item (for proper breakdown)
+  // Use tax calculation from API if available, otherwise fallback to GST calculation
+  const totalTax = taxCalculation?.success ? taxCalculation.totalTax : (() => {
+    // Fallback: Calculate GST per item (for proper breakdown)
+    const itemsWithGST = items.map(item => {
+      const amount = item.quantity * item.rate
+      const gstAmount = item.isExempt ? 0 : (amount * item.gstRate) / 100
+      return { ...item, amount, gstAmount }
+    })
+    return itemsWithGST.reduce((sum, item) => sum + item.gstAmount, 0)
+  })()
+  
+  // Calculate GST per item (for fallback display)
   const itemsWithGST = items.map(item => {
     const amount = item.quantity * item.rate
-    const gstAmount = (amount * item.gstRate) / 100
+    const gstAmount = item.isExempt ? 0 : (amount * item.gstRate) / 100
     return { ...item, amount, gstAmount }
   })
   
@@ -426,8 +490,8 @@ export default function NewInvoicePage() {
   const isTCS = formData.tdsType === 'tcs'
   
   // Final total with adjustment
-  // Total = Subtotal + GST - TDS + TCS + Adjustment
-  const total = subtotalAfterDiscount + totalGST - (isTDS ? tdsAmount : 0) + (isTCS ? tdsAmount : 0) + formData.adjustment
+  // Total = Subtotal + Tax - TDS + TCS + Adjustment
+  const total = subtotalAfterDiscount + totalTax - (isTDS ? tdsAmount : 0) + (isTCS ? tdsAmount : 0) + formData.adjustment
   
   // Auto-determine GST type based on seller and buyer states/GSTIN
   const sellerGSTIN = tenantData?.gstin || formData.supplierGSTIN
@@ -767,6 +831,19 @@ export default function NewInvoicePage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
+                    <label htmlFor="currency" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Currency *
+                    </label>
+                    <CurrencySelector
+                      value={formData.currency}
+                      onChange={(currency) => setFormData(prev => ({ ...prev, currency }))}
+                      disabled={createInvoice.isPending}
+                      className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <label htmlFor="orderNumber" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Order Number
                     </label>
@@ -985,19 +1062,43 @@ export default function NewInvoicePage() {
                       )}
                       
                       <div className="col-span-3 space-y-2">
-                        <label className="text-xs text-gray-500 dark:text-gray-400">GST Rate (%)</label>
-                        <select
-                          value={item.gstRate}
-                          onChange={(e) => handleItemChange(index, 'gstRate', parseFloat(e.target.value))}
-                          className="flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                        <label className="text-xs text-gray-500 dark:text-gray-400">Tax Rule</label>
+                        <TaxRuleSelector
+                          value={item.taxRuleId}
+                          onChange={(taxRuleId) => {
+                            const newItems = [...items]
+                            newItems[index] = { ...newItems[index], taxRuleId }
+                            setItems(newItems)
+                          }}
                           disabled={createInvoice.isPending}
-                        >
-                          <option value={0}>0% (Nil)</option>
-                          <option value={5}>5%</option>
-                          <option value={12}>12%</option>
-                          <option value={18}>18% (Standard)</option>
-                          <option value={28}>28% (Luxury)</option>
-                        </select>
+                          className="dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500"
+                        />
+                        {!item.taxRuleId && (
+                          <select
+                            value={item.gstRate}
+                            onChange={(e) => handleItemChange(index, 'gstRate', parseFloat(e.target.value))}
+                            className="mt-2 flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                            disabled={createInvoice.isPending}
+                          >
+                            <option value={0}>0% (Nil)</option>
+                            <option value={5}>5%</option>
+                            <option value={12}>12%</option>
+                            <option value={18}>18% (Standard)</option>
+                            <option value={28}>28% (Luxury)</option>
+                          </select>
+                        )}
+                      </div>
+                      <div className="col-span-3 space-y-2">
+                        <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                          <input
+                            type="checkbox"
+                            checked={item.isExempt || false}
+                            onChange={(e) => handleItemChange(index, 'isExempt', e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300"
+                            disabled={createInvoice.isPending}
+                          />
+                          Tax Exempt
+                        </label>
                       </div>
                       
                       <div className="col-span-3 space-y-2">
@@ -1030,12 +1131,15 @@ export default function NewInvoicePage() {
                     
                     <div className="text-right text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Amount: </span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatINRStandard(item.quantity * item.rate)}</span>
-                      {item.gstRate > 0 && (
+                      <CurrencyDisplay amount={item.quantity * item.rate} currency={formData.currency} className="font-medium text-gray-900 dark:text-gray-100" />
+                      {item.gstRate > 0 && !item.taxRuleId && (
                         <>
                           <span className="text-gray-600 dark:text-gray-400 ml-2">+ GST ({item.gstRate}%): </span>
-                          <span className="font-medium text-gray-900 dark:text-gray-100">{formatINRStandard((item.quantity * item.rate * item.gstRate) / 100)}</span>
+                          <CurrencyDisplay amount={(item.quantity * item.rate * item.gstRate) / 100} currency={formData.currency} className="font-medium text-gray-900 dark:text-gray-100" />
                         </>
+                      )}
+                      {item.isExempt && (
+                        <span className="text-xs text-green-600 dark:text-green-400 ml-2">(Tax Exempt)</span>
                       )}
                     </div>
                   </div>
@@ -1158,7 +1262,7 @@ export default function NewInvoicePage() {
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{formatINRStandard(subtotal)}</span>
+                  <CurrencyDisplay amount={subtotal} currency={formData.currency} className="font-medium text-gray-900 dark:text-gray-100" />
                 </div>
                 
                 {/* Discount */}
@@ -1298,45 +1402,58 @@ export default function NewInvoicePage() {
                   </div>
                 </div>
                 
-                {/* GST Breakdown */}
-                {isInterState ? (
-                  <div className="space-y-1 border-t dark:border-gray-700 pt-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">IGST ({itemsWithGST[0]?.gstRate || 18}%)</span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatINRStandard(totalGST)}</span>
+                {/* Tax Breakdown - Use new flexible tax engine if available */}
+                {taxCalculation?.success && taxCalculation.totalTax > 0 ? (
+                  <TaxBreakdown
+                    breakdown={taxCalculation.taxBreakdown || []}
+                    taxByType={taxCalculation.taxByType || {}}
+                    totalTax={taxCalculation.totalTax}
+                    currency={formData.currency}
+                    className="border-t dark:border-gray-700 pt-2"
+                  />
+                ) : totalGST > 0 ? (
+                  <>
+                    {/* GST Breakdown - Fallback to old GST calculation */}
+                    {isInterState ? (
+                      <div className="space-y-1 border-t dark:border-gray-700 pt-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">IGST ({itemsWithGST[0]?.gstRate || 18}%)</span>
+                          <CurrencyDisplay amount={totalGST} currency={formData.currency} />
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Inter-state supply
+                          {gstTypeInfo.sellerStateCode && gstTypeInfo.buyerStateCode && (
+                            <span className="ml-2">
+                              ({gstTypeInfo.sellerStateCode} → {gstTypeInfo.buyerStateCode})
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1 border-t dark:border-gray-700 pt-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">CGST ({(itemsWithGST[0]?.gstRate || 18) / 2}%)</span>
+                          <CurrencyDisplay amount={totalGST / 2} currency={formData.currency} />
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">SGST ({(itemsWithGST[0]?.gstRate || 18) / 2}%)</span>
+                          <CurrencyDisplay amount={totalGST / 2} currency={formData.currency} />
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Intra-state supply
+                          {gstTypeInfo.sellerStateCode && (
+                            <span className="ml-2">(State: {gstTypeInfo.sellerStateCode})</span>
+                          )}
+                        </p>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between text-sm pt-2">
+                      <span className="text-gray-600 dark:text-gray-400">Total Tax</span>
+                      <CurrencyDisplay amount={totalGST} currency={formData.currency} />
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Inter-state supply
-                      {gstTypeInfo.sellerStateCode && gstTypeInfo.buyerStateCode && (
-                        <span className="ml-2">
-                          ({gstTypeInfo.sellerStateCode} → {gstTypeInfo.buyerStateCode})
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-1 border-t dark:border-gray-700 pt-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">CGST ({(itemsWithGST[0]?.gstRate || 18) / 2}%)</span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatINRStandard(totalGST / 2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">SGST ({(itemsWithGST[0]?.gstRate || 18) / 2}%)</span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatINRStandard(totalGST / 2)}</span>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Intra-state supply
-                      {gstTypeInfo.sellerStateCode && (
-                        <span className="ml-2">(State: {gstTypeInfo.sellerStateCode})</span>
-                      )}
-                    </p>
-                  </div>
-                )}
-                
-                <div className="flex justify-between text-sm pt-2">
-                  <span className="text-gray-600 dark:text-gray-400">Total GST</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{formatINRStandard(totalGST)}</span>
-                </div>
+                  </>
+                ) : null}
                 
                 {/* Discount */}
                 {formData.discount > 0 && (
@@ -1395,7 +1512,7 @@ export default function NewInvoicePage() {
                 
                 <div className="border-t dark:border-gray-700 pt-3 flex justify-between text-lg font-bold">
                   <span className="text-gray-900 dark:text-gray-100">Total Amount</span>
-                  <span className="text-blue-600 dark:text-blue-400">{formatINRStandard(total)}</span>
+                  <CurrencyDisplay amount={total} currency={formData.currency} className="text-blue-600 dark:text-blue-400" />
                 </div>
               </CardContent>
             </Card>

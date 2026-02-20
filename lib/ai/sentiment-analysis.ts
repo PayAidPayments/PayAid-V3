@@ -25,7 +25,7 @@ export class SentimentAnalysisService {
 
   constructor() {
     this.llm = new ChatGroq({
-      modelName: 'llama-3.1-70b-versatile',
+      model: 'llama-3.1-70b-versatile',
       temperature: 0.3,
       apiKey: process.env.GROQ_API_KEY,
     })
@@ -39,13 +39,16 @@ export class SentimentAnalysisService {
       const prompt = this.buildSentimentPrompt(text, context)
 
       const response = await this.llm.invoke(prompt)
-
-      const parsed = this.parseSentimentResponse(response)
+      const responseText = typeof response === 'string' ? response : (response as any).content || String(response)
+      const parsed = this.parseSentimentResponse(responseText)
 
       logger.info('Sentiment analysis completed', {
-        sentiment: parsed.sentiment,
-        score: parsed.score,
-        confidence: parsed.confidence,
+        action: 'sentiment_analyzed',
+        metadata: {
+          sentiment: parsed.sentiment,
+          score: parsed.score,
+          confidence: parsed.confidence,
+        },
       })
 
       return parsed

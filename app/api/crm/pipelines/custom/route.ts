@@ -14,13 +14,14 @@ export async function GET(request: NextRequest) {
     const customPipeline = await prisma.customReport.findFirst({
       where: {
         tenantId,
-        type: 'custom_pipeline',
+        reportType: 'custom_pipeline',
       },
     })
 
     if (customPipeline) {
+      const filters = customPipeline.filters as any
       return NextResponse.json({
-        stages: customPipeline.config?.stages || getDefaultStages(),
+        stages: filters?.stages || getDefaultStages(),
       })
     }
 
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, user } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
     const body = await request.json()
     const { stages } = body
 
@@ -57,18 +58,16 @@ export async function POST(request: NextRequest) {
         id: `pipeline-${tenantId}`,
       },
       update: {
-        config: { stages },
+        filters: { stages } as any,
         updatedAt: new Date(),
       },
       create: {
         id: `pipeline-${tenantId}`,
         tenantId,
         name: 'Custom Pipeline',
-        type: 'custom_pipeline',
-        config: { stages },
-        createdById: user?.userId,
-        isPublic: false,
-        isActive: true,
+        reportType: 'custom_pipeline',
+        filters: { stages } as any,
+        columns: [],
       },
     })
 

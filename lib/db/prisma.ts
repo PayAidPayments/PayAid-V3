@@ -51,6 +51,18 @@ function createPrismaClient(): PrismaClient {
   // Parse and enhance DATABASE_URL with connection pool parameters
   const url = new URL(databaseUrl)
   
+  // Log connection details for debugging (localhost only)
+  if (isDevelopment() && !process.env.VERCEL) {
+    const originalPort = url.port || '5432'
+    const hasPooler = url.hostname.includes('pooler.supabase.com')
+    console.log(`[PRISMA] DATABASE_URL detected:`, {
+      hostname: url.hostname.substring(0, 30) + '...',
+      originalPort,
+      hasPooler,
+      willSwitchToTransactionMode: hasPooler && originalPort !== '6543',
+    })
+  }
+  
   // Add connection pool parameters if not already present
   // These parameters are passed to the underlying PostgreSQL driver
   if (!url.searchParams.has('connection_limit')) {
@@ -59,10 +71,19 @@ function createPrismaClient(): PrismaClient {
     // For session mode, use 1-2 connections max
     // For transaction mode, use 3-5 connections
     const isTransactionMode = url.hostname.includes('pooler.supabase.com') && (url.port === '6543' || url.port === '')
+    // For localhost development, use higher connection limit to handle concurrent requests
+    // For Vercel/serverless, keep it conservative
+    const isLocalhost = process.env.NODE_ENV === 'development' && !process.env.VERCEL
     const connectionLimit = process.env.DATABASE_CONNECTION_LIMIT 
       ? parseInt(process.env.DATABASE_CONNECTION_LIMIT, 10)
-      : (isTransactionMode ? 3 : 1) // Transaction mode: 3, Session mode: 1 (very limited)
+      : (isTransactionMode 
+          ? (isLocalhost ? 10 : 3) // Localhost: 10 connections, Serverless: 3 connections
+          : 1) // Session mode: 1 (very limited)
     url.searchParams.set('connection_limit', connectionLimit.toString())
+    
+    if (isDevelopment() && isLocalhost) {
+      console.log(`[PRISMA] Connection limit set to ${connectionLimit} (${isTransactionMode ? 'transaction' : 'session'} mode, localhost)`)
+    }
   }
   
   if (!url.searchParams.has('pool_timeout')) {
@@ -142,13 +163,26 @@ function getPrismaClient(): PrismaClient {
   } catch (error) {
     // If DATABASE_URL is not set, provide a more helpful error
     if (error instanceof Error && error.message.includes('DATABASE_URL')) {
+      const isVercel = process.env.VERCEL === '1'
+      const troubleshootingSteps = isVercel
+        ? [
+            '1. Check if DATABASE_URL is set in Vercel environment variables',
+            '2. Verify the database connection string is correct',
+            '3. If using Supabase, check if your project is paused',
+            '4. Ensure environment variables are set for Production environment',
+          ]
+        : [
+            '1. Check if DATABASE_URL exists in .env.local file',
+            '2. Verify DATABASE_URL format: postgresql://user:password@host:port/database',
+            '3. If using Supabase, get connection string from: Project Settings → Database → Connection String',
+            '4. Ensure Supabase project is active (not paused)',
+            '5. Restart your development server after updating .env.local',
+          ]
+      
       throw new Error(
         'DATABASE_URL environment variable is not set. Please configure it in your environment variables.\n\n' +
         '🔧 Troubleshooting Steps:\n' +
-        '1. Check if DATABASE_URL is set in Vercel environment variables\n' +
-        '2. Verify the database connection string is correct\n' +
-        '3. If using Supabase, check if your project is paused\n' +
-        '4. Ensure environment variables are set for Production environment'
+        troubleshootingSteps.join('\n')
       )
     }
     throw error

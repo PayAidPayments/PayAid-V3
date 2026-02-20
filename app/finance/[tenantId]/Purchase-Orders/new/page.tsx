@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { getAuthHeaders } from '@/lib/api/client'
 import { formatINRStandard } from '@/lib/utils/formatINR'
@@ -162,21 +162,21 @@ export default function FinancePurchaseOrdersNewPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="vendorId" className="dark:text-gray-300">Vendor *</Label>
-                <Select
+                <CustomSelect
                   value={formData.vendorId}
-                  onValueChange={(value) => setFormData({ ...formData, vendorId: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, vendorId: value })}
+                  placeholder="Select a vendor"
                 >
-                  <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
-                    <SelectValue placeholder="Select a vendor" />
-                  </SelectTrigger>
-                  <SelectContent>
+                  <CustomSelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+                  </CustomSelectTrigger>
+                  <CustomSelectContent>
                     {vendors.map((vendor) => (
-                      <SelectItem key={vendor.id} value={vendor.id}>
+                      <CustomSelectItem key={vendor.id} value={vendor.id}>
                         {vendor.name} {vendor.companyName && `(${vendor.companyName})`}
-                      </SelectItem>
+                      </CustomSelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </CustomSelectContent>
+                </CustomSelect>
               </div>
 
               <div className="space-y-2">

@@ -85,6 +85,16 @@ export const modules: ModuleConfig[] = [
     color: "#06B6D4"
   },
   {
+    id: "marketplace",
+    name: "App Store",
+    description: "Discover and install apps to extend PayAid's functionality",
+    icon: "Store",
+    url: "/dashboard/marketplace", // Resolved to tenant URL in ModuleCard
+    status: "active",
+    category: "core",
+    color: "#14B8A6"
+  },
+  {
     id: "ai-cofounder",
     name: "AI Co-founder",
     description: "Business AI assistant with 9 specialist agents for finance, sales, marketing, HR, and more",

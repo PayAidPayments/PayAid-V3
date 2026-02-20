@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { DashboardLoading } from '@/components/ui/loading'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
 import { TrendingUp, TrendingDown, Target, RefreshCw } from 'lucide-react'
@@ -84,18 +84,17 @@ export function RiskCalibrationDashboard() {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Risk Calibration Dashboard</h2>
         <div className="flex items-center gap-2">
-          <Select value={decisionType} onValueChange={setDecisionType}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Decision Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="send_invoice">Send Invoice</SelectItem>
-              <SelectItem value="apply_discount">Apply Discount</SelectItem>
-              <SelectItem value="assign_lead">Assign Lead</SelectItem>
-              <SelectItem value="bulk_invoice_payment">Bulk Payment</SelectItem>
-            </SelectContent>
-          </Select>
+          <CustomSelect value={decisionType} onValueChange={(value: string) => setDecisionType(value)} placeholder="Decision Type">
+            <CustomSelectTrigger className="w-[200px]">
+            </CustomSelectTrigger>
+            <CustomSelectContent>
+              <CustomSelectItem value="all">All Types</CustomSelectItem>
+              <CustomSelectItem value="send_invoice">Send Invoice</CustomSelectItem>
+              <CustomSelectItem value="apply_discount">Apply Discount</CustomSelectItem>
+              <CustomSelectItem value="assign_lead">Assign Lead</CustomSelectItem>
+              <CustomSelectItem value="bulk_invoice_payment">Bulk Payment</CustomSelectItem>
+            </CustomSelectContent>
+          </CustomSelect>
           <Button onClick={fetchMetrics} variant="outline" size="icon">
             <RefreshCw className="h-4 w-4" />
           </Button>

@@ -1,105 +1,133 @@
-// PayAid V3 Browser Extension - Popup Script
+// PayAid Agent Browser Extension - Popup Script
 
-// Get base URL from storage or use default
-async function getBaseUrl() {
-  const result = await chrome.storage.sync.get(['payaidBaseUrl'])
-  return result.payaidBaseUrl || 'http://localhost:3000'
+async function getApiKey() {
+  const result = await chrome.storage.sync.get(['payaidApiKey', 'payaidTenantId'])
+  return { apiKey: result.payaidApiKey, tenantId: result.payaidTenantId }
 }
 
-// Get auth token from storage
-async function getAuthToken() {
-  const result = await chrome.storage.sync.get(['payaidAuthToken'])
-  return result.payaidAuthToken
-}
-
-// Load stats
-async function loadStats() {
-  try {
-    const baseUrl = await getBaseUrl()
-    const token = await getAuthToken()
+async function getCurrentPageContext() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  const url = tab.url || ''
+  
+  // Detect if we're on a PayAid page
+  if (url.includes('payaid.com') || url.includes('localhost')) {
+    const contactMatch = url.match(/\/contacts\/([^\/]+)/)
+    const dealMatch = url.match(/\/deals\/([^\/]+)/)
     
-    if (!token) {
-      document.getElementById('deals-count').textContent = 'Login required'
-      document.getElementById('tasks-count').textContent = 'Login required'
-      document.getElementById('leads-count').textContent = 'Login required'
-      return
+    if (contactMatch) {
+      return { type: 'contact', id: contactMatch[1] }
     }
-
-    // Fetch stats from API
-    const [dealsRes, tasksRes, leadsRes] = await Promise.all([
-      fetch(`${baseUrl}/api/crm/dashboard/stats`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      }).catch(() => null),
-      fetch(`${baseUrl}/api/tasks?status=pending&limit=1`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      }).catch(() => null),
-      fetch(`${baseUrl}/api/crm/leads?limit=1`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      }).catch(() => null),
-    ])
-
-    if (dealsRes && dealsRes.ok) {
-      const data = await dealsRes.json()
-      document.getElementById('deals-count').textContent = data.activeDeals || '0'
+    if (dealMatch) {
+      return { type: 'deal', id: dealMatch[1] }
     }
+  }
+  
+  return null
+}
 
-    if (tasksRes && tasksRes.ok) {
-      const data = await tasksRes.json()
-      document.getElementById('tasks-count').textContent = data.total || '0'
-    }
-
-    if (leadsRes && leadsRes.ok) {
-      const data = await leadsRes.json()
-      document.getElementById('leads-count').textContent = data.total || '0'
-    }
+async function getSuggestions(context, apiKey, tenantId) {
+  if (!context || !apiKey) return []
+  
+  try {
+    // Call PayAid API to get suggestions
+    const response = await fetch(`https://api.payaid.com/api/ai/suggestions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tenantId,
+        context: {
+          type: context.type,
+          id: context.id,
+        },
+      }),
+    })
+    
+    if (!response.ok) return []
+    
+    const data = await response.json()
+    return data.suggestions || []
   } catch (error) {
-    console.error('Error loading stats:', error)
+    console.error('Failed to get suggestions:', error)
+    return []
   }
 }
 
-// Handle action clicks
-document.addEventListener('DOMContentLoaded', () => {
-  // Load stats on popup open
-  loadStats()
-
-  // Action items
-  document.querySelectorAll('.action-item').forEach(item => {
-    item.addEventListener('click', async () => {
-      const action = item.getAttribute('data-action')
-      const baseUrl = await getBaseUrl()
-      
-      let url = baseUrl
-      switch (action) {
-        case 'dashboard':
-          url = `${baseUrl}/dashboard`
-          break
-        case 'deals':
-          // Get tenant ID from storage
-          const tenant = await chrome.storage.sync.get(['payaidTenantId'])
-          url = `${baseUrl}/crm/${tenant.payaidTenantId || 'default'}/Deals`
-          break
-        case 'contacts':
-          const tenant2 = await chrome.storage.sync.get(['payaidTenantId'])
-          url = `${baseUrl}/crm/${tenant2.payaidTenantId || 'default'}/Contacts`
-          break
-        case 'tasks':
-          url = `${baseUrl}/dashboard/tasks`
-          break
-        case 'ai-cofounder':
-          const tenant3 = await chrome.storage.sync.get(['payaidTenantId'])
-          url = `${baseUrl}/ai-studio/${tenant3.payaidTenantId || 'default'}/Cofounder`
-          break
-      }
-      
-      chrome.tabs.create({ url })
-      window.close()
+async function executeAction(actionId, apiKey, tenantId) {
+  try {
+    const response = await fetch(`https://api.payaid.com/api/ai/actions/${actionId}/execute`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ tenantId }),
     })
-  })
+    
+    return response.ok
+  } catch (error) {
+    console.error('Failed to execute action:', error)
+    return false
+  }
+}
 
-  // Open full app
-  document.getElementById('open-full').addEventListener('click', async () => {
-    const baseUrl = await getBaseUrl()
-    chrome.tabs.create({ url: baseUrl })
-    window.close()
-  })
-})
+async function renderSuggestions() {
+  const container = document.getElementById('suggestions')
+  const { apiKey, tenantId } = await getApiKey()
+  
+  if (!apiKey) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <p>Please configure your API key in settings</p>
+      </div>
+    `
+    return
+  }
+  
+  const context = await getCurrentPageContext()
+  if (!context) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <p>Open a contact or deal page in PayAid to see suggestions</p>
+      </div>
+    `
+    return
+  }
+  
+  const suggestions = await getSuggestions(context, apiKey, tenantId)
+  
+  if (suggestions.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <p>No suggestions available</p>
+      </div>
+    `
+    return
+  }
+  
+  container.innerHTML = suggestions.map((suggestion, index) => `
+    <div class="suggestion">
+      <div class="suggestion-title">${suggestion.title}</div>
+      <div class="suggestion-desc">${suggestion.description}</div>
+      <button class="action-button" onclick="executeAction('${suggestion.id}')">
+        ${suggestion.actionLabel || 'Execute'}
+      </button>
+    </div>
+  `).join('')
+  
+  // Attach event handlers
+  window.executeAction = async (actionId) => {
+    const success = await executeAction(actionId, apiKey, tenantId)
+    if (success) {
+      alert('Action executed successfully!')
+      renderSuggestions() // Refresh
+    } else {
+      alert('Failed to execute action')
+    }
+  }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', renderSuggestions)

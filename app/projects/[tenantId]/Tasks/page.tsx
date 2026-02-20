@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 // ModuleTopBar is now in layout.tsx
 import { useAuthStore } from '@/lib/stores/auth'
 import { PageLoading } from '@/components/ui/loading'
@@ -113,31 +113,29 @@ export default function ProjectsTasksPage() {
                 </button>
               )}
             </div>
-            <Select value={projectFilter} onValueChange={setProjectFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="All Projects" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Projects</SelectItem>
+            <CustomSelect value={projectFilter} onValueChange={setProjectFilter} placeholder="All Projects">
+              <CustomSelectTrigger className="w-48">
+              </CustomSelectTrigger>
+              <CustomSelectContent>
+                <CustomSelectItem value="all">All Projects</CustomSelectItem>
                 {projects.map((project: any) => (
-                  <SelectItem key={project.id} value={project.id}>
+                  <CustomSelectItem key={project.id} value={project.id}>
                     {project.name}
-                  </SelectItem>
+                  </CustomSelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="All Priorities" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="LOW">Low</SelectItem>
-                <SelectItem value="MEDIUM">Medium</SelectItem>
-                <SelectItem value="HIGH">High</SelectItem>
-                <SelectItem value="URGENT">Urgent</SelectItem>
-              </SelectContent>
-            </Select>
+              </CustomSelectContent>
+            </CustomSelect>
+            <CustomSelect value={priorityFilter} onValueChange={setPriorityFilter} placeholder="All Priorities">
+              <CustomSelectTrigger className="w-40">
+              </CustomSelectTrigger>
+              <CustomSelectContent>
+                <CustomSelectItem value="all">All Priorities</CustomSelectItem>
+                <CustomSelectItem value="LOW">Low</CustomSelectItem>
+                <CustomSelectItem value="MEDIUM">Medium</CustomSelectItem>
+                <CustomSelectItem value="HIGH">High</CustomSelectItem>
+                <CustomSelectItem value="URGENT">Urgent</CustomSelectItem>
+              </CustomSelectContent>
+            </CustomSelect>
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh

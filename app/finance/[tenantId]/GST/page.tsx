@@ -17,28 +17,32 @@ export default function FinanceGSTPage() {
     {
       label: 'GSTR-1',
       value: 'Sales Register',
-      icon: FileText,
+      icon: <FileText className="w-5 h-5" />,
       href: `/finance/${tenantId}/GST/GSTR-1`,
     },
     {
       label: 'GSTR-3B',
       value: 'Summary Return',
-      icon: Scale,
+      icon: <Scale className="w-5 h-5" />,
       href: `/finance/${tenantId}/GST/GSTR-3B`,
     },
     {
       label: 'Filing Due',
       value: '11th & 20th',
-      icon: Calendar,
+      icon: <Calendar className="w-5 h-5" />,
       href: '#',
     },
     {
       label: 'Portal',
       value: 'GST.gov.in',
-      icon: Info,
+      icon: <Info className="w-5 h-5" />,
       href: 'https://www.gst.gov.in',
     },
   ]
+
+  if (!moduleConfig) {
+    return <div>Module configuration not found</div>
+  }
 
   return (
     <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>

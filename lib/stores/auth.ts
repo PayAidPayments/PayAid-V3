@@ -6,6 +6,7 @@ interface User {
   email: string
   name: string | null
   role: string
+  roles?: string[]
   avatar: string | null
 }
 
@@ -17,6 +18,7 @@ interface Tenant {
   // NEW: Module licensing (Phase 1)
   licensedModules?: string[]
   subscriptionTier?: string
+  defaultCurrency?: string
 }
 
 interface AuthState {
@@ -86,6 +88,7 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email: string, password: string) => {
         set({ isLoading: true })
+        let timeoutId: NodeJS.Timeout | null = null
         try {
           // Add timeout to prevent hanging
           // Local dev: 15 seconds (server timeout is 10s, add buffer)
@@ -93,9 +96,13 @@ export const useAuthStore = create<AuthState>()(
           const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
           const timeoutMs = isDev ? 15000 : 15000 // 15 seconds for both
           const controller = new AbortController()
-          const timeoutId = setTimeout(() => {
-            controller.abort()
-            console.warn(`[AUTH] Login request timed out after ${timeoutMs / 1000} seconds`)
+          
+          // Set up timeout
+          timeoutId = setTimeout(() => {
+            if (!controller.signal.aborted) {
+              controller.abort('Login request timeout')
+              console.warn(`[AUTH] Login request timed out after ${timeoutMs / 1000} seconds`)
+            }
           }, timeoutMs)
           
           const response = await fetch('/api/auth/login', {
@@ -105,7 +112,11 @@ export const useAuthStore = create<AuthState>()(
             signal: controller.signal,
           })
           
-          clearTimeout(timeoutId)
+          // Clear timeout if request completed successfully
+          if (timeoutId) {
+            clearTimeout(timeoutId)
+            timeoutId = null
+          }
 
           // Check content type before parsing
           const contentType = response.headers.get('content-type') || ''
@@ -194,22 +205,63 @@ export const useAuthStore = create<AuthState>()(
             token: data.token,
           }
         } catch (error) {
-          console.error('[AUTH] Login error:', error)
+          // Clear timeout if still active
+          if (timeoutId) {
+            clearTimeout(timeoutId)
+            timeoutId = null
+          }
+          
           set({ isLoading: false })
           
-          // Handle timeout specifically
-          if (error instanceof Error && error.name === 'AbortError') {
+          // Check for timeout/abort errors FIRST before logging
+          let isTimeoutError = false
+          
+          // Check if error is a string
+          if (typeof error === 'string') {
+            if (error.includes('timeout') || error.includes('aborted') || error.includes('Login request timeout')) {
+              isTimeoutError = true
+            }
+          }
+          // Check if error is an Error instance
+          else if (error instanceof Error) {
+            isTimeoutError = error.name === 'AbortError' || 
+                            error.message?.includes('aborted') ||
+                            error.message?.includes('timeout') ||
+                            error.message?.includes('Login request timeout')
+          }
+          // Check if error is a DOMException (which browsers throw for abort)
+          else if (error && typeof error === 'object') {
+            const errorObj = error as any
+            isTimeoutError = errorObj.name === 'AbortError' || 
+                            errorObj.name === 'DOMException' ||
+                            errorObj.code === 'ABORT_ERR' ||
+                            errorObj.message?.includes('aborted') ||
+                            errorObj.message?.includes('timeout') ||
+                            errorObj.message?.includes('Login request timeout')
+          }
+          
+          // Handle timeout error - don't log, just throw user-friendly message
+          if (isTimeoutError) {
             throw new Error('Login request timed out. The server may be experiencing high load or a cold start. Please try again in a moment.')
           }
           
-          // Provide more helpful error messages
+          // Log non-timeout errors for debugging
+          console.error('[AUTH] Login error:', error)
+          
+          // Handle network errors
           if (error instanceof Error) {
-            // Re-throw with improved message if needed
-            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+            if (error.message.includes('Failed to fetch') || 
+                error.message.includes('NetworkError') ||
+                error.message.includes('Network request failed')) {
               throw new Error('Network error. Please check your internet connection and try again.')
             }
             // Keep original error message if it's already descriptive
             throw error
+          }
+          
+          // Handle string errors
+          if (typeof error === 'string') {
+            throw new Error(error)
           }
           
           throw new Error('An unexpected error occurred during login. Please try again.')

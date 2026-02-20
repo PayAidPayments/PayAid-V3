@@ -447,7 +447,7 @@ export function ModuleSwitcher() {
         )}
         title={module.description}
       >
-        <Icon className="h-5 w-5 flex-shrink-0" strokeWidth={2} />
+        <Icon className="h-5 w-5 flex-shrink-0" />
         <span className="flex-1 text-left truncate">{module.name}</span>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {module.badge && module.badge > 0 && (
@@ -631,12 +631,12 @@ export function ModuleSwitcher() {
   // Mobile: Accordion layout
   const renderMobileLayout = () => {
     const allTiers: { tier: ModuleTier; modules: TieredModule[] }[] = [
-      { tier: 'tier1-top6', modules: filteredModules['tier1-top6'] },
-      { tier: 'tier2-operational', modules: filteredModules['tier2-operational'] },
-      { tier: 'tier3-ai-intelligence', modules: filteredModules['tier3-ai-intelligence'] },
-      { tier: 'tier4-productivity', modules: filteredModules['tier4-productivity'] },
-      { tier: 'tier5-specialized', modules: filteredModules['tier5-specialized'] },
-      { tier: 'tier6-creative', modules: filteredModules['tier6-creative'] }
+      { tier: 'tier1-top6' as ModuleTier, modules: filteredModules['tier1-top6'] },
+      { tier: 'tier2-operational' as ModuleTier, modules: filteredModules['tier2-operational'] },
+      { tier: 'tier3-ai-intelligence' as ModuleTier, modules: filteredModules['tier3-ai-intelligence'] },
+      { tier: 'tier4-productivity' as ModuleTier, modules: filteredModules['tier4-productivity'] },
+      { tier: 'tier5-specialized' as ModuleTier, modules: filteredModules['tier5-specialized'] },
+      { tier: 'tier6-creative' as ModuleTier, modules: filteredModules['tier6-creative'] }
     ].filter(item => item.modules.length > 0)
 
     return (
@@ -703,7 +703,7 @@ export function ModuleSwitcher() {
           <>
             {(() => {
               const Icon = moduleIconMap[currentModuleData.id]
-              return Icon ? <Icon className="h-4 w-4" strokeWidth={2} /> : null
+              return Icon ? <Icon className="h-4 w-4" /> : null
             })()}
             <span className="hidden sm:inline">{currentModuleData.name}</span>
           </>

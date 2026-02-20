@@ -38,11 +38,11 @@ export async function POST(request: NextRequest) {
       data: {
         tenantId,
         name: validated.name,
-        type: 'custom_dashboard',
-        config: {
+        reportType: 'custom_dashboard',
+        filters: {
           widgets: validated.widgets,
-        },
-        createdById: userId,
+        } as any,
+        columns: [],
       },
     })
 
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     const dashboards = await prisma.customReport.findMany({
       where: {
         tenantId,
-        type: 'custom_dashboard',
+        reportType: 'custom_dashboard',
       },
       orderBy: { createdAt: 'desc' },
     })

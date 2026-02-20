@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { Card, CardContent } from '@/components/ui/card'
 import { 
   ChevronLeft, 
@@ -303,18 +303,17 @@ export default function FieldConfigurationPage() {
             </Link>
             <h2 className="text-lg font-semibold text-gray-900">CRM</h2>
             <div className="flex items-center gap-2">
-              <Select value={entityType} onValueChange={setEntityType}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
+              <CustomSelect value={entityType} onValueChange={setEntityType} placeholder="Select entity">
+                <CustomSelectTrigger className="w-40">
+                </CustomSelectTrigger>
+                <CustomSelectContent>
                   {ENTITY_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
+                    <CustomSelectItem key={type.value} value={type.value}>
                       {type.label}
-                    </SelectItem>
+                    </CustomSelectItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </CustomSelectContent>
+              </CustomSelect>
               <span className="text-gray-400">Standard</span>
               <Settings className="w-4 h-4 text-gray-400" />
             </div>
@@ -500,21 +499,21 @@ export default function FieldConfigurationPage() {
               </div>
               <div>
                 <Label>Field Type</Label>
-                <Select
+                <CustomSelect
                   value={selectedField.type}
                   onValueChange={(value) => updateField(selectedField.id, { type: value })}
+                  placeholder="Select field type"
                 >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
+                  <CustomSelectTrigger className="mt-1">
+                  </CustomSelectTrigger>
+                  <CustomSelectContent>
                     {FIELD_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
+                      <CustomSelectItem key={type.value} value={type.value}>
                         {type.label}
-                      </SelectItem>
+                      </CustomSelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </CustomSelectContent>
+                </CustomSelect>
               </div>
               <div>
                 <Label>Display Label</Label>
@@ -568,21 +567,21 @@ export default function FieldConfigurationPage() {
               </div>
               <div>
                 <Label>Column</Label>
-                <Select
+                <CustomSelect
                   value={selectedField.column || 'left'}
                   onValueChange={(value) =>
                     updateField(selectedField.id, { column: value as 'left' | 'right' | 'full' })
                   }
+                  placeholder="Select column"
                 >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="left">Left</SelectItem>
-                    <SelectItem value="right">Right</SelectItem>
-                    <SelectItem value="full">Full Width</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <CustomSelectTrigger className="mt-1">
+                  </CustomSelectTrigger>
+                  <CustomSelectContent>
+                    <CustomSelectItem value="left">Left</CustomSelectItem>
+                    <CustomSelectItem value="right">Right</CustomSelectItem>
+                    <CustomSelectItem value="full">Full Width</CustomSelectItem>
+                  </CustomSelectContent>
+                </CustomSelect>
               </div>
             </div>
           </div>

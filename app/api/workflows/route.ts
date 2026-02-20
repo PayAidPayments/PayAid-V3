@@ -1,78 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
-import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
-import { z } from 'zod'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import type { WorkflowStep } from '@/lib/workflow/types'
 
-const createWorkflowSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  triggerType: z.enum(['EVENT', 'SCHEDULE', 'MANUAL']),
-  triggerEvent: z.string().optional(),
-  triggerSchedule: z.string().optional(), // Cron expression
-  steps: z.array(z.any()).min(1), // Array of workflow steps
-  isTemplate: z.boolean().default(false),
-})
-
-// GET /api/workflows - List workflows
+/** GET /api/workflows - List workflows for tenant */
 export async function GET(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
-
-    const { searchParams } = new URL(request.url)
-    const isActive = searchParams.get('isActive')
-    const isTemplate = searchParams.get('isTemplate')
-    const triggerType = searchParams.get('triggerType')
-
-    const where: any = { tenantId }
-    if (isActive !== null) where.isActive = isActive === 'true'
-    if (isTemplate !== null) where.isTemplate = isTemplate === 'true'
-    if (triggerType) where.triggerType = triggerType
+    const searchParams = request.nextUrl.searchParams
+    const activeOnly = searchParams.get('active') === 'true'
 
     const workflows = await prisma.workflow.findMany({
-      where,
-      include: {
-        _count: {
-          select: {
-            executions: true,
-          },
-        },
+      where: {
+        tenantId,
+        ...(activeOnly ? { isActive: true } : {}),
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        _count: { select: { executions: true } },
+      },
     })
 
-    return NextResponse.json({ workflows })
-  } catch (error) {
-    if (error && typeof error === 'object' && 'moduleId' in error) {
-      return handleLicenseError(error)
-    }
+    const list = workflows.map((w) => ({
+      id: w.id,
+      name: w.name,
+      description: w.description,
+      triggerType: w.triggerType,
+      triggerEvent: w.triggerEvent,
+      triggerSchedule: w.triggerSchedule,
+      isActive: w.isActive,
+      stepsCount: Array.isArray(w.steps) ? (w.steps as unknown as WorkflowStep[]).length : 0,
+      executionsCount: w._count.executions,
+      createdAt: w.createdAt,
+      updatedAt: w.updatedAt,
+    }))
 
-    console.error('Get workflows error:', error)
+    return NextResponse.json({ workflows: list })
+  } catch (e) {
+    const err = handleLicenseError(e)
+    if (err) return err
+    console.error('[API] workflows GET', e)
     return NextResponse.json(
-      { error: 'Failed to fetch workflows' },
+      { error: e instanceof Error ? e.message : 'Failed to list workflows' },
       { status: 500 }
     )
   }
 }
 
-// POST /api/workflows - Create workflow
+/** POST /api/workflows - Create workflow */
 export async function POST(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
-
     const body = await request.json()
-    const validated = createWorkflowSchema.parse(body)
+    const {
+      name,
+      description,
+      triggerType,
+      triggerEvent,
+      triggerSchedule,
+      isActive = true,
+      steps = [],
+    } = body
 
-    // Validate trigger based on type
-    if (validated.triggerType === 'EVENT' && !validated.triggerEvent) {
+    if (!name || !triggerType) {
       return NextResponse.json(
-        { error: 'triggerEvent is required for EVENT trigger type' },
-        { status: 400 }
-      )
-    }
-
-    if (validated.triggerType === 'SCHEDULE' && !validated.triggerSchedule) {
-      return NextResponse.json(
-        { error: 'triggerSchedule is required for SCHEDULE trigger type' },
+        { error: 'name and triggerType are required' },
         { status: 400 }
       )
     }
@@ -80,33 +72,24 @@ export async function POST(request: NextRequest) {
     const workflow = await prisma.workflow.create({
       data: {
         tenantId,
-        name: validated.name,
-        description: validated.description,
-        triggerType: validated.triggerType,
-        triggerEvent: validated.triggerEvent,
-        triggerSchedule: validated.triggerSchedule,
-        steps: validated.steps,
-        isTemplate: validated.isTemplate,
+        name: String(name).trim(),
+        description: description ? String(description).trim() : null,
+        triggerType: String(triggerType),
+        triggerEvent: triggerEvent ? String(triggerEvent) : null,
+        triggerSchedule: triggerSchedule ? String(triggerSchedule) : null,
+        isActive: Boolean(isActive),
+        steps: Array.isArray(steps) ? steps : [],
       },
     })
 
-    return NextResponse.json({ workflow }, { status: 201 })
-  } catch (error) {
-    if (error && typeof error === 'object' && 'moduleId' in error) {
-      return handleLicenseError(error)
-    }
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    console.error('Create workflow error:', error)
+    return NextResponse.json({ workflow })
+  } catch (e) {
+    const err = handleLicenseError(e)
+    if (err) return err
+    console.error('[API] workflows POST', e)
     return NextResponse.json(
-      { error: 'Failed to create workflow' },
+      { error: e instanceof Error ? e.message : 'Failed to create workflow' },
       { status: 500 }
     )
   }
 }
-

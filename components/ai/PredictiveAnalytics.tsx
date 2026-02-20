@@ -105,8 +105,8 @@ export function PredictiveAnalytics({ tenantId, stats }: PredictiveAnalyticsProp
 
   if (isLoading) {
     return (
-      <Card className="border-0 shadow-md">
-        <CardHeader>
+      <Card className="border-0 shadow-md rounded-xl">
+        <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-purple-500" />
             Predictive Analytics
@@ -123,8 +123,8 @@ export function PredictiveAnalytics({ tenantId, stats }: PredictiveAnalyticsProp
 
   if (predictions.length === 0) {
     return (
-      <Card className="border-0 shadow-md">
-        <CardHeader>
+      <Card className="border-0 shadow-md rounded-xl">
+        <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-purple-500" />
             Predictive Analytics
@@ -140,16 +140,16 @@ export function PredictiveAnalytics({ tenantId, stats }: PredictiveAnalyticsProp
   }
 
   return (
-    <Card className="border-0 shadow-md">
-      <CardHeader>
+    <Card className="border-0 shadow-md rounded-xl" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardHeader className="pb-3 flex-shrink-0">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <BarChart3 className="w-5 h-5 text-purple-500" />
           Predictive Analytics
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
         <div className="space-y-4">
-          {(Array.isArray(predictions) ? predictions : []).map((prediction, index) => (
+          {(Array.isArray(predictions) ? predictions : []).slice(0, 3).map((prediction, index) => (
             <motion.div
               key={prediction.id}
               initial={{ opacity: 0, x: -20 }}

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { usePayAidAuth } from '@/lib/hooks/use-payaid-auth'
+import { usePermissions } from '@/lib/hooks/usePermissions'
 import { cn } from '@/lib/utils/cn'
 import { useState, useMemo } from 'react'
 import { getModuleLink, requiresSSO } from '@/lib/navigation/module-navigation'
@@ -84,7 +85,6 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   'vendors': Building2,
   'billing': CreditCard,
   'campaigns': Megaphone,
-  'analytics': BarChart3,
   'segments': Target,
   'social-media': Smartphone,
   'media-library': Image,
@@ -131,7 +131,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   'communication': MessageSquare,
   'productivity': FileText,
   'hr': Users,
-  'analytics': BarChart3,
+  'workflows': Zap,
 }
 
 // Core Navigation - Always visible, single-click access
@@ -177,6 +177,8 @@ const navigationSections = [
       { name: 'Vendors', href: '/dashboard/purchases/vendors', icon: 'vendors', module: 'finance' },
       { name: 'Billing', href: '/dashboard/billing', icon: 'billing', module: null },
       { name: 'Invoices', href: '/dashboard/invoices', icon: 'invoices', module: 'finance' }, // Cross-linked
+      { name: 'Credit Notes', href: '/dashboard/credit-notes', icon: 'invoices', module: 'finance' },
+      { name: 'Debit Notes', href: '/dashboard/debit-notes', icon: 'invoices', module: 'finance' },
     ],
   },
   {
@@ -259,9 +261,37 @@ const navigationSections = [
       { name: 'Advanced Reporting', href: '/dashboard/reports', icon: 'reports-analytics', module: 'analytics' },
       { name: 'Custom Dashboards', href: '/dashboard/dashboards/custom', icon: 'custom-dashboards', module: 'analytics' },
       { name: 'Analytics', href: '/dashboard/analytics', icon: 'analytics', module: 'analytics' },
+      { name: 'AI Query', href: '/dashboard/analytics/ai-query', icon: 'analytics', module: 'analytics' },
+      { name: 'Scenario Planning', href: '/dashboard/analytics/scenario', icon: 'analytics', module: 'analytics' },
       { name: 'GST Reports', href: '/dashboard/gst/gstr-1', icon: 'gst', module: 'finance' },
       { name: 'GSTR-3B', href: '/dashboard/gst/gstr-3b', icon: 'gst', module: 'finance' },
       { name: 'GST Hub', href: '/dashboard/gst', icon: 'gst', module: 'finance' },
+    ],
+  },
+  {
+    name: 'Automation',
+    icon: 'workflows',
+    items: [
+      { name: 'Workflows', href: '/dashboard/workflows', icon: 'workflows', module: 'crm' },
+    ],
+  },
+  {
+    name: 'Developer',
+    icon: 'settings',
+    items: [
+      { name: 'API Keys', href: '/dashboard/developer/api-keys', icon: 'settings', module: null },
+      { name: 'Webhooks', href: '/dashboard/developer/webhooks', icon: 'settings', module: null },
+      { name: 'API Explorer', href: '/dashboard/developer/api-explorer', icon: 'settings', module: null },
+      { name: 'API Analytics', href: '/dashboard/developer/analytics', icon: 'analytics', module: null },
+      { name: 'AI Governance', href: '/dashboard/developer/ai-governance', icon: 'settings', module: null },
+      { name: 'API Docs', href: '/dashboard/developer/docs', icon: 'settings', module: null },
+    ],
+  },
+  {
+    name: 'Marketplace',
+    icon: 'settings',
+    items: [
+      { name: 'App Store', href: '/dashboard/marketplace', icon: 'settings', module: null },
     ],
   },
   {
@@ -384,7 +414,7 @@ function NavItem({
         isComingSoon && 'opacity-60 cursor-not-allowed'
       )}
     >
-      <IconComponent className="mr-3 h-6 w-6 text-gray-600 dark:text-gray-400 flex-shrink-0" strokeWidth={2} />
+      <IconComponent className="mr-3 h-6 w-6 text-gray-600 dark:text-gray-400 flex-shrink-0" />
       <span className="flex-1">{item.name}</span>
       {isComingSoon && (
         <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-0.5 rounded">
@@ -473,7 +503,7 @@ function NavSection({ section, pathname, onLinkClick }: { section: typeof naviga
         )}
       >
         <div className="flex items-center flex-1 min-w-0">
-          <SectionIcon className="mr-3 h-6 w-6 text-gray-600 dark:text-gray-400 shrink-0" strokeWidth={2} />
+          <SectionIcon className="mr-3 h-6 w-6 text-gray-600 dark:text-gray-400 shrink-0" />
           <span className="truncate">{section.name}</span>
         </div>
         <svg
@@ -536,6 +566,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
 
   // Check if user is admin/owner (admins have access to module management panel)
   const isAdmin = user?.role === 'owner' || user?.role === 'admin'
+  const { isSuperAdmin, isBusinessAdmin } = usePermissions()
   
   // Total available modules (9 logical modules in new structure)
   const totalModules = 9
@@ -589,6 +620,20 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
 
         {/* Admin & Settings */}
         <div className="pt-2 border-t border-gray-200 dark:border-gray-700 mt-2 space-y-1">
+          {isSuperAdmin && (
+            <NavItem
+              item={{ name: 'Super Admin', href: '/super-admin', icon: 'settings', module: null }}
+              isActive={pathname?.startsWith('/super-admin')}
+              onLinkClick={onClose}
+            />
+          )}
+          {(isBusinessAdmin || isAdmin) && (
+            <NavItem
+              item={{ name: 'Admin', href: '/admin', icon: 'settings', module: null }}
+              isActive={pathname?.startsWith('/admin')}
+              onLinkClick={onClose}
+            />
+          )}
           {isAdmin && (
             <NavItem
               item={{ name: 'Module Management', href: '/dashboard/admin/modules', icon: 'module-management', module: null }}

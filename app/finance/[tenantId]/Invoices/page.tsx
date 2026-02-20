@@ -10,6 +10,7 @@ import { PageLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
 import { getDynamicTitle, getDynamicDescription } from '@/lib/utils/status-labels'
 import { formatINRStandard, formatINRForDisplay } from '@/lib/utils/formatINR'
+import { CurrencyDisplay } from '@/components/currency/CurrencyDisplay'
 import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 import { GlassCard } from '@/components/modules/GlassCard'
 import { getModuleConfig } from '@/lib/modules/module-config'
@@ -31,35 +32,44 @@ export default function FinanceInvoicesPage() {
 
   const invoices = data?.invoices || []
   const pagination = data?.pagination
+  const summary = data?.summary
   const moduleConfig = getModuleConfig('finance')
 
-  const totalAmount = invoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
-  const paidInvoices = invoices.filter(inv => inv.status === 'paid').length
-  const pendingInvoices = invoices.filter(inv => inv.status === 'sent' || inv.status === 'draft').length
+  const totalInvoices = summary?.totalInvoices ?? pagination?.total ?? 0
+  const paidCount = summary?.paidCount ?? 0
+  const overdueCount = summary?.overdueCount ?? 0
+  const pendingCount = summary?.pendingCount ?? 0
+  const totalAmount = summary?.totalAmount ?? 0
 
   const heroMetrics = [
     {
       label: 'Total Invoices',
-      value: pagination?.total?.toString() || invoices.length.toString(),
-      icon: FileText,
+      value: String(totalInvoices),
+      icon: <FileText className="w-5 h-5" />,
       href: `#`,
     },
     {
       label: 'Total Amount',
       value: formatINRForDisplay(totalAmount),
-      icon: IndianRupee,
+      icon: <IndianRupee className="w-5 h-5" />,
       href: `#`,
     },
     {
       label: 'Paid',
-      value: paidInvoices.toString(),
-      icon: TrendingUp,
+      value: String(paidCount),
+      icon: <TrendingUp className="w-5 h-5" />,
       href: `#`,
     },
     {
+      label: 'Overdue',
+      value: String(overdueCount),
+      icon: <FileText className="w-5 h-5" />,
+      href: statusFilter === 'overdue' ? `#` : `/finance/${tenantId}/Invoices?status=overdue`,
+    },
+    {
       label: 'Pending',
-      value: pendingInvoices.toString(),
-      icon: FileText,
+      value: String(pendingCount),
+      icon: <FileText className="w-5 h-5" />,
       href: `#`,
     },
   ]
@@ -73,6 +83,10 @@ export default function FinanceInvoicesPage() {
       cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
     }
     return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+  }
+
+  if (!moduleConfig) {
+    return <div>Module configuration not found</div>
   }
 
   return (
@@ -167,7 +181,11 @@ export default function FinanceInvoicesPage() {
                         {invoice.dueDate ? format(new Date(invoice.dueDate), 'MMM dd, yyyy') : '-'}
                       </TableCell>
                       <TableCell className="font-semibold">
-                        {formatINRStandard(invoice.total)}
+                        <CurrencyDisplay 
+                          amount={invoice.total || 0} 
+                          currency={invoice.currency || 'INR'} 
+                          showCode={true}
+                        />
                       </TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 text-xs rounded-full capitalize ${getStatusColor(invoice.status)}`}>

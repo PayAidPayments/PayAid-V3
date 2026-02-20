@@ -44,6 +44,9 @@ const updateEmployeeSchema = z.object({
   uanNumber: z.string().optional().nullable(),
   esiNumber: z.string().optional().nullable(),
   
+  // Account linking (for attendance, leave, etc.)
+  userId: z.string().cuid().optional().nullable(),
+
   // Statutory Applicability
   pfApplicable: z.boolean().optional(),
   esiApplicable: z.boolean().optional(),
@@ -182,6 +185,7 @@ export async function PATCH(
     if (validated.esiApplicable !== undefined) updateData.esiApplicable = validated.esiApplicable
     if (validated.ptApplicable !== undefined) updateData.ptApplicable = validated.ptApplicable
     if (validated.tdsApplicable !== undefined) updateData.tdsApplicable = validated.tdsApplicable
+    if (validated.userId !== undefined) updateData.userId = validated.userId
 
     // Get before snapshot for audit
     const beforeSnapshot = JSON.stringify(existing)

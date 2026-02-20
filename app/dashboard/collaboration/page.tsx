@@ -6,15 +6,19 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { redirect } from 'next/navigation'
 
 export default function CollaborationPage() {
-  const { tenantId } = useAuthStore()
+  const { tenant } = useAuthStore()
 
-  if (!tenantId) {
+  if (!tenant?.id) {
     redirect('/auth/login')
   }
 
   return (
     <div className="flex flex-col h-full">
-      <ModuleTopBar title="Collaborative AI Co-Founder" module="ai-studio" />
+      <ModuleTopBar 
+        moduleId="ai-studio" 
+        moduleName="Collaborative AI Co-Founder" 
+        items={[]} 
+      />
       <main className="flex-1 overflow-y-auto p-6">
         <CollaborativeCofounder />
       </main>

@@ -167,7 +167,7 @@ export function GSTTaxManagement({ tenantId }: GSTTaxManagementProps) {
                     <Badge 
                       variant={
                         deadline.status === 'overdue' ? 'destructive' :
-                        deadline.status === 'due' ? 'warning' :
+                        deadline.status === 'due' ? 'secondary' :
                         'default'
                       }
                     >
@@ -209,7 +209,7 @@ export function GSTTaxManagement({ tenantId }: GSTTaxManagementProps) {
                       variant={
                         returnItem.status === 'filed' ? 'default' :
                         returnItem.status === 'overdue' ? 'destructive' :
-                        'warning'
+                        'secondary'
                       }
                     >
                       {returnItem.status}

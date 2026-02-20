@@ -21,6 +21,10 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category')
     const isActive = searchParams.get('isActive')
 
+    if (!user.tenantId) {
+      return NextResponse.json({ error: 'Tenant ID is required' }, { status: 400 })
+    }
+
     const where: any = {
       tenantId: user.tenantId,
     }
@@ -57,12 +61,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = createFAQSchema.parse(body)
 
+    const tenantId = user.tenantId
+    if (!tenantId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const faq = await prisma.callFAQ.create({
       data: {
         question: validated.question,
         answer: validated.answer,
         category: validated.category,
-        tenantId: user.tenantId,
+        tenantId,
       },
     })
 

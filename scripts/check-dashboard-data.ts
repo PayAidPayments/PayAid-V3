@@ -1,64 +1,123 @@
 import { PrismaClient } from '@prisma/client'
+import { getTimePeriodBounds } from '../lib/utils/crm-filters'
 
 const prisma = new PrismaClient()
 
-async function main() {
-  console.log('🔍 Checking dashboard data...\n')
-
-  // Get demo tenant
+async function checkDashboardData() {
   const tenant = await prisma.tenant.findUnique({
     where: { subdomain: 'demo' },
   })
 
   if (!tenant) {
-    console.log('❌ Demo tenant not found!')
-    console.log('📋 Run: npm run db:seed\n')
-    await prisma.$disconnect()
-    return
+    console.log('❌ Tenant not found')
+    process.exit(1)
   }
 
-  console.log('✅ Tenant found:', tenant.name)
-  console.log('   Tenant ID:', tenant.id)
-  console.log('   Subdomain:', tenant.subdomain)
+  const user = await prisma.user.findUnique({
+    where: { email: 'admin@demo.com' },
+  })
+
+  if (!user) {
+    console.log('❌ User not found')
+    process.exit(1)
+  }
+
+  console.log(`✅ Found tenant: ${tenant.name}`)
+  console.log(`✅ Found user: ${user.name} (role: ${user.role})`)
   console.log('')
 
-  // Count data
-  const [contacts, deals, orders, invoices, tasks] = await Promise.all([
+  // Check SalesRep
+  const salesRep = await prisma.salesRep.findUnique({
+    where: { userId: user.id },
+  })
+  console.log(`✅ SalesRep: ${salesRep ? salesRep.id : 'Not found'}`)
+  console.log('')
+
+  // Get current month period
+  const periodBounds = getTimePeriodBounds('month')
+  const periodStart = periodBounds.start
+  const periodEnd = periodBounds.end
+
+  console.log('📅 Current month period:')
+  console.log(`   Start: ${periodStart.toISOString()}`)
+  console.log(`   End: ${periodEnd.toISOString()}`)
+  console.log('')
+
+  // Check data with tenantId filter (owner should see all)
+  const [totalContacts, totalDeals, contactsInPeriod, dealsInPeriod, wonDealsInPeriod] = await Promise.all([
     prisma.contact.count({ where: { tenantId: tenant.id } }),
     prisma.deal.count({ where: { tenantId: tenant.id } }),
-    prisma.order.count({ where: { tenantId: tenant.id } }),
-    prisma.invoice.count({ where: { tenantId: tenant.id } }),
-    prisma.task.count({ where: { tenantId: tenant.id } }),
+    prisma.contact.count({
+      where: {
+        tenantId: tenant.id,
+        createdAt: { gte: periodStart, lte: periodEnd },
+      },
+    }),
+    prisma.deal.count({
+      where: {
+        tenantId: tenant.id,
+        createdAt: { gte: periodStart, lte: periodEnd },
+      },
+    }),
+    prisma.deal.findMany({
+      where: {
+        tenantId: tenant.id,
+        stage: 'won',
+        OR: [
+          { actualCloseDate: { gte: periodStart, lte: periodEnd } },
+          { updatedAt: { gte: periodStart, lte: periodEnd } },
+          { createdAt: { gte: periodStart, lte: periodEnd } },
+        ],
+      },
+      select: { id: true, value: true, actualCloseDate: true, updatedAt: true, createdAt: true },
+    }),
   ])
 
-  console.log('📊 Data Counts:')
-  console.log('   Contacts:', contacts)
-  console.log('   Deals:', deals)
-  console.log('   Orders:', orders)
-  console.log('   Invoices:', invoices)
-  console.log('   Tasks:', tasks)
+  console.log('📊 Data with tenantId filter (owner view):')
+  console.log(`   Total Contacts: ${totalContacts}`)
+  console.log(`   Total Deals: ${totalDeals}`)
+  console.log(`   Contacts in Period: ${contactsInPeriod}`)
+  console.log(`   Deals in Period: ${dealsInPeriod}`)
+  console.log(`   Won Deals in Period: ${wonDealsInPeriod.length}`)
+  console.log(`   Revenue from Won Deals: ${wonDealsInPeriod.reduce((sum, d) => sum + d.value, 0)}`)
   console.log('')
 
-  if (contacts === 0 && deals === 0 && orders === 0) {
-    console.log('⚠️  No data found! Re-seeding database...\n')
-    await prisma.$disconnect()
-    return
+  // Check with SalesRep filter (if user was a regular user)
+  if (salesRep) {
+    const [contactsWithSalesRep, dealsWithSalesRep] = await Promise.all([
+      prisma.contact.count({
+        where: {
+          tenantId: tenant.id,
+          assignedToId: salesRep.id,
+        },
+      }),
+      prisma.deal.count({
+        where: {
+          tenantId: tenant.id,
+          assignedToId: salesRep.id,
+        },
+      }),
+    ])
+
+    console.log('📊 Data with SalesRep filter:')
+    console.log(`   Contacts assigned to SalesRep: ${contactsWithSalesRep}`)
+    console.log(`   Deals assigned to SalesRep: ${dealsWithSalesRep}`)
+    console.log('')
   }
 
-  console.log('✅ Data exists! Dashboard should work.')
-  console.log('')
-  console.log('💡 If dashboard still shows 0:')
-  console.log('   1. Check browser console for errors')
-  console.log('   2. Check server logs for API errors')
-  console.log('   3. Verify you logged in with admin@demo.com')
-  console.log('   4. Refresh the dashboard page')
+  // Check lead sources
+  const leadSources = await prisma.leadSource.findMany({
+    where: { tenantId: tenant.id },
+    take: 5,
+  })
+  console.log(`📊 Lead Sources: ${leadSources.length} found`)
+  if (leadSources.length > 0) {
+    leadSources.forEach((ls, i) => {
+      console.log(`   ${i + 1}. ${ls.name}: ${ls.leadsCount} leads, ${ls.conversionsCount} conversions`)
+    })
+  }
+
+  await prisma.$disconnect()
 }
 
-main()
-  .catch((e) => {
-    console.error('Error:', e)
-    process.exit(1)
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
-  })
+checkDashboardData().catch(console.error)

@@ -33,7 +33,7 @@ export function ModuleGate({
   redirectTo,
 }: ModuleGateProps) {
   const { hasModule, licensedModules, subscriptionTier } = usePayAidAuth()
-  const { user } = useAuthStore()
+  const { user, tenant } = useAuthStore()
   const router = useRouter()
 
   // Determine redirect destination

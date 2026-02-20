@@ -45,6 +45,10 @@ export async function POST(
     const body = await request.json()
     const validated = createCallSchema.parse(body)
 
+    if (!user.tenantId) {
+      return NextResponse.json({ error: 'Tenant ID is required' }, { status: 400 })
+    }
+
     // Create call record
     const call = await prisma.voiceAgentCall.create({
       data: {

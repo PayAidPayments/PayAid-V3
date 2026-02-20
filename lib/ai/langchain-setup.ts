@@ -19,7 +19,7 @@ export async function getLangChainLLM(): Promise<BaseChatModel> {
     try {
       const { ChatGroq } = await import('@langchain/groq')
       return new ChatGroq({
-        modelName: process.env.GROQ_MODEL || 'llama-3.1-70b-versatile',
+        model: process.env.GROQ_MODEL || 'llama-3.1-70b-versatile',
         temperature: 0.7,
         apiKey: process.env.GROQ_API_KEY,
       })
@@ -291,7 +291,8 @@ Always format currency as ₹ with commas (e.g., ₹1,00,000).`],
   // The import is wrapped in a function to ensure it's only evaluated when called
   const getAgents = async () => {
     try {
-      // Try importing from langchain package
+      // Try importing from langchain package (optional - may not be installed)
+      // @ts-expect-error - langchain/agents may not have types or may not be installed
       return await import('langchain/agents')
     } catch (error) {
       // If that fails, try alternative import paths or throw a helpful error

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { GripVertical, Plus, Trash2, Save, LayoutGrid } from 'lucide-react'
 
 export interface DashboardWidget {
@@ -236,77 +236,77 @@ export function CustomDashboardBuilder({ tenantId, dashboardId, onSave }: Custom
 
                   <div>
                     <Label>Widget Type</Label>
-                    <Select
+                    <CustomSelect
                       value={selectedWidget.type}
-                      onValueChange={(value) =>
+                      onValueChange={(value: string) =>
                         updateWidget(selectedWidget.id, { type: value as DashboardWidget['type'] })
                       }
+                      placeholder="Select widget type"
                     >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
+                      <CustomSelectTrigger className="mt-1">
+                      </CustomSelectTrigger>
+                      <CustomSelectContent>
                         {WIDGET_TYPES.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
+                          <CustomSelectItem key={type.value} value={type.value}>
                             {type.label}
-                          </SelectItem>
+                          </CustomSelectItem>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </CustomSelectContent>
+                    </CustomSelect>
                   </div>
 
                   <div>
                     <Label>Data Source</Label>
-                    <Select
+                    <CustomSelect
                       value={selectedWidget.config.dataSource || ''}
-                      onValueChange={(value) =>
+                      onValueChange={(value: string) =>
                         updateWidget(selectedWidget.id, {
                           config: { ...selectedWidget.config, dataSource: value },
                         })
                       }
+                      placeholder="Select data source"
                     >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select data source" />
-                      </SelectTrigger>
-                      <SelectContent>
+                      <CustomSelectTrigger className="mt-1">
+                      </CustomSelectTrigger>
+                      <CustomSelectContent>
                         {DATA_SOURCES.map((source) => (
-                          <SelectItem key={source.value} value={source.value}>
+                          <CustomSelectItem key={source.value} value={source.value}>
                             {source.label}
-                          </SelectItem>
+                          </CustomSelectItem>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </CustomSelectContent>
+                    </CustomSelect>
                   </div>
 
                   {selectedWidget.type === 'chart' && (
                     <div>
                       <Label>Chart Type</Label>
-                      <Select
+                      <CustomSelect
                         value={selectedWidget.config.chartType || 'line'}
-                        onValueChange={(value) =>
+                        onValueChange={(value: string) =>
                           updateWidget(selectedWidget.id, {
                             config: { ...selectedWidget.config, chartType: value as any },
                           })
                         }
+                        placeholder="Select chart type"
                       >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="line">Line Chart</SelectItem>
-                          <SelectItem value="bar">Bar Chart</SelectItem>
-                          <SelectItem value="pie">Pie Chart</SelectItem>
-                          <SelectItem value="area">Area Chart</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <CustomSelectTrigger className="mt-1">
+                        </CustomSelectTrigger>
+                        <CustomSelectContent>
+                          <CustomSelectItem value="line">Line Chart</CustomSelectItem>
+                          <CustomSelectItem value="bar">Bar Chart</CustomSelectItem>
+                          <CustomSelectItem value="pie">Pie Chart</CustomSelectItem>
+                          <CustomSelectItem value="area">Area Chart</CustomSelectItem>
+                        </CustomSelectContent>
+                      </CustomSelect>
                     </div>
                   )}
 
                   <div>
                     <Label>Size</Label>
-                    <Select
+                    <CustomSelect
                       value={selectedWidget.config.size || 'medium'}
-                      onValueChange={(value) =>
+                      onValueChange={(value: string) =>
                         updateWidget(selectedWidget.id, {
                           config: { ...selectedWidget.config, size: value as any },
                           position: {
@@ -316,16 +316,16 @@ export function CustomDashboardBuilder({ tenantId, dashboardId, onSave }: Custom
                           },
                         })
                       }
+                      placeholder="Select size"
                     >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="small">Small</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="large">Large</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <CustomSelectTrigger className="mt-1">
+                      </CustomSelectTrigger>
+                      <CustomSelectContent>
+                        <CustomSelectItem value="small">Small</CustomSelectItem>
+                        <CustomSelectItem value="medium">Medium</CustomSelectItem>
+                        <CustomSelectItem value="large">Large</CustomSelectItem>
+                      </CustomSelectContent>
+                    </CustomSelect>
                   </div>
                 </div>
               ) : (

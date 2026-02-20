@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Plus, Trash2, GripVertical, Save, Sparkles } from 'lucide-react'
 
@@ -132,6 +132,7 @@ export function FormBuilder({ tenantId, formId, onSave }: FormBuilderProps) {
       description: formDescription,
       slug: formSlug,
       fields: fields.map((f) => ({
+        id: f.id,
         label: f.label,
         type: f.type,
         placeholder: f.placeholder,
@@ -224,18 +225,17 @@ export function FormBuilder({ tenantId, formId, onSave }: FormBuilderProps) {
             </div>
             <div>
               <Label htmlFor="purpose">Form Purpose</Label>
-              <Select value={purpose} onValueChange={setPurpose}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="lead_capture">Lead Capture</SelectItem>
-                  <SelectItem value="contact_form">Contact Form</SelectItem>
-                  <SelectItem value="event_registration">Event Registration</SelectItem>
-                  <SelectItem value="survey">Survey</SelectItem>
-                  <SelectItem value="quote_request">Quote Request</SelectItem>
-                </SelectContent>
-              </Select>
+              <CustomSelect value={purpose} onValueChange={setPurpose} placeholder="Select purpose">
+                <CustomSelectTrigger>
+                </CustomSelectTrigger>
+                <CustomSelectContent>
+                  <CustomSelectItem value="lead_capture">Lead Capture</CustomSelectItem>
+                  <CustomSelectItem value="contact_form">Contact Form</CustomSelectItem>
+                  <CustomSelectItem value="event_registration">Event Registration</CustomSelectItem>
+                  <CustomSelectItem value="survey">Survey</CustomSelectItem>
+                  <CustomSelectItem value="quote_request">Quote Request</CustomSelectItem>
+                </CustomSelectContent>
+              </CustomSelect>
             </div>
           </div>
         </CardContent>
@@ -279,27 +279,27 @@ export function FormBuilder({ tenantId, formId, onSave }: FormBuilderProps) {
                           placeholder="Field Label"
                           className="flex-1"
                         />
-                        <Select
+                        <CustomSelect
                           value={field.type}
-                          onValueChange={(value: FormField['type']) =>
-                            updateField(field.id, { type: value })
+                          onValueChange={(value: string) =>
+                            updateField(field.id, { type: value as FormField['type'] })
                           }
+                          placeholder="Select type"
                         >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="text">Text</SelectItem>
-                            <SelectItem value="email">Email</SelectItem>
-                            <SelectItem value="phone">Phone</SelectItem>
-                            <SelectItem value="select">Select</SelectItem>
-                            <SelectItem value="checkbox">Checkbox</SelectItem>
-                            <SelectItem value="radio">Radio</SelectItem>
-                            <SelectItem value="textarea">Textarea</SelectItem>
-                            <SelectItem value="number">Number</SelectItem>
-                            <SelectItem value="date">Date</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          <CustomSelectTrigger className="w-32">
+                          </CustomSelectTrigger>
+                          <CustomSelectContent>
+                            <CustomSelectItem value="text">Text</CustomSelectItem>
+                            <CustomSelectItem value="email">Email</CustomSelectItem>
+                            <CustomSelectItem value="phone">Phone</CustomSelectItem>
+                            <CustomSelectItem value="select">Select</CustomSelectItem>
+                            <CustomSelectItem value="checkbox">Checkbox</CustomSelectItem>
+                            <CustomSelectItem value="radio">Radio</CustomSelectItem>
+                            <CustomSelectItem value="textarea">Textarea</CustomSelectItem>
+                            <CustomSelectItem value="number">Number</CustomSelectItem>
+                            <CustomSelectItem value="date">Date</CustomSelectItem>
+                          </CustomSelectContent>
+                        </CustomSelect>
                         <label className="flex items-center gap-2">
                           <input
                             type="checkbox"

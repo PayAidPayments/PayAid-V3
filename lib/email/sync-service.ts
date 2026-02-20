@@ -458,6 +458,29 @@ async function syncGmailInbox(accountId: string, maxResults: number = 50): Promi
         if (contactId) {
           result.linked++
           await logEmailActivity(account.tenantId, contactId, parsedEmail, 'inbound')
+        } else {
+          // AUTO-IMPORT LEAD: If no contact found, parse email and create lead automatically
+          // This matches Perfex CRM's auto-import leads feature
+          try {
+            const { autoProcessEmail } = await import('@/lib/workflow/email-parser')
+            const autoResult = await autoProcessEmail(
+              account.tenantId,
+              parsedEmail.body,
+              parsedEmail.subject,
+              parsedEmail.fromEmail,
+              parsedEmail.fromName
+            )
+
+            if (autoResult.contactId) {
+              result.created++
+              // Link the email message to the newly created contact
+              await updateEmailMessageWithContact(emailMessage.id, autoResult.contactId)
+              await logEmailActivity(account.tenantId, autoResult.contactId, parsedEmail, 'inbound')
+            }
+          } catch (parseError) {
+            // Silently fail - email parsing is optional enhancement, don't block sync
+            console.debug('[EMAIL_SYNC] Auto-import lead failed (non-critical):', parseError)
+          }
         }
       } catch (error) {
         console.error(`Error syncing Gmail message ${messageRef.id}:`, error)
@@ -576,6 +599,29 @@ async function syncOutlookInbox(accountId: string, maxResults: number = 50): Pro
         if (contactId) {
           result.linked++
           await logEmailActivity(account.tenantId, contactId, parsedEmail, 'inbound')
+        } else {
+          // AUTO-IMPORT LEAD: If no contact found, parse email and create lead automatically
+          // This matches Perfex CRM's auto-import leads feature
+          try {
+            const { autoProcessEmail } = await import('@/lib/workflow/email-parser')
+            const autoResult = await autoProcessEmail(
+              account.tenantId,
+              parsedEmail.body,
+              parsedEmail.subject,
+              parsedEmail.fromEmail,
+              parsedEmail.fromName
+            )
+
+            if (autoResult.contactId) {
+              result.created++
+              // Link the email message to the newly created contact
+              await updateEmailMessageWithContact(emailMessage.id, autoResult.contactId)
+              await logEmailActivity(account.tenantId, autoResult.contactId, parsedEmail, 'inbound')
+            }
+          } catch (parseError) {
+            // Silently fail - email parsing is optional enhancement, don't block sync
+            console.debug('[EMAIL_SYNC] Auto-import lead failed (non-critical):', parseError)
+          }
         }
       } catch (error) {
         console.error(`Error syncing Outlook message ${messageData.id}:`, error)

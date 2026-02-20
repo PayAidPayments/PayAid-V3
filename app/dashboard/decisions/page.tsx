@@ -8,15 +8,19 @@ import { redirect } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export default function DecisionsDashboardPage() {
-  const { tenantId } = useAuthStore()
+  const { tenant } = useAuthStore()
 
-  if (!tenantId) {
+  if (!tenant?.id) {
     redirect('/auth/login')
   }
 
   return (
     <div className="flex flex-col h-full">
-      <ModuleTopBar title="AI Decision Automation" module="ai-studio" />
+      <ModuleTopBar 
+        moduleId="ai-studio" 
+        moduleName="AI Decision Automation" 
+        items={[]} 
+      />
       <main className="flex-1 overflow-y-auto">
         <Tabs defaultValue="decisions" className="p-6">
           <TabsList>

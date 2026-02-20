@@ -6,12 +6,11 @@ import { apiRequest } from '@/lib/api/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  CustomSelect,
+  CustomSelectContent,
+  CustomSelectItem,
+  CustomSelectTrigger,
+} from '@/components/ui/custom-select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, TrendingUp, TrendingDown, Calculator, AlertCircle } from 'lucide-react'
@@ -59,7 +58,7 @@ export function ScenarioPlanner() {
     onSuccess: (data) => {
       toast({
         title: 'Scenario Analysis Complete',
-        description: `Revenue change: ₹${(data.data.projectedState.revenueChange / 100000).toFixed(1)}L (${data.data.projectedState.revenueChangePercent.toFixed(1)}%)`,
+        description: `Revenue change: ₹${(data.projectedState.revenueChange / 100000).toFixed(1)}L (${data.projectedState.revenueChangePercent.toFixed(1)}%)`,
       })
     },
     onError: (error) => {
@@ -88,7 +87,7 @@ export function ScenarioPlanner() {
     })
   }
 
-  const result = scenarioMutation.data?.data
+  const result = scenarioMutation.data
 
   return (
     <Card>
@@ -103,17 +102,16 @@ export function ScenarioPlanner() {
           {/* Scenario Type Selection */}
           <div>
             <Label htmlFor="scenario-type">Scenario Type</Label>
-            <Select value={scenarioType} onValueChange={setScenarioType}>
-              <SelectTrigger id="scenario-type">
-                <SelectValue placeholder="Select scenario" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="close-deals">Close Specific Deals</SelectItem>
-                <SelectItem value="lose-customers">Lose Specific Customers</SelectItem>
-                <SelectItem value="upsell-customers">Upsell Specific Customers</SelectItem>
-                <SelectItem value="improve-closure-rate">Improve Closure Rate</SelectItem>
-              </SelectContent>
-            </Select>
+            <CustomSelect value={scenarioType} onValueChange={setScenarioType} placeholder="Select scenario">
+              <CustomSelectTrigger id="scenario-type">
+              </CustomSelectTrigger>
+              <CustomSelectContent>
+                <CustomSelectItem value="close-deals">Close Specific Deals</CustomSelectItem>
+                <CustomSelectItem value="lose-customers">Lose Specific Customers</CustomSelectItem>
+                <CustomSelectItem value="upsell-customers">Upsell Specific Customers</CustomSelectItem>
+                <CustomSelectItem value="improve-closure-rate">Improve Closure Rate</CustomSelectItem>
+              </CustomSelectContent>
+            </CustomSelect>
           </div>
 
           {/* Parameters based on scenario type */}
@@ -156,10 +154,10 @@ export function ScenarioPlanner() {
 
           <Button
             onClick={handleRunScenario}
-            disabled={scenarioMutation.isLoading}
+            disabled={scenarioMutation.isPending}
             className="w-full"
           >
-            {scenarioMutation.isLoading ? (
+            {scenarioMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Running Scenario...
@@ -234,7 +232,7 @@ export function ScenarioPlanner() {
                   <div>
                     <h4 className="text-sm font-semibold mb-2">Recommended Actions</h4>
                     <div className="space-y-2">
-                      {result.actions.map((action, index) => (
+                      {result.actions.map((action: ScenarioResult['actions'][0], index: number) => (
                         <div key={index} className="flex items-center justify-between p-2 border rounded-md">
                           <span className="text-sm">{action.description}</span>
                           <Badge
@@ -259,7 +257,7 @@ export function ScenarioPlanner() {
                   <div>
                     <h4 className="text-sm font-semibold mb-2">Recommendations</h4>
                     <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                      {result.recommendations.map((rec, index) => (
+                      {result.recommendations.map((rec: string, index: number) => (
                         <li key={index}>{rec}</li>
                       ))}
                     </ul>

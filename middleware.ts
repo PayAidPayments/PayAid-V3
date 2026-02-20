@@ -43,22 +43,17 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next()
     }
 
-    // Admin routes - check for super admin
-    if (pathname.startsWith('/admin')) {
+    // Allow /home routes to pass through - client-side handles auth
+    if (pathname.startsWith('/home')) {
+      return NextResponse.next()
+    }
+
+    // Super Admin and Admin routes: only check token presence in middleware.
+    // (Middleware runs on Edge – verifyToken uses Node crypto and fails here.)
+    // Layout runs on Node and will verify token and role.
+    if (pathname.startsWith('/super-admin') || pathname.startsWith('/admin')) {
       const token = getTokenFromRequest(request)
       if (!token) {
-        return NextResponse.redirect(new URL('/login', request.url))
-      }
-
-      try {
-        const decoded = verifyToken(token)
-        const isSuperAdmin = decoded.roles?.includes('super_admin') || 
-                           decoded.role === 'super_admin'
-        
-        if (!isSuperAdmin) {
-          return NextResponse.redirect(new URL('/dashboard', request.url))
-        }
-      } catch {
         return NextResponse.redirect(new URL('/login', request.url))
       }
     }
@@ -162,6 +157,10 @@ function getTokenFromRequest(request: NextRequest): string | null {
 export const config = {
   matcher: [
     '/dashboard/:path*',
+    '/home/:path*',
+    '/super-admin',
+    '/super-admin/:path*',
+    '/admin',
     '/admin/:path*',
     '/crm/:path*',
     '/CRM/:path*',

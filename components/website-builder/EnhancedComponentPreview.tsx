@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, ErrorInfo, Component, ReactNode } from 're
 import { AlertCircle, Monitor, Tablet, Smartphone, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 
 interface ComponentPreviewProps {
   code: string
@@ -265,19 +265,18 @@ export function EnhancedComponentPreview({ code, componentName }: ComponentPrevi
               >
                 <ZoomOut className="h-4 w-4" />
               </Button>
-              <Select value={zoom.toString()} onValueChange={(v) => setZoom(Number(v))}>
-                <SelectTrigger className="w-20 h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="50">50%</SelectItem>
-                  <SelectItem value="75">75%</SelectItem>
-                  <SelectItem value="100">100%</SelectItem>
-                  <SelectItem value="125">125%</SelectItem>
-                  <SelectItem value="150">150%</SelectItem>
-                  <SelectItem value="200">200%</SelectItem>
-                </SelectContent>
-              </Select>
+              <CustomSelect value={zoom.toString()} onValueChange={(v: string) => setZoom(Number(v))} placeholder="Zoom">
+                <CustomSelectTrigger className="w-20 h-8">
+                </CustomSelectTrigger>
+                <CustomSelectContent>
+                  <CustomSelectItem value="50">50%</CustomSelectItem>
+                  <CustomSelectItem value="75">75%</CustomSelectItem>
+                  <CustomSelectItem value="100">100%</CustomSelectItem>
+                  <CustomSelectItem value="125">125%</CustomSelectItem>
+                  <CustomSelectItem value="150">150%</CustomSelectItem>
+                  <CustomSelectItem value="200">200%</CustomSelectItem>
+                </CustomSelectContent>
+              </CustomSelect>
               <Button
                 variant="outline"
                 size="sm"

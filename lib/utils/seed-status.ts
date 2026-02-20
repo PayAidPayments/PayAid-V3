@@ -1,17 +1,17 @@
 // Track ongoing seed operations to prevent concurrent seeding
-const ongoingSeeds = new Map<string, { startTime: number; promise: Promise<any> }>()
+const ongoingSeeds = new Map<string, { startTime: number; promise: Promise<any>; lastError?: string }>()
 const SEED_TIMEOUT_MS = 300000 // 5 minutes max for comprehensive seed
 
 /**
  * Check if a seed operation is currently running for a tenant
  */
-export function isSeedRunning(tenantId?: string): { running: boolean; elapsed?: number } {
+export function isSeedRunning(tenantId?: string): { running: boolean; elapsed?: number; lastError?: string } {
   if (!tenantId) {
     // Check if any seed is running
     for (const [tid, seed] of ongoingSeeds.entries()) {
       const elapsed = Date.now() - seed.startTime
       if (elapsed < SEED_TIMEOUT_MS) {
-        return { running: true, elapsed }
+        return { running: true, elapsed, lastError: seed.lastError }
       }
     }
     return { running: false }
@@ -24,11 +24,19 @@ export function isSeedRunning(tenantId?: string): { running: boolean; elapsed?: 
   
   const elapsed = Date.now() - seed.startTime
   if (elapsed >= SEED_TIMEOUT_MS) {
+    const lastError = seed.lastError
     ongoingSeeds.delete(tenantId)
-    return { running: false }
+    return { running: false, lastError }
   }
   
-  return { running: true, elapsed }
+  return { running: true, elapsed, lastError: seed.lastError }
+}
+
+export function setSeedError(tenantId: string, error: string): void {
+  const seed = ongoingSeeds.get(tenantId)
+  if (seed) {
+    seed.lastError = error
+  }
 }
 
 /**

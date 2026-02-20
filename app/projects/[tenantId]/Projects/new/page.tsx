@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { getAuthHeaders } from '@/lib/api/client'
 import { ArrowLeft } from 'lucide-react'
 
@@ -123,39 +123,39 @@ export default function NewProjectPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="status" className="dark:text-gray-300">Status</Label>
-                  <Select
+                  <CustomSelect
                     value={formData.status}
-                    onValueChange={(value) => setFormData({ ...formData, status: value })}
+                    onValueChange={(value: string) => setFormData({ ...formData, status: value })}
+                    placeholder="Status"
                   >
-                    <SelectTrigger className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      <SelectItem value="PLANNING" className="dark:text-gray-100">Planning</SelectItem>
-                      <SelectItem value="IN_PROGRESS" className="dark:text-gray-100">In Progress</SelectItem>
-                      <SelectItem value="ON_HOLD" className="dark:text-gray-100">On Hold</SelectItem>
-                      <SelectItem value="COMPLETED" className="dark:text-gray-100">Completed</SelectItem>
-                      <SelectItem value="CANCELLED" className="dark:text-gray-100">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <CustomSelectTrigger className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
+                    </CustomSelectTrigger>
+                    <CustomSelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                      <CustomSelectItem value="PLANNING" className="dark:text-gray-100">Planning</CustomSelectItem>
+                      <CustomSelectItem value="IN_PROGRESS" className="dark:text-gray-100">In Progress</CustomSelectItem>
+                      <CustomSelectItem value="ON_HOLD" className="dark:text-gray-100">On Hold</CustomSelectItem>
+                      <CustomSelectItem value="COMPLETED" className="dark:text-gray-100">Completed</CustomSelectItem>
+                      <CustomSelectItem value="CANCELLED" className="dark:text-gray-100">Cancelled</CustomSelectItem>
+                    </CustomSelectContent>
+                  </CustomSelect>
                 </div>
 
                 <div>
                   <Label htmlFor="priority" className="dark:text-gray-300">Priority</Label>
-                  <Select
+                  <CustomSelect
                     value={formData.priority}
-                    onValueChange={(value) => setFormData({ ...formData, priority: value })}
+                    onValueChange={(value: string) => setFormData({ ...formData, priority: value })}
+                    placeholder="Priority"
                   >
-                    <SelectTrigger className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      <SelectItem value="LOW" className="dark:text-gray-100">Low</SelectItem>
-                      <SelectItem value="MEDIUM" className="dark:text-gray-100">Medium</SelectItem>
-                      <SelectItem value="HIGH" className="dark:text-gray-100">High</SelectItem>
-                      <SelectItem value="URGENT" className="dark:text-gray-100">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <CustomSelectTrigger className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
+                    </CustomSelectTrigger>
+                    <CustomSelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                      <CustomSelectItem value="LOW" className="dark:text-gray-100">Low</CustomSelectItem>
+                      <CustomSelectItem value="MEDIUM" className="dark:text-gray-100">Medium</CustomSelectItem>
+                      <CustomSelectItem value="HIGH" className="dark:text-gray-100">High</CustomSelectItem>
+                      <CustomSelectItem value="URGENT" className="dark:text-gray-100">Urgent</CustomSelectItem>
+                    </CustomSelectContent>
+                  </CustomSelect>
                 </div>
               </div>
 

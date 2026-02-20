@@ -1,7 +1,7 @@
-1. Open the command prompt Navigate to "PayaidPayments" directory  execute the following  commands one by one
-	a. npm install express
-	b. npm install jade
-	c. npm intall body-parser
-2. Replace the SALT and API_KEY in app.js file .
-3. Run the command "node app.js" and hit the link "http://localhost:8888/" in the browser you will get the PayaidPayments form .
-4. Fill all mandatory fileds and select mode of transaction LIVE or TEST and submit the form you will redirect to payment gatewaye.
+Similarly, this is how the prospects page is currently looking, the data is going into the second line and the rows look too big. Can you guide with a professional looking layout for the Prospects, Contacts, Customers, Deals pages. The left menu was supposed to be a little wider and a lot of orientation issues.
+
+Could you suggest better layout and can we add any AI feature or touch to these pages.
+Go ahead and enhance the required page if you feel that we are missing out on anything.
+
+The pages should look professional, a touch of AI, futuristic and scalable.
+Use the best model and give a prompt that i can share with cursor and it should not deviate from our instructions and none of the data should be deleted or erased.

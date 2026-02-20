@@ -134,28 +134,32 @@ export default function FinanceRecurringBillingPage() {
     {
       label: 'Recurring Invoices',
       value: invoices.length.toString(),
-      icon: Repeat,
+      icon: <Repeat className="w-5 h-5" />,
       href: `#invoices`,
     },
     {
       label: 'Total Amount',
       value: formatINRStandard(totalRecurringAmount),
-      icon: IndianRupee,
+      icon: <IndianRupee className="w-5 h-5" />,
       href: `#invoices`,
     },
     {
       label: 'Active Invoices',
       value: activeInvoices.toString(),
-      icon: CheckCircle2,
+      icon: <CheckCircle2 className="w-5 h-5" />,
       href: `#invoices`,
     },
     {
       label: 'Dunning Attempts',
       value: dunningAttempts.length.toString(),
-      icon: Clock,
+      icon: <Clock className="w-5 h-5" />,
       href: `#dunning`,
     },
   ]
+
+  if (!moduleConfig) {
+    return <div>Module configuration not found</div>
+  }
 
   return (
     <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>

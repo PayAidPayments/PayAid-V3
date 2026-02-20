@@ -60,8 +60,9 @@ export function FeatureDiscovery() {
     }
 
     // Show first undismissed tip
+    const dismissedArray: string[] = dismissed ? JSON.parse(dismissed) : []
     const firstUndismissed = featureTips.findIndex(
-      (tip) => !dismissed.includes(tip.id)
+      (tip) => !dismissedArray.includes(tip.id)
     )
     if (firstUndismissed !== -1) {
       setTimeout(() => setCurrentTip(firstUndismissed), 1000)

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { DashboardLoading } from '@/components/ui/loading'
 import { TrendingUp, TrendingDown, AlertCircle, Lightbulb, Plus, X } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
@@ -150,18 +150,17 @@ export function WhatIfAnalysis() {
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
             <Label>Scenario Type:</Label>
-            <Select value={activeScenarioType} onValueChange={(v: any) => setActiveScenarioType(v)}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pricing">Pricing Change</SelectItem>
-                <SelectItem value="hiring">Hiring</SelectItem>
-                <SelectItem value="product">Product Launch</SelectItem>
-                <SelectItem value="marketing">Marketing Campaign</SelectItem>
-                <SelectItem value="custom">Custom</SelectItem>
-              </SelectContent>
-            </Select>
+            <CustomSelect value={activeScenarioType} onValueChange={(v: string) => setActiveScenarioType(v as any)} placeholder="Select scenario type">
+              <CustomSelectTrigger className="w-[200px]">
+              </CustomSelectTrigger>
+              <CustomSelectContent>
+                <CustomSelectItem value="pricing">Pricing Change</CustomSelectItem>
+                <CustomSelectItem value="hiring">Hiring</CustomSelectItem>
+                <CustomSelectItem value="product">Product Launch</CustomSelectItem>
+                <CustomSelectItem value="marketing">Marketing Campaign</CustomSelectItem>
+                <CustomSelectItem value="custom">Custom</CustomSelectItem>
+              </CustomSelectContent>
+            </CustomSelect>
             <Button onClick={addScenario} variant="outline">
               <Plus className="h-4 w-4 mr-2" />
               Add Scenario
@@ -180,26 +179,26 @@ export function WhatIfAnalysis() {
                       placeholder="Scenario name"
                       className="font-semibold"
                     />
-                    <Select
+                    <CustomSelect
                       value={scenario.type}
-                      onValueChange={(v: any) =>
+                      onValueChange={(v: string) =>
                         updateScenario(scenario.id, {
-                          type: v,
-                          parameters: getDefaultParameters(v),
+                          type: v as any,
+                          parameters: getDefaultParameters(v as any),
                         })
                       }
+                      placeholder="Select type"
                     >
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pricing">Pricing</SelectItem>
-                        <SelectItem value="hiring">Hiring</SelectItem>
-                        <SelectItem value="product">Product</SelectItem>
-                        <SelectItem value="marketing">Marketing</SelectItem>
-                        <SelectItem value="custom">Custom</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <CustomSelectTrigger className="w-[200px]">
+                      </CustomSelectTrigger>
+                      <CustomSelectContent>
+                        <CustomSelectItem value="pricing">Pricing</CustomSelectItem>
+                        <CustomSelectItem value="hiring">Hiring</CustomSelectItem>
+                        <CustomSelectItem value="product">Product</CustomSelectItem>
+                        <CustomSelectItem value="marketing">Marketing</CustomSelectItem>
+                        <CustomSelectItem value="custom">Custom</CustomSelectItem>
+                      </CustomSelectContent>
+                    </CustomSelect>
                   </div>
                   {scenario.id !== 'scenario-1' && (
                     <Button

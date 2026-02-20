@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { getAuthHeaders, apiRequest } from '@/lib/api/client'
 import { ArrowLeft } from 'lucide-react'
 
@@ -139,21 +139,21 @@ export default function NewTaskPage() {
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="projectId" className="dark:text-gray-300">Project *</Label>
-                <Select
+                <CustomSelect
                   value={formData.projectId}
-                  onValueChange={(value) => setFormData({ ...formData, projectId: value, dependsOnTaskId: '' })}
+                  onValueChange={(value: string) => setFormData({ ...formData, projectId: value, dependsOnTaskId: '' })}
+                  placeholder="Select a project"
                 >
-                  <SelectTrigger required className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
-                    <SelectValue placeholder="Select a project" />
-                  </SelectTrigger>
-                  <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                  <CustomSelectTrigger className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
+                  </CustomSelectTrigger>
+                  <CustomSelectContent className="dark:bg-gray-800 dark:border-gray-700">
                     {projects.map((project: any) => (
-                      <SelectItem key={project.id} value={project.id} className="dark:text-gray-100">
+                      <CustomSelectItem key={project.id} value={project.id} className="dark:text-gray-100">
                         {project.name} {project.code ? `(${project.code})` : ''}
-                      </SelectItem>
+                      </CustomSelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </CustomSelectContent>
+                </CustomSelect>
               </div>
 
               <div>
@@ -183,60 +183,60 @@ export default function NewTaskPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="status" className="dark:text-gray-300">Status</Label>
-                  <Select
+                  <CustomSelect
                     value={formData.status}
-                    onValueChange={(value) => setFormData({ ...formData, status: value })}
+                    onValueChange={(value: string) => setFormData({ ...formData, status: value })}
+                    placeholder="Status"
                   >
-                    <SelectTrigger className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      <SelectItem value="TODO" className="dark:text-gray-100">To Do</SelectItem>
-                      <SelectItem value="IN_PROGRESS" className="dark:text-gray-100">In Progress</SelectItem>
-                      <SelectItem value="IN_REVIEW" className="dark:text-gray-100">In Review</SelectItem>
-                      <SelectItem value="DONE" className="dark:text-gray-100">Done</SelectItem>
-                      <SelectItem value="BLOCKED" className="dark:text-gray-100">Blocked</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <CustomSelectTrigger className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
+                    </CustomSelectTrigger>
+                    <CustomSelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                      <CustomSelectItem value="TODO" className="dark:text-gray-100">To Do</CustomSelectItem>
+                      <CustomSelectItem value="IN_PROGRESS" className="dark:text-gray-100">In Progress</CustomSelectItem>
+                      <CustomSelectItem value="IN_REVIEW" className="dark:text-gray-100">In Review</CustomSelectItem>
+                      <CustomSelectItem value="DONE" className="dark:text-gray-100">Done</CustomSelectItem>
+                      <CustomSelectItem value="BLOCKED" className="dark:text-gray-100">Blocked</CustomSelectItem>
+                    </CustomSelectContent>
+                  </CustomSelect>
                 </div>
 
                 <div>
                   <Label htmlFor="priority" className="dark:text-gray-300">Priority</Label>
-                  <Select
+                  <CustomSelect
                     value={formData.priority}
-                    onValueChange={(value) => setFormData({ ...formData, priority: value })}
+                    onValueChange={(value: string) => setFormData({ ...formData, priority: value })}
+                    placeholder="Priority"
                   >
-                    <SelectTrigger className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      <SelectItem value="LOW" className="dark:text-gray-100">Low</SelectItem>
-                      <SelectItem value="MEDIUM" className="dark:text-gray-100">Medium</SelectItem>
-                      <SelectItem value="HIGH" className="dark:text-gray-100">High</SelectItem>
-                      <SelectItem value="URGENT" className="dark:text-gray-100">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <CustomSelectTrigger className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
+                    </CustomSelectTrigger>
+                    <CustomSelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                      <CustomSelectItem value="LOW" className="dark:text-gray-100">Low</CustomSelectItem>
+                      <CustomSelectItem value="MEDIUM" className="dark:text-gray-100">Medium</CustomSelectItem>
+                      <CustomSelectItem value="HIGH" className="dark:text-gray-100">High</CustomSelectItem>
+                      <CustomSelectItem value="URGENT" className="dark:text-gray-100">Urgent</CustomSelectItem>
+                    </CustomSelectContent>
+                  </CustomSelect>
                 </div>
               </div>
 
               <div>
                 <Label htmlFor="assignedToId" className="dark:text-gray-300">Assign To</Label>
-                <Select
+                <CustomSelect
                   value={formData.assignedToId}
-                  onValueChange={(value) => setFormData({ ...formData, assignedToId: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, assignedToId: value })}
+                  placeholder="Select a user"
                 >
-                  <SelectTrigger className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
-                    <SelectValue placeholder="Select a user" />
-                  </SelectTrigger>
-                  <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                    <SelectItem value="" className="dark:text-gray-100">Unassigned</SelectItem>
+                  <CustomSelectTrigger className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
+                  </CustomSelectTrigger>
+                  <CustomSelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                    <CustomSelectItem value="" className="dark:text-gray-100">Unassigned</CustomSelectItem>
                     {users.map((user: any) => (
-                      <SelectItem key={user.id} value={user.id} className="dark:text-gray-100">
+                      <CustomSelectItem key={user.id} value={user.id} className="dark:text-gray-100">
                         {user.name} ({user.email})
-                      </SelectItem>
+                      </CustomSelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </CustomSelectContent>
+                </CustomSelect>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -266,22 +266,22 @@ export default function NewTaskPage() {
               {formData.projectId && (
                 <div>
                   <Label htmlFor="dependsOnTaskId" className="dark:text-gray-300">Depends On Task</Label>
-                  <Select
+                  <CustomSelect
                     value={formData.dependsOnTaskId}
-                    onValueChange={(value) => setFormData({ ...formData, dependsOnTaskId: value })}
+                    onValueChange={(value: string) => setFormData({ ...formData, dependsOnTaskId: value })}
+                    placeholder="Select a task"
                   >
-                    <SelectTrigger className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
-                      <SelectValue placeholder="Select a task" />
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      <SelectItem value="" className="dark:text-gray-100">No dependency</SelectItem>
+                    <CustomSelectTrigger className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
+                    </CustomSelectTrigger>
+                    <CustomSelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                      <CustomSelectItem value="" className="dark:text-gray-100">No dependency</CustomSelectItem>
                       {tasks.map((task: any) => (
-                        <SelectItem key={task.id} value={task.id} className="dark:text-gray-100">
+                        <CustomSelectItem key={task.id} value={task.id} className="dark:text-gray-100">
                           {task.name} ({task.status})
-                        </SelectItem>
+                        </CustomSelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </CustomSelectContent>
+                  </CustomSelect>
                 </div>
               )}
 

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { apiRequest } from '@/lib/api/client'
 import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -140,42 +140,42 @@ export default function NewTimeEntryPage() {
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="projectId">Project *</Label>
-                  <Select
+                  <CustomSelect
                     value={formData.projectId}
-                    onValueChange={(value) => setFormData({ ...formData, projectId: value, taskId: '' })}
+                    onValueChange={(value: string) => setFormData({ ...formData, projectId: value, taskId: '' })}
+                    placeholder="Select a project"
                   >
-                    <SelectTrigger required>
-                      <SelectValue placeholder="Select a project" />
-                    </SelectTrigger>
-                    <SelectContent>
+                    <CustomSelectTrigger>
+                    </CustomSelectTrigger>
+                    <CustomSelectContent>
                       {projects.map((project: any) => (
-                        <SelectItem key={project.id} value={project.id}>
+                        <CustomSelectItem key={project.id} value={project.id}>
                           {project.name} {project.code ? `(${project.code})` : ''}
-                        </SelectItem>
+                        </CustomSelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </CustomSelectContent>
+                  </CustomSelect>
                 </div>
 
                 {formData.projectId && (
                   <div>
                     <Label htmlFor="taskId">Task (Optional)</Label>
-                    <Select
+                    <CustomSelect
                       value={formData.taskId}
-                      onValueChange={(value) => setFormData({ ...formData, taskId: value })}
+                      onValueChange={(value: string) => setFormData({ ...formData, taskId: value })}
+                      placeholder="Select a task"
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a task" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">No specific task</SelectItem>
+                      <CustomSelectTrigger>
+                      </CustomSelectTrigger>
+                      <CustomSelectContent>
+                        <CustomSelectItem value="">No specific task</CustomSelectItem>
                         {tasks.map((task: any) => (
-                          <SelectItem key={task.id} value={task.id}>
+                          <CustomSelectItem key={task.id} value={task.id}>
                             {task.name} ({task.status})
-                          </SelectItem>
+                          </CustomSelectItem>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </CustomSelectContent>
+                    </CustomSelect>
                   </div>
                 )}
 

@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Enable standalone output for Docker production builds
-  output: 'standalone',
+  // Vercel uses serverless functions, not standalone builds
+  // Only enable standalone for Docker/self-hosted deployments
+  // output: 'standalone', // Disabled for Vercel compatibility
   // Enable response compression (gzip/brotli) for better performance
   compress: true,
   // Disable Turbopack - use webpack for better compatibility with native modules
@@ -170,6 +171,11 @@ const nextConfig = {
       {
         source: '/dashboard/:tenantId/:path*',
         destination: '/dashboard/:path*',
+      },
+      // Serve /home/:tenantId via tenant-home route (avoids app/home/[tenantId] 404 on Windows)
+      {
+        source: '/home/:tenantId',
+        destination: '/tenant-home/:tenantId',
       },
     ]
   },

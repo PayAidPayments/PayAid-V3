@@ -21,6 +21,10 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
 
+    if (!user.tenantId) {
+      return NextResponse.json({ error: 'Tenant ID is required' }, { status: 400 })
+    }
+
     const where: any = {
       tenantId: user.tenantId,
     }
@@ -74,6 +78,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = createCallSchema.parse(body)
 
+    const tenantId = user.tenantId
+    if (!tenantId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     // TODO: Integrate with Twilio to initiate call
     // For now, create call record
     const call = await prisma.aICall.create({
@@ -82,7 +91,7 @@ export async function POST(request: NextRequest) {
         direction: validated.direction,
         status: 'RINGING',
         handledByAI: true,
-        tenantId: user.tenantId,
+        tenantId,
       },
     })
 

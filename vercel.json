@@ -6,6 +6,17 @@
   "env": {
     "PRISMA_GENERATE_DATAPROXY": "false"
   },
+  "functions": {
+    "app/api/admin/seed-demo-data/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/finance/ensure-demo-data/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/v1/voice-agents/**/stream/route.ts": {
+      "maxDuration": 300
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/process-scheduled-reports",

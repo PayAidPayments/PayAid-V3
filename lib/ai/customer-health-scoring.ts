@@ -229,7 +229,6 @@ async function getHealthScoreComponents(
   const interactions = await prisma.interaction.findMany({
     where: {
       contactId,
-      tenantId,
       createdAt: { gte: ninetyDaysAgo },
     },
     select: { createdAt: true },
@@ -245,16 +244,16 @@ async function getHealthScoreComponents(
   const supportInteractions = await prisma.interaction.findMany({
     where: {
       contactId,
-      tenantId,
       type: 'support',
       createdAt: { gte: thirtyDaysAgo },
     },
   })
 
   // Payment history (assuming there's an invoice/payment system)
+  // Invoice uses customerId, not contactId
   const invoices = await prisma.invoice.findMany({
     where: {
-      contactId,
+      customerId: contactId,
       tenantId,
     },
     select: {
@@ -267,44 +266,60 @@ async function getHealthScoreComponents(
 
   const totalPayments = invoices.length
   const onTimePayments = invoices.filter(
-    (inv) => inv.status === 'paid' && inv.paidAt && inv.paidAt <= inv.dueDate
+    (inv) => inv.status === 'paid' && inv.paidAt && inv.dueDate && inv.paidAt <= inv.dueDate
   ).length
   const latePayments = invoices.filter(
-    (inv) => inv.status === 'paid' && inv.paidAt && inv.paidAt > inv.dueDate
+    (inv) => inv.status === 'paid' && inv.paidAt && inv.dueDate && inv.paidAt > inv.dueDate
   ).length
   const daysOverdue = invoices
-    .filter((inv) => inv.status === 'unpaid' && inv.dueDate < now)
+    .filter((inv) => inv.status === 'unpaid' && inv.dueDate && inv.dueDate < now)
     .reduce((sum, inv) => {
-      const days = Math.floor((now.getTime() - inv.dueDate.getTime()) / (1000 * 60 * 60 * 24))
+      const days = Math.floor((now.getTime() - (inv.dueDate!.getTime())) / (1000 * 60 * 60 * 24))
       return sum + days
     }, 0)
 
   // Engagement metrics
+  // Interaction doesn't have metadata field, use notes instead
   const emailInteractions = await prisma.interaction.findMany({
     where: {
       contactId,
-      tenantId,
       type: 'email',
       createdAt: { gte: thirtyDaysAgo },
     },
     select: {
-      metadata: true,
+      notes: true,
     },
   })
 
+  // Use notes field to infer engagement (if notes contain "opened" or similar)
   const emailOpens = emailInteractions.filter(
-    (e) => (e.metadata as any)?.emailOpened === true
+    (e) => e.notes && (e.notes.toLowerCase().includes('opened') || e.notes.toLowerCase().includes('read'))
   ).length
   const emailOpenRate = emailInteractions.length > 0 ? (emailOpens / emailInteractions.length) * 100 : 0
 
   // Last login (if user account exists)
+  // User model doesn't have direct tenantId, check through TenantMember
+  // Find user by email first, then check tenant membership
   const user = await prisma.user.findFirst({
     where: {
-      email: contact.email,
-      tenantId,
+      email: contact.email || undefined,
     },
-    select: { lastLoginAt: true },
+    select: { id: true, lastLoginAt: true },
   })
+  
+  // Check if user is member of this tenant
+  let lastLoginAt: Date | null = null
+  if (user) {
+    const tenantMember = await prisma.tenantMember.findFirst({
+      where: {
+        tenantId,
+        userId: user.id,
+      },
+    })
+    if (tenantMember) {
+      lastLoginAt = user.lastLoginAt
+    }
+  }
 
   const lastLoginDays = user?.lastLoginAt
     ? Math.floor((now.getTime() - user.lastLoginAt.getTime()) / (1000 * 60 * 60 * 24))

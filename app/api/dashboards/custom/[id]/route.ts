@@ -23,7 +23,7 @@ export async function GET(
       where: {
         id: params.id,
         tenantId,
-        type: 'custom_dashboard',
+        reportType: 'custom_dashboard',
       },
     })
 
@@ -69,7 +69,7 @@ export async function PUT(
       where: {
         id: params.id,
         tenantId,
-        type: 'custom_dashboard',
+        reportType: 'custom_dashboard',
       },
     })
 
@@ -80,15 +80,16 @@ export async function PUT(
       )
     }
 
+    const filters = dashboard.filters as any
     const updated = await prisma.customReport.update({
       where: { id: params.id },
       data: {
         name: validated.name,
-        config: validated.widgets
+        filters: validated.widgets
           ? {
-              ...((dashboard.config as any) || {}),
+              ...(filters || {}),
               widgets: validated.widgets,
-            }
+            } as any
           : undefined,
       },
     })
@@ -131,7 +132,7 @@ export async function DELETE(
       where: {
         id: params.id,
         tenantId,
-        type: 'custom_dashboard',
+        reportType: 'custom_dashboard',
       },
     })
 

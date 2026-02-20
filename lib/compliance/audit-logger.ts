@@ -29,7 +29,7 @@ export async function logAudit(entry: AuditLogEntry): Promise<void> {
         changedBy: entry.userId,
         tenantId: entry.tenantId,
         changeSummary: `${entry.action}: ${entry.context}`, // Combine action and context
-        beforeSnapshot: null, // Not applicable for compliance logs
+        beforeSnapshot: {}, // Not applicable for compliance logs
         afterSnapshot: entry.metadata || {}, // Store metadata in afterSnapshot
         timestamp: new Date(),
       },

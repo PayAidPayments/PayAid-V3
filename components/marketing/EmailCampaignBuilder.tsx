@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Calendar } from '@/components/ui/calendar'
@@ -243,10 +243,10 @@ export function EmailCampaignBuilder({ tenantId, onSave, onCancel }: EmailCampai
                     <Calendar
                       mode="single"
                       selected={campaignData.scheduledFor || undefined}
-                      onSelect={(date) =>
-                        setCampaignData({ ...campaignData, scheduledFor: date || null })
-                      }
-                      initialFocus
+                      onSelect={(date) => {
+                        const selectedDate = date instanceof Date ? date : (date as any)?.from
+                        setCampaignData({ ...campaignData, scheduledFor: selectedDate || null })
+                      }}
                     />
                   </PopoverContent>
                 </Popover>

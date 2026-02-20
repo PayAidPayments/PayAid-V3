@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       
       // Simple risk calculation based on attendance and leave patterns
       const attendanceRate = emp.attendanceRecords.length / 30
-      const leaveDays = emp.leaveRequests.reduce((sum, lr) => sum + (lr.days || 0), 0)
+      const leaveDays = emp.leaveRequests.reduce((sum, lr) => sum + Number(lr.days || 0), 0)
       const riskScore = (1 - attendanceRate) * 50 + (leaveDays > 10 ? 30 : 0)
       turnoverRiskByDept[dept].risk += riskScore
     })

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { MapPin, Users, TrendingUp } from 'lucide-react'
 
 interface Territory {
@@ -118,19 +118,18 @@ export function TerritoryMap({ tenantId }: TerritoryMapProps) {
               <CardTitle>Territory Map</CardTitle>
               <CardDescription>Geographic territory visualization</CardDescription>
             </div>
-            <Select value={selectedState} onValueChange={setSelectedState}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by state" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All States</SelectItem>
+            <CustomSelect value={selectedState} onValueChange={(value: string) => setSelectedState(value)} placeholder="Filter by state">
+              <CustomSelectTrigger className="w-48">
+              </CustomSelectTrigger>
+              <CustomSelectContent>
+                <CustomSelectItem value="all">All States</CustomSelectItem>
                 {indianStates.map((state) => (
-                  <SelectItem key={state} value={state}>
+                  <CustomSelectItem key={state} value={state}>
                     {state}
-                  </SelectItem>
+                  </CustomSelectItem>
                 ))}
-              </SelectContent>
-            </Select>
+              </CustomSelectContent>
+            </CustomSelect>
           </div>
         </CardHeader>
         <CardContent>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { createPayAidPayments } from '@/lib/payments/payaid'
 import { getTenantPayAidConfig, getTenantPaymentSettings } from '@/lib/payments/get-tenant-payment-config'
+import { convertCurrency } from '@/lib/currency/converter'
 
 /**
  * POST /api/payments/webhook
@@ -85,7 +86,25 @@ export async function POST(request: NextRequest) {
       paymentStatus = 'failed'
     }
 
-    // Update invoice
+    // Handle currency conversion for payment recording
+    const paymentAmount = parseFloat(body.amount || '0')
+    const invoiceCurrency = invoice.currency || invoice.tenant?.defaultCurrency || 'INR'
+    const tenantDefaultCurrency = invoice.tenant?.defaultCurrency || 'INR'
+    
+    let convertedAmount = paymentAmount
+    let exchangeRate = invoice.exchangeRate || 1
+    
+    // If payment currency differs from invoice currency, convert
+    if (invoiceCurrency !== tenantDefaultCurrency && invoice.exchangeRate) {
+      convertedAmount = convertCurrency(
+        paymentAmount,
+        invoiceCurrency,
+        tenantDefaultCurrency,
+        invoice.exchangeRate
+      )
+    }
+
+    // Update invoice with currency conversion
     await prisma.invoice.update({
       where: { id: invoice.id },
       data: {
@@ -96,6 +115,10 @@ export async function POST(request: NextRequest) {
         paymentDatetime: body.payment_datetime ? new Date(body.payment_datetime) : null,
         status: invoiceStatus,
         paidAt,
+        // Store converted amount if different currency
+        ...(invoiceCurrency !== tenantDefaultCurrency && {
+          baseCurrencyAmount: convertedAmount,
+        }),
       },
     })
 

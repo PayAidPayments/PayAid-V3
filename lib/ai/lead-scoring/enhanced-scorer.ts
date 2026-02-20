@@ -99,9 +99,9 @@ export async function calculateEnhancedScore(
   
   // Calculate demographic fit score (0-25 points)
   const companySizeScore = features.companySize === 'large' ? 10 : features.companySize === 'medium' ? 7 : 3
-  const industryScore = getIndustryScore(features.industry) // 0-8 points
-  const geographyScore = getGeographyScore(features.geography) // 0-5 points
-  const revenueScore = features.revenue > 1000000 ? 2 : features.revenue > 100000 ? 1 : 0
+  const industryScore = getIndustryScore(features.industry ?? '') // 0-8 points
+  const geographyScore = getGeographyScore(features.geography ?? '') // 0-5 points
+  const revenueScore = (features.revenue ?? 0) > 1000000 ? 2 : (features.revenue ?? 0) > 100000 ? 1 : 0
   
   const demographicTotal = Math.min(
     companySizeScore + industryScore + geographyScore + revenueScore,
