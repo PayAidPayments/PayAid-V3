@@ -80,6 +80,7 @@ export async function collectHistoricalDealData(
               id: true,
               stage: true,
               value: true,
+              probability: true,
             },
           },
         },
@@ -227,7 +228,7 @@ export async function extractContactFeatures(contactId: string): Promise<Histori
   // Behavioral signals
   const timeInApp = 0
   const featureUsage: string[] = []
-  const paymentIntent = contact.deals?.some((d) => d.probability && d.probability > 70) || false
+  const paymentIntent = contact.deals?.some((d: any) => d.probability && d.probability > 70) || false
   const documentDownloads = 0
 
   // Historical patterns

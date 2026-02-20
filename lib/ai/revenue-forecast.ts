@@ -40,12 +40,16 @@ export async function generateRevenueForecast(
   const deals = await prisma.deal.findMany({
     where: {
       tenantId,
-      status: { notIn: ['won', 'lost'] },
+      stage: { notIn: ['won', 'lost'] },
     },
     include: {
-      interactions: {
-        orderBy: { createdAt: 'desc' },
-        take: 1,
+      contact: {
+        include: {
+          interactions: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
       },
     },
   })

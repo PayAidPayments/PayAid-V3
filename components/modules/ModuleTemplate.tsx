@@ -28,6 +28,10 @@ export default function ModuleTemplatePage({ tenantId }: ModuleTemplateProps) {
   // const [data, setData] = useState(null)
   // useEffect(() => { ... }, [tenantId])
 
+  if (!moduleConfig) {
+    return <div>Module configuration not found</div>
+  }
+
   // Define top bar navigation items
   const topBarItems = [
     { name: 'Home', href: `/${moduleConfig.id}/${tenantId}/Home` },

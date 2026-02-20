@@ -13,6 +13,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <motion.input
         type={type}
+        {...(props as any)}
         className={cn(
           // Base styles - Design System compliant
           'flex w-full rounded-lg border',
@@ -36,7 +37,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         suppressHydrationWarning
         whileFocus={{ scale: 1.01 }}
         transition={{ duration: 0.15 }}
-        {...props}
+        {...(props as any)}
       />
     )
   }

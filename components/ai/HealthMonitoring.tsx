@@ -148,8 +148,8 @@ export function HealthMonitoring({ tenantId, stats }: HealthMonitoringProps) {
 
   if (isLoading) {
     return (
-      <Card className="border-0 shadow-md">
-        <CardHeader>
+      <Card className="border-0 shadow-md rounded-xl">
+        <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Activity className="w-5 h-5 text-purple-500" />
             Health Monitoring
@@ -165,24 +165,24 @@ export function HealthMonitoring({ tenantId, stats }: HealthMonitoringProps) {
   }
 
   return (
-    <Card className="border-0 shadow-md">
-      <CardHeader>
+    <Card className="border-0 shadow-md rounded-xl" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardHeader className="pb-3 flex-shrink-0">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <Activity className="w-5 h-5 text-purple-500" />
           Health Monitoring
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {/* Overall Health Score */}
-        <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-lg border border-purple-200">
+        <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-lg border border-purple-200 flex-shrink-0">
           <div className="flex items-center justify-center gap-3 mb-2">
-            <Heart className="w-8 h-8 text-purple-500" />
+            <Heart className="w-6 h-6 text-purple-500" />
             <div>
-              <p className="text-sm text-gray-600">Overall Health Score</p>
-              <p className="text-4xl font-bold text-purple-600">{overallHealth}%</p>
+              <p className="text-xs text-gray-600">Overall Health Score</p>
+              <p className="text-3xl font-bold text-purple-600">{overallHealth}%</p>
             </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 mt-4 overflow-hidden">
+          <div className="w-full bg-gray-200 rounded-full h-2 mt-3 overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${overallHealth}%` }}
@@ -195,25 +195,25 @@ export function HealthMonitoring({ tenantId, stats }: HealthMonitoringProps) {
         </div>
 
         {/* Individual Metrics */}
-        <div className="space-y-3">
-          {(Array.isArray(metrics) ? metrics : []).map((metric, index) => (
+        <div className="space-y-2 flex-1 overflow-y-auto">
+          {(Array.isArray(metrics) ? metrics : []).slice(0, 4).map((metric, index) => (
             <motion.div
               key={metric.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+              className="p-3 bg-gray-50 rounded-lg border border-gray-200"
             >
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
                   {getStatusIcon(metric.status)}
-                  <span className="text-sm font-semibold text-gray-900">{metric.name}</span>
+                  <span className="text-xs font-semibold text-gray-900">{metric.name}</span>
                 </div>
-                <span className={`text-sm font-bold ${getStatusColor(metric.status)}`}>
+                <span className={`text-xs font-bold ${getStatusColor(metric.status)}`}>
                   {Math.round(metric.value)}%
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${metric.value}%` }}

@@ -9,9 +9,11 @@ import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useDeals, useDeleteDeal } from '@/lib/hooks/use-api'
 import { useAuthStore } from '@/lib/stores/auth'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { format, isThisMonth, isPast, isWithinInterval } from 'date-fns'
 import { Briefcase, TrendingUp, CheckCircle2, XCircle, Calendar, DollarSign, AlertCircle, Filter } from 'lucide-react'
 // ModuleTopBar is now in layout.tsx
@@ -90,63 +92,77 @@ export default function CRMDealsPage() {
     const [stageFilter, setStageFilter] = useState<string>('')
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
     const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
-    const { data, isLoading, error: dealsError } = useDeals({ page, limit: 1000, stage: stageFilter || undefined })
+    const queryClient = useQueryClient()
+    // Use bypassCache on initial load to ensure fresh data after seeding.
+    // Pass tenantId from the route so the API returns deals for the tenant we're viewing.
+    const { data, isLoading, error: dealsError, refetch } = useDeals({ 
+      page, 
+      limit: 1000, 
+      stage: stageFilter || undefined,
+      bypassCache: true, // Always bypass cache to get fresh data
+      tenantId: tenantId || undefined,
+    })
     const deleteDeal = useDeleteDeal()
     const hasCheckedDataRef = useRef(false)
+    const hasTriggeredSeedRef = useRef(false)
     const [pageError, setPageError] = useState<Error | null>(null)
+    const [seedStatus, setSeedStatus] = useState<{ running: boolean; elapsed?: number } | null>(null)
+    const [diagnosticsOpen, setDiagnosticsOpen] = useState(false)
+    const [diagnosticsResult, setDiagnosticsResult] = useState<string | null>(null)
+    const hasTriggeredEnsureDemoRef = useRef(false)
 
-  // Check if demo data exists and seed if needed (only once) - Run in background
-  useEffect(() => {
-    if (!tenantId || !token || hasCheckedDataRef.current) return
-    
-    hasCheckedDataRef.current = true // Mark as checked to prevent multiple checks
-    
-    // Run in background after initial render - don't block UI
-    const checkAndSeedData = async () => {
-      try {
-        // Check if deals exist
-        const dealsResponse = await fetch(`/api/deals?limit=1`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        })
-        
-        if (dealsResponse.ok) {
-          const dealsData = await dealsResponse.json()
-          
-          // If no deals, seed it automatically in background
-          if (!dealsData.deals || dealsData.deals.length === 0) {
-            console.log('[DEALS_PAGE] No deals found, seeding demo data in background...')
-            try {
-              // Use background mode to avoid timeout - don't await
-              fetch('/api/admin/seed-demo-data?background=true', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-              }).then(seedResponse => {
-                if (seedResponse.ok) {
-                  console.log('[DEALS_PAGE] Demo data seeding started in background')
-                  // Reload page after longer delay (background seeding takes 30-60 seconds)
-                  setTimeout(() => {
-                    window.location.reload()
-                  }, 60000) // Wait 60 seconds for background seeding
-                } else {
-                  console.error('[DEALS_PAGE] Failed to start seed:', seedResponse.status)
-                }
-              }).catch(seedError => {
-                console.error('[DEALS_PAGE] Failed to seed demo data:', seedError)
-              })
-            } catch (seedError) {
-              console.error('[DEALS_PAGE] Failed to seed demo data:', seedError)
+    // When page loads with 0 deals, ensure demo data once so demos are never empty
+    useEffect(() => {
+      if (
+        hasTriggeredEnsureDemoRef.current ||
+        !tenantId ||
+        !token ||
+        isLoading ||
+        !data
+      ) return
+      const total = data?.pagination?.total ?? 0
+      const dealsLen = data?.deals?.length ?? 0
+      if (total > 0 || dealsLen > 0) return
+      hasTriggeredEnsureDemoRef.current = true
+      ;(async () => {
+        try {
+          const res = await fetch(
+            `/api/admin/ensure-demo-data?tenantId=${encodeURIComponent(tenantId)}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          )
+          if (res.ok) {
+            const json = await res.json()
+            if (json.created?.deals > 0 || json.created?.tasks > 0) {
+              queryClient.invalidateQueries({ queryKey: ['deals'] })
+              await refetch()
             }
           }
+        } catch (_) {}
+      })()
+    }, [tenantId, token, isLoading, data, refetch, queryClient])
+
+    // Function to refresh deals data (bypass cache)
+    const refreshDeals = async () => {
+      if (!token) return
+      // Invalidate React Query cache
+      queryClient.invalidateQueries({ queryKey: ['deals'] })
+      // Use refetch from useDeals hook which already has bypassCache=true
+      try {
+        const result = await refetch()
+        if (result.data) {
+          console.log('[DEALS_PAGE] Refreshed data:', { 
+            dealsCount: result.data?.deals?.length || 0, 
+            total: result.data?.pagination?.total || 0 
+          })
         }
-      } catch (checkError) {
-        console.error('[DEALS_PAGE] Failed to check deals data:', checkError)
+      } catch (error) {
+        console.error('[DEALS_PAGE] Refresh error:', error)
       }
     }
-    
-    // Run after initial render - don't block
-    const timeoutId = setTimeout(checkAndSeedData, 1000)
-    return () => clearTimeout(timeoutId)
-  }, [tenantId, token])
+
+  // DISABLED: Automatic seed checking to prevent refresh loops
+  // Users must manually click "Seed Demo Data" button if needed
+  // This prevents the page from refreshing in a loop
 
   // Handle URL query parameters - use shared validation utility
   useEffect(() => {
@@ -631,37 +647,212 @@ export default function CRMDealsPage() {
                             alert('Please log in first')
                             return
                           }
-                          // Use background mode to avoid timeout
-                          const response = await fetch('/api/admin/seed-demo-data?background=true', {
+                          // Use comprehensive seed with background mode to avoid timeout
+                          // Comprehensive seed creates all data including 200 deals, 150 contacts, etc.
+                          const response = await fetch(`/api/admin/seed-demo-data?background=true&comprehensive=true&tenantId=${encodeURIComponent(tenantId)}`, {
                             method: 'POST',
                             headers: { 'Authorization': `Bearer ${token}` },
                           })
                           if (response.ok) {
                             const data = await response.json()
-                            if (data.background) {
-                              alert('Seed operation started in background. This may take 30-60 seconds. Please refresh the page in a minute.')
-                            } else {
-                              alert('Demo data seeded successfully! Please refresh the page.')
-                              window.location.reload()
-                            }
+                            setSeedStatus({ running: true, elapsed: 0 })
+                            console.log(`[DEALS_PAGE] Seed started:`, data)
+                            
+                            // Start polling for seed completion
+                            let pollCount = 0
+                            const maxPolls = 60 // 5 minutes max (60 * 5s = 300s)
+                            const pollInterval = setInterval(async () => {
+                              pollCount++
+                              try {
+                                const statusResponse = await fetch(`/api/admin/seed-demo-data?checkStatus=true&tenantId=${tenantId}`, {
+                                  headers: { 'Authorization': `Bearer ${token}` },
+                                })
+                                if (statusResponse.ok) {
+                                  const statusData = await statusResponse.json()
+                                  console.log(`[DEALS_PAGE] Seed status check ${pollCount}:`, statusData)
+                                  
+                                  // Check if seed likely completed (data exists but tracking shows running)
+                                  const likelyCompleted = statusData.likelyCompleted || (statusData.hasData && !statusData.running)
+                                  const isRunning = statusData.running && !likelyCompleted
+                                  
+                                  // Show error if one occurred
+                                  if (statusData.lastError) {
+                                    console.error(`[DEALS_PAGE] ❌ Seed error:`, statusData.lastError)
+                                    alert(`Seed error: ${statusData.lastError}`)
+                                  }
+                                  
+                                  setSeedStatus({ running: isRunning, elapsed: statusData.elapsed })
+                                  
+                                  if (!isRunning || pollCount >= maxPolls) {
+                                    clearInterval(pollInterval)
+                                    if (!isRunning || likelyCompleted) {
+                                      console.log(`[DEALS_PAGE] Seed completed (likelyCompleted: ${likelyCompleted}), refreshing data...`)
+                                      await refreshDeals()
+                                      // Show success message
+                                      if (statusData.dataCounts) {
+                                        const { contacts, deals, tasks } = statusData.dataCounts
+                                        console.log(`[DEALS_PAGE] ✅ Seed completed! Created: ${contacts} contacts, ${deals} deals, ${tasks} tasks`)
+                                      }
+                                    } else {
+                                      console.warn(`[DEALS_PAGE] ⚠️ Seed polling timed out after ${maxPolls} checks`)
+                                    }
+                                  }
+                                }
+                              } catch (e) {
+                                console.error(`[DEALS_PAGE] Status check error:`, e)
+                                if (pollCount >= maxPolls) {
+                                  clearInterval(pollInterval)
+                                }
+                              }
+                            }, 5000) // Poll every 5 seconds
                           } else {
                             const errorData = await response.json().catch(() => ({}))
+                            setSeedStatus({ running: false })
                             alert(`Failed to seed data: ${errorData.message || 'Unknown error'}. ${errorData.suggestion || ''}`)
                           }
                         } catch (err) {
                           console.error('Seed error:', err)
                           alert('Error seeding data. Please check console.')
+                          setSeedStatus({ running: false })
                         }
                       }}
                     >
-                      Seed Demo Data
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                          Seed Demo Data
+                        </Button>
+                        <Dialog open={diagnosticsOpen} onOpenChange={setDiagnosticsOpen}>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  if (!token) {
+                                    alert('Please log in first')
+                                    return
+                                  }
+                                  console.log(`[DEALS_PAGE] Running seed diagnosis...`)
+                                  setDiagnosticsOpen(true)
+                                  setDiagnosticsResult('Running diagnosis...')
+                                  
+                                  const response = await fetch(`/api/admin/seed-diagnosis?tenantId=${encodeURIComponent(tenantId)}`, {
+                                    headers: { 'Authorization': `Bearer ${token}` },
+                                  })
+                                  if (response.ok) {
+                                    const diagnostics = await response.json()
+                                    console.log(`[DEALS_PAGE] Diagnosis results:`, diagnostics)
+                                    
+                                    // Format diagnosis results for display
+                                    let message = `🔍 Seed Diagnosis Results\n\n`
+                                    message += `Timestamp: ${diagnostics.timestamp || new Date().toISOString()}\n`
+                                    message += `Tenant ID: ${diagnostics.tenantId}\n\n`
+                                    message += `Status: ${diagnostics.summary?.status || 'unknown'}\n`
+                                    message += `Checks: ${diagnostics.summary?.passedChecks || 0}/${diagnostics.summary?.totalChecks || 0} passed\n`
+                                    message += `Failed: ${diagnostics.summary?.failedChecks || 0}\n`
+                                    message += `Warnings: ${diagnostics.summary?.warnings || 0}\n\n`
+                                    
+                                    if (diagnostics.errors.length > 0) {
+                                      message += `❌ ERRORS:\n${diagnostics.errors.map((e: string) => `  • ${e}`).join('\n')}\n\n`
+                                    }
+                                    
+                                    if (diagnostics.warnings.length > 0) {
+                                      message += `⚠️ WARNINGS:\n${diagnostics.warnings.map((w: string) => `  • ${w}`).join('\n')}\n\n`
+                                    }
+                                    
+                                    if (diagnostics.recommendations.length > 0) {
+                                      message += `💡 RECOMMENDATIONS:\n${diagnostics.recommendations.map((r: string) => `  • ${r}`).join('\n')}\n\n`
+                                    }
+                                    
+                                    // Add check details
+                                    message += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
+                                    message += `DETAILED CHECKS:\n`
+                                    message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`
+                                    Object.entries(diagnostics.checks || {}).forEach(([key, check]: [string, any]) => {
+                                      const icon = check.status === 'ok' ? '✅' : check.status === 'error' ? '❌' : check.status === 'warning' ? '⚠️' : 'ℹ️'
+                                      message += `${icon} ${key.toUpperCase().replace(/([A-Z])/g, ' $1').trim()}:\n`
+                                      message += `   Status: ${check.status}\n`
+                                      message += `   Message: ${check.message}\n`
+                                      if (check.error) {
+                                        message += `   Error: ${check.error}\n`
+                                      }
+                                      if (check.errorCode) {
+                                        message += `   Error Code: ${check.errorCode}\n`
+                                      }
+                                      if (check.errorMeta) {
+                                        message += `   Error Meta: ${JSON.stringify(check.errorMeta)}\n`
+                                      }
+                                      if (check.count !== undefined) {
+                                        message += `   Count: ${check.count}\n`
+                                      }
+                                      message += `\n`
+                                    })
+                                    
+                                    // Add JSON for advanced users
+                                    message += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
+                                    message += `RAW JSON (for developers):\n`
+                                    message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`
+                                    message += JSON.stringify(diagnostics, null, 2)
+                                    
+                                    setDiagnosticsResult(message)
+                                    
+                                    // Also log to console for detailed inspection
+                                    console.log(`[DEALS_PAGE] Full diagnosis:`, JSON.stringify(diagnostics, null, 2))
+                                  } else {
+                                    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+                                    setDiagnosticsResult(`❌ Diagnosis failed:\n\n${error.error || error.message || 'Unknown error'}`)
+                                  }
+                                } catch (err) {
+                                  console.error('Diagnosis error:', err)
+                                  setDiagnosticsResult(`❌ Error running diagnosis:\n\n${err instanceof Error ? err.message : String(err)}`)
+                                }
+                              }}
+                            >
+                              🔍 Run Diagnosis
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                            <DialogHeader>
+                              <DialogTitle>Seed Diagnosis Results</DialogTitle>
+                              <DialogDescription>
+                                Copy the results below to share with developers or for troubleshooting
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="flex-1 overflow-hidden flex flex-col">
+                              <div className="flex justify-end mb-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    if (diagnosticsResult) {
+                                      navigator.clipboard.writeText(diagnosticsResult).then(() => {
+                                        alert('Diagnosis results copied to clipboard!')
+                                      }).catch(() => {
+                                        alert('Failed to copy. Please select and copy manually.')
+                                      })
+                                    }
+                                  }}
+                                >
+                                  📋 Copy to Clipboard
+                                </Button>
+                              </div>
+                              <textarea
+                                readOnly
+                                value={diagnosticsResult || 'Running diagnosis...'}
+                                className="flex-1 w-full p-4 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900 text-sm font-mono resize-none"
+                                style={{ minHeight: '400px' }}
+                                onClick={(e) => {
+                                  // Select all text when clicked for easy copying
+                                  ;(e.target as HTMLTextAreaElement).select()
+                                }}
+                              />
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             )}
-          </div>
-        )}
 
         {/* Show all deals when no filter is selected */}
         {!selectedCategory && (
@@ -697,41 +888,249 @@ export default function CRMDealsPage() {
               {deals.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-gray-600 dark:text-gray-400 mb-4">No deals found</p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    {isLoading ? 'Loading deals...' : 'Deals will appear here once created. The seed script should create demo deals automatically.'}
-                  </p>
-                  <div className="flex gap-2 justify-center">
-                    <Link href={`/crm/${tenantId}/Deals/new`}>
-                      <Button>Create Your First Deal</Button>
-                    </Link>
-                    <Button 
-                      variant="outline"
-                      onClick={async () => {
-                        try {
-                          const token = useAuthStore.getState().token
-                          if (!token) {
-                            alert('Please log in first')
-                            return
-                          }
-                          const response = await fetch('/api/admin/seed-demo-data', {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${token}` },
-                          })
-                          if (response.ok) {
-                            alert('Demo data seeded successfully! Please refresh the page.')
-                            window.location.reload()
-                          } else {
-                            alert('Failed to seed data. Please check console.')
-                          }
-                        } catch (err) {
-                          console.error('Seed error:', err)
-                          alert('Error seeding data. Please check console.')
-                        }
-                      }}
-                    >
-                      Seed Demo Data
-                    </Button>
-                  </div>
+                  {seedStatus?.running ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent mx-auto mb-4"></div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                        Seeding demo data in progress...
+                      </p>
+                      <p className="text-xs text-gray-500 mb-4">
+                        {seedStatus.elapsed ? `Running for ${Math.floor(seedStatus.elapsed / 1000)} seconds` : 'This may take 30-60 seconds'}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        The page will refresh automatically when complete
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-500 mb-4">
+                        {isLoading ? 'Loading deals...' : 'Deals will appear here once created. The seed script should create demo deals automatically.'}
+                      </p>
+                      <div className="flex gap-2 justify-center">
+                        <Link href={`/crm/${tenantId}/Deals/new`}>
+                          <Button>Create Your First Deal</Button>
+                        </Link>
+                        <Button 
+                          variant="outline"
+                          onClick={async () => {
+                            try {
+                              const token = useAuthStore.getState().token
+                              if (!token) {
+                                alert('Please log in first')
+                                return
+                              }
+                              setSeedStatus({ running: true, elapsed: 0 })
+                              // IMPORTANT: Pass tenantId to ensure seed uses correct tenant
+                              const response = await fetch(`/api/admin/seed-demo-data?comprehensive=true&background=true&tenantId=${encodeURIComponent(tenantId)}`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${token}` },
+                              })
+                              const data = await response.json().catch(() => ({}))
+                              console.log(`[DEALS_PAGE] Seed response:`, data)
+                              if (response.ok) {
+                                setSeedStatus({ running: true, elapsed: 0 })
+                                alert(data.message || `Demo data seeding started in background for tenant ${tenantId}. Please wait 30-60 seconds, then click "Refresh Data" button.`)
+                                
+                                // Poll seed status every 5 seconds
+                                let pollCount = 0
+                                const maxPolls = 24 // 2 minutes max (24 * 5s)
+                                const pollInterval = setInterval(async () => {
+                                  pollCount++
+                                  try {
+                                    const statusResponse = await fetch(`/api/admin/seed-demo-data?checkStatus=true&tenantId=${tenantId}`, {
+                                      headers: { 'Authorization': `Bearer ${token}` },
+                                    })
+                                    if (statusResponse.ok) {
+                                    const statusData = await statusResponse.json()
+                                    console.log(`[DEALS_PAGE] Seed status check ${pollCount}:`, statusData)
+                                    
+                                    // Check if seed likely completed (data exists but tracking shows running)
+                                    const likelyCompleted = statusData.likelyCompleted || (statusData.hasData && !statusData.running)
+                                    const isRunning = statusData.running && !likelyCompleted
+                                    
+                                    setSeedStatus({ running: isRunning, elapsed: statusData.elapsed })
+                                    
+                                    if (!isRunning || pollCount >= maxPolls) {
+                                      clearInterval(pollInterval)
+                                      if (!isRunning || likelyCompleted) {
+                                        console.log(`[DEALS_PAGE] Seed completed (likelyCompleted: ${likelyCompleted}), refreshing data...`)
+                                        await refreshDeals()
+                                      }
+                                    }
+                                    }
+                                  } catch (e) {
+                                    console.error(`[DEALS_PAGE] Status check error:`, e)
+                                    if (pollCount >= maxPolls) {
+                                      clearInterval(pollInterval)
+                                    }
+                                  }
+                                }, 5000)
+                              } else {
+                                setSeedStatus({ running: false })
+                                const errorMsg = data.message || data.error || 'Failed to seed data'
+                                console.error('[DEALS_PAGE] Seed error:', data)
+                                alert(`${errorMsg}\n\nSuggestion: ${data.suggestion || 'Please check server logs for details.'}`)
+                              }
+                            } catch (err: any) {
+                              setSeedStatus({ running: false })
+                              console.error('[DEALS_PAGE] Seed error:', err)
+                              alert(`Error seeding data: ${err?.message || 'Unknown error'}\n\nPlease check console and server logs.`)
+                            }
+                          }}
+                        >
+                          Seed Demo Data
+                        </Button>
+                        <Dialog open={diagnosticsOpen} onOpenChange={setDiagnosticsOpen}>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  if (!token) {
+                                    alert('Please log in first')
+                                    return
+                                  }
+                                  console.log(`[DEALS_PAGE] Running seed diagnosis...`)
+                                  setDiagnosticsOpen(true)
+                                  setDiagnosticsResult('Running diagnosis...')
+                                  
+                                  const response = await fetch(`/api/admin/seed-diagnosis?tenantId=${encodeURIComponent(tenantId)}`, {
+                                    headers: { 'Authorization': `Bearer ${token}` },
+                                  })
+                                  if (response.ok) {
+                                    const diagnostics = await response.json()
+                                    console.log(`[DEALS_PAGE] Diagnosis results:`, diagnostics)
+                                    
+                                    // Format diagnosis results for display
+                                    let message = `🔍 Seed Diagnosis Results\n\n`
+                                    message += `Timestamp: ${diagnostics.timestamp || new Date().toISOString()}\n`
+                                    message += `Tenant ID: ${diagnostics.tenantId}\n\n`
+                                    message += `Status: ${diagnostics.summary?.status || 'unknown'}\n`
+                                    message += `Checks: ${diagnostics.summary?.passedChecks || 0}/${diagnostics.summary?.totalChecks || 0} passed\n`
+                                    message += `Failed: ${diagnostics.summary?.failedChecks || 0}\n`
+                                    message += `Warnings: ${diagnostics.summary?.warnings || 0}\n\n`
+                                    
+                                    if (diagnostics.errors.length > 0) {
+                                      message += `❌ ERRORS:\n${diagnostics.errors.map((e: string) => `  • ${e}`).join('\n')}\n\n`
+                                    }
+                                    
+                                    if (diagnostics.warnings.length > 0) {
+                                      message += `⚠️ WARNINGS:\n${diagnostics.warnings.map((w: string) => `  • ${w}`).join('\n')}\n\n`
+                                    }
+                                    
+                                    if (diagnostics.recommendations.length > 0) {
+                                      message += `💡 RECOMMENDATIONS:\n${diagnostics.recommendations.map((r: string) => `  • ${r}`).join('\n')}\n\n`
+                                    }
+                                    
+                                    // Add check details
+                                    message += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
+                                    message += `DETAILED CHECKS:\n`
+                                    message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`
+                                    Object.entries(diagnostics.checks || {}).forEach(([key, check]: [string, any]) => {
+                                      const icon = check.status === 'ok' ? '✅' : check.status === 'error' ? '❌' : check.status === 'warning' ? '⚠️' : 'ℹ️'
+                                      message += `${icon} ${key.toUpperCase().replace(/([A-Z])/g, ' $1').trim()}:\n`
+                                      message += `   Status: ${check.status}\n`
+                                      message += `   Message: ${check.message}\n`
+                                      if (check.error) {
+                                        message += `   Error: ${check.error}\n`
+                                      }
+                                      if (check.errorCode) {
+                                        message += `   Error Code: ${check.errorCode}\n`
+                                      }
+                                      if (check.errorMeta) {
+                                        message += `   Error Meta: ${JSON.stringify(check.errorMeta)}\n`
+                                      }
+                                      if (check.count !== undefined) {
+                                        message += `   Count: ${check.count}\n`
+                                      }
+                                      message += `\n`
+                                    })
+                                    
+                                    // Add JSON for advanced users
+                                    message += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
+                                    message += `RAW JSON (for developers):\n`
+                                    message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`
+                                    message += JSON.stringify(diagnostics, null, 2)
+                                    
+                                    setDiagnosticsResult(message)
+                                    
+                                    // Also log to console for detailed inspection
+                                    console.log(`[DEALS_PAGE] Full diagnosis:`, JSON.stringify(diagnostics, null, 2))
+                                  } else {
+                                    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+                                    setDiagnosticsResult(`❌ Diagnosis failed:\n\n${error.error || error.message || 'Unknown error'}`)
+                                  }
+                                } catch (err) {
+                                  console.error('Diagnosis error:', err)
+                                  setDiagnosticsResult(`❌ Error running diagnosis:\n\n${err instanceof Error ? err.message : String(err)}`)
+                                }
+                              }}
+                            >
+                              🔍 Run Diagnosis
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                            <DialogHeader>
+                              <DialogTitle>Seed Diagnosis Results</DialogTitle>
+                              <DialogDescription>
+                                Copy the results below to share with developers or for troubleshooting
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="flex-1 overflow-hidden flex flex-col">
+                              <div className="flex justify-end mb-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    if (diagnosticsResult) {
+                                      navigator.clipboard.writeText(diagnosticsResult).then(() => {
+                                        alert('Diagnosis results copied to clipboard!')
+                                      }).catch(() => {
+                                        alert('Failed to copy. Please select and copy manually.')
+                                      })
+                                    }
+                                  }}
+                                >
+                                  📋 Copy to Clipboard
+                                </Button>
+                              </div>
+                              <textarea
+                                readOnly
+                                value={diagnosticsResult || 'Running diagnosis...'}
+                                className="flex-1 w-full p-4 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900 text-sm font-mono resize-none"
+                                style={{ minHeight: '400px' }}
+                                onClick={(e) => {
+                                  // Select all text when clicked for easy copying
+                                  ;(e.target as HTMLTextAreaElement).select()
+                                }}
+                              />
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                        <Button 
+                          variant="outline"
+                          onClick={refreshDeals}
+                          className="ml-2"
+                          disabled={isLoading}
+                        >
+                          {isLoading ? 'Refreshing...' : 'Refresh Data'}
+                        </Button>
+                        {seedStatus?.running && (
+                          <Button 
+                            variant="outline"
+                            onClick={() => {
+                              refreshDeals()
+                              setTimeout(() => window.location.reload(), 1000)
+                            }}
+                            className="ml-2"
+                          >
+                            Refresh Page
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">

@@ -475,19 +475,13 @@ export async function processMeetingIntelligence(
     extractActionItems(transcript, tenantId),
   ])
 
-  // Save to interaction metadata
+  // Interaction model doesn't have metadata or tenantId in where - store in notes
+  const existingInteraction = await prisma.interaction.findUnique({ where: { id: interactionId } })
+  const existingNotes = existingInteraction?.notes || ''
   await prisma.interaction.update({
-    where: { id: interactionId, tenantId },
+    where: { id: interactionId },
     data: {
-      metadata: {
-        ...((await prisma.interaction.findUnique({ where: { id: interactionId } }))?.metadata as any || {}),
-        meetingIntelligence: {
-          sentiment,
-          summary,
-          insights,
-          processedAt: new Date().toISOString(),
-        },
-      },
+      notes: `${existingNotes}\n\n[Meeting Intelligence]\nSentiment: ${sentiment}\nSummary: ${summary}\nInsights: ${JSON.stringify(insights)}\nProcessed: ${new Date().toISOString()}`.substring(0, 2000),
     },
   })
 

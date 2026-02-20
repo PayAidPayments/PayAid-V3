@@ -88,7 +88,7 @@ export class DecisionTreeService {
       return null
     }
 
-    return account.decisionTree as DecisionTree
+    return account.decisionTree as unknown as DecisionTree
   }
 
   /**

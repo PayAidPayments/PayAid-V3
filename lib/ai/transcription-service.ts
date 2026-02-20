@@ -273,22 +273,11 @@ export async function saveTranscription(
   audioUrl: string,
   tenantId: string
 ): Promise<void> {
+  // Interaction doesn't have metadata or tenantId in where - store transcript in notes
   await prisma.interaction.update({
-    where: { id: interactionId, tenantId },
+    where: { id: interactionId },
     data: {
       notes: transcription.transcript,
-      metadata: {
-        ...((prisma.interaction.findUnique({ where: { id: interactionId } }) as any)?.metadata || {}),
-        transcription: {
-          transcript: transcription.transcript,
-          segments: transcription.segments,
-          summary: transcription.summary,
-          duration: transcription.duration,
-          language: transcription.language,
-          audioUrl,
-          transcribedAt: new Date().toISOString(),
-        },
-      },
     },
   })
 }
@@ -314,25 +303,27 @@ export async function searchTranscripts(
   summary: string
   createdAt: Date
 }>> {
+  // Interaction doesn't have tenantId, dealId, or metadata - filter through contact
   const interactions = await prisma.interaction.findMany({
     where: {
-      tenantId,
       type: { in: ['call', 'meeting'] },
       ...(options?.contactId && { contactId: options.contactId }),
-      ...(options?.dealId && { dealId: options.dealId }),
       ...(options?.dateFrom && { createdAt: { gte: options.dateFrom } }),
       ...(options?.dateTo && { createdAt: { lte: options.dateTo } }),
       notes: {
         contains: query,
         mode: 'insensitive',
       },
+      ...(tenantId && {
+        contact: {
+          tenantId,
+        },
+      }),
     },
     select: {
       id: true,
       contactId: true,
-      dealId: true,
       notes: true,
-      metadata: true,
       createdAt: true,
     },
     take: options?.limit || 50,
@@ -340,15 +331,13 @@ export async function searchTranscripts(
   })
 
   return interactions.map((interaction) => {
-    const metadata = (interaction.metadata as any) || {}
-    const transcription = metadata.transcription || {}
-
+    // Extract transcription from notes (stored as transcript)
     return {
       interactionId: interaction.id,
       contactId: interaction.contactId,
-      dealId: interaction.dealId,
-      transcript: interaction.notes || transcription.transcript || '',
-      summary: transcription.summary || '',
+      dealId: null, // Interaction doesn't have dealId
+      transcript: interaction.notes || '',
+      summary: '',
       createdAt: interaction.createdAt,
     }
   })

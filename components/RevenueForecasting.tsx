@@ -95,7 +95,8 @@ export function RevenueForecasting() {
 
   const generateInsights = (forecastData: ForecastData) => {
     const insights: AIInsight[] = []
-    const { summary, confidence, projectionVsCurrent } = forecastData
+    const { summary, confidence } = forecastData
+    const projectionVsCurrent = summary.projectionVsCurrent
 
     // Revenue trend insight
     if (projectionVsCurrent > 10) {
@@ -321,8 +322,8 @@ export function RevenueForecasting() {
                   border: '1px solid #ddd',
                   borderRadius: '4px',
                 }}
-                formatter={(value: number) => formatCurrency(value)}
-                labelFormatter={(label) => format(new Date(label), 'MMM dd, yyyy')}
+                formatter={(value: any) => formatCurrency(Number(value))}
+                labelFormatter={(label: any) => format(new Date(label), 'MMM dd, yyyy')}
               />
               <Legend />
               {/* 95% Confidence Interval */}
@@ -373,8 +374,8 @@ export function RevenueForecasting() {
               />
               <YAxis tickFormatter={(value) => formatCurrency(value)} />
               <Tooltip
-                formatter={(value: number) => formatCurrency(value)}
-                labelFormatter={(label) => format(new Date(label), 'MMM dd, yyyy')}
+                formatter={(value: any) => formatCurrency(Number(value))}
+                labelFormatter={(label: any) => format(new Date(label), 'MMM dd, yyyy')}
               />
               <Legend />
               <Line

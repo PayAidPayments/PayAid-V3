@@ -61,7 +61,7 @@ export async function executeWorkflow(
     throw new Error('Workflow not found or inactive')
   }
 
-  const steps = workflow.steps as WorkflowStep[]
+  const steps = (workflow.steps as unknown) as WorkflowStep[]
   const errors: string[] = []
   let executedActions = 0
 
@@ -325,7 +325,8 @@ async function notifyAction(
       type: action.config.type || 'info',
       title: action.config.title || 'Workflow Notification',
       message: action.config.message || '',
-      userId: action.config.userId,
+      repId: action.config.repId || action.config.userId || '',
+      channels: [],
       isRead: false,
     },
   })

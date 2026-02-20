@@ -5,6 +5,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { checkTenantLimits } from '@/lib/middleware/tenant'
 import { z } from 'zod'
 import { multiLayerCache } from '@/lib/cache/multi-layer'
+import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
 
 const createContactSchema = z.object({
   name: z.string().min(1),
@@ -234,6 +235,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result)
   } catch (error: any) {
+    // Handle license errors first
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
+    
     console.error('Get contacts error:', error)
     
     // Return more detailed error information for debugging
@@ -382,6 +388,23 @@ export async function POST(request: NextRequest) {
     // Invalidate dashboard stats cache so the count updates immediately
     await multiLayerCache.delete(`dashboard:stats:${tenantId}`).catch(() => {
       // Ignore cache errors - not critical
+    })
+
+    // Trigger workflow automation (e.g. welcome email, create task)
+    triggerWorkflowsByEvent({
+      tenantId,
+      event: 'contact.created',
+      entity: 'contact',
+      entityId: contact.id,
+      data: {
+        contact: {
+          id: contact.id,
+          name: contact.name,
+          email: contact.email,
+          phone: contact.phone,
+          company: contact.company,
+        },
+      },
     })
 
     return NextResponse.json(contact, { status: 201 })

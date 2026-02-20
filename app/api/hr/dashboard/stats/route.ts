@@ -52,12 +52,12 @@ export async function GET(request: NextRequest) {
       prisma.payrollRun.aggregate({
         where: {
           tenantId,
-          status: 'PENDING',
+          payoutStatus: 'PENDING',
         },
         _sum: {
-          grossSalary: true,
+          grossEarningsInr: true,
         },
-      }).catch(() => ({ _sum: { grossSalary: null } })),
+      }).catch(() => ({ _sum: { grossEarningsInr: null } })),
 
       // Open positions (from job requisitions or similar - using a placeholder for now)
       Promise.resolve(12).catch(() => 0),
@@ -139,13 +139,17 @@ export async function GET(request: NextRequest) {
       : 0
 
     // Calculate attendance rate (employees with attendance records this month)
-    const employeesWithAttendance = await prisma.attendanceRecord.count({
+    const uniqueEmployees = await prisma.attendanceRecord.findMany({
       where: {
         tenantId,
         date: { gte: startOfMonth, lte: endOfMonth },
       },
+      select: {
+        employeeId: true,
+      },
       distinct: ['employeeId'],
-    }).catch(() => 0)
+    }).catch(() => [])
+    const employeesWithAttendance = uniqueEmployees.length
     const attendanceRate = activeEmployees > 0 ? (employeesWithAttendance / activeEmployees) * 100 : 0
 
     // Calculate leave utilization (total leave days used this month / total available)
@@ -173,7 +177,7 @@ export async function GET(request: NextRequest) {
       totalEmployees: hasRealData ? totalEmployees : 156,
       activeEmployees: hasRealData ? activeEmployees : 142,
       onLeave: hasRealData ? onLeaveCount : 8,
-      pendingPayroll: hasRealData ? Number(pendingPayrollAmount._sum?.grossSalary || 0) : 1420000,
+      pendingPayroll: hasRealData ? Number(pendingPayrollAmount._sum?.grossEarningsInr || 0) : 1420000,
       openPositions: hasRealData ? openPositions : 12,
       employeeGrowth: hasRealData ? Number(employeeGrowth.toFixed(1)) : 8.3,
       attendanceRate: hasRealData ? Number(attendanceRate.toFixed(1)) : 94.5,

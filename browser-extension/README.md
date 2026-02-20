@@ -1,38 +1,37 @@
-# PayAid V3 Browser Extension
+# PayAid Agent Browser Extension
 
-Quick access to PayAid V3 from any webpage.
-
-## Features
-
-- **Quick Actions**: Access Dashboard, Deals, Contacts, Tasks, AI Co-Founder
-- **Live Stats**: View active deals, pending tasks, and new leads
-- **Floating Widget**: Quick access button on any webpage
-- **Context Menu**: Right-click to create contacts or deals from selected text
-- **Contact Detection**: Auto-detect emails and phone numbers on pages
+AI-powered assistant for PayAid V3 that provides context-aware suggestions and quick actions.
 
 ## Installation
 
-1. Open Chrome/Edge browser
-2. Go to `chrome://extensions/` (or `edge://extensions/`)
-3. Enable "Developer mode"
-4. Click "Load unpacked"
-5. Select the `browser-extension` folder
+1. Open Chrome/Edge and navigate to `chrome://extensions/`
+2. Enable "Developer mode"
+3. Click "Load unpacked"
+4. Select the `browser-extension` folder
 
 ## Configuration
 
-1. Click the extension icon
-2. Set your PayAid base URL (default: http://localhost:3000)
-3. Login to PayAid and the extension will store your auth token
+1. Get your API key from PayAid Dashboard → Developer → API Keys
+2. Click the extension icon
+3. Click "Configure API Key"
+4. Enter your API key and Tenant ID
+
+## Features
+
+- **Context-aware suggestions**: See relevant actions when viewing contacts or deals
+- **Quick actions**: One-click task creation, deal creation, email sending
+- **Floating action button**: Quick access from any PayAid page
 
 ## Usage
 
-- **Popup**: Click extension icon for quick access
-- **Floating Widget**: Click the floating button on any webpage
-- **Context Menu**: Right-click selected text → "Create Contact/Deal in PayAid"
+1. Navigate to a contact or deal page in PayAid
+2. Click the floating ⚡ button or extension icon
+3. See suggested actions based on context
+4. Click "Execute" to perform actions
 
 ## Development
 
 - `manifest.json` - Extension configuration
 - `popup.html/js` - Extension popup UI
-- `background.js` - Service worker for background tasks
-- `content.js` - Content script injected into web pages
+- `content.js` - Content script injected into PayAid pages
+- `background.js` - Background service worker

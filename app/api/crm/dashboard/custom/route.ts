@@ -8,20 +8,21 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/licens
  */
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId, user } = await requireModuleAccess(request, 'crm')
+    const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const customDashboard = await prisma.customReport.findFirst({
       where: {
         tenantId,
-        type: 'custom_dashboard',
-        createdById: user?.userId,
+        reportType: 'custom_dashboard',
       },
     })
 
     if (customDashboard) {
+      // Map filters/columns to widgets/layout structure
+      const filters = customDashboard.filters as any
       return NextResponse.json({
-        widgets: customDashboard.config?.widgets || [],
-        layout: customDashboard.config?.layout || {},
+        widgets: filters?.widgets || [],
+        layout: filters?.layout || {},
       })
     }
 
@@ -49,27 +50,26 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, user } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
     const body = await request.json()
     const { widgets, layout } = body
 
+    // Store widgets/layout in filters JSON field
     await prisma.customReport.upsert({
       where: {
-        id: `dashboard-${tenantId}-${user?.userId}`,
+        id: `dashboard-${tenantId}-${userId || 'default'}`,
       },
       update: {
-        config: { widgets, layout },
+        filters: { widgets, layout } as any,
         updatedAt: new Date(),
       },
       create: {
-        id: `dashboard-${tenantId}-${user?.userId}`,
+        id: `dashboard-${tenantId}-${userId || 'default'}`,
         tenantId,
         name: 'Custom Dashboard',
-        type: 'custom_dashboard',
-        config: { widgets, layout },
-        createdById: user?.userId,
-        isPublic: false,
-        isActive: true,
+        reportType: 'custom_dashboard',
+        filters: { widgets, layout } as any,
+        columns: [],
       },
     })
 

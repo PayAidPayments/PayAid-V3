@@ -8,10 +8,10 @@ import { mediumPriorityQueue } from '@/lib/queue/bull'
 
 // GET /api/ai/insights - Get AI-powered business insights
 export async function GET(request: NextRequest) {
+  let tenantId: string | undefined
+  let userId: string | undefined
   try {
     // Check AI Studio module license - allow fallback for demo/development
-    let tenantId: string
-    let userId: string
     try {
       const result = await requireModuleAccess(request, 'ai-studio')
       tenantId = result.tenantId
@@ -105,6 +105,7 @@ export async function GET(request: NextRequest) {
           title: true,
           priority: true,
           dueDate: true,
+          status: true,
         },
         take: 50, // Limit to 50 pending tasks
         orderBy: { dueDate: 'asc' },
@@ -443,10 +444,11 @@ Be specific, actionable, and data-driven.`
       return handleLicenseError(error)
     }
     console.error('[AI Insights] Outer catch - AI insights error:', error)
+    const errorObj = error as any
     console.error('[AI Insights] Error details:', {
-      message: error?.message,
-      stack: error?.stack,
-      name: error?.name,
+      message: errorObj?.message,
+      stack: errorObj?.stack,
+      name: errorObj?.name,
       tenantId: tenantId || 'NOT SET',
     })
     
@@ -483,6 +485,9 @@ Be specific, actionable, and data-driven.`
     
     try {
       // Get minimal data for insights with error handling for each query
+      if (!tenantId) {
+        throw new Error('tenantId is required')
+      }
       const [contacts, deals, invoices, tasks] = await Promise.all([
         prisma.contact.findMany({
           where: { tenantId },
@@ -573,12 +578,13 @@ Be specific, actionable, and data-driven.`
         },
         generatedAt: new Date().toISOString(),
       })
-    } catch (fallbackError) {
-      console.error('[AI Insights] Fallback insights generation failed:', fallbackError)
+    } catch (fallbackError: unknown) {
+      const err = fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError))
+      console.error('[AI Insights] Fallback insights generation failed:', err)
       console.error('[AI Insights] Fallback error details:', {
-        message: fallbackError?.message,
-        stack: fallbackError?.stack,
-        name: fallbackError?.name,
+        message: err.message,
+        stack: err.stack,
+        name: err.name,
       })
       // Continue to final fallback below
     }

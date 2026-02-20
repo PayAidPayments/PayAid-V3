@@ -2,7 +2,19 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import type { EmailCampaign } from '@/types/base-modules'
+// EmailCampaign type based on Campaign model
+interface EmailCampaign {
+  id: string
+  name: string
+  subject: string | null
+  recipientCount: number
+  status: string
+  metrics: {
+    totalSent: number
+    opened: number
+    clicked: number
+  }
+}
 
 interface EmailCampaignListProps {
   organizationId: string

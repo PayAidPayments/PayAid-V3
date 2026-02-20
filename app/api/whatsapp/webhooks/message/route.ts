@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
+import { processHRBotMessage } from '@/lib/hr/whatsapp-bot-handler'
 
 // POST /api/whatsapp/webhooks/message - WAHA sends incoming messages via webhook
 // This endpoint should be public (no auth) as WAHA calls it
@@ -143,6 +144,53 @@ export async function POST(request: NextRequest) {
         details: JSON.stringify({ messageType, hasMedia: !!data.mediaUrl }),
       },
     })
+
+    // Check if this is an HR bot message (from an employee)
+    // If message is text, try to process via HR bot
+    if (messageType === 'text' && text && text.trim().length > 0) {
+      try {
+        // Process HR bot message
+        const botResponse = await processHRBotMessage(
+          session.account.tenantId,
+          fromNumber,
+          text
+        )
+
+        if (botResponse && botResponse.response) {
+          // Send response back via WhatsApp
+          // Store outgoing message
+          await prisma.whatsappMessage.create({
+            data: {
+              conversationId: conversation.id,
+              sessionId: session.id,
+              employeeId: botResponse.employeeId || null,
+              direction: 'out',
+              messageType: 'text',
+              fromNumber: session.phoneNumber || '',
+              toNumber: fromNumber,
+              text: botResponse.response,
+              status: 'sent',
+              createdAt: new Date(),
+            },
+          })
+
+          // Update conversation
+          await prisma.whatsappConversation.update({
+            where: { id: conversation.id },
+            data: {
+              lastMessageAt: new Date(),
+              lastDirection: 'out',
+            },
+          })
+
+          // Send via WhatsApp API (would need actual WhatsApp send implementation)
+          // For now, message is stored and can be sent via scheduled job or webhook callback
+        }
+      } catch (error) {
+        console.error('HR bot processing error:', error)
+        // Continue with normal flow if bot fails
+      }
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

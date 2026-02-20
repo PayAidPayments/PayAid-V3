@@ -7,12 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  CustomSelect,
+  CustomSelectContent,
+  CustomSelectItem,
+  CustomSelectTrigger,
+} from '@/components/ui/custom-select'
 import Link from 'next/link'
 import { Sparkles } from 'lucide-react'
 
@@ -105,28 +104,28 @@ export default function LandingPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="industry-select">Select Your Industry</Label>
-              <Select
+              <CustomSelect
                 value={selectedIndustry}
                 onValueChange={handleIndustrySelect}
+                placeholder="Choose your industry..."
               >
-                <SelectTrigger id="industry-select" className="w-full dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
-                  <SelectValue placeholder="Choose your industry..." />
-                </SelectTrigger>
-                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                <CustomSelectTrigger id="industry-select" className="w-full dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
+                </CustomSelectTrigger>
+                <CustomSelectContent className="dark:bg-gray-800 dark:border-gray-700">
                   {industries.map((industry) => (
-                    <SelectItem 
+                    <CustomSelectItem 
                       key={industry.id} 
                       value={industry.id}
                       className="dark:text-gray-100 dark:hover:bg-gray-700"
                     >
                       {industry.icon} {industry.name}
-                    </SelectItem>
+                    </CustomSelectItem>
                   ))}
-                  <SelectItem value="others" className="dark:text-gray-100 dark:hover:bg-gray-700">
+                  <CustomSelectItem value="others" className="dark:text-gray-100 dark:hover:bg-gray-700">
                     ➕ Others (Not Listed)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                  </CustomSelectItem>
+                </CustomSelectContent>
+              </CustomSelect>
             </div>
           </div>
         </div>

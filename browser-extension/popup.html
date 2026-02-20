@@ -1,176 +1,95 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PayAid V3</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
     body {
       width: 350px;
-      min-height: 500px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: linear-gradient(135deg, #53328A 0%, #6B4BA1 100%);
-      color: white;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
     }
-    
     .header {
-      padding: 20px;
-      text-align: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    
-    .header h1 {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 5px;
-    }
-    
-    .header p {
-      font-size: 12px;
-      opacity: 0.9;
-    }
-    
-    .quick-actions {
-      padding: 15px;
-    }
-    
-    .action-item {
       display: flex;
       align-items: center;
-      padding: 12px;
-      margin-bottom: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e7eb;
     }
-    
-    .action-item:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: translateX(4px);
-    }
-    
-    .action-item svg {
-      width: 20px;
-      height: 20px;
-      margin-right: 12px;
-    }
-    
-    .action-item span {
-      flex: 1;
-      font-size: 14px;
-      font-weight: 500;
-    }
-    
-    .stats {
-      padding: 15px;
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    
-    .stat-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 0;
-      font-size: 13px;
-    }
-    
-    .stat-label {
-      opacity: 0.8;
-    }
-    
-    .stat-value {
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
       font-weight: 600;
+      color: #111827;
     }
-    
-    .footer {
-      padding: 15px;
-      text-align: center;
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    .suggestion {
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
     }
-    
-    .footer button {
+    .suggestion:hover {
+      background: #f3f4f6;
+    }
+    .suggestion-title {
+      font-weight: 500;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+    .suggestion-desc {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .action-button {
       width: 100%;
-      padding: 10px;
-      background: rgba(255, 255, 255, 0.2);
+      padding: 8px 16px;
+      background: #53328a;
+      color: white;
       border: none;
       border-radius: 6px;
-      color: white;
-      font-weight: 500;
       cursor: pointer;
-      transition: all 0.2s;
+      font-weight: 500;
+      margin-top: 8px;
     }
-    
-    .footer button:hover {
-      background: rgba(255, 255, 255, 0.3);
+    .action-button:hover {
+      background: #6b3fa0;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 24px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .config-link {
+      display: block;
+      text-align: center;
+      margin-top: 12px;
+      color: #53328a;
+      text-decoration: none;
+      font-size: 12px;
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>PayAid V3</h1>
-    <p>Quick Access</p>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#53328a" stroke-width="2">
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+    </svg>
+    <h1>PayAid Agent</h1>
   </div>
   
-  <div class="quick-actions">
-    <div class="action-item" data-action="dashboard">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-      <span>Dashboard</span>
-    </div>
-    
-    <div class="action-item" data-action="deals">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-      <span>Deals</span>
-    </div>
-    
-    <div class="action-item" data-action="contacts">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-      </svg>
-      <span>Contacts</span>
-    </div>
-    
-    <div class="action-item" data-action="tasks">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-      </svg>
-      <span>Tasks</span>
-    </div>
-    
-    <div class="action-item" data-action="ai-cofounder">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-      </svg>
-      <span>AI Co-Founder</span>
-    </div>
-  </div>
+  <div id="suggestions"></div>
   
-  <div class="stats">
-    <div class="stat-row">
-      <span class="stat-label">Active Deals</span>
-      <span class="stat-value" id="deals-count">-</span>
-    </div>
-    <div class="stat-row">
-      <span class="stat-label">Pending Tasks</span>
-      <span class="stat-value" id="tasks-count">-</span>
-    </div>
-    <div class="stat-row">
-      <span class="stat-label">New Leads</span>
-      <span class="stat-value" id="leads-count">-</span>
-    </div>
-  </div>
-  
-  <div class="footer">
-    <button id="open-full">Open PayAid V3</button>
+  <div style="display: flex; gap: 8px; margin-top: 12px;">
+    <a href="options.html" target="_blank" class="config-link" style="flex: 1; text-align: center;">
+      Settings
+    </a>
+    <a href="https://app.payaid.com/dashboard/developer/api-keys" target="_blank" class="config-link" style="flex: 1; text-align: center;">
+      Get API Key
+    </a>
   </div>
   
   <script src="popup.js"></script>

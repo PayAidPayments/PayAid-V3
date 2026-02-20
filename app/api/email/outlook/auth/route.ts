@@ -22,10 +22,16 @@ export async function GET(request: NextRequest) {
       try {
         const token = authHeader.replace('Bearer ', '')
         const payload = decodeToken(token)
-        if (payload) userId = payload.userId
+        if (payload && payload.userId) {
+          userId = payload.userId
+        }
       } catch (e) {
         console.error('Error getting user from token:', e)
       }
+    }
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
     }
 
     // Pass tenantId:userId in state for callback

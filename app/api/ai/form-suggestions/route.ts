@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const { industry, purpose, existingFields } = suggestionSchema.parse(body)
 
     const service = new FormFieldSuggestionService()
-    const suggestions = await service.suggestFields(industry, purpose, existingFields)
+    const suggestions = await service.suggestFields({ industry, purpose, existingFields })
 
     return NextResponse.json({
       success: true,

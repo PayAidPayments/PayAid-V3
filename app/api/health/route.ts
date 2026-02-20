@@ -5,7 +5,15 @@ import { NextResponse } from 'next/server'
  * Checks database connection and environment variables
  */
 export async function GET() {
-  const checks = {
+  const checks: {
+    database: {
+      configured: boolean
+      urlLength: number
+      error?: string
+    }
+    jwt: { configured: boolean; secretLength: number }
+    environment: string
+  } = {
     database: {
       configured: !!process.env.DATABASE_URL,
       urlLength: process.env.DATABASE_URL?.length || 0,

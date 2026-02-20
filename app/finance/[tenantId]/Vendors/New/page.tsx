@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { getAuthHeaders } from '@/lib/api/client'
 
 export default function FinanceVendorsNewPage() {
@@ -243,19 +243,19 @@ export default function FinanceVendorsNewPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="status" className="dark:text-gray-300">Status</Label>
-                <Select
+                <CustomSelect
                   value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, status: value })}
+                  placeholder="Status"
                 >
-                  <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="INACTIVE">Inactive</SelectItem>
-                    <SelectItem value="BLACKLISTED">Blacklisted</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <CustomSelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+                  </CustomSelectTrigger>
+                  <CustomSelectContent>
+                    <CustomSelectItem value="ACTIVE">Active</CustomSelectItem>
+                    <CustomSelectItem value="INACTIVE">Inactive</CustomSelectItem>
+                    <CustomSelectItem value="BLACKLISTED">Blacklisted</CustomSelectItem>
+                  </CustomSelectContent>
+                </CustomSelect>
               </div>
             </div>
 

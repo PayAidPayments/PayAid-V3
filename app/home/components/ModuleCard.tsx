@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils/cn';
 import { memo } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/auth';
+import { getDashboardUrl } from '@/lib/utils/dashboard-url';
 
 // Custom Rupee Icon Component
 const RupeeIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
@@ -42,9 +43,12 @@ function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {
   
   // Construct module URL - always use base module URL to let entry point handle redirect
   const getModuleUrl = (): string => {
+    // App Store / Marketplace: use tenant-scoped dashboard URL (decoupled structure)
+    if (module.id === 'marketplace') {
+      return getDashboardUrl('/marketplace');
+    }
     // Always return base module URL (e.g., /crm, /sales, /finance)
     // The module entry point will handle redirecting to /module/[tenantId]/Home/
-    // This ensures auth state is properly checked before redirecting
     return module.url;
   };
   

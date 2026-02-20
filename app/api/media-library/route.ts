@@ -22,7 +22,7 @@ const createMediaSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const user = await authenticateRequest(request)
-    if (!user) {
+    if (!user || !user.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -125,6 +125,10 @@ export async function POST(request: NextRequest) {
           { status: 403 }
         )
       }
+    }
+
+    if (!user.tenantId || !user.userId) {
+      return NextResponse.json({ error: 'Tenant ID and User ID are required' }, { status: 400 })
     }
 
     const media = await prisma.mediaLibrary.create({

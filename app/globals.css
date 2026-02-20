@@ -176,3 +176,384 @@ select:focus {
   height: auto;
 }
 
+/* STRICT 12-COLUMN CSS GRID - RESPONSIVE BREAKPOINTS */
+.dashboard-grid-responsive {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px 20px;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Tablet (1200px and below): Stack stat cards 3x2, charts 2x2 */
+@media (max-width: 1200px) {
+  .dashboard-grid-responsive {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  
+  /* Stat cards: 3 per row (span 2 each) */
+  .dashboard-grid-responsive > div[style*="gridColumn: 'span 2'"][style*="height: '140px'"] {
+    grid-column: span 2 !important;
+  }
+  
+  /* Charts: 2 per row (span 3 each) */
+  .dashboard-grid-responsive > div[style*="gridColumn: 'span 4'"][style*="height: '320px'"] {
+    grid-column: span 3 !important;
+  }
+  
+  /* AI Panels: 2 per row (span 3 each) */
+  .dashboard-grid-responsive > div[style*="gridColumn: 'span 4'"][style*="height: '280px'"] {
+    grid-column: span 3 !important;
+  }
+  
+  /* Widgets: 2 per row (span 3 each) */
+  .dashboard-grid-responsive > div[style*="gridColumn: 'span 4'"][style*="height: '200px'"] {
+    grid-column: span 3 !important;
+  }
+}
+
+/* Mobile (768px and below): Single column stack */
+@media (max-width: 768px) {
+  .dashboard-grid-responsive {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 0 16px;
+  }
+  
+  /* All items span full width on mobile */
+  .dashboard-grid-responsive > div {
+    grid-column: 1 / -1 !important;
+  }
+  
+  /* Adjust heights for mobile */
+  .dashboard-grid-responsive > div[style*="height: '380px'"] {
+    height: auto !important;
+    min-height: 300px;
+  }
+  
+  .dashboard-grid-responsive > div[style*="height: '140px'"] {
+    height: auto !important;
+    min-height: 120px;
+  }
+  
+  .dashboard-grid-responsive > div[style*="height: '320px'"] {
+    height: auto !important;
+    min-height: 280px;
+  }
+  
+  .dashboard-grid-responsive > div[style*="height: '280px'"] {
+    height: auto !important;
+    min-height: 240px;
+  }
+  
+  .dashboard-grid-responsive > div[style*="height: '200px'"] {
+    height: auto !important;
+    min-height: 180px;
+  }
+  
+  .dashboard-grid-responsive > div[style*="height: '400px'"] {
+    height: auto !important;
+    min-height: 300px;
+  }
+}
+
+/* Uniform stat card styling */
+.stat-card-uniform {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+/* ==================================================================== */
+/* === PIXEL-PERFECT DASHBOARD GRID SYSTEM ========================== */
+/* ==================================================================== */
+
+/* Root container */
+.dashboard-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+}
+
+/* Page background gradient */
+.dashboard-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 50%, #f1f5f9 100%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.dark .dashboard-container::before {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e293b 100%);
+}
+
+/* Main grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: auto;
+  grid-auto-flow: row;
+  gap: 28px 24px; /* vertical 28px, horizontal 24px */
+  align-items: start;
+  position: relative;
+}
+
+.dashboard-grid > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Band 1 */
+.ai-command-center {
+  grid-column: 1 / -1;
+  height: 380px !important;
+  padding: 0 !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(139, 92, 246, 0.2) !important;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(99, 102, 241, 0.08) 100%) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.ai-command-center:hover {
+  box-shadow: 0 25px 50px -12px rgba(139, 92, 246, 0.25) !important;
+  border-color: rgba(139, 92, 246, 0.4) !important;
+}
+
+/* Band 2 Stat Cards - ALL IDENTICAL */
+.stat-card {
+  grid-column: span 2;
+  height: 160px !important;
+  padding: 20px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
+}
+
+.dark .stat-card {
+  background: rgba(31, 41, 55, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.stat-card a {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Band 2 Charts - ALL IDENTICAL */
+.chart-panel {
+  grid-column: span 4;
+  height: 340px !important;
+  padding: 0 !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.chart-panel:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
+}
+
+.dark .chart-panel {
+  background: rgba(31, 41, 55, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Band 3 AI Panels - ALL IDENTICAL */
+.ai-panel {
+  grid-column: span 4;
+  height: 300px !important;
+  padding: 0 !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(139, 92, 246, 0.2) !important;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(99, 102, 241, 0.05) 100%) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.ai-panel:hover {
+  transform: translateY(-2px) scale(1.01) !important;
+  box-shadow: 0 20px 25px -5px rgba(139, 92, 246, 0.15), 0 10px 10px -5px rgba(139, 92, 246, 0.1) !important;
+  border-color: rgba(139, 92, 246, 0.4) !important;
+}
+
+.dark .ai-panel {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
+}
+
+/* Band 3 Widgets - ALL IDENTICAL */
+.widget-card {
+  grid-column: span 4;
+  height: 320px !important;
+  padding: 0 !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.widget-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
+}
+
+.dark .widget-card {
+  background: rgba(31, 41, 55, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Quarterly Table */
+.quarterly-table {
+  grid-column: 1 / -1;
+  height: 420px !important;
+  padding: 0 !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  overflow: auto;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.quarterly-table:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
+}
+
+.dark .quarterly-table {
+  background: rgba(31, 41, 55, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .ai-command-center {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
+}
+
+/* Gradient text for stat card values */
+.stat-card-gradient-text {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Status badge enhancements */
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.025em;
+}
+
+.status-badge.on-track {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-badge.ahead {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.status-badge.attention {
+  background: rgba(251, 191, 36, 0.1);
+  color: #d97706;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.status-badge.critical {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.dark .status-badge.on-track {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.dark .status-badge.ahead {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.dark .status-badge.attention {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.dark .status-badge.critical {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(8, 1fr);
+  }
+  .stat-card { grid-column: span 4; }  /* 2x2 grid */
+  .chart-panel, .ai-panel, .widget-card { grid-column: span 8; }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 0 16px;
+  }
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 16px 0;
+  }
+  .stat-card, .chart-panel, .ai-panel, .widget-card, .quarterly-table {
+    grid-column: 1 / -1 !important;
+  }
+}

@@ -26,12 +26,11 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  CustomSelect,
+  CustomSelectContent,
+  CustomSelectItem,
+  CustomSelectTrigger,
+} from '@/components/ui/custom-select'
 
 interface CustomReport {
   id: string
@@ -242,18 +241,17 @@ export default function CustomReportsPage() {
                 </div>
                 <div>
                   <Label htmlFor="type">Report Type</Label>
-                  <Select value={reportType} onValueChange={(value: any) => setReportType(value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sales">Sales</SelectItem>
-                      <SelectItem value="marketing">Marketing</SelectItem>
-                      <SelectItem value="finance">Finance</SelectItem>
-                      <SelectItem value="hr">HR</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <CustomSelect value={reportType} onValueChange={(value: any) => setReportType(value)} placeholder="Select report type">
+                    <CustomSelectTrigger>
+                    </CustomSelectTrigger>
+                    <CustomSelectContent>
+                      <CustomSelectItem value="sales">Sales</CustomSelectItem>
+                      <CustomSelectItem value="marketing">Marketing</CustomSelectItem>
+                      <CustomSelectItem value="finance">Finance</CustomSelectItem>
+                      <CustomSelectItem value="hr">HR</CustomSelectItem>
+                      <CustomSelectItem value="custom">Custom</CustomSelectItem>
+                    </CustomSelectContent>
+                  </CustomSelect>
                 </div>
               </div>
               <DialogFooter>

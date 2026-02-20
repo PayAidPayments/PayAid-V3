@@ -14,6 +14,8 @@ export default function FinanceHomeLayout({
   const topBarItems = [
     { name: 'Home', href: `/finance/${tenantId}/Home` },
     { name: 'Invoices', href: `/finance/${tenantId}/Invoices` },
+    { name: 'Credit Notes', href: `/finance/${tenantId}/Credit-Notes` },
+    { name: 'Debit Notes', href: `/finance/${tenantId}/Debit-Notes` },
     { name: 'Accounting', href: `/finance/${tenantId}/Accounting` },
     { name: 'Purchase Orders', href: `/finance/${tenantId}/Purchase-Orders` },
     { name: 'GST Reports', href: `/finance/${tenantId}/GST` },

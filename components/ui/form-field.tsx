@@ -37,9 +37,9 @@ export const FormField = React.forwardRef<HTMLDivElement, FormFieldProps>(
 
         {/* Input wrapper with error/success states */}
         <div className="relative">
-          {React.cloneElement(children as React.ReactElement, {
+          {React.cloneElement(children as React.ReactElement<any>, {
             className: cn(
-              (children as React.ReactElement).props.className,
+              (children as React.ReactElement<any>).props.className,
               error && 'border-error focus:ring-error',
               success && 'border-success focus:ring-success'
             ),

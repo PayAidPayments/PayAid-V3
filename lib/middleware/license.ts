@@ -71,8 +71,11 @@ export async function checkModuleAccess(
     // Normalize module ID (handle backward compatibility)
     const normalizedModules = normalizeModuleId(moduleId)
     
-    // Check if any of the normalized modules are licensed
-    const hasAccess = normalizedModules.some(normalizedId => 
+    // Free tier with no licensed modules: allow access to all modules (no license enforcement)
+    const isFreeTierNoModules = subscriptionTier === 'free' && licensedModules.length === 0
+    
+    // Check if any of the normalized modules are licensed (or allow if free tier with no modules)
+    const hasAccess = isFreeTierNoModules || normalizedModules.some(normalizedId => 
       licensedModules.includes(normalizedId)
     )
 
@@ -83,10 +86,8 @@ export async function checkModuleAccess(
       )
     }
 
-    // Check if subscription is active (free tier is always active)
-    if (subscriptionTier === 'free' && licensedModules.length === 0) {
-      // Free tier with no modules - allow access but log it
-      console.warn(`Free tier user accessing module ${moduleId} without license`)
+    if (isFreeTierNoModules) {
+      console.warn(`Free tier user accessing module ${moduleId} (no license list)`)
     }
 
     return {
@@ -171,6 +172,7 @@ export function handleLicenseError(error: unknown): NextResponse {
     return NextResponse.json(
       {
         error: error.message,
+        message: error.message,
         code: isTokenError ? 'INVALID_TOKEN' : 'MODULE_NOT_LICENSED',
         moduleId: error.moduleId,
       },

@@ -24,12 +24,14 @@ export default async function AdminTenantsPage() {
   try {
     const decoded = verifyToken(token)
     
-    // Check if super admin
-    const isSuperAdmin = decoded.roles?.includes('super_admin') || 
-                        decoded.role === 'super_admin'
-    
+    // Tenants list is Super Admin only; tenant admins use /admin overview
+    const isSuperAdmin =
+      decoded.roles?.includes('SUPER_ADMIN') ||
+      decoded.roles?.includes('super_admin') ||
+      decoded.role === 'SUPER_ADMIN' ||
+      decoded.role === 'super_admin'
     if (!isSuperAdmin) {
-      redirect('/dashboard')
+      redirect('/admin')
     }
   } catch {
     redirect('/login?redirect=/admin/tenants')

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, FileText, ShoppingCart, IndianRupee, Bell, Landmark, RefreshCw, CreditCard, Calendar } from 'lucide-react'
+import { Plus, FileText, ShoppingCart, IndianRupee, Bell, Landmark, RefreshCw, CreditCard, Calendar, ArrowLeftRight, ArrowRightLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import {
@@ -81,6 +81,22 @@ const actions = [
     shortcut: 'Ctrl+M',
     dialog: 'record-payment',
     color: 'bg-pink-500 hover:bg-pink-600',
+  },
+  {
+    id: 'create-credit-note',
+    label: 'Create Credit Note',
+    icon: <ArrowLeftRight className="w-5 h-5" />,
+    shortcut: 'Ctrl+C',
+    href: (tenantId: string) => `/finance/${tenantId}/Credit-Notes/new`,
+    color: 'bg-emerald-500 hover:bg-emerald-600',
+  },
+  {
+    id: 'create-debit-note',
+    label: 'Create Debit Note',
+    icon: <ArrowRightLeft className="w-5 h-5" />,
+    shortcut: 'Ctrl+D',
+    href: (tenantId: string) => `/finance/${tenantId}/Debit-Notes/new`,
+    color: 'bg-amber-500 hover:bg-amber-600',
   },
 ]
 

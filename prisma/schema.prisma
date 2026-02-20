@@ -39,6 +39,8 @@ model Tenant {
   googleAiStudioApiKey         String?
   licensedModules              String[]                      @default([])
   subscriptionTier             String                        @default("free")
+  defaultCurrency              String                        @default("INR") // ISO 4217 currency code
+  supportedCurrencies          String[]                      @default(["INR"]) // Array of supported currency codes
   createdAt                    DateTime                      @default(now())
   updatedAt                    DateTime                      @updatedAt
   aiCalls                      AICall[]
@@ -55,6 +57,8 @@ model Tenant {
   manufacturingBOMs            ManufacturingBOM[]
   manufacturingQualityControls ManufacturingQualityControl[]
   complianceRecords            ComplianceRecord[]
+  merchantOnboarding           MerchantOnboarding?
+  kycDocuments                 KYCDocument[]
   lmsCourses                   LMSCourse[]
   ecommerceStores              EcommerceStore[]
   competitors                  Competitor[]
@@ -62,6 +66,9 @@ model Tenant {
   dataGovernancePolicies       DataGovernancePolicy[]
   dataRetentionLogs            DataRetentionLog[]
   budgetLines                  BudgetLine[]
+  taxRules                     TaxRule[]
+  currencyExchangeRates        CurrencyExchangeRate[]
+  customerInsights             CustomerInsight[]
   crmConfig                    CRMConfig?
   callFAQs                     CallFAQ[]
   callRecordings               CallRecording[]
@@ -102,6 +109,8 @@ model Tenant {
   healthcarePatients           HealthcarePatient[]
   holidayCalendars             HolidayCalendar[]
   invoices                     Invoice[]
+  creditNotes                  CreditNote[]
+  debitNotes                   DebitNote[]
   invoicingConfig              InvoicingConfig?
   jobRequisitions              JobRequisition[]
   knowledgeDocuments           KnowledgeDocument[]
@@ -318,6 +327,14 @@ model Tenant {
   userPermissions              UserPermission[]              @relation("TenantUserPermissions")
   forms                        Form[]
   formSubmissions              FormSubmission[]
+  surveys                      Survey[]
+  surveyResponses              SurveyResponse[]
+  proposals                    Proposal[]
+  goals                        Goal[]
+  goalProgress                 GoalProgress[]
+  companyNewsfeed              CompanyNewsfeed[]
+  newsfeedPosts                NewsfeedPost[]
+  newsfeedComments             NewsfeedComment[]
   territories                  Territory[]
   quotas                       Quota[]
   accounts                     Account[]
@@ -325,6 +342,7 @@ model Tenant {
   aIDecisions                  AIDecision[]
   riskPolicies                 RiskPolicy[]
   decisionOutcomes             DecisionOutcome[]
+  MarketplaceAppReview         MarketplaceAppReview[]
 
   @@index([subdomain])
   @@index([status])
@@ -518,6 +536,8 @@ model AuditLog {
   beforeSnapshot Json?
   afterSnapshot  Json?
   tenantId       String
+  ipAddress      String?
+  userAgent      String?
   timestamp      DateTime @default(now())
   tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -526,6 +546,58 @@ model AuditLog {
   @@index([tenantId, entityId])
   @@index([tenantId, timestamp])
   @@index([changedBy])
+  @@index([ipAddress])
+}
+
+// Merchant Onboarding - Track onboarding status and workflow
+model MerchantOnboarding {
+  id              String        @id @default(cuid())
+  tenantId        String        @unique
+  status          String        @default("pending_review") // pending_review, approved, rejected, needs_info, in_progress
+  kycStatus       String        @default("not_started") // not_started, in_progress, verified, failed
+  riskScore       Float? // 0-100 risk assessment
+  documents       Json? // Document upload status: { pan: { uploaded: true, verified: false }, ... }
+  reviewedBy      String? // Super Admin user ID
+  reviewedAt      DateTime?
+  rejectionReason String?
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  kycDocuments    KYCDocument[]
+
+  @@index([status])
+  @@index([kycStatus])
+  @@index([tenantId])
+  @@index([reviewedBy])
+}
+
+// KYC Documents - Store uploaded documents and verification status
+model KYCDocument {
+  id                 String              @id @default(cuid())
+  tenantId           String
+  onboardingId       String?
+  documentType       String // pan, aadhaar, bank_statement, gst_certificate, incorporation_certificate, address_proof
+  fileUrl            String
+  fileName           String
+  fileSize           Int // bytes
+  mimeType           String
+  ocrData            Json? // OCR extraction results: { extractedText: "...", fields: { pan: "...", name: "..." } }
+  verificationStatus String              @default("pending") // pending, verified, rejected, needs_review
+  verifiedBy         String? // Super Admin user ID
+  verifiedAt         DateTime?
+  notes              String?
+  rejectionReason    String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  onboarding         MerchantOnboarding? @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([documentType])
+  @@index([verificationStatus])
+  @@index([onboardingId])
+  @@index([verifiedBy])
 }
 
 model ApiKey {
@@ -578,6 +650,7 @@ model User {
   tenantMemberships          TenantMember[]
   timeEntries                TimeEntry[]                @relation("TimeEntries")
   activityFeeds              ActivityFeed[]
+  marketplaceAppReviews      MarketplaceAppReview[]
   tenant                     Tenant                     @relation("PrimaryTenant", fields: [tenantId], references: [id], onDelete: Cascade)
   vendorRatings              VendorRating[]             @relation("VendorRatings")
   whatsappMessages           WhatsappMessage[]
@@ -614,6 +687,7 @@ model User {
   meetingCreated             Meeting[]                  @relation("MeetingCreatedBy")
   createdWhatsappTemplates   WhatsappTemplate[]
   helpCenterArticles         HelpCenterArticle[]        @relation("HelpCenterArticleAuthor")
+  hrEmployees                Employee[]                 @relation("UserEmployee")
 
   @@index([email])
   // Performance indexes for 10,000+ users
@@ -697,6 +771,8 @@ model Contact {
   emailMessages         EmailMessage[]            @relation("EmailMessages")
   interactions          Interaction[]
   invoices              Invoice[]                 @relation("CustomerInvoices")
+  creditNotes           CreditNote[]              @relation("CustomerCreditNotes")
+  debitNotes            DebitNote[]               @relation("CustomerDebitNotes")
   loyaltyPoints         LoyaltyPoints[]
   nurtureEnrollments    NurtureEnrollment[]
   orders                Order[]                   @relation("CustomerOrders")
@@ -709,10 +785,13 @@ model Contact {
   whatsappConversations WhatsappConversation[]
   workOrders            WorkOrder[]
   formSubmissions       FormSubmission[]
+  surveyResponses       SurveyResponse[]
+  proposals             Proposal[]
   account               Account?                  @relation(fields: [accountId], references: [id], onDelete: SetNull)
   accountId             String?
   quotes                Quote[]
   contracts             Contract[]
+  customerInsights      CustomerInsight[]
 
   @@index([tenantId])
   @@index([accountId])
@@ -802,6 +881,7 @@ model Deal {
   contact           Contact?   @relation(fields: [contactId], references: [id], onDelete: SetNull)
   tenant            Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   quote             Quote?
+  proposals         Proposal[]
   contracts         Contract[]
 
   @@index([tenantId])
@@ -991,8 +1071,12 @@ model Invoice {
   invoiceDate            DateTime          @default(now())
   dueDate                DateTime?
   paidAt                 DateTime?
+  currency               String            @default("INR") // ISO 4217 currency code
+  exchangeRate           Float? // Exchange rate from base currency at invoice date
+  baseCurrencyAmount     Float? // Amount in base currency (for multi-currency reporting)
   tenantId               String
   customerId             String?
+  metadata               Json? // Reminder counts, lastReminderSent, etc.
   createdAt              DateTime          @default(now())
   updatedAt              DateTime          @updatedAt
   customer               Contact?          @relation("CustomerInvoices", fields: [customerId], references: [id])
@@ -1009,6 +1093,105 @@ model Invoice {
   @@index([tenantId, status, createdAt], name: "idx_invoice_forecast_query") // For revenue forecasting queries
   @@index([tenantId, createdAt], name: "idx_invoice_tenant_created") // For date range queries
   @@index([status, createdAt], name: "idx_invoice_status_created") // For status-based date queries
+  // Critical performance index for revenue queries (dashboard stats)
+  @@index([tenantId, status, paidAt], name: "idx_invoice_revenue_query") // For paidAt date range queries with status filter
+  @@index([paidAt], name: "idx_invoice_paid_at") // For paidAt queries without tenantId filter
+}
+
+model CreditNote {
+  id                 String   @id @default(cuid())
+  creditNoteNumber   String   @unique
+  invoiceId          String? // Reference to original invoice
+  invoiceNumber      String? // Denormalized for easy reference
+  status             String   @default("draft") // draft, issued, cancelled
+  reason             String // return, discount, adjustment, other
+  reasonDescription  String?
+  subtotal           Float
+  tax                Float
+  total              Float
+  gstRate            Float?
+  gstAmount          Float?
+  cgst               Float?
+  sgst               Float?
+  igst               Float?
+  isInterState       Boolean  @default(false)
+  placeOfSupply      String?
+  hsnCode            String?
+  reverseCharge      Boolean  @default(false)
+  supplierGSTIN      String?
+  items              Json? // Same structure as Invoice items
+  customerName       String?
+  customerEmail      String?
+  customerPhone      String?
+  customerAddress    String?
+  customerCity       String?
+  customerState      String?
+  customerPostalCode String?
+  customerGSTIN      String?
+  notes              String?
+  termsAndConditions String?
+  creditNoteDate     DateTime @default(now())
+  currency           String   @default("INR")
+  tenantId           String
+  customerId         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  customer           Contact? @relation("CustomerCreditNotes", fields: [customerId], references: [id])
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([creditNoteNumber])
+  @@index([invoiceId])
+  @@index([tenantId, status])
+  @@index([tenantId, creditNoteDate])
+}
+
+model DebitNote {
+  id                 String   @id @default(cuid())
+  debitNoteNumber    String   @unique
+  invoiceId          String? // Reference to original invoice
+  invoiceNumber      String? // Denormalized for easy reference
+  status             String   @default("draft") // draft, issued, cancelled
+  reason             String // additional_charge, price_adjustment, other
+  reasonDescription  String?
+  subtotal           Float
+  tax                Float
+  total              Float
+  gstRate            Float?
+  gstAmount          Float?
+  cgst               Float?
+  sgst               Float?
+  igst               Float?
+  isInterState       Boolean  @default(false)
+  placeOfSupply      String?
+  hsnCode            String?
+  reverseCharge      Boolean  @default(false)
+  supplierGSTIN      String?
+  items              Json? // Same structure as Invoice items
+  customerName       String?
+  customerEmail      String?
+  customerPhone      String?
+  customerAddress    String?
+  customerCity       String?
+  customerState      String?
+  customerPostalCode String?
+  customerGSTIN      String?
+  notes              String?
+  termsAndConditions String?
+  debitNoteDate      DateTime @default(now())
+  currency           String   @default("INR")
+  tenantId           String
+  customerId         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  customer           Contact? @relation("CustomerDebitNotes", fields: [customerId], references: [id])
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([debitNoteNumber])
+  @@index([invoiceId])
+  @@index([tenantId, status])
+  @@index([tenantId, debitNoteDate])
 }
 
 model Department {
@@ -1103,6 +1286,7 @@ model Employee {
   tdsApplicable        Boolean                   @default(true)
   createdBy            String?
   updatedBy            String?
+  userId               String?                   // Link to platform User for attendance, leave, etc.
   tenantId             String
   createdAt            DateTime                  @default(now())
   updatedAt            DateTime                  @updatedAt
@@ -1114,6 +1298,7 @@ model Employee {
   manager              Employee?                 @relation("EmployeeManager", fields: [managerId], references: [id])
   reports              Employee[]                @relation("EmployeeManager")
   tenant               Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user                 User?                     @relation("UserEmployee", fields: [userId], references: [id], onDelete: SetNull)
   employeeDocuments    EmployeeDocument[]
   salaryStructures     EmployeeSalaryStructure[]
   taxDeclarations      EmployeeTaxDeclaration[]
@@ -1129,6 +1314,7 @@ model Employee {
   @@unique([tenantId, officialEmail])
   @@index([tenantId])
   @@index([tenantId, status])
+  @@index([tenantId, userId])
   @@index([tenantId, departmentId])
   @@index([tenantId, designationId])
   @@index([managerId])
@@ -1180,6 +1366,7 @@ model Expense {
   rejectedAt         DateTime?
   rejectionReason    String?
   status             String            @default("pending")
+  metadata           Json? // Recurring config, lastGenerated, totalGenerated
   employee           Employee?         @relation("EmployeeExpenses", fields: [employeeId], references: [id])
   tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   approvals          ExpenseApproval[]
@@ -2885,13 +3072,13 @@ model CustomReport {
 
 model FeatureToggle {
   id          String   @id @default(cuid())
-  tenantId    String
+  tenantId    String? // null for platform-wide flags
   featureName String
   isEnabled   Boolean  @default(false)
   settings    Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, featureName])
   @@index([tenantId])
@@ -7214,32 +7401,66 @@ model MarketplaceApp {
   category      String
   icon          String?
   developer     String
+  developerId   String? // For developer portal
   rating        Decimal?                     @db.Decimal(3, 2)
   installs      Int                          @default(0)
   pricing       String                       @default("Free")
   isActive      Boolean                      @default(true)
+  isApproved    Boolean                      @default(false) // For app submission
+  submittedAt   DateTime?
+  approvedAt    DateTime?
+  version       String?                      @default("1.0.0")
+  changelog     String?
   createdAt     DateTime                     @default(now())
   updatedAt     DateTime                     @updatedAt
   installations MarketplaceAppInstallation[]
+  reviews       MarketplaceAppReview[]
 
   @@index([category])
   @@index([isActive])
+  @@index([isApproved])
+  @@index([developerId])
 }
 
 model MarketplaceAppInstallation {
-  id          String         @id @default(cuid())
+  id          String                 @id @default(cuid())
   tenantId    String
   appId       String
-  status      String         @default("active")
+  status      String                 @default("active")
   config      Json?
-  installedAt DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  app         MarketplaceApp @relation(fields: [appId], references: [id], onDelete: Cascade)
+  installedAt DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  tenant      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  app         MarketplaceApp         @relation(fields: [appId], references: [id], onDelete: Cascade)
+  reviews     MarketplaceAppReview[]
 
   @@unique([tenantId, appId])
   @@index([tenantId])
   @@index([appId])
+}
+
+model MarketplaceAppReview {
+  id             String                      @id @default(cuid())
+  appId          String
+  installationId String?
+  tenantId       String
+  userId         String
+  rating         Int // 1-5 stars
+  title          String?
+  comment        String?
+  isVerified     Boolean                     @default(false) // Verified purchase
+  helpfulCount   Int                         @default(0)
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+  app            MarketplaceApp              @relation(fields: [appId], references: [id], onDelete: Cascade)
+  installation   MarketplaceAppInstallation? @relation(fields: [installationId], references: [id], onDelete: Cascade)
+  tenant         Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user           User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([appId, tenantId]) // One review per tenant per app
+  @@index([appId])
+  @@index([appId, rating])
+  @@index([createdAt])
 }
 
 // Data Governance
@@ -7688,6 +7909,67 @@ model FormSubmission {
   @@index([status])
 }
 
+// Customer Surveys Module (Better than Perfex CRM)
+model Survey {
+  id                   String           @id @default(cuid())
+  tenantId             String
+  name                 String
+  description          String?
+  slug                 String           @unique // For public URLs: /surveys/{slug}
+  type                 String           @default("satisfaction") // satisfaction, nps, feedback, custom
+  status               String           @default("draft") // draft, active, closed
+  questions            Json             @default("[]") // Question definitions
+  settings             Json             @default("{}") // Distribution, reminders, analytics
+  targetAudience       Json? // Segment filters (contact type, deal stage, etc.)
+  distributionChannels String[]         @default(["email"]) // email, sms, whatsapp, web
+  reminderSettings     Json? // Auto-remind after X days
+  analytics            Json             @default("{}") // Response rate, completion rate, NPS score
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  createdById          String?
+  closedAt             DateTime?
+  responses            SurveyResponse[]
+  tenant               Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([slug])
+  @@index([tenantId, status])
+}
+
+model SurveyResponse {
+  id                String    @id @default(cuid())
+  surveyId          String
+  tenantId          String
+  contactId         String?
+  contactEmail      String?
+  contactName       String?
+  responses         Json      @default("{}") // Question ID -> Answer mapping
+  npsScore          Int? // Net Promoter Score (0-10)
+  satisfactionScore Int? // Satisfaction score (1-5)
+  sentiment         String? // positive, neutral, negative
+  channel           String // email, sms, whatsapp, web
+  status            String    @default("sent") // sent, opened, in_progress, completed, declined
+  sentAt            DateTime?
+  openedAt          DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  declinedAt        DateTime?
+  ipAddress         String?
+  userAgent         String?
+  metadata          Json      @default("{}") // Additional metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  survey            Survey    @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  contact           Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([surveyId])
+  @@index([tenantId])
+  @@index([contactId])
+  @@index([status])
+  @@index([completedAt])
+}
+
 // Territory & Quota Management (Critical Gap #3)
 model Territory {
   id           String                @id @default(cuid())
@@ -7851,7 +8133,188 @@ model QuoteLineItem {
   @@index([productId])
 }
 
+// Proposal Model (Better than Perfex CRM - Rich editor, customer acceptance, auto-convert to invoice)
+model Proposal {
+  id                   String             @id @default(cuid())
+  tenantId             String
+  proposalNumber       String             @unique
+  title                String
+  content              Json // Rich editor content (HTML with images, tables, videos)
+  dealId               String? // Optional: Link to deal
+  contactId            String
+  contactEmail         String
+  contactName          String?
+  status               String             @default("draft") // draft, sent, viewed, in_progress, accepted, rejected, expired
+  publicToken          String             @unique // For public view without login
+  publicViewEnabled    Boolean            @default(true) // Allow public view
+  lineItems            ProposalLineItem[]
+  subtotal             Float
+  tax                  Float              @default(0)
+  discount             Float              @default(0)
+  total                Float
+  validUntil           DateTime? // Expiration date
+  expiresAt            DateTime? // Calculated expiration
+  sentAt               DateTime?
+  viewedAt             DateTime?
+  acceptedAt           DateTime?
+  rejectedAt           DateTime?
+  rejectionReason      String?
+  acceptedBy           String? // Customer name/email who accepted
+  customerComments     Json? // Customer comments/discussion
+  autoConvertToInvoice Boolean            @default(true) // Auto-convert to invoice on acceptance
+  convertedInvoiceId   String? // Invoice ID if converted
+  convertedAt          DateTime?
+  reminderSentAt       DateTime? // Last reminder sent
+  reminderSettings     Json? // Reminder configuration
+  metadata             Json               @default("{}") // Additional metadata
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  deal                 Deal?              @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  contact              Contact            @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tenant               Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([dealId])
+  @@index([contactId])
+  @@index([status])
+  @@index([proposalNumber])
+  @@index([publicToken])
+  @@index([validUntil])
+}
+
+model ProposalLineItem {
+  id          String   @id @default(cuid())
+  proposalId  String
+  productId   String?
+  productName String
+  description String?
+  quantity    Int      @default(1)
+  unitPrice   Float
+  discount    Float    @default(0)
+  total       Float
+  createdAt   DateTime @default(now())
+  proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@index([proposalId])
+  @@index([productId])
+}
+
 // Contract model enhanced above - no duplicate needed
+
+// Goals Tracking Module (Better than Perfex CRM)
+model Goal {
+  id              String         @id @default(cuid())
+  tenantId        String
+  name            String
+  description     String?
+  type            String         @default("revenue") // revenue, deals, contacts, tasks, custom
+  targetValue     Float
+  currentValue    Float          @default(0)
+  unit            String         @default("INR") // INR, count, percentage
+  startDate       DateTime
+  endDate         DateTime
+  status          String         @default("active") // active, completed, failed, paused
+  progress        Float          @default(0) // Percentage (0-100)
+  assignedToId    String? // SalesRep or User ID
+  teamId          String? // Team/Department ID
+  milestones      Json           @default("[]") // Array of milestone objects
+  trackingSource  Json? // What to track (deals, invoices, contacts, etc.)
+  metadata        Json           @default("{}")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  completedAt     DateTime?
+  progressHistory GoalProgress[]
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([tenantId, status])
+  @@index([assignedToId])
+  @@index([endDate])
+}
+
+model GoalProgress {
+  id            String   @id @default(cuid())
+  goalId        String
+  tenantId      String
+  value         Float
+  previousValue Float?
+  change        Float? // Change from previous
+  percentage    Float // Progress percentage
+  recordedAt    DateTime @default(now())
+  source        String? // What triggered this update (deal_closed, invoice_paid, etc.)
+  sourceId      String? // ID of source entity
+  metadata      Json     @default("{}")
+  goal          Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+  @@index([tenantId])
+  @@index([recordedAt])
+}
+
+// Company Newsfeed Model (Internal Employee Communication - Better than Perfex CRM)
+model CompanyNewsfeed {
+  id             String         @id @default(cuid())
+  tenantId       String
+  title          String
+  content        String
+  authorId       String
+  authorName     String
+  authorEmail    String
+  type           String         @default("announcement")
+  priority       String         @default("normal")
+  targetAudience Json?
+  attachments    Json           @default("[]")
+  isPinned       Boolean        @default(false)
+  expiresAt      DateTime?
+  publishedAt    DateTime       @default(now())
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  posts          NewsfeedPost[]
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, type])
+  @@index([tenantId, publishedAt])
+  @@index([isPinned])
+}
+
+model NewsfeedPost {
+  id          String            @id @default(cuid())
+  newsfeedId  String
+  tenantId    String
+  authorId    String
+  authorName  String
+  content     String
+  attachments Json              @default("[]")
+  likes       Json              @default("[]")
+  comments    NewsfeedComment[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  newsfeed    CompanyNewsfeed   @relation(fields: [newsfeedId], references: [id], onDelete: Cascade)
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([newsfeedId])
+  @@index([tenantId])
+  @@index([createdAt])
+}
+
+model NewsfeedComment {
+  id         String       @id @default(cuid())
+  postId     String
+  tenantId   String
+  authorId   String
+  authorName String
+  content    String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  post       NewsfeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([tenantId])
+}
 
 // ============================================
 // PHASE 1: RBAC (Role-Based Access Control)
@@ -8300,4 +8763,116 @@ model CashFlowProjection {
 
   @@index([tenantId, projectionDate])
   @@map("cash_flow_projections")
+}
+
+// Tax Rules - Flexible tax engine for per-item tax, multiple tax types
+model TaxRule {
+  id              String    @id @default(cuid())
+  tenantId        String
+  name            String // e.g., "GST 18%", "VAT 20%", "Sales Tax 5%"
+  taxType         String // 'GST', 'VAT', 'SALES_TAX', 'CUSTOM'
+  rate            Float // Tax rate percentage (e.g., 18.0 for 18%)
+  isDefault       Boolean   @default(false) // Default tax rule for tenant
+  appliesTo       String    @default("all") // 'all', 'products', 'services', 'specific'
+  productIds      String[]  @default([]) // If appliesTo is 'specific', list product IDs
+  customerIds     String[]  @default([]) // If applies to specific customers
+  isExempt        Boolean   @default(false) // Exemption rule
+  exemptionReason String? // Reason for exemption
+  isActive        Boolean   @default(true)
+  effectiveFrom   DateTime  @default(now())
+  effectiveTo     DateTime? // Optional end date
+  metadata        Json?     @default("{}") // Additional tax configuration
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@index([tenantId, taxType])
+  @@map("tax_rules")
+}
+
+// Currency Exchange Rates - Track exchange rate history
+model CurrencyExchangeRate {
+  id           String   @id @default(cuid())
+  tenantId     String?
+  fromCurrency String // Base currency (e.g., "INR")
+  toCurrency   String // Target currency (e.g., "USD")
+  rate         Float // Exchange rate
+  rateDate     DateTime @default(now()) @db.Date
+  source       String   @default("manual") // 'manual', 'api', 'openexchangerates', 'fixer'
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([fromCurrency, toCurrency, rateDate, tenantId])
+  @@index([fromCurrency, toCurrency, rateDate])
+  @@index([tenantId])
+  @@map("currency_exchange_rates")
+}
+
+// Customer Insights - AI-powered customer analytics
+model CustomerInsight {
+  id        String @id @default(cuid())
+  contactId String
+  tenantId  String
+
+  // Health Score (0-100)
+  healthScore           Float @default(0) // Overall customer health
+  healthScoreComponents Json? // Breakdown: engagement, payment, support
+
+  // Churn Prediction
+  churnRisk           Float     @default(0) // 0-100 probability
+  churnRiskLevel      String    @default("low") // low, medium, high, critical
+  churnReasons        String[] // Reasons for churn risk
+  churnPredictionDate DateTime? // Predicted churn date
+
+  // Lifetime Value
+  lifetimeValue     Float  @default(0) // Total LTV
+  predictedLTV      Float? // Predicted future LTV
+  averageOrderValue Float? // Average order/invoice value
+  purchaseFrequency Float? // Purchases per period
+
+  // Engagement Metrics
+  engagementScore  Float     @default(0) // 0-100
+  lastActivityDate DateTime?
+  activityCount    Int       @default(0)
+  responseRate     Float? // Email/SMS response rate
+
+  // Payment Metrics
+  paymentScore      Float  @default(0) // 0-100
+  averageDaysToPay  Float? // Average payment delay
+  onTimePaymentRate Float? // Percentage of on-time payments
+  totalPaid         Float  @default(0)
+  totalOutstanding  Float  @default(0)
+
+  // Support Metrics
+  supportScore          Float  @default(0) // 0-100
+  ticketCount           Int    @default(0)
+  averageResolutionTime Float? // Hours
+  satisfactionScore     Float? // Customer satisfaction rating
+
+  // Recommendations
+  recommendedActions String[] // AI-suggested actions
+  nextBestAction     String? // Top recommended action
+
+  // Metadata
+  lastCalculatedAt   DateTime @default(now())
+  calculationVersion String   @default("1.0")
+  metadata           Json?    @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, tenantId])
+  @@index([tenantId])
+  @@index([contactId])
+  @@index([tenantId, churnRiskLevel])
+  @@index([tenantId, healthScore])
+  @@index([lastCalculatedAt])
+  @@map("customer_insights")
 }

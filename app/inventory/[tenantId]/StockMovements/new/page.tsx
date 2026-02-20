@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { apiRequest } from '@/lib/api/client'
 import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -137,57 +137,57 @@ export default function NewStockMovementPage() {
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="type">Movement Type *</Label>
-                  <Select
+                  <CustomSelect
                     value={formData.type}
-                    onValueChange={(value) => setFormData({ ...formData, type: value as 'IN' | 'OUT' | 'ADJUSTMENT' })}
+                    onValueChange={(value: string) => setFormData({ ...formData, type: value as 'IN' | 'OUT' | 'ADJUSTMENT' })}
+                    placeholder="Select movement type"
                   >
-                    <SelectTrigger required>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="IN">Stock In</SelectItem>
-                      <SelectItem value="OUT">Stock Out</SelectItem>
-                      <SelectItem value="ADJUSTMENT">Adjustment</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <CustomSelectTrigger>
+                    </CustomSelectTrigger>
+                    <CustomSelectContent>
+                      <CustomSelectItem value="IN">Stock In</CustomSelectItem>
+                      <CustomSelectItem value="OUT">Stock Out</CustomSelectItem>
+                      <CustomSelectItem value="ADJUSTMENT">Adjustment</CustomSelectItem>
+                    </CustomSelectContent>
+                  </CustomSelect>
                 </div>
 
                 <div>
                   <Label htmlFor="productId">Product *</Label>
-                  <Select
+                  <CustomSelect
                     value={formData.productId}
-                    onValueChange={(value) => setFormData({ ...formData, productId: value })}
+                    onValueChange={(value: string) => setFormData({ ...formData, productId: value })}
+                    placeholder="Select a product"
                   >
-                    <SelectTrigger required>
-                      <SelectValue placeholder="Select a product" />
-                    </SelectTrigger>
-                    <SelectContent>
+                    <CustomSelectTrigger>
+                    </CustomSelectTrigger>
+                    <CustomSelectContent>
                       {products.map((product: any) => (
-                        <SelectItem key={product.id} value={product.id}>
+                        <CustomSelectItem key={product.id} value={product.id}>
                           {product.name} {product.sku ? `(${product.sku})` : ''}
-                        </SelectItem>
+                        </CustomSelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </CustomSelectContent>
+                  </CustomSelect>
                 </div>
 
                 <div>
                   <Label htmlFor="locationId">Warehouse/Location *</Label>
-                  <Select
+                  <CustomSelect
                     value={formData.locationId}
-                    onValueChange={(value) => setFormData({ ...formData, locationId: value })}
+                    onValueChange={(value: string) => setFormData({ ...formData, locationId: value })}
+                    placeholder="Select a warehouse"
                   >
-                    <SelectTrigger required>
-                      <SelectValue placeholder="Select a warehouse" />
-                    </SelectTrigger>
-                    <SelectContent>
+                    <CustomSelectTrigger>
+                    </CustomSelectTrigger>
+                    <CustomSelectContent>
                       {warehouses.map((warehouse: any) => (
-                        <SelectItem key={warehouse.id} value={warehouse.id}>
+                        <CustomSelectItem key={warehouse.id} value={warehouse.id}>
                           {warehouse.name} {warehouse.code ? `(${warehouse.code})` : ''}
-                        </SelectItem>
+                        </CustomSelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </CustomSelectContent>
+                  </CustomSelect>
                 </div>
 
                 <div>

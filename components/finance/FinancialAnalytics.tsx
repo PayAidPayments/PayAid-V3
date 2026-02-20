@@ -150,7 +150,7 @@ export function FinancialAnalytics({ tenantId }: FinancialAnalyticsProps) {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percentage }) => `${name}: ${percentage}%`}
+                  label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="amount"
@@ -176,7 +176,7 @@ export function FinancialAnalytics({ tenantId }: FinancialAnalyticsProps) {
                 <div key={idx} className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <div className="font-medium">{customer.customer}</div>
-                    <Badge variant={customer.avgDaysToPay <= 30 ? 'default' : 'warning'}>
+                    <Badge variant={customer.avgDaysToPay <= 30 ? 'default' : 'secondary'}>
                       {customer.avgDaysToPay} days avg
                     </Badge>
                   </div>

@@ -20,7 +20,13 @@ export async function POST(
 ) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
-    const contractId = params.id
+    if (!tenantId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const contractId = typeof params?.id === 'string' ? params.id : undefined
+    if (!contractId) {
+      return NextResponse.json({ error: 'Contract ID is required' }, { status: 400 })
+    }
 
     const body = await request.json()
     const validated = signContractSchema.parse(body)
@@ -47,9 +53,9 @@ export async function POST(
       contractId,
       {
         signatureId: validated.signatureId,
-        signatureUrl: validated.signatureData 
-          ? `data:image/png;base64,${validated.signatureData}` 
-          : undefined,
+        signatureUrl: validated.signatureData
+          ? `data:image/png;base64,${validated.signatureData}`
+          : '',
         ipAddress: clientIp,
         userAgent: userAgent,
       }

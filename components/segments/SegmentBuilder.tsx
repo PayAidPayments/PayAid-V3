@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { Plus, X, Trash2 } from 'lucide-react'
 
 export interface SegmentCriteria {
@@ -187,59 +187,59 @@ export function SegmentBuilder({ criteria, onCriteriaChange }: SegmentBuilderPro
             <Card key={index} className="p-4">
               <div className="flex items-start gap-3">
                 {index > 0 && (
-                  <Select
+                  <CustomSelect
                     value={criterion.logicalOperator || 'AND'}
-                    onValueChange={(value) =>
+                    onValueChange={(value: string) =>
                       updateCriteria(index, { logicalOperator: value as 'AND' | 'OR' })
                     }
+                    placeholder="AND"
                   >
-                    <SelectTrigger className="w-20">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="AND">AND</SelectItem>
-                      <SelectItem value="OR">OR</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <CustomSelectTrigger className="w-20">
+                    </CustomSelectTrigger>
+                    <CustomSelectContent>
+                      <CustomSelectItem value="AND">AND</CustomSelectItem>
+                      <CustomSelectItem value="OR">OR</CustomSelectItem>
+                    </CustomSelectContent>
+                  </CustomSelect>
                 )}
 
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
-                  <Select
+                  <CustomSelect
                     value={criterion.field}
-                    onValueChange={(value) => {
+                    onValueChange={(value: string) => {
                       updateCriteria(index, { field: value, operator: '', value: '' })
                     }}
+                    placeholder="Select field"
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select field" />
-                    </SelectTrigger>
-                    <SelectContent>
+                    <CustomSelectTrigger>
+                    </CustomSelectTrigger>
+                    <CustomSelectContent>
                       {AVAILABLE_FIELDS.map((field) => (
-                        <SelectItem key={field.value} value={field.value}>
+                        <CustomSelectItem key={field.value} value={field.value}>
                           {field.label}
-                        </SelectItem>
+                        </CustomSelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </CustomSelectContent>
+                  </CustomSelect>
 
                   {criterion.field && (
-                    <Select
+                    <CustomSelect
                       value={criterion.operator}
-                      onValueChange={(value) => {
+                      onValueChange={(value: string) => {
                         updateCriteria(index, { operator: value, value: '' })
                       }}
+                      placeholder="Select operator"
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select operator" />
-                      </SelectTrigger>
-                      <SelectContent>
+                      <CustomSelectTrigger>
+                      </CustomSelectTrigger>
+                      <CustomSelectContent>
                         {operators.map((op) => (
-                          <SelectItem key={op.value} value={op.value}>
+                          <CustomSelectItem key={op.value} value={op.value}>
                             {op.label}
-                          </SelectItem>
+                          </CustomSelectItem>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </CustomSelectContent>
+                    </CustomSelect>
                   )}
 
                   {criterion.field && criterion.operator && (

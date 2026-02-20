@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/auth';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useEffect, useState, useRef } from 'react';
-import { Settings, LogOut, ChevronDown, Newspaper } from 'lucide-react';
+import { Settings, LogOut, ChevronDown, Newspaper, Shield, Building2 } from 'lucide-react';
 import { NotificationBell } from '@/components/NotificationBell';
 import { Logo } from '@/components/brand/Logo';
 
@@ -17,6 +18,7 @@ export function Header() {
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { logout, tenant, user, token } = useAuthStore();
+  const { isSuperAdmin, isBusinessAdmin } = usePermissions();
 
   useEffect(() => {
     setMounted(true);
@@ -150,6 +152,26 @@ export function Header() {
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user?.name || 'User'}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
                       </div>
+                      {mounted && isSuperAdmin && (
+                        <Link
+                          href="/super-admin"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <Shield className="w-4 h-4 mr-3" />
+                          Super Admin
+                        </Link>
+                      )}
+                      {mounted && (isBusinessAdmin || isSuperAdmin) && (
+                        <Link
+                          href="/admin"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <Building2 className="w-4 h-4 mr-3" />
+                          Admin
+                        </Link>
+                      )}
                       <button
                         onClick={() => {
                           router.push(getProfileUrl());

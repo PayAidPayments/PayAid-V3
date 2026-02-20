@@ -14,28 +14,6 @@ export function getTenantId(): string | null {
 }
 
 /**
- * Generate a tenant-aware dashboard URL
- * @param path - The dashboard path (e.g., '/contacts', '/invoices/new')
- * @returns Full path with tenant ID (e.g., '/dashboard/[tenantId]/contacts')
- */
-export function getDashboardUrl(path: string): string {
-  if (!path || typeof path !== 'string') {
-    path = '/dashboard'
-  }
-  
-  const tenantId = getTenantId()
-  if (!tenantId) {
-    // Fallback to path without tenantId (will be handled by middleware)
-    return `/dashboard${path.startsWith('/') ? path : '/' + path}`
-  }
-  
-  // Remove leading /dashboard if present
-  const cleanPath = path.replace(/^\/dashboard\/?/, '')
-  
-  return `/dashboard/${tenantId}${cleanPath ? '/' + cleanPath : ''}`
-}
-
-/**
  * Extract tenant ID from a dashboard URL
  * @param pathname - Full pathname (e.g., '/dashboard/[tenantId]/contacts')
  * @returns Tenant ID or null

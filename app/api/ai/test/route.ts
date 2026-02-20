@@ -7,39 +7,47 @@ export async function GET(request: NextRequest) {
     // Check AI Studio module license
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
+    // Trim whitespace from API keys (common issue)
+    const groqKey = (process.env.GROQ_API_KEY || '').trim()
+    const ollamaKey = (process.env.OLLAMA_API_KEY || '').trim()
+    const hfKey = (process.env.HUGGINGFACE_API_KEY || '').trim()
+
     const results: any = {
       groq: {
-        configured: !!process.env.GROQ_API_KEY,
-        apiKeyLength: process.env.GROQ_API_KEY?.length || 0,
-        model: process.env.GROQ_MODEL || 'not set',
+        configured: !!groqKey,
+        apiKeyLength: groqKey.length,
+        apiKeyPrefix: groqKey.substring(0, 8) + '...' || 'none',
+        model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
         testResult: null,
         error: null,
       },
       ollama: {
-        configured: !!process.env.OLLAMA_API_KEY || !!process.env.OLLAMA_BASE_URL,
+        configured: !!ollamaKey || !!process.env.OLLAMA_BASE_URL,
         baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
-        apiKeyLength: process.env.OLLAMA_API_KEY?.length || 0,
-        model: process.env.OLLAMA_MODEL || 'not set',
+        apiKeyLength: ollamaKey.length,
+        apiKeyPrefix: ollamaKey ? ollamaKey.substring(0, 8) + '...' : 'none',
+        model: process.env.OLLAMA_MODEL || 'mistral:7b',
         testResult: null,
         error: null,
       },
       huggingface: {
-        configured: !!process.env.HUGGINGFACE_API_KEY,
-        apiKeyLength: process.env.HUGGINGFACE_API_KEY?.length || 0,
-        model: process.env.HUGGINGFACE_MODEL || 'not set',
+        configured: !!hfKey,
+        apiKeyLength: hfKey.length,
+        apiKeyPrefix: hfKey ? hfKey.substring(0, 8) + '...' : 'none',
+        model: process.env.HUGGINGFACE_MODEL || 'google/gemma-2-2b-it',
         testResult: null,
         error: null,
       },
     }
 
     // Test Groq
-    if (process.env.GROQ_API_KEY) {
+    if (groqKey) {
       try {
         const testResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+            'Authorization': `Bearer ${groqKey}`,
           },
           body: JSON.stringify({
             model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
@@ -66,15 +74,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Test Ollama
-    if (process.env.OLLAMA_BASE_URL || process.env.OLLAMA_API_KEY) {
+    if (process.env.OLLAMA_BASE_URL || ollamaKey) {
       try {
         const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
         }
         
-        if (process.env.OLLAMA_API_KEY) {
-          headers['Authorization'] = `Bearer ${process.env.OLLAMA_API_KEY}`
+        if (ollamaKey) {
+          headers['Authorization'] = `Bearer ${ollamaKey}`
         }
 
         const testResponse = await fetch(`${baseUrl}/api/chat`, {
@@ -105,7 +113,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Test Hugging Face
-    if (process.env.HUGGINGFACE_API_KEY) {
+    if (hfKey) {
       try {
         const model = process.env.HUGGINGFACE_MODEL || 'google/gemma-2-2b-it'
         
@@ -114,7 +122,7 @@ export async function GET(request: NextRequest) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+            'Authorization': `Bearer ${hfKey}`,
           },
           body: JSON.stringify({
             model: model,

@@ -44,6 +44,8 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
           },
         })
 
+        console.log('[SmartInsights] API response status:', response.status, response.statusText)
+
         if (response.ok) {
           const data = await response.json()
           console.log('[SmartInsights] API response:', { 
@@ -56,6 +58,17 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
             improvements: data?.insights?.improvements?.length || 0,
             fullData: data
           })
+          
+          // Debug: Log the actual arrays to see if they have content
+          if (data?.insights) {
+            console.log('[SmartInsights] Raw insights arrays:', {
+              urgentActions: data.insights.urgentActions,
+              opportunities: data.insights.opportunities,
+              risks: data.insights.risks,
+              recommendations: data.insights.recommendations,
+              improvements: data.insights.improvements,
+            })
+          }
           
           // API returns object with insights.urgentActions, insights.opportunities, etc.
           // Transform API response to our Insight format
@@ -142,7 +155,21 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
             statusText: response.statusText,
             error: errorText,
           })
-          setInsights([])
+          
+          // Even on error, try to show a helpful message
+          if (response.status === 403 || response.status === 401) {
+            // License/auth issue - show helpful message
+            setInsights([{
+              id: 'license-error',
+              type: 'info',
+              title: 'AI Insights Unavailable',
+              description: 'AI Smart Insights require the AI Studio module. Please contact your administrator to enable this feature.',
+              impact: 'low',
+              timestamp: new Date(),
+            }])
+          } else {
+            setInsights([])
+          }
         }
       } catch (error) {
         console.error('[SmartInsights] Error fetching insights:', error)
@@ -210,11 +237,15 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
     )
   }
 
+  // CRITICAL: Normalize insights to always be an array to prevent .map() errors
+  const safeInsights = Array.isArray(insights) ? insights : []
+
   // CRITICAL: Check if insights is an array and has length before rendering
-  if (!Array.isArray(insights) || insights.length === 0) {
+  // Only show empty state if we're not loading AND have no insights
+  if (!isLoading && (!Array.isArray(safeInsights) || safeInsights.length === 0)) {
     return (
-      <Card className="border-0 shadow-md">
-        <CardHeader>
+      <Card className="border-0 shadow-md rounded-xl">
+        <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-purple-500" />
             Smart Insights
@@ -229,21 +260,18 @@ export function SmartInsights({ tenantId, stats }: SmartInsightsProps) {
     )
   }
 
-  // CRITICAL: Normalize insights to always be an array to prevent .map() errors
-  const safeInsights = Array.isArray(insights) ? insights : []
-
   return (
-    <Card className="border-0 shadow-md">
-      <CardHeader>
+    <Card className="border-0 shadow-md rounded-xl">
+      <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-purple-500" />
           Smart Insights
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="max-h-[600px] overflow-y-auto">
         <div className="space-y-3">
           <AnimatePresence>
-            {safeInsights.map((insight, index) => (
+            {safeInsights.slice(0, 5).map((insight, index) => (
               <motion.div
                 key={insight.id}
                 initial={{ opacity: 0, y: 10 }}

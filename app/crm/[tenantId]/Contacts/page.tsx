@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useContacts, useDeleteContact } from '@/lib/hooks/use-api'
 import { Button } from '@/components/ui/button'
@@ -29,7 +29,6 @@ import {
   CheckCircle,
   Copy,
   Filter,
-  MoreVertical,
   Phone,
   Calendar,
   FileIcon,
@@ -54,9 +53,15 @@ import { StagePromotionButton } from '@/components/crm/StagePromotionButton'
 import { StageBadge } from '@/components/crm/StageBadge'
 import { PageLoading } from '@/components/ui/loading'
 import { Badge } from '@/components/ui/badge'
+import { EntityPageLayout } from '@/components/crm/layout/EntityPageLayout'
+import { KPIBar } from '@/components/crm/layout/KPIBar'
+import { EntityAIPanel } from '@/components/crm/layout/EntityAIPanel'
+import { RowActionsMenu } from '@/components/crm/RowActionsMenu'
+import { BulkActionsBar } from '@/components/crm/BulkActionsBar'
 
 export default function CRMContactsPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const router = useRouter()
   const tenantId = params?.tenantId as string
   const { user, logout } = useAuthStore()
@@ -64,6 +69,7 @@ export default function CRMContactsPage() {
   const [limit, setLimit] = useState(100)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('')
+  const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
@@ -93,11 +99,37 @@ export default function CRMContactsPage() {
   const createMenuRef = useRef<HTMLDivElement>(null)
   const profileMenuRef = useRef<HTMLDivElement>(null)
 
+  // Handle URL query parameters for filtering
+  useEffect(() => {
+    const filter = searchParams?.get('filter')
+    if (filter === 'new') {
+      // Filter for new contacts created this month
+      const now = new Date()
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+      // We'll filter client-side since the API doesn't support date filtering yet
+      setTimePeriod('month')
+    } else if (filter === 'customers') {
+      setTypeFilter('customer')
+    }
+  }, [searchParams])
+
   const { data, isLoading, error } = useContacts({ page, limit, search, type: typeFilter || undefined })
   
   // Apply filters to contacts
   const contacts = data?.contacts || []
   const filteredContacts = contacts.filter((contact: any) => {
+    // Handle filter=new - show contacts created this month
+    const filter = searchParams?.get('filter')
+    if (filter === 'new') {
+      if (!contact.createdAt) return false
+      const createdDate = new Date(contact.createdAt)
+      const now = new Date()
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+      if (createdDate < monthStart || createdDate > monthEnd) return false
+    }
+    
     // Apply system filters
     if (systemFilters.touched && !contact.lastActivityDate) return false
     if (systemFilters.untouched && contact.lastActivityDate) return false
@@ -292,6 +324,20 @@ export default function CRMContactsPage() {
   const pagination = data?.pagination
   const totalRecords = pagination?.total || filteredContacts.length
 
+  // Calculate KPI stats
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const newThisMonth = filteredContacts.filter((contact: any) => {
+    if (!contact.createdAt) return false
+    const created = new Date(contact.createdAt)
+    return created >= monthStart
+  }).length
+
+  const customers = filteredContacts.filter((contact: any) => {
+    const stage = contact.stage || (contact.type === 'customer' ? 'customer' : 'contact')
+    return stage === 'customer'
+  }).length
+
   // Get status color
   const getStatusColor = (status: string) => {
     const statusColors: Record<string, string> = {
@@ -332,9 +378,9 @@ export default function CRMContactsPage() {
   }
 
   return (
-    <div className="w-full bg-gray-50 relative" style={{ zIndex: 1 }}>
-      {/* ModuleTopBar is now in layout.tsx */}
-
+    <>
+      {/* Action buttons in header area */}
+      <div className="fixed top-16 right-6 z-50 flex items-center gap-2">
             {/* Create Contact Dropdown */}
             <div className="relative" ref={createMenuRef}>
               <button
@@ -472,82 +518,58 @@ export default function CRMContactsPage() {
                 </div>
               )}
             </div>
-
-      {/* Header Section */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">All Contacts</h1>
-        <div className="flex items-center gap-4">
-          <select
-            value={limit}
-            onChange={(e) => setLimit(Number(e.target.value))}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value={25}>25 Records Per Page</option>
-            <option value={50}>50 Records Per Page</option>
-            <option value={100}>100 Records Per Page</option>
-            <option value={200}>200 Records Per Page</option>
-          </select>
-          {pagination && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span>
-                {((page - 1) * limit) + 1} - {Math.min(page * limit, totalRecords)}
-              </span>
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-2 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                &lt;
-              </button>
-              <button
-                onClick={() => setPage(p => Math.min(Math.ceil(totalRecords / limit), p + 1))}
-                disabled={page >= Math.ceil(totalRecords / limit)}
-                className="px-2 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                &gt;
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
-      <div className="flex">
-        {/* Left Sidebar - Filters */}
-        <div className="w-64 bg-white border-r border-gray-200 min-h-screen p-4">
-          <div className="mb-6">
-            <p className="text-sm font-semibold text-gray-700">Total Records: {totalRecords.toLocaleString()}</p>
-          </div>
+      <EntityPageLayout
+        title="Contacts"
+        subtitle="Manage your contacts and relationships"
+        kpiBar={
+          <KPIBar
+            items={[
+              { label: 'Total Contacts', value: totalRecords.toLocaleString() },
+              { label: 'Customers', value: customers.toLocaleString() },
+              { label: 'New This Month', value: newThisMonth.toLocaleString() },
+              { label: 'Active', value: filteredContacts.length.toLocaleString() },
+            ]}
+          />
+        }
+        leftSidebar={
+          <div className="p-4 space-y-4">
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">
+                Total Records: {totalRecords.toLocaleString()}
+              </p>
+            </div>
+            {/* Filter Contacts by */}
+            <div className="border-t border-slate-100 dark:border-gray-700 pt-3">
+              <button
+                onClick={() => setFilterByOpen(!filterByOpen)}
+                className="w-full flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide mb-2"
+              >
+                <span>Filter Contacts by</span>
+                <ChevronDown className={`w-4 h-4 transition-transform text-slate-400 dark:text-gray-500 ${filterByOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {filterByOpen && (
+                <div className="space-y-3">
+                  <Input
+                    placeholder="Search contacts..."
+                    className="h-8 text-sm rounded-lg border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
 
-          {/* Filter Contacts by */}
-          <div className="mb-6">
-            <button
-              onClick={() => setFilterByOpen(!filterByOpen)}
-              className="w-full flex items-center justify-between text-sm font-semibold text-gray-700 mb-2"
-            >
-              <span>Filter Contacts by</span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${filterByOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {filterByOpen && (
-              <div className="space-y-3">
-                <Input
-                  placeholder="Q Search..."
-                  className="h-8 text-sm"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* System Defined Filters */}
-          <div className="mb-6">
-            <button
-              onClick={() => setSystemFiltersOpen(!systemFiltersOpen)}
-              className="w-full flex items-center justify-between text-sm font-semibold text-gray-700 mb-2"
-            >
-              <span>System Defined Filters</span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${systemFiltersOpen ? 'rotate-180' : ''}`} />
-            </button>
+            {/* System Defined Filters */}
+            <div className="border-t border-slate-100 dark:border-gray-700 pt-3">
+              <button
+                onClick={() => setSystemFiltersOpen(!systemFiltersOpen)}
+                className="w-full flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide mb-2"
+              >
+                <span>System Defined Filters</span>
+                <ChevronDown className={`w-4 h-4 transition-transform text-slate-400 dark:text-gray-500 ${systemFiltersOpen ? 'rotate-180' : ''}`} />
+              </button>
             {systemFiltersOpen && (
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
@@ -654,15 +676,15 @@ export default function CRMContactsPage() {
             )}
           </div>
 
-          {/* Filter By Fields */}
-          <div>
-            <button
-              onClick={() => setFieldFiltersOpen(!fieldFiltersOpen)}
-              className="w-full flex items-center justify-between text-sm font-semibold text-gray-700 mb-2"
-            >
-              <span>Filter By Fields</span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${fieldFiltersOpen ? 'rotate-180' : ''}`} />
-            </button>
+            {/* Filter By Fields */}
+            <div className="border-t border-slate-100 dark:border-gray-700 pt-3">
+              <button
+                onClick={() => setFieldFiltersOpen(!fieldFiltersOpen)}
+                className="w-full flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide mb-2"
+              >
+                <span>Filter By Fields</span>
+                <ChevronDown className={`w-4 h-4 transition-transform text-slate-400 dark:text-gray-500 ${fieldFiltersOpen ? 'rotate-180' : ''}`} />
+              </button>
             {fieldFiltersOpen && (
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
@@ -680,166 +702,152 @@ export default function CRMContactsPage() {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        }
+        mainContent={
+          <div className="p-6">
+            {/* Contacts Table */}
+            <div className="overflow-x-auto">
+            {filteredContacts.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600 dark:text-gray-400 mb-4">No contacts found</p>
+                <Link href={`/crm/${tenantId}/Contacts/new`}>
+                  <Button>Create Your First Contact</Button>
+                </Link>
+              </div>
+            ) : (
+              <Table className="min-w-full text-sm">
+                <TableHeader>
+                  <TableRow className="bg-slate-50 dark:bg-gray-800">
+                    <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide w-12">
+                      <Checkbox
+                        checked={selectedContacts.length === filteredContacts.length && filteredContacts.length > 0}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedContacts(filteredContacts.map((c: any) => c.id))
+                          } else {
+                            setSelectedContacts([])
+                          }
+                        }}
+                      />
+                    </TableHead>
+                    <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Status</TableHead>
+                    <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Stage</TableHead>
+                    <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Name</TableHead>
+                    <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Company</TableHead>
+                    <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Email</TableHead>
+                    <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Phone</TableHead>
+                    <TableHead className="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-100 dark:divide-gray-700">
+                  {filteredContacts.map((contact: any) => {
+                    const isSelected = selectedContacts.includes(contact.id)
+                    const status = contact.status || 'Active'
 
-        {/* Main Content Area */}
-        <div className="flex-1 p-6">
-          {/* Contacts Table */}
-          <Card className="border-0 shadow-lg">
-            <CardContent className="p-0">
-              {filteredContacts.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-600 mb-4">No contacts found</p>
-                  <Link href={`/crm/${tenantId}/Contacts/new`}>
-                    <Button>Create Your First Contact</Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">
+                    return (
+                      <TableRow key={contact.id} className={`hover:bg-indigo-50/40 dark:hover:bg-indigo-900/20 transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
+                        <TableCell className="px-4 py-3">
                           <Checkbox
-                            checked={selectedContacts.length === filteredContacts.length && filteredContacts.length > 0}
+                            checked={isSelected}
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setSelectedContacts(filteredContacts.map((c: any) => c.id))
+                                setSelectedContacts([...selectedContacts, contact.id])
                               } else {
-                                setSelectedContacts([])
+                                setSelectedContacts(selectedContacts.filter(id => id !== contact.id))
                               }
                             }}
                           />
-                        </TableHead>
-                        <TableHead className="w-16"></TableHead>
-                        <TableHead>
-                          <div className="flex items-center gap-2">
-                            Lead Status
-                            <ArrowUpDown className="w-3 h-3 text-gray-400" />
-                            <Filter className="w-3 h-3 text-gray-400" />
-                          </div>
-                        </TableHead>
-                        <TableHead>
-                          <div className="flex items-center gap-2">
-                            <select className="text-xs border-0 bg-transparent font-semibold">
-                              <option>All</option>
-                              <option>Customers</option>
-                              <option>Leads</option>
-                            </select>
-                            Contact Name
-                            <ArrowUpDown className="w-3 h-3 text-gray-400" />
-                            <Filter className="w-3 h-3 text-gray-400" />
-                          </div>
-                        </TableHead>
-                        <TableHead>
-                          <div className="flex items-center gap-2">
-                            Account Name
-                            <ArrowUpDown className="w-3 h-3 text-gray-400" />
-                            <Filter className="w-3 h-3 text-gray-400" />
-                          </div>
-                        </TableHead>
-                        <TableHead>
-                          <div className="flex items-center gap-2">
-                            Email
-                            <ArrowUpDown className="w-3 h-3 text-gray-400" />
-                            <Filter className="w-3 h-3 text-gray-400" />
-                          </div>
-                        </TableHead>
-                        <TableHead>
-                          <div className="flex items-center gap-2">
-                            Phone
-                            <ArrowUpDown className="w-3 h-3 text-gray-400" />
-                            <Filter className="w-3 h-3 text-gray-400" />
-                          </div>
-                        </TableHead>
-                        <TableHead>
-                          <div className="flex items-center gap-2">
-                            Contact Owner
-                            <ArrowUpDown className="w-3 h-3 text-gray-400" />
-                            <Filter className="w-3 h-3 text-gray-400" />
-                          </div>
-                        </TableHead>
-                        <TableHead>
-                          <ArrowUpDown className="w-3 h-3 text-gray-400" />
-                        </TableHead>
+                        </TableCell>
+                        <TableCell className="px-4 py-3 whitespace-nowrap">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
+                            {status}
+                          </span>
+                        </TableCell>
+                        <TableCell className="px-4 py-3 whitespace-nowrap">
+                          <StageBadge 
+                            stage={contact.stage || (contact.type === 'lead' ? 'prospect' : contact.type === 'customer' ? 'customer' : 'contact')} 
+                          />
+                        </TableCell>
+                        <TableCell className="px-4 py-3 whitespace-nowrap">
+                          <Link href={`/crm/${tenantId}/Contacts/${contact.id}`} className="font-medium text-slate-800 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400">
+                            {contact.name}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="px-4 py-3 whitespace-nowrap max-w-[160px] truncate text-sm text-slate-500 dark:text-gray-400">
+                          {contact.company || '-'}
+                        </TableCell>
+                        <TableCell className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-gray-400">
+                          {contact.email || '-'}
+                        </TableCell>
+                        <TableCell className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-gray-400">
+                          {contact.phone || '-'}
+                        </TableCell>
+                        <TableCell className="px-4 py-3 whitespace-nowrap text-right">
+                          <RowActionsMenu
+                            entityType={contact.stage === 'customer' ? 'customer' : 'contact'}
+                            entityId={contact.id}
+                            tenantId={tenantId}
+                            onDelete={async () => {
+                              if (confirm('Are you sure you want to delete this contact?')) {
+                                try {
+                                  await deleteContact.mutateAsync(contact.id)
+                                } catch (error) {
+                                  alert(error instanceof Error ? error.message : 'Failed to delete contact')
+                                }
+                              }
+                            }}
+                            onCreateDeal={() => {
+                              router.push(`/crm/${tenantId}/Deals/new?contactId=${contact.id}`)
+                            }}
+                          />
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredContacts.map((contact: any) => {
-                        const isSelected = selectedContacts.includes(contact.id)
-                        const contactDate = getContactDate(contact)
-                        const status = contact.status || 'Active'
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            )}
+            </div>
+          </div>
+        }
+        rightSidebar={<EntityAIPanel entityType="contacts" />}
+      />
 
-                        return (
-                          <TableRow key={contact.id} className={isSelected ? 'bg-blue-50' : ''}>
-                            <TableCell>
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedContacts([...selectedContacts, contact.id])
-                                  } else {
-                                    setSelectedContacts(selectedContacts.filter(id => id !== contact.id))
-                                  }
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              {contactDate && (
-                                <div className="flex flex-col items-center">
-                                  {getContactIcon(contact)}
-                                  <span className="text-xs text-gray-500 mt-1">{contactDate}</span>
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
-                                {status}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <StageBadge 
-                                stage={contact.stage || (contact.type === 'lead' ? 'prospect' : contact.type === 'customer' ? 'customer' : 'contact')} 
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Link href={`/crm/${tenantId}/Contacts/${contact.id}`} className="font-medium text-blue-600 hover:underline">
-                                {contact.name}
-                              </Link>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600">
-                              {contact.company || '-'}
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600">
-                              {contact.email || '-'}
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {contact.phone ? (
-                                <div className="flex items-center gap-1">
-                                  <Phone className="w-4 h-4 text-green-600" />
-                                  <span>{contact.phone}</span>
-                                </div>
-                              ) : '-'}
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600">
-                              {contact.assignedTo?.name || contact.assignedToId || '-'}
-                            </TableCell>
-                            <TableCell>
-                              <button className="p-1 hover:bg-gray-100 rounded">
-                                <MoreVertical className="w-4 h-4 text-gray-600" />
-                              </button>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      {/* Bulk Actions Bar */}
+      <BulkActionsBar
+        selectedCount={selectedContacts.length}
+        entityType="contact"
+        onEdit={() => {
+          if (selectedContacts.length === 1) {
+            router.push(`/crm/${tenantId}/Contacts/${selectedContacts[0]}/Edit`)
+          } else {
+            alert('Mass edit feature coming soon')
+          }
+        }}
+        onDelete={async () => {
+          if (selectedContacts.length > 0 && confirm(`Are you sure you want to delete ${selectedContacts.length} contact(s)?`)) {
+            try {
+              for (const id of selectedContacts) {
+                await deleteContact.mutateAsync(id)
+              }
+              setSelectedContacts([])
+              window.location.reload()
+            } catch (error) {
+              alert('Failed to delete some contacts')
+            }
+          }
+        }}
+        onAssign={() => {
+          if (selectedContacts.length > 0) {
+            setMassTransferModalOpen(true)
+          }
+        }}
+        onExport={() => handleExportContacts('excel')}
+        onClearSelection={() => setSelectedContacts([])}
+      />
+
+      {/* Bottom Bar - Smart Chat */}
 
       {/* Bottom Bar - Smart Chat */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3 flex items-center justify-between z-20">
@@ -928,6 +936,6 @@ export default function CRMContactsPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }

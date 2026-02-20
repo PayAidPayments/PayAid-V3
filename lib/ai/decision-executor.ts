@@ -293,9 +293,12 @@ async function executeChangePaymentTerms(
     return { success: false, message: 'Customer ID and payment terms required' }
   }
 
+  // Contact model doesn't have paymentTerms field - store in notes or metadata
   await prisma.contact.update({
     where: { id: customerId, tenantId: decision.tenantId },
-    data: { paymentTerms },
+    data: { 
+      notes: `Payment Terms: ${paymentTerms}. ${(await prisma.contact.findUnique({ where: { id: customerId } }))?.notes || ''}`.substring(0, 500),
+    },
   })
 
   return {
@@ -315,9 +318,13 @@ async function executeCustomerSegmentUpdate(
     return { success: false, message: 'Customer ID and segment required' }
   }
 
+  // Contact model doesn't have segment field - use tags or sourceData
   await prisma.contact.update({
     where: { id: customerId, tenantId: decision.tenantId },
-    data: { segment },
+    data: { 
+      tags: [...((await prisma.contact.findUnique({ where: { id: customerId } }))?.tags || []), segment],
+      sourceData: { segment },
+    },
   })
 
   return {

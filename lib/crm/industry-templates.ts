@@ -27,7 +27,7 @@ export interface CustomFieldDefinition {
 export interface IndustryTemplate {
   id: string
   name: string
-  industry: 'fintech' | 'd2c' | 'agencies' | 'retail' | 'manufacturing' | 'real-estate' | 'healthcare' | 'professional-services' | 'construction' | 'education' | 'restaurant' | 'logistics' | 'beauty' | 'automotive' | 'hospitality' | 'legal' | 'wholesale' | 'event-management'
+  industry: 'fintech' | 'd2c' | 'agencies' | 'retail' | 'manufacturing' | 'real-estate' | 'healthcare' | 'professional-services' | 'construction' | 'education' | 'restaurant' | 'logistics' | 'beauty' | 'automotive' | 'hospitality' | 'legal' | 'wholesale' | 'event-management' | 'ecommerce' | 'financial-services' | 'agriculture' | 'freelancer' | 'service-business'
   description: string
   stages: PipelineStage[]
   customFields: CustomFieldDefinition[]

@@ -5,6 +5,7 @@ import { signToken } from '@/lib/auth/jwt'
 import { z } from 'zod'
 import { checkTenantLimits } from '@/lib/middleware/tenant'
 import { generateTenantId } from '@/lib/utils/tenant-id'
+import { createAuditLogData } from '@/lib/utils/audit-helper'
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -101,6 +102,29 @@ export async function POST(request: NextRequest) {
           role: 'owner',
           tenantId: tenant.id,
         },
+      })
+
+      // Create MerchantOnboarding record for Super Admin tracking
+      await tx.merchantOnboarding.create({
+        data: {
+          tenantId: tenant.id,
+          status: 'pending_review',
+          kycStatus: 'not_started',
+        },
+      })
+
+      // Create audit log for tenant creation
+      await tx.auditLog.create({
+        data: createAuditLogData(
+          'tenant',
+          tenant.id,
+          user.id,
+          `Tenant created: ${tenant.name}`,
+          tenant.id,
+          request,
+          null,
+          { name: tenant.name, subdomain: tenant.subdomain, plan: tenant.plan }
+        ),
       })
 
       return { tenant, user }

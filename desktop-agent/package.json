@@ -1,0 +1,19 @@
+{
+  "name": "payaid-desktop-agent",
+  "version": "1.0.0",
+  "description": "PayAid Desktop Agent - System-wide AI assistant",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "electron .",
+    "build": "tsc && electron-builder",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^28.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "electron-builder": "^24.0.0",
+    "typescript": "^5.0.0"
+  }
+}

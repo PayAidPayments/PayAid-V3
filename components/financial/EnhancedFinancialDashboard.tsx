@@ -217,7 +217,7 @@ export function EnhancedFinancialDashboard({ tenantId }: { tenantId: string }) {
                   from: period.startDate,
                   to: period.endDate,
                 }}
-                onSelect={(range) => {
+                onSelect={(range: any) => {
                   if (range?.from && range?.to) {
                     setPeriod({
                       startDate: range.from,

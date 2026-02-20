@@ -80,31 +80,35 @@ export default function FinanceBillingPage() {
     {
       label: 'Current Plan',
       value: subscription?.tier?.toUpperCase() || 'FREE',
-      icon: Package,
+      icon: <Package className="w-5 h-5" />,
       href: '#',
     },
     {
       label: 'Monthly Price',
       value: subscription ? formatINRForDisplay(subscription.monthlyPrice) : '₹0',
-      icon: IndianRupee,
+      icon: <IndianRupee className="w-5 h-5" />,
       href: '#',
     },
     {
       label: 'Licensed Modules',
       value: subscription?.modules?.length?.toString() || '0',
-      icon: CheckCircle2,
+      icon: <CheckCircle2 className="w-5 h-5" />,
       href: '#',
     },
     {
       label: 'Payment History',
       value: orders.length.toString(),
-      icon: CreditCard,
+      icon: <CreditCard className="w-5 h-5" />,
       href: '#',
     },
   ]
 
   if (loading) {
     return <PageLoading message="Loading billing information..." fullScreen={false} />
+  }
+
+  if (!moduleConfig) {
+    return <div>Module configuration not found</div>
   }
 
   return (

@@ -33,14 +33,11 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Overdue invoices alert
+    // Overdue invoices alert (same definition as dashboard stats: status = 'overdue')
     const overdueCount = await prisma.invoice.count({
       where: {
         tenantId,
-        status: { in: ['sent', 'pending'] },
-        dueDate: {
-          lt: now,
-        },
+        status: 'overdue',
       },
     })
 
@@ -48,10 +45,7 @@ export async function GET(request: NextRequest) {
       const overdueTotal = await prisma.invoice.aggregate({
         where: {
           tenantId,
-          status: { in: ['sent', 'pending'] },
-          dueDate: {
-            lt: now,
-          },
+          status: 'overdue',
         },
         _sum: { total: true },
       })

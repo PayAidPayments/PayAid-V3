@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
     // 1. CRM Module Notifications
     if (licensedModules.includes('crm') && (!moduleFilter || moduleFilter === 'crm')) {
       // Overdue tasks - use minimal retries
-      let overdueTasks = []
+      let overdueTasks: Awaited<ReturnType<typeof prisma.task.findMany>> = []
       try {
         overdueTasks = await prismaWithRetry(() =>
           prisma.task.findMany({
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
       })
 
       // Tasks due today - use minimal retries
-      let tasksDueToday = []
+      let tasksDueToday: Awaited<ReturnType<typeof prisma.task.findMany>> = []
       try {
         tasksDueToday = await prismaWithRetry(() =>
           prisma.task.findMany({
@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
 
       // Deals closing this week - use minimal retries
       const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-      let dealsClosing = []
+      let dealsClosing: Awaited<ReturnType<typeof prisma.deal.findMany>> = []
       try {
         dealsClosing = await prismaWithRetry(() =>
           prisma.deal.findMany({
@@ -230,18 +230,33 @@ export async function GET(request: NextRequest) {
 
     // 2. Finance Module Notifications
     if (licensedModules.includes('finance') && (!moduleFilter || moduleFilter === 'finance')) {
-      // Overdue invoices
-      const overdueInvoices = await prismaWithRetry(() =>
-        prisma.invoice.findMany({
-          where: {
-            tenantId: user.tenantId,
-            dueDate: { lt: now },
-            status: { in: ['sent', 'partial'] },
-          },
-          take: 10,
-          orderBy: { dueDate: 'asc' },
-        })
-      )
+      // Overdue invoices - use minimal retries
+      let overdueInvoices: Awaited<ReturnType<typeof prisma.invoice.findMany>> = []
+      try {
+        overdueInvoices = await prismaWithRetry(() =>
+          prisma.invoice.findMany({
+            where: {
+              tenantId: user.tenantId,
+              dueDate: { lt: now },
+              status: { in: ['sent', 'partial'] },
+            },
+            take: 10,
+            orderBy: { dueDate: 'asc' },
+          }),
+          {
+            maxRetries: 1,
+            retryDelay: 200,
+            exponentialBackoff: false,
+          }
+        )
+      } catch (error: any) {
+        if (error?.code === 'CIRCUIT_OPEN' || error?.isCircuitBreaker) {
+          console.warn('[NOTIFICATIONS] Circuit breaker open, skipping finance overdue invoices')
+        } else {
+          // Log but don't throw - continue with other notifications
+          console.warn('[NOTIFICATIONS] Error fetching overdue invoices:', error?.message)
+        }
+      }
 
       overdueInvoices.forEach((invoice) => {
         addNotification(
@@ -257,22 +272,36 @@ export async function GET(request: NextRequest) {
       })
 
       // Expenses pending approval (expenses without approval or rejected)
-      const allExpenses = await prismaWithRetry(() =>
-        prisma.expense.findMany({
-          where: {
-            tenantId: user.tenantId,
-            approvedAt: null,
-            rejectedAt: null,
-          },
-          include: {
-            approvals: {
-              take: 1,
+      let allExpenses: Awaited<ReturnType<typeof prisma.expense.findMany<{ include: { approvals: true } }>>> = []
+      try {
+        allExpenses = await prismaWithRetry(() =>
+          prisma.expense.findMany({
+            where: {
+              tenantId: user.tenantId,
+              approvedAt: null,
+              rejectedAt: null,
             },
-          },
-          take: 10,
-          orderBy: { createdAt: 'desc' },
-        })
-      )
+            include: {
+              approvals: {
+                take: 1,
+              },
+            },
+            take: 10,
+            orderBy: { createdAt: 'desc' },
+          }),
+          {
+            maxRetries: 1,
+            retryDelay: 200,
+            exponentialBackoff: false,
+          }
+        )
+      } catch (error: any) {
+        if (error?.code === 'CIRCUIT_OPEN' || error?.isCircuitBreaker) {
+          console.warn('[NOTIFICATIONS] Circuit breaker open, skipping finance expenses')
+        } else {
+          console.warn('[NOTIFICATIONS] Error fetching expenses:', error?.message)
+        }
+      }
 
       // Filter expenses that don't have any approvals yet
       const pendingExpenses = allExpenses.filter(expense => expense.approvals.length === 0)
@@ -294,28 +323,43 @@ export async function GET(request: NextRequest) {
     // 3. HR Module Notifications
     if (licensedModules.includes('hr') && (!moduleFilter || moduleFilter === 'hr')) {
       // Leave requests pending approval
-      const pendingLeaves = await prismaWithRetry(() =>
-        prisma.leaveRequest.findMany({
-          where: {
-            tenantId: user.tenantId,
-            status: 'pending',
-          },
-          include: {
-            employee: {
-              select: { firstName: true, lastName: true },
+      let pendingLeaves: Awaited<ReturnType<typeof prisma.leaveRequest.findMany<{ include: { employee: { select: { firstName: true; lastName: true } } } }>>> = []
+      try {
+        pendingLeaves = await prismaWithRetry(() =>
+          prisma.leaveRequest.findMany({
+            where: {
+              tenantId: user.tenantId,
+              status: 'pending',
             },
-          },
-          take: 10,
-        })
-      )
+            include: {
+              employee: {
+                select: { firstName: true, lastName: true },
+              },
+            },
+            take: 10,
+          }),
+          {
+            maxRetries: 1,
+            retryDelay: 200,
+            exponentialBackoff: false,
+          }
+        )
+      } catch (error: any) {
+        if (error?.code === 'CIRCUIT_OPEN' || error?.isCircuitBreaker) {
+          console.warn('[NOTIFICATIONS] Circuit breaker open, skipping HR leave requests')
+        } else {
+          console.warn('[NOTIFICATIONS] Error fetching leave requests:', error?.message)
+        }
+      }
 
       pendingLeaves.forEach((leave) => {
+        const employeeName = leave.employee ? `${leave.employee.firstName} ${leave.employee.lastName}` : 'Employee'
         addNotification(
           `leave-${leave.id}`,
           'LEAVE_PENDING',
           'hr',
           'Leave Request Pending',
-          `${leave.employee.firstName} ${leave.employee.lastName} has a pending leave request`,
+          `${employeeName} has a pending leave request`,
           'MEDIUM',
           leave.createdAt,
           `/hr/${user.tenantId}/Leave/requests`
@@ -324,24 +368,38 @@ export async function GET(request: NextRequest) {
 
       // Attendance issues
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      const missingAttendance = await prismaWithRetry(() =>
-        prisma.employee.findMany({
-          where: {
-            tenantId: user.tenantId,
-            status: 'active',
-          },
-          include: {
-            attendanceRecords: {
-              where: {
-                date: today,
+      let missingAttendance: Awaited<ReturnType<typeof prisma.employee.findMany<{ include: { attendanceRecords: true } }>>> = []
+      try {
+        missingAttendance = await prismaWithRetry(() =>
+          prisma.employee.findMany({
+            where: {
+              tenantId: user.tenantId,
+              status: 'active',
+            },
+            include: {
+              attendanceRecords: {
+                where: {
+                  date: today,
+                },
               },
             },
-          },
-        })
-      )
+          }),
+          {
+            maxRetries: 1,
+            retryDelay: 200,
+            exponentialBackoff: false,
+          }
+        )
+      } catch (error: any) {
+        if (error?.code === 'CIRCUIT_OPEN' || error?.isCircuitBreaker) {
+          console.warn('[NOTIFICATIONS] Circuit breaker open, skipping HR attendance')
+        } else {
+          console.warn('[NOTIFICATIONS] Error fetching attendance:', error?.message)
+        }
+      }
 
       missingAttendance
-        .filter((emp) => emp.attendanceRecords.length === 0)
+        .filter((emp) => emp.attendanceRecords && emp.attendanceRecords.length === 0)
         .slice(0, 5)
         .forEach((emp) => {
           addNotification(
@@ -360,32 +418,47 @@ export async function GET(request: NextRequest) {
     // 4. Projects Module Notifications
     if (licensedModules.includes('projects') && (!moduleFilter || moduleFilter === 'projects')) {
       // Tasks due soon
-      const projectTasksDue = await prismaWithRetry(() =>
-        prisma.projectTask.findMany({
-          where: {
-            project: {
-              tenantId: user.tenantId,
+      let projectTasksDue: Awaited<ReturnType<typeof prisma.projectTask.findMany<{ include: { project: { select: { name: true } } } }>>> = []
+      try {
+        projectTasksDue = await prismaWithRetry(() =>
+          prisma.projectTask.findMany({
+            where: {
+              project: {
+                tenantId: user.tenantId,
+              },
+              assignedToId: user.userId,
+              dueDate: { gte: now, lte: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000) },
+              status: { not: 'completed' },
             },
-            assignedToId: user.userId,
-            dueDate: { gte: now, lte: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000) },
-            status: { not: 'completed' },
-          },
-          include: {
-            project: {
-              select: { name: true },
+            include: {
+              project: {
+                select: { name: true },
+              },
             },
-          },
-          take: 10,
-        })
-      )
+            take: 10,
+          }),
+          {
+            maxRetries: 1,
+            retryDelay: 200,
+            exponentialBackoff: false,
+          }
+        )
+      } catch (error: any) {
+        if (error?.code === 'CIRCUIT_OPEN' || error?.isCircuitBreaker) {
+          console.warn('[NOTIFICATIONS] Circuit breaker open, skipping projects tasks')
+        } else {
+          console.warn('[NOTIFICATIONS] Error fetching project tasks:', error?.message)
+        }
+      }
 
       projectTasksDue.forEach((task) => {
+        const projectName = task.project?.name || 'Project'
         addNotification(
           `project-task-${task.id}`,
           'PROJECT_TASK_DUE',
           'projects',
           'Project Task Due',
-          `Task "${task.name}" in project "${task.project.name}" is due soon`,
+          `Task "${task.name}" in project "${projectName}" is due soon`,
           'MEDIUM',
           task.dueDate || now,
           `/projects/${user.tenantId}/Tasks`
@@ -395,16 +468,39 @@ export async function GET(request: NextRequest) {
 
     // 5. Inventory Module Notifications
     if (licensedModules.includes('inventory') && (!moduleFilter || moduleFilter === 'inventory')) {
-      // Low stock alerts
-      const lowStockProducts = await prismaWithRetry(() =>
-        prisma.product.findMany({
-          where: {
-            tenantId: user.tenantId,
-            quantity: { lte: prisma.product.fields.reorderLevel },
-          },
-          take: 10,
-        })
-      )
+      // Low stock alerts - fetch products and filter in memory (Prisma doesn't support field comparison in where clause)
+      let lowStockProducts: Array<{ id: string; name: string; quantity: number; reorderLevel: number | null }> = []
+      try {
+        const allProducts = await prismaWithRetry(() =>
+          prisma.product.findMany({
+            where: {
+              tenantId: user.tenantId,
+            },
+            select: {
+              id: true,
+              name: true,
+              quantity: true,
+              reorderLevel: true,
+            },
+            take: 100, // Get more products to filter
+          }),
+          {
+            maxRetries: 1,
+            retryDelay: 200,
+            exponentialBackoff: false,
+          }
+        )
+        // Filter products where quantity <= reorderLevel
+        lowStockProducts = allProducts.filter(product => 
+          product.quantity <= (product.reorderLevel || 10)
+        ).slice(0, 10) // Take top 10
+      } catch (error: any) {
+        if (error?.code === 'CIRCUIT_OPEN' || error?.isCircuitBreaker) {
+          console.warn('[NOTIFICATIONS] Circuit breaker open, skipping inventory products')
+        } else {
+          console.warn('[NOTIFICATIONS] Error fetching low stock products:', error?.message)
+        }
+      }
 
       lowStockProducts.forEach((product) => {
         addNotification(
@@ -423,20 +519,34 @@ export async function GET(request: NextRequest) {
     // 6. Appointments Module Notifications
     if (licensedModules.includes('appointments') && (!moduleFilter || moduleFilter === 'appointments')) {
       // Upcoming appointments today
-      const todayAppointments = await prismaWithRetry(() =>
-        prisma.appointment.findMany({
-          where: {
-            tenantId: user.tenantId,
-            assignedToId: user.userId,
-            appointmentDate: {
-              gte: todayStart,
-              lte: todayEnd,
+      let todayAppointments: Awaited<ReturnType<typeof prisma.appointment.findMany>> = []
+      try {
+        todayAppointments = await prismaWithRetry(() =>
+          prisma.appointment.findMany({
+            where: {
+              tenantId: user.tenantId,
+              assignedToId: user.userId,
+              appointmentDate: {
+                gte: todayStart,
+                lte: todayEnd,
+              },
+              status: { in: ['SCHEDULED', 'CONFIRMED'] },
             },
-            status: { in: ['SCHEDULED', 'CONFIRMED'] },
-          },
-          take: 5,
-        })
-      )
+            take: 5,
+          }),
+          {
+            maxRetries: 1,
+            retryDelay: 200,
+            exponentialBackoff: false,
+          }
+        )
+      } catch (error: any) {
+        if (error?.code === 'CIRCUIT_OPEN' || error?.isCircuitBreaker) {
+          console.warn('[NOTIFICATIONS] Circuit breaker open, skipping appointments')
+        } else {
+          console.warn('[NOTIFICATIONS] Error fetching appointments:', error?.message)
+        }
+      }
 
       todayAppointments.forEach((apt) => {
         addNotification(

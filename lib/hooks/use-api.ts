@@ -2,6 +2,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/stores/auth'
 
+// Helper to handle 401 errors (invalid/expired token)
+// Use a flag to prevent multiple redirects
+let isRedirecting = false
+function handle401Error() {
+  if (isRedirecting) return // Prevent multiple redirects
+  isRedirecting = true
+  
+  const { logout } = useAuthStore.getState()
+  logout()
+  
+  // Redirect to login page
+  if (typeof window !== 'undefined') {
+    // Small delay to prevent rapid redirects
+    setTimeout(() => {
+      window.location.href = '/login'
+    }, 100)
+  }
+}
+
 // Helper to get auth headers
 export function getAuthHeaders() {
   const { token } = useAuthStore.getState()
@@ -84,6 +103,14 @@ export function useContacts(params?: { page?: number; limit?: number; type?: str
             console.error('Raw error response:', errorText)
           }
           
+          // Handle 401 Unauthorized (invalid/expired token)
+          if (response.status === 401 || error.code === 'INVALID_TOKEN') {
+            console.warn('Token expired or invalid, logging out and redirecting to login')
+            handle401Error()
+            // Return a user-friendly error message
+            throw new Error('Your session has expired. Please log in again.')
+          }
+          
           // Include more details in error message
           const errorMsg = error.error || error.message || `Failed to fetch contacts (${response.status})`
           const errorWithDetails = error.code 
@@ -107,7 +134,14 @@ export function useContacts(params?: { page?: number; limit?: number; type?: str
         throw error
       }
     },
-    retry: 2, // Retry failed requests twice
+    retry: (failureCount, error) => {
+      // Don't retry on 401 errors (invalid token) - user needs to log in again
+      if (error instanceof Error && (error.message.includes('session has expired') || error.message.includes('INVALID_TOKEN'))) {
+        return false
+      }
+      // Retry other errors up to 2 times
+      return failureCount < 2
+    },
     retryDelay: 1000, // Wait 1 second between retries
     enabled: true, // Always enable the query
   })
@@ -190,20 +224,28 @@ export function useDeleteContact() {
 }
 
 // Deals hooks
-export function useDeals(params?: { page?: number; limit?: number; stage?: string; contactId?: string }) {
+export function useDeals(params?: { page?: number; limit?: number; stage?: string; contactId?: string; bypassCache?: boolean; tenantId?: string }) {
   const queryString = new URLSearchParams()
   if (params?.page) queryString.set('page', params.page.toString())
   if (params?.limit) queryString.set('limit', params.limit.toString())
   if (params?.stage) queryString.set('stage', params.stage)
   if (params?.contactId) queryString.set('contactId', params.contactId)
+  // CRITICAL: Add bypassCache parameter to force fresh data from database
+  if (params?.bypassCache) queryString.set('bypassCache', 'true')
+  // When viewing CRM by tenant (e.g. /crm/[tenantId]/Deals), pass tenantId so API returns that tenant's deals
+  if (params?.tenantId) queryString.set('tenantId', params.tenantId)
 
   return useQuery({
     queryKey: ['deals', params],
     queryFn: async () => {
       try {
-        const response = await fetch(`/api/deals?${queryString}`, {
+        const url = `/api/deals?${queryString}`
+        console.log('[useDeals] Fetching deals from:', url)
+        const response = await fetch(url, {
           headers: getAuthHeaders(),
         })
+        console.log('[useDeals] Response status:', response.status, response.statusText)
+        
         if (!response.ok) {
           // If 500 error, return empty data instead of throwing
           if (response.status === 500) {
@@ -211,9 +253,33 @@ export function useDeals(params?: { page?: number; limit?: number; stage?: strin
             return { deals: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0 }, pipelineSummary: [] }
           }
           const errorData = await response.json().catch(() => ({ error: 'Failed to fetch deals' }))
+          console.error('[useDeals] API error:', errorData)
           throw new Error(errorData.message || errorData.error || 'Failed to fetch deals')
         }
-        return response.json()
+        const data = await response.json()
+        console.log('[useDeals] Received data:', { 
+          dealsCount: data?.deals?.length || 0, 
+          total: data?.pagination?.total || 0,
+          hasDeals: !!data?.deals,
+          dataKeys: Object.keys(data || {})
+        })
+        
+        // Log debug info if available (when no deals found)
+        if (data?._debug) {
+          console.warn('[useDeals] ⚠️ NO DEALS FOUND - DEBUG INFO:', {
+            tenantId: data._debug.tenantId,
+            totalDealsForTenant: data._debug.actualDealCountForTenant || data._debug.totalDealsForTenant,
+            totalDealsInDatabase: data._debug.totalDealsInDatabase,
+            quickCheck: data._debug.quickCheck,
+            queryWhere: data._debug.queryWhere,
+            sampleDeal: data._debug.sampleDeal,
+            allDealsSample: data._debug.allDealsSample,
+            message: data._debug.message,
+            retryAttempted: data._debug.retryAttempted,
+          })
+        }
+        
+        return data
       } catch (error: any) {
         console.error('[useDeals] Error fetching deals:', error)
         // Return empty data structure instead of throwing to prevent UI crashes
@@ -221,6 +287,9 @@ export function useDeals(params?: { page?: number; limit?: number; stage?: strin
       }
     },
     retry: false, // Don't retry on error to prevent multiple failed requests
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
+    refetchOnMount: false, // Don't refetch on mount if data exists
   })
 }
 

@@ -55,17 +55,14 @@ export async function calculateDealClosureProbability(
   const deal = await prisma.deal.findUnique({
     where: { id: input.dealId, tenantId: input.tenantId },
     include: {
+      // Deal doesn't have interactions relation directly, get through contact
       contact: {
         include: {
           interactions: {
             orderBy: { createdAt: 'desc' },
-            take: 10,
+            take: 20,
           },
         },
-      },
-      interactions: {
-        orderBy: { createdAt: 'desc' },
-        take: 20,
       },
     },
   })
@@ -117,8 +114,7 @@ export async function calculateDealClosureProbability(
  */
 async function calculateSignalAdjustments(
   deal: Deal & {
-    contact: Contact & { interactions: Interaction[] } | null
-    interactions: Interaction[]
+    contact: (Contact & { interactions: Interaction[] }) | null
   }
 ): Promise<DealClosureResult['signalAdjustments']> {
   const adjustments = {
@@ -132,7 +128,8 @@ async function calculateSignalAdjustments(
   }
 
   // CEO Engagement (+20%)
-  const interactions = deal.interactions || []
+  // Get interactions from contact, not deal directly
+  const interactions = deal.contact?.interactions || []
   const hasCEOEngagement = interactions.some(
     (i) => i.type === 'meeting' && i.notes?.toLowerCase().includes('ceo')
   )
@@ -195,15 +192,15 @@ async function calculateSignalAdjustments(
  */
 function calculateConfidence(
   deal: Deal & {
-    contact: Contact & { interactions: Interaction[] } | null
-    interactions: Interaction[]
+    contact: (Contact & { interactions: Interaction[] }) | null
   },
   adjustments: DealClosureResult['signalAdjustments']
 ): number {
   let confidence = 50 // Base confidence
 
   // More interactions = higher confidence
-  const interactionCount = deal.interactions?.length || 0
+  // Get interactions from contact, not deal directly
+  const interactionCount = deal.contact?.interactions?.length || 0
   confidence += Math.min(20, interactionCount * 2)
 
   // Recent activity = higher confidence

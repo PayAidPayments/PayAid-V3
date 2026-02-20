@@ -25,13 +25,13 @@ export async function getTemplateAnalytics(
   tenantId: string,
   templateId: string
 ): Promise<TemplateMetrics | null> {
-  // Get template configuration from tenant settings
+  // Get template configuration from tenant (industrySettings or onboardingData)
   const tenant = await prismaRead.tenant.findUnique({
     where: { id: tenantId },
-    select: { settings: true },
+    select: { industrySettings: true, onboardingData: true },
   })
 
-  const settings = (tenant?.settings as any) || {}
+  const settings = ((tenant?.industrySettings ?? tenant?.onboardingData) as any) || {}
   const templateConfig = settings.pipelineTemplate
 
   if (!templateConfig || templateConfig.templateId !== templateId) {

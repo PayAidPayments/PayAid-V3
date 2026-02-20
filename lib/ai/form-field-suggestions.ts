@@ -29,7 +29,7 @@ export class FormFieldSuggestionService {
 
   constructor() {
     this.llm = new ChatGroq({
-      modelName: 'llama-3.1-70b-versatile',
+      model: 'llama-3.1-70b-versatile',
       temperature: 0.7,
       apiKey: process.env.GROQ_API_KEY,
     })
@@ -42,12 +42,16 @@ export class FormFieldSuggestionService {
     try {
       const prompt = this.buildSuggestionPrompt(context)
       const response = await this.llm.invoke(prompt)
-      const suggestions = this.parseSuggestions(response, context)
+      const responseText = typeof response === 'string' ? response : (response as any).content || String(response)
+      const suggestions = this.parseSuggestions(responseText, context)
 
       logger.info('Form field suggestions generated', {
-        industry: context.industry,
-        purpose: context.purpose,
-        suggestionCount: suggestions.length,
+        action: 'form_suggestions_generated',
+        metadata: {
+          industry: context.industry,
+          purpose: context.purpose,
+          suggestionCount: suggestions.length,
+        },
       })
 
       return suggestions

@@ -4,6 +4,8 @@ import * as bcrypt from 'bcryptjs'
 import { generateTenantId } from '@/lib/utils/tenant-id'
 import { seedAllModules } from '@/lib/seed/module-seeders'
 import { seedDemoBusiness } from '@/prisma/seeds/demo/demo-business-master-seed'
+import { seedSalesAndBillingModule } from '@/prisma/seeds/demo/seed-sales-billing'
+import { DEMO_DATE_RANGE } from '@/prisma/seeds/demo/date-utils'
 
 // Increase timeout for seed route (Vercel Pro: 60s, Hobby: 10s)
 // Note: On Hobby plan, this will still timeout at 10s, but we handle it gracefully
@@ -13,6 +15,247 @@ export const runtime = 'nodejs'
 import { isSeedRunning, startSeedTracking, stopSeedTracking } from '@/lib/utils/seed-status'
 
 const SEED_TIMEOUT_MS = 300000 // 5 minutes max for comprehensive seed
+
+/**
+ * Ensure current month data exists for dashboard stats
+ * Comprehensive seed creates data in future dates (Mar 2025 - Feb 2026)
+ * This function creates additional data in the current month
+ */
+async function ensureCurrentMonthData(tenantId: string) {
+  try {
+    console.log(`[SEED_DEMO_DATA] 🔧 Ensuring current month data exists for dashboard stats...`)
+    console.log(`[SEED_DEMO_DATA] TenantId: ${tenantId}`)
+    
+    // Verify tenant exists and database connection works
+    // If tenant doesn't exist, it might be because seed is still running
+    // Try a few times with delays before giving up
+    let tenantCheck = null
+    let retries = 3
+    while (retries > 0 && !tenantCheck) {
+      try {
+        tenantCheck = await prisma.tenant.findUnique({
+          where: { id: tenantId },
+          select: { id: true, name: true },
+        })
+        if (!tenantCheck) {
+          retries--
+          if (retries > 0) {
+            console.log(`[SEED_DEMO_DATA] ⏳ Tenant ${tenantId} not found yet, waiting 2s before retry (${retries} retries left)...`)
+            await new Promise(resolve => setTimeout(resolve, 2000))
+          }
+        }
+      } catch (tenantError: any) {
+        console.error(`[SEED_DEMO_DATA] ❌ Database connection error:`, tenantError?.message || tenantError)
+        return { createdContacts: 0, createdDeals: 0, finalContacts: 0, finalDeals: 0, error: `Database error: ${tenantError?.message || String(tenantError)}` }
+      }
+    }
+    
+    if (!tenantCheck) {
+      console.error(`[SEED_DEMO_DATA] ❌ Tenant ${tenantId} not found in database after retries!`)
+      return { createdContacts: 0, createdDeals: 0, finalContacts: 0, finalDeals: 0, error: `Tenant ${tenantId} not found - seed may still be running` }
+    }
+    console.log(`[SEED_DEMO_DATA] ✓ Tenant verified: ${tenantCheck.name}`)
+    
+    // CRITICAL: Get or create SalesRep for admin user (needed for assignedToId)
+    const adminUser = await prisma.user.findFirst({
+      where: {
+        tenantId,
+        role: { in: ['owner', 'admin'] },
+      },
+      orderBy: { createdAt: 'asc' },
+    })
+    
+    let salesRepId: string | null = null
+    if (adminUser) {
+      let salesRep = await prisma.salesRep.findUnique({
+        where: { userId: adminUser.id },
+      })
+      if (!salesRep) {
+        console.log(`[SEED_DEMO_DATA] Creating SalesRep for admin user ${adminUser.id}...`)
+        salesRep = await prisma.salesRep.create({
+          data: {
+            userId: adminUser.id,
+            tenantId,
+            specialization: 'General Sales',
+            conversionRate: 0.15,
+          },
+        })
+      }
+      salesRepId = salesRep.id
+      console.log(`[SEED_DEMO_DATA] ✓ Using SalesRep: ${salesRepId}`)
+    } else {
+      console.warn(`[SEED_DEMO_DATA] ⚠️ No admin user found for tenant ${tenantId}, contacts/deals will not have assignedToId`)
+    }
+    
+    const now = new Date()
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+    console.log(`[SEED_DEMO_DATA] Current month range: ${monthStart.toISOString()} to ${monthEnd.toISOString()}`)
+    console.log(`[SEED_DEMO_DATA] Current date: ${now.toISOString()}`)
+    
+    // Check existing current month data
+    const [existingContacts, existingDeals] = await Promise.all([
+      prisma.contact.count({
+        where: {
+          tenantId,
+          createdAt: { gte: monthStart, lte: monthEnd },
+        },
+      }),
+      prisma.deal.count({
+        where: {
+          tenantId,
+          createdAt: { gte: monthStart, lte: monthEnd },
+        },
+      }),
+    ])
+    
+    console.log(`[SEED_DEMO_DATA] Current month data check: ${existingContacts} contacts, ${existingDeals} deals`)
+    
+    // Get or create contacts for current month deals
+    let contacts = await prisma.contact.findMany({
+      where: { tenantId },
+      take: 20,
+    })
+    
+    // Create 20 contacts in current month if needed
+    if (existingContacts < 20) {
+      const needed = 20 - existingContacts
+      console.log(`[SEED_DEMO_DATA] Creating ${needed} contacts in current month...`)
+      const newContacts = []
+      let firstError: any = null
+      for (let i = 0; i < needed; i++) {
+        const dayInMonth = Math.min((i % 28) + 1, new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate())
+        const createdAt = new Date(now.getFullYear(), now.getMonth(), dayInMonth, 12, 0, 0)
+        try {
+          console.log(`[SEED_DEMO_DATA] Attempting to create contact ${i + 1}/${needed} with createdAt: ${createdAt.toISOString()}`)
+          const contact = await prisma.contact.create({
+            data: {
+              tenantId,
+              name: `Current Month Contact ${existingContacts + i + 1}`,
+              email: `current${existingContacts + i + 1}@example.com`,
+              phone: `+91-9876544${String(existingContacts + i).padStart(3, '0')}`,
+              company: `Current Co ${existingContacts + i + 1}`,
+              source: ['Website', 'LinkedIn', 'Referral', 'Google Ads'][i % 4],
+              stage: i % 3 === 0 ? 'customer' : i % 3 === 1 ? 'contact' : 'prospect',
+              status: 'active',
+              city: 'Bangalore',
+              state: 'Karnataka',
+              postalCode: '560001',
+              country: 'India',
+              assignedToId: salesRepId || undefined, // Set SalesRep ID if available
+              createdAt,
+            },
+          })
+          console.log(`[SEED_DEMO_DATA] ✓ Successfully created contact ${i + 1}: ${contact.id}`)
+          newContacts.push(contact)
+        } catch (err: any) {
+          if (!firstError) firstError = err
+          console.error(`[SEED_DEMO_DATA] ❌ Failed to create contact ${i + 1}:`, err?.message || err)
+          console.error(`[SEED_DEMO_DATA] Contact creation error details:`, {
+            error: err?.message,
+            code: err?.code,
+            meta: err?.meta,
+            stack: err?.stack,
+            tenantId,
+            createdAt: createdAt.toISOString(),
+          })
+        }
+      }
+      contacts = [...contacts, ...newContacts]
+      console.log(`[SEED_DEMO_DATA] ✓ Created ${newContacts.length} contacts in current month (attempted ${needed}, succeeded ${newContacts.length})`)
+      if (newContacts.length === 0 && needed > 0) {
+        console.error(`[SEED_DEMO_DATA] ⚠️ CRITICAL: All ${needed} contact creation attempts failed!`)
+        console.error(`[SEED_DEMO_DATA] First error was:`, firstError)
+        // Don't return error - let it continue to try deals, but log the issue
+      }
+    }
+    
+    // Refresh contacts list after creation to ensure we have contacts for deals
+    if (contacts.length === 0) {
+      contacts = await prisma.contact.findMany({
+        where: { tenantId },
+        take: 20,
+      })
+      console.log(`[SEED_DEMO_DATA] Refreshed contacts list: ${contacts.length} contacts available`)
+    }
+    
+    // Create 15 deals in current month if needed
+    if (existingDeals < 15) {
+      if (contacts.length === 0) {
+        console.error(`[SEED_DEMO_DATA] ⚠️ Cannot create deals: No contacts available for tenant ${tenantId}`)
+      } else {
+        const needed = 15 - existingDeals
+        console.log(`[SEED_DEMO_DATA] Creating ${needed} deals in current month using ${contacts.length} available contacts...`)
+        const newDeals = []
+        for (let i = 0; i < needed; i++) {
+          const dayInMonth = Math.min((i % 28) + 1, new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate())
+          const createdAt = new Date(now.getFullYear(), now.getMonth(), dayInMonth, 12, 0, 0)
+          const contact = contacts[i % contacts.length]
+          const stage = ['lead', 'qualified', 'proposal', 'negotiation'][i % 4]
+          try {
+            const dealPayload: Record<string, unknown> = {
+              tenantId,
+              name: `Current Month Deal ${existingDeals + i + 1} - ${contact.company || 'Unknown'}`,
+              value: Math.floor(Math.random() * 500000) + 10000,
+              stage,
+              probability: Math.floor(Math.random() * 80) + 20,
+              contactId: contact.id,
+              createdAt,
+              expectedCloseDate: new Date(now.getFullYear(), now.getMonth() + 1, 15, 12, 0, 0),
+            }
+            if (salesRepId) dealPayload.assignedToId = salesRepId
+            const deal = await prisma.deal.create({
+              data: dealPayload as any,
+            })
+            newDeals.push(deal)
+          } catch (err: any) {
+            console.error(`[SEED_DEMO_DATA] ❌ Failed to create deal ${i + 1}:`, err?.message || err)
+            console.error(`[SEED_DEMO_DATA] Deal creation error details:`, {
+              error: err?.message,
+              code: err?.code,
+              meta: err?.meta,
+              stack: err?.stack,
+              contactId: contact?.id,
+              contactCompany: contact?.company,
+            })
+          }
+        }
+        console.log(`[SEED_DEMO_DATA] ✓ Created ${newDeals.length} deals in current month (attempted ${needed}, succeeded ${newDeals.length})`)
+        if (newDeals.length === 0 && needed > 0) {
+          console.error(`[SEED_DEMO_DATA] ⚠️ CRITICAL: All ${needed} deal creation attempts failed!`)
+        }
+      }
+    }
+    
+    // Final verification
+    const [finalContacts, finalDeals] = await Promise.all([
+      prisma.contact.count({
+        where: {
+          tenantId,
+          createdAt: { gte: monthStart, lte: monthEnd },
+        },
+      }),
+      prisma.deal.count({
+        where: {
+          tenantId,
+          createdAt: { gte: monthStart, lte: monthEnd },
+        },
+      }),
+    ])
+    console.log(`[SEED_DEMO_DATA] ✅ Current month data ensured - Final counts: ${finalContacts} contacts, ${finalDeals} deals`)
+    
+    if (finalContacts === 0 && finalDeals === 0) {
+      console.error(`[SEED_DEMO_DATA] ⚠️ WARNING: Current month data creation may have failed - no data found after creation attempt`)
+    }
+    
+    return { createdContacts: finalContacts - existingContacts, createdDeals: finalDeals - existingDeals, finalContacts, finalDeals }
+  } catch (error) {
+    console.error(`[SEED_DEMO_DATA] ❌ Error ensuring current month data:`, error)
+    console.error(`[SEED_DEMO_DATA] Error stack:`, error instanceof Error ? error.stack : 'No stack trace')
+    // Don't throw - this is a best-effort operation, but return error info
+    return { createdContacts: 0, createdDeals: 0, finalContacts: 0, finalDeals: 0, error: error instanceof Error ? error.message : String(error) }
+  }
+}
 
 /**
  * GET /api/admin/seed-demo-data
@@ -25,20 +268,107 @@ export async function GET(request: NextRequest) {
     const checkStatus = searchParams.get('checkStatus') === 'true'
     const checkData = searchParams.get('checkData') === 'true'
     const trigger = searchParams.get('trigger') === 'true'
+    const ensureCurrentMonth = searchParams.get('ensureCurrentMonth') === 'true'
     
     // If checking status only
     if (checkStatus) {
       const seedStatus = isSeedRunning(tenantId || undefined)
+      
+      // Also check if data exists - if data exists and seed has been running > 60s, 
+      // it likely completed but tracking didn't update
+      let hasData = false
+      let dataCounts = { contacts: 0, deals: 0, tasks: 0 }
+      if (tenantId) {
+        try {
+          const [contacts, deals, tasks] = await Promise.all([
+            prisma.contact.count({ where: { tenantId } }).catch(() => 0),
+            prisma.deal.count({ where: { tenantId } }).catch(() => 0),
+            prisma.task.count({ where: { tenantId } }).catch(() => 0),
+          ])
+          dataCounts = { contacts, deals, tasks }
+          hasData = contacts > 0 || deals > 0 || tasks > 0
+        } catch (e) {
+          // Ignore errors when checking data
+        }
+      }
+      
+      // If seed shows as running but data exists and it's been > 60 seconds,
+      // the seed likely completed but tracking didn't update properly
+      const elapsedSeconds = seedStatus.elapsed ? Math.floor(seedStatus.elapsed / 1000) : 0
+      const likelyCompleted = seedStatus.running && hasData && elapsedSeconds > 60 && (dataCounts.contacts > 50 || dataCounts.deals > 50)
+      
+      // Also check invoices and orders for comprehensive seed verification
+      let additionalCounts = { invoices: 0, orders: 0 }
+      if (tenantId && hasData) {
+        try {
+          const [invoices, orders] = await Promise.all([
+            prisma.invoice.count({ where: { tenantId } }).catch(() => 0),
+            prisma.order.count({ where: { tenantId } }).catch(() => 0),
+          ])
+          additionalCounts = { invoices, orders }
+        } catch (e) {
+          // Ignore errors
+        }
+      }
+      
       return NextResponse.json({
-        running: seedStatus.running,
+        running: likelyCompleted ? false : seedStatus.running,
         elapsed: seedStatus.elapsed,
-        elapsedSeconds: seedStatus.elapsed ? Math.floor(seedStatus.elapsed / 1000) : 0,
+        elapsedSeconds: elapsedSeconds,
         elapsedMinutes: seedStatus.elapsed ? Math.floor(seedStatus.elapsed / 60000) : 0,
+        hasData,
+        dataCounts: {
+          ...dataCounts,
+          ...additionalCounts,
+          total: dataCounts.contacts + dataCounts.deals + dataCounts.tasks + additionalCounts.invoices + additionalCounts.orders,
+        },
+        likelyCompleted, // Indicates seed probably completed but tracking didn't update
+        seedCompleted: likelyCompleted || (hasData && !seedStatus.running && elapsedSeconds > 30), // Seed is done
+        lastError: seedStatus.lastError, // Include any error that occurred during seeding
       })
     }
     
-    // If checking data counts
+    // If checking data counts with current month verification
     if (checkData && tenantId) {
+      const verifyCurrentMonth = searchParams.get('verifyCurrentMonth') === 'true'
+      
+      if (verifyCurrentMonth) {
+        const now = new Date()
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+        
+        const [currentMonthContacts, currentMonthDeals, totalContacts, totalDeals] = await Promise.all([
+          prisma.contact.count({
+            where: {
+              tenantId,
+              createdAt: { gte: monthStart, lte: monthEnd },
+            },
+          }),
+          prisma.deal.count({
+            where: {
+              tenantId,
+              createdAt: { gte: monthStart, lte: monthEnd },
+            },
+          }),
+          prisma.contact.count({ where: { tenantId } }),
+          prisma.deal.count({ where: { tenantId } }),
+        ])
+        
+        return NextResponse.json({
+          tenantId,
+          currentMonth: {
+            start: monthStart.toISOString(),
+            end: monthEnd.toISOString(),
+            contacts: currentMonthContacts,
+            deals: currentMonthDeals,
+          },
+          total: {
+            contacts: totalContacts,
+            deals: totalDeals,
+          },
+          hasCurrentMonthData: currentMonthContacts > 0 || currentMonthDeals > 0,
+        })
+      }
       try {
         const [contacts, deals, tasks, invoices, orders] = await Promise.all([
           prisma.contact.count({ where: { tenantId } }).catch(() => 0),
@@ -77,6 +407,163 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // If ensureCurrentMonth=true, just ensure current month data exists (without full seed)
+    if (ensureCurrentMonth && tenantId) {
+      try {
+        console.log(`[SEED_DEMO_DATA] Manual trigger: Ensuring current month data for tenant ${tenantId}`)
+        
+        // First, test database connection and wait for tenant if needed
+        // If tenant doesn't exist, wait for seed to complete (up to 30 seconds)
+        let tenantExists = false
+        let attempts = 0
+        const maxAttempts = 15 // 15 attempts * 2 seconds = 30 seconds max wait
+        
+        while (!tenantExists && attempts < maxAttempts) {
+          try {
+            const testQuery = await prisma.tenant.findUnique({
+              where: { id: tenantId },
+              select: { id: true, name: true },
+            })
+            if (testQuery) {
+              tenantExists = true
+              console.log(`[SEED_DEMO_DATA] ✓ Tenant found: ${testQuery.name}`)
+              break
+            }
+          } catch (dbError: any) {
+            console.error(`[SEED_DEMO_DATA] ❌ Database connection test failed:`, dbError)
+            return NextResponse.json({
+              success: false,
+              error: `Database connection failed: ${dbError?.message || String(dbError)}`,
+            }, { status: 500 })
+          }
+          
+          if (!tenantExists) {
+            attempts++
+            if (attempts < maxAttempts) {
+              console.log(`[SEED_DEMO_DATA] ⏳ Tenant ${tenantId} not found yet, waiting 2s (attempt ${attempts}/${maxAttempts})...`)
+              await new Promise(resolve => setTimeout(resolve, 2000))
+            }
+          }
+        }
+        
+        if (!tenantExists) {
+          console.error(`[SEED_DEMO_DATA] ❌ Tenant ${tenantId} not found after ${maxAttempts} attempts`)
+          return NextResponse.json({
+            success: false,
+            error: `Tenant ${tenantId} not found - seed may have failed or tenant was deleted`,
+            suggestion: 'Try running the comprehensive seed again',
+          }, { status: 404 })
+        }
+        
+        const result = await ensureCurrentMonthData(tenantId)
+        
+        return NextResponse.json({
+          success: result.finalContacts > 0 || result.finalDeals > 0,
+          message: `Current month data ensured. Found ${result.finalContacts} contacts and ${result.finalDeals} deals in current month.`,
+          createdContacts: result.createdContacts,
+          createdDeals: result.createdDeals,
+          currentMonth: { contacts: result.finalContacts, deals: result.finalDeals },
+          ...(result.error ? { warning: result.error } : {}),
+          ...(result.finalContacts === 0 && result.finalDeals === 0 ? { 
+            error: 'No data was created. Check server logs for details.' 
+          } : {}),
+        })
+      } catch (error: any) {
+        console.error('[SEED_DEMO_DATA] Error ensuring current month data:', error)
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Failed to ensure current month data',
+            message: error?.message || String(error),
+          },
+          { status: 500 }
+        )
+      }
+    }
+    
+    // Add finance data only (no reset, no delete) - orders + invoices for Mar 2025–Feb 2026
+    const addFinanceOnly = searchParams.get('addFinanceOnly') === 'true'
+    if (addFinanceOnly && tenantId) {
+      try {
+        const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } })
+        if (!tenant) {
+          return NextResponse.json(
+            { success: false, error: 'Tenant not found', message: `Tenant ${tenantId} not found` },
+            { status: 404 }
+          )
+        }
+        let contacts = await prisma.contact.findMany({
+          where: { tenantId },
+          select: { id: true, address: true, city: true, postalCode: true },
+          take: 200,
+        })
+        if (contacts.length < 5) {
+          const names = ['Alpha Corp', 'Beta Ltd', 'Gamma Inc', 'Delta Co', 'Epsilon LLC']
+          for (let i = contacts.length; i < 5; i++) {
+            const c = await prisma.contact.create({
+              data: {
+                tenantId,
+                name: names[i],
+                email: `contact${i + 1}@example.com`,
+                phone: `+91-98765${String(i).padStart(5, '0')}`,
+                type: 'customer',
+                tags: [],
+              },
+            })
+            contacts.push({ id: c.id, address: c.address, city: c.city, postalCode: c.postalCode } as any)
+          }
+        }
+        let products = await prisma.product.findMany({
+          where: { tenantId },
+          select: { id: true, name: true, salePrice: true },
+          take: 50,
+        })
+        if (products.length < 5) {
+          const names = ['Product A', 'Product B', 'Product C', 'Product D', 'Product E']
+          for (let i = products.length; i < 5; i++) {
+            const price = 1000 + i * 500
+            const p = await prisma.product.create({
+              data: {
+                tenantId,
+                name: names[i],
+                sku: `SKU-${Date.now()}-${i}`,
+                costPrice: price * 0.6,
+                salePrice: price,
+                images: [],
+                categories: [],
+              },
+            })
+            products.push({ id: p.id, name: p.name, salePrice: p.salePrice })
+          }
+        }
+        const result = await seedSalesAndBillingModule(
+          tenantId,
+          contacts,
+          products,
+          DEMO_DATE_RANGE,
+          prisma
+        )
+        return NextResponse.json({
+          success: true,
+          message: 'Finance data (orders + invoices) added without deleting existing data. Date range: Mar 2025 – Feb 2026.',
+          addFinanceOnly: true,
+          tenantId,
+          tenantName: tenant.name,
+          ...result,
+        })
+      } catch (error: any) {
+        console.error('[SEED_DEMO_DATA] addFinanceOnly error:', error)
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Failed to add finance data',
+            message: error?.message || String(error),
+          },
+          { status: 500 }
+        )
+      }
+    }
+    
     // If trigger=true, actually seed the data
     if (trigger) {
       const comprehensive = searchParams.get('comprehensive') === 'true'
@@ -88,9 +575,13 @@ export async function GET(request: NextRequest) {
           where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
         })
         if (comprehensive && demoTenant) {
-          seedDemoBusiness(demoTenant.id).catch((err) => {
-            console.error('[SEED_DEMO_DATA] Background comprehensive seed error:', err)
-          })
+          seedDemoBusiness(demoTenant.id)
+            .then(async () => {
+              console.log('[SEED_DEMO_DATA] Background comprehensive seed completed - current month data included in seed')
+            })
+            .catch((err) => {
+              console.error('[SEED_DEMO_DATA] Background comprehensive seed error:', err)
+            })
         } else {
           seedDemoData().catch((err) => {
             console.error('[SEED_DEMO_DATA] Background seed error:', err)
@@ -112,6 +603,8 @@ export async function GET(request: NextRequest) {
         })
         if (demoTenant) {
           result = await seedDemoBusiness(demoTenant.id)
+          // NOTE: Current month data is now created as part of seedCRMModule
+          console.log(`[SEED_DEMO_DATA] Comprehensive seed completed - current month data included in seed`)
         } else {
           result = await seedDemoData()
         }
@@ -137,10 +630,12 @@ export async function GET(request: NextRequest) {
         '3. Background seed: Add ?background=true to run without timeout',
         '4. Use POST request: curl -X POST https://payaid-v3.vercel.app/api/admin/seed-demo-data?comprehensive=true',
         '5. Use browser console: fetch("/api/admin/seed-demo-data?comprehensive=true", {method: "POST"})',
+        '6. Add finance only (no delete): /api/admin/seed-demo-data?addFinanceOnly=true&tenantId=<tenantId>',
       ],
       quickSeed: 'Visit: /api/admin/seed-demo-data?trigger=true&comprehensive=true',
       comprehensiveSeed: 'Visit: /api/admin/seed-demo-data?trigger=true&comprehensive=true&background=true',
       note: 'Comprehensive seed creates 150+ contacts, 200+ deals, 300+ tasks, and data across all modules (Mar 2025 - Feb 2026).',
+      addFinanceOnly: 'Add only orders + invoices (no reset): GET /api/admin/seed-demo-data?addFinanceOnly=true&tenantId=<tenantId>',
     }, {
       headers: {
         'Content-Type': 'application/json',
@@ -360,6 +855,31 @@ export async function POST(request: NextRequest) {
         })
       }
       
+      // Verify tenant exists before starting seed
+      console.log(`[SEED_DEMO_DATA] 🔍 Verifying tenant exists before seed: ${seedTenantId}`)
+      console.log(`[SEED_DEMO_DATA] 📋 Seed parameters:`, {
+        targetTenantId,
+        tenantIdFromToken,
+        userTenantId: user?.tenantId,
+        seedTenantId,
+        comprehensive,
+        background,
+      })
+      let preSeedTenant = null
+      try {
+        preSeedTenant = await prisma.tenant.findUnique({
+          where: { id: seedTenantId },
+          select: { id: true, name: true },
+        })
+        if (preSeedTenant) {
+          console.log(`[SEED_DEMO_DATA] ✅ Tenant exists: ${preSeedTenant.name} (${preSeedTenant.id})`)
+        } else {
+          console.log(`[SEED_DEMO_DATA] ⚠️ Tenant ${seedTenantId} not found - seed will create it`)
+        }
+      } catch (preCheckError) {
+        console.error(`[SEED_DEMO_DATA] ❌ Error checking tenant before seed:`, preCheckError)
+      }
+      
       // Start seeding in background and return immediately
       const seedStartTime = Date.now()
       const seedPromise = (async () => {
@@ -372,6 +892,10 @@ export async function POST(request: NextRequest) {
             console.log(`[SEED_DEMO_DATA] 📦 Running comprehensive seed (seedDemoBusiness)...`)
             seedResult = await seedDemoBusiness(seedTenantId)
             console.log(`[SEED_DEMO_DATA] ✅ Comprehensive seed function completed`)
+            
+            // NOTE: Current month data is now created as part of seedCRMModule
+            // No need to call ensureCurrentMonthData separately
+            console.log(`[SEED_DEMO_DATA] Comprehensive seed completed - current month data included in seed`)
           } else {
             console.log(`[SEED_DEMO_DATA] 📦 Running basic seed (seedDemoDataForTenant)...`)
             seedResult = await seedDemoDataForTenant(seedTenantId)
@@ -381,26 +905,59 @@ export async function POST(request: NextRequest) {
           // Wait a moment for database to sync
           await new Promise(resolve => setTimeout(resolve, 2000))
           
+          // Verify tenant still exists and get actual tenant ID
+          console.log(`[SEED_DEMO_DATA] 🔍 Verifying tenant exists: ${seedTenantId}`)
+          let actualTenant = null
+          try {
+            actualTenant = await prisma.tenant.findUnique({
+              where: { id: seedTenantId },
+              select: { id: true, name: true },
+            })
+            if (!actualTenant) {
+              // Try to find by name in case ID changed
+              actualTenant = await prisma.tenant.findFirst({
+                where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
+                select: { id: true, name: true },
+              })
+              if (actualTenant) {
+                console.warn(`[SEED_DEMO_DATA] ⚠️ Tenant ID mismatch: requested ${seedTenantId}, found ${actualTenant.id}`)
+                console.warn(`[SEED_DEMO_DATA] ⚠️ Using actual tenant ID: ${actualTenant.id}`)
+              }
+            }
+          } catch (tenantVerifyError) {
+            console.error(`[SEED_DEMO_DATA] ❌ Failed to verify tenant:`, tenantVerifyError)
+          }
+          
+          if (!actualTenant) {
+            console.error(`[SEED_DEMO_DATA] ❌ CRITICAL: Tenant ${seedTenantId} not found after seed completion!`)
+            console.error(`[SEED_DEMO_DATA] Seed may have failed or tenant was deleted`)
+          } else {
+            console.log(`[SEED_DEMO_DATA] ✅ Tenant verified: ${actualTenant.name} (${actualTenant.id})`)
+          }
+          
+          // Use actual tenant ID for verification
+          const verifyTenantId = actualTenant?.id || seedTenantId
+          
           // Verify data was created
-          console.log(`[SEED_DEMO_DATA] 🔍 Verifying data creation for tenant: ${seedTenantId}`)
+          console.log(`[SEED_DEMO_DATA] 🔍 Verifying data creation for tenant: ${verifyTenantId}`)
           const [contacts, deals, tasks, invoices, orders] = await Promise.all([
-            prisma.contact.count({ where: { tenantId: seedTenantId } }).catch((e) => {
+            prisma.contact.count({ where: { tenantId: verifyTenantId } }).catch((e) => {
               console.error(`[SEED_DEMO_DATA] Error counting contacts:`, e)
               return 0
             }),
-            prisma.deal.count({ where: { tenantId: seedTenantId } }).catch((e) => {
+            prisma.deal.count({ where: { tenantId: verifyTenantId } }).catch((e) => {
               console.error(`[SEED_DEMO_DATA] Error counting deals:`, e)
               return 0
             }),
-            prisma.task.count({ where: { tenantId: seedTenantId } }).catch((e) => {
+            prisma.task.count({ where: { tenantId: verifyTenantId } }).catch((e) => {
               console.error(`[SEED_DEMO_DATA] Error counting tasks:`, e)
               return 0
             }),
-            prisma.invoice.count({ where: { tenantId: seedTenantId } }).catch((e) => {
+            prisma.invoice.count({ where: { tenantId: verifyTenantId } }).catch((e) => {
               console.error(`[SEED_DEMO_DATA] Error counting invoices:`, e)
               return 0
             }),
-            prisma.order.count({ where: { tenantId: seedTenantId } }).catch((e) => {
+            prisma.order.count({ where: { tenantId: verifyTenantId } }).catch((e) => {
               console.error(`[SEED_DEMO_DATA] Error counting orders:`, e)
               return 0
             }),
@@ -410,7 +967,10 @@ export async function POST(request: NextRequest) {
           const elapsedSeconds = Math.floor((Date.now() - seedStartTime) / 1000)
           
           console.log(`[SEED_DEMO_DATA] ⏰ Seed completed in ${elapsedSeconds} seconds`)
-          console.log(`[SEED_DEMO_DATA] ✅ Seed completed for tenant ${seedTenantId}`)
+          console.log(`[SEED_DEMO_DATA] ✅ Seed completed for tenant ${verifyTenantId} (requested: ${seedTenantId})`)
+          if (verifyTenantId !== seedTenantId) {
+            console.warn(`[SEED_DEMO_DATA] ⚠️ Tenant ID changed during seed: ${seedTenantId} -> ${verifyTenantId}`)
+          }
           console.log(`[SEED_DEMO_DATA] 📊 Data verification:`)
           console.log(`[SEED_DEMO_DATA]   - Contacts: ${contacts}`)
           console.log(`[SEED_DEMO_DATA]   - Deals: ${deals}`)
@@ -430,29 +990,62 @@ export async function POST(request: NextRequest) {
             console.error(`[SEED_DEMO_DATA]   2. Seed function error (check logs above)`)
             console.error(`[SEED_DEMO_DATA]   3. Wrong tenantId used in seed function`)
             console.error(`[SEED_DEMO_DATA]   4. Database transaction rollback`)
+          } else if (deals === 0 && contacts > 0) {
+            console.warn(`[SEED_DEMO_DATA] ⚠️ Seed created contacts but 0 deals. Running ensureCurrentMonthData to add deals...`)
+            try {
+              const ensured = await ensureCurrentMonthData(verifyTenantId)
+              console.log(`[SEED_DEMO_DATA] ✅ Ensure current month: ${ensured.createdDeals} deals, ${ensured.createdContacts} contacts`)
+              if (ensured.finalDeals > 0) {
+                const { multiLayerCache } = await import('@/lib/cache/multi-layer')
+                await multiLayerCache.deletePattern(`deals:${verifyTenantId}:*`).catch(() => {})
+                await multiLayerCache.deletePattern(`dashboard:stats:${verifyTenantId}*`).catch(() => {})
+              }
+            } catch (ensureErr: any) {
+              console.error(`[SEED_DEMO_DATA] ❌ ensureCurrentMonthData failed:`, ensureErr?.message || ensureErr)
+            }
           } else if (totalData < 10) {
             console.warn(`[SEED_DEMO_DATA] ⚠️  WARNING: Seed completed but very little data was created (${totalData} records)`)
             console.warn(`[SEED_DEMO_DATA] Expected: 150+ contacts, 200+ deals for comprehensive seed`)
           } else {
             console.log(`[SEED_DEMO_DATA] ✅ Seed successful! Dashboard should now show data.`)
             console.log(`[SEED_DEMO_DATA] 💡 Users should refresh the dashboard page to see the data.`)
+            
+            // Clear cache to ensure fresh data is shown
+            try {
+              const { multiLayerCache } = await import('@/lib/cache/multi-layer')
+              await multiLayerCache.deletePattern(`deals:${verifyTenantId}:*`)
+              await multiLayerCache.deletePattern(`contacts:${verifyTenantId}:*`)
+              await multiLayerCache.deletePattern(`dashboard:stats:${verifyTenantId}*`)
+              console.log(`[SEED_DEMO_DATA] ✅ Cache cleared for tenant ${verifyTenantId}`)
+            } catch (cacheError) {
+              console.warn(`[SEED_DEMO_DATA] ⚠️ Failed to clear cache:`, cacheError)
+            }
           }
         } catch (err: any) {
           const elapsedSeconds = Math.floor((Date.now() - seedStartTime) / 1000)
+          const errorMessage = `${err?.message || String(err)}${err?.code ? ` [Code: ${err?.code}]` : ''}`
           console.error(`[SEED_DEMO_DATA] ❌ Background seed FAILED after ${elapsedSeconds} seconds`)
           console.error(`[SEED_DEMO_DATA] Error type: ${err?.constructor?.name || typeof err}`)
-          console.error(`[SEED_DEMO_DATA] Error message: ${err?.message || String(err)}`)
+          console.error(`[SEED_DEMO_DATA] Error message: ${errorMessage}`)
           console.error(`[SEED_DEMO_DATA] Error code: ${err?.code || 'N/A'}`)
           console.error(`[SEED_DEMO_DATA] Error stack:`, err?.stack)
           console.error(`[SEED_DEMO_DATA] Full error object:`, JSON.stringify(err, Object.getOwnPropertyNames(err), 2))
           
-          // Try to verify if any data was created despite the error
+          // Store error in seed tracking so it can be retrieved via status API
+          const { setSeedError } = await import('@/lib/utils/seed-status')
+          setSeedError(seedTenantId, errorMessage)
+          
+          // Try to verify if any data was created despite the error; if we have contacts but 0 deals, top up
           try {
             const [contacts, deals] = await Promise.all([
               prisma.contact.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
               prisma.deal.count({ where: { tenantId: seedTenantId } }).catch(() => 0),
             ])
             console.error(`[SEED_DEMO_DATA] Partial data check: ${contacts} contacts, ${deals} deals created before error`)
+            if (contacts > 0 && deals === 0) {
+              console.log(`[SEED_DEMO_DATA] Running ensureCurrentMonthData to add deals after seed failure...`)
+              await ensureCurrentMonthData(seedTenantId).catch((e) => console.error('[SEED_DEMO_DATA] ensureCurrentMonthData failed:', e))
+            }
           } catch (verifyError) {
             console.error(`[SEED_DEMO_DATA] Could not verify partial data:`, verifyError)
           }
@@ -500,14 +1093,14 @@ export async function POST(request: NextRequest) {
     let seedPromise: Promise<any>
     if (comprehensive) {
       if (targetTenantId) {
-        seedPromise = seedDemoBusiness(targetTenantId)
+        seedPromise = seedDemoBusiness(targetTenantId).then(() => ensureCurrentMonthData(targetTenantId))
       } else {
         // Find Demo Business tenant
         const demoTenant = await prisma.tenant.findFirst({
           where: { name: { contains: 'Demo Business', mode: 'insensitive' } },
         })
         if (demoTenant) {
-          seedPromise = seedDemoBusiness(demoTenant.id)
+          seedPromise = seedDemoBusiness(demoTenant.id).then(() => ensureCurrentMonthData(demoTenant.id))
         } else {
           seedPromise = seedDemoData()
         }
@@ -533,27 +1126,61 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     const duration = Date.now() - startTime
     console.error('[SEED_DEMO_DATA] POST Error:', error)
+    console.error('[SEED_DEMO_DATA] Error type:', typeof error)
     console.error('[SEED_DEMO_DATA] Error stack:', error?.stack)
     console.error(`[SEED_DEMO_DATA] Failed after ${duration}ms`)
     
+    // Extract error message from various error formats
+    let errorMessage = 'Unknown error occurred'
+    if (error instanceof Error) {
+      errorMessage = error.message || error.toString()
+    } else if (error?.message) {
+      errorMessage = String(error.message)
+    } else if (error?.toString) {
+      errorMessage = error.toString()
+    } else if (typeof error === 'string') {
+      errorMessage = error
+    } else if (error) {
+      errorMessage = JSON.stringify(error)
+    }
+    
     // Check if it's a timeout error
-    const isTimeout = error?.message?.includes('timeout') || duration >= 8500
+    const isTimeout = errorMessage?.toLowerCase().includes('timeout') || duration >= 8500
+    
+    // Check for common database errors
+    const isDatabaseError = error?.code === 'P2002' || error?.code === 'P2003' || error?.code?.startsWith('P')
+    const databaseErrorHint = isDatabaseError 
+      ? `Database error (${error.code}): ${error.meta?.target || error.meta?.cause || 'Check constraints'}`
+      : null
     
     return NextResponse.json(
       {
         error: 'Failed to seed demo data',
-        message: error?.message || 'Unknown error occurred',
+        message: databaseErrorHint || errorMessage,
         isTimeout,
         duration: `${duration}ms`,
+        errorCode: error?.code,
         suggestion: isTimeout 
           ? 'The seed operation timed out. Try using ?background=true parameter or upgrade to Vercel Pro plan for longer execution times.'
-          : 'Please check the server logs for more details.',
+          : isDatabaseError
+          ? 'Database constraint violation. The data might already exist or there might be a schema mismatch.'
+          : 'Please check the server logs for more details. Try using ?background=true to run in background mode.',
         backgroundOption: 'You can use POST /api/admin/seed-demo-data?background=true to run in background',
-        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined,
+        details: process.env.NODE_ENV === 'development' ? (error?.stack || JSON.stringify(error, null, 2)) : undefined,
       },
       { status: 500 }
     )
   }
+}
+
+/**
+ * Internal seeding function for a specific tenant
+ */
+async function seedDemoDataInternal(tenantId: string, tenant: any) {
+  console.log(`[SEED_DEMO_DATA] Seeding data for tenant: ${tenant.name} (${tenantId})`)
+  
+  // Use the seedDemoBusiness function which handles all the seeding
+  return await seedDemoBusiness(tenantId)
 }
 
 /**
@@ -607,12 +1234,12 @@ async function seedDemoData() {
         // IMPORTANT: Don't delete admin@demo.com user - we'll update its tenantId instead
         await prisma.$transaction(async (tx) => {
           // Update admin user's tenantId to null temporarily (we'll set it to new tenant later)
-          await tx.user.updateMany({
+          // Note: tenantId is required, so we'll delete and recreate the user instead
+          await tx.user.deleteMany({
             where: { 
               email: 'admin@demo.com',
               tenantId: tenantIdToDelete 
-            },
-            data: { tenantId: null } // Temporarily set to null to break foreign key
+            }
           })
           
           // Delete other users (not admin@demo.com)
@@ -1610,18 +2237,28 @@ async function seedDemoData() {
 
     console.log(`✅ Total tasks: ${tasks.length} (${existingTasksCount > 0 ? `${existingTasksCount} preserved, ${tasks.length - existingTasksCount} added` : 'all created'})`)
 
-    // Create Lead Sources and assign to contacts
+    // Create Lead Sources and assign to contacts - Expanded list with more variety
     const leadSourcesData = [
       { name: 'Google Search', type: 'organic' },
       { name: 'Facebook Ads', type: 'paid_ad' },
       { name: 'LinkedIn', type: 'social' },
-      { name: 'Referral', type: 'referral' },
+      { name: 'Referral Program', type: 'referral' },
       { name: 'Website Form', type: 'organic' },
       { name: 'Email Campaign', type: 'email' },
-      { name: 'Trade Show', type: 'event' },
+      { name: 'Trade Show 2024', type: 'event' },
       { name: 'Cold Call', type: 'direct' },
       { name: 'YouTube Ads', type: 'paid_ad' },
       { name: 'Partner Channel', type: 'partner' },
+      { name: 'Instagram Ads', type: 'paid_ad' },
+      { name: 'Twitter/X', type: 'social' },
+      { name: 'Content Marketing', type: 'organic' },
+      { name: 'Webinar', type: 'event' },
+      { name: 'Google Ads', type: 'paid_ad' },
+      { name: 'Bing Search', type: 'organic' },
+      { name: 'WhatsApp Business', type: 'social' },
+      { name: 'Telemarketing', type: 'direct' },
+      { name: 'Affiliate Program', type: 'partner' },
+      { name: 'Press Release', type: 'organic' },
     ]
 
     await prisma.leadSource.deleteMany({ where: { tenantId } })
@@ -1665,12 +2302,15 @@ async function seedDemoData() {
       }
     }
 
-    // Update lead source counts (with delay to avoid connection pool exhaustion)
+    // Update lead source counts with realistic stats (with delay to avoid connection pool exhaustion)
     for (let i = 0; i < leadSources.length; i++) {
       const source = leadSources[i]
+      
+      // Get actual counts from database
       const sourceContacts = await prisma.contact.count({
         where: { tenantId, sourceId: source.id },
       })
+      
       const sourceDeals = await prisma.deal.findMany({
         where: {
           tenantId,
@@ -1678,17 +2318,41 @@ async function seedDemoData() {
         },
         select: { value: true, stage: true },
       })
+      
       const wonDeals = sourceDeals.filter(d => d.stage === 'won')
       const totalValue = wonDeals.reduce((sum, d) => sum + (d.value || 0), 0)
+      
+      // Calculate realistic stats based on source type
+      // If no data exists, generate realistic demo stats
+      let finalLeadsCount = sourceContacts
+      let finalConversionsCount = wonDeals.length
+      let finalTotalValue = totalValue
+      
+      if (sourceContacts === 0) {
+        // Generate realistic demo stats based on source type
+        const baseLeads = Math.floor(Math.random() * 150) + 20 // 20-170 leads
+        const conversionRate = source.type === 'referral' ? 0.25 : 
+                              source.type === 'paid_ad' ? 0.15 : 
+                              source.type === 'organic' ? 0.20 : 
+                              source.type === 'social' ? 0.18 : 
+                              source.type === 'event' ? 0.12 : 0.10
+        
+        finalLeadsCount = baseLeads
+        finalConversionsCount = Math.floor(baseLeads * conversionRate)
+        finalTotalValue = finalConversionsCount * (Math.floor(Math.random() * 100000) + 50000) // ₹50k-₹150k per deal
+      }
+      
+      const avgDealValue = finalConversionsCount > 0 ? finalTotalValue / finalConversionsCount : 0
+      const conversionRate = finalLeadsCount > 0 ? (finalConversionsCount / finalLeadsCount) * 100 : 0
       
       await prisma.leadSource.update({
         where: { id: source.id },
         data: {
-          leadsCount: sourceContacts,
-          conversionsCount: wonDeals.length,
-          totalValue,
-          avgDealValue: wonDeals.length > 0 ? totalValue / wonDeals.length : 0,
-          conversionRate: sourceContacts > 0 ? (wonDeals.length / sourceContacts) * 100 : 0,
+          leadsCount: finalLeadsCount,
+          conversionsCount: finalConversionsCount,
+          totalValue: finalTotalValue,
+          avgDealValue,
+          conversionRate,
         },
       })
       
@@ -1906,6 +2570,7 @@ async function seedDemoData() {
           name: 'Main Website',
           domain: 'demobusiness.com',
           status: 'active',
+          trackingCode: `track-${tenantId.substring(0, 8)}-${Date.now()}`,
         },
       })
     }
@@ -1921,21 +2586,24 @@ async function seedDemoData() {
       const sessionDate = new Date(now.getTime() - (i % 7) * 24 * 60 * 60 * 1000) // Last 7 days
       sessionDate.setHours(9 + (i % 8), (i % 4) * 15, 0, 0)
       
+      // Store device/browser info for visits (not sessions)
+      const device = ['Desktop', 'Mobile', 'Tablet'][i % 3]
+      const browser = ['Chrome', 'Firefox', 'Safari', 'Edge'][i % 4]
+      const os = ['Windows', 'macOS', 'iOS', 'Android'][i % 4]
+      const country = 'India'
+      const city = ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad'][i % 4]
+      const referrer = i % 3 === 0 ? 'google.com' : i % 3 === 1 ? 'linkedin.com' : 'direct'
+      
       const session = await prisma.websiteSession.create({
         data: {
           tenantId,
           websiteId: website.id,
+          sessionId: `sess-${tenantId.substring(0, 8)}-${Date.now()}-${i}`,
           visitorId,
           startedAt: sessionDate,
           endedAt: new Date(sessionDate.getTime() + (60 + (i % 120)) * 60 * 1000), // 1-3 hours
           duration: 60 + (i % 120),
           pageViews: 3 + (i % 10),
-          device: ['Desktop', 'Mobile', 'Tablet'][i % 3],
-          browser: ['Chrome', 'Firefox', 'Safari', 'Edge'][i % 4],
-          os: ['Windows', 'macOS', 'iOS', 'Android'][i % 4],
-          country: 'India',
-          city: ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad'][i % 4],
-          referrer: i % 3 === 0 ? 'google.com' : i % 3 === 1 ? 'linkedin.com' : 'direct',
         },
       })
       
@@ -1943,16 +2611,16 @@ async function seedDemoData() {
       const pages = ['/', '/products', '/pricing', '/about', '/contact']
       for (let j = 0; j < Math.min(session.pageViews, 5); j++) {
         let page = await prisma.websitePage.findFirst({
-          where: { tenantId, websiteId: website.id, path: pages[j % pages.length] },
+          where: { websiteId: website.id, path: pages[j % pages.length] },
         })
         
         if (!page) {
           page = await prisma.websitePage.create({
             data: {
-              tenantId,
               websiteId: website.id,
               path: pages[j % pages.length],
               title: pages[j % pages.length] === '/' ? 'Home' : pages[j % pages.length].charAt(1).toUpperCase() + pages[j % pages.length].slice(2),
+              contentJson: {},
             },
           })
         }
@@ -1960,15 +2628,16 @@ async function seedDemoData() {
         await prisma.websiteVisit.create({
           data: {
             tenantId,
+            websiteId: website.id,
             sessionId: session.id,
             pageId: page.id,
             visitedAt: new Date(sessionDate.getTime() + j * 30 * 1000),
-            device: session.device,
-            browser: session.browser,
-            os: session.os,
-            country: session.country,
-            city: session.city,
-            referrer: session.referrer,
+            device,
+            browser,
+            os,
+            country,
+            city,
+            referrer,
           },
         })
       }
@@ -1978,6 +2647,7 @@ async function seedDemoData() {
         await prisma.websiteEvent.create({
           data: {
             tenantId,
+            websiteId: website.id,
             sessionId: session.id,
             eventType: 'engagement',
             eventName: 'form_submit',
@@ -1990,6 +2660,7 @@ async function seedDemoData() {
         await prisma.websiteEvent.create({
           data: {
             tenantId,
+            websiteId: website.id,
             sessionId: session.id,
             eventType: 'engagement',
             eventName: 'scroll_depth',
@@ -2107,18 +2778,25 @@ async function seedDemoData() {
     console.log('🌱 Seeding All Modules...')
     let moduleData: any = {}
     try {
-      moduleData = await seedAllModules(tenantId, adminUser.id, contacts, now)
+      moduleData = await seedAllModules(tenantId, adminUser.id)
       console.log('✅ All modules seeded')
     } catch (moduleError) {
       console.warn('Module seeding failed (non-critical):', moduleError)
     }
 
-    // Invalidate cache
+    // Invalidate cache (both Redis and multi-layer cache)
     try {
       const { cache } = await import('@/lib/redis/client')
       await cache.deletePattern(`contacts:${tenantId}:*`)
       await cache.deletePattern(`deals:${tenantId}:*`)
       await cache.deletePattern(`dashboard:stats:${tenantId}`)
+      
+      // Also invalidate multi-layer cache
+      const { multiLayerCache } = await import('@/lib/cache/multi-layer')
+      await multiLayerCache.deletePattern(`contacts:${tenantId}:*`)
+      await multiLayerCache.deletePattern(`deals:${tenantId}:*`)
+      await multiLayerCache.deletePattern(`dashboard:stats:${tenantId}`)
+      console.log(`[SEED_DEMO_DATA] Cache invalidated for tenant ${tenantId}`)
     } catch (cacheError) {
       console.warn('Cache invalidation failed (non-critical):', cacheError)
     }
@@ -2148,14 +2826,33 @@ async function seedDemoData() {
         visitorSessions: visitorSessions.length,
       },
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[SEED_DEMO_DATA] Seed demo data error:', error)
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    const errorStack = error instanceof Error ? error.stack : undefined
-    console.error('[SEED_DEMO_DATA] Error stack:', errorStack)
+    console.error('[SEED_DEMO_DATA] Error type:', typeof error)
+    console.error('[SEED_DEMO_DATA] Error keys:', error ? Object.keys(error) : 'null')
+    
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : error?.message 
+      ? String(error.message)
+      : error?.toString 
+      ? error.toString()
+      : String(error)
+    
+    const errorStack = error instanceof Error ? error.stack : error?.stack
+    const errorCode = error?.code
+    const errorMeta = error?.meta
+    
+    console.error('[SEED_DEMO_DATA] Error details:', {
+      message: errorMessage,
+      code: errorCode,
+      meta: errorMeta,
+      stack: errorStack,
+    })
     
     // Re-throw with more context
-    throw new Error(`Failed to seed demo data: ${errorMessage}${errorStack ? `\nStack: ${errorStack}` : ''}`)
+    const fullError = `Failed to seed demo data: ${errorMessage}${errorCode ? ` [Code: ${errorCode}]` : ''}${errorStack ? `\nStack: ${errorStack.substring(0, 500)}` : ''}`
+    throw new Error(fullError)
   }
 }
 

@@ -76,7 +76,7 @@ export default function HREmployeesPage() {
             <h1 className="text-3xl font-bold text-gray-900">Employees</h1>
             <p className="mt-2 text-gray-600">Manage your workforce</p>
           </div>
-          <Link href="/dashboard/hr/employees/new">
+          <Link href={`/hr/${tenantId}/Employees/new`}>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
               Add Employee
@@ -123,7 +123,7 @@ export default function HREmployeesPage() {
             ) : employees.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <p className="mb-4">No employees found</p>
-                <Link href="/dashboard/hr/employees/new">
+                <Link href={`/hr/${tenantId}/Employees/new`}>
                   <Button variant="outline">Add your first employee</Button>
                 </Link>
               </div>
@@ -163,7 +163,7 @@ export default function HREmployeesPage() {
                           {employee.joiningDate ? format(new Date(employee.joiningDate), 'MMM dd, yyyy') : '-'}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Link href={`/dashboard/hr/employees/${employee.id}`}>
+                          <Link href={`/hr/${tenantId}/Employees/${employee.id}`}>
                             <Button variant="ghost" size="sm">View</Button>
                           </Link>
                         </TableCell>

@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
       where: {
         tenantId,
         status: { in: ['approved', 'pending'] },
-        dueDate: {
+        expectedDeliveryDate: {
           gte: now,
           lte: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
         },
@@ -191,7 +191,7 @@ export async function GET(request: NextRequest) {
       select: {
         poNumber: true,
         total: true,
-        dueDate: true,
+        expectedDeliveryDate: true,
       },
       take: 10,
     })
@@ -224,7 +224,7 @@ export async function GET(request: NextRequest) {
         outflows: upcomingOutflows.map(po => ({
           id: po.poNumber,
           description: `Vendor Payment - ${po.poNumber}`,
-          date: po.dueDate,
+          date: po.expectedDeliveryDate,
           amount: Number(po.total),
           type: 'outflow',
         })),

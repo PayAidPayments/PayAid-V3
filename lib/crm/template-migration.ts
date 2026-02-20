@@ -70,14 +70,14 @@ export async function applyTemplate(
       }
     }
 
-    // Store template configuration in tenant settings
+    // Store template configuration in tenant industrySettings
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { settings: true },
+      select: { industrySettings: true },
     })
 
-    const settings = (tenant?.settings as any) || {}
-    settings.pipelineTemplate = {
+    const industrySettings = (tenant?.industrySettings as any) || {}
+    industrySettings.pipelineTemplate = {
       templateId: template.id,
       industry: template.industry,
       stages: template.stages,
@@ -86,7 +86,7 @@ export async function applyTemplate(
 
     await prisma.tenant.update({
       where: { id: tenantId },
-      data: { settings: settings as any },
+      data: { industrySettings: industrySettings as any },
     })
 
     // Migrate existing deals to new stages (map old stages to new ones)

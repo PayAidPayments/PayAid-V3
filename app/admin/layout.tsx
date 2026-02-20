@@ -1,18 +1,21 @@
 /**
- * Phase 2: Admin Panel Layout
- * Super admin panel - not tenant-specific
+ * Business Admin layout – tenant owner / admin
+ * Route guard in middleware; layout wraps all /admin/* pages.
  */
 
 import { redirect } from 'next/navigation'
-import { verifyToken } from '@/lib/auth/jwt'
 import { cookies } from 'next/headers'
+import { verifyToken } from '@/lib/auth/jwt'
+import { AdminLayout } from '@/components/Admin/layout/AdminLayout'
 
-export default async function AdminLayout({
+const SUPER_ADMIN_ROLES = ['SUPER_ADMIN', 'super_admin']
+const TENANT_ADMIN_ROLES = ['BUSINESS_ADMIN', 'business_admin', 'admin']
+
+export default async function AdminRootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // Check authentication
   const cookieStore = await cookies()
   const token = cookieStore.get('token')?.value
 
@@ -22,49 +25,15 @@ export default async function AdminLayout({
 
   try {
     const decoded = verifyToken(token)
-    
-    // Check if super admin
-    const isSuperAdmin = decoded.roles?.includes('super_admin') || 
-                        decoded.role === 'super_admin'
-    
-    if (!isSuperAdmin) {
+    const roles = decoded.roles ?? (decoded.role ? [decoded.role] : [])
+    const isSuperAdmin = roles.some((r: string) => SUPER_ADMIN_ROLES.includes(r))
+    const isTenantAdmin = roles.some((r: string) => TENANT_ADMIN_ROLES.includes(r))
+    if (!isSuperAdmin && !isTenantAdmin) {
       redirect('/dashboard')
     }
   } catch {
     redirect('/login?redirect=/admin')
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="border-b">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-6">
-            <h1 className="text-xl font-bold">PayAid Admin</h1>
-            <nav className="flex gap-4">
-              <a href="/admin/tenants" className="text-sm font-medium hover:underline">
-                Tenants
-              </a>
-              <a href="/admin/users" className="text-sm font-medium hover:underline">
-                Users
-              </a>
-              <a href="/admin/modules" className="text-sm font-medium hover:underline">
-                Modules
-              </a>
-              <a href="/admin/settings" className="text-sm font-medium hover:underline">
-                Settings
-              </a>
-            </nav>
-          </div>
-          <div className="flex items-center gap-4">
-            <a href="/dashboard" className="text-sm text-muted-foreground hover:underline">
-              Back to Dashboard
-            </a>
-          </div>
-        </div>
-      </div>
-      <main className="container py-6">
-        {children}
-      </main>
-    </div>
-  )
+  return <AdminLayout>{children}</AdminLayout>
 }

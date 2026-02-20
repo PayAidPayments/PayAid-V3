@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 
 export default function HRLeaveApplyPage() {
   const params = useParams()
@@ -107,40 +107,40 @@ export default function HRLeaveApplyPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="employeeId" className="dark:text-gray-300">Employee *</Label>
-                <Select
+                <CustomSelect
                   value={formData.employeeId}
-                  onValueChange={(value) => setFormData({ ...formData, employeeId: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, employeeId: value })}
+                  placeholder="Select employee"
                 >
-                  <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
-                    <SelectValue placeholder="Select employee" />
-                  </SelectTrigger>
-                  <SelectContent>
+                  <CustomSelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+                  </CustomSelectTrigger>
+                  <CustomSelectContent>
                     {employees?.employees.map((emp) => (
-                      <SelectItem key={emp.id} value={emp.id}>
+                      <CustomSelectItem key={emp.id} value={emp.id}>
                         {emp.employeeCode} - {emp.firstName} {emp.lastName}
-                      </SelectItem>
+                      </CustomSelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </CustomSelectContent>
+                </CustomSelect>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="leaveTypeId" className="dark:text-gray-300">Leave Type *</Label>
-                <Select
+                <CustomSelect
                   value={formData.leaveTypeId}
-                  onValueChange={(value) => setFormData({ ...formData, leaveTypeId: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, leaveTypeId: value })}
+                  placeholder="Select leave type"
                 >
-                  <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
-                    <SelectValue placeholder="Select leave type" />
-                  </SelectTrigger>
-                  <SelectContent>
+                  <CustomSelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+                  </CustomSelectTrigger>
+                  <CustomSelectContent>
                     {leaveTypes?.leaveTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
+                      <CustomSelectItem key={type.id} value={type.id}>
                         {type.name} {type.isPaid ? '(Paid)' : '(Unpaid)'}
-                      </SelectItem>
+                      </CustomSelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </CustomSelectContent>
+                </CustomSelect>
                 {selectedBalance && (
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Available balance: {selectedBalance.balance} days
@@ -185,18 +185,18 @@ export default function HRLeaveApplyPage() {
                   <Label htmlFor="isHalfDay" className="dark:text-gray-300">Half Day</Label>
                 </div>
                 {formData.isHalfDay && (
-                  <Select
+                  <CustomSelect
                     value={formData.halfDayType}
-                    onValueChange={(value) => setFormData({ ...formData, halfDayType: value as 'FIRST_HALF' | 'SECOND_HALF' })}
+                    onValueChange={(value: string) => setFormData({ ...formData, halfDayType: value as 'FIRST_HALF' | 'SECOND_HALF' })}
+                    placeholder="Half day type"
                   >
-                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="FIRST_HALF">First Half</SelectItem>
-                      <SelectItem value="SECOND_HALF">Second Half</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <CustomSelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+                    </CustomSelectTrigger>
+                    <CustomSelectContent>
+                      <CustomSelectItem value="FIRST_HALF">First Half</CustomSelectItem>
+                      <CustomSelectItem value="SECOND_HALF">Second Half</CustomSelectItem>
+                    </CustomSelectContent>
+                  </CustomSelect>
                 )}
               </div>
 

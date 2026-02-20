@@ -8,19 +8,29 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/licens
  */
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, user } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
-    await prisma.notification.updateMany({
+    // Find SalesRep by userId
+    const salesRep = await prisma.salesRep.findFirst({
       where: {
+        userId: userId,
         tenantId,
-        userId: user?.userId,
-        read: false,
-      },
-      data: {
-        read: true,
-        readAt: new Date(),
       },
     })
+
+    if (salesRep) {
+      await prisma.alert.updateMany({
+        where: {
+          repId: salesRep.id,
+          tenantId,
+          isRead: false,
+        },
+        data: {
+          isRead: true,
+          readAt: new Date(),
+        },
+      })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

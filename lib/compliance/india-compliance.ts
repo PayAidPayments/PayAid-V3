@@ -117,7 +117,7 @@ export async function getLaborLawCompliance(tenantId: string): Promise<LaborLawC
   // PF Compliance (Provident Fund)
   // PF is mandatory for companies with 20+ employees
   const pfRequired = employeeCount >= 20
-  const pfContributions = await prisma.pfConfig.findFirst({
+  const pfContributions = await prisma.pFConfig.findFirst({
     where: { tenantId },
   })
 
@@ -144,7 +144,7 @@ export async function getLaborLawCompliance(tenantId: string): Promise<LaborLawC
   // ESI Compliance (Employee State Insurance)
   // ESI is mandatory for companies with 10+ employees (in some states)
   const esiRequired = employeeCount >= 10
-  const esiConfig = await prisma.ptConfig.findFirst({
+  const esiConfig = await prisma.pTConfig.findFirst({
     where: { tenantId },
   })
 

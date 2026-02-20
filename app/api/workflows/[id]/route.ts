@@ -1,149 +1,119 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
-import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
-import { z } from 'zod'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import type { WorkflowStep } from '@/lib/workflow/types'
 
-const updateWorkflowSchema = z.object({
-  name: z.string().min(1).optional(),
-  description: z.string().optional(),
-  triggerType: z.enum(['EVENT', 'SCHEDULE', 'MANUAL']).optional(),
-  triggerEvent: z.string().optional(),
-  triggerSchedule: z.string().optional(),
-  steps: z.array(z.any()).optional(),
-  isActive: z.boolean().optional(),
-  isTemplate: z.boolean().optional(),
-})
-
-// GET /api/workflows/[id] - Get workflow
+/** GET /api/workflows/[id] */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { id } = await params
 
     const workflow = await prisma.workflow.findFirst({
-      where: {
-        id: params.id,
-        tenantId,
-      },
-      include: {
-        _count: {
-          select: {
-            executions: true,
-          },
-        },
+      where: { id, tenantId },
+      include: { _count: { select: { executions: true } } },
+    })
+    if (!workflow) {
+      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      workflow: {
+        id: workflow.id,
+        name: workflow.name,
+        description: workflow.description,
+        triggerType: workflow.triggerType,
+        triggerEvent: workflow.triggerEvent,
+        triggerSchedule: workflow.triggerSchedule,
+        isActive: workflow.isActive,
+        steps: (workflow.steps as unknown as WorkflowStep[]) || [],
+        executionsCount: workflow._count.executions,
+        createdAt: workflow.createdAt,
+        updatedAt: workflow.updatedAt,
       },
     })
+  } catch (e) {
+    const err = handleLicenseError(e)
+    if (err) return err
+    console.error('[API] workflows/[id] GET', e)
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : 'Failed to get workflow' },
+      { status: 500 }
+    )
+  }
+}
 
-    if (!workflow) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      )
+/** PUT /api/workflows/[id] */
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { id } = await params
+    const body = await request.json()
+
+    const existing = await prisma.workflow.findFirst({
+      where: { id, tenantId },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 })
     }
+
+    const update: Record<string, unknown> = {}
+    if (body.name !== undefined) update.name = String(body.name).trim()
+    if (body.description !== undefined) update.description = body.description ? String(body.description).trim() : null
+    if (body.triggerType !== undefined) update.triggerType = String(body.triggerType)
+    if (body.triggerEvent !== undefined) update.triggerEvent = body.triggerEvent ? String(body.triggerEvent) : null
+    if (body.triggerSchedule !== undefined) update.triggerSchedule = body.triggerSchedule ? String(body.triggerSchedule) : null
+    if (body.isActive !== undefined) update.isActive = Boolean(body.isActive)
+    if (body.steps !== undefined) update.steps = Array.isArray(body.steps) ? body.steps : existing.steps
+
+    const workflow = await prisma.workflow.update({
+      where: { id },
+      data: update as any,
+    })
 
     return NextResponse.json({ workflow })
-  } catch (error) {
-    if (error && typeof error === 'object' && 'moduleId' in error) {
-      return handleLicenseError(error)
-    }
-
-    console.error('Get workflow error:', error)
+  } catch (e) {
+    const err = handleLicenseError(e)
+    if (err) return err
+    console.error('[API] workflows/[id] PUT', e)
     return NextResponse.json(
-      { error: 'Failed to fetch workflow' },
+      { error: e instanceof Error ? e.message : 'Failed to update workflow' },
       { status: 500 }
     )
   }
 }
 
-// PATCH /api/workflows/[id] - Update workflow
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
-
-    const body = await request.json()
-    const validated = updateWorkflowSchema.parse(body)
-
-    const workflow = await prisma.workflow.findFirst({
-      where: {
-        id: params.id,
-        tenantId,
-      },
-    })
-
-    if (!workflow) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      )
-    }
-
-    const updated = await prisma.workflow.update({
-      where: { id: params.id },
-      data: validated,
-    })
-
-    return NextResponse.json({ workflow: updated })
-  } catch (error) {
-    if (error && typeof error === 'object' && 'moduleId' in error) {
-      return handleLicenseError(error)
-    }
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    console.error('Update workflow error:', error)
-    return NextResponse.json(
-      { error: 'Failed to update workflow' },
-      { status: 500 }
-    )
-  }
-}
-
-// DELETE /api/workflows/[id] - Delete workflow
+/** DELETE /api/workflows/[id] */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { id } = await params
 
-    const workflow = await prisma.workflow.findFirst({
-      where: {
-        id: params.id,
-        tenantId,
-      },
+    const existing = await prisma.workflow.findFirst({
+      where: { id, tenantId },
     })
-
-    if (!workflow) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      )
+    if (!existing) {
+      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 })
     }
 
-    await prisma.workflow.delete({
-      where: { id: params.id },
-    })
-
+    await prisma.workflow.delete({ where: { id } })
     return NextResponse.json({ success: true })
-  } catch (error) {
-    if (error && typeof error === 'object' && 'moduleId' in error) {
-      return handleLicenseError(error)
-    }
-
-    console.error('Delete workflow error:', error)
+  } catch (e) {
+    const err = handleLicenseError(e)
+    if (err) return err
+    console.error('[API] workflows/[id] DELETE', e)
     return NextResponse.json(
-      { error: 'Failed to delete workflow' },
+      { error: e instanceof Error ? e.message : 'Failed to delete workflow' },
       { status: 500 }
     )
   }
 }
-

@@ -187,10 +187,10 @@ export function SMSCampaignBuilder({ tenantId, onSave, onCancel }: SMSCampaignBu
                 <Calendar
                   mode="single"
                   selected={campaignData.scheduledFor || undefined}
-                  onSelect={(date) =>
-                    setCampaignData({ ...campaignData, scheduledFor: date || null })
-                  }
-                  initialFocus
+                  onSelect={(date) => {
+                    const selectedDate = date instanceof Date ? date : (date as any)?.from
+                    setCampaignData({ ...campaignData, scheduledFor: selectedDate || null })
+                  }}
                 />
               </PopoverContent>
             </Popover>

@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { Phone, PhoneIncoming, PhoneOutgoing, Clock, Users } from 'lucide-react'
 
 interface CallAnalytics {
@@ -94,16 +94,15 @@ export function CallAnalytics({ tenantId }: CallAnalyticsProps) {
               <CardTitle>Call Analytics</CardTitle>
               <CardDescription>Call metrics and performance</CardDescription>
             </div>
-            <Select value={period} onValueChange={(value) => setPeriod(value as any)}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7d">Last 7 days</SelectItem>
-                <SelectItem value="30d">Last 30 days</SelectItem>
-                <SelectItem value="90d">Last 90 days</SelectItem>
-              </SelectContent>
-            </Select>
+            <CustomSelect value={period} onValueChange={(value: string) => setPeriod(value as '7d' | '30d' | '90d')} placeholder="Select period">
+              <CustomSelectTrigger className="w-32">
+              </CustomSelectTrigger>
+              <CustomSelectContent>
+                <CustomSelectItem value="7d">Last 7 days</CustomSelectItem>
+                <CustomSelectItem value="30d">Last 30 days</CustomSelectItem>
+                <CustomSelectItem value="90d">Last 90 days</CustomSelectItem>
+              </CustomSelectContent>
+            </CustomSelect>
           </div>
         </CardHeader>
         <CardContent>

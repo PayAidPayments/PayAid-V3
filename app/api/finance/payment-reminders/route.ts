@@ -35,7 +35,9 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const reminders = overdueInvoices.map(invoice => {
+    const reminders = overdueInvoices
+      .filter((invoice): invoice is typeof invoice & { dueDate: Date } => invoice.dueDate != null)
+      .map(invoice => {
       const daysOverdue = Math.floor(
         (now.getTime() - invoice.dueDate.getTime()) / (1000 * 60 * 60 * 24)
       )
@@ -74,7 +76,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'finance')
+    const { tenantId, userId } = await requireModuleAccess(request, 'finance')
     const body = await request.json()
     const { invoiceId, channel } = body
 
@@ -98,10 +100,13 @@ export async function POST(request: NextRequest) {
     // Generate payment link
     const paymentLink = `https://payaid.link/pay/${invoice.invoiceNumber}`
 
-    // Create activity log entry
-    await prisma.activity.create({
+    // Create activity log entry (using ActivityFeed model)
+    await prisma.activityFeed.create({
       data: {
         tenantId,
+        entityType: 'invoice',
+        entityId: invoice.id,
+        userId: userId,
         type: 'payment_reminder_sent',
         description: `Payment reminder sent for invoice ${invoice.invoiceNumber}`,
         metadata: {

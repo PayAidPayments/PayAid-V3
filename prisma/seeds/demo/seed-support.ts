@@ -5,7 +5,7 @@
  */
 
 import type { PrismaClient } from '@prisma/client'
-import { DateRange, DEMO_DATE_RANGE, randomDateInRange, distributeAcrossMonths } from './date-utils'
+import { DateRange, DEMO_DATE_RANGE, randomDateInRange, distributeAcrossMonths, getMonthsInRange } from './date-utils'
 import { requirePrismaClient } from './prisma-utils'
 
 export interface SupportSeedResult {
@@ -31,37 +31,65 @@ export async function seedSupportModule(
     return { tickets: 0, replies: 0 }
   }
 
-  // 1. SUPPORT TICKETS - 300 tickets across 12 months
+  // 1. SUPPORT TICKETS - 300 tickets distributed across ALL 12 months (Mar 2025 - Feb 2026)
+  // CRITICAL: Ensure data spans entire range, not clustered in Jan/Feb
   const ticketStatuses = ['open', 'pending', 'in_progress', 'resolved', 'closed']
   const ticketPriorities = ['low', 'medium', 'high', 'urgent']
   const ticketCategories = ['technical', 'billing', 'feature_request', 'bug', 'general']
+  const months = getMonthsInRange(range)
+  const ticketsPerMonth = Math.floor(300 / months.length) // ~25 tickets per month
 
-  const ticketData = Array.from({ length: 300 }, (_, i) => {
-    const contact = contacts[Math.floor(Math.random() * contacts.length)]
-    const createdAt = randomDateInRange(range)
-    const status = ticketStatuses[Math.floor(Math.random() * ticketStatuses.length)]
-    const priority = ticketPriorities[Math.floor(Math.random() * ticketPriorities.length)]
-    const category = ticketCategories[Math.floor(Math.random() * ticketCategories.length)]
+  const ticketData: Array<{
+    tenantId: string
+    contactId: string
+    subject: string
+    description: string
+    status: string
+    priority: string
+    category: string
+    assignedToId: string
+    createdAt: Date
+    resolvedAt: Date | null
+    updatedAt: Date
+  }> = []
+  
+  let ticketIndex = 0
+  for (let monthIdx = 0; monthIdx < months.length; monthIdx++) {
+    const month = months[monthIdx]
+    const monthStart = new Date(month.getFullYear(), month.getMonth(), 1)
+    const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0, 23, 59, 59, 999)
+    const ticketsThisMonth = monthIdx === months.length - 1 
+      ? 300 - ticketIndex // Last month gets remaining tickets
+      : ticketsPerMonth
     
-    // Resolved/closed tickets should have resolvedAt
-    const resolvedAt = ['resolved', 'closed'].includes(status)
-      ? randomDateInRange({ start: createdAt, end: range.end })
-      : null
+    for (let i = 0; i < ticketsThisMonth && ticketIndex < 300; i++) {
+      const contact = contacts[Math.floor(Math.random() * contacts.length)]
+      const createdAt = randomDateInRange({ start: monthStart, end: monthEnd })
+      const status = ticketStatuses[Math.floor(Math.random() * ticketStatuses.length)]
+      const priority = ticketPriorities[Math.floor(Math.random() * ticketPriorities.length)]
+      const category = ticketCategories[Math.floor(Math.random() * ticketCategories.length)]
+      
+      // Resolved/closed tickets should have resolvedAt
+      const resolvedAt = ['resolved', 'closed'].includes(status)
+        ? randomDateInRange({ start: createdAt, end: range.end })
+        : null
 
-    return {
-      tenantId,
-      contactId: contact.id,
-      subject: `Support Ticket ${i + 1}: ${category} issue`,
-      description: `Support ticket description for ${category} issue from ${contact.name}`,
-      status,
-      priority,
-      category,
-      assignedToId: userId,
-      createdAt,
-      resolvedAt,
-      updatedAt: resolvedAt || createdAt,
+      ticketData.push({
+        tenantId,
+        contactId: contact.id,
+        subject: `Support Ticket ${ticketIndex + 1}: ${category} issue`,
+        description: `Support ticket description for ${category} issue from ${contact.name}`,
+        status,
+        priority,
+        category,
+        assignedToId: userId,
+        createdAt,
+        resolvedAt,
+        updatedAt: resolvedAt || createdAt,
+      })
+      ticketIndex++
     }
-  })
+  }
 
   const tickets = await Promise.all(
     ticketData.map((ticket) =>

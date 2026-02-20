@@ -37,21 +37,25 @@ export class PredictiveDealRoutingService {
   ): Promise<RoutingRecommendation | null> {
     try {
       // Get all active sales reps
+      // SalesRep doesn't have isActive, territories, or user relation
+      // Use isOnLeave to filter active reps
       const salesReps = await prisma.salesRep.findMany({
         where: {
           tenantId,
-          isActive: true,
           isOnLeave: false,
         },
-        include: {
-          user: true,
-          territories: {
-            include: {
-              territory: true,
-            },
-          },
-        },
       })
+      
+      // Get user info separately
+      const salesRepsWithUsers = await Promise.all(
+        salesReps.map(async (rep) => {
+          const user = await prisma.user.findUnique({
+            where: { id: rep.userId },
+            select: { name: true, email: true },
+          })
+          return { ...rep, user }
+        })
+      )
 
       if (salesReps.length === 0) {
         return null
@@ -59,11 +63,11 @@ export class PredictiveDealRoutingService {
 
       // Score each rep
       const recommendations = await Promise.all(
-        salesReps.map(async (rep) => {
+        salesRepsWithUsers.map(async (rep) => {
           const score = await this.calculateRepScore(tenantId, rep.id, context)
           return {
             salesRepId: rep.id,
-            salesRepName: rep.user.name || rep.user.email,
+            salesRepName: rep.user?.name || rep.user?.email || 'Unknown',
             confidence: score.confidence,
             reasons: score.reasons,
             score: score.totalScore,
@@ -77,9 +81,11 @@ export class PredictiveDealRoutingService {
       const bestMatch = recommendations[0]
 
       logger.info('Deal routing recommendation', {
-        dealValue: context.dealValue,
-        recommendedRep: bestMatch.salesRepName,
-        confidence: bestMatch.confidence,
+        action: 'deal_routed',
+        metadata: {
+          recommendedRep: bestMatch.salesRepName,
+          confidence: bestMatch.confidence,
+        },
       })
 
       return bestMatch

@@ -46,29 +46,50 @@ export interface RefreshTokenPayload {
 }
 
 /**
+ * Input type for signToken - accepts both new and legacy formats
+ */
+export type SignTokenInput = 
+  | JWTPayload
+  | {
+      userId?: string
+      tenantId?: string
+      email: string
+      role?: string
+      licensedModules?: string[]
+      subscriptionTier?: string
+      sub?: string
+      tenant_id?: string
+      roles?: string[]
+      permissions?: string[]
+      modules?: string[]
+      tenant_slug?: string
+    }
+
+/**
  * Generate access token (15 minutes expiry)
  * Includes roles, permissions, and modules
  */
-export function signToken(payload: JWTPayload): string {
+export function signToken(payload: SignTokenInput): string {
   if (!JWT_SECRET || JWT_SECRET === 'change-me-in-production') {
     throw new Error('JWT_SECRET is not configured')
   }
   
   // Normalize payload to include both standard and legacy fields
+  const p = payload as any
   const normalizedPayload: JWTPayload = {
     ...payload,
     // Ensure standard JWT claims
-    sub: payload.sub || payload.userId || '',
-    tenant_id: payload.tenant_id || payload.tenantId || '',
+    sub: p.sub || p.userId || '',
+    tenant_id: p.tenant_id || p.tenantId || '',
     // Ensure arrays are present
-    roles: payload.roles || (payload.role ? [payload.role] : []),
-    permissions: payload.permissions || [],
-    modules: payload.modules || payload.licensedModules || [],
+    roles: p.roles || (p.role ? [p.role] : []),
+    permissions: p.permissions || [],
+    modules: p.modules || p.licensedModules || [],
     // Legacy compatibility
-    userId: payload.userId || payload.sub,
-    tenantId: payload.tenantId || payload.tenant_id,
-    role: payload.role || payload.roles?.[0] || 'user',
-    licensedModules: payload.licensedModules || payload.modules || [],
+    userId: p.userId || p.sub,
+    tenantId: p.tenantId || p.tenant_id,
+    role: p.role || p.roles?.[0] || 'user',
+    licensedModules: p.licensedModules || p.modules || [],
   }
   
   // Validate and normalize expiresIn value
@@ -82,7 +103,7 @@ export function signToken(payload: JWTPayload): string {
   return jwt.sign(normalizedPayload, JWT_SECRET, {
     expiresIn: expiresIn,
     issuer: process.env.JWT_ISSUER || 'payaid.store',
-    audience: payload.tenant_slug ? `${payload.tenant_slug}.payaid.store` : 'payaid.store',
+    audience: p.tenant_slug ? `${p.tenant_slug}.payaid.store` : 'payaid.store',
   } as SignOptions)
 }
 

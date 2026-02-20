@@ -36,7 +36,7 @@ export class CacheWarmer {
       await prisma.contact.findMany({
         where: { tenantId },
         take: 100,
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { createdAt: 'desc' },
         select: { id: true, name: true, email: true },
       })
     } catch (error) {

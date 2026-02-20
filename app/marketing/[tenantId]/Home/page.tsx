@@ -186,6 +186,10 @@ export default function MarketingDashboardPage() {
     },
   ]
 
+  if (!moduleConfig) {
+    return <div>Module configuration not found</div>
+  }
+
   return (
     <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>
       {/* Universal Module Hero */}

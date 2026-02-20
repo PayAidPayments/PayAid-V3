@@ -32,7 +32,7 @@ export class EmailAutomationService {
 
   constructor() {
     this.llm = new ChatGroq({
-      modelName: 'llama-3.1-70b-versatile',
+      model: 'llama-3.1-70b-versatile',
       temperature: 0.7,
       apiKey: process.env.GROQ_API_KEY,
     })
@@ -50,18 +50,25 @@ export class EmailAutomationService {
 
       const response = await this.llm.invoke(prompt)
 
-      // Parse LLM response
-      const parsed = this.parseResponse(response)
+      // Parse LLM response - extract content from AIMessageChunk
+      const responseText = typeof response === 'string' ? response : (response as any).content || String(response)
+      const parsed = this.parseResponse(responseText)
 
       logger.info('Generated automated email response', {
-        contactEmail: context.contactEmail,
-        subject: parsed.subject,
+        action: 'email_generated',
+        metadata: {
+          contactEmail: context.contactEmail,
+          subject: parsed.subject,
+        },
       })
 
       return parsed
     } catch (error) {
       logger.error('Failed to generate email response', error instanceof Error ? error : undefined, {
-        contactEmail: context.contactEmail,
+        action: 'email_generation_failed',
+        metadata: {
+          contactEmail: context.contactEmail,
+        },
       })
       throw error
     }

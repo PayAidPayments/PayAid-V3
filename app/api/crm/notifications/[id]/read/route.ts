@@ -11,19 +11,29 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { tenantId, user } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
-    await prisma.notification.updateMany({
+    // Find SalesRep by userId
+    const salesRep = await prisma.salesRep.findFirst({
       where: {
-        id: params.id,
+        userId: userId,
         tenantId,
-        userId: user?.userId,
-      },
-      data: {
-        read: true,
-        readAt: new Date(),
       },
     })
+
+    if (salesRep) {
+      await prisma.alert.updateMany({
+        where: {
+          id: params.id,
+          repId: salesRep.id,
+          tenantId,
+        },
+        data: {
+          isRead: true,
+          readAt: new Date(),
+        },
+      })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

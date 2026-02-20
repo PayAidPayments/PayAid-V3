@@ -44,10 +44,13 @@ export default function Error({
                 🔧 Troubleshooting Steps:
               </p>
               <ul className="text-xs text-yellow-700 dark:text-yellow-400 list-disc list-inside space-y-1">
-                <li>Check if DATABASE_URL is set in Vercel environment variables</li>
-                <li>Verify the database connection string is correct</li>
-                <li>If using Supabase, check if your project is paused</li>
-                <li>Ensure environment variables are set for Production environment</li>
+                <li>Check if DATABASE_URL exists in .env.local file (for localhost) or Vercel environment variables (for production)</li>
+                <li>Verify DATABASE_URL format: postgresql://user:password@host:port/database</li>
+                <li>If using Supabase, get connection string from Project Settings → Database → Connection String</li>
+                <li>Ensure Supabase project is active (not paused) - Check: https://supabase.com/dashboard</li>
+                <li>Restart your development server after updating .env.local</li>
+                <li>Check console logs for detailed error messages</li>
+                <li>Verify connection string uses Transaction mode (port 6543) for better performance</li>
               </ul>
             </div>
           )}

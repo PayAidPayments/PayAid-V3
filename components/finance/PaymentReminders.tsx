@@ -153,7 +153,7 @@ export function PaymentReminders({ tenantId }: PaymentRemindersProps) {
                       <div className="font-medium">{reminder.invoiceNumber}</div>
                       <div className="text-sm text-gray-500">{reminder.customerName}</div>
                     </div>
-                    <Badge variant={reminder.daysOverdue > 30 ? 'destructive' : 'warning'}>
+                    <Badge variant={reminder.daysOverdue > 30 ? 'destructive' : 'secondary'}>
                       {reminder.daysOverdue} days overdue
                     </Badge>
                     {reminder.reminderSent && (

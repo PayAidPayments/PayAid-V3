@@ -143,21 +143,82 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
         })
         
         if (!tenant) {
-          const error = new Error(`Tenant not found with ID: ${demoTenantId}`)
-          console.error(`❌ ${error.message}`)
-          throw error
+          // Tenant doesn't exist - create new tenant
+          // CRITICAL: Create tenant with requested ID if possible, otherwise Prisma will generate a new ID
+          console.log(`📋 Tenant ${demoTenantId} not found, creating new Demo Business tenant...`)
+          try {
+            tenant = await prisma.tenant.create({
+              data: {
+                id: demoTenantId, // Try to use the requested ID
+                name: 'Demo Business Pvt Ltd',
+                subdomain: 'demo',
+                plan: 'professional',
+                status: 'active',
+                maxContacts: 10000,
+                maxInvoices: 10000,
+                maxUsers: 50,
+                maxStorage: 102400,
+                gstin: '29ABCDE1234F1Z5',
+                address: '123 Business Park, MG Road',
+                city: 'Bangalore',
+                state: 'Karnataka',
+                postalCode: '560001',
+                country: 'India',
+                phone: '+91-80-12345678',
+                email: 'contact@demobusiness.com',
+                website: 'https://demobusiness.com',
+                industry: 'service-business',
+                industrySettings: {
+                  setForDemo: true,
+                  setAt: new Date().toISOString(),
+                },
+              },
+            })
+            console.log(`✅ Created new tenant: ${tenant.name} (${tenant.id})`)
+            if (tenant.id !== demoTenantId) {
+              console.log(`⚠️ Note: Created tenant ID ${tenant.id} differs from requested ${demoTenantId}`)
+            }
+          } catch (createError: any) {
+            // If creating with specific ID fails (e.g., ID already exists or invalid format), 
+            // fall back to finding existing Demo Business tenant
+            if (createError?.code === 'P2002' || createError?.code === 'P2003') {
+              console.log(`⚠️ Could not create tenant with ID ${demoTenantId}, checking for existing Demo Business tenant...`)
+              tenant = await prisma.tenant.findFirst({
+                where: {
+                  OR: [
+                    { name: { contains: 'Demo Business', mode: 'insensitive' } },
+                    { subdomain: 'demo' },
+                  ],
+                },
+              })
+              if (tenant) {
+                console.log(`✅ Found existing Demo Business tenant: ${tenant.name} (${tenant.id})`)
+                console.log(`⚠️ WARNING: Using tenant ID ${tenant.id} instead of requested ${demoTenantId}`)
+                console.log(`⚠️ Frontend should use tenant ID: ${tenant.id}`)
+              } else {
+                throw new Error(`Failed to create tenant ${demoTenantId} and no existing Demo Business tenant found: ${createError?.message || String(createError)}`)
+              }
+            } else {
+              throw createError
+            }
+          }
+        } else {
+          console.log(`✅ Found tenant: ${tenant.name} (${tenant.id})`)
+          if (tenant.id !== demoTenantId) {
+            console.log(`⚠️ WARNING: Found tenant ID ${tenant.id} differs from requested ${demoTenantId}`)
+            console.log(`⚠️ Frontend should use tenant ID: ${tenant.id}`)
+          }
         }
         
-        tenantId = demoTenantId
-        console.log(`✅ Found tenant: ${tenant.name} (${tenantId})`)
+        tenantId = tenant.id // Use the actual tenant ID
       } catch (tenantError: any) {
-        console.error(`❌ Error looking up tenant ${demoTenantId}:`, tenantError?.message || tenantError)
+        console.error(`❌ Error looking up/creating tenant ${demoTenantId}:`, tenantError?.message || tenantError)
         console.error(`❌ Error details:`, {
           code: tenantError?.code,
           name: tenantError?.name,
           stack: tenantError?.stack,
         })
-        throw new Error(`Failed to find tenant ${demoTenantId}: ${tenantError?.message || String(tenantError)}`)
+        throw new Error(`Failed to find or create tenant ${demoTenantId}: ${tenantError?.message || String(tenantError)}`)
       }
     } else {
     // Fallback: find by subdomain
@@ -225,8 +286,33 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
   console.log('')
 
   // 3. RESET - Delete all existing demo data
+  // NOTE: This deletes ALL data including current month data
+  // Current month data will be recreated by ensureCurrentMonthData after seeding
   console.log('🗑️  Resetting existing demo data...')
   await resetDemoBusinessData(prisma, tenantId)
+  console.log('')
+
+  // 3.5. Get or create SalesRep for the admin user (needed for assignedToId in contacts/deals)
+  // MUST be after reset to ensure SalesRep exists
+  let salesRep = await prisma.salesRep.findUnique({
+    where: { userId },
+  })
+
+  if (!salesRep) {
+    console.log('👤 Creating SalesRep for admin user...')
+    salesRep = await prisma.salesRep.create({
+      data: {
+        userId,
+        tenantId,
+        specialization: 'General Sales',
+        conversionRate: 0,
+        isOnLeave: false,
+      },
+    })
+  }
+
+  const salesRepId = salesRep.id
+  console.log(`✅ Using SalesRep: ${salesRepId}`)
   console.log('')
 
   // 4. Seed Products (needed for orders)
@@ -237,7 +323,53 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
 
   // 5. Seed CRM Module
   console.log('📇 Seeding CRM Module...')
-  const crmResult = await seedCRMModule(tenantId, userId, DEMO_DATE_RANGE, prisma)
+  try {
+    const crmResult = await seedCRMModule(tenantId, userId, salesRepId, DEMO_DATE_RANGE, prisma)
+    console.log(`  ✅ CRM Module seeded: ${crmResult.contacts} contacts, ${crmResult.deals} deals, ${crmResult.tasks} tasks`)
+    
+    // Verify deals were actually created
+    const actualDealCount = await prisma.deal.count({ where: { tenantId } })
+    const actualContactCount = await prisma.contact.count({ where: { tenantId } })
+    
+    if (actualContactCount === 0) {
+      console.error(`  ❌ CRITICAL: CRM seed reported ${crmResult.contacts} contacts, but database shows 0 contacts!`)
+      console.error(`  ❌ This indicates a database transaction rollback or connection issue`)
+      throw new Error(`Contact creation failed: ${crmResult.contacts} reported but 0 in database`)
+    }
+    
+    if (actualDealCount === 0) {
+      console.error(`  ❌ CRITICAL: CRM seed reported ${crmResult.deals} deals, but database shows 0 deals!`)
+      console.error(`  ❌ This indicates a database transaction rollback or connection issue`)
+      // Don't throw if contacts exist - deals can be created later
+      if (actualContactCount > 0) {
+        console.warn(`  ⚠️  WARNING: Deals not created, but ${actualContactCount} contacts exist. You can create deals manually.`)
+      } else {
+        throw new Error(`Deal creation failed: ${crmResult.deals} reported but 0 in database, and no contacts exist`)
+      }
+    } else if (actualDealCount < crmResult.deals * 0.9) {
+      console.warn(`  ⚠️  WARNING: CRM seed reported ${crmResult.deals} deals, but database shows only ${actualDealCount} deals`)
+    } else {
+      console.log(`  ✅ Verified: ${actualDealCount} deals exist in database`)
+    }
+  } catch (crmError: any) {
+    console.error(`  ❌ CRM Module seeding FAILED:`, crmError?.message || String(crmError))
+    console.error(`  ❌ Error code:`, crmError?.code || 'N/A')
+    console.error(`  ❌ Error stack:`, crmError?.stack)
+    
+    // Check if we have any data at all
+    const remainingContacts = await prisma.contact.count({ where: { tenantId } }).catch(() => 0)
+    const remainingDeals = await prisma.deal.count({ where: { tenantId } }).catch(() => 0)
+    
+    if (remainingContacts === 0 && remainingDeals === 0) {
+      console.error(`  ❌ CRITICAL: Seed failed and no data was created. Database is empty.`)
+      console.error(`  ❌ This means the reset ran but seeding failed completely.`)
+      throw new Error(`Seed failed completely: No contacts or deals created. Error: ${crmError?.message || String(crmError)}`)
+    } else {
+      console.warn(`  ⚠️  Partial seed: ${remainingContacts} contacts, ${remainingDeals} deals exist`)
+      // Continue with other modules even if CRM partially failed
+    }
+    throw crmError
+  }
   console.log('')
 
   // Get contacts and deals for other modules

@@ -5,7 +5,7 @@
 
 export const DEMO_DATE_RANGE = {
   start: new Date('2025-03-01T00:00:00.000Z'),
-  end: new Date('2026-02-28T23:59:59.999Z'), // Feb 28 (2026 is not a leap year)
+  end: new Date('2026-02-28T23:59:59.999Z'), // Feb 28, 2026 (2026 is not a leap year, so Feb 29 doesn't exist)
 }
 
 export interface DateRange {
@@ -47,6 +47,8 @@ export function getMonthsInRange(range: DateRange = DEMO_DATE_RANGE): Date[] {
 
 /**
  * Distribute records across months (ensures each month has some data)
+ * CRITICAL: This ensures data is spread evenly across ALL 12 months (Mar 2025 - Feb 2026)
+ * to avoid clustering in Jan/Feb only
  */
 export function distributeAcrossMonths<T>(
   items: T[],
@@ -56,6 +58,7 @@ export function distributeAcrossMonths<T>(
   const itemsPerMonth = Math.ceil(items.length / months.length)
   
   return items.map((item, index) => {
+    // Distribute evenly across all months
     const monthIndex = Math.floor(index / itemsPerMonth)
     const month = months[Math.min(monthIndex, months.length - 1)]
     const date = randomDateInRange({
@@ -64,6 +67,76 @@ export function distributeAcrossMonths<T>(
     })
     return { item, date }
   })
+}
+
+/**
+ * Ensure records are distributed with guaranteed coverage across all months
+ * This function guarantees at least minPerMonth records in each month
+ */
+export function ensureMonthlyDistribution<T>(
+  items: T[],
+  minPerMonth: number = 1,
+  range: DateRange = DEMO_DATE_RANGE
+): Array<{ item: T; date: Date }> {
+  const months = getMonthsInRange(range)
+  const totalMin = months.length * minPerMonth
+  const itemsToUse = items.length >= totalMin ? items : items.concat(Array(totalMin - items.length).fill(null) as T[])
+  
+  const result: Array<{ item: T; date: Date }> = []
+  let itemIndex = 0
+  
+  // First pass: ensure minimum per month
+  for (const month of months) {
+    for (let i = 0; i < minPerMonth && itemIndex < itemsToUse.length; i++) {
+      const item = itemsToUse[itemIndex++]
+      if (item) {
+        result.push({
+          item,
+          date: randomDateInRange({
+            start: new Date(month.getFullYear(), month.getMonth(), 1),
+            end: new Date(month.getFullYear(), month.getMonth() + 1, 0, 23, 59, 59, 999),
+          }),
+        })
+      }
+    }
+  }
+  
+  // Second pass: distribute remaining items evenly
+  const remaining = itemsToUse.slice(itemIndex)
+  const remainingPerMonth = Math.floor(remaining.length / months.length)
+  let remainingIndex = 0
+  
+  for (const month of months) {
+    for (let i = 0; i < remainingPerMonth && remainingIndex < remaining.length; i++) {
+      const item = remaining[remainingIndex++]
+      if (item) {
+        result.push({
+          item,
+          date: randomDateInRange({
+            start: new Date(month.getFullYear(), month.getMonth(), 1),
+            end: new Date(month.getFullYear(), month.getMonth() + 1, 0, 23, 59, 59, 999),
+          }),
+        })
+      }
+    }
+  }
+  
+  // Distribute any leftover items randomly across months
+  while (remainingIndex < remaining.length) {
+    const item = remaining[remainingIndex++]
+    if (item) {
+      const randomMonth = months[Math.floor(Math.random() * months.length)]
+      result.push({
+        item,
+        date: randomDateInRange({
+          start: new Date(randomMonth.getFullYear(), randomMonth.getMonth(), 1),
+          end: new Date(randomMonth.getFullYear(), randomMonth.getMonth() + 1, 0, 23, 59, 59, 999),
+        }),
+      })
+    }
+  }
+  
+  return result
 }
 
 /**

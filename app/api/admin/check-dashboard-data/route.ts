@@ -10,14 +10,23 @@ export async function GET(request: NextRequest) {
   try {
     const user = await authenticateRequest(request)
     
-    if (!user?.tenantId) {
+    const queryTenantId = request.nextUrl.searchParams.get('tenantId')
+    const tenantId = queryTenantId || (user as any).tenantId
+    if (!tenantId) {
       return NextResponse.json(
         { error: 'No tenant found' },
         { status: 401 }
       )
     }
-
-    const tenantId = user.tenantId
+    if (queryTenantId && (user as any).tenantId !== queryTenantId) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: (user as any).userId || (user as any).sub },
+        select: { tenantId: true },
+      })
+      if (dbUser?.tenantId !== queryTenantId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    }
 
     // Count data with error handling for each query
     let contacts = 0

@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       const { verifyToken } = await import('@/lib/auth/jwt')
       try {
         const payload = verifyToken(authHeader.substring(7))
-        tenantId = payload.tenantId
+        tenantId = payload.tenantId ?? payload.tenant_id ?? ''
         if (!tenantId) {
           return NextResponse.json(
             { error: 'Invalid token: missing tenantId' },
@@ -60,7 +60,13 @@ export async function GET(request: NextRequest) {
       const cacheKey = `dashboard:stats:${tenantId}`
       cached = await multiLayerCache.get(cacheKey)
       if (cached) {
-        return NextResponse.json(cached)
+        // Return cached response with cache headers
+        return NextResponse.json(cached, {
+          headers: {
+            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+            'CDN-Cache-Control': 'public, s-maxage=300',
+          },
+        })
       }
     } catch (cacheError) {
       console.warn('Cache unavailable, continuing without cache:', cacheError)
@@ -462,7 +468,13 @@ export async function GET(request: NextRequest) {
       // Continue - caching is optional
     }
 
-    return NextResponse.json(stats)
+    // Return response with cache headers for CDN/edge caching
+    return NextResponse.json(stats, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        'CDN-Cache-Control': 'public, s-maxage=300',
+      },
+    })
   } catch (error: any) {
     // Log the full error for debugging
     console.error('Dashboard stats error:', {

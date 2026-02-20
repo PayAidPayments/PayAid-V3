@@ -35,17 +35,36 @@ export function FinancialAlerts({ tenantId }: FinancialAlertsProps) {
   const fetchAlerts = async () => {
     try {
       const token = useAuthStore.getState().token
+      if (!token) {
+        console.warn('[FinancialAlerts] No token available')
+        setLoading(false)
+        return
+      }
+      
       const response = await fetch('/api/finance/alerts', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       })
-      if (response.ok) {
-        const data = await response.json()
-        setAlerts(data.alerts || [])
+      
+      if (!response.ok) {
+        // Don't throw error for 404 or other non-critical errors
+        if (response.status === 404) {
+          console.log('[FinancialAlerts] Alerts API not found, using empty alerts')
+          setAlerts([])
+        } else {
+          console.warn('[FinancialAlerts] Failed to fetch alerts:', response.status, response.statusText)
+          setAlerts([])
+        }
+        return
       }
+      
+      const data = await response.json()
+      setAlerts(data.alerts || [])
     } catch (error) {
-      console.error('Failed to fetch alerts:', error)
+      console.error('[FinancialAlerts] Failed to fetch alerts:', error)
+      // Set empty alerts array instead of leaving it undefined
+      setAlerts([])
     } finally {
       setLoading(false)
     }

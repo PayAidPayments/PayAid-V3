@@ -37,9 +37,7 @@ export async function collectTrainingData(tenantId: string): Promise<TrainingDat
     },
     take: 500,
     orderBy: { createdAt: 'desc' },
-    include: {
-      decisionOutcome: true,
-    },
+    // AIDecision doesn't have decisionOutcome relation
   })
 
   for (const decision of decisions) {
@@ -52,7 +50,7 @@ export async function collectTrainingData(tenantId: string): Promise<TrainingDat
           riskScore: decision.riskScore,
           approvalLevel: decision.approvalLevel,
         },
-        feedback: decision.decisionOutcome?.executionSuccess ? 'positive' : 'negative',
+        feedback: decision.status === 'executed' ? 'positive' : 'negative',
         source: 'decision',
         metadata: {
           decisionId: decision.id,
@@ -64,19 +62,25 @@ export async function collectTrainingData(tenantId: string): Promise<TrainingDat
 
   // 2. Collect from invoice patterns (if we have invoice-related AI interactions)
   // This would come from AI Co-Founder conversations about invoices
-  const invoiceConversations = await prisma.aICofounderConversation.findMany({
+  // AICofounderConversation.messages is Json, not a relation
+  // We'll filter after fetching
+  const allConversations = await prisma.aICofounderConversation.findMany({
     where: {
       tenantId,
-      messages: {
-        some: {
-          content: {
-            contains: 'invoice',
-          },
-        },
-      },
     },
     take: 200,
     orderBy: { createdAt: 'desc' },
+  })
+
+  // Filter conversations that mention invoice in messages
+  const invoiceConversations = allConversations.filter((conv) => {
+    const messages = conv.messages as any
+    if (Array.isArray(messages)) {
+      return messages.some((m: any) => 
+        m.content && typeof m.content === 'string' && m.content.toLowerCase().includes('invoice')
+      )
+    }
+    return false
   })
 
   for (const conversation of invoiceConversations) {
@@ -98,21 +102,21 @@ export async function collectTrainingData(tenantId: string): Promise<TrainingDat
   }
 
   // 3. Collect from customer interactions (CRM conversations)
+  // Task model doesn't have notes field, use description instead
   const customerInteractions = await prisma.task.findMany({
     where: {
       tenantId,
       description: { contains: 'customer' },
-      notes: { not: null },
     },
     take: 200,
     orderBy: { createdAt: 'desc' },
   })
 
   for (const interaction of customerInteractions) {
-    if (interaction.notes) {
+    if (interaction.description) {
       dataPoints.push({
-        prompt: `Customer interaction: ${interaction.description}`,
-        response: interaction.notes,
+        prompt: `Customer interaction: ${interaction.title}`,
+        response: interaction.description,
         source: 'customer_interaction',
         metadata: {
           taskId: interaction.id,

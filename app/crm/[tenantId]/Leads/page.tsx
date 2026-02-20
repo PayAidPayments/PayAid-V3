@@ -49,6 +49,11 @@ import { useRouter } from 'next/navigation'
 import { PageLoading } from '@/components/ui/loading'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { EntityPageLayout } from '@/components/crm/layout/EntityPageLayout'
+import { KPIBar } from '@/components/crm/layout/KPIBar'
+import { EntityAIPanel } from '@/components/crm/layout/EntityAIPanel'
+import { RowActionsMenu } from '@/components/crm/RowActionsMenu'
+import { BulkActionsBar } from '@/components/crm/BulkActionsBar'
 
 export default function CRMLeadsPage() {
   const params = useParams()
@@ -72,6 +77,8 @@ export default function CRMLeadsPage() {
   const [activeFilters, setActiveFilters] = useState<any>({}) // Current filter criteria
   const [showConvertModal, setShowConvertModal] = useState(false)
   const [leadToConvert, setLeadToConvert] = useState<any>(null)
+  const [showMassConvertModal, setShowMassConvertModal] = useState(false)
+  const [isMassConverting, setIsMassConverting] = useState(false)
   const [users, setUsers] = useState<any[]>([])
   const [massTransferModalOpen, setMassTransferModalOpen] = useState(false)
   const [transferUserId, setTransferUserId] = useState<string>('')
@@ -251,6 +258,20 @@ export default function CRMLeadsPage() {
   const leadSources = Array.from(new Set(filteredLeads.map((lead: any) => lead.source).filter(Boolean))) as string[]
   const leadStatuses = Array.from(new Set(filteredLeads.map((lead: any) => lead.status || 'Active').filter(Boolean))) as string[]
 
+  // Calculate KPI stats
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const newThisMonth = filteredLeads.filter((lead: any) => {
+    if (!lead.createdAt) return false
+    const created = new Date(lead.createdAt)
+    return created >= monthStart
+  }).length
+
+  const activeProspects = filteredLeads.filter((lead: any) => lead.status !== 'Not Interested' && lead.status !== 'Lost').length
+  const conversionRate = filteredLeads.length > 0 
+    ? ((filteredLeads.filter((l: any) => l.stage === 'customer' || l.type === 'customer').length / filteredLeads.length) * 100).toFixed(1)
+    : '0.0'
+
   if (isLoading) {
     return <PageLoading message="Loading leads..." fullScreen={false} />
   }
@@ -273,6 +294,117 @@ export default function CRMLeadsPage() {
       dealOwnerId: lead.assignedToId || '',
     })
     setShowConvertModal(true)
+  }
+
+  // Mass convert leads
+  const handleMassConvert = async () => {
+    if (selectedLeads.length === 0) {
+      alert('Please select at least one prospect to convert')
+      return
+    }
+
+    // Initialize conversion data with defaults
+    setConversionData({
+      createAccount: true,
+      accountName: '',
+      accountOwnerId: '',
+      notifyAccountOwner: false,
+      createContact: true,
+      contactName: '',
+      contactOwnerId: '',
+      notifyContactOwner: false,
+      createDeal: false,
+      dealName: 'Deal for {prospect_name}',
+      dealValue: '',
+      dealOwnerId: '',
+    })
+
+    setShowMassConvertModal(true)
+  }
+
+  // Execute mass convert
+  const executeMassConvert = async () => {
+    if (selectedLeads.length === 0) return
+
+    try {
+      setIsMassConverting(true)
+      const token = useAuthStore.getState().token
+      if (!token) {
+        alert('Please log in to convert prospects')
+        return
+      }
+
+      let successCount = 0
+      let failCount = 0
+      const errors: string[] = []
+
+      // Convert each lead sequentially to avoid overwhelming the server
+      for (const leadId of selectedLeads) {
+        try {
+          const lead = filteredLeads.find((l: any) => l.id === leadId)
+          if (!lead) continue
+
+          const response = await fetch('/api/crm/leads/convert', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              leadId: lead.id,
+              createAccount: conversionData.createAccount,
+              accountName: lead.company || lead.name || '',
+              accountOwnerId: conversionData.accountOwnerId || lead.assignedToId || '',
+              notifyAccountOwner: conversionData.notifyAccountOwner,
+              createContact: conversionData.createContact,
+              contactName: lead.name || '',
+              contactOwnerId: conversionData.contactOwnerId || lead.assignedToId || '',
+              notifyContactOwner: conversionData.notifyContactOwner,
+              createDeal: conversionData.createDeal,
+              dealName: conversionData.createDeal 
+                ? (conversionData.dealName || 'Deal for {prospect_name}')
+                    .replace('{prospect_name}', lead.name || 'Prospect')
+                    .replace('{company_name}', lead.company || lead.name || 'Company')
+                : undefined,
+              dealValue: conversionData.dealValue ? parseFloat(conversionData.dealValue) : undefined,
+              dealOwnerId: conversionData.dealOwnerId || lead.assignedToId || '',
+            }),
+          })
+
+          if (response.ok) {
+            successCount++
+          } else {
+            failCount++
+            const error = await response.json().catch(() => ({}))
+            errors.push(`${lead.name || leadId}: ${error.error || 'Failed to convert'}`)
+          }
+        } catch (error) {
+          failCount++
+          const lead = filteredLeads.find((l: any) => l.id === leadId)
+          errors.push(`${lead?.name || leadId}: ${error instanceof Error ? error.message : 'Failed to convert'}`)
+        }
+
+        // Small delay to avoid overwhelming the server
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+
+      setShowMassConvertModal(false)
+      setSelectedLeads([])
+
+      if (failCount === 0) {
+        alert(`Successfully converted ${successCount} prospect(s)!`)
+      } else {
+        alert(`Converted ${successCount} prospect(s), ${failCount} failed.\n\nErrors:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? `\n...and ${errors.length - 5} more` : ''}`)
+      }
+
+      // Refresh the page
+      window.location.reload()
+    } catch (error) {
+      console.error('Error in mass convert:', error)
+      alert('Failed to convert prospects. Please try again.')
+    } finally {
+      setIsMassConverting(false)
+    }
   }
 
   // Convert lead
@@ -709,11 +841,9 @@ export default function CRMLeadsPage() {
   }
 
   return (
-    <div className="w-full bg-gray-50 relative" style={{ zIndex: 1 }}>
-      {/* ModuleTopBar is now in layout.tsx */}
-      
-      <div className="p-6">
-        <div className="flex items-center justify-end gap-2 mb-6">
+    <>
+      {/* Action buttons in header area */}
+      <div className="fixed top-16 right-6 z-50 flex items-center gap-2">
           {/* Create Lead Dropdown */}
           <div className="relative" ref={createMenuRef}>
               <button
@@ -915,16 +1045,27 @@ export default function CRMLeadsPage() {
               )}
           </div>
         </div>
-      </div>
 
-      <div className="flex">
-        {/* Left Sidebar - Filters */}
-        <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 min-h-screen p-4">
-          <div className="mb-6">
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+      <EntityPageLayout
+        title="Prospects"
+        subtitle="Manage and track your sales prospects"
+        kpiBar={
+          <KPIBar
+            items={[
+              { label: 'Total Prospects', value: filteredLeads.length.toLocaleString() },
+              { label: 'Active', value: activeProspects.toLocaleString() },
+              { label: 'New This Month', value: newThisMonth.toLocaleString() },
+              { label: 'Conversion Rate', value: `${conversionRate}%` },
+            ]}
+          />
+        }
+        leftSidebar={
+          <div className="p-4 space-y-4">
+          <div className="mb-4">
+            <p className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">
               Total Records: {filteredLeads.length.toLocaleString()}
               {filteredLeads.length !== totalRecords && (
-                <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+                <span className="text-xs text-slate-400 dark:text-gray-500 ml-1">
                   (of {totalRecords.toLocaleString()})
                 </span>
               )}
@@ -935,10 +1076,10 @@ export default function CRMLeadsPage() {
           <div className="mb-6">
             <button
               onClick={() => setSavedFiltersOpen(!savedFiltersOpen)}
-              className="w-full flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+              className="w-full flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide mb-2"
             >
               <span>Saved Filters</span>
-              <ChevronDown className={`w-4 h-4 transition-transform text-gray-600 dark:text-gray-400 ${savedFiltersOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 transition-transform text-slate-400 dark:text-gray-500 ${savedFiltersOpen ? 'rotate-180' : ''}`} />
             </button>
             {savedFiltersOpen && (
               <div className="space-y-1">
@@ -980,17 +1121,17 @@ export default function CRMLeadsPage() {
           <div>
             <button
               onClick={() => setFilterByOpen(!filterByOpen)}
-              className="w-full flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+              className="w-full flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide mb-2"
             >
               <span>Filter Prospects by</span>
-              <ChevronDown className={`w-4 h-4 transition-transform text-gray-600 dark:text-gray-400 ${filterByOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 transition-transform text-slate-400 dark:text-gray-500 ${filterByOpen ? 'rotate-180' : ''}`} />
             </button>
             {filterByOpen && (
               <div className="space-y-3">
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Q search..."
-                    className="h-8 text-sm flex-1 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                    placeholder="Search prospects..."
+                    className="h-8 text-sm flex-1 rounded-lg border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     value={search}
                     onChange={(e) => {
                       setSearch(e.target.value)
@@ -1174,12 +1315,12 @@ export default function CRMLeadsPage() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className="flex-1 p-6">
-          {/* Top Controls */}
-          <div className="flex items-center justify-between mb-4">
+          </div>
+        }
+        mainContent={
+          <div className="p-6">
+            {/* Top Controls */}
+            <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <select
                 value={limit}
@@ -1247,19 +1388,15 @@ export default function CRMLeadsPage() {
                             }}
                           />
                         </TableHead>
-                        <TableHead>Lead Status</TableHead>
-                        <TableHead>Stage</TableHead>
-                        <TableHead>Last Activity Time</TableHead>
-                        <TableHead>Lead Name</TableHead>
-                        <TableHead>Lead Source</TableHead>
-                        <TableHead>Website</TableHead>
-                        <TableHead>Phone</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Lead Owner</TableHead>
-                        <TableHead>Company</TableHead>
-                        <TableHead>Industry</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Lead Status</TableHead>
+                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Stage</TableHead>
+                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Last Activity</TableHead>
+                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Name</TableHead>
+                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Source</TableHead>
+                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Phone</TableHead>
+                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Email</TableHead>
+                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Company</TableHead>
+                        <TableHead className="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1274,8 +1411,8 @@ export default function CRMLeadsPage() {
                           'bg-gray-100 text-gray-800'
 
                         return (
-                          <TableRow key={lead.id} className={`${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''} dark:border-gray-700`}>
-                            <TableCell>
+                          <TableRow key={lead.id} className={`hover:bg-indigo-50/40 dark:hover:bg-indigo-900/20 transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
+                            <TableCell className="px-4 py-3">
                               <Checkbox
                                 checked={isSelected}
                                 onCheckedChange={(checked) => {
@@ -1287,73 +1424,76 @@ export default function CRMLeadsPage() {
                                 }}
                               />
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-4 py-3 whitespace-nowrap">
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor} dark:bg-opacity-80`}>
                                 {lead.status || 'Active'}
                               </span>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-4 py-3 whitespace-nowrap">
                               <StageBadge 
                                 stage={lead.stage || (lead.type === 'lead' ? 'prospect' : lead.type === 'customer' ? 'customer' : 'contact')} 
                               />
                             </TableCell>
-                            <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                            <TableCell className="px-4 py-3 whitespace-nowrap text-sm text-slate-600 dark:text-gray-400">
                               {lead.lastContactedAt 
-                                ? formatDate(new Date(lead.lastContactedAt), 'dd/MM/yyyy hh:mm a')
+                                ? formatDate(new Date(lead.lastContactedAt), 'MMM d, yyyy')
                                 : lead.createdAt 
-                                ? formatDate(new Date(lead.createdAt), 'dd/MM/yyyy hh:mm a')
+                                ? formatDate(new Date(lead.createdAt), 'MMM d, yyyy')
                                 : '-'}
                             </TableCell>
-                            <TableCell>
-                              <Link href={`/crm/${tenantId}/Contacts/${lead.id}`} className="font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                            <TableCell className="px-4 py-3 whitespace-nowrap">
+                              <Link href={`/crm/${tenantId}/Contacts/${lead.id}`} className="font-medium text-slate-800 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400">
                                 {lead.name}
                               </Link>
                             </TableCell>
-                            <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                            <TableCell className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-gray-400">
                               {lead.source || '-'}
                             </TableCell>
-                            <TableCell className="text-sm text-gray-600 dark:text-gray-400">
-                              {lead.website ? (
-                                <a href={lead.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
-                                  {lead.website}
-                                </a>
-                              ) : '-'}
+                            <TableCell className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-gray-400">
+                              {lead.phone || '-'}
                             </TableCell>
-                            <TableCell className="text-sm text-gray-600 dark:text-gray-400">
-                              {lead.phone ? (
-                                <div className="flex items-center gap-1">
-                                  <span>{lead.phone}</span>
-                                  <span className="text-green-600 dark:text-green-400">✓</span>
-                                </div>
-                              ) : '-'}
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">
-                              {lead.notes || lead.description || '-'}
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                            <TableCell className="px-4 py-3 whitespace-nowrap max-w-[200px] truncate text-sm text-slate-500 dark:text-gray-400">
                               {lead.email || '-'}
                             </TableCell>
-                            <TableCell className="text-sm text-gray-600 dark:text-gray-400">
-                              {lead.assignedTo?.name || lead.assignedToId || '-'}
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                            <TableCell className="px-4 py-3 whitespace-nowrap max-w-[160px] truncate text-sm text-slate-500 dark:text-gray-400">
                               {lead.company || '-'}
                             </TableCell>
-                            <TableCell className="text-sm text-gray-600 dark:text-gray-400">
-                              {lead.industry || 'Others'}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
+                            <TableCell className="px-4 py-3 whitespace-nowrap text-right">
+                              <div className="flex items-center justify-end gap-2">
                                 <button
                                   onClick={() => openConvertModal(lead)}
-                                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                  className="px-3 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
                                   title="Convert Lead"
                                 >
                                   Convert
                                 </button>
-                                <button className="p-1 hover:bg-gray-100 rounded">
-                                  <MoreVertical className="w-4 h-4 text-gray-600" />
-                                </button>
+                                <RowActionsMenu
+                                  entityType="prospect"
+                                  entityId={lead.id}
+                                  tenantId={tenantId}
+                                  onConvert={() => openConvertModal(lead)}
+                                  onDelete={async () => {
+                                    if (confirm('Are you sure you want to delete this prospect?')) {
+                                      try {
+                                        const token = useAuthStore.getState().token
+                                        if (!token) return
+                                        const response = await fetch(`/api/crm/contacts/${lead.id}`, {
+                                          method: 'DELETE',
+                                          headers: { 'Authorization': `Bearer ${token}` },
+                                        })
+                                        if (response.ok) {
+                                          window.location.reload()
+                                        }
+                                      } catch (error) {
+                                        console.error('Error deleting prospect:', error)
+                                        alert('Failed to delete prospect')
+                                      }
+                                    }
+                                  }}
+                                  onCreateDeal={() => {
+                                    router.push(`/crm/${tenantId}/Deals/new?contactId=${lead.id}`)
+                                  }}
+                                />
                               </div>
                             </TableCell>
                           </TableRow>
@@ -1365,8 +1505,32 @@ export default function CRMLeadsPage() {
               )}
             </CardContent>
           </Card>
-        </div>
-      </div>
+          </div>
+        }
+        rightSidebar={<EntityAIPanel entityType="prospects" />}
+      />
+
+      {/* Bulk Actions Bar */}
+      <BulkActionsBar
+        selectedCount={selectedLeads.length}
+        entityType="prospect"
+        onEdit={() => {
+          if (selectedLeads.length === 1) {
+            router.push(`/crm/${tenantId}/Contacts/${selectedLeads[0]}/Edit`)
+          } else {
+            setMassUpdateModalOpen(true)
+          }
+        }}
+        onDelete={handleMassDelete}
+        onAssign={() => {
+          if (selectedLeads.length > 0) {
+            setMassTransferModalOpen(true)
+          }
+        }}
+        onConvert={handleMassConvert}
+        onExport={() => handleExportLeads('csv')}
+        onClearSelection={() => setSelectedLeads([])}
+      />
 
       {/* Convert Lead Modal */}
       {showConvertModal && leadToConvert && (
@@ -1545,6 +1709,175 @@ export default function CRMLeadsPage() {
                   className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isConverting ? 'Converting...' : 'Convert'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mass Convert Modal */}
+      {showMassConvertModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-[600px] max-w-[90vw] max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+              Mass Convert {selectedLeads.length} Prospect(s)
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              Configure how to convert {selectedLeads.length} selected prospect(s). These settings will be applied to all selected prospects.
+            </p>
+            
+            <div className="space-y-6">
+              {/* Create New Account */}
+              <div className="space-y-3">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={conversionData.createAccount}
+                    onChange={(e) => setConversionData({ ...conversionData, createAccount: e.target.checked })}
+                    className="rounded"
+                  />
+                  <span className="font-medium text-gray-900 dark:text-gray-100">Create New Account for each prospect</span>
+                </label>
+                {conversionData.createAccount && (
+                  <div className="ml-6 space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Account Owner</label>
+                      <select
+                        value={conversionData.accountOwnerId}
+                        onChange={(e) => setConversionData({ ...conversionData, accountOwnerId: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      >
+                        <option value="">Use prospect's current owner</option>
+                        {users.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name || u.email} {u.role && `(${u.role})`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={conversionData.notifyAccountOwner}
+                        onChange={(e) => setConversionData({ ...conversionData, notifyAccountOwner: e.target.checked })}
+                        className="rounded"
+                      />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Notify record owner</span>
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              {/* Create New Contact */}
+              <div className="space-y-3">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={conversionData.createContact}
+                    onChange={(e) => setConversionData({ ...conversionData, createContact: e.target.checked })}
+                    className="rounded"
+                  />
+                  <span className="font-medium text-gray-900 dark:text-gray-100">Create New Contact for each prospect</span>
+                </label>
+                {conversionData.createContact && (
+                  <div className="ml-6 space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Owner</label>
+                      <select
+                        value={conversionData.contactOwnerId}
+                        onChange={(e) => setConversionData({ ...conversionData, contactOwnerId: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      >
+                        <option value="">Use prospect's current owner</option>
+                        {users.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name || u.email} {u.role && `(${u.role})`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={conversionData.notifyContactOwner}
+                        onChange={(e) => setConversionData({ ...conversionData, notifyContactOwner: e.target.checked })}
+                        className="rounded"
+                      />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Notify record owner</span>
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              {/* Create New Deal */}
+              <div className="space-y-3">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={conversionData.createDeal}
+                    onChange={(e) => setConversionData({ ...conversionData, createDeal: e.target.checked })}
+                    className="rounded"
+                  />
+                  <span className="font-medium text-gray-900 dark:text-gray-100">Create a new Deal for each Account</span>
+                </label>
+                {conversionData.createDeal && (
+                  <div className="ml-6 space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deal Name Template</label>
+                      <Input
+                        value={conversionData.dealName}
+                        onChange={(e) => setConversionData({ ...conversionData, dealName: e.target.value })}
+                        placeholder="Deal for {prospect_name}"
+                        className="w-full"
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Use {'{prospect_name}'} or {'{company_name}'} as placeholders</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default Deal Value (₹)</label>
+                      <Input
+                        type="number"
+                        value={conversionData.dealValue}
+                        onChange={(e) => setConversionData({ ...conversionData, dealValue: e.target.value })}
+                        placeholder="0.00"
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deal Owner</label>
+                      <select
+                        value={conversionData.dealOwnerId}
+                        onChange={(e) => setConversionData({ ...conversionData, dealOwnerId: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      >
+                        <option value="">Use prospect's current owner</option>
+                        {users.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name || u.email} {u.role && `(${u.role})`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => {
+                    setShowMassConvertModal(false)
+                  }}
+                  className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeMassConvert}
+                  disabled={isMassConverting || (!conversionData.createAccount && !conversionData.createContact)}
+                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isMassConverting ? `Converting ${selectedLeads.length} prospect(s)...` : `Convert ${selectedLeads.length} Prospect(s)`}
                 </button>
               </div>
             </div>
@@ -1826,6 +2159,6 @@ export default function CRMLeadsPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }
