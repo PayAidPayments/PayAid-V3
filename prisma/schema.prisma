@@ -51,6 +51,7 @@ model Tenant {
   assets                       Asset[]
   assetAssignments             AssetAssignment[]
   attendanceRecords            AttendanceRecord[]
+  biometricDevices             BiometricDevice[]
   auditLogs                    AuditLog[]
   apiKeys                      ApiKey[]
   apiUsageLogs                 ApiUsageLog[]
@@ -142,6 +143,7 @@ model Tenant {
   ptConfigs                    PTConfig[]
   payrollCycles                PayrollCycle[]
   payrollRuns                  PayrollRun[]
+  retentionInterventions       RetentionIntervention[]
   products                     Product[]
   productionSchedules          ProductionSchedule[]
   projects                     Project[]
@@ -261,6 +263,7 @@ model Tenant {
   users                        User[]                        @relation("PrimaryTenant")
   vendors                      Vendor[]
   vendorRatings                VendorRating[]
+  advancePayments              AdvancePayment[]
   websites                     Website[]
   websiteChatbots              WebsiteChatbot[]
   websiteEvents                WebsiteEvent[]
@@ -1309,6 +1312,7 @@ model Employee {
   offers               Offer[]
   onboardingInstances  OnboardingInstance[]
   payrollRuns          PayrollRun[]
+  retentionInterventions RetentionIntervention[]
 
   @@unique([tenantId, employeeCode])
   @@unique([tenantId, officialEmail])
@@ -1318,6 +1322,28 @@ model Employee {
   @@index([tenantId, departmentId])
   @@index([tenantId, designationId])
   @@index([managerId])
+}
+
+model RetentionIntervention {
+  id              String    @id @default(cuid())
+  tenantId        String
+  employeeId      String
+  type            String    // SALARY_REVIEW, ROLE_CHANGE, RETENTION_BONUS, ONE_ON_ONE, PIP, PROMOTION, OTHER
+  status          String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, DEFERRED
+  suggestedAction String?
+  costEstimateInr Decimal?  @db.Decimal(12, 2)
+  roiEstimate     Int?      // e.g. 500 for 5x ROI
+  notes           String?
+  createdBy       String?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, status])
 }
 
 model OAuthIntegration {
@@ -1611,6 +1637,25 @@ model AttendanceRecord {
   @@index([tenantId, employeeId])
   @@index([tenantId, date])
   @@index([employeeId, date])
+}
+
+model BiometricDevice {
+  id           String    @id @default(cuid())
+  tenantId     String
+  name         String
+  deviceType   String    @default("FACIAL_RECOGNITION") // FACIAL_RECOGNITION, FINGERPRINT, CARD
+  location     String?
+  deviceId     String?   // Vendor device ID for sync
+  status       String    @default("ACTIVE") // ACTIVE, INACTIVE, ERROR
+  lastSyncAt   DateTime?
+  lastRecordCount Int?
+  config       Json?     // Vendor-specific config (IP, API key placeholder, etc.)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
 }
 
 model LeaveType {
@@ -4850,6 +4895,28 @@ model VendorRating {
 
   @@index([tenantId])
   @@index([tenantId, vendorId])
+}
+
+// Advance payments (to vendors) and advance receipts (from customers)
+model AdvancePayment {
+  id               String   @id @default(cuid())
+  tenantId         String
+  type             String   // 'TO_VENDOR' | 'FROM_CUSTOMER'
+  amount           Decimal  @db.Decimal(12, 2)
+  currency         String   @default("INR")
+  vendorId         String?
+  contactId        String?  // customer for FROM_CUSTOMER
+  referenceNumber  String?
+  adjustedAmount   Decimal  @default(0) @db.Decimal(12, 2)
+  status           String   @default("ACTIVE") // ACTIVE, FULLY_ADJUSTED, CANCELLED
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, type])
+  @@index([tenantId, status])
 }
 
 model Project {

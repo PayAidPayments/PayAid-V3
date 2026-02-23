@@ -22,7 +22,7 @@ export interface HRSummary {
   avgEngagement: number
   okrCompletion: number
   trainingDue: number
-  flightRisks?: Array<{ name: string; risk: number; reason: string }>
+  flightRisks?: Array<{ employeeId?: string; name: string; risk: number; reason: string }>
   hiringVelocity?: number
   overtimeRisk?: { team: string; risk: number }
   healthScore?: number

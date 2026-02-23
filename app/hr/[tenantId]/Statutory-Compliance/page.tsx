@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import { useQuery } from '@tanstack/react-query'
+import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Shield, CheckCircle, Clock, AlertCircle, Upload, Download, IndianRupee, FileText } from 'lucide-react'
+import { Shield, CheckCircle, Clock, AlertCircle, Upload, Download, IndianRupee, FileText, ExternalLink } from 'lucide-react'
 import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 import { getModuleConfig } from '@/lib/modules/module-config'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
@@ -18,6 +20,25 @@ export default function HRStatutoryCompliancePage() {
   const params = useParams()
   const tenantId = params?.tenantId as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
+
+  const { data: complianceOverview } = useQuery({
+    queryKey: ['hr-compliance-overview', tenantId],
+    queryFn: async () => {
+      const token = useAuthStore.getState().token
+      const res = await fetch('/api/hr/compliance/overview', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      if (!res.ok) throw new Error('Failed to fetch')
+      return res.json()
+    },
+    enabled: !!tenantId,
+  })
+
+  const handleTallyExport = (format: 'csv' | 'json') => {
+    const now = new Date()
+    const month = now.getMonth() + 1
+    const year = now.getFullYear()
+    const url = `/api/hr/tally/export/payroll?month=${month}&year=${year}&format=${format}`
+    window.open(url, '_blank', 'noopener')
+  }
 
   // Mock data
   const complianceItems = [
@@ -96,6 +117,41 @@ export default function HRStatutoryCompliancePage() {
           </CardContent>
         </Card>
 
+        {/* Live compliance overview (Phase 2.4) */}
+        {complianceOverview?.items?.length > 0 && (
+          <Card className="border-l-4 border-l-amber-500 dark:border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-lg">Live compliance status</CardTitle>
+              <CardDescription>Current month payroll data — PF/ECR, ESI, TDS/24Q, PT</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {complianceOverview.items.map((item: { type: string; name: string; status: string; employeeCount?: number; totalAmount?: number; downloadUrl?: string | null }) => (
+                  <div key={item.type} className="flex items-center justify-between rounded-lg border dark:border-gray-600 p-3">
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{item.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {item.employeeCount != null && `${item.employeeCount} employees`}
+                        {item.totalAmount != null && item.totalAmount > 0 && ` · ${formatINRForDisplay(item.totalAmount)}`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={item.status === 'READY' ? 'default' : item.status === 'NA' ? 'secondary' : 'outline'}>
+                        {item.status}
+                      </Badge>
+                      {item.downloadUrl && (
+                        <a href={item.downloadUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1">
+                          <Download className="h-3 w-3" /> ECR
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
@@ -164,7 +220,15 @@ export default function HRStatutoryCompliancePage() {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
+          <Button variant="outline" onClick={() => handleTallyExport('csv')}>
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Export to Tally (CSV)
+          </Button>
+          <Button variant="outline" onClick={() => handleTallyExport('json')}>
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Export to Tally (JSON)
+          </Button>
           <Button variant="outline">
             <Upload className="mr-2 h-4 w-4" />
             Manual Upload

@@ -1,10 +1,9 @@
 /**
- * WhatsApp HR Bot Handler
- * Core logic for processing HR-related WhatsApp messages
- * Can be called from webhook without auth middleware
+ * WhatsApp HR Bot Handler (Phase 1.2)
+ * Core logic for leave/payslip/attendance/reimbursement. Use from webhook or POST /api/hr/whatsapp/bot.
  */
-
 import { prisma } from '@/lib/db/prisma'
+import { getPayslipMessageForEmployee, parseMonthYearFromText } from '@/lib/hr/whatsapp-payslip-helper'
 
 export interface BotResponse {
   response: string
@@ -115,73 +114,68 @@ export async function processHRBotMessage(
       }
     }
   }
-  // Payslip request
+  // Payslip
   else if (
     messageLower.includes('payslip') ||
     messageLower.includes('salary slip') ||
-    messageLower.includes('pay slip')
+    messageLower.includes('pay slip') ||
+    messageLower.includes('send my payslip')
   ) {
-    // Extract month/year if mentioned
-    const monthMatch = message.match(/(january|february|march|april|may|june|july|august|september|october|november|december|\d{1,2})/i)
-    
-    response = `I'll help you get your payslip. Please specify the month (e.g., "February 2026" or "last month").\n\n` +
-      `Or reply with "latest" for the most recent payslip.`
-    
-    action = {
-      type: 'PAYSLIP_REQUEST',
-      employeeId: employee.id,
-      requiresMonth: true,
+    const parsed = parseMonthYearFromText(message)
+    const { message: payslipMsg } = await getPayslipMessageForEmployee(tenantId, employee.id, {
+      month: parsed.month,
+      year: parsed.year,
+      preferLastMonth: parsed.preferLastMonth,
+    })
+    response = payslipMsg
+    if (!parsed.month && !parsed.preferLastMonth) {
+      response += '\n\n💡 Reply "latest" or "last month" or "February 2026" for a specific month.'
     }
+    action = { type: 'PAYSLIP_REQUEST', employeeId: employee.id }
   }
-  // Attendance query
+  // Attendance
   else if (
     messageLower.includes('attendance') ||
     messageLower.includes('present') ||
     messageLower.includes('absent') ||
-    messageLower.includes('marked')
+    messageLower.includes('marked') ||
+    messageLower.includes('am i present') ||
+    messageLower.includes('check in')
   ) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    
     const attendance = await prisma.attendanceRecord.findFirst({
-      where: {
-        employeeId: employee.id,
-        date: today,
-        tenantId,
-      },
+      where: { employeeId: employee.id, date: today, tenantId },
     })
-
     if (attendance) {
-      response = `✅ You are marked *${attendance.status}* today.\n` +
-        `Check-in: ${attendance.checkInTime ? new Date(attendance.checkInTime).toLocaleTimeString('en-IN') : 'N/A'}\n` +
-        `Check-out: ${attendance.checkOutTime ? new Date(attendance.checkOutTime).toLocaleTimeString('en-IN') : 'Not checked out'}`
+      const checkIn = attendance.checkInTime ? new Date(attendance.checkInTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'
+      const checkOut = attendance.checkOutTime ? new Date(attendance.checkOutTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Not checked out'
+      response = `✅ You are marked *${attendance.status}* today.\nCheck-in: ${checkIn}\nCheck-out: ${checkOut}`
     } else {
-      response = `I couldn't find your attendance record for today. Please contact HR or check in through the app.`
+      response = 'No attendance record for today. Please check in through the app or contact HR.'
     }
   }
-  // Reimbursement status
+  // Reimbursement / expense status (Expense model)
   else if (
     messageLower.includes('reimbursement') ||
     messageLower.includes('expense') ||
-    messageLower.includes('claim')
+    messageLower.includes('claim') ||
+    messageLower.includes('status of my reimbursement')
   ) {
-    const reimbursements = await prisma.reimbursement.findMany({
-      where: {
-        employeeId: employee.id,
-        tenantId,
-      },
+    const expenses = await prisma.expense.findMany({
+      where: { employeeId: employee.id, tenantId },
       orderBy: { createdAt: 'desc' },
       take: 5,
     })
-
-    if (reimbursements.length === 0) {
-      response = 'You have no recent reimbursement requests.'
+    if (expenses.length === 0) {
+      response = 'You have no recent reimbursement/expense requests.'
     } else {
       response = '💰 *Recent Reimbursements:*\n\n'
-      reimbursements.forEach((reimb) => {
-        const statusEmoji = reimb.status === 'APPROVED' ? '✅' : reimb.status === 'REJECTED' ? '❌' : '⏳'
-        response += `${statusEmoji} ₹${reimb.amount} - ${reimb.status}\n`
-        response += `   Date: ${new Date(reimb.expenseDate).toLocaleDateString('en-IN')}\n\n`
+      expenses.forEach((ex) => {
+        const status = (ex.status || 'pending').toUpperCase()
+        const statusEmoji = status === 'APPROVED' || ex.approvedAt ? '✅' : ex.rejectedAt ? '❌' : '⏳'
+        response += `${statusEmoji} ₹${Number(ex.amount).toLocaleString('en-IN')} - ${status}\n`
+        response += `   ${ex.description || 'Expense'} | ${new Date(ex.date).toLocaleDateString('en-IN')}\n\n`
       })
     }
   }

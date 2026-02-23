@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery, useMutation } from '@tanstack/react-query'
@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
+import { MatchScoreCard } from '@/components/hr/MatchScoreCard'
 
 interface Candidate {
   id: string
@@ -77,6 +78,7 @@ export default function CandidateDetailPage() {
   })
   const [error, setError] = useState('')
   const [newSkill, setNewSkill] = useState('')
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
 
   const { data: candidate, isLoading, refetch } = useQuery<Candidate>({
     queryKey: ['candidate', id],
@@ -101,6 +103,12 @@ export default function CandidateDetailPage() {
       return data
     },
   })
+
+  useEffect(() => {
+    if (candidate?.candidateJobs?.length && selectedJobId === null) {
+      setSelectedJobId(candidate.candidateJobs[0].requisition.id)
+    }
+  }, [candidate?.candidateJobs, selectedJobId])
 
   const updateMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -469,6 +477,13 @@ export default function CandidateDetailPage() {
               </dl>
             </CardContent>
           </Card>
+
+          <MatchScoreCard
+            candidateId={id}
+            jobRequisitionId={selectedJobId}
+            jobRequisitions={candidate.candidateJobs.map((cj) => ({ id: cj.requisition.id, title: cj.requisition.title }))}
+            onSelectJob={setSelectedJobId}
+          />
 
           {candidate.candidateJobs.length > 0 && (
             <Card className="dark:bg-gray-800 dark:border-gray-700">

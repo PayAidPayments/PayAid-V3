@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { PageLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
 import { FlightRiskCard } from '@/components/hr/FlightRiskCard'
+import { RetentionInterventionsCard } from '@/components/hr/RetentionInterventionsCard'
 import { useAuthStore } from '@/lib/stores/auth'
 
 interface Employee {
@@ -303,6 +304,11 @@ export default function HREmployeeDetailPage() {
       {/* Flight Risk Assessment */}
       {employee.status === 'ACTIVE' && (
         <FlightRiskCard employeeId={id} tenantId={tenantId} token={token} />
+      )}
+
+      {/* Retention actions (Phase 1.1 roadmap) */}
+      {employee.status === 'ACTIVE' && (
+        <RetentionInterventionsCard employeeId={id} tenantId={tenantId} />
       )}
 
       {employee.reports && employee.reports.length > 0 && (

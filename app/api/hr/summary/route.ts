@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
+import { getHighRiskEmployees } from '@/lib/hr/flight-risk-service'
 
 /**
  * GET /api/hr/summary
@@ -96,11 +97,8 @@ export async function GET(request: NextRequest) {
       // Engagement data (mock - would come from surveys/feedback)
       Promise.resolve({ avgEngagement: 82, okrCompletion: 76, trainingDue: 8 }),
 
-      // Flight risks (mock AI data)
-      Promise.resolve([
-        { name: 'Rajesh Kumar', risk: 87, reason: 'low engagement' },
-        { name: 'Priya Sharma', risk: 72, reason: 'no promotion in 18 months' },
-      ]),
+      // Flight risks (real: top 5 high-risk employees)
+      getHighRiskEmployees(tenantId, { checkLimit: 25, minRiskScore: 40, maxResults: 5 }),
 
       // AI insights (mock)
       Promise.resolve([

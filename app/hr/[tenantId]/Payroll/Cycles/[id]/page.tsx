@@ -75,6 +75,40 @@ export default function PayrollCycleDetailPage() {
     },
   })
 
+  const [validationResult, setValidationResult] = useState<{
+    isValid: boolean
+    errors: string[]
+    warnings: string[]
+    anomalies?: Array<{ type: string; severity: string; message: string; suggestion?: string }>
+    statutoryChecks?: Array<{ name: string; passed: boolean; message: string }>
+    correctionSuggestions?: string[]
+    summary: Record<string, unknown>
+  } | null>(null)
+
+  const validateMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/hr/payroll/cycles/${id}/validate`)
+      if (!response.ok) throw new Error('Validation failed')
+      return response.json()
+    },
+    onSuccess: (data) => {
+      setValidationResult(data)
+    },
+  })
+
+  const processMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/hr/payroll/cycles/${id}/process`, { method: 'POST' })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || data.message || 'Process failed')
+      return data
+    },
+    onSuccess: (data) => {
+      if (data.validation) setValidationResult(data.validation)
+      refetch()
+    },
+  })
+
   const lockMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(`/api/hr/payroll/cycles/${id}/lock`, {
@@ -128,13 +162,31 @@ export default function PayrollCycleDetailPage() {
         </div>
         <div className="flex gap-2">
           {cycle.status === 'DRAFT' && (
-            <Button
-              onClick={() => generateMutation.mutate()}
-              disabled={generateMutation.isPending}
-              className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
-            >
-              {generateMutation.isPending ? 'Generating...' : 'Generate Payroll'}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => validateMutation.mutate()}
+                disabled={validateMutation.isPending}
+                className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                {validateMutation.isPending ? 'Validating...' : 'Validate'}
+              </Button>
+              <Button
+                onClick={() => generateMutation.mutate()}
+                disabled={generateMutation.isPending}
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+              >
+                {generateMutation.isPending ? 'Generating...' : 'Generate Payroll'}
+              </Button>
+              <Button
+                onClick={() => processMutation.mutate()}
+                disabled={processMutation.isPending}
+                variant="secondary"
+                className="dark:bg-emerald-900/40 dark:text-emerald-200 dark:hover:bg-emerald-800/40"
+              >
+                {processMutation.isPending ? 'Processing...' : 'Validate & Run (one-click)'}
+              </Button>
+            </>
           )}
           {cycle.status === 'IN_PROGRESS' && (
             <Button
@@ -187,6 +239,89 @@ export default function PayrollCycleDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Validation result */}
+      {validationResult && (
+        <Card className={`dark:border-gray-700 ${validationResult.isValid ? 'border-emerald-500' : 'border-amber-500'}`}>
+          <CardHeader>
+            <CardTitle className="dark:text-gray-100">
+              Pre-run validation
+              {validationResult.isValid ? ' — OK' : ' — Issues found'}
+            </CardTitle>
+            <CardDescription className="dark:text-gray-400">
+              Summary: {validationResult.summary?.totalActiveEmployees ?? 0} active employees,{' '}
+              {validationResult.summary?.employeesWithoutStructure ?? 0} without salary structure,{' '}
+              {validationResult.summary?.employeesWithZeroDays ?? 0} with no attendance
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {validationResult.errors.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-red-600 dark:text-red-400">Errors</p>
+                <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400">
+                  {validationResult.errors.slice(0, 5).map((e, i) => (
+                    <li key={i}>{e}</li>
+                  ))}
+                  {validationResult.errors.length > 5 && (
+                    <li>... and {validationResult.errors.length - 5} more</li>
+                  )}
+                </ul>
+              </div>
+            )}
+            {validationResult.warnings.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">Warnings</p>
+                <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400">
+                  {validationResult.warnings.slice(0, 5).map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                  {validationResult.warnings.length > 5 && (
+                    <li>... and {validationResult.warnings.length - 5} more</li>
+                  )}
+                </ul>
+              </div>
+            )}
+            {validationResult.anomalies && validationResult.anomalies.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Anomalies</p>
+                <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                  {validationResult.anomalies.slice(0, 5).map((a, i) => (
+                    <li key={i}>
+                      [{a.severity}] {a.message}
+                      {a.suggestion && <span className="block ml-4 text-xs text-muted-foreground">→ {a.suggestion}</span>}
+                    </li>
+                  ))}
+                  {validationResult.anomalies.length > 5 && (
+                    <li>... and {validationResult.anomalies.length - 5} more</li>
+                  )}
+                </ul>
+              </div>
+            )}
+            {validationResult.statutoryChecks && validationResult.statutoryChecks.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Statutory</p>
+                <ul className="text-sm space-y-1">
+                  {validationResult.statutoryChecks.map((c, i) => (
+                    <li key={i} className={c.passed ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}>
+                      {c.passed ? '✓' : '⚠'} {c.name}: {c.message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {validationResult.correctionSuggestions && validationResult.correctionSuggestions.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Suggestions</p>
+                <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400">
+                  {validationResult.correctionSuggestions.slice(0, 5).map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Cycle Details */}
       <Card className="dark:bg-gray-800 dark:border-gray-700">

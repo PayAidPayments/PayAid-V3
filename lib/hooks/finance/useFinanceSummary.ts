@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/stores/auth'
 
@@ -46,26 +47,46 @@ export interface FinanceSummary {
   debitNotesCount: number
 }
 
-function getAuthHeaders(): Record<string, string> {
-  const token = useAuthStore.getState().token
-  if (!token) return {}
-  return { Authorization: `Bearer ${token}` }
-}
-
 /**
  * Single source of truth for Finance dashboard and list pages.
  * Same API as dashboard stats; use this hook so KPIs match everywhere.
  */
+/** Safe token read: avoids useSyncExternalStore getSnapshot null during SSR/hydration. */
+function useAuthToken(): string | null {
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      return useAuthStore?.getState?.()?.token ?? null
+    } catch {
+      return null
+    }
+  })
+  useEffect(() => {
+    const store = useAuthStore
+    if (!store?.subscribe || typeof store.getState !== 'function') return
+    setToken(store.getState().token ?? null)
+    const unsub = store.subscribe(() => setToken(store.getState().token ?? null))
+    return unsub
+  }, [])
+  return token
+}
+
 export function useFinanceSummary(filters: FinanceSummaryFilters) {
   const { tenantId, period = 'month' } = filters
+  const token = useAuthToken()
 
   return useQuery({
-    queryKey: ['finance-summary', tenantId, period],
+    queryKey: ['finance-summary', tenantId, period, token ? 'authenticated' : 'anonymous'],
     queryFn: async (): Promise<FinanceSummary> => {
+      const currentToken = useAuthStore?.getState?.()?.token ?? null
+      if (!currentToken) {
+        throw new Error('No authorization token provided')
+      }
       const params = new URLSearchParams()
       if (tenantId) params.set('tenantId', tenantId)
       const url = `/api/finance/dashboard/stats?${params}`
-      const res = await fetch(url, { headers: getAuthHeaders() })
+      const headers: Record<string, string> = { Authorization: `Bearer ${currentToken}` }
+      const res = await fetch(url, { headers })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err?.message || err?.error || 'Failed to fetch finance summary')
@@ -109,6 +130,6 @@ export function useFinanceSummary(filters: FinanceSummaryFilters) {
         debitNotesCount: data.debitNotesCount ?? 0,
       }
     },
-    enabled: !!tenantId,
+    enabled: !!tenantId && !!token,
   })
 }

@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const file = formData.get('file') as File
+    const deviceId = formData.get('deviceId') as string | null
 
     if (!file) {
       return NextResponse.json(
@@ -174,6 +175,13 @@ export async function POST(request: NextRequest) {
           })
         }
       }
+    }
+
+    if (deviceId && results.success.length > 0) {
+      await prisma.biometricDevice.updateMany({
+        where: { id: deviceId, tenantId },
+        data: { lastSyncAt: new Date(), lastRecordCount: results.success.length },
+      })
     }
 
     return NextResponse.json({

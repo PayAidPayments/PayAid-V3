@@ -92,7 +92,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Create leave request
+    const days = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+
     const leaveRequest = await prisma.leaveRequest.create({
       data: {
         tenantId,
@@ -100,10 +101,9 @@ export async function POST(request: NextRequest) {
         leaveTypeId: leaveType.id,
         startDate,
         endDate,
+        days,
         reason,
         status: 'PENDING',
-        appliedVia: 'WHATSAPP',
-        createdBy: userId || employeeId,
       },
       include: {
         leaveType: true,

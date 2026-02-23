@@ -6,10 +6,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { useState } from 'react'
+import Link from 'next/link'
+import { useParams } from 'next/navigation'
 
 interface HRAICommandCenterProps {
   stats: {
-    flightRisks?: Array<{ name: string; risk: number; reason: string }>
+    flightRisks?: Array<{ employeeId?: string; name: string; risk: number; reason: string }>
     overtimeRisk?: { team: string; risk: number }
     hiringVelocity?: number
     healthScore?: number
@@ -24,18 +26,20 @@ interface HRAICommandCenterProps {
 
 export function HRAICommandCenter({ stats }: HRAICommandCenterProps) {
   const [isRegenerating, setIsRegenerating] = useState(false)
+  const params = useParams()
+  const tenantId = params?.tenantId as string | undefined
 
   const handleRegenerate = () => {
     setIsRegenerating(true)
     setTimeout(() => setIsRegenerating(false), 1000)
   }
 
-  const flightRisk = stats.flightRisks && stats.flightRisks.length > 0 
-    ? stats.flightRisks[0]
-    : { name: 'Rajesh Kumar', risk: 87, reason: 'low engagement' }
-  
-  const teamEngagement = stats.overtimeRisk
-    ? { team: stats.overtimeRisk.team, change: -stats.overtimeRisk.risk }
+  const flightRisk = stats.flightRisks?.find(
+    (x) => x != null && typeof (x as { risk?: number }).risk === 'number'
+  ) ?? null
+
+  const teamEngagement = stats.overtimeRisk != null && typeof stats.overtimeRisk.risk === 'number'
+    ? { team: stats.overtimeRisk.team ?? 'Engineering', change: -stats.overtimeRisk.risk }
     : { team: 'Engineering', change: -18 }
   
   const hiringVelocity = stats.hiringVelocity || 14
@@ -86,17 +90,29 @@ export function HRAICommandCenter({ stats }: HRAICommandCenterProps) {
               </h3>
               <div className="space-y-3">
                 {/* Flight Risk Alert */}
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      {flightRisk.name}: <span className="text-red-600 dark:text-red-400">{flightRisk.risk}% flight risk</span>
-                    </p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                      {flightRisk.reason}
-                    </p>
+                {flightRisk ? (
+                  <Link href={tenantId && flightRisk.employeeId ? `/hr/${tenantId}/Employees/${flightRisk.employeeId}` : '#'}>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors cursor-pointer">
+                      <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                          {flightRisk.name}: <span className="text-red-600 dark:text-red-400">{flightRisk.risk}% flight risk</span>
+                        </p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                          {flightRisk.reason}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                    <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">No high flight-risk alerts</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Risk levels are within normal range</p>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Engagement Alert */}
                 <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
@@ -213,14 +229,14 @@ export function HRAICommandCenter({ stats }: HRAICommandCenterProps) {
                 AI Recommendations
               </h3>
               <div className="space-y-2">
-                {flightRisk.risk > 80 && (
+                {flightRisk != null && flightRisk.risk > 80 && (
                   <div className="p-2 rounded bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800">
                     <p className="text-xs text-slate-700 dark:text-slate-300">
-                      <span className="font-semibold">Action:</span> Address retention risk for {flightRisk.name}
+                      <span className="font-semibold">Action:</span> Address retention risk for {flightRisk.name ?? 'employee'}
                     </p>
                   </div>
                 )}
-                {teamEngagement.change < -15 && (
+                {teamEngagement != null && teamEngagement.change < -15 && (
                   <div className="p-2 rounded bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800">
                     <p className="text-xs text-slate-700 dark:text-slate-300">
                       <span className="font-semibold">Action:</span> Improve engagement for {teamEngagement.team} team

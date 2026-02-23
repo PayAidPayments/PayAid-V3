@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,52 +13,48 @@ import { getModuleConfig } from '@/lib/modules/module-config'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
+import { useAuthStore } from '@/lib/stores/auth'
+
+const mockRuns = [
+  { id: '1', cycleName: 'February 2026', runDate: '2026-02-28', status: 'COMPLETED', employees: 47, totalAmount: 4200000, processedDate: '2026-02-27' },
+  { id: '2', cycleName: 'January 2026', runDate: '2026-01-31', status: 'COMPLETED', employees: 45, totalAmount: 4000000, processedDate: '2026-01-30' },
+  { id: '3', cycleName: 'March 2026', runDate: '2026-03-31', status: 'DRAFT', employees: 47, totalAmount: 0, processedDate: null },
+]
 
 export default function HRPayrollRunsPage() {
   const params = useParams()
   const tenantId = params?.tenantId as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
+  const { token } = useAuthStore()
 
-  // Mock data
-  const payrollRuns = [
-    {
-      id: '1',
-      cycleName: 'February 2026',
-      runDate: '2026-02-28',
-      status: 'COMPLETED',
-      employees: 47,
-      totalAmount: 4200000,
-      processedDate: '2026-02-27',
+  const { data: cyclesData } = useQuery({
+    queryKey: ['payroll-cycles', tenantId],
+    queryFn: async () => {
+      const res = await fetch('/api/hr/payroll/cycles', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      const json = await res.json().catch(() => ({}))
+      return json.cycles ?? []
     },
-    {
-      id: '2',
-      cycleName: 'January 2026',
-      runDate: '2026-01-31',
-      status: 'COMPLETED',
-      employees: 45,
-      totalAmount: 4000000,
-      processedDate: '2026-01-30',
-    },
-    {
-      id: '3',
-      cycleName: 'March 2026',
-      runDate: '2026-03-31',
-      status: 'DRAFT',
-      employees: 47,
-      totalAmount: 0,
-      processedDate: null,
-    },
-  ]
+  })
 
-  const upcomingRuns = [
-    {
-      id: '3',
-      cycleName: 'March 2026',
-      runDate: '2026-03-31',
-      employees: 47,
-      estimatedAmount: 4200000,
-    },
-  ]
+  const cycles = Array.isArray(cyclesData) && cyclesData.length > 0
+    ? cyclesData.map((c: any) => {
+        const monthName = new Date(c.year, c.month - 1, 1).toLocaleString('en-IN', { month: 'long' })
+        return {
+          id: c.id,
+          cycleName: `${monthName} ${c.year}`,
+          runDate: new Date(c.year, c.month, 0).toISOString().slice(0, 10),
+          status: c.status,
+          employees: c._count?.payrollRuns ?? 0,
+          totalAmount: 0,
+          processedDate: c.updatedAt,
+        }
+      })
+    : mockRuns
+
+  const payrollRuns = cycles
+  const upcomingRuns = cycles.filter((r: any) => r.status === 'DRAFT' || r.status === 'IN_PROGRESS').length > 0
+    ? cycles.filter((r: any) => r.status === 'DRAFT' || r.status === 'IN_PROGRESS')
+    : [mockRuns[2]]
 
   return (
     <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>

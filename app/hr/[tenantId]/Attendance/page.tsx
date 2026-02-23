@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress'
 import { Clock, Calendar, MapPin, Camera, Users, TrendingUp, AlertCircle, CheckCircle, Upload, Download, Settings, Zap } from 'lucide-react'
 import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 import { getModuleConfig } from '@/lib/modules/module-config'
+import { BiometricDevicesCard } from '@/components/hr/BiometricDevicesCard'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
 import {
@@ -32,11 +33,6 @@ export default function HRAttendancePage() {
     avgWorkHours: 8.2,
     overtimeHours: 12,
   }
-
-  const biometricDevices = [
-    { id: '1', name: 'Office Main Gate', type: 'FACIAL_RECOGNITION', status: 'ACTIVE', lastSync: '2026-02-20 09:15:00', employees: 47 },
-    { id: '2', name: 'Warehouse Entrance', type: 'FINGERPRINT', status: 'ACTIVE', lastSync: '2026-02-20 09:10:00', employees: 12 },
-  ]
 
   const geoFences = [
     { id: '1', name: 'Bangalore Office', address: '123 MG Road, Bangalore', radius: 100, status: 'ACTIVE', employees: 35 },
@@ -239,54 +235,7 @@ export default function HRAttendancePage() {
           </TabsContent>
 
           <TabsContent value="biometric" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Biometric Devices</CardTitle>
-                    <CardDescription>Facial recognition and fingerprint devices</CardDescription>
-                  </div>
-                  <Button>
-                    <Zap className="mr-2 h-4 w-4" />
-                    Add Device
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Device Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Employees</TableHead>
-                      <TableHead>Last Sync</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {biometricDevices.map((device) => (
-                      <TableRow key={device.id}>
-                        <TableCell className="font-medium">{device.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{device.type}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={device.status === 'ACTIVE' ? 'default' : 'secondary'}>
-                            {device.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{device.employees}</TableCell>
-                        <TableCell>{device.lastSync}</TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">Configure</Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <BiometricDevicesCard tenantId={tenantId} />
           </TabsContent>
 
           <TabsContent value="geofencing" className="space-y-4">

@@ -6,15 +6,30 @@ import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { BarChart3, Download, Search, Filter, FileText, TrendingUp, Users, IndianRupee } from 'lucide-react'
+import { BarChart3, Download, Search, Filter, FileText, TrendingUp, Users, IndianRupee, Plus } from 'lucide-react'
 import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 import { getModuleConfig } from '@/lib/modules/module-config'
+import { useQuery } from '@tanstack/react-query'
+import { useAuthStore } from '@/lib/stores/auth'
 
 export default function HRReportsPage() {
   const params = useParams()
   const tenantId = params?.tenantId as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
+  const { token } = useAuthStore()
   const [searchQuery, setSearchQuery] = useState('')
+
+  const { data: customReportsData } = useQuery({
+    queryKey: ['hr-custom-reports', tenantId],
+    queryFn: async () => {
+      const res = await fetch('/api/hr/reports/builder?limit=50', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) return { reports: [] }
+      return res.json()
+    },
+  })
+  const customReports = customReportsData?.reports ?? []
 
   // Mock report categories
   const reportCategories = [
@@ -151,20 +166,51 @@ export default function HRReportsPage() {
           ))}
         </div>
 
-        {/* Custom Reports Banner */}
-        <Card className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-purple-200 dark:border-purple-800">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Need a Custom Report?</h3>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  Create custom reports with specific filters, date ranges, and data points tailored to your needs.
-                </p>
-              </div>
-              <Button>
-                Create Custom Report
+        {/* Custom reports (Report Builder) */}
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <CardHeader>
+            <CardTitle className="dark:text-gray-100">Custom reports</CardTitle>
+            <CardDescription className="dark:text-gray-400">
+              Build and run custom reports. Create one with your chosen data source and columns, then run and export to CSV.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Link href={`/hr/${tenantId}/Reports/builder`}>
+              <Button className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
+                <Plus className="mr-2 h-4 w-4" />
+                Create custom report
               </Button>
-            </div>
+            </Link>
+            {customReports.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {customReports.map((r: any) => (
+                  <Card key={r.id} className="dark:bg-gray-700/50 dark:border-gray-600">
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-medium dark:text-gray-100">{r.name}</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{r.reportType}</p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Link href={`/hr/${tenantId}/Reports/builder/${r.id}`}>
+                            <Button variant="outline" size="sm" className="dark:border-gray-600 dark:text-gray-300">
+                              Run
+                            </Button>
+                          </Link>
+                          <a href={`/api/hr/reports/builder/${r.id}/export?format=csv`} target="_blank" rel="noopener noreferrer">
+                            <Button variant="outline" size="sm" className="dark:border-gray-600 dark:text-gray-300">
+                              <Download className="h-3 w-3" />
+                            </Button>
+                          </a>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400">No custom reports yet. Create one to get started.</p>
+            )}
           </CardContent>
         </Card>
       </div>

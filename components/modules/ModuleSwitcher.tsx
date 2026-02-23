@@ -696,21 +696,22 @@ export function ModuleSwitcher() {
       <Button
         variant="outline"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 min-w-0 max-w-[180px] sm:max-w-[220px]"
+        title={currentModuleData?.name}
       >
-        <LayoutGrid className="h-4 w-4" />
+        <LayoutGrid className="h-4 w-4 flex-shrink-0" />
         {currentModuleData ? (
           <>
             {(() => {
               const Icon = moduleIconMap[currentModuleData.id]
-              return Icon ? <Icon className="h-4 w-4" /> : null
+              return Icon ? <Icon className="h-4 w-4 flex-shrink-0" /> : null
             })()}
-            <span className="hidden sm:inline">{currentModuleData.name}</span>
+            <span className="hidden sm:inline truncate min-w-0" title={currentModuleData.name}>{currentModuleData.name}</span>
           </>
         ) : (
           <span className="hidden sm:inline">Modules</span>
         )}
-        <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
+        <ChevronDown className={cn('h-4 w-4 flex-shrink-0 transition-transform', isOpen && 'rotate-180')} />
       </Button>
 
       {isOpen && (

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
 // ModuleTopBar is now in layout.tsx
-import { Users, Plus, RefreshCw } from 'lucide-react'
+import { Users, Plus, RefreshCw, Download, Printer } from 'lucide-react'
 
 interface Employee {
   id: string
@@ -76,12 +76,24 @@ export default function HREmployeesPage() {
             <h1 className="text-3xl font-bold text-gray-900">Employees</h1>
             <p className="mt-2 text-gray-600">Manage your workforce</p>
           </div>
-          <Link href={`/hr/${tenantId}/Employees/new`}>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Employee
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <a href="/api/hr/employees/export?format=csv" download target="_blank" rel="noopener noreferrer">
+                <Download className="mr-2 h-4 w-4" />
+                Export CSV
+              </a>
             </Button>
-          </Link>
+            <Button variant="outline" onClick={() => window.print()}>
+              <Printer className="mr-2 h-4 w-4" />
+              Print
+            </Button>
+            <Link href={`/hr/${tenantId}/Employees/new`}>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Employee
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Filters */}

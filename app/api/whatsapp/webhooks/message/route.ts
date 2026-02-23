@@ -157,34 +157,25 @@ export async function POST(request: NextRequest) {
         )
 
         if (botResponse && botResponse.response) {
-          // Send response back via WhatsApp
-          // Store outgoing message
-          await prisma.whatsappMessage.create({
-            data: {
-              conversationId: conversation.id,
-              sessionId: session.id,
-              employeeId: botResponse.employeeId || null,
-              direction: 'out',
-              messageType: 'text',
-              fromNumber: session.phoneNumber || '',
-              toNumber: fromNumber,
-              text: botResponse.response,
-              status: 'sent',
-              createdAt: new Date(),
-            },
-          })
-
-          // Update conversation
-          await prisma.whatsappConversation.update({
-            where: { id: conversation.id },
-            data: {
-              lastMessageAt: new Date(),
-              lastDirection: 'out',
-            },
-          })
-
-          // Send via WhatsApp API (would need actual WhatsApp send implementation)
-          // For now, message is stored and can be sent via scheduled job or webhook callback
+          const { sendWhatsAppReply } = await import('@/lib/hr/whatsapp-send-internal')
+          const sendResult = await sendWhatsAppReply(conversation.id, botResponse.response)
+          if (!sendResult.ok) {
+            await prisma.whatsappMessage.create({
+              data: {
+                conversationId: conversation.id,
+                sessionId: session.id,
+                employeeId: botResponse.employeeId || null,
+                direction: 'out',
+                messageType: 'text',
+                fromNumber: session.phoneNumber || '',
+                toNumber: fromNumber,
+                text: botResponse.response,
+                status: 'failed',
+                errorMessage: sendResult.error,
+                createdAt: new Date(),
+              },
+            })
+          }
         }
       } catch (error) {
         console.error('HR bot processing error:', error)
