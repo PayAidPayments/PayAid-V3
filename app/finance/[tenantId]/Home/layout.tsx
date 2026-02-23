@@ -19,6 +19,10 @@ export default function FinanceHomeLayout({
     { name: 'Accounting', href: `/finance/${tenantId}/Accounting` },
     { name: 'Purchase Orders', href: `/finance/${tenantId}/Purchase-Orders` },
     { name: 'GST Reports', href: `/finance/${tenantId}/GST` },
+    { name: 'TDS', href: `/finance/${tenantId}/TDS` },
+    { name: 'E-Invoicing', href: `/finance/${tenantId}/E-Invoicing` },
+    { name: 'Bank Reconciliation', href: `/finance/${tenantId}/Bank-Reconciliation` },
+    { name: 'Advances', href: `/finance/${tenantId}/Advances` },
   ]
 
   return (

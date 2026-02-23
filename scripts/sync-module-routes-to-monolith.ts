@@ -1,9 +1,9 @@
 /**
- * Sync Module Routes to Monolith
- * 
- * Copies routes from module directories back to app/api/ so they remain accessible
- * This is temporary until separate deployments are set up
- * 
+ * Sync Module Routes to Host App (decoupled structure)
+ *
+ * Copies API routes from decoupled module directories into app/api/ so the host
+ * Next.js app can serve them. Source of truth remains the module directories.
+ *
  * Usage: npx tsx scripts/sync-module-routes-to-monolith.ts
  */
 
@@ -101,8 +101,8 @@ function copyDirectory(source: string, target: string): number {
 }
 
 async function main() {
-  console.log('🔄 Syncing module routes to monolith...\n')
-  console.log('⚠️  Note: This copies routes back so they remain accessible until separate deployments\n')
+  console.log('🔄 Syncing module routes to host app...\n')
+  console.log('📦 Decoupled structure: routes live in module dirs; this copies them into app/api/ for Next.js to serve.\n')
 
   let totalFiles = 0
   let successCount = 0

@@ -34,6 +34,7 @@ import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 import { getModuleConfig } from '@/lib/modules/module-config'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { PageLoading } from '@/components/ui/loading'
+import { useQuery } from '@tanstack/react-query'
 import { useHRSummary } from '@/lib/hooks/hr/useHRSummary'
 import { motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
@@ -75,6 +76,17 @@ export default function HRDashboardPage() {
   const { user, tenant } = useAuthStore()
   const { data: stats, isLoading, error: fetchError } = useHRSummary({ tenantId })
   const [isDark, setIsDark] = useState(false)
+
+  const { data: advancedAnalytics } = useQuery({
+    queryKey: ['hr-analytics-advanced', tenantId],
+    queryFn: async () => {
+      const token = useAuthStore.getState().token
+      const res = await fetch(`/api/hr/analytics/advanced`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      if (!res.ok) throw new Error('Failed to fetch')
+      return res.json()
+    },
+    enabled: !!tenantId,
+  })
 
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'))
@@ -269,6 +281,56 @@ export default function HRDashboardPage() {
               </div>
             </Card>
           </motion.div>
+
+          {/* Flight Risk Alerts - visible when there are high-risk employees */}
+          {safeStats.flightRisks?.filter(Boolean).length > 0 && (
+            <motion.div
+              className="col-span-full mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.15 }}
+            >
+              <Card className="border-l-4 border-l-red-500 bg-red-50/50 dark:bg-red-900/10 dark:border-red-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    Flight risk alerts
+                  </CardTitle>
+                  <CardDescription>Employees with elevated flight risk. Review and take action.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {safeStats.flightRisks.filter(Boolean).map((item, index) => {
+                      const risk = item?.risk ?? 0
+                      const key = item?.employeeId ?? item?.name ?? `flight-risk-${index}`
+                      return (
+                        <li key={key}>
+                          <Link
+                            href={item?.employeeId ? `/hr/${tenantId}/Employees/${item.employeeId}` : `/hr/${tenantId}/Employees`}
+                            className="flex items-center justify-between rounded-lg p-3 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
+                          >
+                            <div>
+                              <span className="font-medium text-slate-900 dark:text-slate-100">{item?.name ?? 'Unknown'}</span>
+                              <p className="text-sm text-slate-600 dark:text-slate-400">{item?.reason ?? ''}</p>
+                            </div>
+                            <Badge variant={risk >= 75 ? 'destructive' : risk >= 60 ? 'default' : 'secondary'}>
+                              {risk}% risk
+                            </Badge>
+                          </Link>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                  <Link
+                    href={`/hr/${tenantId}/Employees`}
+                    className="mt-3 inline-block text-sm font-medium text-purple-600 dark:text-purple-400 hover:underline"
+                  >
+                    View all employees →
+                  </Link>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
           {/* Band 2: Row 1 - Stat Cards (6 identical cards, each spans 2 columns) */}
           {/* Stat Card 1: Active Employees */}
@@ -629,6 +691,118 @@ export default function HRDashboardPage() {
               </Card>
             </motion.div>
             </>
+          )}
+
+          {/* Advanced Analytics (Live from API) - Phase 2.5 */}
+          {advancedAnalytics && (
+            <motion.div
+              className="col-span-full mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.5 }}
+            >
+              <Card className="dark:bg-gray-800 dark:border-gray-700">
+                <CardHeader>
+                  <CardTitle className="dark:text-gray-100 flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    Advanced Analytics (Live)
+                  </CardTitle>
+                  <CardDescription className="dark:text-gray-400">
+                    Headcount trend, payroll cost, and department mix from HR data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Headcount (12 months)</h4>
+                    {advancedAnalytics.headcountTrend?.length > 0 ? (
+                      <div className="h-[220px] w-full">
+                        <ResponsiveContainer width="100%" height={220}>
+                          <LineChart data={advancedAnalytics.headcountTrend}>
+                            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                            <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke={isDark ? '#9ca3af' : '#6b7280'} />
+                            <YAxis tick={{ fontSize: 10 }} stroke={isDark ? '#9ca3af' : '#6b7280'} />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: isDark ? '#1f2937' : '#fff', borderRadius: '8px' }}
+                              formatter={(value: number) => [value, 'Headcount']}
+                            />
+                            <Line type="monotone" dataKey="count" stroke={PURPLE_PRIMARY} strokeWidth={2} dot={{ r: 3 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500 dark:text-slate-400">No trend data</p>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Payroll (6 months)</h4>
+                    {advancedAnalytics.payrollTrend?.length > 0 ? (
+                      <div className="h-[220px] w-full">
+                        <ResponsiveContainer width="100%" height={220}>
+                          <BarChart data={advancedAnalytics.payrollTrend} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                            <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke={isDark ? '#9ca3af' : '#6b7280'} />
+                            <YAxis tick={{ fontSize: 10 }} stroke={isDark ? '#9ca3af' : '#6b7280'} tickFormatter={(v) => `${(v / 100000).toFixed(0)}L`} />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: isDark ? '#1f2937' : '#fff', borderRadius: '8px' }}
+                              formatter={(value: number) => [formatINRForDisplay(value), 'Net pay']}
+                            />
+                            <Bar dataKey="net" fill={GOLD_ACCENT} radius={[4, 4, 0, 0]} name="Net pay" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500 dark:text-slate-400">No payroll data</p>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Department mix</h4>
+                    {advancedAnalytics.departmentMix?.length > 0 ? (
+                      <div className="h-[220px] w-full">
+                        <ResponsiveContainer width="100%" height={220}>
+                          <PieChart>
+                            <Pie
+                              data={advancedAnalytics.departmentMix.map((d: { departmentName: string; count: number }, i: number) => ({
+                                name: d.departmentName,
+                                value: d.count,
+                                fill: CHART_COLORS[i % CHART_COLORS.length],
+                              }))}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={80}
+                              paddingAngle={2}
+                              dataKey="value"
+                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: isDark ? '#1f2937' : '#fff', borderRadius: '8px' }}
+                              formatter={(value: number) => [value, 'Employees']}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500 dark:text-slate-400">No department data</p>
+                    )}
+                  </div>
+                </CardContent>
+                {advancedAnalytics.summary && (
+                  <CardContent className="pt-0 border-t dark:border-gray-700">
+                    <div className="flex flex-wrap gap-6 text-sm">
+                      <span className="text-slate-600 dark:text-slate-400">
+                        <strong className="text-slate-900 dark:text-slate-100">{advancedAnalytics.summary.currentHeadcount}</strong> active employees
+                      </span>
+                      <span className="text-slate-600 dark:text-slate-400">
+                        Attrition (6m): <strong className="text-slate-900 dark:text-slate-100">{advancedAnalytics.summary.attritionRateLast6Months}%</strong>
+                      </span>
+                      <span className="text-slate-600 dark:text-slate-400">
+                        Exits (6m): <strong className="text-slate-900 dark:text-slate-100">{advancedAnalytics.summary.exitsLast6Months}</strong>
+                      </span>
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            </motion.div>
           )}
 
           {/* Band 4: Row 3 - AI Panels (3 panels, each spans 4 columns) */}

@@ -1,54 +1,39 @@
 'use client'
 
-import { useState, cloneElement, isValidElement } from 'react'
+import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FileText, ShoppingCart, Landmark, TrendingUp, TrendingDown, IndianRupee, Database, AlertCircle, Wallet, Building2, ArrowUpRight, ArrowDownRight, ArrowLeftRight, ArrowRightLeft, Zap } from 'lucide-react'
+import { FileText, ShoppingCart, Landmark, TrendingUp, TrendingDown, IndianRupee, Database, AlertCircle, Wallet, Building2, ArrowLeftRight, ArrowRightLeft, Zap } from 'lucide-react'
 import { PageLoading } from '@/components/ui/loading'
 import {
   PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Area, AreaChart
 } from 'recharts'
-import { motion } from 'framer-motion'
-import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
-import { getModuleConfig } from '@/lib/modules/module-config'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { useFinanceSummary } from '@/lib/hooks/finance/useFinanceSummary'
 import { FinanceCommandCenter } from '@/components/finance/FinanceCommandCenter'
 import { FinanceAIInsightsPanel } from '@/components/finance/FinanceAIInsightsPanel'
 import { QuickActionsPanel } from '@/components/finance/QuickActionsPanel'
+import { FinanceCard } from '@/components/ui/FinanceCard'
 import dynamic from 'next/dynamic'
+import { cn } from '@/lib/utils/cn'
 
 const FinancialAlerts = dynamic(
   () => import('@/components/finance/FinancialAlerts').then(mod => ({ default: mod.FinancialAlerts })),
   { ssr: false, loading: () => null }
 )
-const CashFlowManagement = dynamic(
-  () => import('@/components/finance/CashFlowManagement').then(mod => ({ default: mod.CashFlowManagement })),
-  { ssr: false, loading: () => null }
-)
-const FinancialForecasting = dynamic(
-  () => import('@/components/finance/FinancialForecasting').then(mod => ({ default: mod.FinancialForecasting })),
-  { ssr: false, loading: () => null }
-)
-const FinancialAnalytics = dynamic(
-  () => import('@/components/finance/FinancialAnalytics').then(mod => ({ default: mod.FinancialAnalytics })),
-  { ssr: false, loading: () => null }
-)
 
 const PURPLE_PRIMARY = '#53328A'
 const GOLD_ACCENT = '#F5C700'
-const SUCCESS = '#059669'
-const INFO = '#0284C7'
-const CHART_COLORS = [PURPLE_PRIMARY, GOLD_ACCENT, SUCCESS, INFO, '#8B5CF6', '#FCD34D']
+const CHART_COLORS = [PURPLE_PRIMARY, GOLD_ACCENT, '#059669', '#0284C7', '#8B5CF6', '#FCD34D']
 
 export default function FinanceDashboardPage() {
   const params = useParams()
   const tenantId = (params?.tenantId as string) ?? ''
-  const { user, tenant } = useAuthStore()
+  const { user } = useAuthStore()
   const { data: stats, isLoading, error: fetchError, refetch } = useFinanceSummary({ tenantId })
   const [seedLoading, setSeedLoading] = useState(false)
   const [seedBannerDismissed, setSeedBannerDismissed] = useState(false)
@@ -76,18 +61,19 @@ export default function FinanceDashboardPage() {
     }
   }
 
-  const showSeedBanner =
-    !isLoading &&
+  const isEmptyDashboard =
     stats &&
-    !seedBannerDismissed &&
     (stats.totalInvoices ?? 0) === 0 &&
     (stats.purchaseOrders ?? 0) === 0 &&
     (stats.totalRevenue ?? 0) === 0
+  const showSeedBanner =
+    !isLoading && !!isEmptyDashboard && !seedBannerDismissed
+  const showEmptyCta = !isLoading && !!isEmptyDashboard && seedBannerDismissed
 
   if (!tenantId) {
     return <PageLoading message="Loading..." fullScreen={true} />
   }
-  if (isLoading) {
+  if (isLoading || stats === undefined) {
     return <PageLoading message="Loading Finance dashboard..." fullScreen={true} />
   }
 
@@ -116,386 +102,339 @@ export default function FinanceDashboardPage() {
     ? safeStats.monthlyRevenue.map((item) => ({ month: item?.month ?? '', revenue: item?.revenue ?? 0 }))
     : []
   const isProfit = (safeStats.profit ?? 0) >= 0
-  const moduleConfig = getModuleConfig('finance') || getModuleConfig('crm')!
   const paidPct = safeStats.totalInvoices > 0
     ? Math.round((safeStats.paidInvoices / safeStats.totalInvoices) * 100)
     : 0
 
-  const heroMetrics = [
-    { label: 'Revenue', value: formatINRForDisplay(safeStats.revenueThisMonth), change: safeStats.revenueGrowth, trend: (safeStats.revenueGrowth || 0) > 0 ? 'up' as const : 'down' as const, icon: <IndianRupee className="w-5 h-5" />, color: 'gold' as const, href: `/finance/${tenantId}/Accounting/Reports/Revenue` },
-    { label: 'Invoices', value: `${safeStats.totalInvoices} (${paidPct}% paid)`, change: undefined, trend: 'up' as const, icon: <FileText className="w-5 h-5" />, color: 'info' as const, href: `/finance/${tenantId}/Invoices` },
-    { label: 'Purchase Orders', value: String(safeStats.purchaseOrders), icon: <ShoppingCart className="w-5 h-5" />, color: 'purple' as const, href: `/finance/${tenantId}/Purchase-Orders` },
-    { label: 'Net Profit', value: formatINRForDisplay(Math.abs(safeStats.profit)), change: safeStats.profitMargin, trend: isProfit ? 'up' as const : 'down' as const, icon: isProfit ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />, color: isProfit ? 'success' as const : 'error' as const, href: `/finance/${tenantId}/Accounting/Reports` },
-  ]
+  const revenueGrowth = safeStats.revenueGrowth ?? 0
+  const healthScore = (() => {
+    const growth = safeStats.revenueGrowth ?? 0
+    const margin = safeStats.profitMargin ?? 0
+    const runway = safeStats.cashRunwayDays ?? 0
+    const overdueRatio = safeStats.totalInvoices > 0 ? (safeStats.overdueInvoices / safeStats.totalInvoices) * 100 : 0
+    let score = 70
+    if (growth > 0) score += 5
+    if (margin > 20) score += 5
+    if (runway >= 60) score += 10
+    else if (runway >= 30) score += 5
+    if (overdueRatio > 30) score -= 15
+    else if (overdueRatio > 10) score -= 5
+    return Math.max(0, Math.min(100, score))
+  })()
+
+  const monthLabel = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+
+  const gstMatchPct = safeStats.gstReconciliationPct ?? 0
 
   return (
-    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>
-      <UniversalModuleHero
-        moduleName="Finance"
-        moduleIcon={<moduleConfig.icon className="w-8 h-8" />}
-        gradientFrom={moduleConfig.gradientFrom}
-        gradientTo={moduleConfig.gradientTo}
-        metrics={heroMetrics}
-      />
-
-      {fetchError && (
-        <div className="mx-6 mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-red-700 dark:text-red-300 font-medium">Error:</p>
-          <p className="text-red-600 dark:text-red-400 text-sm truncate">{(fetchError as Error)?.message}</p>
-        </div>
-      )}
-
-      {showSeedBanner && (
-        <div className="mx-6 mt-4 p-4 bg-primary/10 border border-primary/30 rounded-lg flex flex-wrap items-center justify-between gap-3">
-          <p className="text-gray-800 dark:text-gray-200 font-medium">No finance data yet. Seed demo data to see the dashboard.</p>
-          <div className="flex items-center gap-2">
-            <Button variant="default" size="sm" onClick={seedDemoData} disabled={seedLoading}>{seedLoading ? 'Seeding...' : 'Seed demo data'}</Button>
-            <Button variant="ghost" size="sm" onClick={() => setSeedBannerDismissed(true)}>Dismiss</Button>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50">
+      <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+        {/* Page Title */}
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 truncate">Finance Dashboard</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 truncate">AI overview for {monthLabel}</p>
           </div>
-        </div>
-      )}
+        </header>
 
-      <div className="p-6 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
-        <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-muted/50 dark:bg-muted/20 mb-6">
-          <p className="text-sm text-muted-foreground truncate">Numbers show 0? Click to load sample invoices, orders & POs (1–2 min).</p>
-          <Button variant="default" size="sm" onClick={seedDemoData} disabled={seedLoading} className="shrink-0 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#3F1F62] hover:to-[#E0B200] text-white">
-            <Database className="mr-2 h-4 w-4" />
-            {seedLoading ? 'Seeding…' : 'Seed demo data'}
-          </Button>
-        </div>
-
-        {/* 5-band layout – same grid as CRM */}
-        <div className="dashboard-container">
-          <div className="dashboard-grid">
-            {/* Band 1: Finance Command Center - Full Width */}
-            {safeStats && (
-              <motion.div 
-                className="ai-command-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-              >
-                <FinanceCommandCenter tenantId={tenantId} stats={safeStats} userName={user?.name} />
-              </motion.div>
+        {fetchError && (
+          <div className="rounded-2xl border border-red-300 dark:border-red-500/40 bg-red-50 dark:bg-red-500/10 p-4">
+            <p className="text-sm font-medium text-red-700 dark:text-red-300">
+              {(fetchError as Error)?.message === 'No authorization token provided'
+                ? 'Please log in to view the Finance dashboard'
+                : 'Error'}
+            </p>
+            {(fetchError as Error)?.message !== 'No authorization token provided' && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">{(fetchError as Error)?.message}</p>
             )}
-
-            {/* Quick Actions Band - Full Width */}
-            <motion.div 
-              className="col-span-full mb-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-            >
-              <Card className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-purple-200 dark:border-purple-800">
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    <Zap className="h-4 w-4" />
-                    Quick Actions:
-                  </div>
-                  <Link href={`/finance/${tenantId}/Invoices/new`}>
-                    <Button variant="outline" size="sm" className="gap-2 hover:bg-purple-100 dark:hover:bg-purple-900/30">
-                      <FileText className="h-4 w-4" />
-                      Create Invoice
-                    </Button>
-                  </Link>
-                  <Link href={`/finance/${tenantId}/Purchase-Orders/new`}>
-                    <Button variant="outline" size="sm" className="gap-2 hover:bg-blue-100 dark:hover:bg-blue-900/30">
-                      <ShoppingCart className="h-4 w-4" />
-                      Create Purchase Order
-                    </Button>
-                  </Link>
-                  <Link href={`/finance/${tenantId}/Credit-Notes/new`}>
-                    <Button variant="outline" size="sm" className="gap-2 hover:bg-green-100 dark:hover:bg-green-900/30">
-                      <ArrowLeftRight className="h-4 w-4" />
-                      Create Credit Note
-                    </Button>
-                  </Link>
-                  <Link href={`/finance/${tenantId}/Debit-Notes/new`}>
-                    <Button variant="outline" size="sm" className="gap-2 hover:bg-amber-100 dark:hover:bg-amber-900/30">
-                      <ArrowRightLeft className="h-4 w-4" />
-                      Create Debit Note
-                    </Button>
-                  </Link>
-                  <Link href={`/finance/${tenantId}/GST`}>
-                    <Button variant="outline" size="sm" className="gap-2 hover:bg-indigo-100 dark:hover:bg-indigo-900/30">
-                      <Landmark className="h-4 w-4" />
-                      Run GST Report
-                    </Button>
-                  </Link>
-                </div>
-              </Card>
-            </motion.div>
-
-            {/* Band 2: KPI strip – 6 stat cards (Revenue, Net Profit, Invoices, GST Input Credit, Cash Position, Vendors) */}
-            <StatCard label="Revenue" value={formatINRForDisplay(safeStats.revenueThisMonth)} subline={`vs last period ${safeStats.revenueGrowth >= 0 ? '+' : ''}${Math.round(safeStats.revenueGrowth)}%`} trend={safeStats.revenueGrowth >= 0 ? 'up' : 'down'} href={`/finance/${tenantId}/Accounting/Reports/Revenue`} icon={<IndianRupee className="h-4 w-4" />} color="amber" tag={safeStats.revenueGrowth >= 0 ? 'On track' : 'At risk'} delay={0.1} />
-            <StatCard label="Net Profit" value={formatINRForDisplay(Math.abs(safeStats.profit))} subline={`${Math.round(safeStats.profitMargin)}% margin`} trend={isProfit ? 'up' : 'down'} href={`/finance/${tenantId}/Accounting/Reports`} icon={isProfit ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />} color={isProfit ? 'emerald' : 'red'} tag={isProfit ? 'On track' : 'At risk'} delay={0.15} />
-            <StatCard label="Invoices" value={`${safeStats.totalInvoices} (${paidPct}% paid)`} subline={`vs last period +${Math.round(safeStats.invoiceGrowth ?? 0)}%`} trend="up" href={`/finance/${tenantId}/Invoices`} icon={<FileText className="h-4 w-4" />} color="blue" tag="On track" delay={0.2} />
-            <StatCard label="GST Input Credit" value={formatINRForDisplay(safeStats.gstInputCreditAvailable)} subline={`${safeStats.gstReconciliationPct}% matched`} href={`/finance/${tenantId}/GST`} icon={<Landmark className="h-4 w-4" />} color="purple" tag="On track" delay={0.25} />
-            <StatCard label="Cash Position" value={formatINRForDisplay(safeStats.cashPosition)} subline={`${safeStats.cashRunwayDays} days runway`} href={`/finance/${tenantId}/Accounting`} icon={<Wallet className="h-4 w-4" />} color="emerald" tag={safeStats.cashRunwayDays >= 60 ? 'Healthy' : 'Watch'} delay={0.3} />
-            <StatCard label="Vendors" value={`${safeStats.vendorsCount} | ${formatINRForDisplay(safeStats.vendorsDueAmount)} due`} subline="Active" href={`/finance/${tenantId}/Purchase-Orders`} icon={<Building2 className="h-4 w-4" />} color="indigo" tag="On track" delay={0.35} />
-
-            {/* Band 3: Charts and Analytics - Revenue Trend, Invoices by Status */}
-            <motion.div 
-              className="chart-panel" 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              transition={{ duration: 0.3, delay: 0.4 }}
-            >
-              <Card className="border-0 rounded-xl h-full">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold">Revenue Trend</CardTitle>
-                  <CardDescription className="text-sm">Last 12 months</CardDescription>
-                </CardHeader>
-                <CardContent className="h-[260px] overflow-hidden">
-                  {monthlyRevenueData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={260}>
-                      <AreaChart data={monthlyRevenueData}>
-                        <defs>
-                          <linearGradient id="colorFinanceRevenue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={GOLD_ACCENT} stopOpacity={0.8} />
-                            <stop offset="95%" stopColor={GOLD_ACCENT} stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                        <XAxis dataKey="month" className="text-xs" />
-                        <YAxis className="text-xs" tickFormatter={(v) => (v >= 100000 ? `${v / 100000}L` : String(v))} />
-                        <Tooltip formatter={(value: number) => [formatINRForDisplay(value), 'Revenue']} />
-                        <Area type="monotone" dataKey="revenue" stroke={GOLD_ACCENT} fill="url(#colorFinanceRevenue)" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">No revenue data</div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-            <motion.div 
-              className="chart-panel" 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              transition={{ duration: 0.3, delay: 0.45 }}
-            >
-              <Card className="border-0 rounded-xl h-full">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold">Invoices by Status</CardTitle>
-                  <CardDescription className="text-sm">Paid / Unpaid / Overdue / Draft</CardDescription>
-                </CardHeader>
-                <CardContent className="h-[260px] overflow-hidden">
-                  {invoicesByStatusData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={260}>
-                      <PieChart>
-                        <Pie data={invoicesByStatusData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value" label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
-                          {invoicesByStatusData.map((entry, index) => <Cell key={index} fill={entry.fill} />)}
-                        </Pie>
-                        <Tooltip formatter={(value: number) => [value, 'Invoices']} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">No invoice data</div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Band 4: AI Panels - Overdue & Risk, Financial Health, AI Insights */}
-            <motion.div 
-              className="ai-panel" 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              transition={{ duration: 0.3, delay: 0.5 }}
-            >
-              <Card className="border-0 rounded-xl h-full overflow-hidden">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5 text-amber-600" />
-                    Overdue & Risk Alerts
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Link href={`/finance/${tenantId}/Invoices?status=overdue`} className="block p-2 rounded-lg hover:bg-muted text-sm truncate">
-                    Overdue invoices &gt;30 days – {formatINRForDisplay(safeStats.overdueAmount)}
-                  </Link>
-                  <Link href={`/finance/${tenantId}/Credit-Notes`} className="block p-2 rounded-lg hover:bg-muted text-sm">
-                    Credit Notes: <span className="font-semibold">{safeStats.creditNotesCount || 0}</span>
-                  </Link>
-                  <Link href={`/finance/${tenantId}/Debit-Notes`} className="block p-2 rounded-lg hover:bg-muted text-sm">
-                    Debit Notes: <span className="font-semibold">{safeStats.debitNotesCount || 0}</span>
-                  </Link>
-                  <p className="text-xs text-muted-foreground truncate">Vendor credit limit – review in Purchase Orders</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-            <motion.div 
-              className="ai-panel" 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              transition={{ duration: 0.3, delay: 0.55 }}
-            >
-              <Card className="border-0 rounded-xl h-full overflow-hidden">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-semibold">Financial Health Score</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-purple-600">
-                    {safeStats.cashRunwayDays > 0 && safeStats.profit >= 0 ? 75 : 65}/100
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Drivers: growth, margin, collection rate</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-            <motion.div 
-              className="ai-panel" 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              transition={{ duration: 0.3, delay: 0.6 }}
-            >
-              <FinanceAIInsightsPanel tenantId={tenantId} stats={safeStats} />
-            </motion.div>
-
-            {/* Band 5: Widgets - Deep-dive Analytics + CA & Compliance */}
-            {stats && (
-              <motion.div 
-                className="widget-card" 
-                initial={{ opacity: 0, y: 20 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ duration: 0.3, delay: 0.65 }}
-              >
-                <FinancialAlerts tenantId={tenantId} />
-              </motion.div>
+            {(fetchError as Error)?.message === 'No authorization token provided' && (
+              <Link href="/login" className="mt-2 inline-block text-sm font-medium text-slate-600 dark:text-slate-300 hover:underline">
+                Go to login
+              </Link>
             )}
-            {stats && (
-              <motion.div 
-                className="widget-card" 
-                initial={{ opacity: 0, y: 20 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ duration: 0.3, delay: 0.7 }}
-              >
-                <CashFlowManagement tenantId={tenantId} />
-              </motion.div>
-            )}
-            {stats && (
-              <motion.div 
-                className="widget-card" 
-                initial={{ opacity: 0, y: 20 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ duration: 0.3, delay: 0.75 }}
-              >
-                <FinancialForecasting tenantId={tenantId} />
-              </motion.div>
-            )}
-            {stats && (
-              <motion.div 
-                className="widget-card" 
-                initial={{ opacity: 0, y: 20 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ duration: 0.3, delay: 0.8 }}
-              >
-                <FinancialAnalytics tenantId={tenantId} />
-              </motion.div>
-            )}
-            <motion.div 
-              className="widget-card" 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              transition={{ duration: 0.3, delay: 0.85 }}
-            >
-              <Card className="border-0 rounded-xl h-full overflow-hidden">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-semibold">CA & Compliance</CardTitle>
-                  <CardDescription className="text-sm">Invite your CA · AI-assisted view</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-xs text-muted-foreground">AI CA Status: {safeStats.gstReconciliationPct}% GSTR-2B matched</p>
-                  <Link href={`/finance/${tenantId}/ca-assistant`}>
-                    <Button variant="outline" size="sm" className="w-full">Open CA Assistant</Button>
-                  </Link>
-                  <Link href={`/admin/roles`}>
-                    <Button variant="ghost" size="sm" className="w-full text-muted-foreground">Invite your CA (Accountant role)</Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </motion.div>
           </div>
-        </div>
+        )}
+
+        {showSeedBanner && (
+          <div className="rounded-2xl border border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 p-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-medium text-slate-800 dark:text-slate-200 line-clamp-2">Numbers show 0? Click to load sample invoices, orders & POs (1–2 min).</p>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button variant="default" size="sm" onClick={seedDemoData} disabled={seedLoading} className="bg-violet-600 hover:bg-violet-700 text-white">
+                <Database className="mr-2 h-4 w-4" />
+                {seedLoading ? 'Seeding…' : 'Seed demo data'}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setSeedBannerDismissed(true)} className="text-slate-600 dark:text-slate-400">Dismiss</Button>
+            </div>
+          </div>
+        )}
+
+        {showEmptyCta && (
+          <div className="rounded-2xl border border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 p-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-medium text-slate-800 dark:text-slate-200 line-clamp-2">Dashboard empty? Load sample data to see revenue, invoices, and charts.</p>
+            <Button variant="outline" size="sm" onClick={seedDemoData} disabled={seedLoading} className="border-slate-400 dark:border-slate-600 text-slate-700 dark:text-slate-300 flex-shrink-0">
+              <Database className="mr-2 h-4 w-4" />
+              {seedLoading ? 'Loading…' : 'Load sample data'}
+            </Button>
+          </div>
+        )}
+
+        {/* BAND 0 – Top Stat Bar (4 cards) */}
+        <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <Link href={`/finance/${tenantId}/Accounting/Reports/Revenue`} className="h-28 min-w-0">
+            <FinanceCard title="Revenue" accent="yellow" className="h-28">
+              <div className="space-y-0.5 min-w-0">
+                <span className="text-2xl font-semibold text-slate-900 dark:text-slate-50 truncate block">{formatINRForDisplay(safeStats.revenueThisMonth)}</span>
+                <span className={cn('text-xs flex items-center gap-0.5 line-clamp-2', revenueGrowth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                  {revenueGrowth >= 0 ? '▲' : '▼'} vs last period {revenueGrowth >= 0 ? '+' : ''}{Math.round(revenueGrowth)}%
+                </span>
+              </div>
+            </FinanceCard>
+          </Link>
+          <Link href={`/finance/${tenantId}/Invoices`} className="h-28 min-w-0">
+            <FinanceCard title="Invoices" subtitle={`${paidPct}% paid`} accent="blue" className="h-28">
+              <div className="space-y-0.5 min-w-0">
+                <span className="text-2xl font-semibold text-slate-900 dark:text-slate-50 truncate block">{safeStats.totalInvoices}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{paidPct}% paid</span>
+              </div>
+            </FinanceCard>
+          </Link>
+          <Link href={`/finance/${tenantId}/Purchase-Orders`} className="h-28 min-w-0">
+            <FinanceCard title="Purchase Orders" accent="purple" className="h-28">
+              <div className="space-y-0.5 min-w-0">
+                <span className="text-2xl font-semibold text-slate-900 dark:text-slate-50 truncate block">{safeStats.purchaseOrders}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">Active POs</span>
+              </div>
+            </FinanceCard>
+          </Link>
+          <Link href={`/finance/${tenantId}/Accounting/Reports`} className="h-28 min-w-0">
+            <FinanceCard title="Net Profit" accent={isProfit ? 'green' : 'red'} className="h-28">
+              <div className="space-y-0.5 min-w-0">
+                <span className="text-2xl font-semibold text-slate-900 dark:text-slate-50 truncate block">{formatINRForDisplay(Math.abs(safeStats.profit))}</span>
+                <span className={cn('text-xs flex items-center gap-0.5 line-clamp-2', isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                  {isProfit ? '▲' : '▼'} {Math.round(safeStats.profitMargin)}% margin
+                </span>
+              </div>
+            </FinanceCard>
+          </Link>
+        </section>
+
+        {/* BAND 1 – Finance Command Center (full width) */}
+        <section className="overflow-hidden">
+          <FinanceCommandCenter tenantId={tenantId} stats={safeStats} userName={user?.name} />
+        </section>
+
+        {/* Quick Actions row */}
+        <section className="flex flex-wrap gap-3 items-center">
+          <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-shrink-0">
+            <Zap className="h-4 w-4" />
+            Quick Actions
+          </span>
+          <Link href={`/finance/${tenantId}/Invoices/new`}>
+            <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 gap-2">
+              <FileText className="h-4 w-4" />
+              Create Invoice
+            </Button>
+          </Link>
+          <Link href={`/finance/${tenantId}/Purchase-Orders/new`}>
+            <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              Create Purchase Order
+            </Button>
+          </Link>
+          <Link href={`/finance/${tenantId}/Credit-Notes/new`}>
+            <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 gap-2">
+              <ArrowLeftRight className="h-4 w-4" />
+              Create Credit Note
+            </Button>
+          </Link>
+          <Link href={`/finance/${tenantId}/Debit-Notes/new`}>
+            <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 gap-2">
+              <ArrowRightLeft className="h-4 w-4" />
+              Create Debit Note
+            </Button>
+          </Link>
+          <Link href={`/finance/${tenantId}/GST`}>
+            <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 gap-2">
+              <Landmark className="h-4 w-4" />
+              Run GST Report
+            </Button>
+          </Link>
+        </section>
+
+        {/* BAND 2 – KPI Stat Grid (6 cards) */}
+        <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <Link href={`/finance/${tenantId}/Accounting/Reports/Revenue`} className="h-36 min-w-0">
+            <FinanceCard title="Revenue" subtitle={`vs last period: ${revenueGrowth >= 0 ? '+' : ''}${Math.round(revenueGrowth)}%`} statusPill={revenueGrowth >= 0 ? 'On Track' : 'At Risk'} accent="yellow" className="h-36">
+              <span className="text-2xl font-semibold text-slate-900 dark:text-slate-50 truncate block">{formatINRForDisplay(safeStats.revenueThisMonth)}</span>
+            </FinanceCard>
+          </Link>
+          <Link href={`/finance/${tenantId}/Accounting/Reports`} className="h-36 min-w-0">
+            <FinanceCard title="Net Profit" subtitle={`${Math.round(safeStats.profitMargin)}% margin`} statusPill={isProfit ? 'On Track' : 'At Risk'} accent={isProfit ? 'green' : 'red'} className="h-36">
+              <span className="text-2xl font-semibold text-slate-900 dark:text-slate-50 truncate block">{formatINRForDisplay(Math.abs(safeStats.profit))}</span>
+            </FinanceCard>
+          </Link>
+          <Link href={`/finance/${tenantId}/Invoices`} className="h-36 min-w-0">
+            <FinanceCard title="Invoices" subtitle={`${paidPct}% paid`} statusPill="On Track" accent="blue" className="h-36">
+              <span className="text-2xl font-semibold text-slate-900 dark:text-slate-50 truncate block">{safeStats.totalInvoices}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">{paidPct}% paid</span>
+            </FinanceCard>
+          </Link>
+          <Link href={`/finance/${tenantId}/GST`} className="h-36 min-w-0">
+            <FinanceCard title="GST Input Credit" subtitle={`${gstMatchPct}% matched`} accent="purple" className="h-36">
+              <span className="text-2xl font-semibold text-slate-900 dark:text-slate-50 truncate block">{formatINRForDisplay(safeStats.gstInputCreditAvailable)}</span>
+            </FinanceCard>
+          </Link>
+          <Link href={`/finance/${tenantId}/Accounting`} className="h-36 min-w-0">
+            <FinanceCard title="Cash Position" subtitle={`Runway ${safeStats.cashRunwayDays} days`} accent="green" className="h-36">
+              <span className="text-2xl font-semibold text-slate-900 dark:text-slate-50 truncate block">{formatINRForDisplay(safeStats.cashPosition)}</span>
+            </FinanceCard>
+          </Link>
+          <Link href={`/finance/${tenantId}/Purchase-Orders`} className="h-36 min-w-0">
+            <FinanceCard title="Vendors" subtitle="Active vendors with outstanding" accent="purple" className="h-36">
+              <span className="text-2xl font-semibold text-slate-900 dark:text-slate-50 truncate block">{safeStats.vendorsCount} | {formatINRForDisplay(safeStats.vendorsDueAmount)} due</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">View vendor aging</span>
+            </FinanceCard>
+          </Link>
+        </section>
+
+        {/* BAND 3 – Revenue & Invoices Charts */}
+        <section className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg p-5 flex flex-col overflow-hidden min-h-0">
+            <div className="mb-3 flex-shrink-0">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">Revenue Trend</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Last 12 months</p>
+            </div>
+            <div className="flex-1 min-h-[220px] min-w-0">
+              {monthlyRevenueData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={220}>
+                  <AreaChart data={monthlyRevenueData}>
+                    <defs>
+                      <linearGradient id="colorFinanceRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={GOLD_ACCENT} stopOpacity={0.8} />
+                        <stop offset="95%" stopColor={GOLD_ACCENT} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} className="text-slate-500 dark:text-slate-400" />
+                    <YAxis tickFormatter={(v) => (v >= 100000 ? `${v / 100000}L` : String(v))} tick={{ fontSize: 11 }} className="text-slate-500 dark:text-slate-400" />
+                    <Tooltip formatter={(value: number) => [formatINRForDisplay(value), 'Revenue']} />
+                    <Area type="monotone" dataKey="revenue" stroke={GOLD_ACCENT} fill="url(#colorFinanceRevenue)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-slate-500 dark:text-slate-400 text-sm">No revenue data</div>
+              )}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg p-5 flex flex-col overflow-hidden min-h-0">
+            <div className="mb-3 flex-shrink-0">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">Invoices by Status</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Paid / Unpaid / Overdue / Draft</p>
+            </div>
+            <div className="flex-1 min-h-[220px] min-w-0">
+              {invoicesByStatusData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie data={invoicesByStatusData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value" label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                      {invoicesByStatusData.map((entry, index) => <Cell key={index} fill={entry.fill} />)}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => [value, 'Invoices']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-slate-500 dark:text-slate-400 text-sm">No invoice data</div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* BAND 4 – Risk, Health, AI Insights */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg p-5 flex flex-col overflow-hidden min-h-0">
+            <div className="mb-2 flex-shrink-0 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">Overdue & Risk Alerts</h3>
+              </div>
+              <Link href={`/finance/${tenantId}/Invoices?status=overdue`} className="text-xs font-medium text-amber-600 dark:text-amber-400 hover:underline flex-shrink-0">View all</Link>
+            </div>
+            <div className="space-y-2 min-w-0 flex-1">
+              <Link href={`/finance/${tenantId}/Invoices?status=overdue`} className="block p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 text-sm text-slate-700 dark:text-slate-300 truncate">
+                Overdue invoices &gt;30 days – {formatINRForDisplay(safeStats.overdueAmount)}
+                {safeStats.overdueInvoices > 0 && (
+                  <span className="text-slate-500 dark:text-slate-400 ml-1">({safeStats.overdueInvoices} invoice{safeStats.overdueInvoices !== 1 ? 's' : ''})</span>
+                )}
+              </Link>
+              <Link href={`/finance/${tenantId}/Credit-Notes`} className="block p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 text-sm text-slate-700 dark:text-slate-300 truncate">
+                Credit Notes: <span className="font-semibold">{safeStats.creditNotesCount || 0}</span>
+              </Link>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg p-5 flex flex-col overflow-hidden min-h-0">
+            <div className="mb-2 flex-shrink-0">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">Financial Health Score</h3>
+            </div>
+            <div className="flex-1 flex flex-col gap-2 min-w-0">
+              <div className="text-3xl font-semibold text-slate-900 dark:text-slate-50">{healthScore}/100</div>
+              <ul className="text-xs text-slate-500 dark:text-slate-400 space-y-0.5">
+                <li>· Growth</li>
+                <li>· Margins</li>
+                <li>· Collections</li>
+              </ul>
+              <span className={cn('text-xs font-medium', healthScore >= 80 ? 'text-emerald-600 dark:text-emerald-400' : healthScore >= 60 ? 'text-sky-600 dark:text-sky-400' : 'text-amber-600 dark:text-amber-400')}>
+                {healthScore >= 80 ? 'Excellent' : healthScore >= 60 ? 'Good' : 'Needs Attention'}
+              </span>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg overflow-hidden min-h-0 min-w-0 flex flex-col">
+            <FinanceAIInsightsPanel tenantId={tenantId} stats={safeStats} />
+          </div>
+        </section>
+
+        {/* BAND 5 – Bottom row (3 cards) */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 pb-6">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg overflow-hidden min-h-0 min-w-0 flex flex-col max-h-40">
+            <FinancialAlerts tenantId={tenantId} maxVisible={2} />
+          </div>
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg p-5 flex flex-col overflow-hidden min-h-0">
+            <div className="mb-2 flex-shrink-0">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">Key Metrics</h3>
+            </div>
+            <div className="grid grid-cols-3 gap-3 min-w-0 flex-1">
+              <div className="flex flex-col border-r border-slate-200 dark:border-slate-700 pr-3">
+                <span className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Cash</span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-slate-50 truncate">{formatINRForDisplay(safeStats.cashPosition)}</span>
+              </div>
+              <div className="flex flex-col border-r border-slate-200 dark:border-slate-700 pr-3">
+                <span className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Runway</span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">{safeStats.cashRunwayDays} days</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">GST match %</span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">{gstMatchPct}%</span>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg p-5 flex flex-col overflow-hidden min-h-0 h-40">
+            <div className="mb-2 flex-shrink-0">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">CA & Compliance</h3>
+            </div>
+            <div className="space-y-2 min-w-0 flex-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">GSTR‑3B matched {gstMatchPct}%. Next filing: current month.</p>
+              <div className="flex flex-col gap-1.5">
+                <Link href={`/finance/${tenantId}/ca-assistant`}>
+                  <Button variant="outline" size="sm" className="w-full h-8 text-xs border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">Open CA Assistant</Button>
+                </Link>
+                <Link href="/admin/roles">
+                  <Button variant="ghost" size="sm" className="w-full h-8 text-xs text-slate-600 dark:text-slate-400 text-left truncate">Invite your CA (Accountant role)</Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
       <QuickActionsPanel tenantId={tenantId} />
     </div>
-  )
-}
-
-function StatCard({
-  label,
-  value,
-  subline,
-  trend = 'up',
-  href,
-  icon,
-  color,
-  tag,
-  delay = 0.1,
-}: {
-  label: string
-  value: string
-  subline?: string
-  trend?: 'up' | 'down'
-  href: string
-  icon: React.ReactNode
-  color: string
-  tag?: string
-  delay?: number
-}) {
-  const colorStyles: Record<string, { bg: string; iconColor: string }> = {
-    amber: { bg: 'from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30', iconColor: 'text-amber-600 dark:text-amber-400' },
-    emerald: { bg: 'from-emerald-100 to-emerald-200 dark:from-emerald-900/30 dark:to-emerald-800/30', iconColor: 'text-emerald-600 dark:text-emerald-400' },
-    red: { bg: 'from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30', iconColor: 'text-red-600 dark:text-red-400' },
-    blue: { bg: 'from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30', iconColor: 'text-blue-600 dark:text-blue-400' },
-    purple: { bg: 'from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30', iconColor: 'text-purple-600 dark:text-purple-400' },
-    indigo: { bg: 'from-indigo-100 to-indigo-200 dark:from-indigo-900/30 dark:to-indigo-800/30', iconColor: 'text-indigo-600 dark:text-indigo-400' },
-  }
-  const colorStyle = colorStyles[color] || colorStyles.amber
-  const sublineClass = trend === 'down' && color === 'red' ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
-  const TrendIcon = trend === 'down' ? ArrowDownRight : ArrowUpRight
-  
-  // Apply icon color classes directly, matching CRM pattern
-  const iconWithColor = isValidElement(icon) 
-    ? cloneElement(icon as React.ReactElement<any>, { 
-        className: `h-4 w-4 ${colorStyle.iconColor}` 
-      })
-    : icon
-  
-  return (
-    <motion.div
-      className="stat-card"
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.3, delay }}
-      whileHover={{ scale: 1.02, y: -2 }}
-    >
-      <Link href={href} style={{ height: '100%', width: '100%', display: 'flex', textDecoration: 'none', color: 'inherit' }}>
-        <Card className="stat-card-uniform" style={{ height: '100%', width: '100%', padding: 0, margin: 0, borderRadius: 0, border: 0, boxShadow: 'none', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
-          <div className="flex flex-row items-center justify-between mb-1" style={{ minHeight: '32px' }}>
-            <CardTitle className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider" style={{ lineHeight: '1.2', margin: 0 }}>{label}</CardTitle>
-            <div className={`w-8 h-8 bg-gradient-to-br ${colorStyle.bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
-              {iconWithColor}
-            </div>
-          </div>
-          <div className="text-2xl font-bold stat-card-gradient-text dark:text-purple-300 mb-0.5" style={{ lineHeight: '1.2' }}>
-            {value}
-          </div>
-          {subline && (
-            <p className={`text-xs ${sublineClass} flex items-center gap-1 font-medium mb-0.5`} style={{ lineHeight: '1.2', flexShrink: 0 }}>
-              <TrendIcon className="w-3 h-3 flex-shrink-0" />
-              <span className="truncate">{subline}</span>
-            </p>
-          )}
-          {tag && (
-            <div className="flex items-center gap-1" style={{ marginTop: 'auto', flexShrink: 0 }}>
-              <span className={`status-badge ${color === 'red' ? 'critical' : color === 'emerald' && tag.includes('Healthy') ? 'ahead' : 'on-track'}`}>{tag}</span>
-            </div>
-          )}
-        </Card>
-      </Link>
-    </motion.div>
   )
 }

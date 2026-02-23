@@ -72,6 +72,41 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
   const parseAction = (actionText: string, targetRevenue?: number, targetProgress?: number): ActionItem => {
     const lowerText = actionText.toLowerCase()
     
+    // Parse pending / overdue invoices (e.g. "Follow up on 7 pending invoice(s) worth ₹... to ensure timely payment")
+    if ((lowerText.includes('pending invoice') || lowerText.includes('invoice') && (lowerText.includes('follow up') || lowerText.includes('payment') || lowerText.includes('cash flow')))) {
+      const pendingCount = stats?.pendingInvoices ?? stats?.pendingCount ?? 0
+      const overdueCount = stats?.overdueInvoices ?? 0
+      const isOverdue = lowerText.includes('overdue')
+      return {
+        text: actionText,
+        type: 'revenue',
+        navigationUrl: tenantId
+          ? isOverdue
+            ? `/finance/${tenantId}/Invoices?status=overdue`
+            : `/finance/${tenantId}/Invoices?status=sent`
+          : undefined,
+        dataSource: 'Finance / AI Insights - Pending or overdue invoices',
+        supportingData: [
+          { label: 'Pending Invoices', value: pendingCount },
+          { label: 'Overdue Invoices', value: overdueCount },
+        ],
+        calculation: 'Invoices not yet paid (sent) or past due date',
+      }
+    }
+    if (lowerText.includes('overdue') && lowerText.includes('invoice')) {
+      return {
+        text: actionText,
+        type: 'revenue',
+        navigationUrl: tenantId ? `/finance/${tenantId}/Invoices?status=overdue` : undefined,
+        dataSource: 'Finance - Overdue invoices',
+        supportingData: [
+          { label: 'Overdue Invoices', value: stats?.overdueInvoices ?? 0 },
+          { label: 'Overdue Amount', value: formatINRForDisplay(stats?.overdueAmount ?? 0) },
+        ],
+        calculation: 'Invoices past due date',
+      }
+    }
+    
     // Parse overdue tasks
     if (lowerText.includes('overdue task') || lowerText.includes('task')) {
       const taskCount = stats?.overdueTasks || 0

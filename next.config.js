@@ -180,10 +180,10 @@ const nextConfig = {
     ]
   },
   
-  // Note: API routes are synced from module directories to app/api/ for Next.js to serve them
-  // Source of truth: Module directories (crm-module/app/api/, etc.)
+  // Decoupled structure: API routes are synced from module directories to app/api/ for Next.js to serve
+  // Source of truth: Module directories (crm-module/app/api/, hr-module/app/api/, etc.)
   // Runtime location: app/api/ (synced via scripts/sync-module-routes-to-monolith.ts)
-  // Future: Routes will be served from separate module deployments
+  // Future: Routes can be served from separate module deployments
 }
 
 module.exports = nextConfig

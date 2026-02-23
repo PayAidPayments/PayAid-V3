@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { AlertCircle, Bell, DollarSign, TrendingDown, Calendar, FileText } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -22,9 +23,11 @@ interface FinancialAlert {
 
 interface FinancialAlertsProps {
   tenantId: string
+  /** When set, show only this many alerts and a "View all" link (e.g. 2 for dashboard compact card) */
+  maxVisible?: number
 }
 
-export function FinancialAlerts({ tenantId }: FinancialAlertsProps) {
+export function FinancialAlerts({ tenantId, maxVisible }: FinancialAlertsProps) {
   const [alerts, setAlerts] = useState<FinancialAlert[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -101,6 +104,9 @@ export function FinancialAlerts({ tenantId }: FinancialAlertsProps) {
   }
 
   const unreadCount = alerts.filter(a => !a.read).length
+  const displayAlerts = maxVisible != null ? alerts.slice(0, maxVisible) : alerts
+  const hasMore = maxVisible != null && alerts.length > maxVisible
+  const isCompact = maxVisible != null
 
   const markAsRead = (alertId: string) => {
     setAlerts(prev => prev.map(a => 
@@ -112,33 +118,35 @@ export function FinancialAlerts({ tenantId }: FinancialAlertsProps) {
     setAlerts(prev => prev.map(a => ({ ...a, read: true })))
   }
 
-  return (
-    <GlassCard>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Bell className="w-5 h-5" />
+  const content = (
+    <>
+      <CardHeader className="flex-shrink-0 py-4 px-5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 truncate">
+              <Bell className="w-4 h-4 flex-shrink-0" />
               Financial Alerts
               {unreadCount > 0 && (
-                <Badge variant="destructive">{unreadCount} new</Badge>
+                <Badge variant="destructive" className="text-[10px]">{unreadCount} new</Badge>
               )}
             </CardTitle>
-            <CardDescription>Stay informed about important financial events</CardDescription>
+            {maxVisible == null && (
+              <CardDescription className="text-xs">Stay informed about important financial events</CardDescription>
+            )}
           </div>
           {unreadCount > 0 && (
-            <Button variant="outline" size="sm" onClick={markAllAsRead}>
-              Mark All Read
+            <Button variant="outline" size="sm" onClick={markAllAsRead} className="flex-shrink-0 text-xs">
+              Mark all read
             </Button>
           )}
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {alerts.map((alert) => (
+      <CardContent className="overflow-hidden min-h-0 flex flex-col px-5 pb-5 pt-0">
+        <div className="space-y-2 overflow-y-auto min-h-0 flex-1">
+          {displayAlerts.map((alert) => (
             <div
               key={alert.id}
-              className={`p-4 border rounded-lg transition-colors cursor-pointer ${
+              className={`p-4 border rounded-lg transition-colors cursor-pointer overflow-hidden min-w-0 ${
                 !alert.read ? 'bg-white dark:bg-gray-800 border-2' : 'bg-gray-50 dark:bg-gray-900 border'
               } ${getSeverityColor(alert.severity)}`}
               onClick={() => {
@@ -148,36 +156,51 @@ export function FinancialAlerts({ tenantId }: FinancialAlertsProps) {
                 }
               }}
             >
-              <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg ${getSeverityColor(alert.severity)}`}>
+              <div className="flex items-start gap-3 min-w-0">
+                <div className={`p-2 rounded-lg flex-shrink-0 ${getSeverityColor(alert.severity)}`}>
                   {getAlertIcon(alert.type)}
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium">{alert.title}</h4>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="flex items-center gap-2 mb-1 min-w-0">
+                    <h4 className="font-medium truncate">{alert.title}</h4>
                     {!alert.read && (
-                      <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                      <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
                     )}
-                    <Badge variant="outline" className="ml-auto">
+                    <Badge variant="outline" className="ml-auto flex-shrink-0">
                       {alert.severity}
                     </Badge>
                   </div>
-                  <p className="text-sm opacity-90">{alert.message}</p>
-                  <p className="text-xs opacity-75 mt-1">
-                    {alert.timestamp.toLocaleString()}
+                  <p className="text-sm opacity-90 break-words">{alert.message}</p>
+                  <p className="text-xs opacity-75 mt-1 break-words">
+                    {typeof alert.timestamp === 'object' && 'toLocaleString' in alert.timestamp
+                      ? (alert.timestamp as Date).toLocaleString()
+                      : String(alert.timestamp)}
                   </p>
                 </div>
               </div>
             </div>
           ))}
+          {hasMore && (
+            <p className="text-xs text-muted-foreground pt-1">
+              <Link href={`/finance/${tenantId}/Invoices`} className="hover:underline font-medium">View all</Link>
+            </p>
+          )}
           {alerts.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <Bell className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+            <div className="text-center py-4 text-gray-500 text-sm">
+              <Bell className="w-8 h-8 mx-auto mb-1 text-gray-300" />
               <p>No alerts at this time</p>
             </div>
           )}
         </div>
       </CardContent>
+    </>
+  )
+
+  return isCompact ? (
+    <div className="flex flex-col min-h-0 h-full overflow-hidden">{content}</div>
+  ) : (
+    <GlassCard className="overflow-hidden flex flex-col min-h-0 h-full">
+      {content}
     </GlassCard>
   )
 }

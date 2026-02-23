@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
+import { getPayslipMessageForEmployee, parseMonthYearFromText } from '@/lib/hr/whatsapp-payslip-helper'
 
 /**
  * POST /api/hr/whatsapp/bot
- * Handle WhatsApp messages from employees for HR queries
- * Supports: Leave application, payslip requests, attendance queries, leave balance
+ * Handle WhatsApp messages from employees for HR queries (Phase 1.2)
+ * Supports: Leave apply/balance, payslip (latest/last month/specific month), attendance, reimbursement status
  */
 export async function POST(request: NextRequest) {
   try {
@@ -21,22 +22,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Find employee by phone number or employeeId
-    let employee
+    let employee = null
     if (employeeId) {
       employee = await prisma.employee.findFirst({
-        where: {
-          id: employeeId,
-          tenantId,
-        },
+        where: { id: employeeId, tenantId },
       })
-    } else {
-      // Try to find by phone number
+    }
+    if (!employee) {
+      const normalized = phoneNumber.replace(/\D/g, '')
       employee = await prisma.employee.findFirst({
         where: {
           tenantId,
           OR: [
-            { mobileNumber: { contains: phoneNumber.replace(/\D/g, '') } },
+            { mobileNumber: { contains: normalized } },
             { mobileNumber: { contains: phoneNumber } },
           ],
         },
@@ -52,38 +50,105 @@ export async function POST(request: NextRequest) {
 
     const messageLower = message.toLowerCase().trim()
 
-    // Parse intent using simple keyword matching (can be enhanced with NLP)
-    let response = ''
-    let action = null
+    const isPayslipIntent =
+      messageLower.includes('payslip') || messageLower.includes('salary slip') || messageLower.includes('pay slip') ||
+      messageLower.includes('send my payslip') || messageLower.includes('वेतन पर्ची') || messageLower.includes('சம்பள சீட்டு') || messageLower.includes('వేతన పత్రం')
+    const isLeaveIntent =
+      messageLower.includes('leave') || messageLower.includes('holiday') || messageLower.includes('absent') ||
+      messageLower.includes('ছুটি') || messageLower.includes('ரஜா') || messageLower.includes('రజా')
+    const isAttendanceIntent =
+      messageLower.includes('attendance') || messageLower.includes('present') || messageLower.includes('absent') ||
+      messageLower.includes('marked') || messageLower.includes('am i present') || messageLower.includes('check in') ||
+      messageLower.includes('हाजिरी') || messageLower.includes('उपस्थिति') || messageLower.includes('வருகை')
+    const isReimbursementIntent =
+      messageLower.includes('reimbursement') || messageLower.includes('expense') || messageLower.includes('claim') ||
+      messageLower.includes('status of my reimbursement') || messageLower.includes('खर्च') || messageLower.includes('செலவு')
+    const isForm16Intent =
+      messageLower.includes('form 16') || messageLower.includes('form16') || messageLower.includes('tax form') ||
+      messageLower.includes('income tax') || messageLower.includes('फॉर्म 16') || messageLower.includes('படிவம் 16')
 
-    // Leave application intent
-    if (
-      messageLower.includes('leave') ||
-      messageLower.includes('holiday') ||
-      messageLower.includes('absent')
-    ) {
-      // Check if it's a query or application
+    let response = ''
+    let action: Record<string, unknown> | null = null
+
+    // ---------- Form 16 / tax document (Deferred) ----------
+    if (isForm16Intent) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''
+      response = `📄 *Form 16 / Tax document*\n\n` +
+        `Form 16 is available in the HR portal under Documents / Tax Declarations.\n` +
+        (baseUrl ? `Portal: ${baseUrl}\n\n` : '') +
+        `📄 Form 16 / कर दस्तावेज़: HR पोर्टल में Documents के तहत उपलब्ध है।`
+      action = { type: 'FORM_16_REQUEST', employeeId: employee.id }
+    }
+    // ---------- Leave ----------
+    else if (isLeaveIntent) {
+      const datePattern = /(\d{4}[-\/]\d{1,2}[-\/]\d{1,2}|\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/g
+      const dates = message.match(datePattern) || []
+      const leaveTypeMatch = message.match(/\b(CL|SL|PL|EL|ML|HL)\b/i)
+      const leaveTypeCode = leaveTypeMatch ? leaveTypeMatch[1].toUpperCase() : null
+      const hasDatesAndType = dates.length >= 1 && leaveTypeCode
+
+      // If message has dates + leave type, try to create leave request (WhatsApp Leave Bot)
       if (
+        (messageLower.includes('apply') || messageLower.includes('want') || messageLower.includes('need') || messageLower.includes('take')) &&
+        hasDatesAndType
+      ) {
+        const leaveType = await prisma.leaveType.findFirst({
+          where: { tenantId, code: leaveTypeCode },
+        })
+        if (!leaveType) {
+          response = `Leave type ${leaveTypeCode} not found. Available: CL, SL, PL. Reply with type and dates.`
+        } else {
+          const startDate = dates.length >= 2 ? new Date(dates[0]) : new Date(dates[0])
+          const endDate = dates.length >= 2 ? new Date(dates[1]) : new Date(dates[0])
+          const reasonMatch = message.match(/(?:,|reason|for|because)\s*(.+)/i)
+          const reason = reasonMatch ? reasonMatch[1].trim() : 'Applied via WhatsApp'
+
+          const balance = await prisma.leaveBalance.findFirst({
+            where: {
+              employeeId: employee.id,
+              leaveTypeId: leaveType.id,
+              tenantId,
+            },
+          })
+          if (!balance || Number(balance.balance) < 1) {
+            response = `Insufficient ${leaveType.name} balance. Current: ${balance?.balance ?? 0} days. Contact HR.`
+          } else {
+            const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+          const leaveRequest = await prisma.leaveRequest.create({
+              data: {
+                tenantId,
+                employeeId: employee.id,
+                leaveTypeId: leaveType.id,
+                startDate,
+                endDate,
+                days,
+                reason,
+                status: 'PENDING',
+              },
+              include: { leaveType: true },
+            })
+            response =
+              `✅ *Leave applied successfully!*\n\n` +
+              `📅 ${startDate.toLocaleDateString('en-IN')} to ${endDate.toLocaleDateString('en-IN')} (${Number(leaveRequest.days)} day(s))\n` +
+              `📋 ${leaveType.name}\n` +
+              `📝 ${reason}\n` +
+              `⏳ Status: Pending approval. You'll get updates here.`
+            action = { type: 'LEAVE_APPLICATION', employeeId: employee.id, leaveRequestId: leaveRequest.id }
+          }
+        }
+      } else if (
         messageLower.includes('apply') ||
         messageLower.includes('want') ||
         messageLower.includes('need') ||
         messageLower.includes('take')
       ) {
-        // Extract date from message (simple parsing)
-        const dateMatch = message.match(/\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}|\d{4}[-\/]\d{1,2}[-\/]\d{1,2}|tomorrow|today/i)
-        
-        response = `To apply for leave, please provide:\n` +
-          `1. Start date (e.g., "2026-02-25" or "tomorrow")\n` +
-          `2. End date (or "1 day" for single day)\n` +
-          `3. Leave type (CL/SL/PL)\n` +
-          `4. Reason\n\n` +
-          `Example: "Apply leave from 2026-02-25 to 2026-02-26, CL, Personal work"`
-        
-        action = {
-          type: 'LEAVE_APPLICATION',
-          employeeId: employee.id,
-          requiresDetails: true,
-        }
+        response =
+          `To apply for leave, send:\n` +
+          `• Dates (e.g. 2026-02-25 to 2026-02-26)\n` +
+          `• Leave type: CL, SL, or PL\n` +
+          `• Reason (optional)\n\n` +
+          `Example: *Apply leave from 2026-02-25 to 2026-02-26, CL, Personal work*`
+        action = { type: 'LEAVE_APPLICATION', employeeId: employee.id, requiresDetails: true }
       } else {
         // Leave balance query
         const balances = await prisma.leaveBalance.findMany({
@@ -106,100 +171,74 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-    // Payslip request
-    else if (
-      messageLower.includes('payslip') ||
-      messageLower.includes('salary slip') ||
-      messageLower.includes('pay slip')
-    ) {
-      // Extract month/year if mentioned
-      const monthMatch = message.match(/(january|february|march|april|may|june|july|august|september|october|november|december|\d{1,2})/i)
-      
-      response = `I'll help you get your payslip. Please specify the month (e.g., "February 2026" or "last month").\n\n` +
-        `Or reply with "latest" for the most recent payslip.`
-      
-      action = {
-        type: 'PAYSLIP_REQUEST',
-        employeeId: employee.id,
-        requiresMonth: true,
+    // ---------- Payslip (incl. Hindi/Tamil/Telugu) ----------
+    else if (isPayslipIntent) {
+      const parsed = parseMonthYearFromText(message)
+      const { message: payslipMsg } = await getPayslipMessageForEmployee(tenantId, employee.id, {
+        month: parsed.month,
+        year: parsed.year,
+        preferLastMonth: parsed.preferLastMonth,
+      })
+      response = payslipMsg
+      if (!parsed.month && !parsed.preferLastMonth && (messageLower.includes('payslip') || messageLower.includes('salary'))) {
+        response += '\n\n💡 Reply with "latest" or "last month" or "February 2026" for a specific month.'
       }
+      action = { type: 'PAYSLIP_REQUEST', employeeId: employee.id }
     }
-    // Attendance query
-    else if (
-      messageLower.includes('attendance') ||
-      messageLower.includes('present') ||
-      messageLower.includes('absent') ||
-      messageLower.includes('marked')
-    ) {
+    // ---------- Attendance (incl. Hindi/Tamil) ----------
+    else if (isAttendanceIntent) {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
-      
       const attendance = await prisma.attendanceRecord.findFirst({
-        where: {
-          employeeId: employee.id,
-          date: today,
-          tenantId,
-        },
+        where: { employeeId: employee.id, date: today, tenantId },
       })
-
       if (attendance) {
+        const checkIn = attendance.checkInTime ? new Date(attendance.checkInTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'
+        const checkOut = attendance.checkOutTime ? new Date(attendance.checkOutTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Not checked out'
         response = `✅ You are marked *${attendance.status}* today.\n` +
-          `Check-in: ${attendance.checkInTime ? new Date(attendance.checkInTime).toLocaleTimeString('en-IN') : 'N/A'}\n` +
-          `Check-out: ${attendance.checkOutTime ? new Date(attendance.checkOutTime).toLocaleTimeString('en-IN') : 'Not checked out'}`
+          `Check-in: ${checkIn}\nCheck-out: ${checkOut}`
       } else {
-        response = `I couldn't find your attendance record for today. Please contact HR or check in through the app.`
+        response = `No attendance record for today. Please check in through the app or contact HR.`
       }
     }
-    // Reimbursement status
-    else if (
-      messageLower.includes('reimbursement') ||
-      messageLower.includes('expense') ||
-      messageLower.includes('claim')
-    ) {
-      const reimbursements = await prisma.reimbursement.findMany({
-        where: {
-          employeeId: employee.id,
-          tenantId,
-        },
+    // ---------- Reimbursement (incl. Hindi/Tamil) ----------
+    else if (isReimbursementIntent) {
+      const expenses = await prisma.expense.findMany({
+        where: { employeeId: employee.id, tenantId },
         orderBy: { createdAt: 'desc' },
         take: 5,
       })
-
-      if (reimbursements.length === 0) {
-        response = 'You have no recent reimbursement requests.'
+      if (expenses.length === 0) {
+        response = 'You have no recent reimbursement/expense requests.'
       } else {
         response = '💰 *Recent Reimbursements:*\n\n'
-        reimbursements.forEach((reimb) => {
-          const statusEmoji = reimb.status === 'APPROVED' ? '✅' : reimb.status === 'REJECTED' ? '❌' : '⏳'
-          response += `${statusEmoji} ₹${reimb.amount} - ${reimb.status}\n`
-          response += `   Date: ${new Date(reimb.expenseDate).toLocaleDateString('en-IN')}\n\n`
+        expenses.forEach((ex) => {
+          const status = (ex.status || 'pending').toUpperCase()
+          const statusEmoji = status === 'APPROVED' || ex.approvedAt ? '✅' : ex.rejectedAt ? '❌' : '⏳'
+          response += `${statusEmoji} ₹${Number(ex.amount).toLocaleString('en-IN')} - ${status}\n`
+          response += `   ${ex.description || 'Expense'} | ${new Date(ex.date).toLocaleDateString('en-IN')}\n\n`
         })
       }
     }
-    // Help/Commands
+    // ---------- Help / menu ----------
     else if (
       messageLower.includes('help') ||
       messageLower.includes('commands') ||
       messageLower.includes('menu') ||
       messageLower === 'hi' ||
-      messageLower === 'hello'
+      messageLower === 'hello' ||
+      messageLower === 'hey'
     ) {
-      response = `👋 *HR Assistant - Available Commands:*\n\n` +
-        `📅 *Leave:*\n` +
-        `  • "Leave balance" - Check leave balances\n` +
-        `  • "Apply leave" - Apply for leave\n\n` +
-        `💰 *Payslip:*\n` +
-        `  • "Payslip" or "Salary slip" - Get payslip\n\n` +
-        `✅ *Attendance:*\n` +
-        `  • "Attendance" or "Am I present?" - Check today's attendance\n\n` +
-        `💵 *Reimbursement:*\n` +
-        `  • "Reimbursement status" - Check reimbursement status\n\n` +
-        `Type any command above to get started!`
+      response = `👋 *HR Assistant*\n\n` +
+        `📅 *Leave:* "Leave balance" | "Apply leave from 25-02-2026 to 26-02-2026, CL, reason"\n` +
+        `💰 *Payslip:* "Payslip" | "Send my payslip" | "Latest" | "Last month"\n` +
+        `✅ *Attendance:* "Am I present?" | "Attendance"\n` +
+        `💵 *Reimbursement:* "Reimbursement status" | "Status of my reimbursement"\n` +
+        `📄 *Form 16:* "Form 16" | "Tax form"\n\n` +
+        `Type any of the above to get started! (Hindi/Tamil/Telugu supported for key words.)`
     }
-    // Default response
     else {
-      response = `I didn't understand that. Type "help" to see available commands.\n\n` +
-        `Or contact HR for assistance.`
+      response = `I didn't understand that. Type *help* to see commands, or contact HR.`
     }
 
     return NextResponse.json({

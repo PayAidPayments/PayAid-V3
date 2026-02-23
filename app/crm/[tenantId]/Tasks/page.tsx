@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useTasks, useDeleteTask } from '@/lib/hooks/use-api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format, isToday, isPast, isFuture, startOfDay, endOfDay, addDays, startOfWeek, endOfWeek } from 'date-fns'
-import { AlertCircle, CheckCircle2, Clock, Calendar, TrendingUp, AlertTriangle } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Clock, Calendar, TrendingUp, AlertTriangle, Undo2 } from 'lucide-react'
+
+const UNDO_DELETE_SECONDS = 30
 
 // Task Row Component
 function TaskRow({ task, tenantId, onDelete }: { task: any; tenantId: string; onDelete: (id: string) => void }) {
@@ -80,43 +82,91 @@ function TaskRow({ task, tenantId, onDelete }: { task: any; tenantId: string; on
 export default function CRMTasksPage() {
   const params = useParams()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const tenantId = params?.tenantId as string
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [page, setPage] = useState(1)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const { data, isLoading } = useTasks({ page, limit: 1000, status: statusFilter || undefined })
+  const [undoSecondsLeft, setUndoSecondsLeft] = useState<number | null>(null)
+  const undoDeleteId = searchParams?.get('undoDelete') ?? null
   const deleteTask = useDeleteTask()
+  const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Handle URL query parameters
+  const { data, isLoading } = useTasks({ page, limit: 1000, status: statusFilter || undefined })
+
+  // Handle URL query parameters (filter)
   useEffect(() => {
     const filter = searchParams?.get('filter')
     if (filter) {
-      // Map filter to category
-      if (filter === 'overdue') {
-        setSelectedCategory('overdue')
-      } else if (filter === 'today') {
-        setSelectedCategory('today')
-      } else if (filter === 'thisWeek') {
-        setSelectedCategory('thisWeek')
-      } else if (filter === 'completed') {
-        setSelectedCategory('completed')
-      }
+      if (filter === 'overdue') setSelectedCategory('overdue')
+      else if (filter === 'today') setSelectedCategory('today')
+      else if (filter === 'thisWeek') setSelectedCategory('thisWeek')
+      else if (filter === 'completed') setSelectedCategory('completed')
     }
   }, [searchParams])
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this task?')) {
-      try {
-        await deleteTask.mutateAsync(id)
-      } catch (error) {
-        alert(error instanceof Error ? error.message : 'Failed to delete task')
-      }
+  // Pending delete: 30s timer then actually delete; countdown for display
+  useEffect(() => {
+    if (!undoDeleteId) {
+      setUndoSecondsLeft(null)
+      return
     }
+    setUndoSecondsLeft(UNDO_DELETE_SECONDS)
+    const countdown = setInterval(() => {
+      setUndoSecondsLeft((s) => {
+        if (s === null || s <= 1) {
+          if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current)
+          return null
+        }
+        return s - 1
+      })
+    }, 1000)
+    countdownIntervalRef.current = countdown
+    const timeout = setTimeout(() => {
+      deleteTask.mutate(undoDeleteId, {
+        onSettled: () => {
+          const url = new URL(window.location.href)
+          url.searchParams.delete('undoDelete')
+          router.replace(url.pathname + url.search)
+        },
+      })
+    }, UNDO_DELETE_SECONDS * 1000)
+    deleteTimeoutRef.current = timeout
+    return () => {
+      if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current)
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current)
+    }
+  }, [undoDeleteId])
+
+  const handleUndoDelete = () => {
+    if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current)
+    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current)
+    deleteTimeoutRef.current = null
+    countdownIntervalRef.current = null
+    setUndoSecondsLeft(null)
+    const url = new URL(window.location.href)
+    url.searchParams.delete('undoDelete')
+    router.replace(url.pathname + url.search)
   }
 
-  // Categorize tasks
+  const handleDelete = (id: string) => {
+    if (!confirm('Delete this task? You can undo within 30 seconds.')) return
+    const url = new URL(window.location.href)
+    url.searchParams.set('undoDelete', id)
+    router.replace(url.pathname + url.search)
+  }
+
+  // Tasks to display: exclude the one pending delete (optimistic hide)
+  const tasksForDisplay = useMemo(() => {
+    const list = data?.tasks ?? []
+    if (!undoDeleteId) return list
+    return list.filter((t: any) => t.id !== undoDeleteId)
+  }, [data?.tasks, undoDeleteId])
+
+  // Categorize tasks (using filtered list)
   const categorizedTasks = useMemo(() => {
-    if (!data?.tasks) return {
+    if (!tasksForDisplay.length) return {
       overdue: [],
       today: [],
       thisWeek: [],
@@ -136,7 +186,7 @@ export default function CRMTasksPage() {
     const upcoming: any[] = []
     const completed: any[] = []
 
-    data.tasks.forEach((task: any) => {
+    tasksForDisplay.forEach((task: any) => {
       if (task.status === 'completed' || task.status === 'cancelled') {
         completed.push(task)
         return
@@ -170,9 +220,9 @@ export default function CRMTasksPage() {
         return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
       }),
       completed,
-      all: data.tasks
+      all: tasksForDisplay
     }
-  }, [data?.tasks])
+  }, [tasksForDisplay])
 
   const stats = useMemo(() => {
     const all = categorizedTasks.all
@@ -191,10 +241,27 @@ export default function CRMTasksPage() {
     return <div className="flex items-center justify-center h-64">Loading...</div>
   }
 
-  const tasks = data?.tasks || []
+  const tasks = tasksForDisplay
 
   return (
     <div className="w-full bg-gray-50 dark:bg-gray-900 relative" style={{ zIndex: 1 }}>
+      {/* Undo delete banner */}
+      {undoDeleteId && undoSecondsLeft !== null && (
+        <div className="sticky top-0 z-10 mx-6 mt-4 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg shadow-sm flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+            Task deleted. You can undo within <strong>{undoSecondsLeft}</strong> second{undoSecondsLeft !== 1 ? 's' : ''}.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-amber-600 text-amber-700 hover:bg-amber-100 dark:border-amber-500 dark:text-amber-300 dark:hover:bg-amber-900/50"
+            onClick={handleUndoDelete}
+          >
+            <Undo2 className="h-4 w-4 mr-2" />
+            Undo
+          </Button>
+        </div>
+      )}
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>

@@ -84,15 +84,15 @@ export function FinancialForecasting({ tenantId }: FinancialForecastingProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="overflow-y-auto overflow-x-hidden min-h-0 min-w-0 p-4 space-y-6">
       {/* Financial Health Score */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <GlassCard>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Financial Health Score</CardTitle>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-w-0">
+        <GlassCard className="overflow-hidden min-w-0">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-sm font-medium truncate">Financial Health Score</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className={`text-4xl font-bold mb-2 ${getHealthColor(financialHealthScore)}`}>
+          <CardContent className="min-w-0 overflow-hidden">
+            <div className={`text-3xl font-bold mb-2 break-words ${getHealthColor(financialHealthScore)}`}>
               {financialHealthScore}/100
             </div>
             <Badge variant={financialHealthScore >= 80 ? 'default' : 'secondary'}>
@@ -101,36 +101,36 @@ export function FinancialForecasting({ tenantId }: FinancialForecastingProps) {
           </CardContent>
         </GlassCard>
 
-        <GlassCard>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Revenue Growth</CardTitle>
+        <GlassCard className="overflow-hidden min-w-0">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-sm font-medium truncate">Revenue Growth</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-success mb-2">+15%</div>
-            <p className="text-sm text-gray-500">Month over month</p>
+          <CardContent className="min-w-0 overflow-hidden">
+            <div className="text-2xl font-bold text-success mb-2">+15%</div>
+            <p className="text-sm text-gray-500 break-words">Month over month</p>
           </CardContent>
         </GlassCard>
 
-        <GlassCard>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Profit Margin</CardTitle>
+        <GlassCard className="overflow-hidden min-w-0">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-sm font-medium truncate">Profit Margin</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-purple-600 mb-2">22%</div>
-            <p className="text-sm text-gray-500">Current month</p>
+          <CardContent className="min-w-0 overflow-hidden">
+            <div className="text-2xl font-bold text-purple-600 mb-2">22%</div>
+            <p className="text-sm text-gray-500 break-words">Current month</p>
           </CardContent>
         </GlassCard>
       </div>
 
       {/* Revenue Forecast */}
-      <GlassCard>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg font-semibold">Revenue Forecast (12 Months)</CardTitle>
-              <CardDescription>Projected revenue with scenario planning</CardDescription>
+      <GlassCard className="overflow-hidden min-w-0">
+        <CardHeader className="pb-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+            <div className="min-w-0">
+              <CardTitle className="text-lg font-semibold truncate">Revenue Forecast (12 Months)</CardTitle>
+              <CardDescription className="break-words">Projected revenue with scenario planning</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 flex-shrink-0">
               <Button
                 variant={scenario === 'best' ? 'default' : 'outline'}
                 size="sm"
@@ -155,8 +155,9 @@ export function FinancialForecasting({ tenantId }: FinancialForecastingProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+        <CardContent className="min-w-0 overflow-hidden">
+          <div className="w-full min-w-0" style={{ height: 260 }}>
+          <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={revenueForecast}>
               <defs>
                 <linearGradient id="colorForecast" x1="0" y1="0" x2="0" y2="1">
@@ -214,17 +215,19 @@ export function FinancialForecasting({ tenantId }: FinancialForecastingProps) {
               )}
             </AreaChart>
           </ResponsiveContainer>
+          </div>
         </CardContent>
       </GlassCard>
 
       {/* Budget vs Actual */}
-      <GlassCard>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Budget vs Actual</CardTitle>
-          <CardDescription>Variance analysis by category</CardDescription>
+      <GlassCard className="overflow-hidden min-w-0">
+        <CardHeader className="pb-1">
+          <CardTitle className="text-lg font-semibold truncate">Budget vs Actual</CardTitle>
+          <CardDescription className="break-words">Variance analysis by category</CardDescription>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+        <CardContent className="min-w-0 overflow-hidden">
+          <div className="w-full min-w-0" style={{ height: 260 }}>
+          <ResponsiveContainer width="100%" height={260}>
             <BarChart data={budgetData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="category" />
@@ -235,19 +238,19 @@ export function FinancialForecasting({ tenantId }: FinancialForecastingProps) {
               <Bar dataKey="actual" fill="#F5C700" name="Actual" />
             </BarChart>
           </ResponsiveContainer>
-          <div className="mt-4 space-y-2">
+          </div>
+          <div className="mt-4 space-y-2 min-w-0">
             {budgetData.map((item) => (
-              <div key={item.category} className="flex items-center justify-between p-2 border rounded">
-                <div className="flex-1">
-                  <div className="font-medium">{item.category}</div>
-                  <div className="text-sm text-gray-500">
-                    Budget: {formatINRForDisplay(item.budget)} | 
-                    Actual: {formatINRForDisplay(item.actual)}
+              <div key={item.category} className="flex flex-wrap items-center justify-between gap-2 p-2 border rounded min-w-0">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{item.category}</div>
+                  <div className="text-sm text-gray-500 break-words">
+                    Budget: {formatINRForDisplay(item.budget)} | Actual: {formatINRForDisplay(item.actual)}
                   </div>
                 </div>
                 <Badge 
                   variant={item.variance > 0 ? 'destructive' : 'default'}
-                  className={item.variance > 0 ? 'text-red-600' : 'text-green-600'}
+                  className={`flex-shrink-0 ${item.variance > 0 ? 'text-red-600' : 'text-green-600'}`}
                 >
                   {item.variance > 0 ? '+' : ''}{item.variance.toFixed(2)}%
                 </Badge>

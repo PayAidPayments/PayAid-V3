@@ -99,15 +99,15 @@ export function CashFlowManagement({ tenantId }: CashFlowManagementProps) {
   const isLowCash = currentCash < 1000000
 
   return (
-    <div className="space-y-8">
+    <div className="overflow-y-auto overflow-x-hidden min-h-0 min-w-0 p-4 space-y-6">
       {/* Current Cash Position */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <GlassCard>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Current Cash Position</CardTitle>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-w-0">
+        <GlassCard className="overflow-hidden min-w-0">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-sm font-medium truncate">Current Cash Position</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-purple-600 mb-2">
+          <CardContent className="min-w-0 overflow-hidden">
+            <div className="text-2xl font-bold text-purple-600 mb-2 break-words">
               {formatINRForDisplay(currentCash)}
             </div>
             {isLowCash && (
@@ -119,43 +119,46 @@ export function CashFlowManagement({ tenantId }: CashFlowManagementProps) {
           </CardContent>
         </GlassCard>
 
-        <GlassCard>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Working Capital</CardTitle>
+        <GlassCard className="overflow-hidden min-w-0">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-sm font-medium truncate">Working Capital</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-success mb-2">
+          <CardContent className="min-w-0 overflow-hidden">
+            <div className="text-2xl font-bold text-success mb-2 break-words">
               {formatINRForDisplay(workingCapital.workingCapital)}
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 break-words">
               Ratio: {workingCapital.ratio}x
             </div>
           </CardContent>
         </GlassCard>
 
-        <GlassCard>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Cash Conversion Cycle</CardTitle>
+        <GlassCard className="overflow-hidden min-w-0">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-sm font-medium truncate">Cash Conversion Cycle</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-info mb-2">
+          <CardContent className="min-w-0 overflow-hidden">
+            <div className="text-2xl font-bold text-info mb-2">
               {ccc.ccc} days
             </div>
-            <div className="text-xs text-gray-500">
-              DIO: {ccc.dio} | DSO: {ccc.dso} | DPO: {ccc.dpo}
+            <div className="text-xs text-gray-500 flex flex-wrap gap-x-2 gap-y-0.5">
+              <span>DIO: {ccc.dio}</span>
+              <span>DSO: {ccc.dso}</span>
+              <span>DPO: {ccc.dpo}</span>
             </div>
           </CardContent>
         </GlassCard>
       </div>
 
       {/* Cash Flow Chart */}
-      <GlassCard>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Cash Flow Trend</CardTitle>
-          <CardDescription>Monthly cash inflows and outflows</CardDescription>
+      <GlassCard className="overflow-hidden min-w-0">
+        <CardHeader className="pb-1">
+          <CardTitle className="text-lg font-semibold truncate">Cash Flow Trend</CardTitle>
+          <CardDescription className="break-words">Monthly cash inflows and outflows</CardDescription>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+        <CardContent className="min-w-0 overflow-hidden">
+          <div className="w-full min-w-0" style={{ height: 260 }}>
+          <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={cashFlowData}>
               <defs>
                 <linearGradient id="colorInflow" x1="0" y1="0" x2="0" y2="1">
@@ -195,18 +198,19 @@ export function CashFlowManagement({ tenantId }: CashFlowManagementProps) {
               />
             </AreaChart>
           </ResponsiveContainer>
+          </div>
         </CardContent>
       </GlassCard>
 
       {/* Cash Flow Forecast */}
-      <GlassCard>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg font-semibold">Cash Flow Forecast</CardTitle>
-              <CardDescription>Projected cash position for next {forecastPeriod} days</CardDescription>
+      <GlassCard className="overflow-hidden min-w-0">
+        <CardHeader className="pb-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+            <div className="min-w-0">
+              <CardTitle className="text-lg font-semibold truncate">Cash Flow Forecast</CardTitle>
+              <CardDescription className="break-words">Projected cash position for next {forecastPeriod} days</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 flex-shrink-0">
               <Button
                 variant={forecastPeriod === '30' ? 'default' : 'outline'}
                 size="sm"
@@ -231,8 +235,9 @@ export function CashFlowManagement({ tenantId }: CashFlowManagementProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+        <CardContent className="min-w-0 overflow-hidden">
+          <div className="w-full min-w-0" style={{ height: 260 }}>
+          <ResponsiveContainer width="100%" height={260}>
             <LineChart data={forecastData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
@@ -248,38 +253,39 @@ export function CashFlowManagement({ tenantId }: CashFlowManagementProps) {
               />
             </LineChart>
           </ResponsiveContainer>
+          </div>
         </CardContent>
       </GlassCard>
 
       {/* Cash Flow Calendar */}
-      <GlassCard>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Cash Flow Calendar</CardTitle>
-          <CardDescription>Upcoming inflows and outflows</CardDescription>
+      <GlassCard className="overflow-hidden min-w-0">
+        <CardHeader className="pb-1">
+          <CardTitle className="text-lg font-semibold truncate">Cash Flow Calendar</CardTitle>
+          <CardDescription className="break-words">Upcoming inflows and outflows</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <div className="flex items-center gap-3">
-                <TrendingUp className="w-5 h-5 text-green-600" />
-                <div>
-                  <div className="font-medium">Invoice Payment - INV-001</div>
+        <CardContent className="min-w-0 overflow-hidden">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg min-w-0">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <TrendingUp className="w-5 h-5 text-green-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <div className="font-medium break-words">Invoice Payment - INV-001</div>
                   <div className="text-sm text-gray-500">Jan 15, 2026</div>
                 </div>
               </div>
-              <div className="font-semibold text-green-600">
+              <div className="font-semibold text-green-600 flex-shrink-0">
                 +{formatINRForDisplay(50000)}
               </div>
             </div>
-            <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-              <div className="flex items-center gap-3">
-                <TrendingDown className="w-5 h-5 text-red-600" />
-                <div>
-                  <div className="font-medium">Vendor Payment - PO-123</div>
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg min-w-0">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <TrendingDown className="w-5 h-5 text-red-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <div className="font-medium break-words">Vendor Payment - PO-123</div>
                   <div className="text-sm text-gray-500">Jan 18, 2026</div>
                 </div>
               </div>
-              <div className="font-semibold text-red-600">
+              <div className="font-semibold text-red-600 flex-shrink-0">
                 -{formatINRForDisplay(30000)}
               </div>
             </div>

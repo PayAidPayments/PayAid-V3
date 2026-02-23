@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 import { GlassCard } from '@/components/modules/GlassCard'
 import { getModuleConfig } from '@/lib/modules/module-config'
-import { Receipt, FileText, Plus, TrendingUp } from 'lucide-react'
+import { Receipt, FileText, Plus, TrendingUp, BookOpen } from 'lucide-react'
 
 export default function FinanceAccountingPage() {
   const params = useParams()
@@ -37,6 +37,12 @@ export default function FinanceAccountingPage() {
       value: 'Financial Analytics',
       icon: <TrendingUp className="w-5 h-5" />,
       href: `/finance/${tenantId}/Accounting/Reports`,
+    },
+    {
+      label: 'Journal Entries',
+      value: 'Manual entries',
+      icon: <BookOpen className="w-5 h-5" />,
+      href: `/finance/${tenantId}/Accounting/Journal-Entries`,
     },
   ]
 
@@ -91,6 +97,23 @@ export default function FinanceAccountingPage() {
               </div>
             </GlassCard>
           </Link>
+
+          <Link href={`/finance/${tenantId}/Accounting/Journal-Entries`}>
+            <GlassCard className="transition-all hover:shadow-lg cursor-pointer">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <BookOpen className="w-8 h-8 text-green-600 dark:text-green-400" />
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Journal Entries</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Manual double-entry bookkeeping</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Create and manage manual journal entries with debit and credit accounts.
+                </p>
+              </div>
+            </GlassCard>
+          </Link>
         </div>
 
         <GlassCard>
@@ -106,6 +129,12 @@ export default function FinanceAccountingPage() {
               <Link href={`/finance/${tenantId}/Accounting/Reports`}>
                 <Button variant="outline" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
                   View Financial Reports
+                </Button>
+              </Link>
+              <Link href={`/finance/${tenantId}/Accounting/Journal-Entries/new`}>
+                <Button variant="outline" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  New Journal Entry
                 </Button>
               </Link>
             </div>

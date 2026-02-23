@@ -10,6 +10,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
+import { Sparkles } from 'lucide-react'
+
+interface RankedCandidate {
+  candidateId: string
+  fullName: string
+  email: string
+  matchScore: number
+  matchLevel: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR'
+  skillGaps: string[]
+}
 
 interface JobRequisition {
   id: string
@@ -73,6 +83,8 @@ export default function JobRequisitionDetailPage() {
     status: 'DRAFT' as 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'ON_HOLD' | 'CLOSED',
   })
   const [error, setError] = useState('')
+  const [rankedCandidates, setRankedCandidates] = useState<RankedCandidate[] | null>(null)
+  const [isRanking, setIsRanking] = useState(false)
 
   const { data: requisition, isLoading, refetch } = useQuery<JobRequisition>({
     queryKey: ['job-requisition', id],
@@ -150,6 +162,22 @@ export default function JobRequisitionDetailPage() {
       ...formData,
       [e.target.name]: e.target.value,
     })
+  }
+
+  const handleRankCandidates = async () => {
+    if (!id) return
+    setIsRanking(true)
+    setRankedCandidates(null)
+    try {
+      const res = await fetch(`/api/hr/recruitment/jobs/${id}/rank-candidates`, { method: 'POST' })
+      if (!res.ok) throw new Error('Failed to rank candidates')
+      const data = await res.json()
+      setRankedCandidates(data.ranked ?? [])
+    } catch {
+      setError('Could not rank candidates')
+    } finally {
+      setIsRanking(false)
+    }
   }
 
   if (isLoading) {
@@ -382,8 +410,20 @@ export default function JobRequisitionDetailPage() {
           </Card>
 
           <Card className="dark:bg-gray-800 dark:border-gray-700">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="dark:text-gray-100">Candidates ({requisition.candidateJobs.length})</CardTitle>
+              {requisition.candidateJobs.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRankCandidates}
+                  disabled={isRanking}
+                  className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  <Sparkles className="w-4 h-4 mr-1" />
+                  {isRanking ? 'Ranking...' : 'Rank by AI'}
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {requisition.candidateJobs.length === 0 ? (
@@ -418,6 +458,59 @@ export default function JobRequisitionDetailPage() {
               )}
             </CardContent>
           </Card>
+
+          {rankedCandidates && rankedCandidates.length > 0 && (
+            <Card className="dark:bg-gray-800 dark:border-gray-700 border-l-4 border-l-amber-500">
+              <CardHeader>
+                <CardTitle className="dark:text-gray-100 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  AI Ranking
+                </CardTitle>
+                <CardDescription className="dark:text-gray-400">
+                  Candidates ranked by match score (job title, skills, location, completeness)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="dark:border-gray-700">
+                      <TableHead className="dark:text-gray-300 w-12">#</TableHead>
+                      <TableHead className="dark:text-gray-300">Name</TableHead>
+                      <TableHead className="dark:text-gray-300">Score</TableHead>
+                      <TableHead className="dark:text-gray-300">Level</TableHead>
+                      <TableHead className="dark:text-gray-300">Skill gaps</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rankedCandidates.map((r, idx) => (
+                      <TableRow key={r.candidateId} className="dark:border-gray-700 dark:hover:bg-gray-700/50">
+                        <TableCell className="dark:text-gray-200 font-medium">{idx + 1}</TableCell>
+                        <TableCell className="dark:text-gray-200">
+                          <Link href={`/hr/${tenantId}/Hiring/Candidates/${r.candidateId}`} className="text-amber-600 dark:text-amber-400 hover:underline">
+                            {r.fullName}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="dark:text-gray-200">{r.matchScore}%</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            r.matchLevel === 'EXCELLENT' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            r.matchLevel === 'GOOD' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                            r.matchLevel === 'FAIR' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                          }`}>
+                            {r.matchLevel}
+                          </span>
+                        </TableCell>
+                        <TableCell className="dark:text-gray-400 text-sm">
+                          {r.skillGaps.length ? r.skillGaps.join(', ') : '—'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>

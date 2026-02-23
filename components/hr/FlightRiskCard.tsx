@@ -1,10 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, TrendingUp, TrendingDown, Users, DollarSign, Target } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { Button } from '@/components/ui/button'
+import { AlertTriangle, TrendingUp, Bell, Loader2 } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
+import { useAuthStore } from '@/lib/stores/auth'
 
 interface FlightRiskCardProps {
   employeeId: string
@@ -13,16 +16,36 @@ interface FlightRiskCardProps {
 }
 
 export function FlightRiskCard({ employeeId, tenantId, token }: FlightRiskCardProps) {
+  const { token: authToken } = useAuthStore()
+  const queryClient = useQueryClient()
+  const headers = token ?? authToken ? { Authorization: `Bearer ${token ?? authToken}` } : {}
+
   const { data: riskData, isLoading } = useQuery({
     queryKey: ['flight-risk', employeeId],
     queryFn: async () => {
-      const res = await fetch(`/api/hr/employees/${employeeId}/flight-risk`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
+      const res = await fetch(`/api/hr/employees/${employeeId}/flight-risk`, { headers })
       if (!res.ok) throw new Error('Failed to fetch flight risk')
       return res.json()
     },
   })
+
+  const notifyManagerMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/hr/employees/${employeeId}/flight-risk/notify-manager`, {
+        method: 'POST',
+        headers,
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Failed to notify manager')
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['flight-risk', employeeId] })
+    },
+  })
+  const isHighRisk = riskData && (riskData.riskLevel === 'HIGH' || riskData.riskLevel === 'CRITICAL')
 
   if (isLoading) {
     return (
@@ -119,6 +142,31 @@ export function FlightRiskCard({ employeeId, tenantId, token }: FlightRiskCardPr
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {isHighRisk && (
+          <div className="pt-2 border-t dark:border-gray-700">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full dark:border-gray-600 dark:text-gray-300"
+              onClick={() => notifyManagerMutation.mutate()}
+              disabled={notifyManagerMutation.isPending}
+            >
+              {notifyManagerMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Bell className="h-4 w-4 mr-2" />
+              )}
+              Notify manager about this risk
+            </Button>
+            {notifyManagerMutation.isSuccess && (
+              <p className="text-xs text-green-600 dark:text-green-400 mt-2">Manager alert recorded.</p>
+            )}
+            {notifyManagerMutation.isError && (
+              <p className="text-xs text-red-600 dark:text-red-400 mt-2">{(notifyManagerMutation.error as Error).message}</p>
+            )}
           </div>
         )}
       </CardContent>

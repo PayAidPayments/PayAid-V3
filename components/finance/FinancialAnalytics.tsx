@@ -67,19 +67,19 @@ export function FinancialAnalytics({ tenantId }: FinancialAnalyticsProps) {
   ]
 
   return (
-    <div className="space-y-8">
+    <div className="overflow-y-auto overflow-x-hidden min-h-0 min-w-0 p-4 space-y-6">
       {/* Financial KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 min-w-0">
         {kpis.map((kpi, idx) => (
-          <GlassCard key={idx}>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <GlassCard key={idx} className="overflow-hidden min-w-0">
+            <CardHeader className="pb-1">
+              <CardTitle className="text-sm font-medium flex items-center gap-2 min-w-0 truncate">
                 {kpi.icon}
-                {kpi.label}
+                <span className="truncate">{kpi.label}</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600 mb-1">{kpi.value}</div>
+            <CardContent className="min-w-0 overflow-hidden">
+              <div className="text-xl font-bold text-purple-600 mb-1 break-words">{kpi.value}</div>
               <Badge variant={kpi.trend === 'up' ? 'default' : 'secondary'}>
                 {kpi.trend === 'up' ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
                 {kpi.trend === 'up' ? 'Improving' : 'Declining'}
@@ -90,14 +90,14 @@ export function FinancialAnalytics({ tenantId }: FinancialAnalyticsProps) {
       </div>
 
       {/* Revenue Trends */}
-      <GlassCard>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg font-semibold">Revenue Trends</CardTitle>
-              <CardDescription>Revenue, expenses, and profit over time</CardDescription>
+      <GlassCard className="overflow-hidden min-w-0">
+        <CardHeader className="pb-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+            <div className="min-w-0">
+              <CardTitle className="text-lg font-semibold truncate">Revenue Trends</CardTitle>
+              <CardDescription className="break-words">Revenue, expenses, and profit over time</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 flex-shrink-0">
               <button
                 onClick={() => setPeriod('daily')}
                 className={`px-3 py-1 rounded text-sm ${period === 'daily' ? 'bg-purple-600 text-white' : 'bg-gray-100'}`}
@@ -119,8 +119,9 @@ export function FinancialAnalytics({ tenantId }: FinancialAnalyticsProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+        <CardContent className="min-w-0 overflow-hidden">
+          <div className="w-full min-w-0" style={{ height: 260 }}>
+          <ResponsiveContainer width="100%" height={260}>
             <LineChart data={revenueTrends}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="period" />
@@ -132,18 +133,20 @@ export function FinancialAnalytics({ tenantId }: FinancialAnalyticsProps) {
               <Line type="monotone" dataKey="profit" stroke="#059669" strokeWidth={2} name="Profit" />
             </LineChart>
           </ResponsiveContainer>
+          </div>
         </CardContent>
       </GlassCard>
 
       {/* Expense Category Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GlassCard>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Expense Category Breakdown</CardTitle>
-            <CardDescription>Expenses by category this month</CardDescription>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-w-0">
+        <GlassCard className="overflow-hidden min-w-0">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-lg font-semibold truncate">Expense Category Breakdown</CardTitle>
+            <CardDescription className="break-words">Expenses by category this month</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+          <CardContent className="min-w-0 overflow-hidden">
+            <div className="w-full min-w-0" style={{ height: 260 }}>
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
                   data={expenseCategories}
@@ -162,28 +165,29 @@ export function FinancialAnalytics({ tenantId }: FinancialAnalyticsProps) {
                 <Tooltip formatter={(value: any) => formatINRForDisplay(value)} />
               </PieChart>
             </ResponsiveContainer>
+            </div>
           </CardContent>
         </GlassCard>
 
-        <GlassCard>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Customer Payment Behavior</CardTitle>
-            <CardDescription>Payment patterns and collection efficiency</CardDescription>
+        <GlassCard className="overflow-hidden min-w-0">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-lg font-semibold truncate">Customer Payment Behavior</CardTitle>
+            <CardDescription className="break-words">Payment patterns and collection efficiency</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="min-w-0 overflow-hidden">
+            <div className="space-y-3 min-w-0">
               {paymentBehavior.map((customer, idx) => (
-                <div key={idx} className="p-4 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-medium">{customer.customer}</div>
-                    <Badge variant={customer.avgDaysToPay <= 30 ? 'default' : 'secondary'}>
+                <div key={idx} className="p-3 border rounded-lg min-w-0 overflow-hidden">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2 min-w-0">
+                    <div className="font-medium truncate min-w-0">{customer.customer}</div>
+                    <Badge variant={customer.avgDaysToPay <= 30 ? 'default' : 'secondary'} className="flex-shrink-0">
                       {customer.avgDaysToPay} days avg
                     </Badge>
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-gray-500 break-words">
                     {customer.paidOnTime}/{customer.totalInvoices} paid on time
                   </div>
-                  <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                  <div className="mt-2 w-full min-w-0 bg-gray-200 rounded-full h-2 overflow-hidden">
                     <div
                       className="bg-purple-600 h-2 rounded-full"
                       style={{ width: `${(customer.paidOnTime / customer.totalInvoices) * 100}%` }}
@@ -197,13 +201,14 @@ export function FinancialAnalytics({ tenantId }: FinancialAnalyticsProps) {
       </div>
 
       {/* Profit Margin Analysis */}
-      <GlassCard>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Profit Margin Analysis</CardTitle>
-          <CardDescription>Gross and net profit margins over time</CardDescription>
+      <GlassCard className="overflow-hidden min-w-0">
+        <CardHeader className="pb-1">
+          <CardTitle className="text-lg font-semibold truncate">Profit Margin Analysis</CardTitle>
+          <CardDescription className="break-words">Gross and net profit margins over time</CardDescription>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+        <CardContent className="min-w-0 overflow-hidden">
+          <div className="w-full min-w-0" style={{ height: 260 }}>
+          <ResponsiveContainer width="100%" height={260}>
             <BarChart data={revenueTrends}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="period" />
@@ -213,6 +218,7 @@ export function FinancialAnalytics({ tenantId }: FinancialAnalyticsProps) {
               <Bar dataKey="profit" fill="#059669" name="Profit Margin %" />
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </CardContent>
       </GlassCard>
     </div>

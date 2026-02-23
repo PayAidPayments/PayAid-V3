@@ -23,110 +23,75 @@ export async function GET(
       )
     }
 
-    // Get candidate
+    // Get candidate (current schema: fullName, skills[], location, etc.)
     const candidate = await prisma.candidate.findFirst({
-      where: {
-        id: params.id,
-        tenantId,
-      },
-      include: {
-        resume: true,
-      },
+      where: { id: params.id, tenantId },
     })
 
     if (!candidate) {
       return NextResponse.json({ error: 'Candidate not found' }, { status: 404 })
     }
 
-    // Get job requisition
+    // Get job requisition with location
     const jobRequisition = await prisma.jobRequisition.findFirst({
-      where: {
-        id: jobRequisitionId,
-        tenantId,
-      },
+      where: { id: jobRequisitionId, tenantId },
+      include: { location: true },
     })
 
     if (!jobRequisition) {
       return NextResponse.json({ error: 'Job requisition not found' }, { status: 404 })
     }
 
-    // Calculate match score (simplified algorithm - can be enhanced with NLP/AI)
     let matchScore = 0
     const factors: Array<{ factor: string; score: number; maxScore: number }> = []
 
-    // Experience match (30 points)
-    if (candidate.experienceYears && jobRequisition.minExperience) {
-      const experienceMatch = Math.min(
-        (candidate.experienceYears / jobRequisition.minExperience) * 30,
-        30
-      )
-      matchScore += experienceMatch
-      factors.push({
-        factor: 'Experience',
-        score: experienceMatch,
-        maxScore: 30,
-      })
-    }
-
-    // Skills match (40 points) - would need skill extraction from resume
-    // For now, use a placeholder
-    const skillsMatch = 25 // Would be calculated from resume parsing
+    // Skills vs job title match (40 points) - keyword overlap between candidate skills and job title
+    const titleLower = jobRequisition.title.toLowerCase()
+    const candidateSkills = (candidate.skills || []).map((s) => s.toLowerCase())
+    const titleWords = titleLower.split(/\s+/).filter((w) => w.length > 2)
+    const skillsInTitle = candidateSkills.filter((s) =>
+      titleWords.some((w) => s.includes(w) || w.includes(s))
+    )
+    const skillsMatch = titleWords.length > 0
+      ? Math.min(40, (skillsInTitle.length / Math.max(titleWords.length, 1)) * 40)
+      : candidateSkills.length > 0 ? 20 : 10
     matchScore += skillsMatch
-    factors.push({
-      factor: 'Skills Match',
-      score: skillsMatch,
-      maxScore: 40,
-    })
+    factors.push({ factor: 'Skills/Title Match', score: Math.round(skillsMatch), maxScore: 40 })
 
-    // Education match (20 points)
-    if (candidate.education && jobRequisition.requiredEducation) {
-      // Simple matching - would be enhanced with NLP
-      const educationMatch = candidate.education
-        .toLowerCase()
-        .includes(jobRequisition.requiredEducation.toLowerCase())
-        ? 20
-        : 10
-      matchScore += educationMatch
-      factors.push({
-        factor: 'Education',
-        score: educationMatch,
-        maxScore: 20,
-      })
-    }
+    // Experience proxy (30 points) - from notice period / tenure hint or skills count
+    const experienceProxy = candidate.noticePeriodDays != null
+      ? Math.min(30, (candidate.noticePeriodDays / 90) * 30)
+      : candidateSkills.length >= 5 ? 25 : candidateSkills.length >= 2 ? 15 : 10
+    matchScore += experienceProxy
+    factors.push({ factor: 'Experience proxy', score: Math.round(experienceProxy), maxScore: 30 })
 
-    // Location match (10 points)
-    if (candidate.location && jobRequisition.location) {
-      const locationMatch =
-        candidate.location.toLowerCase() === jobRequisition.location.toLowerCase() ? 10 : 5
-      matchScore += locationMatch
-      factors.push({
-        factor: 'Location',
-        score: locationMatch,
-        maxScore: 10,
-      })
-    }
+    // Location match (20 points)
+    const jobLoc = jobRequisition.location?.name ?? jobRequisition.location?.city ?? ''
+    const candLoc = (candidate.location ?? '').toLowerCase()
+    const locMatch = jobLoc && candLoc
+      ? (candLoc.includes(jobLoc.toLowerCase()) || jobLoc.toLowerCase().includes(candLoc)) ? 20 : 10
+      : 0
+    matchScore += locMatch
+    factors.push({ factor: 'Location', score: locMatch, maxScore: 20 })
 
-    // Cap at 100
-    matchScore = Math.min(100, matchScore)
+    // Profile completeness (10 points)
+    const hasCtc = candidate.expectedCtcInr != null || candidate.currentCtcInr != null
+    const completeness = (candidateSkills.length > 0 ? 5 : 0) + (candidate.location ? 3 : 0) + (hasCtc ? 2 : 0)
+    matchScore += completeness
+    factors.push({ factor: 'Profile completeness', score: completeness, maxScore: 10 })
 
-    // Determine match level
+    matchScore = Math.min(100, Math.round(matchScore))
+
     let matchLevel: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR'
-    if (matchScore >= 80) {
-      matchLevel = 'EXCELLENT'
-    } else if (matchScore >= 60) {
-      matchLevel = 'GOOD'
-    } else if (matchScore >= 40) {
-      matchLevel = 'FAIR'
-    } else {
-      matchLevel = 'POOR'
-    }
+    if (matchScore >= 80) matchLevel = 'EXCELLENT'
+    else if (matchScore >= 60) matchLevel = 'GOOD'
+    else if (matchScore >= 40) matchLevel = 'FAIR'
+    else matchLevel = 'POOR'
 
-    // Calculate skill gaps (would come from NLP analysis)
-    const skillGaps = [
-      'Advanced React.js',
-      'TypeScript',
-      'AWS Certification',
-    ] // Placeholder
+    // Skill gaps: words in job title not covered by candidate skills
+    const skillGaps = titleWords.filter(
+      (w) => w.length > 3 && !candidateSkills.some((s) => s.includes(w) || w.includes(s))
+    ).slice(0, 5)
 
     return NextResponse.json({
       candidateId: params.id,

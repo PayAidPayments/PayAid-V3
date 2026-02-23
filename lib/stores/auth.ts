@@ -91,10 +91,10 @@ export const useAuthStore = create<AuthState>()(
         let timeoutId: NodeJS.Timeout | null = null
         try {
           // Add timeout to prevent hanging
-          // Local dev: 15 seconds (server timeout is 10s, add buffer)
-          // Production: 15 seconds (server timeout is 5s, but allow for network delays)
+          // Production: 30s to allow for serverless cold start (Vercel etc.)
+          // Local dev: 20s (server may be slow to wake)
           const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-          const timeoutMs = isDev ? 15000 : 15000 // 15 seconds for both
+          const timeoutMs = isDev ? 20000 : 30000
           const controller = new AbortController()
           
           // Set up timeout
@@ -242,7 +242,7 @@ export const useAuthStore = create<AuthState>()(
           
           // Handle timeout error - don't log, just throw user-friendly message
           if (isTimeoutError) {
-            throw new Error('Login request timed out. The server may be experiencing high load or a cold start. Please try again in a moment.')
+            throw new Error('Login timed out. The server may be starting up (cold start). Please click Sign in again—the next attempt is often faster.')
           }
           
           // Log non-timeout errors for debugging

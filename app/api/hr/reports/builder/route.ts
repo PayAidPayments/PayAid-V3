@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     const dataSource = searchParams.get('dataSource')
 
     const where: any = { tenantId }
-    if (dataSource) where.dataSource = dataSource
+    if (dataSource) where.reportType = dataSource
 
     const [reports, total] = await Promise.all([
       prisma.customReport.findMany({

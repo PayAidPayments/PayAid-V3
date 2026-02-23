@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, FileText, ShoppingCart, IndianRupee, Bell, Landmark, RefreshCw, CreditCard, Calendar, ArrowLeftRight, ArrowRightLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -105,11 +105,12 @@ export function QuickActionsPanel({ tenantId }: QuickActionsPanelProps) {
   const [activeDialog, setActiveDialog] = useState<string | null>(null)
   const router = useRouter()
 
-  // Keyboard shortcuts
-  useState(() => {
+  // Keyboard shortcuts (client-only)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
-        const action = actions.find(a => 
+        const action = actions.find(a =>
           a.shortcut.toLowerCase() === `ctrl+${e.key.toLowerCase()}`
         )
         if (action) {
@@ -123,10 +124,9 @@ export function QuickActionsPanel({ tenantId }: QuickActionsPanelProps) {
         }
       }
     }
-
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  })
+  }, [tenantId, router])
 
   const handleActionClick = (action: typeof actions[0]) => {
     if (action.href) {

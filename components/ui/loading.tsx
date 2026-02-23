@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/lib/stores/auth';
 
@@ -90,9 +91,11 @@ export function Loading({
 // Standardized loading component with oval spinning animation
 export function PageLoading({ message = 'Loading...', fullScreen = true }: { message?: string; fullScreen?: boolean }) {
   const { tenant } = useAuthStore()
-  
-  // Get business name or default to "V3"
-  const displayText = tenant?.name ? tenant.name : 'V3'
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  // Use tenant name only after mount to avoid hydration mismatch (server has no persisted store; client may have tenant from localStorage).
+  const displayText = mounted && tenant?.name ? (tenant.name.length > 12 ? tenant.name.substring(0, 12) + '...' : tenant.name) : 'V3'
   
   const content = (
     <div className="text-center">
@@ -105,7 +108,7 @@ export function PageLoading({ message = 'Loading...', fullScreen = true }: { mes
             <div className="relative w-40 h-24 rounded-full bg-gradient-to-r from-purple-500 to-info flex items-center justify-center">
               {/* Business name or V3 text in white */}
               <span className="text-white font-bold text-base md:text-lg whitespace-nowrap overflow-hidden text-ellipsis max-w-[140px] px-2" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>
-                {displayText.length > 12 ? displayText.substring(0, 12) + '...' : displayText}
+                {displayText}
               </span>
             </div>
           </div>

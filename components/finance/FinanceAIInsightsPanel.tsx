@@ -64,29 +64,29 @@ export function FinanceAIInsightsPanel({ tenantId, stats }: FinanceAIInsightsPan
         icon: 'info',
       })
     }
-    return list.slice(0, 5)
+    return list.slice(0, 3)
   }, [tenantId, stats])
 
   return (
-    <Card className="border-0 rounded-2xl shadow-md bg-gradient-to-br from-purple-50/50 to-amber-50/30 dark:from-gray-800 dark:to-gray-900 border border-purple-100 dark:border-purple-900 overflow-hidden">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold text-purple-900 dark:text-purple-100">
-          <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+    <Card className="border rounded-2xl shadow-lg bg-white dark:bg-slate-900 dark:border-slate-700 border-purple-200 dark:border-purple-900/50 overflow-hidden">
+      <CardHeader className="pb-1 pt-5 px-5">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-purple-900 dark:text-purple-100">
+          <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
           AI Insights & Alerts
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
-        <ul className="space-y-2">
+      <CardContent className="space-y-1 overflow-hidden min-h-0 px-5 pb-5">
+        <ul className="space-y-2 min-w-0">
           {insights.map((item, i) => (
-            <li key={i}>
+            <li key={i} className="min-w-0 overflow-hidden">
               <Link
                 href={item.href}
-                className="flex items-start gap-2 p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors group"
+                className="flex items-start gap-2 p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors group min-w-0"
               >
                 {item.icon === 'alert' && <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />}
                 {item.icon === 'trend' && <TrendingUp className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />}
                 {item.icon === 'info' && <Sparkles className="h-4 w-4 text-purple-600 flex-shrink-0 mt-0.5" />}
-                <span className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 group-hover:text-purple-700 dark:group-hover:text-purple-300">
+                <span className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 break-words min-w-0 group-hover:text-purple-700 dark:group-hover:text-purple-300">
                   {item.text}
                 </span>
               </Link>

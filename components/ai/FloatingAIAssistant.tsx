@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bot, X, Send, Mic, MicOff, Sparkles, Loader2 } from 'lucide-react'
+import { Bot, X, Send, Mic, MicOff, Sparkles, Loader2, Minus } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
 import { cn } from '@/lib/utils/cn'
 
@@ -15,6 +15,24 @@ interface Message {
 
 interface FloatingAIAssistantProps {
   tenantId?: string
+}
+
+function buildErrorMessage(status: number, data: { message?: string; error?: string; hint?: string }): string {
+  const serverMessage = data?.message || data?.error
+  const hint = data?.hint
+  if (status === 401) {
+    return "Please sign in again to use the AI assistant."
+  }
+  if (status === 403) {
+    return serverMessage || "You don't have access to the AI assistant. Check your plan or contact support."
+  }
+  if (status === 400) {
+    return serverMessage || "Your message couldn't be processed. Please rephrase and try again."
+  }
+  if (serverMessage || hint) {
+    return [serverMessage, hint].filter(Boolean).join('\n\n')
+  }
+  return "I couldn't get a response right now. Please try again in a moment."
 }
 
 export function FloatingAIAssistant({ tenantId }: FloatingAIAssistantProps) {
@@ -57,8 +75,20 @@ export function FloatingAIAssistant({ tenantId }: FloatingAIAssistantProps) {
     setInput('')
     setIsLoading(true)
 
+    // No token: show sign-in message without calling the API
+    if (!token) {
+      const signInMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: "Please sign in to use the AI assistant.",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, signInMessage])
+      setIsLoading(false)
+      return
+    }
+
     try {
-      // Call AI chat API
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: {
@@ -71,24 +101,36 @@ export function FloatingAIAssistant({ tenantId }: FloatingAIAssistantProps) {
         }),
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: data.message || 'I apologize, but I couldn\'t process that request. Please try again.',
-          timestamp: new Date(),
-        }
-        setMessages((prev) => [...prev, assistantMessage])
-      } else {
-        throw new Error('Failed to get AI response')
+      let data: { message?: string; error?: string; hint?: string } = {}
+      try {
+        const text = await response.text()
+        if (text) data = JSON.parse(text) as typeof data
+      } catch {
+        // non-JSON or empty body
       }
+
+      const assistantContent =
+        response.ok
+          ? (data.message || "I couldn't process that request. Please try again.")
+          : buildErrorMessage(response.status, data)
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: assistantContent,
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
       console.error('Error sending message:', error)
+      const isNetworkError =
+        error instanceof TypeError && error.message === 'Failed to fetch'
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'I\'m having trouble connecting right now. Please try again in a moment.',
+        content: isNetworkError
+          ? "I couldn't reach the AI service. Check your internet connection and try again. If the problem continues, your administrator may need to enable the AI Studio module or configure API keys."
+          : "Something went wrong. Please try again in a moment. If it keeps happening, your administrator may need to enable the AI Studio module or check the server configuration.",
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMessage])
@@ -138,7 +180,7 @@ export function FloatingAIAssistant({ tenantId }: FloatingAIAssistantProps) {
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Floating Button - left of Quick Actions (right-6) so both are visible */}
       <motion.button
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
@@ -149,7 +191,7 @@ export function FloatingAIAssistant({ tenantId }: FloatingAIAssistantProps) {
           setIsMinimized(false)
         }}
         className={cn(
-          'fixed bottom-6 right-6 z-50',
+          'fixed bottom-6 right-[9.5rem] z-50',
           'w-14 h-14 rounded-full',
           'bg-gradient-to-br from-purple-500 to-purple-600',
           'text-white shadow-lg',
@@ -175,7 +217,7 @@ export function FloatingAIAssistant({ tenantId }: FloatingAIAssistantProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             className={cn(
-              'fixed bottom-6 right-6 z-50',
+              'fixed bottom-6 right-[9.5rem] z-50',
               'w-96 h-[600px]',
               'bg-white rounded-xl shadow-2xl',
               'flex flex-col',
@@ -194,23 +236,20 @@ export function FloatingAIAssistant({ tenantId }: FloatingAIAssistantProps) {
                   <p className="text-xs text-purple-100">Always here to help</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <button
                   onClick={() => setIsMinimized(!isMinimized)}
                   className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
                   aria-label={isMinimized ? 'Expand' : 'Minimize'}
+                  title={isMinimized ? 'Expand' : 'Minimize'}
                 >
-                  <motion.div
-                    animate={{ rotate: isMinimized ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <X className="w-4 h-4" />
-                  </motion.div>
+                  <Minus className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setIsOpen(false)}
                   className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
                   aria-label="Close"
+                  title="Close"
                 >
                   <X className="w-4 h-4" />
                 </button>

@@ -7,10 +7,10 @@ export async function GET(request: NextRequest) {
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'hr')
 
-    // Get user's email for fallback lookup
+    // Get user's email, name, and role for lookup and optional auto-create
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true },
+      select: { email: true, name: true, role: true },
     })
 
     if (!user) {
@@ -27,6 +27,8 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    const isAdminOrOwner = ['admin', 'owner', 'super_admin'].includes(user.role || '')
 
     // 1) Find employee by linked userId (HR can link in Employee edit)
     let employee = await prisma.employee.findFirst({
@@ -61,6 +63,40 @@ export async function GET(request: NextRequest) {
           lastName: true,
         },
       })
+    }
+
+    // 3) For admin/owner: auto-create an Employee record so they can mark attendance
+    if (!employee && isAdminOrOwner) {
+      const nameParts = (user.name || 'Admin User').trim().split(/\s+/)
+      const firstName = nameParts[0] || 'Admin'
+      const lastName = nameParts.slice(1).join(' ') || 'User'
+      const baseCode = 'EMP-ADMIN'
+      let employeeCode = baseCode
+      let attempt = 0
+      while (await prisma.employee.findFirst({ where: { tenantId, employeeCode } })) {
+        attempt += 1
+        employeeCode = `${baseCode}-${attempt}`
+      }
+      const created = await prisma.employee.create({
+        data: {
+          tenantId,
+          userId,
+          employeeCode,
+          firstName,
+          lastName,
+          officialEmail: userEmail,
+          mobileNumber: '0000000000',
+          joiningDate: new Date(),
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+          employeeCode: true,
+          firstName: true,
+          lastName: true,
+        },
+      })
+      employee = created
     }
 
     if (!employee) {
