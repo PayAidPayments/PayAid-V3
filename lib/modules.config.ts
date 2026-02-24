@@ -234,65 +234,76 @@ export const modules: ModuleConfig[] = [
     category: "core",
     color: "#F59E0B"
   },
-  
-  // Productivity Suite
+
+  // Productivity (top-level module: PayAid Sheets, Docs, Slides, Drive, Meet, PDF via tabs)
+  {
+    id: "productivity",
+    name: "Productivity",
+    description: "PayAid Sheets, Docs, Slides, Drive, Meet, and PDF tools in one place",
+    icon: "LayoutGrid",
+    url: "/productivity",
+    status: "active",
+    category: "productivity",
+    color: "#059669"
+  },
+  // Sub-tools are accessed via /productivity/[tenantId]/[tool] tabs (not in main nav)
   {
     id: "spreadsheet",
-    name: "Spreadsheet",
+    name: "PayAid Sheets",
     description: "Excel alternative with formulas, charts, and collaboration",
     icon: "Table",
-    url: "/spreadsheet",
-    status: "active",
+    url: "/productivity",
+    status: "coming-soon",
     category: "productivity",
     color: "#059669"
   },
   {
     id: "docs",
-    name: "Docs",
+    name: "PayAid Docs",
     description: "Word alternative with rich text editing and collaboration",
     icon: "FileEdit",
-    url: "/docs",
-    status: "active",
+    url: "/productivity",
+    status: "coming-soon",
     category: "productivity",
     color: "#0284C7"
   },
   {
     id: "drive",
-    name: "Drive",
-    description: "Cloud storage with 50GB free storage",
+    name: "PayAid Drive",
+    description: "Cloud storage with tenant folders",
     icon: "Folder",
-    url: "/drive",
-    status: "active",
+    url: "/productivity",
+    status: "coming-soon",
     category: "productivity",
     color: "#DC2626"
   },
   {
     id: "slides",
-    name: "Slides",
+    name: "PayAid Slides",
     description: "PowerPoint alternative with themes and collaboration",
     icon: "Presentation",
-    url: "/slides",
-    status: "active",
+    url: "/productivity",
+    status: "coming-soon",
     category: "productivity",
     color: "#EA4335"
   },
   {
     id: "meet",
-    name: "Meet",
+    name: "PayAid Meet",
     description: "Video conferencing with screen sharing and recording",
     icon: "Video",
-    url: "/meet",
-    status: "active",
+    url: "/productivity",
+    status: "coming-soon",
     category: "productivity",
     color: "#4285F4"
   },
   {
     id: "pdf",
-    name: "PDF Tools",
+    name: "PayAid PDF",
     description: "PDF reader, editor, merge, split, compress, and convert",
     icon: "FileText",
-    url: "/pdf",
-    status: "active",
+    url: "/productivity",
+    status: "coming-soon",
     category: "productivity",
     color: "#DC2626"
   },

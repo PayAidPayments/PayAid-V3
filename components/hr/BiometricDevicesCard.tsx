@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
 import { Upload, Plus, Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
 import { format } from 'date-fns'
@@ -148,14 +148,14 @@ export function BiometricDevicesCard({ tenantId }: BiometricDevicesCardProps) {
             </div>
             <div>
               <Label>Type</Label>
-              <Select value={newType} onValueChange={setNewType}>
-                <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="FACIAL_RECOGNITION">Facial</SelectItem>
-                  <SelectItem value="FINGERPRINT">Fingerprint</SelectItem>
-                  <SelectItem value="CARD">Card</SelectItem>
-                </SelectContent>
-              </Select>
+              <CustomSelect value={newType} onValueChange={setNewType} placeholder="Select type">
+                <CustomSelectTrigger className="w-44" />
+                <CustomSelectContent>
+                  <CustomSelectItem value="FACIAL_RECOGNITION">Facial</CustomSelectItem>
+                  <CustomSelectItem value="FINGERPRINT">Fingerprint</CustomSelectItem>
+                  <CustomSelectItem value="CARD">Card</CustomSelectItem>
+                </CustomSelectContent>
+              </CustomSelect>
             </div>
             <div>
               <Label>Location (optional)</Label>

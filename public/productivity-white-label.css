@@ -1,0 +1,34 @@
+/**
+ * PayAid Productivity – White-label overrides for embedded office/drive iframes.
+ * Inject this into the document server (Nextcloud/ONLYOFFICE) wrapper or load
+ * via proxy-injected HTML to hide third-party branding and show PayAid.
+ *
+ * Usage: Document server config or proxy response can inject:
+ *   <link rel="stylesheet" href="/productivity-white-label.css">
+ */
+
+/* Hide third-party logos and brand text */
+[class*="logo"],
+[class*="brand"],
+[data-id*="nextcloud"],
+[data-id*="onlyoffice"],
+a[href*="nextcloud"],
+a[href*="onlyoffice"] {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Optional: PayAid header overlay (if wrapper has .header) */
+.header.payaid-overlay::before {
+  content: "PayAid";
+  font-weight: 700;
+  font-size: 1.125rem;
+  visibility: visible !important;
+  color: inherit;
+}
+
+/* Tool-specific titles (inject via JS or server config) */
+[data-payaid-tool="sheets"] .header::before { content: "PayAid Sheets" !important; }
+[data-payaid-tool="docs"] .header::before { content: "PayAid Docs" !important; }
+[data-payaid-tool="slides"] .header::before { content: "PayAid Slides" !important; }
+[data-payaid-tool="drive"] .header::before { content: "PayAid Drive" !important; }

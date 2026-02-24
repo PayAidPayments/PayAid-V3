@@ -48,7 +48,7 @@ export default function DashboardLayout({
   // Check if this is a module route with its own layout (e.g., /finance/[tenantId]/Home)
   // These routes have their own ModuleTopBar in their layout files, so we shouldn't render one here
   const isModuleRouteWithLayout = pathname && (
-    pathname.match(/^\/(crm|finance|sales|marketing|hr|projects|inventory|analytics|communication|education|healthcare|manufacturing|retail|ai-studio|docs|drive|meet|pdf|slides|spreadsheet|ai-chat|ai-cofounder|ai-insights|knowledge-rag|logo-generator|website-builder|appointments|compliance|contracts|help-center|lms|industry-intelligence|workflow-automation)\/[^/]+\//)
+    pathname.match(/^\/(crm|finance|sales|marketing|hr|projects|inventory|analytics|communication|education|healthcare|manufacturing|retail|ai-studio|docs|drive|meet|pdf|slides|spreadsheet|productivity|ai-chat|ai-cofounder|ai-insights|knowledge-rag|logo-generator|website-builder|appointments|compliance|contracts|help-center|lms|industry-intelligence|workflow-automation)\/[^/]+\//)
   )
   
   // Get module-specific top bar (only for dashboard routes, not module routes with their own layouts)

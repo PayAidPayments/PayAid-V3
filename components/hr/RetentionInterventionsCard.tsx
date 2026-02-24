@@ -10,12 +10,11 @@ import { format } from 'date-fns'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { useAuthStore } from '@/lib/stores/auth'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  CustomSelect,
+  CustomSelectContent,
+  CustomSelectItem,
+  CustomSelectTrigger,
+} from '@/components/ui/custom-select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -146,29 +145,25 @@ export function RetentionInterventionsCard({ employeeId, tenantId }: RetentionIn
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-sm">Type</Label>
-                <Select value={formType} onValueChange={setFormType}>
-                  <SelectTrigger className="dark:bg-gray-800 dark:border-gray-600">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
+                <CustomSelect value={formType} onValueChange={setFormType} placeholder="Type">
+                  <CustomSelectTrigger className="dark:bg-gray-800 dark:border-gray-600" />
+                  <CustomSelectContent>
                     {TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>{t.replace(/_/g, ' ')}</SelectItem>
+                      <CustomSelectItem key={t} value={t}>{t.replace(/_/g, ' ')}</CustomSelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </CustomSelectContent>
+                </CustomSelect>
               </div>
               <div>
                 <Label className="text-sm">Status</Label>
-                <Select value={formStatus} onValueChange={setFormStatus}>
-                  <SelectTrigger className="dark:bg-gray-800 dark:border-gray-600">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
+                <CustomSelect value={formStatus} onValueChange={setFormStatus} placeholder="Status">
+                  <CustomSelectTrigger className="dark:bg-gray-800 dark:border-gray-600" />
+                  <CustomSelectContent>
                     {STATUSES.map((s) => (
-                      <SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>
+                      <CustomSelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</CustomSelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </CustomSelectContent>
+                </CustomSelect>
               </div>
             </div>
             <div>

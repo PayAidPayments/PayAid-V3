@@ -1,17 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import dynamic from "next/dynamic";
 import "./globals.css";
-
-// Load providers in a separate chunk to avoid layout chunk timeout (ChunkLoadError)
-const Providers = dynamic(() => import("./providers").then((m) => ({ default: m.Providers })), {
-  ssr: true,
-  loading: () => (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-900">
-      <div className="animate-pulse text-sm">Loading...</div>
-    </div>
-  ),
-});
+import { Providers } from "./providers";
 
 const inter = Inter({ subsets: ["latin"] });
 

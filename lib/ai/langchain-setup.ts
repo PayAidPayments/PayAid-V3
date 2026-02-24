@@ -287,41 +287,12 @@ Always format currency as ₹ with commas (e.g., ₹1,00,000).`],
     new MessagesPlaceholder('agent_scratchpad'),
   ])
 
-  // Dynamically import agents at runtime - this avoids build-time errors
-  // The import is wrapped in a function to ensure it's only evaluated when called
-  const getAgents = async () => {
-    try {
-      // Try importing from langchain package (optional - may not be installed)
-      // @ts-expect-error - langchain/agents may not have types or may not be installed
-      return await import('langchain/agents')
-    } catch (error) {
-      // If that fails, try alternative import paths or throw a helpful error
-      throw new Error(
-        'LangChain agents module not available. ' +
-        'This feature requires the langchain package with agents support. ' +
-        'Please install: npm install langchain'
-      )
-    }
-  }
-  
-  const langchainAgents = await getAgents()
-  const AgentExecutor = langchainAgents.AgentExecutor
-  const createOpenAIFunctionsAgent = langchainAgents.createOpenAIFunctionsAgent
-  
-  const agent = await createOpenAIFunctionsAgent({
-    llm,
-    tools,
-    prompt,
-  })
-
-  const agentExecutor = new AgentExecutor({
-    agent,
-    tools,
-    verbose: process.env.NODE_ENV === 'development',
-    maxIterations: 5,
-  })
-
-  return agentExecutor
+  // LangChain AgentExecutor: 'langchain/agents' is not exported in current langchain package,
+  // so we throw at runtime. Use useLangChain: false in cofounder or add @langchain/langgraph.
+  throw new Error(
+    'LangChain agent executor is not available in this build. ' +
+    'Use useLangChain: false in the cofounder request, or install/configure LangChain agents (e.g. @langchain/langgraph).'
+  )
 }
 
 /**
