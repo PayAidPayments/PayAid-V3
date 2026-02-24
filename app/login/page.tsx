@@ -254,7 +254,12 @@ export default function LoginPage() {
         }
       }
     } catch (err) {
-      console.error('[LOGIN PAGE] Login error:', err)
+      const isTimeout = err instanceof Error && (err.message.includes('timeout') || err.message.includes('timed out'))
+      if (isTimeout) {
+        console.warn('[LOGIN PAGE] Login timed out (cold start or slow server). User can retry.')
+      } else {
+        console.error('[LOGIN PAGE] Login error:', err)
+      }
       let errorMessage = 'Login failed'
       
       if (err instanceof Error) {
@@ -262,7 +267,7 @@ export default function LoginPage() {
         
         // Provide more helpful error messages
         if (err.message.includes('timeout') || err.message.includes('timed out')) {
-          errorMessage = 'Login request timed out. The server may be experiencing high load. Please try again in a moment.'
+          errorMessage = 'Login timed out. The server may be starting up (cold start). Click Sign in again—the next attempt is often faster.'
         } else if (err.message.includes('Database') || err.message.includes('database')) {
           errorMessage = 'Database connection error. Please try again later or contact support.'
         } else if (err.message.includes('Network') || err.message.includes('fetch')) {

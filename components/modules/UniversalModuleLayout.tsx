@@ -21,7 +21,7 @@ interface UniversalModuleLayoutProps {
 
 /**
  * Universal Module Layout: uses AppShell for unified top nav, optional sidebar, main content, and PageAIAssistant.
- * Same structure across all modules (slate theme, max-w-7xl, 5-band dashboard pattern in pages).
+ * Same structure across all modules (slate theme, full-width layout, 5-band dashboard pattern in pages).
  */
 export function UniversalModuleLayout({
   moduleId,

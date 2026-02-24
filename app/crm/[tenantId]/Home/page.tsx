@@ -27,7 +27,8 @@ import {
   CheckCircle,
   Activity,
   Zap,
-  Sparkles
+  Sparkles,
+  Bot
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { formatINR, formatINRCompact, formatINRForDisplay } from '@/lib/utils/formatINR'
@@ -35,38 +36,9 @@ import { DashboardLoading } from '@/components/ui/loading'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 // ModuleTopBar is now in layout.tsx
-// Lazy load AI components for better performance
-import dynamic from 'next/dynamic'
-import { QuickActionsPanel } from '@/components/crm/QuickActionsPanel'
-import { CommandPalette } from '@/components/crm/CommandPalette'
 import { AIScoreBadge, calculateDealScore, calculateContactScore } from '@/components/ai/AIScoreBadge'
 
-// Lazy load AI components - only load when needed (client-side only)
-// Using explicit dynamic imports with ssr: false to prevent any server-side bundling
-const FloatingAIAssistant = dynamic(
-  () => import('@/components/ai/FloatingAIAssistant').then(mod => ({ default: mod.FloatingAIAssistant })),
-  { ssr: false, loading: () => null }
-)
-const AICommandCenter = dynamic(
-  () => import('@/components/ai/AICommandCenter').then(mod => ({ default: mod.AICommandCenter })),
-  { ssr: false, loading: () => null }
-)
-const AIInsightsAndAlerts = dynamic(
-  () => import('@/components/ai/AIInsightsAndAlerts').then(mod => ({ default: mod.AIInsightsAndAlerts })),
-  { ssr: false, loading: () => null }
-)
-const AIQuestionInput = dynamic(
-  () => import('@/components/ai/AIQuestionInput').then(mod => ({ default: mod.AIQuestionInput })),
-  { ssr: false, loading: () => null }
-)
-const PredictiveAnalytics = dynamic(
-  () => import('@/components/ai/PredictiveAnalytics').then(mod => ({ default: mod.PredictiveAnalytics })),
-  { ssr: false, loading: () => null }
-)
-const HealthMonitoring = dynamic(
-  () => import('@/components/ai/HealthMonitoring').then(mod => ({ default: mod.HealthMonitoring })),
-  { ssr: false, loading: () => null }
-)
+// Single Page AI is provided by AppShell (PageAIAssistant). No duplicate AI components.
 import { 
   LineChart, 
   Line, 
@@ -163,7 +135,6 @@ export default function CRMDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   // Profile menu and news handled by ModuleTopBar in layout
   const [isDark, setIsDark] = useState(false)
   
@@ -449,23 +420,6 @@ export default function CRMDashboardPage() {
       setCurrentView(user?.role === 'owner' || user?.role === 'admin' || user?.role === 'manager' ? 'manager' : 'tasks')
     }
   }, [viewParam, user?.role])
-
-  // Keyboard shortcut for Command Palette (Ctrl+K or Cmd+K)
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-        event.preventDefault()
-        setCommandPaletteOpen(true)
-      }
-      // Close with Escape
-      if (event.key === 'Escape' && commandPaletteOpen) {
-        setCommandPaletteOpen(false)
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [commandPaletteOpen])
 
   // Main data loading effect - only for stats and view-specific data
   useEffect(() => {
@@ -1600,17 +1554,28 @@ export default function CRMDashboardPage() {
         <div className="dashboard-container">
           <div className="dashboard-grid">
           
-          {/* Band 1: AI Command Center - Full Width (Row 1) */}
-          {stats && safeStats && (
-            <motion.div 
-              className="ai-command-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
+          {/* Band 1: Single CTA to open Page AI (no duplicate AI) */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
+            style={{ gridColumn: '1 / -1' }}
+          >
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-page-ai'))}
+              className="flex items-center gap-3 w-full text-left rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
             >
-              <AICommandCenter tenantId={tenantId} stats={safeStats} timePeriod={timePeriod} userName={user?.name || undefined} />
-            </motion.div>
-          )}
+              <div className="w-10 h-10 rounded-full bg-slate-800 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+                <Bot className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Ask PayAid AI about this dashboard</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Contacts, deals, pipeline, and more</p>
+              </div>
+            </button>
+          </motion.div>
 
           {/* Band 2: Row 1 - Stat Cards (6 identical cards, each spans 2 columns) */}
           {/* Stat Card 1: Deals Created */}
@@ -2058,59 +2023,10 @@ export default function CRMDashboardPage() {
             </>
           )}
 
-          {/* Band 3: Row 3 - AI Panels (3 panels, each spans 4 columns) */}
-          {stats && safeStats && (
-            <>
-            {/* AI Panel 1: AI Insights & Alerts */}
-            <motion.div 
-              className="ai-panel"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.55 }}
-              whileHover={{ scale: 1.01, y: -2 }}
-            >
-              <AIInsightsAndAlerts tenantId={tenantId} stats={safeStats} />
-            </motion.div>
-            
-            {/* AI Panel 2: Predictive Analytics */}
-            <motion.div 
-              className="ai-panel"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.6 }}
-              whileHover={{ scale: 1.01, y: -2 }}
-            >
-              <PredictiveAnalytics tenantId={tenantId} stats={safeStats} />
-            </motion.div>
-            
-            {/* AI Panel 3: Health Monitoring */}
-            <motion.div 
-              className="ai-panel"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.65 }}
-              whileHover={{ scale: 1.01, y: -2 }}
-            >
-              <HealthMonitoring tenantId={tenantId} stats={safeStats} />
-            </motion.div>
-            </>
-          )}
-
           {/* Band 3: Row 4 - Widgets (3 cards, each spans 4 columns) */}
           {stats && safeStats && (
             <>
-            {/* Widget 1: Ask AI About Your Funnel */}
-            <motion.div 
-              className="widget-card"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.7 }}
-              whileHover={{ y: -2 }}
-            >
-              <AIQuestionInput tenantId={tenantId} />
-            </motion.div>
-            
-            {/* Widget 2: Customer Issues */}
+            {/* Widget 1: Customer Issues */}
             <motion.div 
               className="widget-card"
               initial={{ opacity: 0, y: 10 }}
@@ -2266,18 +2182,6 @@ export default function CRMDashboardPage() {
         )}
       </div>
 
-      {/* Floating AI Assistant - Lazy loaded */}
-      {tenantId && <FloatingAIAssistant tenantId={tenantId} />}
-      
-      {/* Quick Actions Panel */}
-      <QuickActionsPanel tenantId={tenantId} />
-      
-      {/* Command Palette */}
-      <CommandPalette 
-        tenantId={tenantId} 
-        isOpen={commandPaletteOpen} 
-        onClose={() => setCommandPaletteOpen(false)} 
-      />
     </div>
   )
 }

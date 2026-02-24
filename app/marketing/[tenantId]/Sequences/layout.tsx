@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { ModuleTopBar } from '@/components/modules/ModuleTopBar'
+import { AppShell } from '@/components/modules/AppShell'
 
 export default function MarketingSequencesLayout({
   children,
@@ -23,17 +23,8 @@ export default function MarketingSequencesLayout({
   ]
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <ModuleTopBar
-          moduleId="marketing"
-          moduleName="Marketing"
-          items={topBarItems}
-        />
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
-      </div>
-    </div>
+    <AppShell moduleId="marketing" moduleName="Marketing" topBarItems={topBarItems}>
+      {children}
+    </AppShell>
   )
 }

@@ -91,10 +91,10 @@ export const useAuthStore = create<AuthState>()(
         let timeoutId: NodeJS.Timeout | null = null
         try {
           // Add timeout to prevent hanging
-          // Production: 30s to allow for serverless cold start (Vercel etc.)
-          // Local dev: 20s (server may be slow to wake)
+          // Production: 45s to allow for serverless cold start (Vercel etc.)
+          // Local dev: 30s (server may be slow to wake)
           const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-          const timeoutMs = isDev ? 20000 : 30000
+          const timeoutMs = isDev ? 30000 : 45000
           const controller = new AbortController()
           
           // Set up timeout

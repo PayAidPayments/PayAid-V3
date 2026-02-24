@@ -4,6 +4,7 @@ import { AppShell } from '@/components/modules/AppShell'
 import { useTenantId } from '@/lib/utils/get-tenant-id'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { getCRMTopBarItems } from '@/lib/crm/crm-top-bar-items'
 
 export default function CRMChurnLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -15,14 +16,7 @@ export default function CRMChurnLayout({ children }: { children: React.ReactNode
 
   if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) return null
 
-  const topBarItems = [
-    { name: 'Home', href: `/crm/${tenantId}/Home` },
-    { name: 'Prospects', href: `/crm/${tenantId}/Leads` },
-    { name: 'Agents', href: `/crm/${tenantId}/Agents` },
-    { name: 'Churn', href: `/crm/${tenantId}/Churn` },
-    { name: 'Metrics', href: `/crm/${tenantId}/Metrics` },
-    { name: 'Reports', href: `/crm/${tenantId}/Reports` },
-  ]
+  const topBarItems = getCRMTopBarItems(tenantId)
 
   return (
     <AppShell moduleId="crm" moduleName="CRM" topBarItems={topBarItems}>

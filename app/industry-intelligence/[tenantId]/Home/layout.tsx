@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { ModuleTopBar } from '@/components/modules/ModuleTopBar'
+import { AppShell } from '@/components/modules/AppShell'
 
 export default function IndustryIntelligenceHomeLayout({
   children,
@@ -19,17 +19,8 @@ export default function IndustryIntelligenceHomeLayout({
   ]
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <ModuleTopBar
-          moduleId="industry-intelligence"
-          moduleName="Industry Intelligence"
-          items={topBarItems}
-        />
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
-      </div>
-    </div>
+    <AppShell moduleId="industry-intelligence" moduleName="Industry Intelligence" topBarItems={topBarItems}>
+      {children}
+    </AppShell>
   )
 }

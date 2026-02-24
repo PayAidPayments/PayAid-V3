@@ -37,13 +37,13 @@ export function AppShell({
         moduleName={moduleName}
         items={topBarItems}
       />
-      <main className="max-w-7xl mx-auto w-full px-4 py-5 flex gap-5">
+      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-6 flex gap-4">
         {sidebar != null && (
           <aside className="w-[260px] flex-shrink-0 hidden lg:block">
             {sidebar}
           </aside>
         )}
-        <section className="flex-1 space-y-5 min-w-0">
+        <section className="flex-1 space-y-4 min-w-0">
           {children}
         </section>
         <PageAIAssistant />

@@ -15,6 +15,8 @@ const chatSchema = z.object({
     module: z.string().optional(),
     tenantId: z.string().optional(),
     page: z.string().optional(),
+    businessName: z.string().optional(),
+    entities: z.array(z.string()).optional(),
   }).optional(),
 })
 
@@ -343,19 +345,33 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function buildSystemPrompt(tenantId: string, context?: { module?: string; tenantId?: string; page?: string }): string {
+function buildSystemPrompt(
+  tenantId: string,
+  context?: { module?: string; tenantId?: string; page?: string; businessName?: string; entities?: string[] }
+): string {
   const moduleLabel = context?.module || 'general'
   const pageLabel = context?.page || 'Home'
+  const businessName = context?.businessName || 'this company'
+  const entitiesList = context?.entities?.length ? context.entities.join(', ') : 'data on this page'
   const pageScopedIntro =
     context?.module && context?.page
       ? `
-You are the PayAid V3 AI assistant for the ${moduleLabel} → ${pageLabel} page.
-You ONLY answer questions about this company's data in this module and on this page.
-- Use the tenant_id = ${tenantId}.
-- Use the current page filters (if any) when summarizing.
-- REFUSE any personal, generic, or non-business questions (politics, health, personal life, etc.) with: "I can only help with your company data on this page."
+You are PayAid AI for ${businessName}'s ${moduleLabel} → ${pageLabel}.
+You ONLY help with this company's data on this page.
+
+✅ DO:
+- Answer about ${entitiesList} using current filters.
+- Use exact numbers from page data (don't invent).
+- Suggest actions: e.g. "Click 'New Contact' to add", "Filter by overdue".
+
+❌ DON'T:
+- Answer personal questions, politics, news, health.
+- Reference external companies or market data.
+- Talk about other modules.
+
+- Use tenant_id = ${tenantId} for data.
+- REFUSE non-business questions with: "I can only help with your company data on this page."
 - When referencing numbers, ALWAYS match the underlying API responses for this page.
-- If the user asks "why", provide interpretation using the same data, not external sources.
 `
       : ''
 

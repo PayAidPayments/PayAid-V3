@@ -113,11 +113,9 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           </div>
         </div>
         <div className="flex items-center space-x-2 sm:space-x-4">
-          {/* Module Switcher */}
-          <ModuleSwitcher />
           {/* Theme Toggle */}
           <ThemeToggle />
-          {/* News Button */}
+          {/* News Button - Industry Intelligence */}
           <button
             onClick={handleNewsClick}
             className="relative p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors duration-150"
@@ -131,6 +129,8 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
               </span>
             )}
           </button>
+          {/* Module Switcher - between Industry Intelligence and profile */}
+          <ModuleSwitcher />
           <NotificationBell />
           
           {/* Profile Dropdown */}
