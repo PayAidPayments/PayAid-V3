@@ -19,6 +19,7 @@ export default function CRMMetricsLayout({ children }: { children: React.ReactNo
     { name: 'Home', href: `/crm/${tenantId}/Home` },
     { name: 'Prospects', href: `/crm/${tenantId}/Leads` },
     { name: 'Agents', href: `/crm/${tenantId}/Agents` },
+    { name: 'Churn', href: `/crm/${tenantId}/Churn` },
     { name: 'Metrics', href: `/crm/${tenantId}/Metrics` },
     { name: 'Reports', href: `/crm/${tenantId}/Reports` },
   ]

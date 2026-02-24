@@ -31,6 +31,9 @@ export default function CRMDealsLayout({
     const topBarItems = [
       { name: 'Home', href: `/crm/${tenantId}/Home` },
       { name: 'Prospects', href: `/crm/${tenantId}/Leads` },
+      { name: 'Agents', href: `/crm/${tenantId}/Agents` },
+      { name: 'Churn', href: `/crm/${tenantId}/Churn` },
+      { name: 'Metrics', href: `/crm/${tenantId}/Metrics` },
       { name: 'Contacts', href: `/crm/${tenantId}/Contacts` },
       { name: 'Customers', href: `/crm/${tenantId}/AllPeople?stage=customer` },
       { name: 'Deals', href: `/crm/${tenantId}/Deals` },
