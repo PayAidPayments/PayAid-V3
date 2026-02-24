@@ -335,7 +335,7 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
           ))}
         </div>
       </div>
-    </nav>
+    </header>
   )
 }
 
