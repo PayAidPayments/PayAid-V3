@@ -58,7 +58,8 @@ import {
   PackageSearch,
   ShieldCheck,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  LayoutGrid
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
 import { modules as moduleConfigs, ModuleConfig } from '@/lib/modules.config'
@@ -125,6 +126,7 @@ const moduleIconMap: Record<string, React.ComponentType<{ className?: string }>>
   'financial-services': TrendingUp,
   'events': Calendar,
   'wholesale': PackageSearch,
+  'productivity': LayoutGrid,
 }
 
 // LocalStorage keys
@@ -201,6 +203,7 @@ export function ModuleSwitcher() {
   const [expandedTiers, setExpandedTiers] = useState<Set<ModuleTier>>(new Set(['tier1-top6']))
   const [isMobile, setIsMobile] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   // Detect mobile
   useEffect(() => {
@@ -252,12 +255,31 @@ export function ModuleSwitcher() {
       setCurrentModule('marketing')
     } else if (pathname.startsWith('/dashboard/hr') || pathname.startsWith('/hr')) {
       setCurrentModule('hr')
+    } else if (pathname.startsWith('/productivity')) {
+      setCurrentModule('productivity')
     } else if (pathname.startsWith('/home')) {
       setCurrentModule('home')
     } else {
       setCurrentModule('dashboard')
     }
   }, [pathname])
+
+  // Close when clicking outside the switcher
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (containerRef.current && !containerRef.current.contains(target)) {
+        setIsOpen(false)
+        setSearchQuery('')
+      }
+    }
+
+    // Use mousedown so we close before other handlers (e.g. link navigation)
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -692,7 +714,7 @@ export function ModuleSwitcher() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <Button
         variant="outline"
         onClick={() => setIsOpen(!isOpen)}

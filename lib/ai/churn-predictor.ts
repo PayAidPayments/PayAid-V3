@@ -179,3 +179,33 @@ export async function getChurnDashboard(tenantId: string): Promise<ChurnDashboar
     contacts: withScore.sort((a, b) => b.churnRiskScore - a.churnRiskScore),
   }
 }
+
+/**
+ * Get high-risk customers for a tenant (score >= minRiskScore).
+ * Used by /api/crm/analytics/churn-risk.
+ */
+export async function getHighRiskCustomers(
+  tenantId: string,
+  minRiskScore: number = 60
+): Promise<ChurnContact[]> {
+  const dashboard = await getChurnDashboard(tenantId)
+  return dashboard.contacts.filter((c) => c.churnRiskScore >= minRiskScore)
+}
+
+export type ChurnRiskLevel = 'critical' | 'high' | 'medium' | 'low'
+
+/**
+ * Calculate churn risk for a single contact. Returns score and level.
+ * Used by scenario-planner for retention actions.
+ */
+export async function calculateChurnRisk(params: {
+  contactId: string
+  tenantId: string
+}): Promise<{ riskScore: number; riskLevel: ChurnRiskLevel }> {
+  const score = await computeChurnRiskScore(params.contactId)
+  let riskLevel: ChurnRiskLevel = 'low'
+  if (score >= 70) riskLevel = 'critical'
+  else if (score >= 40) riskLevel = 'high'
+  else if (score >= 20) riskLevel = 'medium'
+  return { riskScore: score, riskLevel }
+}
