@@ -54,6 +54,7 @@ import { KPIBar } from '@/components/crm/layout/KPIBar'
 import { EntityAIPanel } from '@/components/crm/layout/EntityAIPanel'
 import { RowActionsMenu } from '@/components/crm/RowActionsMenu'
 import { BulkActionsBar } from '@/components/crm/BulkActionsBar'
+import { LeadsKanban } from '@/components/crm/LeadsKanban'
 
 export default function CRMLeadsPage() {
   const params = useParams()
@@ -88,7 +89,7 @@ export default function CRMLeadsPage() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [isEnriching, setIsEnriching] = useState(false)
-  const [viewMode, setViewMode] = useState<'table' | 'sheet'>('table')
+  const [viewMode, setViewMode] = useState<'table' | 'sheet' | 'kanban'>('table')
   const [massUpdateData, setMassUpdateData] = useState({
     status: '',
     source: '',
@@ -1023,15 +1024,35 @@ export default function CRMLeadsPage() {
                       <Download className="w-4 h-4 mr-3" />
                       {isExporting ? 'Exporting...' : 'Export Leads'}
                     </button>
-                    <button 
+                    <button
+                      onClick={() => {
+                        setViewMode('table')
+                        setActionsMenuOpen(false)
+                      }}
+                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                    >
+                      <TableIcon className="w-4 h-4 mr-3" />
+                      Table View
+                    </button>
+                    <button
                       onClick={() => {
                         setViewMode(viewMode === 'table' ? 'sheet' : 'table')
                         setActionsMenuOpen(false)
                       }}
                       className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
                     >
-                      <TableIcon className="w-4 h-4 mr-3" />
+                      <FileTextIcon className="w-4 h-4 mr-3" />
                       {viewMode === 'table' ? 'Sheet View' : 'Table View'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setViewMode('kanban')
+                        setActionsMenuOpen(false)
+                      }}
+                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                    >
+                      <Zap className="w-4 h-4 mr-3" />
+                      Kanban View
                     </button>
                     <button 
                       onClick={handlePrintView}
@@ -1505,6 +1526,7 @@ export default function CRMLeadsPage() {
               )}
             </CardContent>
           </Card>
+          )}
           </div>
         }
         rightSidebar={<EntityAIPanel entityType="prospects" />}

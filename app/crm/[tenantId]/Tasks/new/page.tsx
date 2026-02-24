@@ -25,6 +25,8 @@ export default function NewCRMTaskPage() {
     status: 'pending' as 'pending' | 'in_progress' | 'completed' | 'cancelled',
     dueDate: '',
     contactId: '',
+    recurrenceRule: 'none' as 'none' | 'daily' | 'weekly' | 'monthly',
+    recurrenceEndDate: '',
   })
   const [error, setError] = useState('')
 
@@ -49,6 +51,13 @@ export default function NewCRMTaskPage() {
         if (!isNaN(d.getTime())) payload.dueDate = d.toISOString()
       }
       if (formData.contactId) payload.contactId = formData.contactId
+      if (formData.recurrenceRule && formData.recurrenceRule !== 'none') {
+        payload.recurrenceRule = formData.recurrenceRule
+        if (formData.recurrenceEndDate) {
+          const end = new Date(formData.recurrenceEndDate)
+          if (!isNaN(end.getTime())) payload.recurrenceEndDate = end.toISOString()
+        }
+      }
 
       await createTask.mutateAsync(payload)
       router.push(`/crm/${tenantId}/Tasks`)
@@ -202,6 +211,43 @@ export default function NewCRMTaskPage() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="recurrenceRule" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Repeats
+                </label>
+                <select
+                  id="recurrenceRule"
+                  name="recurrenceRule"
+                  value={formData.recurrenceRule}
+                  onChange={handleChange}
+                  disabled={createTask.isPending}
+                  className="flex h-9 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                >
+                  <option value="none">No repeat</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+              {formData.recurrenceRule !== 'none' && (
+                <div className="space-y-2">
+                  <label htmlFor="recurrenceEndDate" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Repeat until
+                  </label>
+                  <input
+                    id="recurrenceEndDate"
+                    name="recurrenceEndDate"
+                    type="date"
+                    value={formData.recurrenceEndDate}
+                    onChange={handleChange}
+                    disabled={createTask.isPending}
+                    className="flex h-9 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2 pt-2">

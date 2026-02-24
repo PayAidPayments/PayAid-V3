@@ -627,13 +627,31 @@ export function useDeal(id: string) {
 }
 
 // Tasks hooks
-export function useTasks(params?: { page?: number; limit?: number; status?: string; assignedToId?: string; contactId?: string }) {
+export function useTasks(params?: {
+  page?: number
+  limit?: number
+  status?: string
+  assignedToId?: string
+  contactId?: string
+  search?: string
+  module?: string
+  priority?: string
+  dueDateFrom?: string
+  dueDateTo?: string
+  stats?: boolean
+}) {
   const queryString = new URLSearchParams()
   if (params?.page) queryString.set('page', params.page.toString())
   if (params?.limit) queryString.set('limit', params.limit.toString())
   if (params?.status) queryString.set('status', params.status)
   if (params?.assignedToId) queryString.set('assignedToId', params.assignedToId)
   if (params?.contactId) queryString.set('contactId', params.contactId)
+  if (params?.search) queryString.set('search', params.search)
+  if (params?.module) queryString.set('module', params.module)
+  if (params?.priority) queryString.set('priority', params.priority)
+  if (params?.dueDateFrom) queryString.set('dueDateFrom', params.dueDateFrom)
+  if (params?.dueDateTo) queryString.set('dueDateTo', params.dueDateTo)
+  if (params?.stats === false) queryString.set('stats', 'false')
 
   return useQuery({
     queryKey: ['tasks', params],
@@ -716,6 +734,79 @@ export function useDeleteTask() {
         const error = await response.json()
         throw new Error(error.error || 'Failed to delete task')
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    },
+  })
+}
+
+export function useRemindTask() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/tasks/remind/${id}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error((error as { error?: string }).error || 'Failed to send reminder')
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    },
+  })
+}
+
+export function useBulkCompleteTasks() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const response = await fetch('/api/tasks/bulk-complete', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ ids }),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error((error as { error?: string }).error || 'Failed to bulk complete')
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    },
+  })
+}
+
+export function useTaskTemplates() {
+  return useQuery({
+    queryKey: ['task-templates'],
+    queryFn: async () => {
+      const response = await fetch('/api/task-templates', { headers: getAuthHeaders() })
+      if (!response.ok) throw new Error('Failed to fetch task templates')
+      return response.json()
+    },
+  })
+}
+
+export function useCreateTaskFromTemplate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: { templateId: string; contactId?: string; dueDate?: string }) => {
+      const response = await fetch('/api/tasks/from-template', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error((error as { error?: string }).error || 'Failed to create task from template')
+      }
+      return response.json()
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })

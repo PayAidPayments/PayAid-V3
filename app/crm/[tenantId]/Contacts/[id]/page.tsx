@@ -15,6 +15,7 @@ import { PageLoading } from '@/components/ui/loading'
 import { ContactInfoTimelineCard } from '@/components/crm/contact/ContactInfoTimelineCard'
 import { QuickActionsCard } from '@/components/crm/contact/QuickActionsCard'
 import { AIFitScoreCard } from '@/components/crm/contact/AIFitScoreCard'
+import { LeadNurtureFlow } from '@/components/crm/LeadNurtureFlow'
 import { AIAssistCard } from '@/components/crm/contact/AIAssistCard'
 import { 
   RefreshCw, 
@@ -173,6 +174,9 @@ export default function ContactDetailPage() {
             <QuickActionsCard tenantId={tenantId} contactId={id} contact={contact} />
             {isProspect && (
               <AIFitScoreCard contact={contact} tenantId={tenantId} />
+            )}
+            {isProspect && (
+              <LeadNurtureFlow contactId={id} tenantId={tenantId} useGroq />
             )}
             <AIAssistCard contact={contact} tenantId={tenantId} onEnriched={() => refetch()} />
           </section>

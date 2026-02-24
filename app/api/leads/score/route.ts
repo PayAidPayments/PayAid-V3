@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { requireModuleAccess } from '@/lib/middleware/auth'
 import { updateLeadScore, scoreLead } from '@/lib/ai-helpers/lead-scoring'
+import { scoreContactWithGroqAndPersist } from '@/lib/ai/lead-scorer-groq'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 
 const scoreRequestSchema = z.object({
   contactId: z.string().optional(),
   batch: z.boolean().optional().default(false),
+  useGroq: z.boolean().optional().default(false), // Phase 1A: India SMB Groq scoring
 })
 
 /**
@@ -18,8 +20,9 @@ export async function POST(request: NextRequest) {
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
-    const body = await request.json()
-    const { contactId, batch } = scoreRequestSchema.parse(body)
+    const body = request.method === 'POST' ? await request.json().catch(() => ({})) : {}
+    const params = { ...Object.fromEntries(request.nextUrl.searchParams), ...body }
+    const { contactId, batch, useGroq } = scoreRequestSchema.parse(params)
 
     if (batch) {
       // Score all leads for this tenant
@@ -56,7 +59,26 @@ export async function POST(request: NextRequest) {
         results,
       })
     } else if (contactId) {
-      // Score single lead
+      // Score single lead (Phase 1A: optional Groq India SMB scoring)
+      if (useGroq && process.env.GROQ_API_KEY) {
+        const groqResult = await scoreContactWithGroqAndPersist(contactId, tenantId)
+        const contact = await prisma.contact.findUnique({
+          where: { id: contactId },
+          select: { id: true, name: true, nurtureStage: true, predictedRevenue: true },
+        })
+        return NextResponse.json({
+          success: true,
+          contactId,
+          contactName: contact?.name,
+          score: groqResult.score,
+          stage: groqResult.stage,
+          nurture_action: groqResult.nurture_action,
+          predicted_mrr: groqResult.predicted_mrr,
+          components: { groq: true, stage: groqResult.stage, nurture_action: groqResult.nurture_action, predicted_mrr_inr: groqResult.predicted_mrr },
+          currentScore: contact?.leadScore,
+          scoreUpdatedAt: new Date().toISOString(),
+        })
+      }
       const result = await updateLeadScore(contactId)
       const contact = await prisma.contact.findUnique({
         where: { id: contactId },
@@ -99,6 +121,7 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams
     const contactId = searchParams.get('contactId')
+    const useGroq = searchParams.get('useGroq') === 'true'
 
     if (!contactId) {
       return NextResponse.json(
@@ -118,6 +141,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Contact not found' }, { status: 404 })
     }
 
+    // Phase 1A: optional Groq India SMB scoring
+    if (useGroq && process.env.GROQ_API_KEY) {
+      const groqResult = await scoreContactWithGroqAndPersist(contactId, tenantId)
+      return NextResponse.json({
+        contactId: contact.id,
+        name: contact.name,
+        score: groqResult.score,
+        stage: groqResult.stage,
+        nurture_action: groqResult.nurture_action,
+        predicted_mrr: groqResult.predicted_mrr,
+        components: { groq: true, stage: groqResult.stage, nurture_action: groqResult.nurture_action, predicted_mrr_inr: groqResult.predicted_mrr },
+        currentScore: contact.leadScore,
+        scoreUpdatedAt: new Date().toISOString(),
+      })
+    }
+
     const { score, components } = await scoreLead(contact)
 
     return NextResponse.json({
@@ -127,6 +166,8 @@ export async function GET(request: NextRequest) {
       components,
       currentScore: contact.leadScore,
       scoreUpdatedAt: contact.scoreUpdatedAt,
+      nurtureStage: (contact as { nurtureStage?: string }).nurtureStage,
+      predictedRevenue: (contact as { predictedRevenue?: unknown }).predictedRevenue,
     })
   } catch (error) {
     console.error('Get lead score error:', error)
