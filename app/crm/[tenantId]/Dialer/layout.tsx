@@ -4,6 +4,7 @@ import { AppShell } from '@/components/modules/AppShell'
 import { useTenantId } from '@/lib/utils/get-tenant-id'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { getCRMTopBarItems } from '@/lib/crm/crm-top-bar-items'
 
 export default function CRMDialerLayout({
   children,
@@ -25,26 +26,7 @@ export default function CRMDialerLayout({
     return null
   }
 
-  const topBarItems = [
-    { name: 'Home', href: `/crm/${tenantId}/Home` },
-    { name: 'Prospects', href: `/crm/${tenantId}/Leads` },
-    { name: 'Agents', href: `/crm/${tenantId}/Agents` },
-    { name: 'Churn', href: `/crm/${tenantId}/Churn` },
-    { name: 'Metrics', href: `/crm/${tenantId}/Metrics` },
-    { name: 'Contacts', href: `/crm/${tenantId}/Contacts` },
-    { name: 'Customers', href: `/crm/${tenantId}/AllPeople?stage=customer` },
-    { name: 'Deals', href: `/crm/${tenantId}/Deals` },
-    { name: 'All People', href: `/crm/${tenantId}/AllPeople` },
-    { name: 'Tasks', href: `/crm/${tenantId}/Tasks` },
-    { name: 'Meetings', href: `/crm/${tenantId}/Meetings` },
-    { name: 'CPQ', href: `/crm/${tenantId}/CPQ` },
-    { name: 'Sales Automation', href: `/crm/${tenantId}/SalesAutomation` },
-    { name: 'Sales Enablement', href: `/crm/${tenantId}/SalesEnablement` },
-    { name: 'Dialer', href: `/crm/${tenantId}/Dialer` },
-    { name: 'Customer Success', href: `/crm/${tenantId}/CustomerSuccess` },
-    { name: 'Visitors', href: `/crm/${tenantId}/Visitors` },
-    { name: 'Reports', href: `/crm/${tenantId}/Reports` },
-  ]
+  const topBarItems = getCRMTopBarItems(tenantId)
 
   return (
     <AppShell moduleId="crm" moduleName="CRM" topBarItems={topBarItems}>

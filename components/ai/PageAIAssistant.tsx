@@ -24,19 +24,38 @@ function buildErrorMessage(status: number, data: { message?: string; error?: str
   return "I couldn't get a response right now. Please try again."
 }
 
+/** Default entities label per module for greeting */
+const moduleEntities: Record<string, string> = {
+  crm: 'contacts, deals, or campaigns',
+  finance: 'invoices, billing, or vendors',
+  hr: 'employees, attendance, or payroll',
+  marketing: 'campaigns, segments, or analytics',
+  sales: 'orders, checkout, or landing pages',
+  inventory: 'products, stock, or warehouses',
+  projects: 'tasks, projects, or time',
+  analytics: 'dashboards or reports',
+  general: 'your data here',
+}
+
 /**
  * Page-scoped AI assistant for the unified shell. Required on every page.
- * Uses current route to set module + page + tenantId; AI only answers about this company's data on this page.
+ * Uses current route + tenant name; AI only answers about this company's data on this page.
  */
 export function PageAIAssistant() {
   const ctx = useCurrentPageContext()
-  const { token } = useAuthStore()
+  const { token, tenant } = useAuthStore()
+  const businessName = tenant?.name || 'Your company'
+  const moduleLabel = ctx.module.charAt(0).toUpperCase() + ctx.module.slice(1).replace(/-/g, ' ')
+  const pageLabel = ctx.page.replace(/-/g, ' ')
+  const entities = moduleEntities[ctx.module] || moduleEntities.general
+
   const [isOpen, setIsOpen] = useState(false)
-  const [messages, setMessages] = useState<Message[]>([
+  const greeting = `Hi! I'm PayAid AI for ${businessName}'s ${moduleLabel} ${pageLabel}. Ask me about your ${entities}.`
+  const [messages, setMessages] = useState<Message[]>(() => [
     {
       id: '1',
       role: 'assistant',
-      content: `I'm your PayAid AI for **${ctx.module} → ${ctx.page}**. I can only help with your company's data on this page. Ask me anything about it.`,
+      content: greeting,
       timestamp: new Date(),
     },
   ])
@@ -46,9 +65,29 @@ export function PageAIAssistant() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Keep greeting in sync when tenant/module/page changes (e.g. after nav)
+  useEffect(() => {
+    const nextGreeting = `Hi! I'm PayAid AI for ${businessName}'s ${moduleLabel} ${pageLabel}. Ask me about your ${entities}.`
+    setMessages((prev) =>
+      prev.length === 1 && prev[0].role === 'assistant'
+        ? [{ ...prev[0], content: nextGreeting }]
+        : prev
+    )
+  }, [businessName, moduleLabel, pageLabel, entities])
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Global event to open panel (e.g. from dashboard CTA)
+  useEffect(() => {
+    const handler = () => {
+      setIsOpen(true)
+      setIsMinimized(false)
+    }
+    window.addEventListener('open-page-ai', handler)
+    return () => window.removeEventListener('open-page-ai', handler)
+  }, [])
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
@@ -77,7 +116,13 @@ export function PageAIAssistant() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           message: userMessage.content,
-          context: { module: ctx.module, page: ctx.page, tenantId: ctx.tenantId },
+          context: {
+            module: ctx.module,
+            page: ctx.page,
+            tenantId: ctx.tenantId,
+            businessName,
+            entities: (moduleEntities[ctx.module] || 'data on this page').split(/, | or /).map((s) => s.trim()).filter(Boolean),
+          },
         }),
       })
       let data: { message?: string; error?: string; hint?: string } = {}
@@ -119,9 +164,8 @@ export function PageAIAssistant() {
         whileTap={{ scale: 0.95 }}
         onClick={() => { setIsOpen(true); setIsMinimized(false) }}
         className={cn(
-          'fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full',
-          'bg-slate-800 dark:bg-slate-700 text-white shadow-lg flex items-center justify-center',
-          'hover:shadow-md transition-shadow',
+          'fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center',
+          'bg-slate-800 dark:bg-slate-700 text-white hover:shadow-md transition-shadow',
           isOpen && 'hidden'
         )}
         aria-label="Open page AI assistant"
@@ -136,9 +180,9 @@ export function PageAIAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             className={cn(
-              'fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)]',
-              'bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col',
-              isMinimized ? 'h-14' : 'h-[520px]'
+              'fixed bottom-20 right-4 z-50 w-96 max-w-[calc(100vw-2rem)]',
+              'bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col',
+              isMinimized ? 'h-14' : 'h-[24rem]'
             )}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-t-2xl">
@@ -147,8 +191,8 @@ export function PageAIAssistant() {
                   <Bot className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Page AI</h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">{ctx.module} → {ctx.page}</p>
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">PayAid AI</h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">{businessName} · {moduleLabel} {pageLabel}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">

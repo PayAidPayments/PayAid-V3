@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { ModuleTopBar } from '@/components/modules/ModuleTopBar'
+import { AppShell } from '@/components/modules/AppShell'
 
 export default function SalesCheckoutPagesLayout({
   children,
@@ -19,17 +19,8 @@ export default function SalesCheckoutPagesLayout({
   ]
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <ModuleTopBar
-          moduleId="sales"
-          moduleName="Sales"
-          items={topBarItems}
-        />
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
-      </div>
-    </div>
+    <AppShell moduleId="sales" moduleName="Sales" topBarItems={topBarItems}>
+      {children}
+    </AppShell>
   )
 }

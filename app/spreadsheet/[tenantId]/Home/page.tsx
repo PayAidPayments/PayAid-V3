@@ -51,7 +51,7 @@ export default function SpreadsheetDashboardPage() {
           <CardContent>
             <div className="flex items-center justify-end mb-4">
               <Link
-                href={`/spreadsheet/${tenantId}/Spreadsheets/new`}
+                href={`/spreadsheet/${tenantId}/Spreadsheets/create`}
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
                 <Plus className="w-5 h-5" />

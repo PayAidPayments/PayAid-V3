@@ -119,11 +119,10 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
   }
 
   return (
-    <header className="h-14 border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur sticky top-0 z-30">
-      <div className="max-w-7xl mx-auto w-full h-full flex items-center px-4 gap-4">
-        {/* Left: Logo and Module Name (spec: ModuleSwitcher + current module label) */}
+    <header className="w-screen h-14 border-b border-slate-200/80 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-950/90 dark:to-slate-900/90 backdrop-blur-sm sticky top-0 z-30">
+      <div className="w-full h-full flex items-center px-4 sm:px-6 lg:px-12 xl:px-20 gap-4">
+        {/* Left: Module name only (ModuleSwitcher is on the right) */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          <ModuleSwitcher />
           <span className="text-sm font-semibold tracking-tight text-slate-900 dark:text-slate-50">
             {moduleName}
           </span>
@@ -234,14 +233,12 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
           )}
         </div>
 
-        {/* Right: Theme Toggle, Notifications, News, Module Switcher and Profile */}
-        {/* These are always visible by default - cannot be hidden or changed */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Theme Toggle - Always Visible */}
+        {/* Right: Global Search, Theme Toggle, Notifications, Module Switcher, News, Profile */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <GlobalSearch />
           <ThemeToggle />
-          
-          {/* Notifications Bell - Always Visible */}
           <NotificationBell />
+          <ModuleSwitcher />
           
           {user && (user.role === 'admin' || user.role === 'owner') && (
             <button

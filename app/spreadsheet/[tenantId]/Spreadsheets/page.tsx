@@ -65,7 +65,7 @@ export default function SpreadsheetsListPage() {
               />
             </div>
             <Link
-              href={`/spreadsheet/${tenantId}/Spreadsheets/new`}
+              href={`/spreadsheet/${tenantId}/Spreadsheets/create`}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
               <Plus className="h-5 w-5" />
@@ -75,7 +75,7 @@ export default function SpreadsheetsListPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <Link
-              href={`/spreadsheet/${tenantId}/Spreadsheets/new`}
+              href={`/spreadsheet/${tenantId}/Spreadsheets/create`}
               className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
             >
               <Plus className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-2" />

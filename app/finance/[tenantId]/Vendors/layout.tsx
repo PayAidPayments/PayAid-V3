@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { ModuleTopBar } from '@/components/modules/ModuleTopBar'
+import { AppShell } from '@/components/modules/AppShell'
 
 export default function FinanceVendorsLayout({
   children,
@@ -20,17 +20,8 @@ export default function FinanceVendorsLayout({
   ]
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <ModuleTopBar
-          moduleId="finance"
-          moduleName="Finance"
-          items={topBarItems}
-        />
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
-      </div>
-    </div>
+    <AppShell moduleId="finance" moduleName="Finance" topBarItems={topBarItems}>
+      {children}
+    </AppShell>
   )
 }

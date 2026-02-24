@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { ModuleTopBar } from '@/components/modules/ModuleTopBar'
+import { AppShell } from '@/components/modules/AppShell'
 
 export default function HRHiringCandidatesNewLayout({
   children,
@@ -21,17 +21,8 @@ export default function HRHiringCandidatesNewLayout({
   ]
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <ModuleTopBar
-          moduleId="hr"
-          moduleName="HR"
-          items={topBarItems}
-        />
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
-      </div>
-    </div>
+    <AppShell moduleId="hr" moduleName="HR" topBarItems={topBarItems}>
+      {children}
+    </AppShell>
   )
 }
