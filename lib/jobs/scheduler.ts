@@ -40,7 +40,9 @@ export async function scheduleCacheWarming() {
 
     console.log(`[Scheduler] Scheduled cache warming for ${tenants.length} tenants`)
   } catch (error) {
-    console.error('[Scheduler] Failed to schedule cache warming:', error)
+    // Redis/DB may be unavailable locally; log once without full stack
+    const msg = error instanceof Error ? error.message : String(error)
+    console.warn('[Scheduler] Cache warming unavailable:', msg)
   }
 }
 

@@ -347,11 +347,42 @@ model Tenant {
   riskPolicies                 RiskPolicy[]
   decisionOutcomes             DecisionOutcome[]
   MarketplaceAppReview         MarketplaceAppReview[]
+  // Phase 1B No-Code Agent Builder
+  agentWorkflows               AgentWorkflow[]
 
   @@index([subdomain])
   @@index([status])
   @@index([industry])
   @@index([subscriptionTier])
+}
+
+// Phase 1B No-Code Agent Builder
+model AgentWorkflow {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  trigger     Json     // { type: 'schedule'|'webhook'|'lead_score'|..., config: {...} }
+  steps       Json     // [{ id, type, config }, ...]
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  runs        AgentWorkflowRun[]
+
+  @@index([tenantId])
+}
+
+model AgentWorkflowRun {
+  id         String        @id @default(cuid())
+  workflowId String
+  status     String        // running | success | failed
+  startedAt  DateTime      @default(now())
+  endedAt    DateTime?
+  logs       Json?         // step-by-step log
+  workflow   AgentWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
 }
 
 model TenantPaymentSettings {
@@ -757,6 +788,9 @@ model Contact {
   gstin                 String?
   likelyToBuy           Boolean?                  @default(false)
   churnRisk             Boolean?                  @default(false)
+  churnRiskScore        Float?                    // 0-100 Phase 1B
+  churnReasonSummary    String?                   // Phase 1B
+  churnRiskUpdatedAt    DateTime?                 // Phase 1B
   leadScore             Float                     @default(0)
   scoreUpdatedAt        DateTime                  @default(now())
   scoreComponents       Json?

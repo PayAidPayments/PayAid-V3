@@ -1,6 +1,6 @@
 'use client'
 
-import { ModuleTopBar } from '@/components/modules/ModuleTopBar'
+import { AppShell } from '@/components/modules/AppShell'
 import { useTenantId } from '@/lib/utils/get-tenant-id'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
@@ -29,6 +29,7 @@ export default function CRMLeadsLayout({
     { name: 'Home', href: `/crm/${tenantId}/Home` },
     { name: 'Prospects', href: `/crm/${tenantId}/Leads` },
     { name: 'Agents', href: `/crm/${tenantId}/Agents` },
+    { name: 'Churn', href: `/crm/${tenantId}/Churn` },
     { name: 'Metrics', href: `/crm/${tenantId}/Metrics` },
     { name: 'Contacts', href: `/crm/${tenantId}/Contacts` },
     { name: 'Customers', href: `/crm/${tenantId}/AllPeople?stage=customer` },
@@ -46,17 +47,8 @@ export default function CRMLeadsLayout({
   ]
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <ModuleTopBar
-          moduleId="crm"
-          moduleName="CRM"
-          items={topBarItems}
-        />
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
-      </div>
-    </div>
+    <AppShell moduleId="crm" moduleName="CRM" topBarItems={topBarItems}>
+      {children}
+    </AppShell>
   )
 }
