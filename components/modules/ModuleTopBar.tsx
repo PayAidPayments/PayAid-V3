@@ -335,9 +335,11 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
           ))}
         </div>
       </div>
+      {/* end of header - do not use </nav>, must match opening <header> */}
     </header>
   )
 }
+
 
 function getModuleIcon(moduleId: string): string {
   const icons: Record<string, string> = {
