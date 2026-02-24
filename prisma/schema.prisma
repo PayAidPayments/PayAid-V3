@@ -257,6 +257,7 @@ model Tenant {
   shifts                       Shift[]
   tdsConfigs                   TDSConfig?
   tasks                        Task[]
+  taskTemplates                TaskTemplate[]
   taxDeclarationCategories     TaxDeclarationCategory[]
   tenantMembers                TenantMember[]
   paymentSettings              TenantPaymentSettings?
@@ -759,6 +760,9 @@ model Contact {
   leadScore             Float                     @default(0)
   scoreUpdatedAt        DateTime                  @default(now())
   scoreComponents       Json?
+  whatsappStatus        Json?                     // { sent: boolean, opened: boolean, replied: boolean } - Phase 1A
+  nurtureStage          String?                   // cold | warm | hot - Phase 1A
+  predictedRevenue      Decimal?                  @db.Decimal(12, 2) // ₹ INR only - Phase 1A
   tags                  String[]
   notes                 String?
   createdAt             DateTime                  @default(now())
@@ -895,28 +899,48 @@ model Deal {
 }
 
 model Task {
-  id           String    @id @default(cuid())
-  title        String
-  description  String?
-  priority     String    @default("medium")
-  status       String    @default("pending")
-  dueDate      DateTime?
-  completedAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  tenantId     String
-  contactId    String?
-  assignedToId String?
-  assignedTo   User?     @relation("AssignedTasks", fields: [assignedToId], references: [id])
-  contact      Contact?  @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  priority        String    @default("medium")
+  status          String    @default("pending")
+  dueDate         DateTime?
+  completedAt     DateTime?
+  reminderSentAt  DateTime?
+  module          String    @default("crm")
+  recurrenceRule  String?   // daily | weekly | monthly | none
+  recurrenceEndDate DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  tenantId        String
+  contactId       String?
+  assignedToId    String?
+  assignedTo      User?     @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  contact         Contact?  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([tenantId, status])
+  @@index([tenantId, module])
   @@index([assignedToId])
   @@index([contactId], name: "idx_task_contact_fk")
-  // Performance indexes for 10,000+ users
   @@index([tenantId, status, dueDate], name: "idx_task_tenant_status_due")
+}
+
+model TaskTemplate {
+  id           String   @id @default(cuid())
+  tenantId     String
+  name         String   // e.g. "Invoice follow-up"
+  title        String   // default task title
+  description  String?
+  priority     String   @default("medium")
+  module       String   @default("crm")
+  defaultDueDays Int?   // suggest due in N days from creation
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model SavedFilter {

@@ -10,6 +10,7 @@ const updateContactSchema = z.object({
   phone: z.string().optional(),
   company: z.string().optional(),
   type: z.enum(['customer', 'lead', 'vendor', 'employee']).optional(),
+  stage: z.enum(['prospect', 'contact', 'customer']).optional(),
   status: z.enum(['active', 'inactive', 'lost']).optional(),
   source: z.string().optional(),
   address: z.string().optional(),

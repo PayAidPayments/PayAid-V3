@@ -1,609 +1,650 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef } from 'react'
-import { useParams, useSearchParams, useRouter } from 'next/navigation'
+import { useState, useEffect, useMemo } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useTasks, useDeleteTask } from '@/lib/hooks/use-api'
+import {
+  useTasks,
+  useUpdateTask,
+  useRemindTask,
+  useBulkCompleteTasks,
+  useTaskTemplates,
+  useCreateTaskFromTemplate,
+} from '@/lib/hooks/use-api'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { format, isToday, isPast, isFuture, startOfDay, endOfDay, addDays, startOfWeek, endOfWeek } from 'date-fns'
-import { AlertCircle, CheckCircle2, Clock, Calendar, TrendingUp, AlertTriangle, Undo2 } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { PageLoading } from '@/components/ui/loading'
+import { TasksSidebar } from '@/components/crm/tasks/TasksSidebar'
+import { TaskCard } from '@/components/crm/tasks/TaskCard'
+import { TasksFilters, type TasksFiltersState } from '@/components/crm/tasks/TasksFilters'
+import { TasksCalendarView } from '@/components/crm/tasks/TasksCalendarView'
+import { TasksKanbanView } from '@/components/crm/tasks/TasksKanbanView'
+import { getModuleConfig } from '@/lib/modules/module-config'
+import { format, isPast, startOfMonth, endOfMonth } from 'date-fns'
+import {
+  Search,
+  Plus,
+  List,
+  LayoutGrid,
+  Calendar,
+  CheckCircle2,
+  Pencil,
+  Bell,
+  Download,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  FileText,
+} from 'lucide-react'
+import { cn } from '@/lib/utils/cn'
 
-const UNDO_DELETE_SECONDS = 30
+const DEFAULT_FILTERS: TasksFiltersState = {
+  status: '',
+  module: '',
+  priority: '',
+  dueDateFrom: '',
+  dueDateTo: '',
+}
 
-// Task Row Component
-function TaskRow({ task, tenantId, onDelete }: { task: any; tenantId: string; onDelete: (id: string) => void }) {
-  const getAssignedToName = () => {
-    const assignedTo = task.assignedTo
-    if (!assignedTo) return 'Unassigned'
-    if (typeof assignedTo === 'string') return assignedTo
-    if (typeof assignedTo === 'object') {
-      return String(assignedTo.name || assignedTo.email || assignedTo.id || 'Unassigned')
-    }
-    return String(assignedTo)
+const PAGE_SIZES = [25, 50, 100]
+
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delayMs)
+    return () => clearTimeout(t)
+  }, [value, delayMs])
+  return debounced
+}
+
+function priorityDot(priority: string) {
+  switch (priority) {
+    case 'high':
+      return 'bg-red-500'
+    case 'medium':
+      return 'bg-amber-500'
+    default:
+      return 'bg-gray-400'
   }
+}
 
-  return (
-    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:border-gray-700 transition-colors">
-      <div className="flex-1 flex items-center gap-4">
-        <div className="flex-1">
-          <Link 
-            href={`/crm/${tenantId}/Tasks/${task.id}`} 
-            className="font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-          >
-            {task.title}
-          </Link>
-          <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
-            <span>Assigned to: {getAssignedToName()}</span>
-            {task.dueDate && (
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {format(new Date(task.dueDate), 'MMM dd, yyyy')}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className={`px-2 py-1 rounded text-xs font-medium ${
-            task.priority === 'high' ? 'bg-red-100 text-red-800' :
-            task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-            'bg-gray-100 text-gray-800'
-          }`}>
-            {task.priority || 'low'}
-          </span>
-          <span className={`px-2 py-1 rounded text-xs font-medium ${
-            task.status === 'completed' ? 'bg-green-100 text-green-800' :
-            task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-            task.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
-            'bg-yellow-100 text-yellow-800'
-          }`}>
-            {task.status?.replace('_', ' ') || 'pending'}
-          </span>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 ml-4">
-        <Link href={`/crm/${tenantId}/Tasks/${task.id}`}>
-          <Button variant="ghost" size="sm">View</Button>
-        </Link>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => onDelete(task.id)}
-          className="text-red-600 hover:text-red-700"
-        >
-          Delete
-        </Button>
-      </div>
-    </div>
-  )
+function statusVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+  if (status === 'completed') return 'default'
+  if (status === 'overdue') return 'destructive'
+  if (status === 'in_progress') return 'secondary'
+  return 'outline'
 }
 
 export default function CRMTasksPage() {
   const params = useParams()
-  const searchParams = useSearchParams()
   const router = useRouter()
-  const tenantId = params?.tenantId as string
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const tenantId = (params?.tenantId as string) || ''
+  const [searchInput, setSearchInput] = useState('')
+  const debouncedSearch = useDebouncedValue(searchInput, 300)
   const [page, setPage] = useState(1)
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [undoSecondsLeft, setUndoSecondsLeft] = useState<number | null>(null)
-  const undoDeleteId = searchParams?.get('undoDelete') ?? null
+  const [pageSize, setPageSize] = useState(25)
+  const [filters, setFilters] = useState<TasksFiltersState>(DEFAULT_FILTERS)
+  const [view, setView] = useState<'list' | 'kanban' | 'calendar'>('list')
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date())
+  const [quickFilter, setQuickFilter] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const queryClient = useQueryClient()
+  const { data: templatesData } = useTaskTemplates()
+  const createFromTemplate = useCreateTaskFromTemplate()
+  const templates = templatesData?.templates ?? []
+  const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false)
+
+  const statusParam = useMemo(() => {
+    if (quickFilter === 'overdue') return 'overdue'
+    if (quickFilter === 'open') return 'open'
+    if (quickFilter === 'today') return 'pending'
+    if (quickFilter === 'completed_today') return 'completed'
+    if (quickFilter === 'high') return undefined
+    return filters.status || undefined
+  }, [quickFilter, filters.status])
+
+  const { data, isLoading } = useTasks({
+    page,
+    limit: pageSize,
+    status: statusParam,
+    search: debouncedSearch || undefined,
+    module: filters.module || undefined,
+    priority: quickFilter === 'high' ? 'high' : filters.priority || undefined,
+    dueDateFrom: filters.dueDateFrom || undefined,
+    dueDateTo: filters.dueDateTo || undefined,
+    stats: true,
+  })
+
+  const calendarRange = useMemo(() => {
+    const start = startOfMonth(calendarMonth)
+    const end = endOfMonth(calendarMonth)
+    return {
+      dueDateFrom: start.toISOString(),
+      dueDateTo: end.toISOString(),
+    }
+  }, [calendarMonth])
+
+  const { data: calendarData } = useTasks({
+    page: 1,
+    limit: 500,
+    dueDateFrom: view === 'calendar' ? calendarRange.dueDateFrom : undefined,
+    dueDateTo: view === 'calendar' ? calendarRange.dueDateTo : undefined,
+    stats: false,
+  })
+  const calendarTasks = view === 'calendar' ? (calendarData?.tasks ?? []) : []
+
+  const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
-  const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const remindTask = useRemindTask()
+  const bulkComplete = useBulkCompleteTasks()
 
-  const { data, isLoading } = useTasks({ page, limit: 1000, status: statusFilter || undefined })
+  const tasks = data?.tasks ?? []
+  const pagination = data?.pagination
+  const stats = data?.stats ?? {
+    openCount: 0,
+    overdueCount: 0,
+    completedTodayCount: 0,
+  }
+  const total = pagination?.total ?? 0
+  const totalPages = pagination?.totalPages ?? 1
 
-  // Handle URL query parameters (filter)
-  useEffect(() => {
-    const filter = searchParams?.get('filter')
-    if (filter) {
-      if (filter === 'overdue') setSelectedCategory('overdue')
-      else if (filter === 'today') setSelectedCategory('today')
-      else if (filter === 'thisWeek') setSelectedCategory('thisWeek')
-      else if (filter === 'completed') setSelectedCategory('completed')
-    }
-  }, [searchParams])
+  const allSelected = tasks.length > 0 && selectedIds.size === tasks.length
+  const someSelected = selectedIds.size > 0
 
-  // Pending delete: 30s timer then actually delete; countdown for display
-  useEffect(() => {
-    if (!undoDeleteId) {
-      setUndoSecondsLeft(null)
-      return
-    }
-    setUndoSecondsLeft(UNDO_DELETE_SECONDS)
-    const countdown = setInterval(() => {
-      setUndoSecondsLeft((s) => {
-        if (s === null || s <= 1) {
-          if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current)
-          return null
-        }
-        return s - 1
-      })
-    }, 1000)
-    countdownIntervalRef.current = countdown
-    const timeout = setTimeout(() => {
-      deleteTask.mutate(undoDeleteId, {
-        onSettled: () => {
-          const url = new URL(window.location.href)
-          url.searchParams.delete('undoDelete')
-          router.replace(url.pathname + url.search)
-        },
-      })
-    }, UNDO_DELETE_SECONDS * 1000)
-    deleteTimeoutRef.current = timeout
-    return () => {
-      if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current)
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current)
-    }
-  }, [undoDeleteId])
-
-  const handleUndoDelete = () => {
-    if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current)
-    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current)
-    deleteTimeoutRef.current = null
-    countdownIntervalRef.current = null
-    setUndoSecondsLeft(null)
-    const url = new URL(window.location.href)
-    url.searchParams.delete('undoDelete')
-    router.replace(url.pathname + url.search)
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) setSelectedIds(new Set(tasks.map((t: { id: string }) => t.id)))
+    else setSelectedIds(new Set())
   }
 
-  const handleDelete = (id: string) => {
-    if (!confirm('Delete this task? You can undo within 30 seconds.')) return
-    const url = new URL(window.location.href)
-    url.searchParams.set('undoDelete', id)
-    router.replace(url.pathname + url.search)
-  }
-
-  // Tasks to display: exclude the one pending delete (optimistic hide)
-  const tasksForDisplay = useMemo(() => {
-    const list = data?.tasks ?? []
-    if (!undoDeleteId) return list
-    return list.filter((t: any) => t.id !== undoDeleteId)
-  }, [data?.tasks, undoDeleteId])
-
-  // Categorize tasks (using filtered list)
-  const categorizedTasks = useMemo(() => {
-    if (!tasksForDisplay.length) return {
-      overdue: [],
-      today: [],
-      thisWeek: [],
-      upcoming: [],
-      completed: [],
-      all: []
-    }
-
-    const now = new Date()
-    const todayStart = startOfDay(now)
-    const todayEnd = endOfDay(now)
-    const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
-
-    const overdue: any[] = []
-    const today: any[] = []
-    const thisWeek: any[] = []
-    const upcoming: any[] = []
-    const completed: any[] = []
-
-    tasksForDisplay.forEach((task: any) => {
-      if (task.status === 'completed' || task.status === 'cancelled') {
-        completed.push(task)
-        return
-      }
-
-      if (!task.dueDate) {
-        upcoming.push(task)
-        return
-      }
-
-      const dueDate = new Date(task.dueDate)
-      
-      if (isPast(dueDate) && !isToday(dueDate)) {
-        overdue.push(task)
-      } else if (isToday(dueDate)) {
-        today.push(task)
-      } else if (dueDate <= weekEnd) {
-        thisWeek.push(task)
-      } else {
-        upcoming.push(task)
-      }
+  const handleSelectOne = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(id)
+      else next.delete(id)
+      return next
     })
-
-    return {
-      overdue: overdue.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()),
-      today: today.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()),
-      thisWeek: thisWeek.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()),
-      upcoming: upcoming.sort((a, b) => {
-        if (!a.dueDate) return 1
-        if (!b.dueDate) return -1
-        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-      }),
-      completed,
-      all: tasksForDisplay
-    }
-  }, [tasksForDisplay])
-
-  const stats = useMemo(() => {
-    const all = categorizedTasks.all
-    return {
-      total: all.length,
-      overdue: categorizedTasks.overdue.length,
-      today: categorizedTasks.today.length,
-      thisWeek: categorizedTasks.thisWeek.length,
-      upcoming: categorizedTasks.upcoming.length,
-      completed: categorizedTasks.completed.length,
-      pending: all.filter((t: any) => t.status === 'pending' || t.status === 'in_progress').length
-    }
-  }, [categorizedTasks])
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>
   }
 
-  const tasks = tasksForDisplay
+  const handleBulkComplete = () => {
+    if (selectedIds.size === 0) return
+    bulkComplete.mutate(Array.from(selectedIds), {
+      onSuccess: () => setSelectedIds(new Set()),
+    })
+  }
+
+  const handleExportCSV = () => {
+    const headers = ['Title', 'Client', 'Assignee', 'Due', 'Status', 'Priority', 'Module']
+    const rows = tasks.map((t: any) => [
+      `"${(t.title || '').replace(/"/g, '""')}"`,
+      `"${(t.contact?.name ?? '').replace(/"/g, '""')}"`,
+      `"${(t.assignedTo?.name ?? '').replace(/"/g, '""')}"`,
+      t.dueDate ? format(new Date(t.dueDate), 'yyyy-MM-dd') : '',
+      t.status ?? '',
+      t.priority ?? '',
+      t.module ?? 'crm',
+    ])
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `tasks-${format(new Date(), 'yyyy-MM-dd')}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const recentActivity = useMemo(
+    () =>
+      tasks.slice(0, 5).map((t: any) => ({
+        id: t.id,
+        title: t.title,
+        at: t.updatedAt ? format(new Date(t.updatedAt), 'MMM d') : '',
+      })),
+    [tasks]
+  )
+
+  const clearFilters = () => {
+    setFilters(DEFAULT_FILTERS)
+    setQuickFilter(null)
+    setPage(1)
+  }
+
+  if (isLoading && !data) {
+    return <PageLoading message="Loading tasks..." fullScreen={false} />
+  }
+
+  const moduleConfig = getModuleConfig('crm')
 
   return (
-    <div className="w-full bg-gray-50 dark:bg-gray-900 relative" style={{ zIndex: 1 }}>
-      {/* Undo delete banner */}
-      {undoDeleteId && undoSecondsLeft !== null && (
-        <div className="sticky top-0 z-10 mx-6 mt-4 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg shadow-sm flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
-            Task deleted. You can undo within <strong>{undoSecondsLeft}</strong> second{undoSecondsLeft !== 1 ? 's' : ''}.
-          </p>
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-amber-600 text-amber-700 hover:bg-amber-100 dark:border-amber-500 dark:text-amber-300 dark:hover:bg-amber-900/50"
-            onClick={handleUndoDelete}
-          >
-            <Undo2 className="h-4 w-4 mr-2" />
-            Undo
-          </Button>
-        </div>
-      )}
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Tasks</h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your tasks and activities</p>
+    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 min-h-full">
+      {/* AI Next 5 Actions placeholder */}
+      <div className="bg-primary/10 border-b border-primary/20 px-6 py-2 flex items-center gap-2 text-sm">
+        <Sparkles className="h-4 w-4 text-primary" />
+        <span className="text-muted-foreground">
+          <strong className="text-foreground">Next 5 actions</strong> — AI prioritization coming soon. Focus on overdue and high-priority tasks first.
+        </span>
+      </div>
+
+      {/* Header */}
+      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-bold text-foreground">
+            Tasks {total > 0 && `(${total.toLocaleString()})`}
+          </h1>
+          <div className="flex-1 min-w-[200px] max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search tasks, clients..."
+                value={searchInput}
+                onChange={(e) => {
+                  setSearchInput(e.target.value)
+                  setPage(1)
+                }}
+                className="pl-9 bg-background"
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <TasksFilters
+            filters={filters}
+            onFiltersChange={(f) => {
+              setFilters(f)
+              setPage(1)
+            }}
+            onClear={clearFilters}
+          />
+          <div className="flex items-center gap-1 border rounded-md p-0.5">
+            {[
+              { key: 'list', icon: List, label: 'List' },
+              { key: 'kanban', icon: LayoutGrid, label: 'Kanban' },
+              { key: 'calendar', icon: Calendar, label: 'Calendar' },
+            ].map(({ key, icon: Icon, label }) => (
+              <Button
+                key={key}
+                variant={view === key ? 'secondary' : 'ghost'}
+                size="sm"
+                className="gap-1"
+                onClick={() => setView(key as 'list' | 'kanban' | 'calendar')}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{label}</span>
+              </Button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1">
             <Link href={`/crm/${tenantId}/Tasks/new`}>
-              <Button>New Task</Button>
+              <Button size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                New Task
+              </Button>
             </Link>
+            {templates.length > 0 && (
+              <div className="relative">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1"
+                  onClick={() => setTemplateDropdownOpen((o) => !o)}
+                  onBlur={() => setTimeout(() => setTemplateDropdownOpen(false), 150)}
+                >
+                  From template
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+                {templateDropdownOpen && (
+                  <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded-md border bg-background py-1 shadow-lg">
+                    {templates.map((tpl: { id: string; name: string; title: string }) => (
+                      <button
+                        key={tpl.id}
+                        type="button"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted"
+                        onClick={() => {
+                          createFromTemplate.mutate(
+                            { templateId: tpl.id },
+                            {
+                              onSuccess: (task: { id: string }) => {
+                                setTemplateDropdownOpen(false)
+                                router.push(`/crm/${tenantId}/Tasks/${task.id}`)
+                              },
+                            }
+                          )
+                        }}
+                        disabled={createFromTemplate.isPending}
+                      >
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        {tpl.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card 
-            className={`border-red-200 bg-red-50 cursor-pointer transition-all hover:shadow-md ${
-              selectedCategory === 'overdue' ? 'ring-2 ring-red-500 shadow-lg' : ''
-            }`}
-            onClick={() => setSelectedCategory(selectedCategory === 'overdue' ? null : 'overdue')}
+      {/* Stats bar */}
+      <div className="bg-card/50 border-b px-6 py-3">
+        <div className="max-w-7xl mx-auto flex flex-wrap gap-4">
+          <button
+            type="button"
+            onClick={() => {
+              setQuickFilter(quickFilter === 'open' ? null : 'open')
+              setFilters((f) => ({ ...f, status: '' }))
+              setPage(1)
+            }}
+            className={cn(
+              'inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium transition-colors',
+              !quickFilter || quickFilter === 'open'
+                ? 'bg-secondary text-secondary-foreground border-transparent'
+                : 'bg-transparent hover:bg-muted'
+            )}
           >
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-red-800 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" />
-                Overdue
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-900">{stats.overdue}</div>
-              <p className="text-xs text-red-700 mt-1">Tasks past due date</p>
-              {selectedCategory === 'overdue' && (
-                <p className="text-xs text-red-600 mt-2 font-medium">Click to view details</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card 
-            className={`border-orange-200 bg-orange-50 cursor-pointer transition-all hover:shadow-md ${
-              selectedCategory === 'today' ? 'ring-2 ring-orange-500 shadow-lg' : ''
-            }`}
-            onClick={() => setSelectedCategory(selectedCategory === 'today' ? null : 'today')}
+            Open {stats.openCount}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setQuickFilter(quickFilter === 'overdue' ? null : 'overdue')
+              setPage(1)
+            }}
+            className={cn(
+              'inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium transition-colors',
+              quickFilter === 'overdue'
+                ? 'bg-destructive text-destructive-foreground border-transparent'
+                : 'bg-transparent hover:bg-muted text-destructive'
+            )}
           >
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-orange-800 flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                Due Today
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-900">{stats.today}</div>
-              <p className="text-xs text-orange-700 mt-1">Tasks due today</p>
-              {selectedCategory === 'today' && (
-                <p className="text-xs text-orange-600 mt-2 font-medium">Click to view details</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card 
-            className={`border-blue-200 bg-blue-50 cursor-pointer transition-all hover:shadow-md ${
-              selectedCategory === 'thisWeek' ? 'ring-2 ring-blue-500 shadow-lg' : ''
-            }`}
-            onClick={() => setSelectedCategory(selectedCategory === 'thisWeek' ? null : 'thisWeek')}
+            Overdue {stats.overdueCount}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setQuickFilter(quickFilter === 'completed_today' ? null : 'completed_today')
+              setFilters((f) => ({ ...f, status: 'completed' }))
+              setPage(1)
+            }}
+            className={cn(
+              'inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium transition-colors',
+              quickFilter === 'completed_today'
+                ? 'bg-primary text-primary-foreground border-transparent'
+                : 'bg-transparent hover:bg-muted'
+            )}
           >
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-blue-800 flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                This Week
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-900">{stats.thisWeek}</div>
-              <p className="text-xs text-blue-700 mt-1">Tasks due this week</p>
-              {selectedCategory === 'thisWeek' && (
-                <p className="text-xs text-blue-600 mt-2 font-medium">Click to view details</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card 
-            className={`border-green-200 bg-green-50 cursor-pointer transition-all hover:shadow-md ${
-              selectedCategory === 'completed' ? 'ring-2 ring-green-500 shadow-lg' : ''
-            }`}
-            onClick={() => setSelectedCategory(selectedCategory === 'completed' ? null : 'completed')}
-          >
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-green-800 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                Completed
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-900">{stats.completed}</div>
-              <p className="text-xs text-green-700 mt-1">Completed tasks</p>
-              {selectedCategory === 'completed' && (
-                <p className="text-xs text-green-600 mt-2 font-medium">Click to view details</p>
-              )}
-            </CardContent>
-          </Card>
+            Completed Today {stats.completedTodayCount}
+          </button>
         </div>
+      </div>
 
-        {/* Show filtered view when a stat card is clicked */}
-        {selectedCategory && (
-          <div className="space-y-4">
-            {selectedCategory === 'overdue' && categorizedTasks.overdue.length > 0 && (
-              <Card className="border-red-200 ring-2 ring-red-500">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-red-800 flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5" />
-                        Overdue Tasks ({categorizedTasks.overdue.length})
-                      </CardTitle>
-                      <CardDescription>Tasks that are past their due date</CardDescription>
-                    </div>
-                    <Button 
-                      variant="ghost" 
+      {/* Main content */}
+      <div className="max-w-7xl mx-auto px-6 py-8 flex gap-6">
+        <TasksSidebar
+          openCount={stats.openCount}
+          overdueCount={stats.overdueCount}
+          completedTodayCount={stats.completedTodayCount}
+          activeQuickFilter={quickFilter}
+          onQuickFilter={setQuickFilter}
+          recentActivity={recentActivity}
+        />
+
+        <main className="flex-1 min-w-0">
+          {view === 'calendar' && (
+            <TasksCalendarView
+              tasks={calendarTasks.map((t: any) => ({
+                id: t.id,
+                title: t.title,
+                dueDate: t.dueDate,
+                priority: t.priority,
+                status: t.status,
+              }))}
+              tenantId={tenantId}
+              currentMonth={calendarMonth}
+              onMonthChange={setCalendarMonth}
+            />
+          )}
+
+          {view === 'list' && (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Select all"
+                  />
+                  {someSelected && (
+                    <span className="text-sm text-muted-foreground">
+                      {selectedIds.size} selected
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {someSelected && (
+                    <Button
+                      variant="outline"
                       size="sm"
-                      onClick={() => setSelectedCategory(null)}
+                      onClick={handleBulkComplete}
+                      disabled={bulkComplete.isPending}
                     >
-                      Show All
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Complete
                     </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {categorizedTasks.overdue.map((task: any) => (
-                      <TaskRow key={task.id} task={task} tenantId={tenantId} onDelete={handleDelete} />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {selectedCategory === 'today' && categorizedTasks.today.length > 0 && (
-              <Card className="border-orange-200 ring-2 ring-orange-500">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-orange-800 flex items-center gap-2">
-                        <Clock className="w-5 h-5" />
-                        Due Today ({categorizedTasks.today.length})
-                      </CardTitle>
-                      <CardDescription>Tasks that need to be completed today</CardDescription>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setSelectedCategory(null)}
-                    >
-                      Show All
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {categorizedTasks.today.map((task: any) => (
-                      <TaskRow key={task.id} task={task} tenantId={tenantId} onDelete={handleDelete} />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {selectedCategory === 'thisWeek' && categorizedTasks.thisWeek.length > 0 && (
-              <Card className="border-blue-200 ring-2 ring-blue-500">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-blue-800 flex items-center gap-2">
-                        <Calendar className="w-5 h-5" />
-                        Due This Week ({categorizedTasks.thisWeek.length})
-                      </CardTitle>
-                      <CardDescription>Tasks due within the next 7 days</CardDescription>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setSelectedCategory(null)}
-                    >
-                      Show All
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {categorizedTasks.thisWeek.map((task: any) => (
-                      <TaskRow key={task.id} task={task} tenantId={tenantId} onDelete={handleDelete} />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {selectedCategory === 'completed' && categorizedTasks.completed.length > 0 && (
-              <Card className="border-green-200 ring-2 ring-green-500">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-green-800 flex items-center gap-2">
-                        <CheckCircle2 className="w-5 h-5" />
-                        Completed Tasks ({categorizedTasks.completed.length})
-                      </CardTitle>
-                      <CardDescription>Tasks that have been completed or cancelled</CardDescription>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setSelectedCategory(null)}
-                    >
-                      Show All
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {categorizedTasks.completed.map((task: any) => (
-                      <TaskRow key={task.id} task={task} tenantId={tenantId} onDelete={handleDelete} />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Show message if selected category is empty */}
-            {((selectedCategory === 'overdue' && categorizedTasks.overdue.length === 0) ||
-              (selectedCategory === 'today' && categorizedTasks.today.length === 0) ||
-              (selectedCategory === 'thisWeek' && categorizedTasks.thisWeek.length === 0) ||
-              (selectedCategory === 'completed' && categorizedTasks.completed.length === 0)) && (
-              <Card>
-                <CardContent className="text-center py-12">
-                  <p className="text-gray-600 mb-2">No tasks found in this category</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setSelectedCategory(null)}
-                  >
-                    Show All Tasks
+                  )}
+                  <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export CSV
                   </Button>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
+                </div>
+              </div>
 
-        {/* Show all categories when no filter is selected */}
-        {!selectedCategory && (
-          <>
-            {/* Overdue Tasks */}
-            {categorizedTasks.overdue.length > 0 && (
-              <Card className="border-red-200">
-                <CardHeader>
-                  <CardTitle className="text-red-800 flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5" />
-                    Overdue Tasks ({categorizedTasks.overdue.length})
-                  </CardTitle>
-                  <CardDescription>Tasks that are past their due date</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {categorizedTasks.overdue.map((task: any) => (
-                      <TaskRow key={task.id} task={task} tenantId={tenantId} onDelete={handleDelete} />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Today's Tasks */}
-            {categorizedTasks.today.length > 0 && (
-              <Card className="border-orange-200">
-                <CardHeader>
-                  <CardTitle className="text-orange-800 flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    Due Today ({categorizedTasks.today.length})
-                  </CardTitle>
-                  <CardDescription>Tasks that need to be completed today</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {categorizedTasks.today.map((task: any) => (
-                      <TaskRow key={task.id} task={task} tenantId={tenantId} onDelete={handleDelete} />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* This Week's Tasks */}
-            {categorizedTasks.thisWeek.length > 0 && (
-              <Card className="border-blue-200">
-                <CardHeader>
-                  <CardTitle className="text-blue-800 flex items-center gap-2">
-                    <Calendar className="w-5 h-5" />
-                    Due This Week ({categorizedTasks.thisWeek.length})
-                  </CardTitle>
-                  <CardDescription>Tasks due within the next 7 days</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {categorizedTasks.thisWeek.map((task: any) => (
-                      <TaskRow key={task.id} task={task} tenantId={tenantId} onDelete={handleDelete} />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Upcoming Tasks */}
-            {categorizedTasks.upcoming.length > 0 && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" />
-                    Upcoming Tasks ({categorizedTasks.upcoming.length})
-                  </CardTitle>
-                  <CardDescription>Tasks scheduled for later</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {categorizedTasks.upcoming.map((task: any) => (
-                      <TaskRow key={task.id} task={task} tenantId={tenantId} onDelete={handleDelete} />
-                    ))}
-                  </div>
-                </CardContent>
+                {tasks.length === 0 ? (
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <p className="mb-4">No tasks match your filters.</p>
+                    <Link href={`/crm/${tenantId}/Tasks/new`}>
+                      <Button>Create task</Button>
+                    </Link>
+                  </CardContent>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10" />
+                        <TableHead className="w-8" />
+                        <TableHead>Task</TableHead>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Assignee</TableHead>
+                        <TableHead>Due</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tasks.map((task: any) => {
+                        const due = task.dueDate ? new Date(task.dueDate) : null
+                        const isOverdue =
+                          due &&
+                          isPast(due) &&
+                          task.status !== 'completed' &&
+                          task.status !== 'cancelled'
+                        return (
+                          <TableRow key={task.id}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedIds.has(task.id)}
+                                onCheckedChange={(c) =>
+                                  handleSelectOne(task.id, c === true)
+                                }
+                                aria-label={`Select ${task.title}`}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div
+                                className={cn(
+                                  'h-2 w-2 rounded-full',
+                                  priorityDot(task.priority)
+                                )}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              <Link
+                                href={`/crm/${tenantId}/Tasks/${task.id}`}
+                                className="text-primary hover:underline truncate max-w-[200px] block"
+                              >
+                                {task.title}
+                              </Link>
+                            </TableCell>
+                            <TableCell>
+                              {task.contactId ? (
+                                <Link
+                                  href={`/crm/${tenantId}/Contacts/${task.contactId}`}
+                                  className="text-primary hover:underline text-sm"
+                                >
+                                  {task.contact?.name ?? '—'}
+                                </Link>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {task.assignedTo?.name ?? 'Unassigned'}
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={cn(
+                                  isOverdue && 'text-destructive font-medium'
+                                )}
+                              >
+                                {due ? format(due, 'MMM d, yyyy') : '—'}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={statusVariant(task.status)}>
+                                {task.status?.replace('_', ' ') ?? 'pending'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                {task.status !== 'completed' &&
+                                  task.status !== 'cancelled' && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() =>
+                                        updateTask.mutate({
+                                          id: task.id,
+                                          data: { status: 'completed' },
+                                        })
+                                      }
+                                    >
+                                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                    </Button>
+                                  )}
+                                <Link href={`/crm/${tenantId}/Tasks/${task.id}`}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                </Link>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => remindTask.mutate(task.id)}
+                                  title="Send reminder"
+                                >
+                                  <Bell className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
               </Card>
-            )}
-          </>
-        )}
 
-        {/* Empty State */}
-        {tasks.length === 0 && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <p className="text-gray-600 dark:text-gray-400 mb-4">No tasks found</p>
-              <Link href={`/crm/${tenantId}/Tasks/new`}>
-                <Button>Create Your First Task</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        )}
+              {/* Pagination */}
+              {pagination && totalPages > 1 && (
+                <div className="flex flex-wrap items-center justify-between gap-4 mt-4">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-muted-foreground">
+                      {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
+                    </span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value))
+                        setPage(1)
+                      }}
+                      className="h-9 rounded-md border bg-background px-2 text-sm"
+                    >
+                      {PAGE_SIZES.map((n) => (
+                        <option key={n} value={n}>
+                          {n} per page
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {view === 'kanban' && (
+            <TasksKanbanView
+              tasks={tasks.map((t: any) => ({
+                id: t.id,
+                title: t.title,
+                description: t.description,
+                priority: t.priority,
+                status: t.status,
+                dueDate: t.dueDate,
+                contact: t.contact,
+                assignedTo: t.assignedTo,
+                reminderSentAt: t.reminderSentAt,
+              }))}
+              tenantId={tenantId}
+              onComplete={(id) => updateTask.mutate({ id, data: { status: 'completed' } })}
+              onRemind={(id) => remindTask.mutate(id)}
+              onStatusChange={() => queryClient.invalidateQueries({ queryKey: ['tasks'] })}
+            />
+          )}
+        </main>
       </div>
     </div>
   )
 }
-

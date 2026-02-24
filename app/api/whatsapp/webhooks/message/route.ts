@@ -133,6 +133,23 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Phase 1A: Update contact WhatsApp status (replied) and trigger AI rescore in background
+    const contactId = contactIdentity.contactId
+    const tenantId = session.account.tenantId
+    const existingStatus = (contactIdentity.contact as { whatsappStatus?: { sent?: boolean; opened?: boolean; replied?: boolean } })?.whatsappStatus ?? {}
+    const newWhatsappStatus = { ...existingStatus, sent: true, opened: true, replied: true }
+    await prisma.contact.update({
+      where: { id: contactId },
+      data: { whatsappStatus: newWhatsappStatus as object },
+    })
+    if (process.env.GROQ_API_KEY) {
+      import('@/lib/ai/lead-scorer-groq')
+        .then(({ scoreContactWithGroqAndPersist }) =>
+          scoreContactWithGroqAndPersist(contactId, tenantId, { whatsappStatus: newWhatsappStatus })
+        )
+        .catch((err) => console.error('Phase 1A WhatsApp rescore error:', err))
+    }
+
     // Log to audit
     await prisma.whatsappAuditLog.create({
       data: {

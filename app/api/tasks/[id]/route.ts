@@ -11,6 +11,9 @@ const updateTaskSchema = z.object({
   dueDate: z.string().datetime().optional(),
   contactId: z.string().optional(),
   assignedToId: z.string().optional(),
+  module: z.string().optional(),
+  recurrenceRule: z.enum(['none', 'daily', 'weekly', 'monthly']).optional().nullable(),
+  recurrenceEndDate: z.string().datetime().optional().nullable(),
 })
 
 // GET /api/tasks/[id] - Get a single task
@@ -100,6 +103,9 @@ export async function PATCH(
     }
     if (validated.contactId) updateData.contactId = validated.contactId
     if (validated.assignedToId) updateData.assignedToId = validated.assignedToId
+    if (validated.module) updateData.module = validated.module
+    if (validated.recurrenceRule !== undefined) updateData.recurrenceRule = validated.recurrenceRule === 'none' || validated.recurrenceRule === null ? null : validated.recurrenceRule
+    if (validated.recurrenceEndDate !== undefined) updateData.recurrenceEndDate = validated.recurrenceEndDate ? new Date(validated.recurrenceEndDate) : null
 
     const task = await prisma.task.update({
       where: { id: resolvedParams.id },
