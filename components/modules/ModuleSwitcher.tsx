@@ -58,8 +58,7 @@ import {
   PackageSearch,
   ShieldCheck,
   Sparkles,
-  ChevronRight,
-  LayoutGrid
+  ChevronRight
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
 import { modules as moduleConfigs, ModuleConfig } from '@/lib/modules.config'
