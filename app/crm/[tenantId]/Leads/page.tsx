@@ -1526,7 +1526,6 @@ export default function CRMLeadsPage() {
               )}
             </CardContent>
           </Card>
-          )}
           </div>
         }
         rightSidebar={<EntityAIPanel entityType="prospects" />}

@@ -12,8 +12,9 @@ import { mediumPriorityQueue } from '@/lib/queue/bull'
 const chatSchema = z.object({
   message: z.string().min(1),
   context: z.object({
-    module: z.enum(['crm', 'accounting', 'inventory', 'marketing', 'hr', 'general']).optional(),
+    module: z.string().optional(),
     tenantId: z.string().optional(),
+    page: z.string().optional(),
   }).optional(),
 })
 
@@ -342,15 +343,31 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function buildSystemPrompt(tenantId: string, context?: { module?: string; tenantId?: string }): string {
+function buildSystemPrompt(tenantId: string, context?: { module?: string; tenantId?: string; page?: string }): string {
+  const moduleLabel = context?.module || 'general'
+  const pageLabel = context?.page || 'Home'
+  const pageScopedIntro =
+    context?.module && context?.page
+      ? `
+You are the PayAid V3 AI assistant for the ${moduleLabel} → ${pageLabel} page.
+You ONLY answer questions about this company's data in this module and on this page.
+- Use the tenant_id = ${tenantId}.
+- Use the current page filters (if any) when summarizing.
+- REFUSE any personal, generic, or non-business questions (politics, health, personal life, etc.) with: "I can only help with your company data on this page."
+- When referencing numbers, ALWAYS match the underlying API responses for this page.
+- If the user asks "why", provide interpretation using the same data, not external sources.
+`
+      : ''
+
   const basePrompt = `You are PayAid AI, an intelligent business assistant for Indian startups and SMBs.
+${pageScopedIntro}
 
 ABSOLUTE REQUIREMENT: You MUST use the ACTUAL business data provided in the user's message. DO NOT give generic responses.
 
 STRICT BUSINESS-ONLY POLICY:
 - You ONLY assist with BUSINESS-RELATED queries
 - You MUST REJECT any personal questions about: relationships, love, family, personal life, dating, girlfriend/boyfriend, personal problems, non-business topics
-- If asked a personal question, politely decline: "I'm a business assistant and can only help with business-related questions. How can I assist you with your business today?"
+- If asked a personal question, politely decline: "I can only help with your company data on this page."
 - Focus ONLY on: business operations, sales, marketing, finance, operations, strategy, documents, proposals, plans, content creation
 
 BUSINESS DOCUMENT CREATION SUPPORT:
@@ -446,6 +463,7 @@ CRITICAL RULES:
 Current context:
 - Tenant ID: ${tenantId}
 - Module: ${context?.module || 'general'}
+- Page: ${context?.page || 'Home'}
 `
 
   // Add module-specific context

@@ -1,8 +1,7 @@
 'use client'
 
 import { ReactNode } from 'react'
-import { ModuleTopBar } from './ModuleTopBar'
-import { ModuleSwitcher } from './ModuleSwitcher'
+import { AppShell } from './AppShell'
 
 interface TopBarItem {
   name: string
@@ -15,40 +14,30 @@ interface UniversalModuleLayoutProps {
   moduleName: string
   topBarItems: TopBarItem[]
   children: ReactNode
-  sidebarWidth?: number // Default: 260px (expanded)
+  sidebarWidth?: number
+  /** Optional left sidebar (260px). */
+  sidebar?: ReactNode
 }
 
 /**
- * Universal Module Layout Component
- * Standardized structure for all 28 modules:
- * - Global navigation bar (module switcher)
- * - Sidebar navigation (260px expanded)
- * - Hero section with gradient + 4 metric cards
- * - GlassCard content sections
- * - Consistent spacing (32px gaps)
+ * Universal Module Layout: uses AppShell for unified top nav, optional sidebar, main content, and PageAIAssistant.
+ * Same structure across all modules (slate theme, max-w-7xl, 5-band dashboard pattern in pages).
  */
 export function UniversalModuleLayout({
   moduleId,
   moduleName,
   topBarItems,
   children,
-  sidebarWidth = 260,
+  sidebar,
 }: UniversalModuleLayoutProps) {
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Module Top Bar */}
-        <ModuleTopBar
-          moduleId={moduleId}
-          moduleName={moduleName}
-          items={topBarItems}
-        />
-        
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
-      </div>
-    </div>
+    <AppShell
+      moduleId={moduleId}
+      moduleName={moduleName}
+      topBarItems={topBarItems}
+      sidebar={sidebar}
+    >
+      {children}
+    </AppShell>
   )
 }

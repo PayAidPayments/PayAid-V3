@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom'
 import { Settings, LogOut, User, ChevronDown, Newspaper, MoreVertical } from 'lucide-react'
 import { NotificationBell } from '@/components/NotificationBell'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { GlobalSearch } from '@/components/layout/GlobalSearch'
 
 interface TopBarItem {
   name: string
@@ -118,16 +119,14 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
   }
 
   return (
-    <nav className="h-16 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-30">
-      <div className="flex items-center h-full px-4 sm:px-6 gap-4">
-        {/* Left: Logo and Module Name */}
-        <div className="flex items-center gap-4 flex-shrink-0">
-          {logo || <span className="text-2xl">{getModuleIcon(moduleId)}</span>}
-          <div>
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {moduleName}
-            </h2>
-          </div>
+    <header className="h-14 border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur sticky top-0 z-30">
+      <div className="max-w-7xl mx-auto w-full h-full flex items-center px-4 gap-4">
+        {/* Left: Logo and Module Name (spec: ModuleSwitcher + current module label) */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <ModuleSwitcher />
+          <span className="text-sm font-semibold tracking-tight text-slate-900 dark:text-slate-50">
+            {moduleName}
+          </span>
         </div>
 
         {/* Center: Navigation Items */}
@@ -244,27 +243,21 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
           {/* Notifications Bell - Always Visible */}
           <NotificationBell />
           
-          {/* News Button - Only visible for Admin/Owner (based on access) */}
           {user && (user.role === 'admin' || user.role === 'owner') && (
             <button
               onClick={handleNewsClick}
-              className="relative p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+              className="relative p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               aria-label="Open Industry Intelligence"
               title="Industry Intelligence"
             >
-              <Newspaper className="w-5 h-5" />
+              <Newspaper className="w-4 h-4" />
               {newsUnreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-semibold">
                   {newsUnreadCount > 9 ? '9+' : newsUnreadCount}
                 </span>
               )}
             </button>
           )}
-          
-          {/* Module Switcher - Always Visible */}
-          <ModuleSwitcher />
-          
-          {/* Profile Dropdown - Always Visible */}
           <div className="relative" ref={profileMenuRef}>
             <button
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}

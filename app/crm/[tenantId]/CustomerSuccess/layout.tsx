@@ -1,6 +1,6 @@
 'use client'
 
-import { ModuleTopBar } from '@/components/modules/ModuleTopBar'
+import { AppShell } from '@/components/modules/AppShell'
 import { useTenantId } from '@/lib/utils/get-tenant-id'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
@@ -44,17 +44,8 @@ export default function CRMCustomerSuccessLayout({
   ]
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <ModuleTopBar
-          moduleId="crm"
-          moduleName="CRM"
-          items={topBarItems}
-        />
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
-      </div>
-    </div>
+    <AppShell moduleId="crm" moduleName="CRM" topBarItems={topBarItems}>
+      {children}
+    </AppShell>
   )
 }

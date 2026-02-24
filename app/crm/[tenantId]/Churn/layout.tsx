@@ -5,7 +5,7 @@ import { useTenantId } from '@/lib/utils/get-tenant-id'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
-export default function CRMAgentsLayout({ children }: { children: React.ReactNode }) {
+export default function CRMChurnLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const tenantId = useTenantId()
 
@@ -21,8 +21,6 @@ export default function CRMAgentsLayout({ children }: { children: React.ReactNod
     { name: 'Agents', href: `/crm/${tenantId}/Agents` },
     { name: 'Churn', href: `/crm/${tenantId}/Churn` },
     { name: 'Metrics', href: `/crm/${tenantId}/Metrics` },
-    { name: 'Contacts', href: `/crm/${tenantId}/AllPeople` },
-    { name: 'Deals', href: `/crm/${tenantId}/Deals` },
     { name: 'Reports', href: `/crm/${tenantId}/Reports` },
   ]
 

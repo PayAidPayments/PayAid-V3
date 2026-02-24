@@ -1,14 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/api/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Package, MessageCircle, FileCheck, Utensils, Truck, Loader2, Play, CheckCircle, XCircle } from 'lucide-react'
+import { Package, MessageCircle, FileCheck, Utensils, Truck, Loader2, Play, CheckCircle, XCircle, Plus, GitBranch } from 'lucide-react'
 import { PageLoading } from '@/components/ui/loading'
+import Link from 'next/link'
 
 const AGENTS = [
   {
@@ -55,10 +56,21 @@ const AGENTS = [
 
 export default function AgentsDashboardPage() {
   const params = useParams()
+  const router = useRouter()
   const tenantId = params?.tenantId as string
   const queryClient = useQueryClient()
   const [runningId, setRunningId] = useState<string | null>(null)
   const [lastResult, setLastResult] = useState<Record<string, { ok: boolean; message?: string; data?: unknown }>>({})
+
+  const { data: workflows = [], isLoading: workflowsLoading } = useQuery({
+    queryKey: ['agent-workflows', tenantId],
+    queryFn: async () => {
+      const res = await apiRequest('/api/agents/workflows')
+      if (!res.ok) return []
+      return res.json()
+    },
+    enabled: !!tenantId,
+  })
 
   const runAgent = useMutation({
     mutationFn: async (agentId: string) => {
@@ -87,12 +99,45 @@ export default function AgentsDashboardPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Industry Agents</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Run pre-built workflows. India SMB only. All amounts in ₹ INR.
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Industry Agents</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Run pre-built workflows. India SMB only. All amounts in ₹ INR.
+          </p>
+        </div>
+        <Link href={`/crm/${tenantId}/Agents/builder`}>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            New workflow
+          </Button>
+        </Link>
       </div>
+
+      {workflows.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <GitBranch className="h-5 w-5" />
+              My workflows
+            </CardTitle>
+            <CardDescription>No-code workflows you created. Run manually or on schedule.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {workflows.map((w: { id: string; name: string; isActive?: boolean }) => (
+                <div key={w.id} className="flex items-center gap-2 rounded-lg border px-3 py-2 dark:border-gray-700">
+                  <span className="font-medium">{w.name}</span>
+                  <Badge variant={w.isActive ? 'default' : 'secondary'}>{w.isActive ? 'Active' : 'Paused'}</Badge>
+                  <Link href={`/crm/${tenantId}/Agents/builder?workflowId=${w.id}`}>
+                    <Button size="sm" variant="outline">Edit</Button>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         {AGENTS.map((agent) => {

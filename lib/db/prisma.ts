@@ -244,28 +244,26 @@ if (!isProduction() || typeof process !== 'undefined') {
     let lastHealthCheck = Date.now()
     const HEALTH_CHECK_INTERVAL = 60000 // Check every minute
 
-    // Periodic health check
+    // Periodic health check (log only when state changes to avoid spam)
     setInterval(async () => {
       try {
-        // Only check if we have a valid client
         if (globalForPrisma.prisma) {
           await globalForPrisma.prisma.$queryRaw`SELECT 1`
           isHealthy = true
           lastHealthCheck = Date.now()
         }
       } catch (error) {
-        console.error('Database health check failed:', error)
+        if (isHealthy) {
+          console.warn('Database health check failed (will retry):', (error as Error)?.message ?? error)
+        }
         isHealthy = false
-        
-        // Attempt to reconnect
         try {
           if (globalForPrisma.prisma) {
             await globalForPrisma.prisma.$disconnect()
-            // Prisma will automatically reconnect on next query
             isHealthy = true
           }
-        } catch (reconnectError) {
-          console.error('Failed to reconnect to database:', reconnectError)
+        } catch {
+          // Ignore reconnect errors; next query will reconnect
         }
       }
     }, HEALTH_CHECK_INTERVAL)

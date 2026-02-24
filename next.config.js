@@ -1,14 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Next.js 16: silence Turbopack vs webpack conflict when using --webpack in scripts
+  turbopack: {},
   // Vercel uses serverless functions, not standalone builds
   // Only enable standalone for Docker/self-hosted deployments
   // output: 'standalone', // Disabled for Vercel compatibility
   // Enable response compression (gzip/brotli) for better performance
   compress: true,
-  // Disable Turbopack - use webpack for better compatibility with native modules
-  // Turbopack has issues with native modules like ssh2, bull, dockerode
-  // webpack: {}, // Use webpack instead
+  // Custom webpack used via npm run dev --webpack / npm run build --webpack
   // Optimize TypeScript compilation
   typescript: {
     // Don't fail build on type errors during build (type checking happens separately)

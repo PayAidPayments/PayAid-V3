@@ -8,11 +8,26 @@ import { getGroqClient } from './groq'
 import { getOllamaClient } from './ollama'
 import { getHuggingFaceClient } from './huggingface'
 
+/** Phase 1B — India SMB industry presets for Website Builder v2 */
+export const WEBSITE_BUILDER_INDUSTRIES = [
+  { value: 'retail', label: 'Retail', sections: ['Hero', 'Features', 'Pricing (₹)', 'Testimonials', 'CTA', 'Contact/WhatsApp'] },
+  { value: 'fb', label: 'F&B', sections: ['Hero', 'Menu highlights', 'Pricing (₹)', 'Testimonials', 'CTA', 'Contact/WhatsApp'] },
+  { value: 'services', label: 'Services', sections: ['Hero', 'Features', 'Pricing (₹)', 'Testimonials', 'CTA', 'Contact/WhatsApp'] },
+  { value: 'manufacturing', label: 'Manufacturing', sections: ['Hero', 'Capabilities', 'Pricing (₹)', 'Testimonials', 'CTA', 'Contact/WhatsApp'] },
+  { value: 'ecom', label: 'Ecom', sections: ['Hero', 'Products', 'Pricing (₹)', 'Testimonials', 'CTA', 'Contact/WhatsApp'] },
+] as const
+
+export type WebsiteBuilderIndustry = typeof WEBSITE_BUILDER_INDUSTRIES[number]['value']
+
 export interface WebsiteGenerationRequest {
   prompt: string
   style?: 'modern' | 'classic' | 'minimal' | 'bold' | 'elegant'
   components?: string[] // e.g., ['hero', 'features', 'pricing', 'testimonials']
   framework?: 'nextjs' | 'react'
+  /** Phase 1B — industry for India SMB tuned copy and sections */
+  industry?: WebsiteBuilderIndustry
+  businessName?: string
+  oneLiner?: string
 }
 
 export interface GeneratedComponent {
@@ -36,8 +51,12 @@ export interface WebsiteGenerationResponse {
 export async function generateWebsiteComponents(
   request: WebsiteGenerationRequest
 ): Promise<WebsiteGenerationResponse> {
-  const systemPrompt = buildSystemPrompt(request)
-  const userPrompt = buildUserPrompt(request)
+  const systemPrompt = request.industry
+    ? buildSystemPromptIndiaSMB(request)
+    : buildSystemPrompt(request)
+  const userPrompt = request.industry
+    ? buildUserPromptIndiaSMB(request)
+    : buildUserPrompt(request)
 
   // Try Groq first (fastest inference)
   try {
@@ -144,6 +163,43 @@ function buildUserPrompt(request: WebsiteGenerationRequest): string {
     prompt += `\n\nRequired components: ${request.components.map(c => `- ${c}`).join('\n')}`
   }
   
+  return prompt
+}
+
+/** Phase 1B — India SMB system prompt: tone, ₹ only, no lorem, Indian placeholders */
+function buildSystemPromptIndiaSMB(request: WebsiteGenerationRequest): string {
+  const framework = request.framework || 'nextjs'
+  const industry = request.industry || 'services'
+  const industryCopy: Record<string, string> = {
+    retail: 'retail store / shop for Indian SMB. Highlight GST-ready billing, local delivery, offers in ₹.',
+    fb: 'restaurant / F&B business in India. Menu, dining, delivery. All prices in ₹. Indian phone/address format.',
+    services: 'professional services business in India. Clear service list, pricing in ₹, contact/WhatsApp.',
+    manufacturing: 'manufacturing / B2B in India. Capabilities, quality, GST. Quotes in ₹.',
+    ecom: 'e-commerce / online store for India. Products, prices in ₹, delivery, WhatsApp support.',
+  }
+  return `You are an expert ${framework === 'nextjs' ? 'Next.js 14' : 'React'} developer. Create a professional landing page for an Indian SMB.
+
+STRICT RULES:
+1. India SMB only. Audience: Indian small business customers.
+2. Currency: ONLY ₹ (INR). No $ or USD or EUR anywhere.
+3. No lorem ipsum. Use real placeholder copy appropriate for ${industryCopy[industry] ?? industryCopy.services}
+4. Indian format: phone +91-XXXXXXXXXX, address (City, State, PIN). Use placeholder like "Mumbai, Maharashtra 400001".
+5. Generate ONLY valid ${framework === 'nextjs' ? 'Next.js 14 App Router' : 'React'} TypeScript code. Tailwind CSS only. Mobile-first.
+6. Export as named exports. NO markdown, NO explanations, ONLY code.
+7. Sections: Hero, Features/Capabilities, Pricing (₹), Testimonials, CTA, Contact/WhatsApp. Professional tone.`
+}
+
+/** Phase 1B — User prompt with industry, business name, one-liner */
+function buildUserPromptIndiaSMB(request: WebsiteGenerationRequest): string {
+  const industry = request.industry || 'services'
+  const preset = WEBSITE_BUILDER_INDUSTRIES.find((i) => i.value === industry)
+  const sections = preset?.sections ?? ['Hero', 'Features', 'Pricing (₹)', 'Testimonials', 'CTA', 'Contact/WhatsApp']
+  const businessName = request.businessName?.trim() || 'Our Business'
+  const oneLiner = request.oneLiner?.trim() || 'Professional services for Indian SMBs.'
+  let prompt = `Create a ${request.style || 'modern'} landing page for: ${businessName}. Tagline: ${oneLiner}. Industry: ${industry}.`
+  prompt += `\n\nSections to include: ${sections.join(', ')}.`
+  prompt += `\n\nAll prices and amounts in ₹ (INR) only. Indian phone and address placeholders. No lorem ipsum. Generate clean React/TypeScript with Tailwind.`
+  if (request.prompt?.trim()) prompt += `\n\nAdditional notes: ${request.prompt}`
   return prompt
 }
 
