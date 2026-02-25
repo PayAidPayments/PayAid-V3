@@ -2,13 +2,13 @@
 
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 import { getModuleConfig } from '@/lib/modules/module-config'
-import { FileText, Plus } from 'lucide-react'
+import { FileText, Plus, Undo2 } from 'lucide-react'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { PageLoading } from '@/components/ui/loading'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -17,6 +17,7 @@ export default function JournalEntriesPage() {
   const params = useParams()
   const tenantId = params?.tenantId as string
   const { token } = useAuthStore()
+  const queryClient = useQueryClient()
   const moduleConfig = getModuleConfig('finance')
 
   const { data, isLoading } = useQuery({
@@ -27,6 +28,23 @@ export default function JournalEntriesPage() {
       })
       if (!res.ok) throw new Error('Failed to load')
       return res.json()
+    },
+  })
+
+  const reverseMutation = useMutation({
+    mutationFn: async (entryId: string) => {
+      const res = await fetch(`/api/finance/journal-entries/${entryId}/reverse`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Failed to reverse')
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['finance-journal-entries', tenantId] })
     },
   })
 
@@ -49,7 +67,7 @@ export default function JournalEntriesPage() {
           <CardHeader>
             <CardTitle className="dark:text-gray-100">Entries</CardTitle>
             <CardDescription className="dark:text-gray-400">
-              Create and view manual journal entries. Debit and credit must balance.
+              Create and view manual journal entries (numbered JE-YYYY-NNNN). Debit and credit must balance. Use Reverse to create an offsetting entry.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -78,6 +96,7 @@ export default function JournalEntriesPage() {
                       <TableHead className="dark:text-gray-300">Debit</TableHead>
                       <TableHead className="dark:text-gray-300">Credit</TableHead>
                       <TableHead className="dark:text-gray-300">Amount</TableHead>
+                      <TableHead className="dark:text-gray-300 text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -91,6 +110,25 @@ export default function JournalEntriesPage() {
                         <TableCell className="dark:text-gray-200">{e.debitAccount?.accountName ?? '—'}</TableCell>
                         <TableCell className="dark:text-gray-200">{e.creditAccount?.accountName ?? '—'}</TableCell>
                         <TableCell className="dark:text-gray-200">{formatINRForDisplay(e.amount)}</TableCell>
+                        <TableCell className="dark:text-gray-200 text-right">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="dark:border-gray-600 dark:text-gray-300"
+                            disabled={reverseMutation.isPending}
+                            onClick={() => reverseMutation.mutate(e.id)}
+                            title="Create reversing entry"
+                          >
+                            {reverseMutation.isPending && reverseMutation.variables === e.id ? (
+                              <span className="animate-pulse">...</span>
+                            ) : (
+                              <>
+                                <Undo2 className="h-4 w-4 mr-1" />
+                                Reverse
+                              </>
+                            )}
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

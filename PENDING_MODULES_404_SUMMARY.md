@@ -96,17 +96,23 @@ Pick one track and tick as you go.
 - [x] **Resume Matching Score** (2–3 weeks) – show match score in Recruitment UI ✅
 
 ### Option B – Finance (critical SMB)
-- [ ] **TDS Management** – TDS on payments, Form 16A/26Q/24Q, due reminders
-- [ ] **E-Invoicing & E-Way Bill** – IRN, QR, e-way bill (GST portal API)
-- [ ] **Bank Reconciliation (full)** – statement import, matching, multi-bank
-- [ ] **Advance Payments & Receipts** – track advances, adjust against invoices
-- [ ] **Journal Entries** – manual JEs, numbering, reversals
+- [x] **TDS Management** – Due reminders (days left), Form 16A/26Q/24Q copy + Export/Prepare placeholders; TDS on payments noted in UI ✅
+- [x] **E-Invoicing & E-Way Bill** – IRN/QR/e-way UI placeholders + “API coming soon” buttons; portal links ✅
+- [x] **Bank Reconciliation (full)** – Multi-bank filter (by account), statement import placeholder + copy ✅
+- [x] **Advance Payments & Receipts** – Adjust-against-invoice flow (modal + PATCH) ✅
+- [x] **Journal Entries** – Numbering (JE-YYYY-NNNN), reversals (POST …/reverse + Reverse button) ✅
 
 ### Option C – 404/UX polish
-- [ ] **Admin tenant modules** – optional: friendly “tenant not found” message instead of raw 404
-- [ ] **Sites** – optional: custom 404 page for missing subdomain/page
-- [ ] **Blog / Features** – optional: “Post/feature not found” copy and CTA
+- [x] **Admin tenant modules** – `app/admin/tenants/[tenantId]/not-found.tsx` – friendly “Tenant not found” + links ✅
+- [x] **Sites** – `app/sites/[subdomain]/not-found.tsx` – “Site or page not found” + CTA ✅
+- [x] **Blog / Features** – `app/blog/not-found.tsx` and `app/features/not-found.tsx` – post/feature not found copy and CTA ✅
+
+### Follow-up (next steps completed)
+- [x] **TDS reminders** – `GET /api/finance/tds/reminders?days=7`; in-app warning banner on TDS page when a return is due within 7 days ✅
+- [x] **Bank statement upload (stub)** – `POST /api/finance/bank-reconcile/import` accepts CSV/TXT/OFX; returns message + line count; Bank Reconciliation page has file input and shows result toast ✅
 
 ---
 
-**Next step:** Choose Option A, B, or C (or one specific item), and we can implement it next.
+**Next step (suggested):** HR Phase 2 deliverables (mobile app, resume screening AI, Tally integration, compliance automation). See **docs/NEXT_STEPS_ROADMAP.md** for the full roadmap.
+
+**Recently completed:** Trial Balance (API + Reports UI), Enhanced P&L and Balance Sheet (real data + breakdowns), CA Assistant (real links + TDS reminders + bank recon summary).

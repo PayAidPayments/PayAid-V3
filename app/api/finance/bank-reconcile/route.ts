@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const reconciled = searchParams.get('reconciled') // 'true' | 'false' | omit = all
     const limit = Math.min(parseInt(searchParams.get('limit') || '100', 10), 200)
 
-    const bankAccountIds = await prisma.chartOfAccounts.findMany({
+    const bankAccountsList = await prisma.chartOfAccounts.findMany({
       where: {
         tenantId,
         isActive: true,
@@ -23,8 +23,9 @@ export async function GET(request: NextRequest) {
           { accountName: { contains: 'bank', mode: 'insensitive' } },
         ],
       },
-      select: { id: true },
-    }).then((r) => r.map((a) => a.id))
+      select: { id: true, accountCode: true, accountName: true },
+    })
+    const bankAccountIds = bankAccountsList.map((a) => a.id)
 
     const where: {
       tenantId: string
@@ -83,6 +84,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       transactions: list,
       summary: { unreconciledCount, reconciledCount, bankAccountsCount: bankAccountIds.length },
+      bankAccounts: bankAccountsList.map((a) => ({ id: a.id, name: `${a.accountCode} – ${a.accountName}` })),
     })
   } catch (error: unknown) {
     return handleLicenseError(error)

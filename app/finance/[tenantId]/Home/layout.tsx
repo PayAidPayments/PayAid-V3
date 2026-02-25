@@ -1,37 +1,10 @@
 'use client'
 
-import { useParams } from 'next/navigation'
-import { UniversalModuleLayout } from '@/components/modules/UniversalModuleLayout'
-
+/** Finance Home: shell is provided by parent finance/[tenantId]/layout.tsx */
 export default function FinanceHomeLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const params = useParams()
-  const tenantId = params.tenantId as string
-
-  const topBarItems = [
-    { name: 'Home', href: `/finance/${tenantId}/Home` },
-    { name: 'Invoices', href: `/finance/${tenantId}/Invoices` },
-    { name: 'Credit Notes', href: `/finance/${tenantId}/Credit-Notes` },
-    { name: 'Debit Notes', href: `/finance/${tenantId}/Debit-Notes` },
-    { name: 'Accounting', href: `/finance/${tenantId}/Accounting` },
-    { name: 'Purchase Orders', href: `/finance/${tenantId}/Purchase-Orders` },
-    { name: 'GST Reports', href: `/finance/${tenantId}/GST` },
-    { name: 'TDS', href: `/finance/${tenantId}/TDS` },
-    { name: 'E-Invoicing', href: `/finance/${tenantId}/E-Invoicing` },
-    { name: 'Bank Reconciliation', href: `/finance/${tenantId}/Bank-Reconciliation` },
-    { name: 'Advances', href: `/finance/${tenantId}/Advances` },
-  ]
-
-  return (
-    <UniversalModuleLayout
-      moduleId="finance"
-      moduleName="Finance"
-      topBarItems={topBarItems}
-    >
-      {children}
-    </UniversalModuleLayout>
-  )
+  return <>{children}</>
 }

@@ -14,15 +14,42 @@ export default function ProductivityModulePage() {
   const { tenant, isAuthenticated } = useAuthStore()
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    // Resolve tenant from store or localStorage (store may not have rehydrated yet)
+    let effectiveTenantId = tenant?.id
+    if (!effectiveTenantId && typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('auth-storage')
+        if (stored?.trim()) {
+          const parsed = JSON.parse(stored)
+          effectiveTenantId = parsed?.state?.tenant?.id || null
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    const hasToken = typeof window !== 'undefined' && (() => {
+      try {
+        const stored = localStorage.getItem('auth-storage')
+        if (stored?.trim()) {
+          const parsed = JSON.parse(stored)
+          return !!parsed?.state?.token
+        }
+      } catch {
+        // ignore
+      }
+      return false
+    })()
+
+    if (!isAuthenticated && !hasToken) {
       router.push('/login')
       return
     }
 
-    if (tenant?.id) {
-      router.push(`/productivity/${tenant.id}/sheets`)
+    if (effectiveTenantId) {
+      router.replace(`/productivity/${effectiveTenantId}/sheets`)
     } else {
-      router.push('/dashboard')
+      router.replace('/dashboard')
     }
   }, [isAuthenticated, tenant?.id, router])
 

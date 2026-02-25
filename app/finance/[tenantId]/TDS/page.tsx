@@ -11,6 +11,7 @@ import { getModuleConfig } from '@/lib/modules/module-config'
 import { FileText, Calendar, IndianRupee, Award, AlertCircle } from 'lucide-react'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { PageLoading } from '@/components/ui/loading'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import {
   Table,
   TableBody,
@@ -26,7 +27,7 @@ export default function FinanceTDSPage() {
   const { token } = useAuthStore()
   const moduleConfig = getModuleConfig('finance')
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['finance-tds', tenantId],
     queryFn: async () => {
       const res = await fetch(`/api/finance/tds`, {
@@ -36,6 +37,18 @@ export default function FinanceTDSPage() {
       return res.json()
     },
   })
+
+  const { data: remindersData } = useQuery({
+    queryKey: ['finance-tds-reminders', tenantId],
+    queryFn: async () => {
+      const res = await fetch('/api/finance/tds/reminders?days=7', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) return { reminders: [] }
+      return res.json()
+    },
+  })
+  const reminders = remindersData?.reminders ?? []
 
   if (isLoading) {
     return <PageLoading message="Loading TDS summary..." fullScreen={false} />
@@ -75,6 +88,22 @@ export default function FinanceTDSPage() {
       />
 
       <div className="p-6 space-y-6">
+        {reminders.length > 0 && (
+          <Alert variant="warning" className="dark:bg-amber-900/20 dark:border-amber-600 dark:text-amber-200">
+            <AlertTitle>TDS return due soon</AlertTitle>
+            <AlertDescription>
+              {reminders.length === 1 ? (
+                <span>{reminders[0].form} ({reminders[0].period}) due in {reminders[0].daysLeft} day{reminders[0].daysLeft !== 1 ? 's' : ''} – {new Date(reminders[0].dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}. File on TRACES to avoid interest.</span>
+              ) : (
+                <ul className="list-disc list-inside mt-1">
+                  {reminders.map((r: { form: string; period: string; dueDate: string; daysLeft: number }, i: number) => (
+                    <li key={i}>{r.form} ({r.period}) – {r.daysLeft} day{r.daysLeft !== 1 ? 's' : ''} left ({new Date(r.dueDate).toLocaleDateString('en-IN')})</li>
+                  ))}
+                </ul>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
@@ -106,17 +135,18 @@ export default function FinanceTDSPage() {
             <CardHeader>
               <CardTitle className="dark:text-gray-100 flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Return due dates
+                Return due dates & reminders
               </CardTitle>
               <CardDescription className="dark:text-gray-400">
-                26Q / 24Q filing due dates (typically 31st of next month after quarter end)
+                26Q / 24Q / 16A – file by 31st of next month after quarter. Set reminders so you don&apos;t miss deadlines.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
-                {dueDates.slice(0, 5).map((d: { form: string; period: string; dueDate: string; description: string }, i: number) => {
+                {dueDates.slice(0, 6).map((d: { form: string; period: string; dueDate: string; description: string }, i: number) => {
                   const due = new Date(d.dueDate)
                   const isPast = due < new Date()
+                  const daysLeft = Math.ceil((due.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
                   return (
                     <li key={i} className="flex justify-between items-start text-sm">
                       <div>
@@ -124,6 +154,11 @@ export default function FinanceTDSPage() {
                         <span className="text-gray-500 dark:text-gray-400 ml-2">{d.period}</span>
                         {isPast && (
                           <span className="ml-2 text-amber-600 dark:text-amber-400 text-xs">Due passed</span>
+                        )}
+                        {!isPast && daysLeft <= 30 && (
+                          <span className="ml-2 text-amber-600 dark:text-amber-400 text-xs">
+                            {daysLeft <= 0 ? 'Due soon' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`}
+                          </span>
                         )}
                       </div>
                       <span className={isPast ? 'text-gray-500' : 'dark:text-gray-300'}>
@@ -198,23 +233,28 @@ export default function FinanceTDSPage() {
 
         <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="dark:text-gray-100">Compliance</CardTitle>
+            <CardTitle className="dark:text-gray-100">Compliance – Form 16A / 26Q / 24Q</CardTitle>
             <CardDescription className="dark:text-gray-400">
-              Form 16A (TDS certificates) and return filing (26Q, 27Q, 24Q) – use GST portal / TRACES for actual filing.
+              Issue TDS certificates (Form 16A) to deductees. File 26Q (salary), 27Q (non-resident), 24Q (non-salary) on TRACES. PayAid aggregates TDS from invoices; use TRACES for filing and certificate generation.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-4">
-            <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300" disabled>
-              Generate Form 16A (coming soon)
-            </Button>
-            <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300" disabled>
-              Prepare 26Q (coming soon)
-            </Button>
-            <a href="https://www.tdscpc.gov.in" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300">
-                TRACES portal
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-3">
+              <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300" disabled title="Export 16A data for TRACES upload">
+                Export for Form 16A
               </Button>
-            </a>
+              <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300" disabled title="Prepare 26Q/24Q statement for TRACES">
+                Prepare 26Q / 24Q
+              </Button>
+              <a href="https://www.tdscpc.gov.in" target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300">
+                  TRACES portal
+                </Button>
+              </a>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              TDS on payments (vendor payments, rent, etc.) can be added when recording expenses or payments; they will appear here once supported. Currently TDS from invoices is included.
+            </p>
           </CardContent>
         </Card>
       </div>

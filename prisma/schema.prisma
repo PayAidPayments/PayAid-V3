@@ -225,6 +225,7 @@ model Tenant {
   // Financial Dashboard Module 1.3
   chartOfAccounts              ChartOfAccounts[]
   financialTransactions        FinancialTransaction[]
+  bankStatementImports         BankStatementImport[]
   generalLedger                GeneralLedger[]
   financialPeriods             FinancialPeriod[]
   financialBudgets             FinancialBudget[]
@@ -8643,11 +8644,12 @@ model ChartOfAccounts {
 
   // Relations
   tenant             Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  debitTransactions  FinancialTransaction[] @relation("DebitAccount")
-  creditTransactions FinancialTransaction[] @relation("CreditAccount")
-  generalLedger      GeneralLedger[]
-  budgets            FinancialBudget[]
-  variances          FinancialVariance[]
+  debitTransactions      FinancialTransaction[] @relation("DebitAccount")
+  creditTransactions     FinancialTransaction[] @relation("CreditAccount")
+  generalLedger          GeneralLedger[]
+  budgets                FinancialBudget[]
+  variances              FinancialVariance[]
+  bankStatementImports   BankStatementImport[]
 
   @@unique([tenantId, accountCode])
   @@index([tenantId, accountType])
@@ -8692,13 +8694,56 @@ model FinancialTransaction {
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant                 Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  matchedStatementLines   BankStatementLine[]
 
   @@index([tenantId, transactionDate])
   @@index([debitAccountId, creditAccountId])
   @@index([tenantId, isPosted, approvalStatus])
   @@index([sourceModule, sourceId])
   @@map("financial_transactions")
+}
+
+// Bank statement import (CSV/OFX) for reconciliation
+model BankStatementImport {
+  id             String              @id @default(cuid())
+  tenantId       String
+  bankAccountId  String              // ChartOfAccounts (bank type)
+  fileName       String
+  importedAt     DateTime            @default(now())
+  lineCount      Int                 @default(0)
+  format         String              @default("csv") // csv, ofx
+  metadata       Json?               @default("{}") // e.g. column mapping used
+  tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bankAccount    ChartOfAccounts     @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  lines          BankStatementLine[]
+
+  @@index([tenantId])
+  @@index([tenantId, bankAccountId])
+  @@index([importedAt])
+  @@map("bank_statement_imports")
+}
+
+model BankStatementLine {
+  id                    String                 @id @default(cuid())
+  importId               String
+  lineIndex              Int                   // order within file
+  transactionDate        DateTime              @db.Date
+  description            String?
+  referenceNumber        String?
+  debitAmount            Decimal               @default(0) @db.Decimal(15, 2)
+  creditAmount           Decimal               @default(0) @db.Decimal(15, 2)
+  balanceAfter           Decimal?              @db.Decimal(15, 2)
+  currency               String                @default("INR")
+  rawDescription         String?               // original narration text
+  matchedTransactionId   String?               // linked FinancialTransaction when reconciled
+  import                 BankStatementImport   @relation(fields: [importId], references: [id], onDelete: Cascade)
+  matchedTransaction     FinancialTransaction? @relation(fields: [matchedTransactionId], references: [id], onDelete: SetNull)
+
+  @@index([importId])
+  @@index([transactionDate])
+  @@index([matchedTransactionId])
+  @@map("bank_statement_lines")
 }
 
 // General Ledger (Denormalized for performance)

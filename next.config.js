@@ -19,7 +19,7 @@ const nextConfig = {
   // Optimize build performance
   experimental: {
     // Enable faster builds with SWC minification
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons', 'framer-motion'],
   },
   
   // Security Headers (Layer 6)
@@ -46,7 +46,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws://localhost:3001 wss://localhost:3001 ws://127.0.0.1:3001 wss://127.0.0.1:3001 https://*.supabase.co https://*.vercel.app;"
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws://localhost:3001 wss://localhost:3001 ws://127.0.0.1:3001 wss://127.0.0.1:3001 https://*.supabase.co https://*.vercel.app;"
           },
           {
             key: 'Referrer-Policy',

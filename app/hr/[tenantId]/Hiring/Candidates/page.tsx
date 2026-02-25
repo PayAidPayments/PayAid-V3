@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoading } from '@/components/ui/loading'
+import { Sparkles } from 'lucide-react'
 
 interface Candidate {
   id: string
@@ -25,12 +26,70 @@ interface Candidate {
   createdAt: string
 }
 
+interface JobRequisition {
+  id: string
+  title: string
+  status: string
+  _count: { candidateJobs: number }
+}
+
+interface RankedEntry {
+  candidateId: string
+  matchScore: number
+  matchLevel: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR'
+}
+
 export default function CandidatesPage() {
   const params = useParams()
   const tenantId = params.tenantId as string
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [selectedJobId, setSelectedJobId] = useState<string>('')
+  const [rankedMap, setRankedMap] = useState<Record<string, RankedEntry>>({})
+  const [isRanking, setIsRanking] = useState(false)
+
+  const { data: jobsData } = useQuery<{ requisitions: JobRequisition[] }>({
+    queryKey: ['hr-job-requisitions-list'],
+    queryFn: async () => {
+      const res = await fetch('/api/hr/job-requisitions?limit=100')
+      if (!res.ok) throw new Error('Failed to fetch jobs')
+      return res.json()
+    },
+  })
+  const jobs = jobsData?.requisitions ?? []
+
+  useEffect(() => {
+    if (!selectedJobId) {
+      setRankedMap({})
+      return
+    }
+    let cancelled = false
+    setIsRanking(true)
+    fetch(`/api/hr/recruitment/jobs/${selectedJobId}/rank-candidates`, { method: 'POST' })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Failed to rank'))))
+      .then((data) => {
+        if (cancelled) return
+        const map: Record<string, RankedEntry> = {}
+        ;(data.ranked ?? []).forEach((r: { candidateId: string; matchScore: number; matchLevel: string }) => {
+          map[r.candidateId] = {
+            candidateId: r.candidateId,
+            matchScore: r.matchScore,
+            matchLevel: r.matchLevel as RankedEntry['matchLevel'],
+          }
+        })
+        setRankedMap(map)
+      })
+      .catch(() => {
+        if (!cancelled) setRankedMap({})
+      })
+      .finally(() => {
+        if (!cancelled) setIsRanking(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [selectedJobId])
 
   const { data, isLoading, refetch } = useQuery<{
     candidates: Candidate[]
@@ -86,7 +145,7 @@ export default function CandidatesPage() {
       {/* Filters */}
       <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
               <input
@@ -113,6 +172,26 @@ export default function CandidatesPage() {
                 <option value="HIRED">Hired</option>
                 <option value="REJECTED">Rejected</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
+                <Sparkles className="h-3.5 w-3" /> Score for job
+              </label>
+              <select
+                value={selectedJobId}
+                onChange={(e) => setSelectedJobId(e.target.value)}
+                className="w-full h-10 rounded-md border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 px-3"
+              >
+                <option value="">No job selected</option>
+                {jobs.map((j) => (
+                  <option key={j.id} value={j.id}>
+                    {j.title} ({j._count.candidateJobs})
+                  </option>
+                ))}
+              </select>
+              {selectedJobId && isRanking && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Loading scores…</p>
+              )}
             </div>
             <div className="flex items-end">
               <Button onClick={() => refetch()} className="w-full dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
@@ -149,6 +228,13 @@ export default function CandidatesPage() {
                     <TableHead className="dark:text-gray-300">Phone</TableHead>
                     <TableHead className="dark:text-gray-300">Current Company</TableHead>
                     <TableHead className="dark:text-gray-300">Expected CTC</TableHead>
+                    {selectedJobId && (
+                      <TableHead className="dark:text-gray-300">
+                        <span className="flex items-center gap-1">
+                          <Sparkles className="h-3.5 w-3" /> Match (job)
+                        </span>
+                      </TableHead>
+                    )}
                     <TableHead className="dark:text-gray-300">Applications</TableHead>
                     <TableHead className="dark:text-gray-300">Interviews</TableHead>
                     <TableHead className="dark:text-gray-300">Status</TableHead>
@@ -156,37 +242,61 @@ export default function CandidatesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {candidates.map((candidate) => (
-                    <TableRow key={candidate.id} className="dark:border-gray-700 dark:hover:bg-gray-700/50">
-                      <TableCell className="font-medium dark:text-gray-200">{candidate.fullName}</TableCell>
-                      <TableCell className="dark:text-gray-200">{candidate.email}</TableCell>
-                      <TableCell className="dark:text-gray-200">{candidate.phone}</TableCell>
-                      <TableCell className="dark:text-gray-200">{candidate.currentCompany || '-'}</TableCell>
-                      <TableCell className="dark:text-gray-200">
-                        {candidate.expectedCtcInr
-                          ? `₹${Number(candidate.expectedCtcInr).toLocaleString('en-IN')}`
-                          : '-'}
-                      </TableCell>
-                      <TableCell className="dark:text-gray-200">{candidate._count.candidateJobs}</TableCell>
-                      <TableCell className="dark:text-gray-200">{candidate._count.interviewRounds}</TableCell>
-                      <TableCell>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            candidate.status
-                          )}`}
-                        >
-                          {candidate.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Link href={`/hr/${tenantId}/Hiring/Candidates/${candidate.id}`}>
-                          <Button variant="outline" size="sm" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-                            View
-                          </Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {candidates.map((candidate) => {
+                    const rank = rankedMap[candidate.id]
+                    return (
+                      <TableRow key={candidate.id} className="dark:border-gray-700 dark:hover:bg-gray-700/50">
+                        <TableCell className="font-medium dark:text-gray-200">{candidate.fullName}</TableCell>
+                        <TableCell className="dark:text-gray-200">{candidate.email}</TableCell>
+                        <TableCell className="dark:text-gray-200">{candidate.phone}</TableCell>
+                        <TableCell className="dark:text-gray-200">{candidate.currentCompany || '-'}</TableCell>
+                        <TableCell className="dark:text-gray-200">
+                          {candidate.expectedCtcInr
+                            ? `₹${Number(candidate.expectedCtcInr).toLocaleString('en-IN')}`
+                            : '-'}
+                        </TableCell>
+                        {selectedJobId && (
+                          <TableCell className="dark:text-gray-200">
+                            {rank ? (
+                              <span className="inline-flex items-center gap-1.5">
+                                <span className="font-medium">{rank.matchScore}%</span>
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                                    rank.matchLevel === 'EXCELLENT' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                    rank.matchLevel === 'GOOD' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                    rank.matchLevel === 'FAIR' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                                  }`}
+                                >
+                                  {rank.matchLevel}
+                                </span>
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 dark:text-gray-500">—</span>
+                            )}
+                          </TableCell>
+                        )}
+                        <TableCell className="dark:text-gray-200">{candidate._count.candidateJobs}</TableCell>
+                        <TableCell className="dark:text-gray-200">{candidate._count.interviewRounds}</TableCell>
+                        <TableCell>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                              candidate.status
+                            )}`}
+                          >
+                            {candidate.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Link href={`/hr/${tenantId}/Hiring/Candidates/${candidate.id}`}>
+                            <Button variant="outline" size="sm" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                              View
+                            </Button>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
 
