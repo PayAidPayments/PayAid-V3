@@ -1,10 +1,10 @@
 /**
  * Initialize AI Influencer Marketing module
  * Call this endpoint once on server startup or manually
+ * Lazy-loads setup (and fluent-ffmpeg) only when this endpoint is called.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { initializeAIInfluencerModule, getDependencyStatus } from '@/lib/ai-influencer/setup'
 import { checkTemplatesAvailable } from '@/lib/ai-influencer/template-fallback'
 
 /**
@@ -13,6 +13,8 @@ import { checkTemplatesAvailable } from '@/lib/ai-influencer/template-fallback'
  */
 export async function POST(request: NextRequest) {
   try {
+    const { initializeAIInfluencerModule, getDependencyStatus } = await import('@/lib/ai-influencer/setup')
+
     // Initialize module
     await initializeAIInfluencerModule()
 
