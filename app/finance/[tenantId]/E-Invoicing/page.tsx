@@ -58,14 +58,19 @@ export default function EInvoicingPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Generate IRN via NIC e-invoice API or GST portal. QR code can be generated after IRN.
+                Invoice Reference Number (IRN) is mandatory for B2B above threshold. Generate via NIC e-invoice API; QR code can be generated after IRN. Connect your GSTIN and IRN API in Settings when ready.
               </p>
-              <a href="https://einv-apisandbox.nic.in" target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  E-Invoice Sandbox
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" className="dark:border-gray-600 dark:text-gray-300" disabled title="GST portal API integration coming soon">
+                  Generate IRN (API coming soon)
                 </Button>
-              </a>
+                <a href="https://einv-apisandbox.nic.in" target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" className="dark:border-gray-600 dark:text-gray-300">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    E-Invoice Sandbox
+                  </Button>
+                </a>
+              </div>
             </CardContent>
           </Card>
           <Card className="dark:bg-gray-800 dark:border-gray-700">
@@ -80,14 +85,19 @@ export default function EInvoicingPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Generate e-way bill from ewaybillgst.gov.in. Link to invoice after generation.
+                Required for movement of goods when value exceeds ₹50,000. Generate from ewaybillgst.gov.in and link to invoice.
               </p>
-              <a href="https://ewaybillgst.gov.in" target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  E-Way Bill Portal
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" className="dark:border-gray-600 dark:text-gray-300" disabled title="GST portal API integration coming soon">
+                  Generate E-Way (API coming soon)
                 </Button>
-              </a>
+                <a href="https://ewaybillgst.gov.in" target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" className="dark:border-gray-600 dark:text-gray-300">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    E-Way Bill Portal
+                  </Button>
+                </a>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -99,7 +109,7 @@ export default function EInvoicingPage() {
               Invoices – IRN / E-Way status
             </CardTitle>
             <CardDescription className="dark:text-gray-400">
-              Generate IRN and E-Way Bill from invoice view when integration is enabled.
+              Invoices listed below. IRN and E-Way can be generated per invoice once GST portal API integration is enabled.
             </CardDescription>
           </CardHeader>
           <CardContent>

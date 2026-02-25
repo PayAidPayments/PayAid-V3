@@ -89,8 +89,9 @@ export function PayAidPDFEmbed() {
       for (const f of mergeFiles) {
         const buf = await f.arrayBuffer()
         const src = await PDFDocument.load(buf)
-        const pages = src.getPageIndices()
-        const copied = await merged.copyPages(src, pages)
+        const pageCount = src.getPageCount()
+        const indices = Array.from({ length: pageCount }, (_, i) => i)
+        const copied = await merged.copyPages(src, indices)
         copied.forEach((p) => merged.addPage(p))
       }
       const bytes = await merged.save()

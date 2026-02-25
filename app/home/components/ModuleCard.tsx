@@ -41,14 +41,17 @@ function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {
     ? tenantIdFromParams 
     : (tenant?.id && typeof tenant.id === 'string' && tenant.id.trim() ? tenant.id : undefined);
   
-  // Construct module URL - always use base module URL to let entry point handle redirect
+  // Construct module URL - use tenant-scoped URL when we have tenantId so user goes directly to module
   const getModuleUrl = (): string => {
     // App Store / Marketplace: use tenant-scoped dashboard URL (decoupled structure)
     if (module.id === 'marketplace') {
       return getDashboardUrl('/marketplace');
     }
-    // Always return base module URL (e.g., /crm, /sales, /finance)
-    // The module entry point will handle redirecting to /module/[tenantId]/Home/
+    // Productivity: go directly to tenant Productivity + default tool (sheets) when tenant is known
+    if (module.id === 'productivity' && tenantId) {
+      return `/productivity/${tenantId}/sheets`;
+    }
+    // Other modules: base URL; entry point will redirect to /module/[tenantId]/Home/ when tenant loads
     return module.url;
   };
   

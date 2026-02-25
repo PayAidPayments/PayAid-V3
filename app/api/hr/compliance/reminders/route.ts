@@ -12,10 +12,13 @@ export async function GET(request: NextRequest) {
     const year = now.getFullYear()
     const month = now.getMonth() + 1
 
+    // TDS 24Q: Q4 (Jan–Mar) due 31 May; Q1 (Apr–Jun) 31 Jul; Q2 (Jul–Sep) 31 Oct; Q3 (Oct–Dec) 31 Jan next year
+    const tdsDueMonth = month <= 3 ? 5 : month <= 6 ? 7 : month <= 9 ? 10 : 1
+    const tdsDueYear = month <= 9 ? year : year + 1
     const reminders = [
       { type: 'PF_ECR', name: 'PF ECR', dueDay: 15, dueMonth: month, dueYear: year, description: 'Upload ECR to EPFO portal' },
       { type: 'ESI', name: 'ESI', dueDay: 21, dueMonth: month, dueYear: year, description: 'File ESI return' },
-      { type: 'TDS_24Q', name: 'TDS 24Q', dueDay: 31, dueMonth: month <= 3 ? month + 9 : month - 3, dueYear: month <= 3 ? year - 1 : year, description: 'Quarterly TDS statement (Q ending)' },
+      { type: 'TDS_24Q', name: 'TDS 24Q', dueDay: 31, dueMonth: tdsDueMonth, dueYear: tdsDueYear, description: 'Quarterly TDS statement (Q ending)' },
       { type: 'PT', name: 'Professional Tax', dueDay: 5, dueMonth: month, dueYear: year, description: 'Pay PT for the month' },
     ].map((r) => {
       const due = new Date(r.dueYear, r.dueMonth - 1, r.dueDay)

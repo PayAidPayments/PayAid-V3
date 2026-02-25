@@ -272,6 +272,12 @@ export default function HRDashboardPage() {
                     Mark Attendance
                   </Button>
                 </Link>
+                <Link href={`/hr/${tenantId}/Reports/builder`}>
+                  <Button variant="outline" size="sm" className="gap-2 hover:bg-violet-100 dark:hover:bg-violet-900/30">
+                    <BarChart3 className="h-4 w-4" />
+                    Report Builder
+                  </Button>
+                </Link>
                 <Link href={`/hr/${tenantId}/Settings`}>
                   <Button variant="outline" size="sm" className="gap-2 hover:bg-slate-100 dark:hover:bg-slate-800">
                     <Settings className="h-4 w-4" />

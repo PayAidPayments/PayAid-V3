@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { CustomSelect, CustomSelectContent, CustomSelectItem, CustomSelectTrigger } from '@/components/ui/custom-select'
+import { MessageCircle } from 'lucide-react'
 
 export default function HRLeaveApplyPage() {
   const params = useParams()
@@ -237,6 +238,27 @@ export default function HRLeaveApplyPage() {
           </CardContent>
         </Card>
       </form>
+
+      <Card className="dark:bg-gray-800 dark:border-gray-700 border-l-4 border-l-green-500">
+        <CardHeader>
+          <CardTitle className="dark:text-gray-100 flex items-center gap-2">
+            <MessageCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+            Apply via WhatsApp
+          </CardTitle>
+          <CardDescription className="dark:text-gray-400">
+            Employees can apply for leave by sending a message to the PayAid WhatsApp bot. Configure the bot in Settings and share the number with your team.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">Example message format:</p>
+          <code className="block p-3 rounded-md bg-gray-100 dark:bg-gray-700 text-sm text-gray-800 dark:text-gray-200">
+            Apply leave from 2026-02-25 to 2026-02-26, CL, Personal work
+          </code>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            Leave types: CL, SL, PL, EL, ML, HL. The bot uses <strong>POST /api/hr/whatsapp/leave/apply</strong>; connect your WhatsApp Business API webhook to this endpoint.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }
