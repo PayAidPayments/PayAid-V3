@@ -1,10 +1,10 @@
 /**
  * Health check endpoint for AI Influencer Marketing
  * Returns system status and readiness
+ * Lazy-loads setup (and fluent-ffmpeg) only when this endpoint is called.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getDependencyStatus } from '@/lib/ai-influencer/setup'
 import { checkTemplatesAvailable } from '@/lib/ai-influencer/template-fallback'
 
 /**
@@ -13,6 +13,7 @@ import { checkTemplatesAvailable } from '@/lib/ai-influencer/template-fallback'
  */
 export async function GET(request: NextRequest) {
   try {
+    const { getDependencyStatus } = await import('@/lib/ai-influencer/setup')
     const dependencies = await getDependencyStatus()
     const templates = checkTemplatesAvailable()
 
