@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "prepare": "husky install",
+    "prepare": "node -e \"if (!process.env.CI) require('child_process').execSync('husky install', {stdio:'inherit'})\"",
     "verify:db": "tsx scripts/verify-database-connection-setup.ts",
     "check:vercel-env": "tsx scripts/check-vercel-env.ts",
     "check:postgrest": "tsx scripts/check-postgrest-status.ts",
