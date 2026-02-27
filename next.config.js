@@ -124,6 +124,7 @@ const nextConfig = {
             'bull': 'commonjs bull',
             'pdfkit': 'commonjs pdfkit',
             'node-statsd': 'commonjs node-statsd',
+            'fluent-ffmpeg': 'commonjs fluent-ffmpeg',
           }
         )
       } else {
@@ -136,6 +137,7 @@ const nextConfig = {
             'bull': 'commonjs bull',
             'pdfkit': 'commonjs pdfkit',
             'node-statsd': 'commonjs node-statsd',
+            'fluent-ffmpeg': 'commonjs fluent-ffmpeg',
           }
         ]
       }
