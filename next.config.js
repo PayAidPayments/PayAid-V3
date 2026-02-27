@@ -16,10 +16,15 @@ const nextConfig = {
     // Set to true for Vercel builds to allow deployment even with type errors
     ignoreBuildErrors: true,
   },
+  // Reduce OOM risk on Vercel (8GB build container)
+  productionBrowserSourceMaps: false,
   // Optimize build performance
   experimental: {
     // Enable faster builds with SWC minification
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons', 'framer-motion'],
+    // Lower memory use during build (Next.js 15+)
+    webpackMemoryOptimizations: true,
+    webpackBuildWorker: true,
   },
   
   // Security Headers (Layer 6)
