@@ -42,12 +42,12 @@ export default function CRMAllPeoplePage() {
   const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
   const [selectedStatCard, setSelectedStatCard] = useState<string | null>(null)
 
-  // Fetch all contacts for stats calculation
-  const { data: allContactsData, isLoading: isLoadingAll } = useContacts({ page: 1, limit: 10000 })
+  // Fetch all contacts for stats calculation (single source for tab counts)
+  const { data: allContactsData, isLoading: isLoadingAll } = useContacts({ page: 1, limit: 10000, tenantId: tenantId || undefined })
   const allContacts = allContactsData?.contacts || []
 
   // Fetch contacts based on stage filter for table
-  const contactParams: any = { page, limit, search }
+  const contactParams: any = { page, limit, search, tenantId: tenantId || undefined }
   if (stageFilter !== 'all') {
     contactParams.stage = stageFilter
   }
@@ -165,21 +165,12 @@ export default function CRMAllPeoplePage() {
     }
   }, [allContacts, timePeriod])
 
-  // Calculate stage counts from current filtered data
+  // Tab counts from same source (stats) so they stay consistent when switching tabs
   const stageCounts = {
-    all: pagination?.total || contacts.length,
-    prospect: contacts.filter((c: any) => {
-      const stage = c.stage || (c.type === 'lead' ? 'prospect' : c.type === 'customer' ? 'customer' : 'contact')
-      return stage === 'prospect'
-    }).length,
-    contact: contacts.filter((c: any) => {
-      const stage = c.stage || (c.type === 'lead' ? 'prospect' : c.type === 'customer' ? 'customer' : 'contact')
-      return stage === 'contact'
-    }).length,
-    customer: contacts.filter((c: any) => {
-      const stage = c.stage || (c.type === 'lead' ? 'prospect' : c.type === 'customer' ? 'customer' : 'contact')
-      return stage === 'customer'
-    }).length,
+    all: stats.total,
+    prospect: stats.prospects,
+    contact: stats.contacts,
+    customer: stats.customers,
   }
 
   // Handle stat card click
@@ -544,29 +535,29 @@ export default function CRMAllPeoplePage() {
                                 }}
                               />
                             </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
+                            <TableCell className="whitespace-nowrap min-w-0 max-w-[180px]">
+                              <div className="flex items-center gap-2 truncate">
                                 <Link 
                                   href={`/crm/${tenantId}/Contacts/${contact.id}`}
-                                  className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                                  className="font-medium text-blue-600 dark:text-blue-400 hover:underline truncate"
                                 >
                                   {contact.name}
                                 </Link>
                               </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="whitespace-nowrap">
                               {getStageBadge(contactStage)}
                             </TableCell>
-                            <TableCell className="text-gray-600 dark:text-gray-400">
+                            <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-0 max-w-[200px] truncate" title={contact.email || undefined}>
                               {contact.email || '-'}
                             </TableCell>
-                            <TableCell className="text-gray-600 dark:text-gray-400">
+                            <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-0 max-w-[140px] truncate" title={contact.phone || undefined}>
                               {contact.phone || '-'}
                             </TableCell>
-                            <TableCell className="text-gray-600 dark:text-gray-400">
+                            <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-0 max-w-[160px] truncate" title={contact.company || undefined}>
                               {contact.company || '-'}
                             </TableCell>
-                            <TableCell className="text-gray-600 dark:text-gray-400">
+                            <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
                               {contact.createdAt ? format(new Date(contact.createdAt), 'MMM d, yyyy') : '-'}
                             </TableCell>
                             <TableCell>

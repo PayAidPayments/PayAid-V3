@@ -14,7 +14,7 @@ export default function EditContactPage() {
   const tenantId = params.tenantId as string
   const id = params.id as string
   const router = useRouter()
-  const { data: contact, isLoading } = useContact(id)
+  const { data: contact, isLoading } = useContact(id, tenantId)
   const updateContact = useUpdateContact()
   const [formData, setFormData] = useState({
     name: '',
@@ -58,7 +58,7 @@ export default function EditContactPage() {
     setError('')
 
     try {
-      await updateContact.mutateAsync({ id, data: formData })
+      await updateContact.mutateAsync({ id, data: formData, tenantId })
       router.push(`/crm/${tenantId}/Contacts/${id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update contact')

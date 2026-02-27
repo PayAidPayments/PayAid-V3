@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { withErrorHandling } from '@/lib/api/route-wrapper'
 import { ApiResponse, Task } from '@/types/base-modules'
 import { CreateTaskSchema } from '@/modules/shared/productivity/types'
@@ -15,12 +16,26 @@ import { CreateTaskSchema } from '@/modules/shared/productivity/types'
  * POST /api/productivity/tasks
  */
 export const POST = withErrorHandling(async (request: NextRequest) => {
+  let tenantId: string
+  try {
+    const access = await requireModuleAccess(request, 'productivity')
+    tenantId = access.tenantId
+  } catch (e) {
+    return handleLicenseError(e)
+  }
   const body = await request.json()
   const validatedData = CreateTaskSchema.parse(body)
+  if (validatedData.organizationId && validatedData.organizationId !== tenantId) {
+    return NextResponse.json(
+      { success: false, statusCode: 403, error: { code: 'FORBIDDEN', message: 'Tenant mismatch' } },
+      { status: 403 }
+    )
+  }
+  const organizationId = validatedData.organizationId || tenantId
 
   const task = await prisma.task.create({
     data: {
-      tenantId: validatedData.organizationId,
+      tenantId: organizationId,
       title: validatedData.title,
       description: validatedData.description || '',
       priority: validatedData.priority,
@@ -61,27 +76,26 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
  * GET /api/productivity/tasks?organizationId=xxx&status=todo&projectId=xxx&page=1&pageSize=20
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
+  let tenantId: string
+  try {
+    const access = await requireModuleAccess(request, 'productivity')
+    tenantId = access.tenantId
+  } catch (e) {
+    return handleLicenseError(e)
+  }
   const searchParams = request.nextUrl.searchParams
-  const organizationId = searchParams.get('organizationId')
+  const organizationId = searchParams.get('organizationId') || tenantId
+  if (organizationId !== tenantId) {
+    return NextResponse.json(
+      { success: false, statusCode: 403, error: { code: 'FORBIDDEN', message: 'Tenant mismatch' } },
+      { status: 403 }
+    )
+  }
   const status = searchParams.get('status')
   const projectId = searchParams.get('projectId')
   const assignedTo = searchParams.get('assignedTo')
   const page = parseInt(searchParams.get('page') || '1', 10)
   const pageSize = parseInt(searchParams.get('pageSize') || '20', 10)
-
-  if (!organizationId) {
-    return NextResponse.json(
-      {
-        success: false,
-        statusCode: 400,
-        error: {
-          code: 'MISSING_ORGANIZATION_ID',
-          message: 'organizationId is required',
-        },
-      },
-      { status: 400 }
-    )
-  }
 
   const where: Record<string, unknown> = {
     tenantId: organizationId,

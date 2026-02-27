@@ -12,11 +12,11 @@ import { getModuleConfig } from '@/lib/modules/module-config'
 import { FileCheck, Landmark, Wallet, PieChart, AlertTriangle, Receipt, ExternalLink } from 'lucide-react'
 
 const TABS = [
-  { id: 'gst', label: 'GST Automation', icon: Landmark, description: 'GSTR-2B match, GSTR-1/3B preview' },
-  { id: 'bank', label: 'Bank Reconciliation AI', icon: Wallet, description: 'Auto-match bank transactions' },
-  { id: 'expense', label: 'Expense Classification AI', icon: PieChart, description: 'Smart categorisation' },
-  { id: 'compliance', label: 'Compliance Alerts', icon: AlertTriangle, description: 'TDS, input credit expiry' },
-  { id: 'tax', label: 'Tax Filing', icon: Receipt, description: 'ITR-4 preview' },
+  { id: 'gst', label: 'GST', icon: Landmark, description: 'GSTR-1/3B, E-Invoicing, E-Way' },
+  { id: 'bank', label: 'Bank Recon', icon: Wallet, description: 'Match statements to ledger' },
+  { id: 'expense', label: 'Expenses', icon: PieChart, description: 'Categories & CoA mapping' },
+  { id: 'compliance', label: 'Compliance', icon: AlertTriangle, description: 'TDS due dates & TRACES' },
+  { id: 'tax', label: 'Tax', icon: Receipt, description: 'P&L & BS for returns' },
 ]
 
 export default function FinanceCAAssistantPage() {
@@ -60,7 +60,7 @@ export default function FinanceCAAssistantPage() {
   }
 
   return (
-    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative min-h-screen">
+    <div className="w-full bg-slate-50 dark:bg-slate-950 relative min-h-screen">
       <UniversalModuleHero
         moduleName="CA Assistant"
         moduleIcon={<moduleConfig.icon className="w-8 h-8" />}
@@ -69,18 +69,19 @@ export default function FinanceCAAssistantPage() {
         metrics={heroMetrics}
       />
 
-      <div className="p-6 max-w-5xl mx-auto">
-        <p className="text-sm text-muted-foreground mb-6">
-          AI-assisted view for your CA. BusinessAdmin and Accountant roles can access this page. AI does 80% → send to human CA for review → merchant approves.
+      <div className="p-6 max-w-5xl mx-auto space-y-5">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          One place for GST, bank recon, expenses, TDS, and tax. Your CA reviews; you approve. BusinessAdmin & Accountant only.
         </p>
 
-        <div className="flex flex-wrap gap-2 border-b border-border pb-4 mb-6">
+        <div className="flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-800 pb-4">
           {TABS.map((tab) => (
             <Button
               key={tab.id}
               variant={activeTab === tab.id ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setActiveTab(tab.id)}
+              className={activeTab === tab.id ? '' : 'text-slate-600 dark:text-slate-400'}
             >
               <tab.icon className="h-4 w-4 mr-2" />
               {tab.label}
@@ -88,26 +89,26 @@ export default function FinanceCAAssistantPage() {
           ))}
         </div>
 
-        <Card>
+        <Card className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader>
-            <CardTitle>{TABS.find((t) => t.id === activeTab)?.label}</CardTitle>
-            <CardDescription>{TABS.find((t) => t.id === activeTab)?.description}</CardDescription>
+            <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-50">{TABS.find((t) => t.id === activeTab)?.label}</CardTitle>
+            <CardDescription className="text-xs text-slate-500 dark:text-slate-400">{TABS.find((t) => t.id === activeTab)?.description}</CardDescription>
           </CardHeader>
           <CardContent>
             {activeTab === 'gst' && (
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  View GSTR-1 and GSTR-3B from GST reports. E-Invoicing (IRN) and E-Way from the E-Invoicing page. GSTR-2B matching with supplier data will be available in a future update.
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  GSTR-1 & GSTR-3B in GST Reports; IRN and E-Way on E-Invoicing. GSTR-2B matching coming later.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Link href={`/finance/${tenantId}/GST`}>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="border-slate-200 dark:border-slate-700">
                       <ExternalLink className="h-4 w-4 mr-2" />
                       GST Reports
                     </Button>
                   </Link>
                   <Link href={`/finance/${tenantId}/E-Invoicing`}>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="border-slate-200 dark:border-slate-700">
                       <ExternalLink className="h-4 w-4 mr-2" />
                       E-Invoicing & E-Way
                     </Button>
@@ -117,14 +118,14 @@ export default function FinanceCAAssistantPage() {
             )}
             {activeTab === 'bank' && (
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Reconcile bank statements with ledger transactions. Import CSV/OFX and match statement lines to ledger. Unreconciled count below.
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Import CSV/OFX and match statement lines to ledger. Clear unreconciled items below.
                 </p>
-                <p className="text-sm font-medium">
-                  Unreconciled ledger transactions: <span className="text-amber-600 dark:text-amber-400">{unreconciledCount}</span>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                  Unreconciled: <span className="text-amber-600 dark:text-amber-400">{unreconciledCount}</span>
                 </p>
                 <Link href={`/finance/${tenantId}/Bank-Reconciliation`}>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="border-slate-200 dark:border-slate-700">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Open Bank Reconciliation
                   </Button>
@@ -133,11 +134,11 @@ export default function FinanceCAAssistantPage() {
             )}
             {activeTab === 'expense' && (
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Expense classification AI will suggest Chart of Accounts categories from description. For now, record expenses in Accounting → Expenses and assign categories; AI suggestions coming in a future update.
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Record and categorise in Accounting → Expenses. AI category suggestions planned.
                 </p>
                 <Link href={`/finance/${tenantId}/Accounting/Expenses`}>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="border-slate-200 dark:border-slate-700">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Expenses
                   </Button>
@@ -146,13 +147,13 @@ export default function FinanceCAAssistantPage() {
             )}
             {activeTab === 'compliance' && (
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  TDS return due dates (26Q, 24Q). File on TRACES. Upcoming due dates in the next 30 days:
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  TDS 26Q/24Q due dates — file on TRACES. Next 30 days:
                 </p>
                 {reminders.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No TDS returns due in the next 30 days.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Nothing due in the next 30 days.</p>
                 ) : (
-                  <ul className="list-disc list-inside text-sm space-y-1">
+                  <ul className="list-disc list-inside text-sm text-slate-700 dark:text-slate-300 space-y-1">
                     {reminders.map((r: { form: string; period: string; dueDate: string; daysLeft: number }, i: number) => (
                       <li key={i}>
                         {r.form} ({r.period}) – {r.daysLeft} days left – {new Date(r.dueDate).toLocaleDateString('en-IN')}
@@ -161,7 +162,7 @@ export default function FinanceCAAssistantPage() {
                   </ul>
                 )}
                 <Link href={`/finance/${tenantId}/TDS`}>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="border-slate-200 dark:border-slate-700">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     TDS Management
                   </Button>
@@ -170,11 +171,11 @@ export default function FinanceCAAssistantPage() {
             )}
             {activeTab === 'tax' && (
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  ITR-4 preview and tax filing summary will appear here. Use P&L and Balance Sheet reports for the period when preparing returns.
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Use P&L and Balance Sheet for the period when preparing returns. ITR-4 preview coming later.
                 </p>
                 <Link href={`/finance/${tenantId}/Accounting/Reports`}>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="border-slate-200 dark:border-slate-700">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Financial Reports
                   </Button>
@@ -184,9 +185,9 @@ export default function FinanceCAAssistantPage() {
           </CardContent>
         </Card>
 
-        <div className="mt-6 flex gap-2">
+        <div className="flex gap-2">
           <Link href={`/finance/${tenantId}/Home`}>
-            <Button variant="ghost" size="sm">Back to Finance dashboard</Button>
+            <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400">Back to Finance dashboard</Button>
           </Link>
         </div>
       </div>

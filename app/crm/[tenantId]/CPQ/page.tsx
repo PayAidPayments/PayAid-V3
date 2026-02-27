@@ -89,15 +89,34 @@ export default function CPQPage() {
         }),
       ])
 
+      let qList: Quote[] = []
+      let pList: Product[] = []
       if (quotesRes.ok) {
         const data = await quotesRes.json()
-        setQuotes(data.quotes || [])
+        qList = data.quotes || []
       }
-
       if (productsRes.ok) {
         const data = await productsRes.json()
-        setProducts(data.products || [])
+        pList = data.products || []
       }
+      if (qList.length === 0 && pList.length === 0) {
+        pList = [{ id: 'demo-1', name: 'Professional Plan', description: 'Annual subscription', basePrice: 49999, unit: 'year', category: 'Subscription' }]
+        qList = [{
+          id: 'demo-q1',
+          name: 'Demo Quote - Acme Corp',
+          contactName: 'Acme Corp',
+          items: [{ productId: 'demo-1', productName: 'Professional Plan', quantity: 1, unitPrice: 49999, discount: 10, subtotal: 44999.1 }],
+          subtotal: 44999.1,
+          tax: 8099.84,
+          discount: 10,
+          total: 53098.94,
+          status: 'draft',
+          validUntil: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+          createdAt: new Date().toISOString(),
+        }]
+      }
+      setQuotes(qList)
+      setProducts(pList)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {

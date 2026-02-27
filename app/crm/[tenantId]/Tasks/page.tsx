@@ -6,6 +6,7 @@ import Link from 'next/link'
 import {
   useTasks,
   useUpdateTask,
+  useDeleteTask,
   useRemindTask,
   useBulkCompleteTasks,
   useTaskTemplates,

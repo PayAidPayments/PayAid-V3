@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, X, Search, ArrowUpDown, Filter, BarChart3, Table2, Brain, Wand2, Sparkles, Eraser, AlertTriangle, Lightbulb } from 'lucide-react'
+import { ArrowLeft, X, Search, ArrowUpDown, Filter, BarChart3, Table2, Brain, Wand2, Sparkles, Eraser, AlertTriangle, Lightbulb, MessageSquare } from 'lucide-react'
 import { SpreadsheetRibbon, type RibbonTab } from '@/components/spreadsheet/SpreadsheetRibbon'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -128,6 +128,91 @@ function getRangeNumericValues(
   return out
 }
 
+/** Cell style from x-spreadsheet data (rows[ri].cells[ci].style) */
+type CellStyleState = {
+  bold: boolean
+  italic: boolean
+  underline: boolean
+  fontFamily: string
+  fontSize: number
+  align: 'left' | 'center' | 'right'
+  valign: 'top' | 'middle' | 'bottom'
+  wrap: boolean
+  fillColor: string
+  fontColor: string
+}
+
+const defaultCellStyle: CellStyleState = {
+  bold: false,
+  italic: false,
+  underline: false,
+  fontFamily: 'Calibri',
+  fontSize: 11,
+  align: 'left',
+  valign: 'middle',
+  wrap: false,
+  fillColor: '#ffffff',
+  fontColor: '#0a0a0a',
+}
+
+function getCellCommentFromData(
+  data: Record<string, unknown>[] | null,
+  row: number,
+  col: number
+): string {
+  if (!data || !data[0]) return ''
+  const sheet = data[0] as Record<string, unknown>
+  const rows = (sheet.rows as Record<string, { cells?: Record<string, { comment?: string | { text?: string } }> }>) || {}
+  const cell = rows[row]?.cells?.[col]
+  if (!cell?.comment) return ''
+  return typeof cell.comment === 'string' ? cell.comment : (cell.comment?.text ?? '')
+}
+
+function setCellCommentInData(
+  data: Record<string, unknown>[],
+  row: number,
+  col: number,
+  text: string
+): void {
+  const sheet = data[0] as Record<string, unknown>
+  const rows = (sheet.rows as Record<string, { cells?: Record<string, Record<string, unknown>> }>) || {}
+  if (!rows[row]) rows[row] = { cells: {} }
+  const cells = rows[row].cells || {}
+  if (!cells[col]) cells[col] = { text: '' }
+  if (text.trim()) {
+    (cells[col] as Record<string, unknown>).comment = { text: text.trim(), author: 'User', date: new Date().toISOString() }
+  } else {
+    delete (cells[col] as Record<string, unknown>).comment
+  }
+  rows[row].cells = cells
+}
+
+function getCellStyleFromData(
+  data: Record<string, unknown>[] | null,
+  row: number,
+  col: number
+): CellStyleState {
+  if (!data || !data[0]) return defaultCellStyle
+  const sheet = data[0] as Record<string, unknown>
+  const rows = (sheet.rows as Record<string, { cells?: Record<string, { text?: string; style?: Record<string, unknown> }> }>) || {}
+  const cell = rows[row]?.cells?.[col]
+  const style = cell?.style as Record<string, unknown> | undefined
+  if (!style) return defaultCellStyle
+  const font = (style.font as Record<string, unknown>) || {}
+  return {
+    bold: (font.bold as boolean) ?? defaultCellStyle.bold,
+    italic: (font.italic as boolean) ?? defaultCellStyle.italic,
+    underline: (style.underline as boolean) ?? defaultCellStyle.underline,
+    fontFamily: (font.name as string) ?? defaultCellStyle.fontFamily,
+    fontSize: (font.size as number) ?? defaultCellStyle.fontSize,
+    align: (style.align as 'left' | 'center' | 'right') ?? defaultCellStyle.align,
+    valign: (style.valign as 'top' | 'middle' | 'bottom') ?? defaultCellStyle.valign,
+    wrap: (style.textwrap as boolean) ?? defaultCellStyle.wrap,
+    fillColor: (style.bgcolor as string) ?? defaultCellStyle.fillColor,
+    fontColor: (style.color as string) ?? defaultCellStyle.fontColor,
+  }
+}
+
 function escapeCsvCell(value: string): string {
   if (/[,"\r\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`
   return value
@@ -151,6 +236,7 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
   const [selectionRange, setSelectionRange] = useState<SelectionRange | null>(null)
   const [formulaValue, setFormulaValue] = useState('')
   const [selectionStats, setSelectionStats] = useState({ sum: 0, count: 0, avg: 0 })
+  const [cellStyleState, setCellStyleState] = useState<CellStyleState>(defaultCellStyle)
   const containerRef = useRef<HTMLDivElement>(null)
   const spreadsheetRef = useRef<any>(null)
   const lastDataRef = useRef<Record<string, unknown> | null>(null)
@@ -161,6 +247,7 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
   const [historyState, setHistoryState] = useState({ index: 0, length: 1 })
   setHistoryStateRef.current = setHistoryState
   const formulaBarInputRef = useRef<HTMLInputElement | null>(null)
+  const clipboardRef = useRef<string[][]>([])
 
   const handleGridKeyDown = useCallback((e: React.KeyboardEvent) => {
     const target = e.target as HTMLElement
@@ -324,6 +411,14 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
     }
   }, [spreadsheetId, initialData, loadXSpreadsheet])
 
+  // Effective selection range (single cell or multi)
+  const effectiveRange = selectionRange ?? {
+    sri: activeCell.row,
+    sci: activeCell.col,
+    eri: activeCell.row,
+    eci: activeCell.col,
+  }
+
   // Sync formula bar from active cell
   useEffect(() => {
     const s = spreadsheetRef.current
@@ -333,27 +428,38 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
     setFormulaValue(getCellTextFromData(arr, activeCell.row, activeCell.col))
   }, [activeCell])
 
-  // Selection stats for status bar
+  // Sync ribbon style from active cell (selection is source of truth)
   useEffect(() => {
-    if (!selectionRange) {
-      setSelectionStats({ sum: 0, count: 0, avg: 0 })
-      return
-    }
     const s = spreadsheetRef.current
     if (!s || typeof s.getData !== 'function') return
     const data = s.getData()
     const arr = Array.isArray(data) ? data : data != null ? [data] : []
-    const nums = getRangeNumericValues(
-      arr,
-      selectionRange.sri,
-      selectionRange.sci,
-      selectionRange.eri,
-      selectionRange.eci
-    )
+    setCellStyleState(getCellStyleFromData(arr, activeCell.row, activeCell.col))
+  }, [activeCell, selectionRange])
+
+  const activeCellComment = (() => {
+    const s = spreadsheetRef.current
+    if (!s?.getData) return ''
+    const data = s.getData()
+    const arr = Array.isArray(data) ? data : data != null ? [data] : []
+    return getCellCommentFromData(arr, activeCell.row, activeCell.col)
+  })()
+
+  // Selection stats for status bar (single cell or range – like Excel)
+  const sri = selectionRange?.sri ?? activeCell.row
+  const sci = selectionRange?.sci ?? activeCell.col
+  const eri = selectionRange?.eri ?? activeCell.row
+  const eci = selectionRange?.eci ?? activeCell.col
+  useEffect(() => {
+    const s = spreadsheetRef.current
+    if (!s || typeof s.getData !== 'function') return
+    const data = s.getData()
+    const arr = Array.isArray(data) ? data : data != null ? [data] : []
+    const nums = getRangeNumericValues(arr, sri, sci, eri, eci)
     const count = nums.length
     const sum = nums.reduce((a, b) => a + b, 0)
     setSelectionStats({ sum, count, avg: count ? sum / count : 0 })
-  }, [selectionRange])
+  }, [sri, sci, eri, eci])
 
   const handleFormulaChange = useCallback((val: string) => {
     setFormulaValue(val)
@@ -446,6 +552,25 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
   const [ribbonTab, setRibbonTab] = useState<RibbonTab>('home')
   const saveMenuRef = useRef<HTMLDivElement>(null)
   const unfilteredDataRef = useRef<string[][] | null>(null)
+  // Page Layout
+  const [pageMargins, setPageMargins] = useState<'normal' | 'wide' | 'narrow'>('normal')
+  const [pageOrientation, setPageOrientation] = useState<'portrait' | 'landscape'>('portrait')
+  const [showGridlines, setShowGridlines] = useState(true)
+  const [showHeadings, setShowHeadings] = useState(true)
+  // View
+  const [showFormulaBar, setShowFormulaBar] = useState(true)
+  const [showStatusBar, setShowStatusBar] = useState(true)
+  const [zoom, setZoom] = useState(100)
+  const [freezePanes, setFreezePanes] = useState<'none' | 'topRow' | 'firstCol' | 'both'>('none')
+  // Review
+  const [sheetProtected, setSheetProtected] = useState(false)
+  const [cfModalOpen, setCfModalOpen] = useState(false)
+  const [cfValue, setCfValue] = useState('')
+  const [cfColor, setCfColor] = useState('#fecaca')
+  const [cfCondition, setCfCondition] = useState<'greater' | 'less' | 'equals'>('greater')
+  const [commentOpen, setCommentOpen] = useState(false)
+  const [commentText, setCommentText] = useState('')
+  const [activeCellCommentText, setActiveCellCommentText] = useState('')
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -463,10 +588,24 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
         e.preventDefault()
         setFindReplaceOpen(true)
       }
+      const target = e.target as HTMLElement
+      const inFormulaBar = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+      if (!inFormulaBar && (e.ctrlKey || e.metaKey) && e.key === 'c') {
+        e.preventDefault()
+        handleCopy()
+      }
+      if (!inFormulaBar && (e.ctrlKey || e.metaKey) && e.key === 'x') {
+        e.preventDefault()
+        handleCut()
+      }
+      if (!inFormulaBar && (e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault()
+        handlePaste()
+      }
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [])
+  }, [handleCopy, handleCut, handlePaste])
 
   const getCurrentData2D = useCallback((): string[][] => {
     const data = spreadsheetRef.current?.getData() ?? lastDataRef.current
@@ -524,91 +663,235 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
     navigator.clipboard.writeText(url).then(() => alert('Link copied to clipboard')).catch(() => alert('Could not copy link'))
   }, [])
 
+  /** Apply style to every cell in the current selection range */
+  const applyStyleToRange = useCallback(
+    (styleArg: Record<string, unknown>) => {
+      const s = spreadsheetRef.current as any
+      if (!s?.cellStyle) return
+      try {
+        for (let ri = effectiveRange.sri; ri <= effectiveRange.eri; ri++) {
+          for (let ci = effectiveRange.sci; ci <= effectiveRange.eci; ci++) {
+            s.cellStyle(ri, ci, 0, styleArg)
+          }
+        }
+        lastDataRef.current = s.getData()
+        if (typeof s.loadData === 'function') s.loadData(Array.isArray(s.getData()) ? s.getData() : [s.getData()])
+      } catch (_) {}
+    },
+    [effectiveRange.sri, effectiveRange.sci, effectiveRange.eri, effectiveRange.eci]
+  )
+
   const handleBold = useCallback(() => {
     const s = spreadsheetRef.current as any
-    if (!s) return
-    const { row, col } = activeCell
+    if (!s?.cellStyle) return
+    const next = !cellStyleState.bold
     try {
-      if (typeof s.cellStyle === 'function') {
-        s.cellStyle(row, col, 0, { style: { font: { bold: true } } })
-        return
+      for (let ri = effectiveRange.sri; ri <= effectiveRange.eri; ri++) {
+        for (let ci = effectiveRange.sci; ci <= effectiveRange.eci; ci++) {
+          s.cellStyle(ri, ci, 0, { style: { font: { bold: next } } })
+        }
       }
-      if (typeof s.setCellStyle === 'function') {
-        s.setCellStyle(row, col, 0, { bold: true })
-        return
-      }
-    } catch (_) {
-      // library may not support
-    }
-  }, [activeCell])
+      setCellStyleState((prev) => ({ ...prev, bold: next }))
+      lastDataRef.current = s.getData()
+      if (typeof s.loadData === 'function') s.loadData(Array.isArray(s.getData()) ? s.getData() : [s.getData()])
+    } catch (_) {}
+  }, [cellStyleState.bold, effectiveRange.sri, effectiveRange.sci, effectiveRange.eri, effectiveRange.eci])
 
   const handleItalic = useCallback(() => {
     const s = spreadsheetRef.current as any
-    if (!s) return
-    const { row, col } = activeCell
+    if (!s?.cellStyle) return
+    const next = !cellStyleState.italic
     try {
-      if (typeof s.cellStyle === 'function') s.cellStyle(row, col, 0, { style: { font: { italic: true } } })
-      else if (typeof s.setCellStyle === 'function') s.setCellStyle(row, col, 0, { italic: true })
+      for (let ri = effectiveRange.sri; ri <= effectiveRange.eri; ri++) {
+        for (let ci = effectiveRange.sci; ci <= effectiveRange.eci; ci++) {
+          s.cellStyle(ri, ci, 0, { style: { font: { italic: next } } })
+        }
+      }
+      setCellStyleState((prev) => ({ ...prev, italic: next }))
+      lastDataRef.current = s.getData()
+      if (typeof s.loadData === 'function') s.loadData(Array.isArray(s.getData()) ? s.getData() : [s.getData()])
     } catch (_) {}
-  }, [activeCell])
+  }, [cellStyleState.italic, effectiveRange.sri, effectiveRange.sci, effectiveRange.eri, effectiveRange.eci])
 
   const handleUnderline = useCallback(() => {
     const s = spreadsheetRef.current as any
-    if (!s) return
-    const { row, col } = activeCell
+    if (!s?.cellStyle) return
+    const next = !cellStyleState.underline
     try {
-      if (typeof s.cellStyle === 'function') s.cellStyle(row, col, 0, { style: { font: { underline: true } } })
-      else if (typeof s.setCellStyle === 'function') s.setCellStyle(row, col, 0, { underline: true })
+      for (let ri = effectiveRange.sri; ri <= effectiveRange.eri; ri++) {
+        for (let ci = effectiveRange.sci; ci <= effectiveRange.eci; ci++) {
+          s.cellStyle(ri, ci, 0, { style: { font: { underline: next } } })
+        }
+      }
+      setCellStyleState((prev) => ({ ...prev, underline: next }))
+      lastDataRef.current = s.getData()
+      if (typeof s.loadData === 'function') s.loadData(Array.isArray(s.getData()) ? s.getData() : [s.getData()])
     } catch (_) {}
-  }, [activeCell])
+  }, [cellStyleState.underline, effectiveRange.sri, effectiveRange.sci, effectiveRange.eri, effectiveRange.eci])
 
   const handleAlignLeft = useCallback(() => {
-    const s = spreadsheetRef.current as any
-    if (!s?.cellStyle) return
-    try {
-      const { row, col } = activeCell
-      s.cellStyle(row, col, 0, { align: 'left' })
-    } catch (_) {}
-  }, [activeCell])
+    applyStyleToRange({ align: 'left' })
+    setCellStyleState((prev) => ({ ...prev, align: 'left' }))
+  }, [applyStyleToRange])
 
   const handleAlignCenter = useCallback(() => {
-    const s = spreadsheetRef.current as any
-    if (!s?.cellStyle) return
-    try {
-      const { row, col } = activeCell
-      s.cellStyle(row, col, 0, { align: 'center' })
-    } catch (_) {}
-  }, [activeCell])
+    applyStyleToRange({ align: 'center' })
+    setCellStyleState((prev) => ({ ...prev, align: 'center' }))
+  }, [applyStyleToRange])
 
   const handleAlignRight = useCallback(() => {
-    const s = spreadsheetRef.current as any
-    if (!s?.cellStyle) return
-    try {
-      const { row, col } = activeCell
-      s.cellStyle(row, col, 0, { align: 'right' })
-    } catch (_) {}
-  }, [activeCell])
+    applyStyleToRange({ align: 'right' })
+    setCellStyleState((prev) => ({ ...prev, align: 'right' }))
+  }, [applyStyleToRange])
 
   const handleMergeCenter = useCallback(() => {
     const s = spreadsheetRef.current as any
     if (!s?.mergeCells) return
     try {
-      const sri = selectionRange?.sri ?? activeCell.row
-      const sci = selectionRange?.sci ?? activeCell.col
-      const eri = selectionRange?.eri ?? activeCell.row
-      const eci = selectionRange?.eci ?? activeCell.col
-      s.mergeCells(sri, sci, eri, eci, 0)
+      s.mergeCells(effectiveRange.sri, effectiveRange.sci, effectiveRange.eri, effectiveRange.eci, 0)
     } catch (_) {}
-  }, [activeCell, selectionRange])
+  }, [effectiveRange.sri, effectiveRange.sci, effectiveRange.eri, effectiveRange.eci])
 
   const handleWrapText = useCallback(() => {
+    const next = !cellStyleState.wrap
+    applyStyleToRange({ wrapText: next })
+    setCellStyleState((prev) => ({ ...prev, wrap: next }))
+  }, [applyStyleToRange, cellStyleState.wrap])
+
+  const handleFontFamily = useCallback(
+    (fontFamily: string) => {
+      applyStyleToRange({ style: { font: { name: fontFamily } } })
+      setCellStyleState((prev) => ({ ...prev, fontFamily }))
+    },
+    [applyStyleToRange]
+  )
+
+  const handleFontSize = useCallback(
+    (fontSize: number) => {
+      applyStyleToRange({ style: { font: { size: fontSize } } })
+      setCellStyleState((prev) => ({ ...prev, fontSize }))
+    },
+    [applyStyleToRange]
+  )
+
+  const handleFillColor = useCallback(
+    (color: string) => {
+      applyStyleToRange({ style: { bgcolor: color } })
+      setCellStyleState((prev) => ({ ...prev, fillColor: color }))
+    },
+    [applyStyleToRange]
+  )
+
+  const handleFontColor = useCallback(
+    (color: string) => {
+      applyStyleToRange({ style: { color } })
+      setCellStyleState((prev) => ({ ...prev, fontColor: color }))
+    },
+    [applyStyleToRange]
+  )
+
+  const handleBorders = useCallback(
+    (border: 'none' | 'all' | 'outside' | 'bottom') => {
+      const s = spreadsheetRef.current as any
+      if (!s?.getData || !s?.loadData) return
+      const borderStyle = '1px solid #334155'
+      try {
+        const data = s.getData()
+        const sheets = Array.isArray(data) ? JSON.parse(JSON.stringify(data)) : [JSON.parse(JSON.stringify(data))]
+        const sheet = sheets[0]
+        if (!sheet?.rows) {
+          s.cellStyle?.(effectiveRange.sri, effectiveRange.sci, 0, { style: { border: border === 'none' ? 'none' : borderStyle } })
+          lastDataRef.current = s.getData()
+          s.loadData(Array.isArray(s.getData()) ? s.getData() : [s.getData()])
+          return
+        }
+        const rows = sheet.rows as Record<string, { cells?: Record<string, { text?: string; style?: Record<string, unknown> }> }>
+        for (let ri = effectiveRange.sri; ri <= effectiveRange.eri; ri++) {
+          for (let ci = effectiveRange.sci; ci <= effectiveRange.eci; ci++) {
+            if (!rows[ri]) rows[ri] = { cells: {} }
+            const cells = rows[ri].cells || {}
+            if (!cells[ci]) cells[ci] = { text: '' }
+            const style = (cells[ci].style = cells[ci].style || {})
+            if (border === 'none') {
+              style.border = 'none'
+              delete style.borderTop
+              delete style.borderLeft
+              delete style.borderRight
+              delete style.borderBottom
+            } else if (border === 'all' || border === 'outside') {
+              style.border = borderStyle
+            } else if (border === 'bottom') {
+              style.borderBottom = borderStyle
+            }
+            rows[ri].cells = cells
+          }
+        }
+        lastDataRef.current = sheets
+        s.loadData(sheets)
+      } catch (_) {
+        try {
+          for (let ri = effectiveRange.sri; ri <= effectiveRange.eri; ri++) {
+            for (let ci = effectiveRange.sci; ci <= effectiveRange.eci; ci++) {
+              s.cellStyle?.(ri, ci, 0, { style: { border: border === 'none' ? 'none' : '1px solid #334155' } })
+            }
+          }
+          lastDataRef.current = s.getData()
+          s.loadData(Array.isArray(s.getData()) ? s.getData() : [s.getData()])
+        } catch (_2) {}
+      }
+    },
+    [effectiveRange.sri, effectiveRange.sci, effectiveRange.eri, effectiveRange.eci]
+  )
+
+  const handleConditionalFormatting = useCallback(() => {
+    setCfModalOpen(true)
+  }, [])
+
+  const handleCfApply = useCallback(() => {
+    const grid = getCurrentData2D()
+    const s = spreadsheetRef.current as any
+    if (!s?.cellStyle || !s?.getData) return
+    const num = parseFloat(cfValue)
+    if (Number.isNaN(num)) {
+      setCfModalOpen(false)
+      return
+    }
+    for (let ri = effectiveRange.sri; ri <= effectiveRange.eri; ri++) {
+      for (let ci = effectiveRange.sci; ci <= effectiveRange.eci; ci++) {
+        const cell = grid[ri]?.[ci]
+        const val = parseFloat(String(cell ?? ''))
+        if (Number.isNaN(val)) continue
+        let match = false
+        if (cfCondition === 'greater' && val > num) match = true
+        else if (cfCondition === 'less' && val < num) match = true
+        else if (cfCondition === 'equals' && val === num) match = true
+        if (match) s.cellStyle(ri, ci, 0, { style: { bgcolor: cfColor } })
+      }
+    }
+    lastDataRef.current = s.getData()
+    if (typeof s.loadData === 'function') s.loadData(Array.isArray(s.getData()) ? s.getData() : [s.getData()])
+    setCfModalOpen(false)
+  }, [getCurrentData2D, effectiveRange, cfValue, cfColor, cfCondition])
+
+  const handleFormatAsTable = useCallback(() => {
     const s = spreadsheetRef.current as any
     if (!s?.cellStyle) return
     try {
-      const { row, col } = activeCell
-      s.cellStyle(row, col, 0, { wrapText: true })
+      const { sri, sci, eri, eci } = effectiveRange
+      for (let ri = sri; ri <= eri; ri++) {
+        for (let ci = sci; ci <= eci; ci++) {
+          if (ri === sri) {
+            s.cellStyle(ri, ci, 0, { style: { font: { bold: true }, bgcolor: '#e2e8f0' } })
+          } else {
+            const stripe = (ri - sri) % 2 === 1 ? '#f8fafc' : '#ffffff'
+            s.cellStyle(ri, ci, 0, { style: { bgcolor: stripe } })
+          }
+        }
+      }
+      lastDataRef.current = s.getData()
+      if (typeof s.loadData === 'function') s.loadData(Array.isArray(s.getData()) ? s.getData() : [s.getData()])
     } catch (_) {}
-  }, [activeCell])
+  }, [effectiveRange.sri, effectiveRange.sci, effectiveRange.eri, effectiveRange.eci])
 
   const handleAutoSum = useCallback((type: 'sum' | 'average' | 'count' | 'max' | 'min') => {
     const s = spreadsheetRef.current
@@ -643,6 +926,52 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
   const handleInsertFunction = useCallback(() => {
     formulaBarInputRef.current?.focus()
   }, [])
+
+  const handleCopy = useCallback(() => {
+    const grid = getCurrentData2D()
+    if (grid.length === 0) return
+    const { sri, sci, eri, eci } = effectiveRange
+    const rows: string[][] = []
+    for (let r = sri; r <= eri; r++) {
+      const row = grid[r]
+      if (!row) continue
+      const cells: string[] = []
+      for (let c = sci; c <= eci; c++) cells.push(row[c] != null ? String(row[c]) : '')
+      rows.push(cells)
+    }
+    clipboardRef.current = rows
+  }, [getCurrentData2D, effectiveRange.sri, effectiveRange.sci, effectiveRange.eri, effectiveRange.eci])
+
+  const handleCut = useCallback(() => {
+    handleCopy()
+    const s = spreadsheetRef.current
+    if (!s?.cellText || !s?.getData) return
+    const { sri, sci, eri, eci } = effectiveRange
+    for (let r = sri; r <= eri; r++) {
+      for (let c = sci; c <= eci; c++) {
+        s.cellText(r, c, '', 0)
+      }
+    }
+    lastDataRef.current = s.getData()
+    if (typeof s.loadData === 'function') s.loadData(Array.isArray(s.getData()) ? s.getData() : [s.getData()])
+  }, [handleCopy, effectiveRange.sri, effectiveRange.sci, effectiveRange.eri, effectiveRange.eci])
+
+  const handlePaste = useCallback(() => {
+    const clip = clipboardRef.current
+    if (!clip.length) return
+    const s = spreadsheetRef.current
+    if (!s?.cellText || !s?.getData) return
+    const startRow = activeCell.row
+    const startCol = activeCell.col
+    for (let ri = 0; ri < clip.length; ri++) {
+      const row = clip[ri]
+      for (let ci = 0; ci < row.length; ci++) {
+        s.cellText(startRow + ri, startCol + ci, row[ci], 0)
+      }
+    }
+    lastDataRef.current = s.getData()
+    if (typeof s.loadData === 'function') s.loadData(Array.isArray(s.getData()) ? s.getData() : [s.getData()])
+  }, [activeCell.row, activeCell.col])
 
   const handleNumberFormat = useCallback((format: string) => {
     const s = spreadsheetRef.current
@@ -1197,6 +1526,45 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
           onDecreaseDecimal={handleDecreaseDecimal}
           onAutoSum={handleAutoSum}
           onInsertFunction={handleInsertFunction}
+          onCut={handleCut}
+          onCopy={handleCopy}
+          onPaste={handlePaste}
+          isBold={cellStyleState.bold}
+          isItalic={cellStyleState.italic}
+          isUnderline={cellStyleState.underline}
+          fontFamily={cellStyleState.fontFamily}
+          fontSize={cellStyleState.fontSize}
+          onFontFamily={handleFontFamily}
+          onFontSize={handleFontSize}
+          pageMargins={pageMargins}
+          onPageMargins={setPageMargins}
+          pageOrientation={pageOrientation}
+          onPageOrientation={setPageOrientation}
+          showGridlines={showGridlines}
+          showHeadings={showHeadings}
+          onToggleGridlines={() => setShowGridlines((v) => !v)}
+          onToggleHeadings={() => setShowHeadings((v) => !v)}
+          sheetProtected={sheetProtected}
+          onProtectSheet={() => setSheetProtected((v) => !v)}
+          onNewComment={() => {
+            setCommentText(activeCellCommentText)
+            setCommentOpen(true)
+          }}
+          showFormulaBar={showFormulaBar}
+          showStatusBar={showStatusBar}
+          onToggleFormulaBar={() => setShowFormulaBar((v) => !v)}
+          onToggleStatusBar={() => setShowStatusBar((v) => !v)}
+          zoom={zoom}
+          onZoomChange={setZoom}
+          freezePanes={freezePanes}
+          onFreezePanes={setFreezePanes}
+          onFillColor={handleFillColor}
+          onFontColor={handleFontColor}
+          fillColor={cellStyleState.fillColor}
+          fontColor={cellStyleState.fontColor}
+          onBorders={handleBorders}
+          onConditionalFormatting={handleConditionalFormatting}
+          onFormatAsTable={handleFormatAsTable}
         />
       </div>
 
@@ -1210,24 +1578,25 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="flex-1 min-w-0">
-                <FormulaBar
-                inputRef={formulaBarInputRef}
-                value={formulaValue}
-                onChange={handleFormulaChange}
-                onCommit={handleFormulaCommit}
-                onCancel={() => {
-                  const s = spreadsheetRef.current
-                  if (!s?.getData) return
-                  const data = s.getData()
-                  const arr = Array.isArray(data) ? data : [data]
-                  setFormulaValue(getCellTextFromData(arr, activeCell.row, activeCell.col))
-                }}
-                disabled={!spreadsheetRef.current}
-                />
-              </div>
-              <button
+            {showFormulaBar && (
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex-1 min-w-0">
+                  <FormulaBar
+                    inputRef={formulaBarInputRef}
+                    value={formulaValue}
+                    onChange={handleFormulaChange}
+                    onCommit={handleFormulaCommit}
+                    onCancel={() => {
+                      const s = spreadsheetRef.current
+                      if (!s?.getData) return
+                      const data = s.getData()
+                      const arr = Array.isArray(data) ? data : [data]
+                      setFormulaValue(getCellTextFromData(arr, activeCell.row, activeCell.col))
+                    }}
+                    disabled={!spreadsheetRef.current || sheetProtected}
+                  />
+                </div>
+<button
                 type="button"
                 onClick={handleInsertCellRef}
                 className="shrink-0 px-2 py-1 rounded text-xs font-mono bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200"
@@ -1235,7 +1604,18 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
               >
                 {getCellRef(activeCell.row, activeCell.col)}
               </button>
-            </div>
+              {activeCellCommentText ? (
+                <button
+                  type="button"
+                  onClick={() => { setCommentText(activeCellCommentText); setCommentOpen(true) }}
+                  className="shrink-0 p-1.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400"
+                  title="View/edit comment"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                </button>
+              ) : null}
+              </div>
+            )}
             <div
               tabIndex={0}
               role="application"
@@ -1244,19 +1624,38 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
               style={{ minHeight: 300 }}
               onKeyDown={handleGridKeyDown}
               onClick={(e) => (e.currentTarget as HTMLElement).focus()}
+              data-freeze={freezePanes}
+              data-gridlines={String(showGridlines)}
+              data-headings={String(showHeadings)}
             >
-              <div
-                ref={containerRef}
-                data-spreadsheet-container
-                className="h-full w-full"
-              />
+              <style dangerouslySetInnerHTML={{ __html: `
+                [data-gridlines="false"] [data-spreadsheet-container] .x-spreadsheet td,[data-gridlines="false"] [data-spreadsheet-container] .x-spreadsheet th,[data-gridlines="false"] [data-spreadsheet-container] .cell{border-color:transparent!important}
+                [data-freeze="topRow"] [data-spreadsheet-container] .x-spreadsheet table tbody tr:first-child td,[data-freeze="topRow"] [data-spreadsheet-container] .x-spreadsheet table thead th,[data-freeze="topRow"] [data-spreadsheet-container] .x-spreadsheet .row:first-child .cell{position:sticky!important;top:0!important;z-index:2!important;background:#fff!important;box-shadow:0 1px 0 0 #e2e8f0}
+                .dark [data-freeze="topRow"] [data-spreadsheet-container] .x-spreadsheet table tbody tr:first-child td,.dark [data-freeze="topRow"] [data-spreadsheet-container] .x-spreadsheet .row:first-child .cell{background:#0f172a!important}
+                [data-freeze="firstCol"] [data-spreadsheet-container] .x-spreadsheet table tbody tr td:first-child,[data-freeze="firstCol"] [data-spreadsheet-container] .x-spreadsheet table thead th:first-child,[data-freeze="firstCol"] [data-spreadsheet-container] .x-spreadsheet .row .cell:first-child{position:sticky!important;left:0!important;z-index:1!important;background:#fff!important;box-shadow:1px 0 0 0 #e2e8f0}
+                .dark [data-freeze="firstCol"] [data-spreadsheet-container] .x-spreadsheet .row .cell:first-child{background:#0f172a!important}
+                [data-freeze="both"] [data-spreadsheet-container] .x-spreadsheet table tbody tr:first-child td,[data-freeze="both"] [data-spreadsheet-container] .x-spreadsheet .row:first-child .cell{position:sticky!important;top:0!important;z-index:2!important;background:#fff!important;box-shadow:0 1px 0 0 #e2e8f0}
+                [data-freeze="both"] [data-spreadsheet-container] .x-spreadsheet table tbody tr td:first-child,[data-freeze="both"] [data-spreadsheet-container] .x-spreadsheet .row .cell:first-child{position:sticky!important;left:0!important;z-index:1!important;background:#fff!important;box-shadow:1px 0 0 0 #e2e8f0}
+                [data-freeze="both"] [data-spreadsheet-container] .x-spreadsheet table tbody tr:first-child td:first-child,[data-freeze="both"] [data-spreadsheet-container] .x-spreadsheet .row:first-child .cell:first-child{z-index:3!important;background:#fff!important;box-shadow:1px 1px 0 0 #e2e8f0}
+                .dark [data-freeze="both"] [data-spreadsheet-container] .x-spreadsheet .row:first-child .cell:first-child{background:#0f172a!important}
+              ` }} />
+              <div className="h-full w-full relative" style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top left' }}>
+                <div ref={containerRef} data-spreadsheet-container className="h-full w-full min-h-[300px]" />
+                {sheetProtected && (
+                  <div className="absolute inset-0 bg-slate-900/10 dark:bg-slate-100/10 flex items-center justify-center cursor-not-allowed" title="Sheet is protected">
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full shadow">Protected</span>
+                  </div>
+                )}
+              </div>
             </div>
+            {showStatusBar && (
             <StatusBar
               sum={selectionStats.sum}
               count={selectionStats.count}
               avg={selectionStats.avg}
-              hasSelection={selectionRange != null}
+              hasSelection={!isLoadingSpreadsheet}
             />
+            )}
           </>
         )}
       </div>
@@ -1268,6 +1667,67 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
         onReplace={handleReplaceFirst}
         onReplaceAll={handleReplaceAll}
       />
+
+      {cfModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setCfModalOpen(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 w-full max-w-sm p-5 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-semibold">Highlight Cell Rules</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Format cells that are {cfCondition === 'greater' ? 'greater than' : cfCondition === 'less' ? 'less than' : 'equal to'} the value with the chosen fill color.</p>
+            <div className="flex gap-2 items-center">
+              <select value={cfCondition} onChange={(e) => setCfCondition(e.target.value as 'greater' | 'less' | 'equals')} className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800">
+                <option value="greater">Greater than</option>
+                <option value="less">Less than</option>
+                <option value="equals">Equal to</option>
+              </select>
+              <input type="number" step="any" value={cfValue} onChange={(e) => setCfValue(e.target.value)} className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm" placeholder="Value" />
+            </div>
+            <div className="flex gap-2 items-center">
+              <span className="text-xs text-slate-500">Fill color:</span>
+              <input type="color" value={cfColor} onChange={(e) => setCfColor(e.target.value)} className="w-10 h-8 rounded border border-slate-300 cursor-pointer" />
+              <span className="text-xs text-slate-400">{cfColor}</span>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={handleCfApply} className="flex-1 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium">Apply</button>
+              <button type="button" onClick={() => setCfModalOpen(false)} className="flex-1 px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {commentOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setCommentOpen(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 w-full max-w-sm p-5 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-semibold">Comment – {getCellRef(activeCell.row, activeCell.col)}</h3>
+            <textarea
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              className="w-full min-h-[80px] px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 resize-y"
+              placeholder="Add a comment..."
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const s = spreadsheetRef.current
+                  if (!s?.getData || !s?.loadData) return
+                  const data = s.getData()
+                  const sheets = Array.isArray(data) ? JSON.parse(JSON.stringify(data)) : [JSON.parse(JSON.stringify(data))]
+                  setCellCommentInData(sheets, activeCell.row, activeCell.col, commentText)
+                  lastDataRef.current = sheets
+                  s.loadData(sheets)
+                  setActiveCellCommentText(commentText.trim())
+                  setCommentOpen(false)
+                }}
+                className="flex-1 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium"
+              >
+                Save
+              </button>
+              <button type="button" onClick={() => setCommentOpen(false)} className="flex-1 px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {filterOpen && (() => {
         const grid = getCurrentData2D()

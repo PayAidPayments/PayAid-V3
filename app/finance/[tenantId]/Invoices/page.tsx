@@ -104,7 +104,7 @@ export default function FinanceInvoicesPage() {
       <div className="p-6 space-y-8 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
         {/* Action Button */}
         <div className="flex items-center justify-end">
-          <Link href={`/finance/${tenantId}/Invoices/New`}>
+          <Link href={`/finance/${tenantId}/Invoices/new`}>
             <Button className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#3F1F62] hover:to-[#E0B200] text-white">
               <Plus className="w-4 h-4 mr-2" />
               Create Invoice
@@ -142,7 +142,7 @@ export default function FinanceInvoicesPage() {
           {invoices.length === 0 ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <p className="mb-4">No invoices found</p>
-              <Link href={`/finance/${tenantId}/Invoices/New`}>
+              <Link href={`/finance/${tenantId}/Invoices/new`}>
                 <Button variant="outline">Create your first invoice</Button>
               </Link>
             </div>

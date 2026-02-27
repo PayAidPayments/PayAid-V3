@@ -31,14 +31,15 @@ export function getAuthHeaders() {
 }
 
 // Contacts hooks
-export function useContacts(params?: { page?: number; limit?: number; type?: string; stage?: string; status?: string; search?: string }) {
+export function useContacts(params?: { page?: number; limit?: number; type?: string; stage?: string; status?: string; search?: string; tenantId?: string }) {
   const queryString = new URLSearchParams()
   if (params?.page) queryString.set('page', params.page.toString())
   if (params?.limit) queryString.set('limit', params.limit.toString())
   if (params?.type) queryString.set('type', params.type)
-  if (params?.stage) queryString.set('stage', params.stage) // New: stage parameter
+  if (params?.stage) queryString.set('stage', params.stage)
   if (params?.status) queryString.set('status', params.status)
   if (params?.search) queryString.set('search', params.search)
+  if (params?.tenantId) queryString.set('tenantId', params.tenantId)
 
   const queryUrl = queryString.toString() ? `/api/contacts?${queryString}` : '/api/contacts'
 
@@ -147,11 +148,14 @@ export function useContacts(params?: { page?: number; limit?: number; type?: str
   })
 }
 
-export function useContact(id: string) {
+export function useContact(id: string, tenantId?: string) {
   return useQuery({
-    queryKey: ['contact', id],
+    queryKey: ['contact', id, tenantId],
     queryFn: async () => {
-      const response = await fetch(`/api/contacts/${id}`, {
+      const url = tenantId
+        ? `/api/contacts/${id}?tenantId=${encodeURIComponent(tenantId)}`
+        : `/api/contacts/${id}`
+      const response = await fetch(url, {
         headers: getAuthHeaders(),
       })
       if (!response.ok) throw new Error('Failed to fetch contact')
@@ -185,8 +189,11 @@ export function useCreateContact() {
 export function useUpdateContact() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const response = await fetch(`/api/contacts/${id}`, {
+    mutationFn: async ({ id, data, tenantId }: { id: string; data: any; tenantId?: string }) => {
+      const url = tenantId
+        ? `/api/contacts/${id}?tenantId=${encodeURIComponent(tenantId)}`
+        : `/api/contacts/${id}`
+      const response = await fetch(url, {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
@@ -207,8 +214,11 @@ export function useUpdateContact() {
 export function useDeleteContact() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (id: string) => {
-      const response = await fetch(`/api/contacts/${id}`, {
+    mutationFn: async ({ id, tenantId }: { id: string; tenantId?: string }) => {
+      const url = tenantId
+        ? `/api/contacts/${id}?tenantId=${encodeURIComponent(tenantId)}`
+        : `/api/contacts/${id}`
+      const response = await fetch(url, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       })
@@ -329,8 +339,11 @@ export function useCreateDeal() {
 export function useDeleteDeal() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (id: string) => {
-      const response = await fetch(`/api/deals/${id}`, {
+    mutationFn: async ({ id, tenantId }: { id: string; tenantId?: string }) => {
+      const url = tenantId
+        ? `/api/deals/${id}?tenantId=${encodeURIComponent(tenantId)}`
+        : `/api/deals/${id}`
+      const response = await fetch(url, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       })
@@ -349,8 +362,11 @@ export function useDeleteDeal() {
 export function useUpdateDeal() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const response = await fetch(`/api/deals/${id}`, {
+    mutationFn: async ({ id, data, tenantId }: { id: string; data: any; tenantId?: string }) => {
+      const url = tenantId
+        ? `/api/deals/${id}?tenantId=${encodeURIComponent(tenantId)}`
+        : `/api/deals/${id}`
+      const response = await fetch(url, {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
@@ -612,11 +628,14 @@ export function useProduct(id: string) {
   })
 }
 
-export function useDeal(id: string) {
+export function useDeal(id: string, tenantId?: string) {
   return useQuery({
-    queryKey: ['deal', id],
+    queryKey: ['deal', id, tenantId],
     queryFn: async () => {
-      const response = await fetch(`/api/deals/${id}`, {
+      const url = tenantId
+        ? `/api/deals/${id}?tenantId=${encodeURIComponent(tenantId)}`
+        : `/api/deals/${id}`
+      const response = await fetch(url, {
         headers: getAuthHeaders(),
       })
       if (!response.ok) throw new Error('Failed to fetch deal')

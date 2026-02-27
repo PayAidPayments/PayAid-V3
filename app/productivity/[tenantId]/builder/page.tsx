@@ -76,10 +76,22 @@ export default function DocumentBuilderPage() {
       if (data.downloadUrl) {
         window.open(data.downloadUrl, '_blank')
         setMessage('Document generated. Download started.')
+      } else if (data.pdfBase64 && data.filename) {
+        const bin = atob(data.pdfBase64)
+        const arr = new Uint8Array(bin.length)
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i)
+        const blob = new Blob([arr], { type: 'application/pdf' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = data.filename
+        a.click()
+        URL.revokeObjectURL(url)
+        setMessage('Document generated. Download started.')
       } else if (data.fileId) {
         setMessage(`Document saved. File ID: ${data.fileId}`)
       } else {
-        setMessage('Document Builder is not configured. Set up ONLYOFFICE Document Server and builder API.')
+        setMessage(data.message || 'No document generated.')
       }
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Request failed')

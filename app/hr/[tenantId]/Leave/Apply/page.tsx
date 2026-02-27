@@ -98,6 +98,22 @@ export default function HRLeaveApplyPage() {
         </Link>
       </div>
 
+      {/* WhatsApp Leave CTA */}
+      <Card className="bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800">
+        <CardContent className="py-3 px-4 flex flex-wrap items-center gap-3">
+          <MessageCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Apply via WhatsApp</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">Submit leave on the go. Ensure your number is linked in HR Settings to use the WhatsApp leave flow.</p>
+          </div>
+          <Link href={`/hr/${tenantId}/Settings`}>
+            <Button variant="outline" size="sm" className="border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300">
+              HR Settings
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+
       <form onSubmit={handleSubmit}>
         <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>

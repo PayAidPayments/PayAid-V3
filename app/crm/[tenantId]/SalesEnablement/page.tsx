@@ -51,6 +51,12 @@ export default function SalesEnablementPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showResourceModal, setShowResourceModal] = useState(false)
   const [selectedResource, setSelectedResource] = useState<EnablementResource | null>(null)
+  const [createTitle, setCreateTitle] = useState('')
+  const [createType, setCreateType] = useState<EnablementResource['type']>('playbook')
+  const [createDescription, setCreateDescription] = useState('')
+  const [createCategory, setCreateCategory] = useState('')
+  const [createTags, setCreateTags] = useState('')
+  const [createSubmitting, setCreateSubmitting] = useState(false)
 
   useEffect(() => {
     fetchResources()
@@ -291,11 +297,25 @@ export default function SalesEnablementPage() {
                       <p>{resource.usageCount} uses</p>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (resource.url) {
+                            window.open(resource.url, '_blank')
+                          } else {
+                            const text = [resource.title, resource.description, resource.content || ''].filter(Boolean).join('\n\n')
+                            const blob = new Blob([text], { type: 'text/plain' })
+                            const a = document.createElement('a')
+                            a.href = URL.createObjectURL(blob)
+                            a.download = `${resource.title.replace(/\s+/g, '-')}.txt`
+                            a.click()
+                            URL.revokeObjectURL(a.href)
+                          }
+                        }}
+                      >
                         <Download className="h-3 w-3" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
@@ -324,6 +344,68 @@ export default function SalesEnablementPage() {
         </Card>
       )}
 
+      {/* View Resource Modal */}
+      {showResourceModal && selectedResource && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => { setShowResourceModal(false); setSelectedResource(null); }}>
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`p-2 rounded ${getTypeColor(selectedResource.type)}`}>
+                    {(() => { const Icon = getTypeIcon(selectedResource.type); return <Icon className="h-4 w-4" /> })()}
+                  </div>
+                  <Badge className={getTypeColor(selectedResource.type)}>{selectedResource.type}</Badge>
+                </div>
+                <CardTitle>{selectedResource.title}</CardTitle>
+                <CardDescription>{selectedResource.description}</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => { setShowResourceModal(false); setSelectedResource(null); }}>×</Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {selectedResource.content && (
+                <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-4 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap max-h-64 overflow-y-auto">
+                  {selectedResource.content}
+                </div>
+              )}
+              {selectedResource.url && (
+                <div>
+                  <a href={selectedResource.url} target="_blank" rel="noopener noreferrer" className="text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1">
+                    <ExternalLink className="h-4 w-4" /> Open link
+                  </a>
+                </div>
+              )}
+              {selectedResource.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {selectedResource.tags.map((tag, idx) => (
+                    <Badge key={idx} variant="outline">{tag}</Badge>
+                  ))}
+                </div>
+              )}
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (selectedResource.url) window.open(selectedResource.url, '_blank')
+                    else {
+                      const text = [selectedResource.title, selectedResource.description, selectedResource.content || ''].filter(Boolean).join('\n\n')
+                      const blob = new Blob([text], { type: 'text/plain' })
+                      const a = document.createElement('a')
+                      a.href = URL.createObjectURL(blob)
+                      a.download = `${selectedResource.title.replace(/\s+/g, '-')}.txt`
+                      a.click()
+                      URL.revokeObjectURL(a.href)
+                    }
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {selectedResource.url ? 'Open / Download' : 'Download as .txt'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Create Resource Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -334,16 +416,20 @@ export default function SalesEnablementPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Title
-                </label>
-                <Input placeholder="e.g., Enterprise Sales Playbook" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                <Input
+                  value={createTitle}
+                  onChange={(e) => setCreateTitle(e.target.value)}
+                  placeholder="e.g., Enterprise Sales Playbook"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Type
-                </label>
-                <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
+                  value={createType}
+                  onChange={(e) => setCreateType(e.target.value as EnablementResource['type'])}
+                >
                   <option value="playbook">Playbook</option>
                   <option value="template">Template</option>
                   <option value="script">Script</option>
@@ -352,23 +438,68 @@ export default function SalesEnablementPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                <Input
+                  value={createCategory}
+                  onChange={(e) => setCreateCategory(e.target.value)}
+                  placeholder="e.g., Enterprise, Email"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                 <textarea
+                  value={createDescription}
+                  onChange={(e) => setCreateDescription(e.target.value)}
                   placeholder="Describe this resource..."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg min-h-[100px]"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg min-h-[100px] dark:bg-gray-800"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags (comma-separated)</label>
+                <Input
+                  value={createTags}
+                  onChange={(e) => setCreateTags(e.target.value)}
+                  placeholder="e.g., sales, b2b, playbook"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button
                   variant="outline"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => {
+                    setShowCreateModal(false)
+                    setCreateTitle(''); setCreateType('playbook'); setCreateDescription(''); setCreateCategory(''); setCreateTags('')
+                  }}
                 >
                   Cancel
                 </Button>
-                <Button className="bg-purple-600 hover:bg-purple-700">
-                  Create Resource
+                <Button
+                  className="bg-purple-600 hover:bg-purple-700"
+                  disabled={!createTitle.trim() || createSubmitting}
+                  onClick={async () => {
+                    if (!createTitle.trim()) return
+                    setCreateSubmitting(true)
+                    try {
+                      const newResource: EnablementResource = {
+                        id: `resource-${Date.now()}`,
+                        title: createTitle.trim(),
+                        type: createType,
+                        category: createCategory.trim() || 'General',
+                        description: createDescription.trim(),
+                        tags: createTags.split(',').map(t => t.trim()).filter(Boolean),
+                        usageCount: 0,
+                        rating: 0,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                      }
+                      setResources(prev => [...prev, newResource])
+                      setShowCreateModal(false)
+                      setCreateTitle(''); setCreateType('playbook'); setCreateDescription(''); setCreateCategory(''); setCreateTags('')
+                    } finally {
+                      setCreateSubmitting(false)
+                    }
+                  }}
+                >
+                  {createSubmitting ? 'Creating...' : 'Create Resource'}
                 </Button>
               </div>
             </CardContent>

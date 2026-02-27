@@ -176,7 +176,7 @@ export default function FinanceRecurringBillingPage() {
       <div className="p-6 space-y-8 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
         {/* Action Buttons */}
         <div className="flex items-center justify-end gap-3">
-          <Link href={`/finance/${tenantId}/Invoices/New?recurring=true`}>
+          <Link href={`/finance/${tenantId}/Invoices/new?recurring=true`}>
             <Button className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#3F1F62] hover:to-[#E0B200] text-white">
               <Plus className="w-4 h-4 mr-2" />
               Create Recurring Invoice
@@ -211,7 +211,7 @@ export default function FinanceRecurringBillingPage() {
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
                     Create your first recurring invoice template to automate billing
                   </p>
-                  <Link href={`/finance/${tenantId}/Invoices/New?recurring=true`}>
+                  <Link href={`/finance/${tenantId}/Invoices/new?recurring=true`}>
                     <Button className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#3F1F62] hover:to-[#E0B200] text-white">
                       <Plus className="w-4 h-4 mr-2" />
                       Create Recurring Invoice

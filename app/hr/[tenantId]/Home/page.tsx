@@ -28,7 +28,8 @@ import {
   Mail,
   Zap,
   Receipt,
-  Settings
+  Settings,
+  Smartphone
 } from 'lucide-react'
 import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 import { getModuleConfig } from '@/lib/modules/module-config'
@@ -282,6 +283,12 @@ export default function HRDashboardPage() {
                   <Button variant="outline" size="sm" className="gap-2 hover:bg-slate-100 dark:hover:bg-slate-800">
                     <Settings className="h-4 w-4" />
                     Payroll Settings
+                  </Button>
+                </Link>
+                <Link href={`/hr/${tenantId}/mobile`}>
+                  <Button variant="outline" size="sm" className="gap-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30">
+                    <Smartphone className="h-4 w-4" />
+                    HR on the go
                   </Button>
                 </Link>
               </div>

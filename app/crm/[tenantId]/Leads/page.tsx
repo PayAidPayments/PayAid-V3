@@ -51,7 +51,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Label } from '@/components/ui/label'
 import { EntityPageLayout } from '@/components/crm/layout/EntityPageLayout'
 import { KPIBar } from '@/components/crm/layout/KPIBar'
-import { EntityAIPanel } from '@/components/crm/layout/EntityAIPanel'
 import { RowActionsMenu } from '@/components/crm/RowActionsMenu'
 import { BulkActionsBar } from '@/components/crm/BulkActionsBar'
 import { LeadsKanban } from '@/components/crm/LeadsKanban'
@@ -90,6 +89,9 @@ export default function CRMLeadsPage() {
   const [isExporting, setIsExporting] = useState(false)
   const [isEnriching, setIsEnriching] = useState(false)
   const [viewMode, setViewMode] = useState<'table' | 'sheet' | 'kanban'>('table')
+  const [massEmailModalOpen, setMassEmailModalOpen] = useState(false)
+  const [massEmailSubject, setMassEmailSubject] = useState('')
+  const [massEmailBody, setMassEmailBody] = useState('')
   const [massUpdateData, setMassUpdateData] = useState({
     status: '',
     source: '',
@@ -97,7 +99,6 @@ export default function CRMLeadsPage() {
     stage: '',
   })
   const [importProspectsModalOpen, setImportProspectsModalOpen] = useState(false)
-  const [importNotesModalOpen, setImportNotesModalOpen] = useState(false)
   const [facebookSyncModalOpen, setFacebookSyncModalOpen] = useState(false)
   const [linkedinSyncModalOpen, setLinkedinSyncModalOpen] = useState(false)
   const [fieldFilters, setFieldFilters] = useState<Record<string, boolean>>({
@@ -137,8 +138,8 @@ export default function CRMLeadsPage() {
   const createMenuRef = useRef<HTMLDivElement>(null)
   const profileMenuRef = useRef<HTMLDivElement>(null)
 
-  // Use stage='prospect' instead of type='lead' for simplified flow
-  const { data, isLoading } = useContacts({ page, limit, search, stage: 'prospect' })
+  // Use stage='prospect' for prospects; pass tenantId so list matches current tenant
+  const { data, isLoading } = useContacts({ page, limit, search, stage: 'prospect', tenantId: tenantId || undefined })
   
   // Apply filters to leads
   const leads = data?.contacts || []
@@ -855,35 +856,34 @@ export default function CRMLeadsPage() {
                 <ChevronDown className="w-4 h-4" />
               </button>
               {createMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
                   <div className="py-1">
+                    <Link
+                      href={`/crm/${tenantId}/Leads/New`}
+                      onClick={() => setCreateMenuOpen(false)}
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <User className="w-4 h-4 mr-3" />
+                      Add new prospect
+                    </Link>
+                    <div className="border-t border-gray-200 dark:border-gray-600 my-1" />
                     <button 
                       onClick={() => {
                         setImportProspectsModalOpen(true)
                         setCreateMenuOpen(false)
                       }}
-                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                     >
                       <Upload className="w-4 h-4 mr-3" />
                       Import Prospects
                     </button>
-                    <button 
-                      onClick={() => {
-                        setImportNotesModalOpen(true)
-                        setCreateMenuOpen(false)
-                      }}
-                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
-                    >
-                      <FileTextIcon className="w-4 h-4 mr-3" />
-                      Import Notes
-                    </button>
-                    <div className="border-t border-gray-200 my-1"></div>
+                    <div className="border-t border-gray-200 dark:border-gray-600 my-1" />
                     <button 
                       onClick={() => {
                         setFacebookSyncModalOpen(true)
                         setCreateMenuOpen(false)
                       }}
-                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                     >
                       <Facebook className="w-4 h-4 mr-3" />
                       Facebook Ads Sync
@@ -893,7 +893,7 @@ export default function CRMLeadsPage() {
                         setLinkedinSyncModalOpen(true)
                         setCreateMenuOpen(false)
                       }}
-                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                     >
                       <Linkedin className="w-4 h-4 mr-3" />
                       LinkedIn Ads Sync
@@ -1023,6 +1023,17 @@ export default function CRMLeadsPage() {
                     >
                       <Download className="w-4 h-4 mr-3" />
                       {isExporting ? 'Exporting...' : 'Export Leads'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMassEmailModalOpen(true)
+                        setActionsMenuOpen(false)
+                      }}
+                      disabled={selectedLeads.length === 0}
+                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Mail className="w-4 h-4 mr-3" />
+                      Mass email ({selectedLeads.length} selected)
                     </button>
                     <button
                       onClick={() => {
@@ -1340,6 +1351,10 @@ export default function CRMLeadsPage() {
         }
         mainContent={
           <div className="p-6">
+            {viewMode === 'kanban' ? (
+              <LeadsKanban tenantId={tenantId} />
+            ) : (
+              <>
             {/* Top Controls */}
             <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
@@ -1382,13 +1397,13 @@ export default function CRMLeadsPage() {
             </div>
           </div>
 
-          {/* Leads Table */}
-          <Card className="border-0 shadow-lg">
+          {/* Leads Table / Sheet */}
+          <Card className={`border-0 shadow-lg ${viewMode === 'sheet' ? 'overflow-auto max-h-[calc(100vh-16rem)]' : ''}`}>
             <CardContent className="p-0">
               {filteredLeads.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-gray-600 mb-4">No leads found</p>
-                  <Link href={`/crm/${tenantId}/Contacts/new`}>
+                  <Link href={`/crm/${tenantId}/Leads/New`}>
                     <Button>Create Your First Lead</Button>
                   </Link>
                 </div>
@@ -1526,9 +1541,10 @@ export default function CRMLeadsPage() {
               )}
             </CardContent>
           </Card>
+              </>
+            )}
           </div>
         }
-        rightSidebar={<EntityAIPanel entityType="prospects" />}
       />
 
       {/* Bulk Actions Bar */}
@@ -1732,6 +1748,61 @@ export default function CRMLeadsPage() {
                   {isConverting ? 'Converting...' : 'Convert'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mass Email Modal */}
+      {massEmailModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-[500px] max-w-[90vw] max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+              Mass email ({selectedLeads.length} prospect{selectedLeads.length !== 1 ? 's' : ''})
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Compose an email and open it in your mail client. Recipients will be the selected prospects with email addresses.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Subject</Label>
+                <Input
+                  value={massEmailSubject}
+                  onChange={(e) => setMassEmailSubject(e.target.value)}
+                  placeholder="Email subject"
+                  className="mt-1 dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Body</Label>
+                <textarea
+                  value={massEmailBody}
+                  onChange={(e) => setMassEmailBody(e.target.value)}
+                  placeholder="Email body..."
+                  rows={5}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end pt-4 border-t mt-4">
+              <Button variant="outline" onClick={() => { setMassEmailModalOpen(false); setMassEmailSubject(''); setMassEmailBody(''); }}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  const withEmail = filteredLeads.filter((l: any) => l.email && selectedLeads.includes(l.id))
+                  const emails = withEmail.map((l: any) => l.email).slice(0, 20).join(',')
+                  const mailto = `mailto:${emails}?subject=${encodeURIComponent(massEmailSubject)}&body=${encodeURIComponent(massEmailBody)}`
+                  window.location.href = mailto
+                  setMassEmailModalOpen(false)
+                  setMassEmailSubject('')
+                  setMassEmailBody('')
+                }}
+                disabled={filteredLeads.filter((l: any) => l.email && selectedLeads.includes(l.id)).length === 0}
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Open in mail client
+              </Button>
             </div>
           </div>
         </div>
@@ -2098,31 +2169,6 @@ export default function CRMLeadsPage() {
               <Button
                 variant="outline"
                 onClick={() => setImportProspectsModalOpen(false)}
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Import Notes Modal */}
-      <Dialog open={importNotesModalOpen} onOpenChange={setImportNotesModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import Notes</DialogTitle>
-            <DialogDescription>
-              Import notes for prospects from a file
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-gray-600">
-              This feature is coming soon. You will be able to import notes for multiple prospects.
-            </p>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setImportNotesModalOpen(false)}
               >
                 Close
               </Button>

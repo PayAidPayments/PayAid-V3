@@ -57,8 +57,11 @@ export default function EInvoicingPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Invoice Reference Number (IRN) is mandatory for B2B above threshold. Generate via NIC e-invoice API; QR code can be generated after IRN. Connect your GSTIN and IRN API in Settings when ready.
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Invoice Reference Number (IRN) is mandatory for B2B above threshold. Generate via NIC e-invoice API; QR code can be generated after IRN.
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mb-4">
+                To enable IRN generation, connect your GSTIN and IRN API credentials in your company or Finance settings.
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" className="dark:border-gray-600 dark:text-gray-300" disabled title="GST portal API integration coming soon">

@@ -51,7 +51,7 @@ export default function CRMReportsPage() {
       if (!token) return
 
       // Fetch dashboard stats which includes pipeline data
-      const response = await fetch(`/api/crm/dashboard/stats?timePeriod=all`, {
+      const response = await fetch(`/api/crm/dashboard/stats?timePeriod=all${tenantId ? `&tenantId=${encodeURIComponent(tenantId)}` : ''}`, {
         headers: { 'Authorization': `Bearer ${token}` },
       })
 
@@ -264,61 +264,67 @@ export default function CRMReportsPage() {
         </Card>
 
         {/* Revenue Report */}
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
-              <CardTitle>Revenue Report</CardTitle>
-            </div>
-            <CardDescription>Track revenue by period</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600 dark:text-gray-400">This Month</p>
-                <p className="font-semibold text-gray-900 dark:text-gray-100">
-                  ₹{(reportData?.pipelineByStage?.reduce((sum, item) => sum + (item.value || 0), 0) || 0).toLocaleString('en-IN')}
-                </p>
+        <Link href={`/crm/${tenantId}/Deals`}>
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <CardTitle>Revenue Report</CardTitle>
               </div>
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Active Deals</p>
-                <p className="font-semibold text-gray-900 dark:text-gray-100">
-                  {reportData?.pipelineByStage?.reduce((sum, item) => sum + (item.count || 0), 0) || 0}
-                </p>
+              <CardDescription>Track revenue by period</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">This Month</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">
+                    ₹{(reportData?.pipelineByStage?.reduce((sum, item) => sum + (item.value || 0), 0) || 0).toLocaleString('en-IN')}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Active Deals</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">
+                    {reportData?.pipelineByStage?.reduce((sum, item) => sum + (item.count || 0), 0) || 0}
+                  </p>
+                </div>
+                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-2">View deals →</p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Performance Report */}
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-              <CardTitle>Performance Report</CardTitle>
-            </div>
-            <CardDescription>Key performance indicators</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Avg Deal Value</p>
-                <p className="font-semibold text-gray-900 dark:text-gray-100">
-                  ₹{reportData?.pipelineByStage && reportData.pipelineByStage.length > 0
-                    ? (reportData.pipelineByStage.reduce((sum, item) => sum + (item.value || 0), 0) / 
-                       reportData.pipelineByStage.reduce((sum, item) => sum + (item.count || 0), 0)).toLocaleString('en-IN')
-                    : '0'}
-                </p>
+        <Link href={`/crm/${tenantId}/Deals`}>
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                <CardTitle>Performance Report</CardTitle>
               </div>
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Win Rate</p>
-                <p className="font-semibold text-green-600 dark:text-green-400">
-                  {reportData?.leadConversion?.conversionRate?.toFixed(1) || '0'}%
-                </p>
+              <CardDescription>Key performance indicators</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Avg Deal Value</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">
+                    ₹{reportData?.pipelineByStage && reportData.pipelineByStage.length > 0
+                      ? (reportData.pipelineByStage.reduce((sum, item) => sum + (item.value || 0), 0) / 
+                         reportData.pipelineByStage.reduce((sum, item) => sum + (item.count || 0), 0)).toLocaleString('en-IN')
+                      : '0'}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Win Rate</p>
+                  <p className="font-semibold text-green-600 dark:text-green-400">
+                    {reportData?.leadConversion?.conversionRate?.toFixed(1) || '0'}%
+                  </p>
+                </div>
+                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-2">View deals & pipeline →</p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Time-based Report */}
         <Card className="hover:shadow-lg transition-shadow">

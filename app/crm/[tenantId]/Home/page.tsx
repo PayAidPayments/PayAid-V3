@@ -1206,6 +1206,28 @@ export default function CRMDashboardPage() {
       )}
 
       <div className="p-6 space-y-6 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
+        {/* AI Command Center - always visible on all views (production and dev) */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
+        >
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-page-ai'))}
+            className="flex items-center gap-3 w-full text-left rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+          >
+            <div className="w-10 h-10 rounded-full bg-slate-800 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+              <Bot className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Ask PayAid AI about this dashboard</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Contacts, deals, pipeline, and more</p>
+            </div>
+          </button>
+        </motion.div>
+
         {/* Conditional Rendering: Tasks View vs Activity Feed vs Manager View */}
         {currentView === 'tasks' ? (
           // Tasks View for regular users
@@ -1550,32 +1572,9 @@ export default function CRMDashboardPage() {
         ) : (
           // Manager View (default for admin/manager)
           <>
-        {/* PIXEL-PERFECT 12-COLUMN CSS GRID LAYOUT */}
+        {/* PIXEL-PERFECT 12-COLUMN CSS GRID LAYOUT (Band 1 AI is above, shared across views) */}
         <div className="dashboard-container">
           <div className="dashboard-grid">
-          
-          {/* Band 1: Single CTA to open Page AI (no duplicate AI) */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
-            style={{ gridColumn: '1 / -1' }}
-          >
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent('open-page-ai'))}
-              className="flex items-center gap-3 w-full text-left rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-            >
-              <div className="w-10 h-10 rounded-full bg-slate-800 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
-                <Bot className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Ask PayAid AI about this dashboard</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Contacts, deals, pipeline, and more</p>
-              </div>
-            </button>
-          </motion.div>
 
           {/* Band 2: Row 1 - Stat Cards (6 identical cards, each spans 2 columns) */}
           {/* Stat Card 1: Deals Created */}
