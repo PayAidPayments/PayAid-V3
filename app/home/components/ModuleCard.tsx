@@ -47,9 +47,9 @@ function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {
     if (module.id === 'marketplace') {
       return getDashboardUrl('/marketplace');
     }
-    // Productivity: go directly to tenant Productivity + default tool (sheets) when tenant is known
+    // Productivity: go to Home dashboard so user can choose Docs, Sheets, Slides, etc.
     if (module.id === 'productivity' && tenantId) {
-      return `/productivity/${tenantId}/sheets`;
+      return `/productivity/${tenantId}/Home`;
     }
     // Other modules: base URL; entry point will redirect to /module/[tenantId]/Home/ when tenant loads
     return module.url;

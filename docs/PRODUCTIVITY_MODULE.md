@@ -5,8 +5,8 @@ Productivity is a **top-level module** (like CRM, Finance, HR). Users open it fr
 ## Structure
 
 - **Main nav:** Home | CRM | Finance | HR | **Productivity** | Analytics | Settings
-- **Route:** `/productivity` → redirects to `/productivity/[tenantId]/sheets`
-- **Tabs:** PayAid Sheets | PayAid Docs | PayAid Slides | PayAid Drive | PayAid Meet | PayAid PDF | Document Builder
+- **Route:** `/productivity` → redirects to `/productivity/[tenantId]/Home` (Productivity dashboard). The dashboard shows tool cards so the user can choose: PayAid Sheets, PayAid Docs, PayAid Slides, PayAid Drive, PayAid Meet, PayAid PDF, or Document Builder.
+- **Tabs:** Home | PayAid Sheets | PayAid Docs | PayAid Slides | PayAid Drive | PayAid Meet | PayAid PDF | Document Builder
 
 ## Tool URLs
 

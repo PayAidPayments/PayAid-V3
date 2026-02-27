@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 import { UniversalModuleLayout } from '@/components/modules/UniversalModuleLayout'
 
 const PRODUCTIVITY_TABS = [
+  { name: 'Home', href: '', slug: 'Home' },
   { name: 'PayAid Sheets', href: '', slug: 'sheets' },
   { name: 'PayAid Docs', href: '', slug: 'docs' },
   { name: 'PayAid Slides', href: '', slug: 'slides' },
