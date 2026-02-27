@@ -12,6 +12,7 @@ import { join } from 'path'
 import { existsSync, mkdirSync } from 'fs'
 import { promisify } from 'util'
 import { exec } from 'child_process'
+import { checkFFmpegInstalled } from './check-ffmpeg'
 
 const execAsync = promisify(exec)
 
@@ -188,21 +189,6 @@ export async function composeSimpleVideo(
       .on('error', reject)
       .run()
   })
-}
-
-/**
- * Check if FFmpeg is installed
- */
-export async function checkFFmpegInstalled(): Promise<boolean> {
-  try {
-    await execAsync('ffmpeg -version')
-    return true
-  } catch {
-    throw new Error(
-      'FFmpeg is not installed. Please install FFmpeg to generate videos.\n' +
-      'Download from: https://ffmpeg.org/download.html'
-    )
-  }
 }
 
 /**
