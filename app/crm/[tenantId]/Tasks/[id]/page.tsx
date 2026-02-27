@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useTask } from '@/lib/hooks/use-api'
+import { useDeleteTask, useTask } from '@/lib/hooks/use-api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { format } from 'date-fns'
@@ -15,10 +15,16 @@ export default function CRMTaskDetailPage() {
   const id = (params?.id as string) ?? ''
   const router = useRouter()
   const { data: task, isLoading, isError } = useTask(id)
+  const deleteTask = useDeleteTask()
 
-  const handleDelete = () => {
-    if (!confirm('Delete this task? You can undo within 30 seconds from the list.')) return
-    router.push(`/crm/${tenantId}/Tasks?undoDelete=${id}`)
+  const handleDelete = async () => {
+    if (!confirm('Delete this task? This action cannot be undone.')) return
+    try {
+      await deleteTask.mutateAsync(id)
+      router.push(`/crm/${tenantId}/Tasks`)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to delete task')
+    }
   }
 
   if (isLoading) {
@@ -66,9 +72,10 @@ export default function CRMTaskDetailPage() {
             size="sm"
             className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
             onClick={handleDelete}
+            disabled={deleteTask.isPending}
           >
             <Trash2 className="h-4 w-4 mr-1" />
-            Delete
+            {deleteTask.isPending ? 'Deleting…' : 'Delete'}
           </Button>
         </div>
       </div>

@@ -15,13 +15,14 @@ import {
 import { useUpdateTask } from '@/lib/hooks/use-api'
 import { TaskCard, type TaskCardTask } from '@/components/crm/tasks/TaskCard'
 import { Badge } from '@/components/ui/badge'
-import { addDays, endOfWeek } from 'date-fns'
+import { addDays, endOfWeek, startOfDay } from 'date-fns'
 import { cn } from '@/lib/utils/cn'
 
 const KANBAN_COLUMNS = [
+  { id: 'overdue', title: 'Overdue', status: 'pending' as const },
+  { id: 'due_soon', title: 'Due Soon', status: 'pending' as const },
   { id: 'todo', title: 'To Do', status: 'pending' as const },
   { id: 'in_progress', title: 'In Progress', status: 'in_progress' as const },
-  { id: 'due_soon', title: 'Due Soon', status: 'pending' as const },
   { id: 'completed', title: 'Completed', status: 'completed' as const },
 ]
 
@@ -117,18 +118,23 @@ export function TasksKanbanView({
 
   const buckets = useMemo(() => {
     const endOfNext7 = endOfWeek(addDays(new Date(), 7), { weekStartsOn: 1 })
+    const startToday = startOfDay(new Date())
     const todo: TaskCardTask[] = []
     const inProgress: TaskCardTask[] = []
+    const overdue: TaskCardTask[] = []
     const dueSoon: TaskCardTask[] = []
     const completed: TaskCardTask[] = []
 
     tasks.forEach((t) => {
       const due = t.dueDate ? new Date(t.dueDate) : null
       const isOpen = t.status === 'pending' || t.status === 'in_progress'
-      const isDueSoon = isOpen && due && due <= endOfNext7
+      const isOverdue = isOpen && due && due < startToday
+      const isDueSoon = isOpen && due && due >= startToday && due <= endOfNext7
 
       if (t.status === 'completed' || t.status === 'cancelled') {
         completed.push(t)
+      } else if (isOverdue) {
+        overdue.push(t)
       } else if (isDueSoon) {
         dueSoon.push(t)
       } else if (t.status === 'in_progress') {
@@ -139,9 +145,10 @@ export function TasksKanbanView({
     })
 
     return [
+      { id: 'overdue', title: 'Overdue', tasks: overdue },
+      { id: 'due_soon', title: 'Due Soon', tasks: dueSoon },
       { id: 'todo', title: 'To Do', tasks: todo },
       { id: 'in_progress', title: 'In Progress', tasks: inProgress },
-      { id: 'due_soon', title: 'Due Soon', tasks: dueSoon },
       { id: 'completed', title: 'Completed', tasks: completed },
     ]
   }, [tasks])
@@ -161,7 +168,13 @@ export function TasksKanbanView({
       const task = tasks.find((t) => t.id === taskId)
       if (!task || task.status === col.status) return
 
-      if (col.id === 'due_soon') {
+      if (col.id === 'overdue') {
+        const dueDate = addDays(startOfDay(new Date()), -1)
+        updateTask.mutate(
+          { id: taskId, data: { status: 'pending', dueDate: dueDate.toISOString() } },
+          { onSuccess: () => onStatusChange(taskId, 'pending', dueDate) }
+        )
+      } else if (col.id === 'due_soon') {
         const dueDate = endOfWeek(addDays(new Date(), 7), { weekStartsOn: 1 })
         updateTask.mutate(
           { id: taskId, data: { status: 'pending', dueDate: dueDate.toISOString() } },
@@ -185,7 +198,7 @@ export function TasksKanbanView({
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className={cn('grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4', className)}>
+      <div className={cn('grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4', className)}>
         {buckets.map((col) => (
           <KanbanColumn
             key={col.id}

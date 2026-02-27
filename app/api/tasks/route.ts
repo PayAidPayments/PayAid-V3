@@ -60,6 +60,12 @@ export async function GET(request: NextRequest) {
         where.dueDate = { lt: startOfToday() }
       } else if (status === 'open') {
         where.status = { in: OPEN_STATUSES }
+      } else if (status === 'completed_today') {
+        where.status = 'completed'
+        where.updatedAt = { gte: startOfToday(), lte: endOfToday() }
+      } else if (status === 'today') {
+        where.status = { in: OPEN_STATUSES }
+        where.dueDate = { gte: startOfToday(), lte: endOfToday() }
       } else {
         where.status = status
       }
