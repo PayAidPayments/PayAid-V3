@@ -153,6 +153,25 @@ export function DocumentsList({ tenantId }: { tenantId: string }) {
 
   return (
     <div className="space-y-5">
+      {/* Hero - similar to Spreadsheet Home */}
+      <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 dark:from-blue-900/20 dark:to-indigo-900/20 p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <FileEdit className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              PayAid Docs
+            </h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              Create and edit documents with rich text, headings, and lists.
+            </p>
+          </div>
+          <Button onClick={createNew} className="gap-2 shrink-0">
+            <Plus className="h-4 w-4" />
+            New document
+          </Button>
+        </div>
+      </section>
+
       {isLoadingList && (
         <div className="h-1 w-full max-w-7xl mx-auto rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
           <div
@@ -162,18 +181,22 @@ export function DocumentsList({ tenantId }: { tenantId: string }) {
         </div>
       )}
 
+      {/* Recent + toolbar */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search documents..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-          />
-        </div>
-        <div className="flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+          {searchQuery ? 'Search results' : 'Your documents'}
+        </h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full sm:w-56">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search documents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
           <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
             <button
               type="button"

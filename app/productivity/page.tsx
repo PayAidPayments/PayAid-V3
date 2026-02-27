@@ -7,7 +7,7 @@ import { PageLoading } from '@/components/ui/loading'
 
 /**
  * Productivity Module Entry Point
- * Redirects to tenant-specific Productivity with default tool (Sheets)
+ * Redirects to tenant-specific Productivity Home dashboard so user can choose Docs, Sheets, Slides, Drive, Meet, PDF, or Document Builder.
  */
 export default function ProductivityModulePage() {
   const router = useRouter()
@@ -47,7 +47,7 @@ export default function ProductivityModulePage() {
     }
 
     if (effectiveTenantId) {
-      router.replace(`/productivity/${effectiveTenantId}/sheets`)
+      router.replace(`/productivity/${effectiveTenantId}/Home`)
     } else {
       router.replace('/dashboard')
     }

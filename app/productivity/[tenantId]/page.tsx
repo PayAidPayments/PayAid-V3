@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 
 /**
- * Default Productivity landing: redirect to PayAid Sheets
+ * Default Productivity landing: redirect to Home dashboard so user can choose Docs, Sheets, Slides, etc.
  */
 export default function ProductivityTenantPage() {
   const router = useRouter()
@@ -13,7 +13,7 @@ export default function ProductivityTenantPage() {
 
   useEffect(() => {
     if (tenantId) {
-      router.replace(`/productivity/${tenantId}/sheets`)
+      router.replace(`/productivity/${tenantId}/Home`)
     }
   }, [tenantId, router])
 
