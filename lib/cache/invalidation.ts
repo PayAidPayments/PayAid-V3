@@ -66,7 +66,11 @@ function getRedisClient(): Redis | null {
 
   const redisUrl = process.env.REDIS_URL
   if (!redisUrl) {
-    console.warn('Redis URL not configured, cache invalidation disabled')
+    return null
+  }
+
+  // Skip real Redis on Vercel build when only localhost is configured (avoids ECONNREFUSED during build)
+  if (process.env.VERCEL === '1' && (redisUrl.includes('localhost') || redisUrl.includes('127.0.0.1'))) {
     return null
   }
 

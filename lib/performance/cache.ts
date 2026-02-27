@@ -5,9 +5,14 @@
 
 import { Redis } from 'ioredis'
 
-const redis = process.env.REDIS_URL
-  ? new Redis(process.env.REDIS_URL)
-  : null
+const redisUrl = process.env.REDIS_URL || ''
+const isLocalhost = redisUrl.includes('localhost') || redisUrl.includes('127.0.0.1')
+const skipRedis =
+  !redisUrl ||
+  (process.env.VERCEL === '1' && isLocalhost) ||
+  (process.env.CI === 'true' && isLocalhost)
+
+const redis: Redis | null = redisUrl && !skipRedis ? new Redis(redisUrl, { lazyConnect: true, maxRetriesPerRequest: 1 }) : null
 
 const CACHE_TTL = {
   FORECAST: 3600, // 1 hour

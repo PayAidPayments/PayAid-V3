@@ -184,7 +184,7 @@ export default function CRMDealsPage() {
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this deal?')) {
       try {
-        await deleteDeal.mutateAsync(id)
+        await deleteDeal.mutateAsync({ id, tenantId })
       } catch (error) {
         alert(error instanceof Error ? error.message : 'Failed to delete deal')
       }
@@ -768,7 +768,7 @@ export default function CRMDealsPage() {
                                     message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`
                                     Object.entries(diagnostics.checks || {}).forEach(([key, check]: [string, any]) => {
                                       const icon = check.status === 'ok' ? '✅' : check.status === 'error' ? '❌' : check.status === 'warning' ? '⚠️' : 'ℹ️'
-                                      message += `${icon} ${key.toUpperCase().replace(/([A-Z])/g, ' $1').trim()}:\n`
+                                      message += `${icon} ${key.toUpperCase().replace(/([A-Z])/g, (_, c) => ' ' + c).trim()}:\n`
                                       message += `   Status: ${check.status}\n`
                                       message += `   Message: ${check.message}\n`
                                       if (check.error) {
@@ -1029,7 +1029,7 @@ export default function CRMDealsPage() {
                                     message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`
                                     Object.entries(diagnostics.checks || {}).forEach(([key, check]: [string, any]) => {
                                       const icon = check.status === 'ok' ? '✅' : check.status === 'error' ? '❌' : check.status === 'warning' ? '⚠️' : 'ℹ️'
-                                      message += `${icon} ${key.toUpperCase().replace(/([A-Z])/g, ' $1').trim()}:\n`
+                                      message += `${icon} ${key.toUpperCase().replace(/([A-Z])/g, (_, c) => ' ' + c).trim()}:\n`
                                       message += `   Status: ${check.status}\n`
                                       message += `   Message: ${check.message}\n`
                                       if (check.error) {

@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { withErrorHandling } from '@/lib/api/route-wrapper'
 import type { ApiResponse } from '@/types/base-modules'
 import type { Project } from '@/modules/shared/productivity/types'
@@ -17,12 +18,26 @@ import { formatINR } from '@/lib/currency'
  * POST /api/productivity/projects
  */
 export const POST = withErrorHandling(async (request: NextRequest) => {
+  let tenantId: string
+  try {
+    const access = await requireModuleAccess(request, 'productivity')
+    tenantId = access.tenantId
+  } catch (e) {
+    return handleLicenseError(e)
+  }
   const body = await request.json()
   const validatedData = CreateProjectSchema.parse(body)
+  if (validatedData.organizationId && validatedData.organizationId !== tenantId) {
+    return NextResponse.json(
+      { success: false, statusCode: 403, error: { code: 'FORBIDDEN', message: 'Tenant mismatch' } },
+      { status: 403 }
+    )
+  }
+  const organizationId = validatedData.organizationId || tenantId
 
   const project = await prisma.project.create({
     data: {
-      tenantId: validatedData.organizationId,
+      tenantId: organizationId,
       name: validatedData.name,
       description: validatedData.description || '',
       status: 'planning',
@@ -30,10 +45,23 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       startDate: new Date(validatedData.startDate),
       endDate: validatedData.endDate ? new Date(validatedData.endDate) : null,
       budget: validatedData.budgetINR,
-      // TODO: Add team members via ProjectMember relation after project creation
-      // TODO: Handle visibility if needed
     },
   })
+
+  const teamIds = validatedData.team ?? []
+  if (teamIds.length > 0) {
+    await prisma.projectMember.createMany({
+      data: teamIds.map((userId) => ({
+        projectId: project.id,
+        userId,
+        role: 'MEMBER',
+        allocationPercentage: 100,
+      })),
+      skipDuplicates: true,
+    })
+  }
+
+  const visibility = validatedData.visibility ?? 'team'
 
   const response: ApiResponse<Project> = {
     success: true,
@@ -51,8 +79,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       actualCostINR: project.actualCost ? Number(project.actualCost) : undefined,
       tasks: [],
       milestones: [],
-      team: [],
-      visibility: 'team' as const,
+      team: teamIds,
+      visibility: visibility as Project['visibility'],
       createdAt: project.createdAt,
     },
     meta: {
@@ -68,26 +96,25 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
  * GET /api/productivity/projects?organizationId=xxx&status=active&page=1&pageSize=20
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
+  let tenantId: string
+  try {
+    const access = await requireModuleAccess(request, 'productivity')
+    tenantId = access.tenantId
+  } catch (e) {
+    return handleLicenseError(e)
+  }
   const searchParams = request.nextUrl.searchParams
-  const organizationId = searchParams.get('organizationId')
+  const organizationId = searchParams.get('organizationId') || tenantId
+  if (organizationId !== tenantId) {
+    return NextResponse.json(
+      { success: false, statusCode: 403, error: { code: 'FORBIDDEN', message: 'Tenant mismatch' } },
+      { status: 403 }
+    )
+  }
   const status = searchParams.get('status')
   const clientId = searchParams.get('clientId')
   const page = parseInt(searchParams.get('page') || '1', 10)
   const pageSize = parseInt(searchParams.get('pageSize') || '20', 10)
-
-  if (!organizationId) {
-    return NextResponse.json(
-      {
-        success: false,
-        statusCode: 400,
-        error: {
-          code: 'MISSING_ORGANIZATION_ID',
-          message: 'organizationId is required',
-        },
-      },
-      { status: 400 }
-    )
-  }
 
   const where: Record<string, unknown> = {
     tenantId: organizationId,
@@ -107,6 +134,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       skip: (page - 1) * pageSize,
       take: pageSize,
       orderBy: { createdAt: 'desc' },
+      include: { members: { select: { userId: true } } },
     }),
     prisma.project.count({ where }),
   ])
@@ -124,7 +152,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     actualCostINR: project.actualCost ? Number(project.actualCost) : undefined,
     tasks: [],
     milestones: [],
-    team: [],
+    team: project.members.map((m) => m.userId),
     visibility: 'team' as const,
     createdAt: project.createdAt,
   }))

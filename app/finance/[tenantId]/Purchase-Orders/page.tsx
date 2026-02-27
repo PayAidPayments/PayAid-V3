@@ -152,7 +152,7 @@ export default function FinancePurchaseOrdersPage() {
       <div className="p-6 space-y-8 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
         {/* Action Button */}
         <div className="flex items-center justify-end">
-          <Link href={`/finance/${tenantId}/Purchase-Orders/New`}>
+          <Link href={`/finance/${tenantId}/Purchase-Orders/new`}>
             <Button className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#3F1F62] hover:to-[#E0B200] text-white">
               <Plus className="w-4 h-4 mr-2" />
               New Purchase Order
@@ -208,7 +208,7 @@ export default function FinancePurchaseOrdersPage() {
           <GlassCard>
             <div className="p-6 py-12 text-center">
               <p className="text-gray-600 dark:text-gray-400">No purchase orders found. Create your first purchase order to get started.</p>
-              <Link href={`/finance/${tenantId}/Purchase-Orders/New`}>
+              <Link href={`/finance/${tenantId}/Purchase-Orders/new`}>
                 <Button className="mt-4 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#3F1F62] hover:to-[#E0B200] text-white">
                   Create Purchase Order
                 </Button>

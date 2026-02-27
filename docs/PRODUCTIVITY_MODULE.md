@@ -13,26 +13,24 @@ Productivity is a **top-level module** (like CRM, Finance, HR). Users open it fr
 | PayAid name   | Implementation | URL / behavior |
 |---------------|-----------------|----------------|
 | PayAid Sheets | Built-in x-spreadsheet | Redirects to `/spreadsheet/[tenantId]/Spreadsheets` (list + editor) |
-| PayAid Docs   | Coming soon     | Placeholder card; use Dashboard for now |
-| PayAid Slides | Coming soon     | Placeholder card; use Dashboard for now |
-| PayAid Drive  | Nextcloud Files (optional) | `/api/productivity/proxy/drive?tenantId=&token=` when `DRIVE_SERVER_URL` is set |
-| PayAid Meet   | Jitsi           | `NEXT_PUBLIC_MEET_BASE_URL` (e.g. `https://meet.payaid.app`) |
-| PayAid PDF    | pdf-lib (in-app)| In-app; no iframe |
-| Document Builder | Optional service | `POST /api/productivity/builder`; set `DOCUMENT_BUILDER_URL` to enable |
+| PayAid Docs   | Built-in (TipTap) | List at `/productivity/[tenantId]/docs`; editor at `.../docs/[id]` or `.../docs/new`; stores in `Document` model |
+| PayAid Slides | Built-in          | List at `/productivity/[tenantId]/slides`; editor at `.../slides/[id]` or `.../slides/new`; present mode; stores in `Presentation` model |
+| PayAid Drive  | Built-in        | List/upload/folders/download at `/productivity/[tenantId]/drive`; stores in `DriveFile`; files under `uploads/[tenantId]/` |
+| PayAid Meet   | Built-in        | List + create/join at `/productivity/[tenantId]/meet`; room at `.../meet/room/[code]`; video via Jitsi when `NEXT_PUBLIC_MEET_BASE_URL` set |
+| PayAid PDF    | Built-in (pdf-lib) | In-app view/new/merge/split at `/productivity/[tenantId]/pdf` |
+| Document Builder | Built-in      | Template + CRM/Finance data at `/productivity/[tenantId]/builder`; generates PDF with pdf-lib. Optional: set `DOCUMENT_BUILDER_URL` to `https://your-builder/build` for external builder (we POST `{ templateId, tenantId, data }` and forward `downloadUrl` / `pdfBase64`) |
 
 ## Env vars
 
-- `DRIVE_SERVER_URL` – Optional; for PayAid Drive iframe (e.g. Nextcloud Files).
-- `NEXT_PUBLIC_MEET_BASE_URL` – Jitsi instance (e.g. `https://meet.payaid.app`).
-- `DOCUMENT_BUILDER_URL` – Optional; for Document Builder (templates + CRM/Finance data).
+- `NEXT_PUBLIC_MEET_BASE_URL` – Optional; Jitsi (or other meet) URL for video in PayAid Meet room (e.g. `https://meet.payaid.app`). If not set, room page shows invite link only.
+- `DOCUMENT_BUILDER_URL` – Optional; external Document Builder service. If not set, built-in pdf-lib generation is used.
+- `DRIVE_SERVER_URL` – Optional; legacy; was used for Nextcloud Drive iframe. Built-in Drive no longer uses it.
 
 ## Security
 
-- **JWT verification:** The drive proxy verifies the JWT (from query `token` or `Authorization: Bearer`) before proxying. See `lib/productivity/verify-proxy-token.ts`.
+- **JWT verification:** All productivity APIs and the builder use JWT (Bearer or proxy token). See `lib/productivity/verify-proxy-token.ts` for proxy/builder.
 
 ## Deployment
 
-- **PayAid Sheets:** No extra deployment; uses the built-in spreadsheet module (x-spreadsheet) and `/api/spreadsheets`.
-- **PayAid Meet:** Deploy Jitsi separately; set `NEXT_PUBLIC_MEET_BASE_URL`.
-- **PayAid Drive:** Set `DRIVE_SERVER_URL` if you use an external file server.
-- **PayAid PDF:** In-app; no extra deployment.
+- **PayAid Sheets / Docs / Slides / Drive / PDF / Document Builder:** No extra deployment; all built-in with existing APIs and storage.
+- **PayAid Meet:** Built-in list and room; set `NEXT_PUBLIC_MEET_BASE_URL` only if you want in-app video (e.g. Jitsi).

@@ -1,8 +1,27 @@
 import { prisma } from '@/lib/db/prisma'
 import { Redis } from 'ioredis'
 
-// Initialize Redis for caching
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379')
+/** Lazy Redis client; skips connection on Vercel build when only localhost is configured to avoid ECONNREFUSED. */
+let redis: Redis | null = null
+
+function getRedis(): Redis | null {
+  if (redis) return redis
+  const url = process.env.REDIS_URL || 'redis://localhost:6379'
+  const isVercelBuild = process.env.VERCEL === '1'
+  const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1')
+  if (isVercelBuild && (!url || isLocalhost)) return null
+  try {
+    redis = new Redis(url, {
+      maxRetriesPerRequest: 1,
+      lazyConnect: true,
+      connectTimeout: 2000,
+      retryStrategy: (times) => (times > 2 ? null : Math.min(times * 50, 500)),
+    })
+    return redis
+  } catch {
+    return null
+  }
+}
 
 /**
  * Cache key generators
@@ -15,8 +34,10 @@ export function getCacheKey(prefix: string, ...parts: string[]): string {
  * Get cached data
  */
 export async function getCached<T>(key: string): Promise<T | null> {
+  const client = getRedis()
+  if (!client) return null
   try {
-    const cached = await redis.get(key)
+    const cached = await client.get(key)
     if (cached) {
       return JSON.parse(cached) as T
     }
@@ -35,8 +56,10 @@ export async function setCached(
   data: any,
   ttlSeconds: number = 300
 ): Promise<void> {
+  const client = getRedis()
+  if (!client) return
   try {
-    await redis.setex(key, ttlSeconds, JSON.stringify(data))
+    await client.setex(key, ttlSeconds, JSON.stringify(data))
   } catch (error) {
     console.error('Cache set error:', error)
   }
@@ -46,10 +69,12 @@ export async function setCached(
  * Invalidate cache by pattern
  */
 export async function invalidateCache(pattern: string): Promise<void> {
+  const client = getRedis()
+  if (!client) return
   try {
-    const keys = await redis.keys(pattern)
+    const keys = await client.keys(pattern)
     if (keys.length > 0) {
-      await redis.del(...keys)
+      await client.del(...keys)
     }
   } catch (error) {
     console.error('Cache invalidation error:', error)

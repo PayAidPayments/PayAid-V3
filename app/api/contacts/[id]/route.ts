@@ -4,6 +4,30 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { cache } from '@/lib/redis/client'
 
+// Resolve effective tenantId from request (matches deals list/detail behavior)
+async function resolveContactTenantId(
+  request: NextRequest,
+  jwtTenantId: string,
+  userId: string
+): Promise<string> {
+  const requestTenantId = request.nextUrl.searchParams.get('tenantId') || undefined
+  if (!requestTenantId) return jwtTenantId
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { tenantId: true, email: true },
+  }).catch(() => null)
+  const userTenantId = user?.tenantId ?? null
+  const hasAccess = jwtTenantId === requestTenantId || userTenantId === requestTenantId
+  const isDemoTenantRequest =
+    user?.email === 'admin@demo.com' &&
+    (await prisma.tenant.findUnique({
+      where: { id: requestTenantId },
+      select: { name: true },
+    }).then((t) => t?.name?.toLowerCase().includes('demo') ?? false).catch(() => false))
+  if (hasAccess || isDemoTenantRequest) return requestTenantId
+  return jwtTenantId
+}
+
 const updateContactSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.string().email().optional(),
@@ -87,18 +111,17 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Handle Next.js 16+ async params
     const resolvedParams = await params
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
+    const tenantId = await resolveContactTenantId(request, jwtTenantId, userId)
 
     const body = await request.json()
     const validated = updateContactSchema.parse(body)
 
-    // Check if contact exists and belongs to tenant
     const existing = await prisma.contact.findFirst({
       where: {
         id: resolvedParams.id,
-        tenantId: tenantId,
+        tenantId,
       },
     })
 
@@ -162,15 +185,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Handle Next.js 16+ async params
     const resolvedParams = await params
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
+    const tenantId = await resolveContactTenantId(request, jwtTenantId, userId)
 
-    // Check if contact exists and belongs to tenant
     const existing = await prisma.contact.findFirst({
       where: {
         id: resolvedParams.id,
-        tenantId: tenantId,
+        tenantId,
       },
     })
 

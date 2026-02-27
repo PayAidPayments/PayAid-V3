@@ -32,6 +32,7 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
   const { logout, tenant, user, token } = useAuthStore()
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [newsUnreadCount, setNewsUnreadCount] = useState(0)
   const profileMenuRef = useRef<HTMLDivElement>(null)
   const moreMenuRef = useRef<HTMLDivElement>(null)
@@ -287,15 +288,6 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
                     <User className="w-4 h-4 mr-3" />
                     Profile Settings
                   </Link>
-                  <Link
-                    href={getProfileUrl()}
-                    onClick={() => setProfileMenuOpen(false)}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    role="menuitem"
-                  >
-                    <Settings className="w-4 h-4 mr-3" />
-                    Settings
-                  </Link>
                   <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                   <button
                     onClick={handleLogout}
@@ -312,24 +304,58 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
         </div>
       </div>
 
-      {/* Mobile Navigation */}
-      <div className="md:hidden border-t border-gray-200 dark:border-gray-700 px-4 py-2 overflow-x-auto">
-        <div className="flex items-center gap-2">
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors',
-                isActive(item.href)
-                  ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-              )}
-            >
-              {item.icon && <span className="mr-1">{item.icon}</span>}
-              {item.name}
-            </Link>
-          ))}
+      {/* Mobile / Tablet: single "Menu" dropdown instead of horizontal scroll */}
+      <div className="md:hidden border-t border-gray-200 dark:border-gray-700 px-4 py-2">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setMobileMenuOpen((prev) => !prev)
+            }}
+            className={cn(
+              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+              'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+            )}
+            aria-label="Open menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            <MoreVertical className="w-5 h-5" />
+            Menu
+          </button>
+          {mobileMenuOpen && typeof window !== 'undefined' && createPortal(
+            <>
+              <div
+                className="fixed inset-0 z-[199]"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-hidden="true"
+              />
+              <div
+                className="fixed left-4 right-4 top-[calc(3.5rem+8px)] z-[200] max-h-[70vh] overflow-y-auto rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-700 py-1"
+                role="menu"
+              >
+                {items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(
+                      'flex items-center px-4 py-3 text-sm transition-colors',
+                      isActive(item.href)
+                        ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    )}
+                    role="menuitem"
+                  >
+                    {item.icon && <span className="mr-3">{item.icon}</span>}
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
+            </>,
+            document.body
+          )}
         </div>
       </div>
       {/* end of header - do not use </nav>, must match opening <header> */}

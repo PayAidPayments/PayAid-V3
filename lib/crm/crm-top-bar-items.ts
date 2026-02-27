@@ -10,6 +10,10 @@ export interface CRMTopBarItem {
   icon?: string
 }
 
+/**
+ * CRM nav order: core pipeline first (Prospects → Contacts → Customers → Deals → Tasks),
+ * then All People, Meetings, CPQ; then Agents, Churn, Metrics; then rest and Reports last.
+ */
 export function getCRMTopBarItems(tenantId: string): CRMTopBarItem[] {
   if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
     return []
@@ -18,16 +22,16 @@ export function getCRMTopBarItems(tenantId: string): CRMTopBarItem[] {
   return [
     { name: 'Home', href: `${base}/Home` },
     { name: 'Prospects', href: `${base}/Leads` },
-    { name: 'Agents', href: `${base}/Agents` },
-    { name: 'Churn', href: `${base}/Churn` },
-    { name: 'Metrics', href: `${base}/Metrics` },
     { name: 'Contacts', href: `${base}/Contacts` },
     { name: 'Customers', href: `${base}/AllPeople?stage=customer` },
     { name: 'Deals', href: `${base}/Deals` },
-    { name: 'All People', href: `${base}/AllPeople` },
     { name: 'Tasks', href: `${base}/Tasks` },
+    { name: 'All People', href: `${base}/AllPeople` },
     { name: 'Meetings', href: `${base}/Meetings` },
     { name: 'CPQ', href: `${base}/CPQ` },
+    { name: 'Agents', href: `${base}/Agents` },
+    { name: 'Churn', href: `${base}/Churn` },
+    { name: 'Metrics', href: `${base}/Metrics` },
     { name: 'Sales Automation', href: `${base}/SalesAutomation` },
     { name: 'Sales Enablement', href: `${base}/SalesEnablement` },
     { name: 'Dialer', href: `${base}/Dialer` },

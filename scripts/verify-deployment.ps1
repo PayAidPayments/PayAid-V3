@@ -1,7 +1,8 @@
 # PowerShell script to verify PayAid V3 deployment
 # Tests all critical endpoints and functionality
+# Default: https://payaid-v3.vercel.app (override with $env:BASE_URL)
 
-$baseUrl = "https://payaid-v3.vercel.app"
+$baseUrl = if ($env:BASE_URL) { $env:BASE_URL.TrimEnd('/') } else { "https://payaid-v3.vercel.app" }
 $errors = @()
 $success = @()
 

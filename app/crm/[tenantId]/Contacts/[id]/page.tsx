@@ -37,7 +37,7 @@ export default function ContactDetailPage() {
   const id = params.id as string
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { data: contact, isLoading, refetch } = useContact(id)
+  const { data: contact, isLoading, refetch } = useContact(id, tenantId)
   const updateContact = useUpdateContact()
   const deleteContact = useDeleteContact()
   const [showAllocationDialog, setShowAllocationDialog] = useState(false)
@@ -47,7 +47,7 @@ export default function ContactDetailPage() {
   const handleDelete = async () => {
     if (confirm('Are you sure you want to delete this contact? This action cannot be undone.')) {
       try {
-        await deleteContact.mutateAsync(id)
+        await deleteContact.mutateAsync({ id, tenantId })
         router.push(`/crm/${tenantId}/Contacts`)
       } catch (error) {
         alert(error instanceof Error ? error.message : 'Failed to delete contact')

@@ -14,7 +14,7 @@ export default function EditDealPage() {
   const tenantId = params.tenantId as string
   const id = params.id as string
   const router = useRouter()
-  const { data: deal, isLoading } = useDeal(id)
+  const { data: deal, isLoading } = useDeal(id, tenantId)
   const { data: contactsData } = useContacts()
   const updateDeal = useUpdateDeal()
   const contacts = contactsData?.contacts || []
@@ -55,6 +55,7 @@ export default function EditDealPage() {
           probability: parseFloat(formData.probability),
           expectedCloseDate: formData.expectedCloseDate || undefined,
         },
+        tenantId,
       })
       router.push(`/crm/${tenantId}/Deals/${id}`)
     } catch (err) {

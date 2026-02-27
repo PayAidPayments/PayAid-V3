@@ -4,10 +4,40 @@ let redis: Redis | null = null
 let errorLogged = false
 let isConnected = false
 
+/** No-op Redis stub for Vercel build / when Redis is not available. Avoids ECONNREFUSED during build. */
+function createNoopRedisClient(): Redis {
+  const noop = {
+    get: () => Promise.resolve(null),
+    set: () => Promise.resolve('OK'),
+    setex: () => Promise.resolve('OK'),
+    del: () => Promise.resolve(0),
+    keys: () => Promise.resolve([]),
+    exists: () => Promise.resolve(0),
+    quit: () => Promise.resolve('OK'),
+    on: () => noop,
+  } as unknown as Redis
+  return noop
+}
+
+/** True when we should not attempt a real Redis connection (e.g. Vercel build with no Redis). */
+function shouldSkipRedis(): boolean {
+  const url = (process.env.REDIS_URL || 'redis://localhost:6379').trim()
+  const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1')
+  if (process.env.VERCEL === '1' && (!url || isLocalhost)) return true
+  if (process.env.CI === 'true' && isLocalhost) return true
+  if (process.env.NODE_ENV === 'production' && isLocalhost) return true
+  return false
+}
+
 export function getRedisClient(): Redis {
   if (!redis) {
+    if (shouldSkipRedis()) {
+      redis = createNoopRedisClient()
+      return redis
+    }
+
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379'
-    
+
     redis = new Redis(redisUrl, {
       maxRetriesPerRequest: 1, // Reduce retries
       retryStrategy(times) {
@@ -18,37 +48,29 @@ export function getRedisClient(): Redis {
         const delay = Math.min(times * 50, 2000)
         return delay
       },
-      reconnectOnError(err) {
-        // Don't reconnect on errors - Redis is optional
+      reconnectOnError() {
         return false
       },
-      // Enable lazy connect - don't connect immediately
       lazyConnect: true,
-      // Don't throw on connection errors
       enableOfflineQueue: false,
-      // Connection timeout
       connectTimeout: 2000,
-      // Command timeout
       commandTimeout: 1000,
-      // Don't auto-reconnect
       enableAutoPipelining: false,
     })
 
     redis.on('error', (err) => {
-      // Only log once to prevent spam
       if (!errorLogged) {
         console.warn('⚠️ Redis not available (cache disabled). To enable caching, start Redis:', err.message)
         errorLogged = true
       }
       isConnected = false
-      // Don't throw - Redis is optional for caching
     })
 
     redis.on('connect', () => {
       if (!isConnected) {
         console.log('✅ Redis Client Connected')
         isConnected = true
-        errorLogged = false // Reset error flag on successful connection
+        errorLogged = false
       }
     })
 

@@ -16,7 +16,7 @@ export default function DealDetailPage() {
   const id = params.id as string
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { data: deal, isLoading } = useDeal(id)
+  const { data: deal, isLoading } = useDeal(id, tenantId)
   const updateDeal = useUpdateDeal()
 
   if (isLoading) {
@@ -165,7 +165,7 @@ export default function DealDetailPage() {
                 onClick={async () => {
                   if (confirm('Mark this deal as won?')) {
                     try {
-                      await updateDeal.mutateAsync({ id, data: { stage: 'won', actualCloseDate: new Date().toISOString() } })
+                      await updateDeal.mutateAsync({ id, data: { stage: 'won', actualCloseDate: new Date().toISOString() }, tenantId })
                       queryClient.invalidateQueries({ queryKey: ['deal', id] })
                       queryClient.invalidateQueries({ queryKey: ['deals'] })
                     } catch (error) {
@@ -182,7 +182,7 @@ export default function DealDetailPage() {
                 onClick={async () => {
                   if (confirm('Mark this deal as lost?')) {
                     try {
-                      await updateDeal.mutateAsync({ id, data: { stage: 'lost' } })
+                      await updateDeal.mutateAsync({ id, data: { stage: 'lost' }, tenantId })
                       queryClient.invalidateQueries({ queryKey: ['deal', id] })
                       queryClient.invalidateQueries({ queryKey: ['deals'] })
                     } catch (error) {

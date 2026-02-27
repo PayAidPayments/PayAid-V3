@@ -24,6 +24,7 @@ export default function FinanceTenantLayout({
     { name: 'Bank Reconciliation', href: `/finance/${tenantId}/Bank-Reconciliation` },
     { name: 'Advances', href: `/finance/${tenantId}/Advances` },
     { name: 'Tally Export', href: `/finance/${tenantId}/Tally-Export` },
+    { name: 'CA Assistant', href: `/finance/${tenantId}/ca-assistant` },
   ]
 
   return (

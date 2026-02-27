@@ -55,7 +55,6 @@ import { PageLoading } from '@/components/ui/loading'
 import { Badge } from '@/components/ui/badge'
 import { EntityPageLayout } from '@/components/crm/layout/EntityPageLayout'
 import { KPIBar } from '@/components/crm/layout/KPIBar'
-import { EntityAIPanel } from '@/components/crm/layout/EntityAIPanel'
 import { RowActionsMenu } from '@/components/crm/RowActionsMenu'
 import { BulkActionsBar } from '@/components/crm/BulkActionsBar'
 
@@ -73,7 +72,6 @@ export default function CRMContactsPage() {
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [filterByOpen, setFilterByOpen] = useState(true)
   const [systemFiltersOpen, setSystemFiltersOpen] = useState(true)
   const [fieldFiltersOpen, setFieldFiltersOpen] = useState(true)
@@ -97,7 +95,6 @@ export default function CRMContactsPage() {
   })
   const actionsMenuRef = useRef<HTMLDivElement>(null)
   const createMenuRef = useRef<HTMLDivElement>(null)
-  const profileMenuRef = useRef<HTMLDivElement>(null)
 
   // Handle URL query parameters for filtering
   useEffect(() => {
@@ -114,7 +111,7 @@ export default function CRMContactsPage() {
     }
   }, [searchParams])
 
-  const { data, isLoading, error } = useContacts({ page, limit, search, type: typeFilter || undefined })
+  const { data, isLoading, error } = useContacts({ page, limit, search, type: typeFilter || undefined, tenantId: tenantId || undefined })
   
   // Apply filters to contacts
   const contacts = data?.contacts || []
@@ -195,26 +192,10 @@ export default function CRMContactsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Logout handled by ModuleTopBar in layout
-  const handleLogout = () => {
-    logout()
-    router.push('/login')
-  }
-
-  const getUserInitials = () => {
-    if (user?.name) {
-      return user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    }
-    if (user?.email) {
-      return user.email[0].toUpperCase()
-    }
-    return 'U'
-  }
-
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this contact?')) {
       try {
-        await deleteContact.mutateAsync(id)
+        await deleteContact.mutateAsync({ id, tenantId })
       } catch (error) {
         alert(error instanceof Error ? error.message : 'Failed to delete contact')
       }
@@ -397,13 +378,15 @@ export default function CRMContactsPage() {
                       <Plus className="w-4 h-4 mr-3 inline" />
                       New Contact
                     </Link>
-                    <button className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left">
+                    <button
+                      onClick={() => {
+                        setCreateMenuOpen(false)
+                        router.push(`/crm/${tenantId}/Contacts?import=1`)
+                      }}
+                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                    >
                       <Upload className="w-4 h-4 mr-3" />
                       Import Contacts
-                    </button>
-                    <button className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left">
-                      <FileText className="w-4 h-4 mr-3" />
-                      Import Notes
                     </button>
                   </div>
                 </div>
@@ -472,47 +455,6 @@ export default function CRMContactsPage() {
                     <button className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left">
                       <FileText className="w-4 h-4 mr-3" />
                       Print View
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* User Profile Dropdown */}
-            <div className="relative" ref={profileMenuRef}>
-              <button
-                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm">
-                  {getUserInitials()}
-                </div>
-                <ChevronDownIcon className={`h-4 w-4 text-gray-500 transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {profileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                  <div className="py-1">
-                    <div className="px-4 py-3 border-b border-gray-200">
-                      <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
-                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        router.push('/dashboard/settings')
-                        setProfileMenuOpen(false)
-                      }}
-                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
-                    >
-                      <SettingsIcon className="w-4 h-4 mr-3" />
-                      Profile Settings
-                    </button>
-                    <div className="border-t border-gray-200 my-1"></div>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
-                    >
-                      <LogOut className="w-4 h-4 mr-3" />
-                      Sign Out
                     </button>
                   </div>
                 </div>
@@ -769,18 +711,18 @@ export default function CRMContactsPage() {
                             stage={contact.stage || (contact.type === 'lead' ? 'prospect' : contact.type === 'customer' ? 'customer' : 'contact')} 
                           />
                         </TableCell>
-                        <TableCell className="px-4 py-3 whitespace-nowrap">
-                          <Link href={`/crm/${tenantId}/Contacts/${contact.id}`} className="font-medium text-slate-800 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400">
+                        <TableCell className="px-4 py-3 whitespace-nowrap min-w-0 max-w-[180px]">
+                          <Link href={`/crm/${tenantId}/Contacts/${contact.id}`} className="font-medium text-slate-800 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 truncate block">
                             {contact.name}
                           </Link>
                         </TableCell>
-                        <TableCell className="px-4 py-3 whitespace-nowrap max-w-[160px] truncate text-sm text-slate-500 dark:text-gray-400">
+                        <TableCell className="px-4 py-3 whitespace-nowrap max-w-[160px] truncate text-sm text-slate-500 dark:text-gray-400" title={contact.company || undefined}>
                           {contact.company || '-'}
                         </TableCell>
-                        <TableCell className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-gray-400">
+                        <TableCell className="px-4 py-3 whitespace-nowrap max-w-[200px] truncate text-sm text-slate-500 dark:text-gray-400" title={contact.email || undefined}>
                           {contact.email || '-'}
                         </TableCell>
-                        <TableCell className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-gray-400">
+                        <TableCell className="px-4 py-3 whitespace-nowrap max-w-[140px] truncate text-sm text-slate-500 dark:text-gray-400" title={contact.phone || undefined}>
                           {contact.phone || '-'}
                         </TableCell>
                         <TableCell className="px-4 py-3 whitespace-nowrap text-right">
@@ -791,7 +733,7 @@ export default function CRMContactsPage() {
                             onDelete={async () => {
                               if (confirm('Are you sure you want to delete this contact?')) {
                                 try {
-                                  await deleteContact.mutateAsync(contact.id)
+                                  await deleteContact.mutateAsync({ id: contact.id, tenantId })
                                 } catch (error) {
                                   alert(error instanceof Error ? error.message : 'Failed to delete contact')
                                 }
@@ -811,7 +753,6 @@ export default function CRMContactsPage() {
             </div>
           </div>
         }
-        rightSidebar={<EntityAIPanel entityType="contacts" />}
       />
 
       {/* Bulk Actions Bar */}
@@ -829,7 +770,7 @@ export default function CRMContactsPage() {
           if (selectedContacts.length > 0 && confirm(`Are you sure you want to delete ${selectedContacts.length} contact(s)?`)) {
             try {
               for (const id of selectedContacts) {
-                await deleteContact.mutateAsync(id)
+                await deleteContact.mutateAsync({ id, tenantId })
               }
               setSelectedContacts([])
               window.location.reload()

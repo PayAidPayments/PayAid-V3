@@ -7,6 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'All-in-one business operating system for Indian startups and SMBs. HR, Finance, CRM, and more.',
     start_url: '/',
     display: 'standalone',
+    orientation: 'portrait',
     background_color: '#ffffff',
     theme_color: '#53328A',
     icons: [

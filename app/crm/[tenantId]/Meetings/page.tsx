@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -65,7 +66,7 @@ export default function MeetingsPage() {
         params.append('filter', filter)
       }
 
-      const response = await fetch(`/api/crm/meetings?${params.toString()}`, {
+      const response = await fetch(`/api/crm/meetings?${params.toString()}${tenantId ? `&tenantId=${encodeURIComponent(tenantId)}` : ''}`, {
         headers: { 'Authorization': `Bearer ${token}` },
       })
 
@@ -136,10 +137,12 @@ export default function MeetingsPage() {
             AI-powered meeting qualification, scheduling, and management
           </p>
         </div>
-        <Button className="bg-purple-600 hover:bg-purple-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Schedule Meeting
-        </Button>
+        <Link href={`/crm/${tenantId}/Tasks/new?type=meeting`}>
+          <Button className="bg-purple-600 hover:bg-purple-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Schedule Meeting
+          </Button>
+        </Link>
       </div>
 
       {/* Stats */}
