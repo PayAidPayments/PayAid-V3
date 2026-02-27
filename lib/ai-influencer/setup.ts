@@ -1,10 +1,10 @@
 /**
  * AI Influencer Marketing Setup
- * Initialize queue processor and check dependencies
+ * Initialize queue processor and check dependencies.
+ * Uses check-ffmpeg (not video-composer) so health route does not pull fluent-ffmpeg into the bundle.
  */
 
-import { setupVideoGenerationProcessor } from './video-job-processor'
-import { checkFFmpegInstalled } from './video-composer'
+import { checkFFmpegInstalled } from './check-ffmpeg'
 import { checkRhubarbInstalled } from './lip-sync'
 import { checkTemplatesAvailable, getTemplateStatusMessage } from './template-fallback'
 
@@ -20,7 +20,8 @@ export async function initializeAIInfluencerModule() {
   }
 
   try {
-    // Setup queue processor
+    // Lazy-load to avoid pulling fluent-ffmpeg into health/build bundle
+    const { setupVideoGenerationProcessor } = await import('./video-job-processor')
     setupVideoGenerationProcessor()
     console.log('✅ AI Influencer video generation queue processor started')
 
