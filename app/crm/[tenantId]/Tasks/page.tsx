@@ -111,8 +111,8 @@ export default function CRMTasksPage() {
   const statusParam = useMemo(() => {
     if (quickFilter === 'overdue') return 'overdue'
     if (quickFilter === 'open') return 'open'
-    if (quickFilter === 'today') return 'pending'
-    if (quickFilter === 'completed_today') return 'completed'
+    if (quickFilter === 'today') return 'today'
+    if (quickFilter === 'completed_today') return 'completed_today'
     if (quickFilter === 'high') return undefined
     return filters.status || undefined
   }, [quickFilter, filters.status])
@@ -374,7 +374,6 @@ export default function CRMTasksPage() {
             type="button"
             onClick={() => {
               setQuickFilter(quickFilter === 'completed_today' ? null : 'completed_today')
-              setFilters((f) => ({ ...f, status: 'completed' }))
               setPage(1)
             }}
             className={cn(

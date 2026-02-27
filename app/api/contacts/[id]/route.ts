@@ -56,12 +56,13 @@ export async function GET(
   try {
     // Handle Next.js 16+ async params
     const resolvedParams = await params
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
+    const tenantId = await resolveContactTenantId(request, jwtTenantId, userId)
 
     const contact = await prisma.contact.findFirst({
       where: {
         id: resolvedParams.id,
-        tenantId: tenantId,
+        tenantId,
       },
       include: {
         assignedTo: {
@@ -97,6 +98,9 @@ export async function GET(
 
     return NextResponse.json(contact)
   } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Get contact error:', error)
     return NextResponse.json(
       { error: 'Failed to get contact' },
