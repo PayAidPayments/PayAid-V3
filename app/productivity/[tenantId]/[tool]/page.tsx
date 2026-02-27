@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PageLoading } from '@/components/ui/loading'
 import { Table, FileEdit, Presentation, Folder, Video, FileText } from 'lucide-react'
 import { PayAidPDFEmbed } from '@/components/productivity/PayAidPDFEmbed'
@@ -37,6 +37,11 @@ const TOOL_ICONS: Record<ToolId, React.ComponentType<{ className?: string }>> = 
 }
 
 const DRIVE_TOOL: ToolId = 'drive'
+
+function getToolUrl(_tool: ToolId, _tenantId: string, _token: string | null): string {
+  if (typeof window === 'undefined') return ''
+  return `${window.location.origin}/productivity/${_tenantId}/${_tool}`
+}
 
 export default function ProductivityToolPage() {
   const params = useParams()
