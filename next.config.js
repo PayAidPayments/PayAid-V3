@@ -16,7 +16,7 @@ const nextConfig = {
     // Set to true for Vercel builds to allow deployment even with type errors
     ignoreBuildErrors: true,
   },
-  // Reduce OOM risk on Vercel (8GB build container)
+  // Reduce OOM risk on Vercel (8GB build container): leave headroom for OS + Prisma + subprocesses
   productionBrowserSourceMaps: false,
   // Optimize build performance
   experimental: {
@@ -24,11 +24,11 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons', 'framer-motion'],
     // Lower memory use during build (Next.js 15+)
     webpackMemoryOptimizations: true,
-    // Disable worker so single Node process can use full heap (avoids main+worker both hitting limit)
+    // Disable worker so single Node process uses one heap (avoids OOM from main+worker)
     webpackBuildWorker: false,
     cpus: 1,
   },
-  
+
   // Security Headers (Layer 6)
   async headers() {
     return [
@@ -67,7 +67,7 @@ const nextConfig = {
       },
     ]
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { dev, isServer }) => {
     // Ensure path aliases are set first for both server and client
     config.resolve.alias = {
       ...config.resolve.alias,
@@ -153,6 +153,19 @@ const nextConfig = {
       if (!config.resolve.alias['@']) {
         config.resolve.alias['@'] = require('path').resolve(__dirname)
       }
+    }
+
+    // Reduce OOM: single-thread minification (Node heap is 3072 in package.json "build")
+    if (!dev && config.optimization?.minimizer) {
+      try {
+        const idx = config.optimization.minimizer.findIndex(m => m?.constructor?.name === 'TerserPlugin')
+        if (idx >= 0 && config.optimization.minimizer[idx]?.options) {
+          config.optimization.minimizer[idx].options = {
+            ...config.optimization.minimizer[idx].options,
+            parallel: 1,
+          }
+        }
+      } catch (_) {}
     }
     
     return config
