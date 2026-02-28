@@ -24,7 +24,7 @@ Before the app can use the database and cron in production:
 
 3. **Redeploy** after changing env vars (Vercel usually prompts; otherwise trigger a redeploy).
 
-**Build OOM (Out of Memory):** The app uses a 4 GB Node heap for the Next.js build (`--max-old-space-size=4096` in `package.json`). If the build fails with "JavaScript heap out of memory" on Vercel, try: (1) In Vercel, clear the build cache and redeploy; (2) In `package.json`, increase the number to `5120` or `6144` (requires enough RAM in the build container); or (3) Use a Vercel plan with more build memory if available.
+**Build OOM (Out of Memory):** The app uses a 5 GB Node heap for the Next.js build (`--max-old-space-size=5120` in `package.json`) to fit within Vercel’s 8 GB build container. If the build still fails: (1) In Vercel, clear the build cache and redeploy; (2) In `package.json`, try `6144` (requires enough RAM); or (3) Use a Vercel plan with more build memory if available.
 
 **Supabase (free tier):** Use the **pooled** connection string, not the direct one. In Supabase Dashboard → **Project Settings** → **Database**, use the URI under **Connection pooling** (e.g. **Transaction** or **Session** mode, port **6543**). The direct connection (port 5432) is not included on the free tier and may require a paid plan. If you see connection or payment prompts, switch to the pooled URI.
 

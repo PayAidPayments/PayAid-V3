@@ -155,7 +155,7 @@ const nextConfig = {
       }
     }
 
-    // Reduce OOM: single-thread minification (Node heap 4096 in package.json "build")
+    // Reduce OOM: single-thread minification (Node heap 5120 in package.json "build")
     if (!dev && config.optimization?.minimizer) {
       try {
         const idx = config.optimization.minimizer.findIndex(m => m?.constructor?.name === 'TerserPlugin')
