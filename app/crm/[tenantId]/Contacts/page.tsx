@@ -647,9 +647,10 @@ export default function CRMContactsPage() {
           </div>
         }
         mainContent={
-          <div className="p-6">
-            {/* Contacts Table */}
-            <div className="overflow-x-auto">
+          <div className="flex flex-col flex-1 min-w-0 p-4 sm:p-6">
+            {/* Contacts Table - full width, Name and Company use empty space */}
+            <Card className="flex-1 min-w-0 border-0 shadow-sm rounded-xl overflow-hidden">
+              <CardContent className="p-0">
             {filteredContacts.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-600 dark:text-gray-400 mb-4">No contacts found</p>
@@ -658,28 +659,18 @@ export default function CRMContactsPage() {
                 </Link>
               </div>
             ) : (
-              <Table className="min-w-full text-sm">
+              <div className="overflow-x-auto min-w-0">
+              <Table className="w-full table-auto text-sm">
                 <TableHeader>
-                  <TableRow className="bg-slate-50 dark:bg-gray-800">
-                    <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide w-12">
-                      <Checkbox
-                        checked={selectedContacts.length === filteredContacts.length && filteredContacts.length > 0}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedContacts(filteredContacts.map((c: any) => c.id))
-                          } else {
-                            setSelectedContacts([])
-                          }
-                        }}
-                      />
-                    </TableHead>
-                    <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Status</TableHead>
-                    <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Stage</TableHead>
-                    <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Name</TableHead>
-                    <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Company</TableHead>
-                    <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Email</TableHead>
-                    <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Phone</TableHead>
-                    <TableHead className="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Actions</TableHead>
+                  <TableRow className="bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700">
+                    <TableHead className="w-11 py-3 pl-4 pr-2 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide"> </TableHead>
+                    <TableHead className="w-[90px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Status</TableHead>
+                    <TableHead className="w-[90px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Stage</TableHead>
+                    <TableHead className="min-w-[220px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Name</TableHead>
+                    <TableHead className="min-w-[200px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Company</TableHead>
+                    <TableHead className="min-w-[180px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Email</TableHead>
+                    <TableHead className="min-w-[120px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Phone</TableHead>
+                    <TableHead className="w-[100px] py-3 pl-3 pr-4 text-right text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-slate-100 dark:divide-gray-700">
@@ -689,7 +680,7 @@ export default function CRMContactsPage() {
 
                     return (
                       <TableRow key={contact.id} className={`hover:bg-indigo-50/40 dark:hover:bg-indigo-900/20 transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
-                        <TableCell className="px-4 py-3">
+                        <TableCell className="py-3 pl-4 pr-2">
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={(checked) => {
@@ -701,31 +692,31 @@ export default function CRMContactsPage() {
                             }}
                           />
                         </TableCell>
-                        <TableCell className="px-4 py-3 whitespace-nowrap">
+                        <TableCell className="py-3 px-3 whitespace-nowrap">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
                             {status}
                           </span>
                         </TableCell>
-                        <TableCell className="px-4 py-3 whitespace-nowrap">
+                        <TableCell className="py-3 px-3 whitespace-nowrap">
                           <StageBadge 
                             stage={contact.stage || (contact.type === 'lead' ? 'prospect' : contact.type === 'customer' ? 'customer' : 'contact')} 
                           />
                         </TableCell>
-                        <TableCell className="px-4 py-3 whitespace-nowrap min-w-0 max-w-[180px]">
-                          <Link href={`/crm/${tenantId}/Contacts/${contact.id}`} className="font-medium text-slate-800 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 truncate block">
+                        <TableCell className="py-3 px-3 min-w-0">
+                          <Link href={`/crm/${tenantId}/Contacts/${contact.id}`} className="font-medium text-slate-800 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 block truncate" title={contact.name}>
                             {contact.name}
                           </Link>
                         </TableCell>
-                        <TableCell className="px-4 py-3 whitespace-nowrap max-w-[160px] truncate text-sm text-slate-500 dark:text-gray-400" title={contact.company || undefined}>
-                          {contact.company || '-'}
+                        <TableCell className="py-3 px-3 min-w-0 text-sm text-slate-500 dark:text-gray-400">
+                          <span className="block truncate" title={contact.company || undefined}>{contact.company || '-'}</span>
                         </TableCell>
-                        <TableCell className="px-4 py-3 whitespace-nowrap max-w-[200px] truncate text-sm text-slate-500 dark:text-gray-400" title={contact.email || undefined}>
-                          {contact.email || '-'}
+                        <TableCell className="py-3 px-3 min-w-0 text-sm text-slate-500 dark:text-gray-400">
+                          <span className="block truncate" title={contact.email || undefined}>{contact.email || '-'}</span>
                         </TableCell>
-                        <TableCell className="px-4 py-3 whitespace-nowrap max-w-[140px] truncate text-sm text-slate-500 dark:text-gray-400" title={contact.phone || undefined}>
+                        <TableCell className="py-3 px-3 whitespace-nowrap text-sm text-slate-500 dark:text-gray-400" title={contact.phone || undefined}>
                           {contact.phone || '-'}
                         </TableCell>
-                        <TableCell className="px-4 py-3 whitespace-nowrap text-right">
+                        <TableCell className="py-3 pl-3 pr-4 whitespace-nowrap text-right">
                           <RowActionsMenu
                             entityType={contact.stage === 'customer' ? 'customer' : 'contact'}
                             entityId={contact.id}
@@ -749,8 +740,10 @@ export default function CRMContactsPage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
             )}
-            </div>
+              </CardContent>
+            </Card>
           </div>
         }
       />

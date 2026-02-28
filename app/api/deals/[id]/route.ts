@@ -47,7 +47,7 @@ export async function GET(
     const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
     const tenantId = await resolveDealTenantId(request, jwtTenantId, userId)
 
-    const deal = await prisma.deal.findFirst({
+    let deal = await prisma.deal.findFirst({
       where: {
         id: resolvedParams.id,
         tenantId,
@@ -56,6 +56,20 @@ export async function GET(
         contact: true,
       },
     })
+
+    // Fallback: find by id only (e.g. URL tenant matches record's tenant but JWT differed)
+    if (!deal) {
+      const byId = await prisma.deal.findUnique({
+        where: { id: resolvedParams.id },
+        include: { contact: true },
+      })
+      if (byId) {
+        const allowed =
+          byId.tenantId === jwtTenantId ||
+          (await prisma.user.findUnique({ where: { id: userId }, select: { tenantId: true } }).then((u) => u?.tenantId === byId.tenantId))
+        if (allowed) deal = byId
+      }
+    }
 
     if (!deal) {
       return NextResponse.json(

@@ -684,11 +684,14 @@ export function useTasks(params?: {
   })
 }
 
-export function useTask(id: string) {
+export function useTask(id: string, tenantId?: string) {
   return useQuery({
-    queryKey: ['task', id],
+    queryKey: ['task', id, tenantId],
     queryFn: async () => {
-      const response = await fetch(`/api/tasks/${id}`, {
+      const url = tenantId
+        ? `/api/tasks/${id}?tenantId=${encodeURIComponent(tenantId)}`
+        : `/api/tasks/${id}`
+      const response = await fetch(url, {
         headers: getAuthHeaders(),
       })
       if (!response.ok) throw new Error('Failed to fetch task')

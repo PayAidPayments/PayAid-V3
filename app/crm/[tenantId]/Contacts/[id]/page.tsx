@@ -86,6 +86,17 @@ export default function ContactDetailPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-gray-900">
       <div className="max-w-6xl mx-auto px-6 py-6 space-y-5">
+        {/* AI entry point: open the page-scoped assistant */}
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-page-ai'))}
+            className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-1.5"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            Ask PayAid AI about this contact
+          </button>
+        </div>
         {/* Header Band */}
         <header className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm px-5 py-4">
           <div className="flex-1">

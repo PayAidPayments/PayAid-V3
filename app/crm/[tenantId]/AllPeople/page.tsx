@@ -224,9 +224,9 @@ export default function CRMAllPeoplePage() {
   }
 
   return (
-    <div className="w-full bg-gray-50 dark:bg-gray-900">
-      <div className="p-6">
-        <div className="max-w-7xl mx-auto">
+    <div className="w-full flex flex-col flex-1 min-w-0 bg-gray-50 dark:bg-gray-900">
+      <div className="flex-1 min-w-0 p-4 sm:p-6">
+        <div className="max-w-7xl mx-auto w-full min-w-0">
           {/* Page Header */}
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -478,14 +478,14 @@ export default function CRMAllPeoplePage() {
             </div>
           </div>
 
-          {/* Contacts Table */}
-          <Card>
+          {/* Contacts Table - full width, Name and Company use empty space */}
+          <Card className="flex-1 min-w-0 overflow-hidden">
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="overflow-x-auto min-w-0">
+                <Table className="w-full table-auto text-sm">
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">
+                    <TableRow className="bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700">
+                      <TableHead className="w-11 py-3 pl-4 pr-2">
                         <Checkbox
                           checked={selectedContacts.length === contacts.length && contacts.length > 0}
                           onCheckedChange={(checked) => {
@@ -497,16 +497,16 @@ export default function CRMAllPeoplePage() {
                           }}
                         />
                       </TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Stage</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="min-w-[220px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Name</TableHead>
+                      <TableHead className="w-[90px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Stage</TableHead>
+                      <TableHead className="min-w-[180px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Email</TableHead>
+                      <TableHead className="min-w-[120px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Phone</TableHead>
+                      <TableHead className="min-w-[200px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Company</TableHead>
+                      <TableHead className="w-[100px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Created</TableHead>
+                      <TableHead className="w-[100px] py-3 pl-3 pr-4 text-right text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="divide-y divide-slate-100 dark:divide-gray-700">
                     {contacts.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={8} className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -523,7 +523,7 @@ export default function CRMAllPeoplePage() {
                             key={contact.id} 
                             className={isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}
                           >
-                            <TableCell>
+                            <TableCell className="py-3 pl-4 pr-2">
                               <Checkbox
                                 checked={isSelected}
                                 onCheckedChange={(checked) => {
@@ -535,32 +535,31 @@ export default function CRMAllPeoplePage() {
                                 }}
                               />
                             </TableCell>
-                            <TableCell className="whitespace-nowrap min-w-0 max-w-[180px]">
-                              <div className="flex items-center gap-2 truncate">
-                                <Link 
-                                  href={`/crm/${tenantId}/Contacts/${contact.id}`}
-                                  className="font-medium text-blue-600 dark:text-blue-400 hover:underline truncate"
-                                >
-                                  {contact.name}
-                                </Link>
-                              </div>
+                            <TableCell className="py-3 px-3 min-w-0">
+                              <Link 
+                                href={`/crm/${tenantId}/Contacts/${contact.id}`}
+                                className="font-medium text-blue-600 dark:text-blue-400 hover:underline block truncate"
+                                title={contact.name}
+                              >
+                                {contact.name}
+                              </Link>
                             </TableCell>
-                            <TableCell className="whitespace-nowrap">
+                            <TableCell className="py-3 px-3 whitespace-nowrap">
                               {getStageBadge(contactStage)}
                             </TableCell>
-                            <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-0 max-w-[200px] truncate" title={contact.email || undefined}>
-                              {contact.email || '-'}
+                            <TableCell className="py-3 px-3 min-w-0 text-gray-600 dark:text-gray-400 text-sm">
+                              <span className="block truncate" title={contact.email || undefined}>{contact.email || '-'}</span>
                             </TableCell>
-                            <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-0 max-w-[140px] truncate" title={contact.phone || undefined}>
-                              {contact.phone || '-'}
+                            <TableCell className="py-3 px-3 min-w-0 text-gray-600 dark:text-gray-400 text-sm">
+                              <span className="block truncate" title={contact.phone || undefined}>{contact.phone || '-'}</span>
                             </TableCell>
-                            <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-0 max-w-[160px] truncate" title={contact.company || undefined}>
-                              {contact.company || '-'}
+                            <TableCell className="py-3 px-3 min-w-0 text-gray-600 dark:text-gray-400 text-sm">
+                              <span className="block truncate" title={contact.company || undefined}>{contact.company || '-'}</span>
                             </TableCell>
-                            <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                            <TableCell className="py-3 px-3 text-gray-600 dark:text-gray-400 whitespace-nowrap text-sm">
                               {contact.createdAt ? format(new Date(contact.createdAt), 'MMM d, yyyy') : '-'}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="py-3 pl-3 pr-4">
                               <div className="flex items-center gap-2">
                                 <StagePromotionButton
                                   contactId={contact.id}

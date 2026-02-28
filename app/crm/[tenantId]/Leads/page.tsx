@@ -1350,197 +1350,186 @@ export default function CRMLeadsPage() {
           </div>
         }
         mainContent={
-          <div className="p-6">
+          <div className="flex flex-col flex-1 min-w-0 p-4 sm:p-6">
             {viewMode === 'kanban' ? (
               <LeadsKanban tenantId={tenantId} />
             ) : (
               <>
             {/* Top Controls */}
-            <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <select
-                value={limit}
-                onChange={(e) => setLimit(Number(e.target.value))}
-                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              >
-                <option value={25}>25 Records Per Page</option>
-                <option value={50}>50 Records Per Page</option>
-                <option value={100}>100 Records Per Page</option>
-                <option value={200}>200 Records Per Page</option>
-              </select>
-              {pagination && (
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <button
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300"
-                  >
-                    &lt;
-                  </button>
-                  <span>
-                    Showing {filteredLeads.length} of {totalRecords} prospects
-                    {(statusFilter || sourceFilter || assignedToFilter || leadScoreMin || leadScoreMax || 
-                      fieldFilters.hasEmail || fieldFilters.hasPhone || fieldFilters.hasCompany || 
-                      fieldFilters.notes || fieldFilters.tasks) && (
-                      <span className="text-xs text-blue-600 dark:text-blue-400 ml-1">(filtered)</span>
-                    )}
-                  </span>
-                  <button
-                    onClick={() => setPage(p => Math.min(Math.ceil(totalRecords / limit), p + 1))}
-                    disabled={page >= Math.ceil(totalRecords / limit)}
-                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300"
-                  >
-                    &gt;
-                  </button>
-                </div>
-              )}
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-4">
+                <select
+                  value={limit}
+                  onChange={(e) => setLimit(Number(e.target.value))}
+                  className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value={25}>25 Records Per Page</option>
+                  <option value={50}>50 Records Per Page</option>
+                  <option value={100}>100 Records Per Page</option>
+                  <option value={200}>200 Records Per Page</option>
+                </select>
+                {pagination && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300"
+                    >
+                      &lt;
+                    </button>
+                    <span>
+                      Showing {filteredLeads.length} of {totalRecords} prospects
+                      {(statusFilter || sourceFilter || assignedToFilter || leadScoreMin || leadScoreMax ||
+                        fieldFilters.hasEmail || fieldFilters.hasPhone || fieldFilters.hasCompany ||
+                        fieldFilters.notes || fieldFilters.tasks) && (
+                        <span className="text-xs text-blue-600 dark:text-blue-400 ml-1">(filtered)</span>
+                      )}
+                    </span>
+                    <button
+                      onClick={() => setPage(p => Math.min(Math.ceil(totalRecords / limit), p + 1))}
+                      disabled={page >= Math.ceil(totalRecords / limit)}
+                      className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300"
+                    >
+                      &gt;
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Leads Table / Sheet */}
-          <Card className={`border-0 shadow-lg ${viewMode === 'sheet' ? 'overflow-auto max-h-[calc(100vh-16rem)]' : ''}`}>
-            <CardContent className="p-0">
-              {filteredLeads.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-600 mb-4">No leads found</p>
-                  <Link href={`/crm/${tenantId}/Leads/New`}>
-                    <Button>Create Your First Lead</Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">
-                          <Checkbox
-                            checked={selectedLeads.length === filteredLeads.length && filteredLeads.length > 0}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedLeads(filteredLeads.map((l: any) => l.id))
-                              } else {
-                                setSelectedLeads([])
-                              }
-                            }}
-                          />
-                        </TableHead>
-                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Lead Status</TableHead>
-                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Stage</TableHead>
-                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Last Activity</TableHead>
-                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Name</TableHead>
-                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Source</TableHead>
-                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Phone</TableHead>
-                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Email</TableHead>
-                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Company</TableHead>
-                        <TableHead className="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredLeads.map((lead: any) => {
-                        const isSelected = selectedLeads.includes(lead.id)
-                        const statusColor = lead.status === 'Not Contactable/Call unanswered' ? 'bg-orange-100 text-orange-800' :
-                          lead.status === 'Proposal Sent' ? 'bg-purple-100 text-purple-800' :
-                          lead.status === 'Yet to call' ? 'bg-green-100 text-green-800' :
-                          lead.status === 'Under Followup' ? 'bg-orange-100 text-orange-800' :
-                          lead.status === 'Not Interested' ? 'bg-blue-100 text-blue-800' :
-                          lead.status === 'Reassigned' ? 'bg-purple-100 text-purple-800' :
-                          'bg-gray-100 text-gray-800'
+            {/* Leads Table - full width, improved display */}
+            <Card className={`flex-1 min-w-0 border-0 shadow-sm rounded-xl overflow-hidden ${viewMode === 'sheet' ? 'overflow-auto max-h-[calc(100vh-16rem)]' : ''}`}>
+              <CardContent className="p-0">
+                {filteredLeads.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">No leads found</p>
+                    <Link href={`/crm/${tenantId}/Leads/New`}>
+                      <Button>Create Your First Lead</Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto min-w-0">
+                    <Table className="w-full table-auto">
+                      <TableHeader>
+                        <TableRow className="border-b border-slate-200 dark:border-gray-700 hover:bg-transparent">
+                          <TableHead className="w-11 py-3 pl-4 pr-2 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide"> </TableHead>
+                          <TableHead className="w-[100px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Lead Status</TableHead>
+                          <TableHead className="w-[80px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Stage</TableHead>
+                          <TableHead className="w-[100px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Last Activity</TableHead>
+                          <TableHead className="min-w-[220px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Name</TableHead>
+                          <TableHead className="min-w-[100px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Source</TableHead>
+                          <TableHead className="min-w-[110px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Phone</TableHead>
+                          <TableHead className="min-w-[180px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Email</TableHead>
+                          <TableHead className="min-w-[200px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Company</TableHead>
+                          <TableHead className="w-[140px] py-3 pl-3 pr-4 text-right text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredLeads.map((lead: any) => {
+                          const isSelected = selectedLeads.includes(lead.id)
+                          const statusColor = lead.status === 'Not Contactable/Call unanswered' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200' :
+                            lead.status === 'Proposal Sent' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200' :
+                            lead.status === 'Yet to call' ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200' :
+                            lead.status === 'Under Followup' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200' :
+                            lead.status === 'Not Interested' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200' :
+                            lead.status === 'Reassigned' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
 
-                        return (
-                          <TableRow key={lead.id} className={`hover:bg-indigo-50/40 dark:hover:bg-indigo-900/20 transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
-                            <TableCell className="px-4 py-3">
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedLeads([...selectedLeads, lead.id])
-                                  } else {
-                                    setSelectedLeads(selectedLeads.filter(id => id !== lead.id))
-                                  }
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell className="px-4 py-3 whitespace-nowrap">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor} dark:bg-opacity-80`}>
-                                {lead.status || 'Active'}
-                              </span>
-                            </TableCell>
-                            <TableCell className="px-4 py-3 whitespace-nowrap">
-                              <StageBadge 
-                                stage={lead.stage || (lead.type === 'lead' ? 'prospect' : lead.type === 'customer' ? 'customer' : 'contact')} 
-                              />
-                            </TableCell>
-                            <TableCell className="px-4 py-3 whitespace-nowrap text-sm text-slate-600 dark:text-gray-400">
-                              {lead.lastContactedAt 
-                                ? formatDate(new Date(lead.lastContactedAt), 'MMM d, yyyy')
-                                : lead.createdAt 
-                                ? formatDate(new Date(lead.createdAt), 'MMM d, yyyy')
-                                : '-'}
-                            </TableCell>
-                            <TableCell className="px-4 py-3 whitespace-nowrap">
-                              <Link href={`/crm/${tenantId}/Contacts/${lead.id}`} className="font-medium text-slate-800 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400">
-                                {lead.name}
-                              </Link>
-                            </TableCell>
-                            <TableCell className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-gray-400">
-                              {lead.source || '-'}
-                            </TableCell>
-                            <TableCell className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-gray-400">
-                              {lead.phone || '-'}
-                            </TableCell>
-                            <TableCell className="px-4 py-3 whitespace-nowrap max-w-[200px] truncate text-sm text-slate-500 dark:text-gray-400">
-                              {lead.email || '-'}
-                            </TableCell>
-                            <TableCell className="px-4 py-3 whitespace-nowrap max-w-[160px] truncate text-sm text-slate-500 dark:text-gray-400">
-                              {lead.company || '-'}
-                            </TableCell>
-                            <TableCell className="px-4 py-3 whitespace-nowrap text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  onClick={() => openConvertModal(lead)}
-                                  className="px-3 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
-                                  title="Convert Lead"
-                                >
-                                  Convert
-                                </button>
-                                <RowActionsMenu
-                                  entityType="prospect"
-                                  entityId={lead.id}
-                                  tenantId={tenantId}
-                                  onConvert={() => openConvertModal(lead)}
-                                  onDelete={async () => {
-                                    if (confirm('Are you sure you want to delete this prospect?')) {
-                                      try {
-                                        const token = useAuthStore.getState().token
-                                        if (!token) return
-                                        const response = await fetch(`/api/crm/contacts/${lead.id}`, {
-                                          method: 'DELETE',
-                                          headers: { 'Authorization': `Bearer ${token}` },
-                                        })
-                                        if (response.ok) {
-                                          window.location.reload()
-                                        }
-                                      } catch (error) {
-                                        console.error('Error deleting prospect:', error)
-                                        alert('Failed to delete prospect')
-                                      }
+                          return (
+                            <TableRow key={lead.id} className={`border-b border-slate-100 dark:border-gray-700/80 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors ${isSelected ? 'bg-blue-50/80 dark:bg-blue-900/20' : ''}`}>
+                              <TableCell className="py-3 pl-4 pr-2 align-middle">
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedLeads([...selectedLeads, lead.id])
+                                    } else {
+                                      setSelectedLeads(selectedLeads.filter(id => id !== lead.id))
                                     }
                                   }}
-                                  onCreateDeal={() => {
-                                    router.push(`/crm/${tenantId}/Deals/new?contactId=${lead.id}`)
-                                  }}
                                 />
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                              </TableCell>
+                              <TableCell className="py-3 px-3 align-middle">
+                                <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>
+                                  {lead.status || 'Active'}
+                                </span>
+                              </TableCell>
+                              <TableCell className="py-3 px-3 align-middle">
+                                <StageBadge
+                                  stage={lead.stage || (lead.type === 'lead' ? 'prospect' : lead.type === 'customer' ? 'customer' : 'contact')}
+                                />
+                              </TableCell>
+                              <TableCell className="py-3 px-3 text-sm text-slate-600 dark:text-gray-400 align-middle whitespace-nowrap">
+                                {lead.lastContactedAt
+                                  ? formatDate(new Date(lead.lastContactedAt), 'MMM d, yyyy')
+                                  : lead.createdAt
+                                    ? formatDate(new Date(lead.createdAt), 'MMM d, yyyy')
+                                    : '-'}
+                              </TableCell>
+                              <TableCell className="py-3 px-3 align-middle min-w-0">
+                                <Link href={`/crm/${tenantId}/Contacts/${lead.id}`} className="font-medium text-slate-800 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 truncate block">
+                                  {lead.name}
+                                </Link>
+                              </TableCell>
+                              <TableCell className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 align-middle">
+                                <span className="truncate block" title={lead.source || ''}>{lead.source || '-'}</span>
+                              </TableCell>
+                              <TableCell className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 align-middle whitespace-nowrap">
+                                {lead.phone || '-'}
+                              </TableCell>
+                              <TableCell className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 align-middle min-w-0 max-w-[200px]">
+                                <span className="truncate block" title={lead.email || ''}>{lead.email || '-'}</span>
+                              </TableCell>
+                              <TableCell className="py-3 px-3 text-sm text-slate-500 dark:text-gray-400 align-middle min-w-0 max-w-[180px]">
+                                <span className="truncate block" title={lead.company || ''}>{lead.company || '-'}</span>
+                              </TableCell>
+                              <TableCell className="py-3 pl-3 pr-4 text-right align-middle whitespace-nowrap">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => openConvertModal(lead)}
+                                    className="px-2.5 py-1 text-xs bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                                    title="Convert Lead"
+                                  >
+                                    Convert
+                                  </button>
+                                  <RowActionsMenu
+                                    entityType="prospect"
+                                    entityId={lead.id}
+                                    tenantId={tenantId}
+                                    onConvert={() => openConvertModal(lead)}
+                                    onDelete={async () => {
+                                      if (confirm('Are you sure you want to delete this prospect?')) {
+                                        try {
+                                          const token = useAuthStore.getState().token
+                                          if (!token) return
+                                          const response = await fetch(`/api/crm/contacts/${lead.id}`, {
+                                            method: 'DELETE',
+                                            headers: { 'Authorization': `Bearer ${token}` },
+                                          })
+                                          if (response.ok) {
+                                            window.location.reload()
+                                          }
+                                        } catch (error) {
+                                          console.error('Error deleting prospect:', error)
+                                          alert('Failed to delete prospect')
+                                        }
+                                      }
+                                    }}
+                                    onCreateDeal={() => {
+                                      router.push(`/crm/${tenantId}/Deals/new?contactId=${lead.id}`)
+                                    }}
+                                  />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
               </>
             )}
           </div>

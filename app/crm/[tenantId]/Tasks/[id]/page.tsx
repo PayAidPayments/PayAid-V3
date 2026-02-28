@@ -7,14 +7,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { PageLoading } from '@/components/ui/loading'
-import { ArrowLeft, Calendar, User, FileText, Trash2, ListTodo } from 'lucide-react'
+import { ArrowLeft, Calendar, User, FileText, Trash2, ListTodo, Bot } from 'lucide-react'
 
 export default function CRMTaskDetailPage() {
   const params = useParams()
   const tenantId = (params?.tenantId as string) ?? ''
   const id = (params?.id as string) ?? ''
   const router = useRouter()
-  const { data: task, isLoading, isError } = useTask(id)
+  const { data: task, isLoading, isError } = useTask(id, tenantId || undefined)
   const deleteTask = useDeleteTask()
 
   const handleDelete = async () => {
@@ -58,6 +58,16 @@ export default function CRMTaskDetailPage() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
+      <div className="flex justify-end mb-2">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('open-page-ai'))}
+          className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-1.5"
+        >
+          <Bot className="w-3.5 h-3.5" />
+          Ask PayAid AI about this task
+        </button>
+      </div>
       <div className="flex items-center justify-between gap-4 mb-6">
         <Link
           href={`/crm/${tenantId}/Tasks`}

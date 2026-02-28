@@ -442,8 +442,8 @@ export default function CRMDealsPage() {
   const displayedDeals = getDealsToDisplay()
 
   return (
-    <div className="w-full bg-gray-50 dark:bg-gray-900 relative" style={{ zIndex: 1 }}>
-      <div className="p-6 space-y-6">
+    <div className="w-full flex flex-col flex-1 min-w-0 bg-gray-50 dark:bg-gray-900 relative" style={{ zIndex: 1 }}>
+      <div className="flex-1 min-w-0 p-4 sm:p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Deals</h1>

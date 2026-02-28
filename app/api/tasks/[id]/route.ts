@@ -3,6 +3,30 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 
+// Resolve effective tenantId from request (same pattern as deals/contacts)
+async function resolveTaskTenantId(
+  request: NextRequest,
+  jwtTenantId: string,
+  userId: string
+): Promise<string> {
+  const requestTenantId = request.nextUrl.searchParams.get('tenantId') || undefined
+  if (!requestTenantId) return jwtTenantId
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { tenantId: true, email: true },
+  }).catch(() => null)
+  const userTenantId = user?.tenantId ?? null
+  const hasAccess = jwtTenantId === requestTenantId || userTenantId === requestTenantId
+  const isDemoTenantRequest =
+    user?.email === 'admin@demo.com' &&
+    (await prisma.tenant.findUnique({
+      where: { id: requestTenantId },
+      select: { name: true },
+    }).then((t) => t?.name?.toLowerCase().includes('demo') ?? false).catch(() => false))
+  if (hasAccess || isDemoTenantRequest) return requestTenantId
+  return jwtTenantId
+}
+
 const updateTaskSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
@@ -22,14 +46,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-  const resolvedParams = await params
-    // Check CRM module license (tasks are part of CRM)
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const resolvedParams = await params
+    const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
+    const tenantId = await resolveTaskTenantId(request, jwtTenantId, userId)
 
-    const task = await prisma.task.findFirst({
+    let task = await prisma.task.findFirst({
       where: {
         id: resolvedParams.id,
-        tenantId: tenantId,
+        tenantId,
       },
       include: {
         contact: true,
@@ -43,6 +67,23 @@ export async function GET(
       },
     })
 
+    // Fallback: find by id when tenant filter missed
+    if (!task) {
+      const byId = await prisma.task.findUnique({
+        where: { id: resolvedParams.id },
+        include: {
+          contact: true,
+          assignedTo: { select: { id: true, name: true, email: true } },
+        },
+      })
+      if (byId) {
+        const allowed =
+          byId.tenantId === jwtTenantId ||
+          (await prisma.user.findUnique({ where: { id: userId }, select: { tenantId: true } }).then((u) => u?.tenantId === byId.tenantId))
+        if (allowed) task = byId
+      }
+    }
+
     if (!task) {
       return NextResponse.json(
         { error: 'Task not found' },
@@ -52,6 +93,9 @@ export async function GET(
 
     return NextResponse.json(task)
   } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Get task error:', error)
     return NextResponse.json(
       { error: 'Failed to get task' },
@@ -67,17 +111,16 @@ export async function PATCH(
 ) {
   try {
     const resolvedParams = await params
-    // Check CRM module license (tasks are part of CRM)
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
+    const tenantId = await resolveTaskTenantId(request, jwtTenantId, userId)
 
     const body = await request.json()
     const validated = updateTaskSchema.parse(body)
 
-    // Check if task exists and belongs to tenant
     const existing = await prisma.task.findFirst({
       where: {
         id: resolvedParams.id,
-        tenantId: tenantId,
+        tenantId,
       },
     })
 
@@ -154,15 +197,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-  const resolvedParams = await params
-    // Check CRM module license (tasks are part of CRM)
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const resolvedParams = await params
+    const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
+    const tenantId = await resolveTaskTenantId(request, jwtTenantId, userId)
 
-    // Check if task exists and belongs to tenant
     const existing = await prisma.task.findFirst({
       where: {
         id: resolvedParams.id,
-        tenantId: tenantId,
+        tenantId,
       },
     })
 
