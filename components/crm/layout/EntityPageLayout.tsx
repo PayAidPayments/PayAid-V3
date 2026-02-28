@@ -33,26 +33,24 @@ export const EntityPageLayout: React.FC<EntityPageLayoutProps> = ({
         </section>
       )}
 
-      {/* 3-column layout */}
-      <div className="grid grid-cols-[260px,minmax(0,1fr),320px] gap-6">
+      {/* 2- or 3-column layout: no right column when rightSidebar absent so main fills the gap */}
+      <div className={`grid gap-6 ${rightSidebar ? 'grid-cols-[260px,minmax(0,1fr),320px]' : 'grid-cols-[260px,minmax(0,1fr)]'}`}>
         {/* Left sidebar */}
         <aside className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm h-fit sticky top-4">
           {leftSidebar}
         </aside>
 
-        {/* Main content */}
-        <main className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        {/* Main content - takes remaining width when no right sidebar */}
+        <main className="min-w-0 bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col">
           {mainContent}
         </main>
 
-        {/* Right sidebar (AI) */}
+        {/* Right sidebar (AI) - only when provided */}
         {rightSidebar ? (
           <aside className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm h-fit sticky top-4">
             {rightSidebar}
           </aside>
-        ) : (
-          <div className="hidden" />
-        )}
+        ) : null}
       </div>
     </div>
   </div>

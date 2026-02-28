@@ -449,7 +449,7 @@ export default function CRMTasksPage() {
                 </div>
               </div>
 
-              <Card>
+              <Card className="flex-1 min-w-0 overflow-hidden">
                 {tasks.length === 0 ? (
                   <CardContent className="py-12 text-center text-muted-foreground">
                     <p className="mb-4">No tasks match your filters.</p>
@@ -458,20 +458,21 @@ export default function CRMTasksPage() {
                     </Link>
                   </CardContent>
                 ) : (
-                  <Table>
+                  <div className="overflow-x-auto min-w-0">
+                  <Table className="w-full table-auto text-sm">
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-10" />
-                        <TableHead className="w-8" />
-                        <TableHead>Task</TableHead>
-                        <TableHead>Client</TableHead>
-                        <TableHead>Assignee</TableHead>
-                        <TableHead>Due</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                      <TableRow className="bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700">
+                        <TableHead className="w-10 py-3 pl-4 pr-2" />
+                        <TableHead className="w-8 py-3 px-2" />
+                        <TableHead className="min-w-[220px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Task</TableHead>
+                        <TableHead className="min-w-[180px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Client</TableHead>
+                        <TableHead className="min-w-[120px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Assignee</TableHead>
+                        <TableHead className="w-[100px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Due</TableHead>
+                        <TableHead className="w-[100px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Status</TableHead>
+                        <TableHead className="w-[100px] py-3 pl-3 pr-4 text-right text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    <TableBody className="divide-y divide-slate-100 dark:divide-gray-700">
                       {tasks.map((task: any) => {
                         const due = task.dueDate ? new Date(task.dueDate) : null
                         const isOverdue =
@@ -481,7 +482,7 @@ export default function CRMTasksPage() {
                           task.status !== 'cancelled'
                         return (
                           <TableRow key={task.id}>
-                            <TableCell>
+                            <TableCell className="py-3 pl-4 pr-2">
                               <Checkbox
                                 checked={selectedIds.has(task.id)}
                                 onCheckedChange={(c) =>
@@ -490,7 +491,7 @@ export default function CRMTasksPage() {
                                 aria-label={`Select ${task.title}`}
                               />
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="py-3 px-2">
                               <div
                                 className={cn(
                                   'h-2 w-2 rounded-full',
@@ -498,19 +499,21 @@ export default function CRMTasksPage() {
                                 )}
                               />
                             </TableCell>
-                            <TableCell className="font-medium">
+                            <TableCell className="py-3 px-3 font-medium min-w-0">
                               <Link
                                 href={`/crm/${tenantId}/Tasks/${task.id}`}
-                                className="text-primary hover:underline truncate max-w-[200px] block"
+                                className="text-primary hover:underline block truncate"
+                                title={task.title}
                               >
                                 {task.title}
                               </Link>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="py-3 px-3 min-w-0">
                               {task.contactId ? (
                                 <Link
                                   href={`/crm/${tenantId}/Contacts/${task.contactId}`}
-                                  className="text-primary hover:underline text-sm"
+                                  className="text-primary hover:underline text-sm block truncate"
+                                  title={task.contact?.name ?? undefined}
                                 >
                                   {task.contact?.name ?? '—'}
                                 </Link>
@@ -518,10 +521,10 @@ export default function CRMTasksPage() {
                                 <span className="text-muted-foreground">—</span>
                               )}
                             </TableCell>
-                            <TableCell className="text-sm">
+                            <TableCell className="py-3 px-3 text-sm">
                               {task.assignedTo?.name ?? 'Unassigned'}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="py-3 px-3">
                               <span
                                 className={cn(
                                   isOverdue && 'text-destructive font-medium'
@@ -530,12 +533,12 @@ export default function CRMTasksPage() {
                                 {due ? format(due, 'MMM d, yyyy') : '—'}
                               </span>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="py-3 px-3">
                               <Badge variant={statusVariant(task.status)}>
                                 {task.status?.replace('_', ' ') ?? 'pending'}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="py-3 pl-3 pr-4 text-right">
                               <div className="flex justify-end gap-1">
                                 {task.status !== 'completed' &&
                                   task.status !== 'cancelled' && (
@@ -574,6 +577,7 @@ export default function CRMTasksPage() {
                       })}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </Card>
 

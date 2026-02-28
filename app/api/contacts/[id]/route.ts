@@ -59,7 +59,7 @@ export async function GET(
     const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
     const tenantId = await resolveContactTenantId(request, jwtTenantId, userId)
 
-    const contact = await prisma.contact.findFirst({
+    let contact = await prisma.contact.findFirst({
       where: {
         id: resolvedParams.id,
         tenantId,
@@ -88,6 +88,25 @@ export async function GET(
         },
       },
     })
+
+    // Fallback: find by id only when tenant filter missed (e.g. URL tenant vs JWT tenant)
+    if (!contact) {
+      const byId = await prisma.contact.findUnique({
+        where: { id: resolvedParams.id },
+        include: {
+          assignedTo: { include: { user: { select: { name: true, email: true } } } },
+          interactions: { orderBy: { createdAt: 'desc' }, take: 50 },
+          deals: { orderBy: { createdAt: 'desc' } },
+          tasks: { where: { status: { not: 'completed' } }, orderBy: { dueDate: 'asc' } },
+        },
+      })
+      if (byId) {
+        const allowed =
+          byId.tenantId === jwtTenantId ||
+          (await prisma.user.findUnique({ where: { id: userId }, select: { tenantId: true } }).then((u) => u?.tenantId === byId.tenantId))
+        if (allowed) contact = byId
+      }
+    }
 
     if (!contact) {
       return NextResponse.json(

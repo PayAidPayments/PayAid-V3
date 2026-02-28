@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { PageLoading } from '@/components/ui/loading'
-import { FileText } from 'lucide-react'
+import { FileText, Bot } from 'lucide-react'
 
 export default function DealDetailPage() {
   const params = useParams()
@@ -36,6 +36,17 @@ export default function DealDetailPage() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* AI entry point: open the page-scoped assistant (same as CRM Home Command Center) */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('open-page-ai'))}
+          className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-1.5"
+        >
+          <Bot className="w-3.5 h-3.5" />
+          Ask PayAid AI about this deal
+        </button>
+      </div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{deal.name}</h1>
