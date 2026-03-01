@@ -374,13 +374,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = createContactSchema.parse(body)
 
-    // Check for duplicate email if provided
+    // Check for duplicate email if provided (select only id to avoid depending on optional Phase 1B columns)
     if (validated.email) {
       const existing = await prisma.contact.findFirst({
         where: {
           tenantId: tenantId,
           email: validated.email,
         },
+        select: { id: true },
       })
 
       if (existing) {
