@@ -59,13 +59,20 @@ export async function gatherFactorsForEmployee(
   if (!emp) return factors
   const empWithDes = emp as { designationId?: string | null; ctcAnnualInr?: unknown; joiningDate?: Date | null }
 
-  const latestReview = await prisma.performanceReview.findFirst({
-    where: { employeeId, tenantId },
-    orderBy: { createdAt: 'desc' },
-  })
-  if (latestReview) {
-    factors.lastPerformanceRating = latestReview.overallRating ?? undefined
-    factors.performanceTrend = 'STABLE'
+  try {
+    const performanceReviewDelegate = (prisma as any).performanceReview
+    if (performanceReviewDelegate && typeof performanceReviewDelegate.findFirst === 'function') {
+      const latestReview = await performanceReviewDelegate.findFirst({
+        where: { employeeId, tenantId },
+        orderBy: { createdAt: 'desc' },
+      })
+      if (latestReview) {
+        factors.lastPerformanceRating = (latestReview as { overallRating?: number }).overallRating ?? undefined
+        factors.performanceTrend = 'STABLE'
+      }
+    }
+  } catch (_) {
+    // PerformanceReview model may not exist in schema; skip this factor
   }
 
   const thirtyDaysAgo = new Date()

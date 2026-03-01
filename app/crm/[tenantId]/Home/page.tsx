@@ -38,7 +38,8 @@ import { motion } from 'framer-motion'
 // ModuleTopBar is now in layout.tsx
 import { AIScoreBadge, calculateDealScore, calculateContactScore } from '@/components/ai/AIScoreBadge'
 
-// Single Page AI is provided by AppShell (PageAIAssistant). No duplicate AI components.
+// Single Page AI is provided by AppShell (PageAIAssistant). CRM AI Command Center band below.
+import { CRMAICommandCenter } from '@/components/crm/CRMAICommandCenter'
 import { 
   LineChart, 
   Line, 
@@ -1206,27 +1207,17 @@ export default function CRMDashboardPage() {
       )}
 
       <div className="p-6 space-y-6 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
-        {/* AI Command Center - always visible on all views (production and dev) */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
-        >
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent('open-page-ai'))}
-            className="flex items-center gap-3 w-full text-left rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+        {/* Band 1: AI Command Center - same style as Finance & HR dashboards */}
+        {safeStats && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="w-full"
           >
-            <div className="w-10 h-10 rounded-full bg-slate-800 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
-              <Bot className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Ask PayAid AI about this dashboard</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Contacts, deals, pipeline, and more</p>
-            </div>
-          </button>
-        </motion.div>
+            <CRMAICommandCenter tenantId={tenantId} stats={safeStats} userName={user?.name} />
+          </motion.div>
+        )}
 
         {/* Conditional Rendering: Tasks View vs Activity Feed vs Manager View */}
         {currentView === 'tasks' ? (
