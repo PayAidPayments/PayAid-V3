@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { formatINR, formatINRCompact, formatINRForDisplay } from '@/lib/utils/formatINR'
+import { StatCard } from '@/components/ui/StatCard'
 import { DashboardLoading } from '@/components/ui/loading'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -1573,209 +1574,60 @@ export default function CRMDashboardPage() {
         ) : (
           // Manager View (default for admin/manager)
           <>
-        {/* PIXEL-PERFECT 12-COLUMN CSS GRID LAYOUT (Band 1 AI is above, shared across views) */}
         <div className="dashboard-container">
           <div className="dashboard-grid">
 
-          {/* Band 2: Row 1 - Stat Cards (6 identical cards, each spans 2 columns) */}
-          {/* Stat Card 1: Deals Created */}
-          <motion.div 
-            className="stat-card"
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            whileHover={{ scale: 1.02, y: -2 }}
-          >
-            <Link href={tenantId ? `/crm/${tenantId}/Deals?category=created&timePeriod=${timePeriod}` : '#'}>
-              <Card className="stat-card-uniform" style={{ height: '100%', padding: 0, borderRadius: 0, border: 0, boxShadow: 'none', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
-                <div className="flex flex-row items-center justify-between mb-1" style={{ minHeight: '32px' }}>
-                  <CardTitle className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider" style={{ lineHeight: '1.2', margin: 0 }}>Deals Created</CardTitle>
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Briefcase className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                  </div>
-                </div>
-                <div className="text-2xl font-bold stat-card-gradient-text dark:text-purple-300 mb-0.5" style={{ lineHeight: '1.2' }}>
-                  {safeStats.dealsCreatedThisMonth || 0}
-                </div>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium mb-0.5" style={{ lineHeight: '1.2' }}>
-                  <ArrowUpRight className="w-3 h-3" />
-                  <span>vs last period +12%</span>
-                </p>
-                {safeStats.dealsCreatedThisMonth > 0 && (
-                  <div className="flex items-center gap-1" style={{ marginTop: 'auto' }}>
-                    <span className="status-badge on-track">On track</span>
-                  </div>
-                )}
-              </Card>
+          {/* Band 0: Top stat bar – 4 cards (blueprint) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" style={{ gridColumn: '1 / -1' }}>
+            <Link href={tenantId ? `/crm/${tenantId}/Deals?category=created&timePeriod=${timePeriod}` : '#'} className="block">
+              <StatCard
+                title="Deals Created"
+                value={safeStats.dealsCreatedThisMonth ?? 0}
+                trend={<span className="text-emerald-600 dark:text-emerald-400">↗ vs last period +12%</span>}
+                status={safeStats.dealsCreatedThisMonth > 0 ? 'On track' : undefined}
+                icon={<Briefcase className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
+                height="sm"
+              />
             </Link>
-          </motion.div>
-
-          {/* Stat Card 2: Revenue */}
-          <motion.div 
-            className="stat-card"
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.15 }}
-            whileHover={{ scale: 1.02, y: -2 }}
-          >
-            <Link href={tenantId ? `/crm/${tenantId}/Deals?category=won&timePeriod=${timePeriod}` : '#'}>
-              <Card className="stat-card-uniform" style={{ height: '100%', padding: 0, borderRadius: 0, border: 0, boxShadow: 'none', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
-                <div className="flex flex-row items-center justify-between mb-1" style={{ minHeight: '32px' }}>
-                  <CardTitle className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider" style={{ lineHeight: '1.2', margin: 0 }}>Revenue</CardTitle>
-                  <div className="w-8 h-8 bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <IndianRupee className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  </div>
-                </div>
-                <div className="text-xl font-bold stat-card-gradient-text dark:text-purple-300 mb-0.5" style={{ lineHeight: '1.2' }}>
-                  {safeStats.revenueThisMonth ? formatINRForDisplay(safeStats.revenueThisMonth) : '₹0'}
-                </div>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium mb-0.5" style={{ lineHeight: '1.2' }}>
-                  <ArrowUpRight className="w-3 h-3" />
-                  <span>vs last period +18%</span>
-                </p>
-                {safeStats.revenueThisMonth > 0 && (
-                  <div className="flex items-center gap-1" style={{ marginTop: 'auto' }}>
-                    <span className="status-badge ahead">Ahead</span>
-                  </div>
-                )}
-              </Card>
+            <Link href={tenantId ? `/crm/${tenantId}/Deals?category=won&timePeriod=${timePeriod}` : '#'} className="block">
+              <StatCard
+                title="Revenue"
+                value={safeStats.revenueThisMonth ? formatINRForDisplay(safeStats.revenueThisMonth) : '₹0'}
+                trend={<span className="text-emerald-600 dark:text-emerald-400">↗ vs last period +18%</span>}
+                status={safeStats.revenueThisMonth > 0 ? 'Ahead' : undefined}
+                icon={<IndianRupee className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
+                height="sm"
+              />
             </Link>
-          </motion.div>
-
-          {/* Stat Card 3: Deals Closing */}
-          <motion.div 
-            className="stat-card"
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-            whileHover={{ scale: 1.02, y: -2 }}
-          >
-            <Link href={tenantId ? `/crm/${tenantId}/Deals?category=closing&timePeriod=${timePeriod}` : '#'}>
-              <Card className="stat-card-uniform" style={{ height: '100%', padding: 0, borderRadius: 0, border: 0, boxShadow: 'none', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
-                <div className="flex flex-row items-center justify-between mb-1" style={{ minHeight: '32px' }}>
-                  <CardTitle className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider" style={{ lineHeight: '1.2', margin: 0 }}>Deals Closing</CardTitle>
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  </div>
-                </div>
-                <div className="text-2xl font-bold stat-card-gradient-text dark:text-purple-300 mb-0.5" style={{ lineHeight: '1.2' }}>
-                  {safeStats.dealsClosingThisMonth || 0}
-                </div>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium mb-0.5" style={{ lineHeight: '1.2' }}>
-                  <ArrowUpRight className="w-3 h-3" />
-                  <span>vs last period +8%</span>
-                </p>
-                {safeStats.dealsClosingThisMonth > 0 && (
-                  <div className="flex items-center gap-1" style={{ marginTop: 'auto' }}>
-                    <span className="status-badge on-track">High win prob</span>
-                  </div>
-                )}
-              </Card>
+            <Link href={tenantId ? `/crm/${tenantId}/Deals` : '#'} className="block">
+              <StatCard
+                title="Pipeline Size"
+                value={safeStats.pipelineByStage?.reduce((sum: number, stage: any) => sum + (stage.count || 0), 0) ?? 0}
+                trend={<span className="text-slate-600 dark:text-slate-300">↗ Active deals</span>}
+                status={safeStats.pipelineByStage?.length ? 'Healthy' : undefined}
+                icon={<BarChart3 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />}
+                height="sm"
+              />
             </Link>
-          </motion.div>
-
-          {/* Stat Card 4: Overdue Tasks */}
-          <motion.div 
-            className="stat-card"
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.25 }}
-            whileHover={{ scale: 1.02, y: -2 }}
-          >
-            <Link href={tenantId ? `/crm/${tenantId}/Tasks?filter=overdue` : '#'}>
-              <Card className="stat-card-uniform" style={{ height: '100%', padding: 0, borderRadius: 0, border: 0, boxShadow: 'none', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
-                <div className="flex flex-row items-center justify-between mb-1" style={{ minHeight: '32px' }}>
-                  <CardTitle className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider" style={{ lineHeight: '1.2', margin: 0 }}>Overdue Tasks</CardTitle>
-                  <div className="w-8 h-8 bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400 mb-0.5" style={{ lineHeight: '1.2' }}>
-                  {safeStats.overdueTasks || 0}
-                </div>
-                <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1 font-medium mb-0.5" style={{ lineHeight: '1.2' }}>
-                  <ArrowDownRight className="w-3 h-3" />
-                  <span>vs last period +5%</span>
-                </p>
-                {safeStats.overdueTasks > 0 && (
-                  <div className="flex items-center gap-1" style={{ marginTop: 'auto' }}>
-                    <span className="status-badge critical">At risk</span>
-                  </div>
-                )}
-              </Card>
+            <Link href={tenantId ? `/crm/${tenantId}/Tasks?filter=overdue` : '#'} className="block">
+              <StatCard
+                title="Overdue Tasks"
+                value={safeStats.overdueTasks ?? 0}
+                trend={<span className="text-red-600 dark:text-red-400">↘ vs last period +5%</span>}
+                status={safeStats.overdueTasks > 0 ? 'At risk' : undefined}
+                icon={<AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />}
+                height="sm"
+              />
             </Link>
-          </motion.div>
+          </div>
 
-          {/* Stat Card 5: New Contacts */}
-          <motion.div 
-            className="stat-card"
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.3 }}
-            whileHover={{ scale: 1.02, y: -2 }}
-          >
-            <Link href={tenantId ? `/crm/${tenantId}/Contacts?filter=new` : '#'}>
-              <Card className="stat-card-uniform" style={{ height: '100%', padding: 0, borderRadius: 0, border: 0, boxShadow: 'none', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
-                <div className="flex flex-row items-center justify-between mb-1" style={{ minHeight: '32px' }}>
-                  <CardTitle className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider" style={{ lineHeight: '1.2', margin: 0 }}>New Contacts</CardTitle>
-                  <div className="w-8 h-8 bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/30 dark:to-emerald-800/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Users className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                </div>
-                <div className="text-2xl font-bold stat-card-gradient-text dark:text-purple-300 mb-0.5" style={{ lineHeight: '1.2' }}>
-                  {safeStats.contactsCreatedThisMonth || safeStats.totalLeads || 0}
-                </div>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium mb-0.5" style={{ lineHeight: '1.2' }}>
-                  <ArrowUpRight className="w-3 h-3" />
-                  <span>vs last period +15%</span>
-                </p>
-                {((safeStats.contactsCreatedThisMonth ?? 0) > 0) && (
-                  <div className="flex items-center gap-1" style={{ marginTop: 'auto' }}>
-                    <span className="status-badge ahead">Growing</span>
-                  </div>
-                )}
-              </Card>
-            </Link>
-          </motion.div>
-
-          {/* Stat Card 6: Pipeline Size */}
-          <motion.div 
-            className="stat-card"
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.35 }}
-            whileHover={{ scale: 1.02, y: -2 }}
-          >
-            <Link href={tenantId ? `/crm/${tenantId}/Deals` : '#'}>
-              <Card className="stat-card-uniform" style={{ height: '100%', padding: 0, borderRadius: 0, border: 0, boxShadow: 'none', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
-                <div className="flex flex-row items-center justify-between mb-1" style={{ minHeight: '32px' }}>
-                  <CardTitle className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider" style={{ lineHeight: '1.2', margin: 0 }}>Pipeline Size</CardTitle>
-                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/30 dark:to-indigo-800/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <BarChart3 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                </div>
-                <div className="text-2xl font-bold stat-card-gradient-text dark:text-purple-300 mb-0.5" style={{ lineHeight: '1.2' }}>
-                  {safeStats.pipelineByStage?.reduce((sum: number, stage: any) => sum + (stage.count || 0), 0) || 0}
-                </div>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium mb-0.5" style={{ lineHeight: '1.2' }}>
-                  <ArrowUpRight className="w-3 h-3" />
-                  <span>Active deals</span>
-                </p>
-                {safeStats.pipelineByStage && safeStats.pipelineByStage.length > 0 && (
-                  <div className="flex items-center gap-1" style={{ marginTop: 'auto' }}>
-                    <span className="status-badge on-track">Healthy</span>
-                  </div>
-                )}
-              </Card>
-            </Link>
-          </motion.div>
-
-          {/* Band 2: Row 2 - Charts (3 charts, each spans 4 columns) */}
+          {/* Band 3: Charts – 3 equal columns (no empty space) */}
           {safeStats && (
-            <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" style={{ gridColumn: '1 / -1' }}>
             {/* Chart 1: Pipeline by Stage */}
             <motion.div 
               className="chart-panel"
+              style={{ gridColumn: 'span 1' }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.4 }}
@@ -1849,6 +1701,7 @@ export default function CRMDashboardPage() {
             {/* Chart 2: Monthly Lead Creation */}
             <motion.div 
               className="chart-panel"
+              style={{ gridColumn: 'span 1' }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.45 }}
@@ -1910,6 +1763,7 @@ export default function CRMDashboardPage() {
             {/* Chart 3: TOP 10 Lead Sources */}
             <motion.div 
               className="chart-panel"
+              style={{ gridColumn: 'span 1' }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.5 }}
@@ -2020,10 +1874,10 @@ export default function CRMDashboardPage() {
                 </CardContent>
               </Card>
             </motion.div>
-            </>
+            </div>
           )}
 
-          {/* Band 3: Row 4 - Widgets (3 cards, each spans 4 columns) */}
+          {/* Band 4: Alerts / lists – 3 cards (blueprint lg:grid-cols-3) */}
           {stats && safeStats && (
             <>
             {/* Widget 1: Customer Issues */}
@@ -2070,7 +1924,7 @@ export default function CRMDashboardPage() {
               </Card>
             </motion.div>
 
-            {/* Widget 3: Latest Campaigns */}
+            {/* Widget 2: Latest Campaigns */}
             <motion.div 
               className="widget-card"
               initial={{ opacity: 0, y: 10 }}
@@ -2112,6 +1966,52 @@ export default function CRMDashboardPage() {
                   <Link href={tenantId ? `/crm/${tenantId}/Campaigns` : '#'} className="mt-auto">
                     <Button variant="outline" className="w-full mt-2 text-xs py-1">
                       View All Campaigns
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Widget 3: Deals Closing Soon – fills Band 4 third slot */}
+            <motion.div 
+              className="widget-card"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.85 }}
+              whileHover={{ y: -2 }}
+            >
+              <Card className="border-0 rounded-xl" style={{ height: '100%', padding: 0, borderRadius: 0, background: 'transparent' }}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <Target className="h-5 w-5 text-indigo-600" />
+                    Deals Closing Soon
+                  </CardTitle>
+                  <CardDescription className="text-sm">Expected to close this period</CardDescription>
+                </CardHeader>
+                <CardContent style={{ height: 'calc(100% - 100px)', overflow: 'visible', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div className="space-y-2 flex-1">
+                    <div className="flex items-center justify-between p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                      <div>
+                        <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Deals closing</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">This month / quarter</p>
+                      </div>
+                      <Badge variant="outline" className="bg-indigo-100 text-indigo-700 border-indigo-300 dark:bg-indigo-900/40 dark:border-indigo-700">
+                        {safeStats.dealsClosingThisMonth ?? 0}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <div>
+                        <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Pipeline value</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Active deals total</p>
+                      </div>
+                      <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                        {formatINRForDisplay((safeStats.pipelineByStage || []).reduce((s: number, p: any) => s + (Number(p?.value) || 0), 0) || 0)}
+                      </span>
+                    </div>
+                  </div>
+                  <Link href={tenantId ? `/crm/${tenantId}/Deals?category=closing&timePeriod=${timePeriod}` : '#'} className="mt-auto">
+                    <Button variant="outline" className="w-full mt-2 text-xs py-1">
+                      View Closing Deals
                     </Button>
                   </Link>
                 </CardContent>
