@@ -92,7 +92,16 @@ If you specify which of these (or something else) you mean, we can implement the
 
 ---
 
-## 5. Quick check: what’s on production?
+## 5. Vercel build: Prisma migrate and Supabase pooler
+
+If the build fails with **"prepared statement 's0' does not exist"** during `prisma migrate deploy`, migrations are hitting the Supabase **pooler** (port 6543). They must use a **direct** connection.
+
+- **In repo:** `prisma/schema.prisma` now has `directUrl = env("DIRECT_DATABASE_URL")` for migrations.
+- **In Vercel:** Add env var **`DIRECT_DATABASE_URL`** = Supabase **direct** connection (port **5432**). In Supabase: Project Settings → Database → Connection string → use the URI with port **5432** (not the pooler 6543). Keep **`DATABASE_URL`** as the pooler URL for runtime. Then redeploy.
+
+---
+
+## 6. Quick check: what’s on production?
 
 1. Open **Vercel** → project → **Deployments** → latest deployment → note the **commit** and **branch**.
 2. Locally: `git log origin/<branch> -5` to see what’s on the remote.
