@@ -7,22 +7,26 @@ import { z } from 'zod'
 import { multiLayerCache } from '@/lib/cache/multi-layer'
 import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
 
+// Optional email/phone: allow empty string from forms and coerce to undefined for DB
+const optionalEmail = z.union([z.string().email(), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v))
+const optionalString = z.string().optional().transform((v) => (v === '' ? undefined : v))
+
 const createContactSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  company: z.string().optional(),
+  email: optionalEmail,
+  phone: optionalString,
+  company: optionalString,
   type: z.enum(['customer', 'lead', 'vendor', 'employee']).default('lead'),
   stage: z.enum(['prospect', 'contact', 'customer']).optional(), // New simplified stage
   status: z.enum(['active', 'inactive', 'lost']).default('active'),
-  source: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  postalCode: z.string().optional(),
+  source: optionalString,
+  address: optionalString,
+  city: optionalString,
+  state: optionalString,
+  postalCode: optionalString,
   country: z.string().default('India'),
   tags: z.array(z.string()).default([]),
-  notes: z.string().optional(),
+  notes: z.string().optional().transform((v) => (v === '' ? undefined : v)),
 })
 
 // GET /api/contacts - List all contacts
@@ -439,8 +443,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Create contact error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to create contact'
     return NextResponse.json(
-      { error: 'Failed to create contact' },
+      { error: 'Failed to create contact', details: message },
       { status: 500 }
     )
   }

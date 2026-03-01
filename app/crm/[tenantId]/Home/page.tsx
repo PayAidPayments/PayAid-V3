@@ -38,8 +38,8 @@ import { motion } from 'framer-motion'
 // ModuleTopBar is now in layout.tsx
 import { AIScoreBadge, calculateDealScore, calculateContactScore } from '@/components/ai/AIScoreBadge'
 
-// Single Page AI is provided by AppShell (PageAIAssistant). CRM AI Command Center band below.
-import { CRMAICommandCenter } from '@/components/crm/CRMAICommandCenter'
+// Single Page AI is provided by AppShell (PageAIAssistant). Band 1 uses full AI Command Center (insights, regenerate, expandable actions).
+import { AICommandCenter } from '@/components/ai/AICommandCenter'
 import { 
   LineChart, 
   Line, 
@@ -1207,7 +1207,7 @@ export default function CRMDashboardPage() {
       )}
 
       <div className="p-6 space-y-6 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
-        {/* Band 1: AI Command Center - same style as Finance & HR dashboards */}
+        {/* Band 1: AI Command Center - full version with AI insights, regenerate, expandable actions, target progress, micro-KPIs */}
         {safeStats && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -1215,7 +1215,17 @@ export default function CRMDashboardPage() {
             transition={{ duration: 0.3 }}
             className="w-full"
           >
-            <CRMAICommandCenter tenantId={tenantId} stats={safeStats} userName={user?.name} />
+            <AICommandCenter
+              tenantId={tenantId}
+              stats={{
+                ...safeStats,
+                activeDeals: (safeStats.pipelineByStage || []).reduce((s: number, p: any) => s + (Number(p?.count) || 0), 0),
+                forecastedRevenue: (safeStats.pipelineByStage || []).reduce((s: number, p: any) => s + (Number(p?.value) || 0), 0),
+                atRiskContacts: (safeStats as any).atRiskContacts ?? 0,
+              }}
+              timePeriod={timePeriod}
+              userName={user?.name}
+            />
           </motion.div>
         )}
 

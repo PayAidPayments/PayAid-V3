@@ -28,22 +28,26 @@ async function resolveContactTenantId(
   return jwtTenantId
 }
 
+// Allow empty string for optional fields from forms
+const optionalEmail = z.union([z.string().email(), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v))
+const optionalString = z.string().optional().transform((v) => (v === '' ? undefined : v))
+
 const updateContactSchema = z.object({
   name: z.string().min(1).optional(),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  company: z.string().optional(),
+  email: optionalEmail,
+  phone: optionalString,
+  company: optionalString,
   type: z.enum(['customer', 'lead', 'vendor', 'employee']).optional(),
   stage: z.enum(['prospect', 'contact', 'customer']).optional(),
   status: z.enum(['active', 'inactive', 'lost']).optional(),
-  source: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  postalCode: z.string().optional(),
-  country: z.string().optional(),
+  source: optionalString,
+  address: optionalString,
+  city: optionalString,
+  state: optionalString,
+  postalCode: optionalString,
+  country: optionalString,
   tags: z.array(z.string()).optional(),
-  notes: z.string().optional(),
+  notes: z.string().optional().transform((v) => (v === '' ? undefined : v)),
   likelyToBuy: z.boolean().optional(),
   churnRisk: z.boolean().optional(),
 })
