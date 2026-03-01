@@ -96,8 +96,16 @@ If you specify which of these (or something else) you mean, we can implement the
 
 The Vercel build uses **only the pooler connection** (`DATABASE_URL`). It does **not** run `prisma migrate deploy` (which would require a direct connection and can fail with "prepared statement does not exist" on the pooler).
 
-- **Build script:** runs `prisma generate` then `next build`. No migration step.
-- **Schema changes:** when you add or change Prisma migrations, run **`prisma migrate deploy`** locally (or from a environment that has direct DB access) to apply them. The app at runtime works with the pooler; migrations are applied separately.
+- **Build script:** runs `prisma generate` then `next build`. No migration step. The project pins this in `vercel.json` so the deploy never requires `DIRECT_DATABASE_URL`.
+- **Schema:** `prisma/schema.prisma` datasource must **not** include `directUrl = env("DIRECT_DATABASE_URL")`; use only `url = env("DATABASE_URL")`.
+- **Schema changes / migrations:** Until a direct DB connection is available, **do not run migrations on Vercel**. Run **`npm run db:migrate:deploy`** only from a machine that has `DIRECT_DATABASE_URL` (and `DATABASE_URL`) in `.env` (e.g. local or a CI job with direct access). The app at runtime uses only the pooler (`DATABASE_URL`).
+
+### Fix: "Environment variable not found: DIRECT_DATABASE_URL"
+
+If the Vercel build fails with `Error: Environment variable not found: DIRECT_DATABASE_URL` at `prisma/schema.prisma` (line with `directUrl`):
+
+- **Option A (recommended):** Keep pooler-only build. Ensure `prisma/schema.prisma` has no `directUrl` line and that `vercel.json` uses the pinned build command (generate + next build only). Run migrations locally with `npm run db:migrate:deploy` when you change the schema.
+- **Option B:** Add **`DIRECT_DATABASE_URL`** in Vercel → Project → Settings → Environment Variables (direct Postgres URL, port 5432, not pooler 6543) if you want to run `prisma migrate deploy` during the build.
 
 ---
 
