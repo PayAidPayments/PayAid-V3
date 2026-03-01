@@ -63,7 +63,12 @@ function createSeedPrismaClient(): PrismaClient {
   })
 }
 
-const prisma = createSeedPrismaClient()
+// Lazy init: avoid creating Prisma/DB connection at import time (e.g. during Next.js build)
+let _prisma: PrismaClient | null = null
+function getPrisma(): PrismaClient {
+  if (!_prisma) _prisma = createSeedPrismaClient()
+  return _prisma
+}
 
 export interface DemoBusinessSeedResult {
   crm: CRMSeedResult
@@ -100,7 +105,7 @@ async function seedProducts(tenantId: string) {
   const products = []
   for (let idx = 0; idx < productData.length; idx++) {
     const product = productData[idx]
-    const created = await prisma.product.upsert({
+    const created = await getPrisma().product.upsert({
       where: { id: `product-${idx + 1}` },
       update: {},
       create: {
@@ -138,7 +143,7 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
       // Use the provided tenantId directly
       console.log(`📋 Using provided tenantId: ${demoTenantId}`)
       try {
-        tenant = await prisma.tenant.findUnique({
+        tenant = await getPrisma().tenant.findUnique({
           where: { id: demoTenantId },
         })
         
@@ -147,7 +152,7 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
           // CRITICAL: Create tenant with requested ID if possible, otherwise Prisma will generate a new ID
           console.log(`📋 Tenant ${demoTenantId} not found, creating new Demo Business tenant...`)
           try {
-            tenant = await prisma.tenant.create({
+            tenant = await getPrisma().tenant.create({
               data: {
                 id: demoTenantId, // Try to use the requested ID
                 name: 'Demo Business Pvt Ltd',
@@ -183,7 +188,7 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
             // fall back to finding existing Demo Business tenant
             if (createError?.code === 'P2002' || createError?.code === 'P2003') {
               console.log(`⚠️ Could not create tenant with ID ${demoTenantId}, checking for existing Demo Business tenant...`)
-              tenant = await prisma.tenant.findFirst({
+              tenant = await getPrisma().tenant.findFirst({
                 where: {
                   OR: [
                     { name: { contains: 'Demo Business', mode: 'insensitive' } },
@@ -222,13 +227,13 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
       }
     } else {
     // Fallback: find by subdomain
-    tenant = await prisma.tenant.findUnique({
+    tenant = await getPrisma().tenant.findUnique({
       where: { subdomain: 'demo' },
     })
 
     if (!tenant) {
       console.log('📋 Creating Demo Business tenant...')
-      tenant = await prisma.tenant.create({
+      tenant = await getPrisma().tenant.create({
         data: {
           name: 'Demo Business Pvt Ltd',
           subdomain: 'demo',
@@ -264,13 +269,13 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
 
   // 2. Get or create admin user
   const hashedPassword = await bcrypt.hash('Test@1234', 10)
-  let user = await prisma.user.findUnique({
+  let user = await getPrisma().user.findUnique({
     where: { email: 'admin@demo.com' },
   })
 
   if (!user) {
     console.log('👤 Creating admin user...')
-    user = await prisma.user.create({
+    user = await getPrisma().user.create({
       data: {
         email: 'admin@demo.com',
         name: 'Admin User',
@@ -294,13 +299,13 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
 
   // 3.5. Get or create SalesRep for the admin user (needed for assignedToId in contacts/deals)
   // MUST be after reset to ensure SalesRep exists
-  let salesRep = await prisma.salesRep.findUnique({
+  let salesRep = await getPrisma().salesRep.findUnique({
     where: { userId },
   })
 
   if (!salesRep) {
     console.log('👤 Creating SalesRep for admin user...')
-    salesRep = await prisma.salesRep.create({
+    salesRep = await getPrisma().salesRep.create({
       data: {
         userId,
         tenantId,
@@ -328,8 +333,8 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
     console.log(`  ✅ CRM Module seeded: ${crmResult.contacts} contacts, ${crmResult.deals} deals, ${crmResult.tasks} tasks`)
     
     // Verify deals were actually created
-    const actualDealCount = await prisma.deal.count({ where: { tenantId } })
-    const actualContactCount = await prisma.contact.count({ where: { tenantId } })
+    const actualDealCount = await getPrisma().deal.count({ where: { tenantId } })
+    const actualContactCount = await getPrisma().contact.count({ where: { tenantId } })
     
     if (actualContactCount === 0) {
       console.error(`  ❌ CRITICAL: CRM seed reported ${crmResult.contacts} contacts, but database shows 0 contacts!`)
@@ -357,8 +362,8 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
     console.error(`  ❌ Error stack:`, crmError?.stack)
     
     // Check if we have any data at all
-    const remainingContacts = await prisma.contact.count({ where: { tenantId } }).catch(() => 0)
-    const remainingDeals = await prisma.deal.count({ where: { tenantId } }).catch(() => 0)
+    const remainingContacts = await getPrisma().contact.count({ where: { tenantId } }).catch(() => 0)
+    const remainingDeals = await getPrisma().deal.count({ where: { tenantId } }).catch(() => 0)
     
     if (remainingContacts === 0 && remainingDeals === 0) {
       console.error(`  ❌ CRITICAL: Seed failed and no data was created. Database is empty.`)
@@ -373,8 +378,8 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
   console.log('')
 
   // Get contacts and deals for other modules
-  const contacts = await prisma.contact.findMany({ where: { tenantId }, take: 200 })
-  const deals = await prisma.deal.findMany({ where: { tenantId }, take: 200 })
+  const contacts = await getPrisma().contact.findMany({ where: { tenantId }, take: 200 })
+  const deals = await getPrisma().deal.findMany({ where: { tenantId }, take: 200 })
 
   // 5.5. Initialize Chart of Accounts (needed for Finance module)
   console.log('📊 Initializing Chart of Accounts...')
@@ -396,7 +401,7 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
 
     for (const account of defaultAccounts) {
       try {
-        await prisma.chartOfAccounts.upsert({
+        await getPrisma().chartOfAccounts.upsert({
           where: {
             tenantId_accountCode: {
               tenantId,
@@ -520,6 +525,6 @@ if (require.main === module) {
       process.exit(1)
     })
     .finally(async () => {
-      await prisma.$disconnect()
+      await getPrisma().$disconnect()
     })
 }
