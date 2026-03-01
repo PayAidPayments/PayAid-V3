@@ -63,19 +63,28 @@ export async function GET(request: NextRequest) {
         },
       }).catch(() => 0),
 
-      // Next payroll cycle
-      prisma.payrollCycle.findFirst({
-        where: {
-          tenantId,
-          status: { in: ['DRAFT', 'IN_PROGRESS'] },
-          startDate: { gte: now },
-        },
-        orderBy: { startDate: 'asc' },
-        select: {
-          startDate: true,
-          id: true,
-        },
-      }).catch(() => null),
+      // Next payroll cycle (PayrollCycle uses month/year, not startDate)
+      (async () => {
+        try {
+          const currentYear = now.getFullYear()
+          const currentMonth = now.getMonth() + 1
+          const cycle = await prisma.payrollCycle.findFirst({
+            where: {
+              tenantId,
+              status: { in: ['DRAFT', 'IN_PROGRESS'] },
+              OR: [
+                { year: { gt: currentYear } },
+                { year: currentYear, month: { gte: currentMonth } },
+              ],
+            },
+            orderBy: [{ year: 'asc' }, { month: 'asc' }],
+            select: { id: true, month: true, year: true },
+          })
+          return cycle
+        } catch (e) {
+          return null
+        }
+      })(),
 
       // Pending reimbursements (using Expense model)
       prisma.expense.aggregate({
@@ -97,8 +106,11 @@ export async function GET(request: NextRequest) {
       // Engagement data (mock - would come from surveys/feedback)
       Promise.resolve({ avgEngagement: 82, okrCompletion: 76, trainingDue: 8 }),
 
-      // Flight risks (real: top 5 high-risk employees)
-      getHighRiskEmployees(tenantId, { checkLimit: 25, minRiskScore: 40, maxResults: 5 }),
+      // Flight risks (real: top 5 high-risk employees) - catch to avoid findFirst/undefined errors
+      getHighRiskEmployees(tenantId, { checkLimit: 25, minRiskScore: 40, maxResults: 5 }).catch((err) => {
+        console.error('HR summary: getHighRiskEmployees failed', err?.message ?? err)
+        return []
+      }),
 
       // AI insights (mock)
       Promise.resolve([
@@ -134,8 +146,10 @@ export async function GET(request: NextRequest) {
     // Calculate next payroll amount
     let nextPayrollAmount = 0
     let nextPayrollDate = ''
-    if (nextPayrollCycle) {
-      nextPayrollDate = nextPayrollCycle.startDate.toISOString().split('T')[0]
+    if (nextPayrollCycle && 'month' in nextPayrollCycle && 'year' in nextPayrollCycle) {
+      // PayrollCycle uses month (1-12) and year
+      const cycleDate = new Date(nextPayrollCycle.year, (nextPayrollCycle as { month: number }).month - 1, 1)
+      nextPayrollDate = cycleDate.toISOString().split('T')[0]
       // Mock calculation - would sum all employee salaries for the cycle
       nextPayrollAmount = activeEmployees * 50000 // Rough estimate
     } else {
