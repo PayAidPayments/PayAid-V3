@@ -175,8 +175,9 @@ export function useCreateContact() {
         body: JSON.stringify(data),
       })
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create contact')
+        const error = await response.json().catch(() => ({}))
+        const message = error.details || error.error || 'Failed to create contact'
+        throw new Error(message)
       }
       return response.json()
     },

@@ -4,13 +4,16 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { Decimal } from '@prisma/client/runtime/library'
 
+// Optional email: allow empty string from forms
+const optionalEmail = z.union([z.string().email(), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v))
+
 const createEmployeeSchema = z.object({
   // Basic Information
   employeeCode: z.string().min(1),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   officialEmail: z.string().email(),
-  personalEmail: z.string().email().optional(),
+  personalEmail: optionalEmail,
   mobileCountryCode: z.string().default('+91'),
   mobileNumber: z.string().min(10),
   
