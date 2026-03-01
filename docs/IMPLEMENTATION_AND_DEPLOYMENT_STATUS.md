@@ -92,12 +92,12 @@ If you specify which of these (or something else) you mean, we can implement the
 
 ---
 
-## 5. Vercel build: Prisma migrate and Supabase pooler
+## 5. Vercel build: pooler-only (no migrate on deploy)
 
-If the build fails with **"prepared statement 's0' does not exist"** during `prisma migrate deploy`, migrations are hitting the Supabase **pooler** (port 6543). They must use a **direct** connection.
+The Vercel build uses **only the pooler connection** (`DATABASE_URL`). It does **not** run `prisma migrate deploy` (which would require a direct connection and can fail with "prepared statement does not exist" on the pooler).
 
-- **In repo:** `prisma/schema.prisma` now has `directUrl = env("DIRECT_DATABASE_URL")` for migrations.
-- **In Vercel:** Add env var **`DIRECT_DATABASE_URL`** = Supabase **direct** connection (port **5432**). In Supabase: Project Settings → Database → Connection string → use the URI with port **5432** (not the pooler 6543). Keep **`DATABASE_URL`** as the pooler URL for runtime. Then redeploy.
+- **Build script:** runs `prisma generate` then `next build`. No migration step.
+- **Schema changes:** when you add or change Prisma migrations, run **`prisma migrate deploy`** locally (or from a environment that has direct DB access) to apply them. The app at runtime works with the pooler; migrations are applied separately.
 
 ---
 
