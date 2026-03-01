@@ -1,15 +1,14 @@
 /**
- * Run Database Migrations for Vercel
- * 
- * This script runs Prisma migrations in production.
- * It's designed to be run as a one-time script or via Vercel CLI.
- * 
- * Usage:
- *   npx tsx scripts/run-migrations-vercel.ts
- * 
- * Or via Vercel CLI:
+ * Run Database Migrations (off-Vercel only; pooler-only deploy does not run this)
+ *
+ * Runs Prisma migrations. Requires direct DB access (DIRECT_DATABASE_URL or a
+ * non-pooler DATABASE_URL). Do NOT run during Vercel build; the app uses
+ * pooler-only until a direct connection is available.
+ *
+ * Usage (from a machine with direct DB access):
  *   vercel env pull .env.production --environment=production
  *   npx tsx scripts/run-migrations-vercel.ts
+ * Or: npm run db:migrate:vercel
  */
 
 import { execSync } from 'child_process'
