@@ -524,12 +524,12 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
           </div>
         </div>
 
-        {/* Micro-KPIs */}
-        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-purple-100 dark:border-purple-900">
+        {/* Micro-KPIs – equal width, no empty space */}
+        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-purple-100 dark:border-purple-900 min-w-0">
           {/* Win Rate */}
           {tenantId ? (
-            <Link href={`/crm/${tenantId}/Contacts?filter=converted`} className="block" title="Click to view converted contacts - Calculation: (Converted Leads / Total Leads) × 100">
-              <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-100 dark:border-purple-900 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all cursor-pointer group">
+            <Link href={`/crm/${tenantId}/Contacts?filter=converted`} className="block min-w-0" title="Click to view converted contacts - Calculation: (Converted Leads / Total Leads) × 100">
+              <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-100 dark:border-purple-900 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all cursor-pointer group min-w-0">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <BarChart3 className="h-3 w-3 text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <p className="text-xs text-gray-600 dark:text-gray-400">Win Rate</p>
@@ -545,7 +545,7 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
               </div>
             </Link>
           ) : (
-            <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-100 dark:border-purple-900">
+            <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-100 dark:border-purple-900 min-w-0">
               <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Win Rate</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                 {stats?.totalLeads && stats?.convertedLeads
@@ -557,8 +557,8 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
           
           {/* Avg Deal Size */}
           {tenantId ? (
-            <Link href={`/crm/${tenantId}/Deals`} className="block" title="Click to view all deals - Calculation: Forecasted Revenue / Active Deals">
-              <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-100 dark:border-purple-900 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all cursor-pointer group">
+            <Link href={`/crm/${tenantId}/Deals`} className="block min-w-0" title="Click to view all deals - Calculation: Forecasted Revenue / Active Deals">
+              <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-100 dark:border-purple-900 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all cursor-pointer group min-w-0">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Briefcase className="h-3 w-3 text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <p className="text-xs text-gray-600 dark:text-gray-400">Avg Deal Size</p>
@@ -574,7 +574,7 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
               </div>
             </Link>
           ) : (
-            <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-100 dark:border-purple-900">
+            <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-100 dark:border-purple-900 min-w-0">
               <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Avg Deal Size</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                 {stats?.activeDeals && stats?.forecastedRevenue
@@ -586,8 +586,8 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
           
           {/* Churn Risk */}
           {tenantId ? (
-            <Link href={`/crm/${tenantId}/Contacts?filter=at-risk`} className="block" title="Click to view at-risk contacts - Based on inactivity and engagement patterns">
-              <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-100 dark:border-purple-900 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all cursor-pointer group">
+            <Link href={`/crm/${tenantId}/Contacts?filter=at-risk`} className="block min-w-0" title="Click to view at-risk contacts - Based on inactivity and engagement patterns">
+              <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-100 dark:border-purple-900 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all cursor-pointer group min-w-0">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <AlertTriangle className="h-3 w-3 text-red-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <p className="text-xs text-gray-600 dark:text-gray-400">Churn Risk</p>
@@ -601,7 +601,7 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
               </div>
             </Link>
           ) : (
-            <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-100 dark:border-purple-900">
+            <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-100 dark:border-purple-900 min-w-0">
               <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Churn Risk</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                 {stats?.atRiskContacts ? `${stats.atRiskContacts}` : '0'}

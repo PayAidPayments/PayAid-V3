@@ -67,6 +67,14 @@ export default function ProductivityToolPage() {
     }
   }, [tool, tenantId, router])
 
+  // PayAid Docs: use docs sub-routes (Home, Documents, Templates) with same header as Sheets
+  useEffect(() => {
+    if (tool === 'docs' && tenantId) {
+      router.replace(`/productivity/${tenantId}/docs`)
+      return
+    }
+  }, [tool, tenantId, router])
+
   const iframeSrc = useMemo(() => getToolUrl(tool, tenantId, token), [tool, tenantId, token])
   const driveConfigured = status?.drive ?? true
   const driveNotConfigured = tool === DRIVE_TOOL && !driveConfigured
