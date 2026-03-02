@@ -11,11 +11,21 @@ interface QuickActionsCardProps {
   contact: any
 }
 
-export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({ 
-  tenantId, 
-  contactId, 
-  contact 
+function formatWhatsAppPhone(phone: string | null | undefined): string {
+  if (!phone) return ''
+  return phone.replace(/\D/g, '').replace(/^91/, '') || phone.replace(/\D/g, '')
+}
+
+export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
+  tenantId,
+  contactId,
+  contact,
 }) => {
+  const hasEmail = !!contact?.email?.trim()
+  const hasPhone = !!contact?.phone?.trim()
+  const waNumber = formatWhatsAppPhone(contact?.phone)
+  const waUrl = waNumber ? `https://wa.me/${waNumber.startsWith('91') ? waNumber : '91' + waNumber}` : null
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm p-4 space-y-3">
       <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">Quick Actions</h2>
@@ -26,23 +36,45 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
             Create Deal
           </Button>
         </Link>
-        <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-          <CheckCircle className="w-3 h-3 mr-2" />
-          Create Task
-        </Button>
-        <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-          <Mail className="w-3 h-3 mr-2" />
-          Send Email
-        </Button>
-        <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-          <MessageSquare className="w-3 h-3 mr-2" />
-          Send WhatsApp
-        </Button>
-        <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-          <Phone className="w-3 h-3 mr-2" />
-          Log Call
-        </Button>
-        {(contact.type === 'customer' || contact.type === 'lead') && (
+        <Link href={`/crm/${tenantId}/Tasks/new?contactId=${contactId}`}>
+          <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+            <CheckCircle className="w-3 h-3 mr-2" />
+            Create Task
+          </Button>
+        </Link>
+        {hasEmail ? (
+          <a href={`mailto:${contact.email}`}>
+            <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+              <Mail className="w-3 h-3 mr-2" />
+              Send Email
+            </Button>
+          </a>
+        ) : (
+          <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 opacity-60" disabled title="Add email to contact">
+            <Mail className="w-3 h-3 mr-2" />
+            Send Email
+          </Button>
+        )}
+        {waUrl ? (
+          <a href={waUrl} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+              <MessageSquare className="w-3 h-3 mr-2" />
+              Send WhatsApp
+            </Button>
+          </a>
+        ) : (
+          <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 opacity-60" disabled title="Add phone to contact">
+            <MessageSquare className="w-3 h-3 mr-2" />
+            Send WhatsApp
+          </Button>
+        )}
+        <Link href={`/crm/${tenantId}/Dialer?contactId=${contactId}`}>
+          <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+            <Phone className="w-3 h-3 mr-2" />
+            Log Call
+          </Button>
+        </Link>
+        {(contact?.type === 'customer' || contact?.type === 'lead') && (
           <Link href={`/finance/${tenantId}/Invoices/new?customerId=${contactId}`}>
             <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
               <FileText className="w-3 h-3 mr-2" />

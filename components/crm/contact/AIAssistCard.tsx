@@ -142,6 +142,7 @@ export const AIAssistCard: React.FC<AIAssistCardProps> = ({ contact, tenantId, o
 
       {/* Generate Message */}
       <div className="border-t border-slate-100 dark:border-gray-700 pt-3 space-y-2">
+        <p className="text-xs text-slate-500 dark:text-gray-400">Describe your intent, then click Email or WhatsApp to generate a message.</p>
         <textarea
           value={intent}
           onChange={(e) => setIntent(e.target.value)}
@@ -152,6 +153,7 @@ export const AIAssistCard: React.FC<AIAssistCardProps> = ({ contact, tenantId, o
           <button
             onClick={() => handleGenerate('email')}
             disabled={isGenerating || !intent.trim()}
+            title={!intent.trim() ? 'Enter intent above first' : 'Generate email draft'}
             className="flex-1 rounded-lg bg-indigo-600 text-white text-xs font-semibold py-2 hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
           >
             <Mail className="w-3 h-3" />
@@ -160,6 +162,7 @@ export const AIAssistCard: React.FC<AIAssistCardProps> = ({ contact, tenantId, o
           <button
             onClick={() => handleGenerate('whatsapp')}
             disabled={isGenerating || !intent.trim()}
+            title={!intent.trim() ? 'Enter intent above first' : 'Generate WhatsApp message'}
             className="flex-1 rounded-lg bg-emerald-600 text-white text-xs font-semibold py-2 hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
           >
             <MessageSquare className="w-3 h-3" />

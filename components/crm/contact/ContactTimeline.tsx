@@ -1,17 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { format, formatDistanceToNow } from 'date-fns'
-import { 
-  Mail, 
-  Phone, 
-  MessageSquare, 
-  Calendar, 
-  FileText, 
-  CheckCircle, 
+import {
+  Mail,
+  Phone,
+  MessageSquare,
+  Calendar,
+  FileText,
+  CheckCircle,
   Briefcase,
   Plus,
-  Filter,
   X
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -40,77 +40,95 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({ contactId, ten
   const [filter, setFilter] = useState<ActivityFilter>('all')
   const [isLoading, setIsLoading] = useState(true)
   const [showAddMenu, setShowAddMenu] = useState(false)
+  const [showAddNote, setShowAddNote] = useState(false)
+  const [noteText, setNoteText] = useState('')
+  const [noteSubmitting, setNoteSubmitting] = useState(false)
   const { token } = useAuthStore()
 
-  useEffect(() => {
-    const fetchActivities = async () => {
-      if (!token || !contactId) return
-      
-      setIsLoading(true)
-      try {
-        // Fetch interactions (calls, emails, WhatsApp, meetings) - scoped to this contact
-        const interactionsRes = await fetch(`/api/interactions?contactId=${contactId}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        })
-        const interactionsData = interactionsRes.ok ? await interactionsRes.json() : { interactions: [] }
-
-        // Tasks and notes are passed as props, will be used in normalization below
-
-        // Fetch deals for this contact only (API must filter by contactId)
-        const dealsRes = await fetch(`/api/deals?contactId=${contactId}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        })
-        const dealsData = dealsRes.ok ? await dealsRes.json() : { deals: [] }
-
-        // Combine and normalize activities
-        const allActivities: Activity[] = [
-          ...(interactionsData.interactions || []).map((i: any) => ({
-            id: i.id,
-            type: (i.type === 'email' ? 'email' : i.type === 'whatsapp' ? 'whatsapp' : i.type === 'meeting' ? 'meeting' : 'call') as Activity['type'],
-            title: i.subject || `${i.type} with ${i.contact?.name || 'contact'}`,
-            description: i.notes || i.outcome || undefined,
-            createdAt: i.createdAt,
-            metadata: i,
-          })),
-          ...(tasks || []).map((t: any) => ({
-            id: t.id,
-            type: 'task' as const,
-            title: t.title || 'Task',
-            description: t.description || undefined,
-            createdAt: t.createdAt || t.dueDate || new Date().toISOString(),
-            metadata: t,
-          })),
-          ...(notes ? [{
-            id: 'note-1',
-            type: 'note' as const,
-            title: 'Note',
-            description: notes,
-            createdAt: new Date().toISOString(),
-            metadata: { content: notes },
-          }] : []),
-          ...(dealsData.deals || []).map((d: any) => ({
-            id: d.id,
-            type: 'deal' as const,
-            title: `Deal: ${d.name}`,
-            description: `₹${d.value?.toLocaleString() || '0'} • ${d.stage}`,
-            createdAt: d.createdAt,
-            metadata: d,
-          })),
-        ]
-
-        // Sort by date (newest first)
-        allActivities.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )
-
-        setActivities(allActivities)
-      } catch (error) {
-        console.error('Error fetching activities:', error)
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchActivities = async () => {
+    if (!token || !contactId) return
+    setIsLoading(true)
+    try {
+      const [interactionsRes, dealsRes] = await Promise.all([
+        fetch(`/api/interactions?contactId=${contactId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`/api/deals?contactId=${contactId}`, { headers: { Authorization: `Bearer ${token}` } }),
+      ])
+      const interactionsData = interactionsRes.ok ? await interactionsRes.json() : { interactions: [] }
+      const dealsData = dealsRes.ok ? await dealsRes.json() : { deals: [] }
+      const allActivities: Activity[] = [
+        ...(interactionsData.interactions || []).map((i: any) => ({
+          id: i.id,
+          type: (i.type === 'email' ? 'email' : i.type === 'whatsapp' ? 'whatsapp' : i.type === 'meeting' ? 'meeting' : 'call') as Activity['type'],
+          title: i.subject || `${i.type} with ${i.contact?.name || 'contact'}`,
+          description: i.notes || i.outcome || undefined,
+          createdAt: i.createdAt,
+          metadata: i,
+        })),
+        ...(tasks || []).map((t: any) => ({
+          id: t.id,
+          type: 'task' as const,
+          title: t.title || 'Task',
+          description: t.description || undefined,
+          createdAt: t.createdAt || t.dueDate || new Date().toISOString(),
+          metadata: t,
+        })),
+        ...(notes ? [{
+          id: 'note-1',
+          type: 'note' as const,
+          title: 'Note',
+          description: notes,
+          createdAt: new Date().toISOString(),
+          metadata: { content: notes },
+        }] : []),
+        ...(dealsData.deals || []).map((d: any) => ({
+          id: d.id,
+          type: 'deal' as const,
+          title: `Deal: ${d.name}`,
+          description: `₹${d.value?.toLocaleString() || '0'} • ${d.stage}`,
+          createdAt: d.createdAt,
+          metadata: d,
+        })),
+      ]
+      allActivities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      setActivities(allActivities)
+    } catch (err) {
+      console.error('Error fetching activities:', err)
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  const submitNote = async () => {
+    if (!noteText.trim() || !token) return
+    setNoteSubmitting(true)
+    try {
+      const res = await fetch('/api/interactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          contactId,
+          type: 'meeting',
+          subject: 'Note',
+          notes: noteText.trim(),
+        }),
+      })
+      if (res.ok) {
+        setNoteText('')
+        setShowAddNote(false)
+        fetchActivities()
+      } else {
+        const err = await res.json()
+        alert(err.error || 'Failed to add note')
+      }
+    } catch (e) {
+      console.error(e)
+      alert('Failed to add note')
+    } finally {
+      setNoteSubmitting(false)
+    }
+  }
+
+  useEffect(() => {
     fetchActivities()
   }, [contactId, token, tasks, notes])
 
@@ -189,26 +207,42 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({ contactId, ten
             </button>
             
             {showAddMenu && (
-              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-700 z-50">
-                <div className="py-1">
-                  <button className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left">
+              <>
+                <div className="fixed inset-0 z-40" aria-hidden onClick={() => setShowAddMenu(false)} />
+                <div className="absolute right-0 mt-2 w-52 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-700 z-50 py-1">
+                  <Link
+                    href={`/crm/${tenantId}/Dialer?contactId=${contactId}`}
+                    className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    onClick={() => setShowAddMenu(false)}
+                  >
                     <Phone className="w-4 h-4 mr-3" />
                     Log Call
-                  </button>
-                  <button className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left">
+                  </Link>
+                  <button
+                    onClick={() => { setShowAddNote(true); setShowAddMenu(false) }}
+                    className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                  >
                     <FileText className="w-4 h-4 mr-3" />
                     Add Note
                   </button>
-                  <button className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left">
+                  <Link
+                    href={`/crm/${tenantId}/Tasks/new?contactId=${contactId}`}
+                    className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    onClick={() => setShowAddMenu(false)}
+                  >
                     <CheckCircle className="w-4 h-4 mr-3" />
                     Create Task
-                  </button>
-                  <button className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left">
+                  </Link>
+                  <Link
+                    href={`/crm/${tenantId}/Tasks/new?contactId=${contactId}&type=meeting`}
+                    className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    onClick={() => setShowAddMenu(false)}
+                  >
                     <Calendar className="w-4 h-4 mr-3" />
                     Schedule Meeting
-                  </button>
+                  </Link>
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>
@@ -272,6 +306,34 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({ contactId, ten
           </ul>
         )}
       </div>
+
+      {/* Add Note modal */}
+      {showAddNote && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowAddNote(false)} aria-hidden />
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm rounded-lg bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 shadow-xl p-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-gray-100">Add Note</h3>
+              <button onClick={() => setShowAddNote(false)} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-gray-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <textarea
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Enter note..."
+              className="w-full rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm p-2 min-h-[80px] resize-none"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2 mt-3">
+              <Button variant="outline" size="sm" onClick={() => setShowAddNote(false)}>Cancel</Button>
+              <Button size="sm" onClick={submitNote} disabled={noteSubmitting || !noteText.trim()}>
+                {noteSubmitting ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
