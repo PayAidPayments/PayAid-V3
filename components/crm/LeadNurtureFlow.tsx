@@ -48,16 +48,21 @@ export function LeadNurtureFlow({ contactId, tenantId, useGroq = true }: LeadNur
     mutationFn: async () => {
       const response = await apiRequest('/api/leads/score', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contactId, useGroq: true }),
       })
-      if (!response.ok) throw new Error('Rescore failed')
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err.error || err.details || `Rescore failed (${response.status})`)
+      }
       return response.json()
     },
     onSuccess: () => {
       setRescoreWithGroq(true)
       queryClient.invalidateQueries({ queryKey: ['lead-nurture', contactId] })
       queryClient.invalidateQueries({ queryKey: ['lead-score', contactId] })
+    },
+    onError: (error: Error) => {
+      alert(error.message || 'Rescore failed. Check GROQ_API_KEY and CRM access.')
     },
   })
 
