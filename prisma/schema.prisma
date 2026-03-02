@@ -789,9 +789,6 @@ model Contact {
   gstin                 String?
   likelyToBuy           Boolean?                  @default(false)
   churnRisk             Boolean?                  @default(false)
-  churnRiskScore        Float?                    // 0-100 Phase 1B
-  churnReasonSummary    String?                   // Phase 1B
-  churnRiskUpdatedAt    DateTime?                 // Phase 1B
   leadScore             Float                     @default(0)
   scoreUpdatedAt        DateTime                  @default(now())
   scoreComponents       Json?

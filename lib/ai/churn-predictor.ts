@@ -120,8 +120,6 @@ export async function getChurnDashboard(tenantId: string): Promise<ChurnDashboar
       company: true,
       stage: true,
       lastContactedAt: true,
-      churnRiskScore: true,
-      churnReasonSummary: true,
       whatsappStatus: true,
       deals: { where: { stage: { notIn: ['won', 'lost'] } }, select: { value: true } },
       invoices: { where: { status: { not: 'paid' } }, select: { total: true } },
@@ -130,10 +128,10 @@ export async function getChurnDashboard(tenantId: string): Promise<ChurnDashboar
 
   const withScore: ChurnContact[] = []
   for (const c of contacts) {
-    const score = c.churnRiskScore ?? await computeChurnRiskScore(c.id)
+    const score = await computeChurnRiskScore(c.id)
     const openDealValue = c.deals.reduce((s, d) => s + (Number(d.value) || 0), 0)
     const unpaidInr = c.invoices.reduce((s, i) => s + Number(i.total || 0), 0)
-    let reasonSummary = c.churnReasonSummary ?? null
+    let reasonSummary: string | null = null
     let recommendedAction: string | null = null
 
     if (score >= MEDIUM_RISK) {
