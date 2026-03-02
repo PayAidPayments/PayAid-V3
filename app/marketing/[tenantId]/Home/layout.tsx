@@ -16,6 +16,7 @@ export default function MarketingHomeLayout({
     { name: 'Campaigns', href: `/marketing/${tenantId}/Campaigns` },
     { name: 'Sequences', href: `/marketing/${tenantId}/Sequences` },
     { name: 'Ads', href: `/marketing/${tenantId}/Ads` },
+    { name: 'Creative Studio', href: `/marketing/${tenantId}/Creative-Studio` },
     { name: 'Social Listening', href: `/marketing/${tenantId}/SocialListening` },
     { name: 'Analytics', href: `/marketing/${tenantId}/Analytics` },
     { name: 'Segments', href: `/marketing/${tenantId}/Segments` },

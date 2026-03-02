@@ -41,6 +41,8 @@ model Tenant {
   subscriptionTier             String                        @default("free")
   defaultCurrency              String                        @default("INR") // ISO 4217 currency code
   supportedCurrencies          String[]                      @default(["INR"]) // Array of supported currency codes
+  creativeStudioPrimaryColor   String?                       // Brand kit: hex color for Creative Studio
+  creativeStudioTagline        String?                       // Brand kit: tagline for Creative Studio
   createdAt                    DateTime                      @default(now())
   updatedAt                    DateTime                      @updatedAt
   aiCalls                      AICall[]
@@ -908,6 +910,8 @@ model Deal {
   expectedCloseDate DateTime?
   actualCloseDate   DateTime?
   lostReason        String?
+  wonReason         String?    // Phase A: reason when deal is won
+  competitor        String?    // Phase A: competitor (won or lost)
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
   tenantId          String
