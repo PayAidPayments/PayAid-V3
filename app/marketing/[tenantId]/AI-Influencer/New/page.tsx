@@ -36,6 +36,8 @@ export default function NewAICampaignPage() {
   const [selectedScriptIndex, setSelectedScriptIndex] = useState<number | null>(null)
   const [generatingScript, setGeneratingScript] = useState(false)
 
+  const [platform, setPlatform] = useState<'reels' | 'shorts' | 'tiktok'>('reels')
+  const [adTemplate, setAdTemplate] = useState<'testimonial' | 'demo' | 'unboxing' | 'problem-solution'>('testimonial')
   const [videoStyle, setVideoStyle] = useState<'testimonial' | 'demo' | 'problem-solution'>('testimonial')
   const [cta, setCta] = useState('')
 
@@ -103,39 +105,31 @@ export default function NewAICampaignPage() {
   }
 
   const handleStep3Next = async () => {
-    if (!token || !campaignId) return
+    if (!token || !scriptId) return
     if (selectedScriptIndex === null) {
       alert('Please select a script variation')
       return
     }
 
-    setGeneratingScript(true)
+    setLoading(true)
     try {
-      const scriptRes = await fetch('/api/ai-influencer/scripts/enhance', {
-        method: 'POST',
+      const patchRes = await fetch(`/api/ai-influencer/scripts/${scriptId}`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          campaignId,
-          productName,
-          productDescription: productDescription || undefined,
-          tone: 'casual',
-        }),
+        body: JSON.stringify({ selectedVariation: selectedScriptIndex }),
       })
-
-      const scriptData = await scriptRes.json()
-      if (!scriptRes.ok) throw new Error(scriptData.error || 'Failed to generate script')
-
-      setScriptId(scriptData.script.id)
-      setScriptVariations(scriptData.script.variations || [])
-      setSelectedScriptIndex(0)
+      if (!patchRes.ok) {
+        const data = await patchRes.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to save selection')
+      }
       setStep(4)
     } catch (error: any) {
       alert(`Error: ${error.message}`)
     } finally {
-      setGeneratingScript(false)
+      setLoading(false)
     }
   }
 
@@ -158,6 +152,8 @@ export default function NewAICampaignPage() {
           productName,
           productDescription: productDescription || undefined,
           tone: 'casual',
+          platform,
+          adTemplate,
         }),
       })
 
@@ -320,8 +316,8 @@ export default function NewAICampaignPage() {
       {step === 2 && (
         <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="dark:text-gray-100">Step 2: Product Details</CardTitle>
-            <CardDescription className="dark:text-gray-400">Enter information about the product you&apos;re promoting</CardDescription>
+            <CardTitle className="dark:text-gray-100">Step 2: Product & Ad Setup</CardTitle>
+            <CardDescription className="dark:text-gray-400">Enter product details and choose platform + ad format for UGC-style ads</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -342,6 +338,35 @@ export default function NewAICampaignPage() {
                 placeholder="Describe your product..."
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md min-h-[100px]"
               />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Platform</label>
+                <select
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value as 'reels' | 'shorts' | 'tiktok')}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md"
+                >
+                  <option value="reels">Instagram Reels</option>
+                  <option value="shorts">YouTube Shorts</option>
+                  <option value="tiktok">TikTok</option>
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Scripts optimized for this platform</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Ad template</label>
+                <select
+                  value={adTemplate}
+                  onChange={(e) => setAdTemplate(e.target.value as 'testimonial' | 'demo' | 'unboxing' | 'problem-solution')}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md"
+                >
+                  <option value="testimonial">Testimonial</option>
+                  <option value="demo">Product Demo</option>
+                  <option value="unboxing">Unboxing</option>
+                  <option value="problem-solution">Problem-Solution</option>
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Style of the UGC ad</p>
+              </div>
             </div>
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep(1)} className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
@@ -390,6 +415,9 @@ export default function NewAICampaignPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <p className="font-medium capitalize mb-2 text-gray-900 dark:text-gray-100">{variation.type || 'Script'}</p>
+                        {variation.hook && (
+                          <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">&quot;{variation.hook}&quot;</p>
+                        )}
                         <p className="text-sm text-gray-600 dark:text-gray-400">{variation.text}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Duration: ~{variation.duration || 30}s</p>
                       </div>

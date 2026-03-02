@@ -9,6 +9,8 @@ const enhanceScriptSchema = z.object({
   productDescription: z.string().optional(),
   benefits: z.array(z.string()).optional(),
   tone: z.enum(['casual', 'professional', 'funny']).optional().default('casual'),
+  platform: z.enum(['reels', 'shorts', 'tiktok']).optional(),
+  adTemplate: z.enum(['testimonial', 'demo', 'unboxing', 'problem-solution']).optional(),
 })
 
 /**
@@ -61,42 +63,66 @@ export async function POST(request: NextRequest) {
     // Build script generation prompt
     const benefitsText = validated.benefits?.join(', ') || ''
     const productDesc = validated.productDescription || ''
-    
-    const prompt = `Generate 3 UGC (User Generated Content) style video scripts for promoting ${validated.productName}.
+    const platform = validated.platform || null
+    const adTemplate = validated.adTemplate || 'testimonial'
+
+    const platformGuidance = platform === 'reels'
+      ? 'Optimize for Instagram Reels: hook in the first 3 seconds, vertical 9:16, keep under 90 seconds.'
+      : platform === 'shorts'
+      ? 'Optimize for YouTube Shorts: strong hook in first 3 seconds, vertical 9:16, 15-60 seconds.'
+      : platform === 'tiktok'
+      ? 'Optimize for TikTok: trending-style hook in first 1-2 seconds, vertical 9:16, 15-60 seconds, punchy and scroll-stopping.'
+      : 'Suitable for Instagram Reels, YouTube Shorts, and TikTok (vertical, 15-60 seconds, strong hook).'
+
+    const adTemplateGuidance = adTemplate === 'testimonial'
+      ? 'Style: Personal testimonial - "I tried this and loved it", authentic recommendation.'
+      : adTemplate === 'demo'
+      ? 'Style: Product demonstration - show the product in use, highlight features.'
+      : adTemplate === 'unboxing'
+      ? 'Style: Unboxing / first impression - excitement of opening and trying, real reaction feel.'
+      : 'Style: Problem-solution - state a problem, then show how the product solves it.'
+
+    const prompt = `Generate 3 UGC (User Generated Content) AD scripts for promoting ${validated.productName}. These are for paid/social ads.
     
 Product Details:
 - Name: ${validated.productName}
 - Description: ${productDesc}
 - Benefits: ${benefitsText}
 
-Generate 3 script variations:
+Ad format: ${adTemplateGuidance}
+Platform: ${platformGuidance}
+
+Generate 3 script variations (each with a distinct HOOK in the first line):
 1. Casual tone - friendly, conversational, like a friend recommending a product
 2. Professional tone - polished, trustworthy, business-like
 3. Funny tone - entertaining, humorous, engaging
 
-Each script should be:
-- 30-60 seconds when spoken
-- Natural and conversational
-- Include a clear call-to-action
-- Sound authentic and genuine
-- Suitable for social media (Instagram, YouTube Shorts, TikTok)
+Each script must:
+- Start with a strong HOOK (first 1-3 seconds) to stop the scroll
+- Be 30-60 seconds when spoken
+- Be natural and conversational
+- Include a clear call-to-action at the end
+- Sound authentic and genuine for UGC-style ads
 
-Return the response as JSON with this structure:
+Return the response as JSON with this structure (include a "hook" line for each - the first sentence or phrase that grabs attention):
 {
   "variations": [
     {
       "type": "casual",
-      "text": "script text here",
+      "hook": "first line that grabs attention",
+      "text": "full script text here",
       "duration": 45
     },
     {
       "type": "professional", 
-      "text": "script text here",
+      "hook": "first line that grabs attention",
+      "text": "full script text here",
       "duration": 50
     },
     {
       "type": "funny",
-      "text": "script text here", 
+      "hook": "first line that grabs attention",
+      "text": "full script text here", 
       "duration": 40
     }
   ]

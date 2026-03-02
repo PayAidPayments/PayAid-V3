@@ -133,6 +133,52 @@
 - **Description:** Deploy in multiple regions
 - **Benefits:** Lower latency, disaster recovery
 
+### AI Creative Studio (Scalio-Inspired Features)
+
+**Summary:** Creative Studio is available under Marketing: hub at **Creative Studio**, with **Product Studio**, **Model Studio**, **UGC Video Ads** (AI-Influencer), and **Image Ads**. All use the tenant’s Google AI Studio API key (Settings > AI Integrations). Marketing Home dashboard includes a Creative Studio band with shortcuts.
+
+**1. Product Studio** ✅ Implemented
+- **Priority:** Medium
+- **Timeline:** Q2–Q3 2026
+- **Status:** API accepts `file`, `marketplace`, optional `templateId` (50+ category templates), optional `brandColor`/`brandTagline`. Image-in + text fallback with retry. Frontend: category template dropdown (grouped), export presets (Amazon 3000×3000, Meta, Stories, etc.), brand from hub.
+- **Description:** Upload product photos → AI-generated marketplace-ready image sets (main, lifestyle, infographic). Amazon, Flipkart, Myntra, Shopify. 50+ category templates (Electronics, Fashion, Beauty, Home, Food, Health, Sports, Toys, Auto, Office, Pet, Books, Jewellery).
+- **Acceptance Criteria:** Upload flow ✅, marketplace presets ✅, export ✅, 50+ category templates ✅.
+
+**2. Model Studio** ✅ Implemented
+- **Priority:** Medium
+- **Timeline:** Q2–Q3 2026
+- **Status:** API `POST /api/marketing/model-studio/generate` (file + pose + background). Frontend: upload, generate, download.
+- **Description:** Upload garment → realistic on-model photos with Indian poses, lighting, and backdrops. Myntra & Shopify-ready framing.
+- **Acceptance Criteria:** Garment upload ✅, pose/background selection ✅, on-model generation ✅, export ✅.
+
+**3. UGC Video Ads** ✅ Implemented
+- **Priority:** Medium
+- **Timeline:** Q2 2026 (extend existing AI-Influencer)
+- **Status:** Platform presets (Reels/Shorts/TikTok) and ad templates (Testimonial/Demo/Unboxing/Problem-Solution) in Step 2. Script API accepts platform + adTemplate; prompts include hook guidance. Script variations include optional hook line. PATCH /api/ai-influencer/scripts/[id] to save selected variation.
+- **Description:** Vertical UGC-style video ads with AI scripts, voiceover, and actors for Reels, Shorts, TikTok.
+- **Acceptance Criteria:** Ad-focused templates ✅, platform presets ✅, script/hook variants ✅.
+
+**4. Image Ads (Static)** ✅ Implemented
+- **Priority:** Medium
+- **Timeline:** Q2 2026
+- **Status:** API accepts preset, hook, price, customPrompt, overlayStyle (none | minimal | bold-cta | price-badge | discount-sticker | trust-badge | countdown), ctaText, brandColor/brandTagline. Frontend: overlay dropdown, CTA text, export presets, brand from hub.
+- **Description:** Static ad creatives with AI-generated hooks, price tags, benefits, and overlay controls (CTA, price badge, discount sticker, trust badge, countdown).
+- **Acceptance Criteria:** Hook/CTA ✅, presets ✅, export ✅, overlay controls ✅.
+
+**5. AI-CMO / Ad Insights** ✅ Implemented
+- **Priority:** Low
+- **Timeline:** Q3 2026
+- **Status:** Ad Insights page at Creative Studio → Ad Insights. Research section (competitor URL input + coming-soon message), Winning strategies (best-practice tips), Suggest creatives (links to Product Studio & Image Ads). Nav and hub updated.
+- **Description:** Winning strategies, research placeholder, and suggest creatives. Future: competitor/market research, Ad Library integration.
+- **Acceptance Criteria:** Research view ✅ (placeholder), winning strategies ✅, suggest creatives ✅.
+
+### Creative Studio – Best-in-market enhancements ✅
+
+- **Export presets:** Product Studio and Image Ads support one-click export at platform sizes: Amazon (3000×3000), Meta Feed (1080×1080), Stories/Reels (1080×1920), Google (1200×1200), Pinterest (1000×1500). Client-side resize and download.
+- **Brand kit:** On Creative Studio hub, set primary color and tagline (stored in localStorage). Product Studio and Image Ads use them in prompts when generating for consistent brand look.
+- **Done (further ideas):** Batch Product Studio (multi-file upload, sequential generate, per-product results), Save to Media Library (Product Studio, Image Ads, Model Studio), Image Ads A/B variants (generate 2, side-by-side), Brand kit in backend (tenant DB + GET/PATCH API), Model Studio export presets + Save to library, Ad Insights saved competitors (localStorage list, add/remove, Analyze coming soon).
+- **Future:** Ad Library integration (Ad Insights), full competitor analysis.
+
 ### New Module Ideas
 
 **1. E-Learning Module**
