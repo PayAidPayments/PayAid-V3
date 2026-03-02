@@ -1,5 +1,5 @@
 {
-  "buildCommand": "prisma generate && node --max-old-space-size=5120 ./node_modules/next/dist/bin/next build --webpack",
+  "buildCommand": "rm -rf node_modules/.prisma node_modules/@prisma/client 2>/dev/null; prisma generate && node --max-old-space-size=5120 ./node_modules/next/dist/bin/next build --webpack",
   "outputDirectory": ".next",
   "installCommand": "npm install --legacy-peer-deps",
   "framework": "nextjs",
