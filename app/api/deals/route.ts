@@ -274,8 +274,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // CRITICAL: If we have deals in DB but query returned 0, clear cache and retry
-    if (total === 0 && quickCheck > 0) {
+    // CRITICAL: If we have deals in DB but query returned 0, clear cache and retry.
+    // Do NOT use this fallback when the request is for a specific contact (contactId):
+    // 0 deals for that contact is correct; we must never return all tenant deals instead.
+    const isContactScoped = !!contactId
+    if (total === 0 && quickCheck > 0 && !isContactScoped) {
       console.error(`[DEALS_API] ❌ CRITICAL: Database has ${quickCheck} deals but query returned 0!`)
       console.error(`[DEALS_API] Query where clause:`, JSON.stringify(where, null, 2))
       console.error(`[DEALS_API] This is a cache or query issue. Clearing cache and retrying...`)
@@ -295,9 +298,8 @@ export async function GET(request: NextRequest) {
       }).catch(() => null)
       console.log(`[DEALS_API] Sample deal from DB:`, sampleDealDebug)
       
-      // Retry the query once with minimal where clause to test
+      // Retry the query once with minimal where clause to test (tenant-wide only)
       try {
-        // First, try with just tenantId (no other filters)
         const minimalWhere = { tenantId }
         const [testDeals, testTotal] = await Promise.all([
           prisma.deal.findMany({
@@ -368,10 +370,9 @@ export async function GET(request: NextRequest) {
             deals = retryDeals
             total = retryTotal
           } else if (testTotal > 0) {
-            // Minimal query worked but filtered query didn't - filter is the issue
+            // Minimal query worked but filtered query didn't - filter is the issue (tenant-wide only)
             console.error(`[DEALS_API] ❌ Filter issue: ${testTotal} deals with minimal where, but 0 with filtered where`)
             console.error(`[DEALS_API] Filter that's excluding deals:`, JSON.stringify(where, null, 2))
-            // Use minimal results as fallback
             deals = testDeals
             total = testTotal
           }

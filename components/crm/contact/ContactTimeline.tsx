@@ -44,11 +44,11 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({ contactId, ten
 
   useEffect(() => {
     const fetchActivities = async () => {
-      if (!token) return
+      if (!token || !contactId) return
       
       setIsLoading(true)
       try {
-        // Fetch interactions (calls, emails, WhatsApp, meetings)
+        // Fetch interactions (calls, emails, WhatsApp, meetings) - scoped to this contact
         const interactionsRes = await fetch(`/api/interactions?contactId=${contactId}`, {
           headers: { 'Authorization': `Bearer ${token}` },
         })
@@ -56,7 +56,7 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({ contactId, ten
 
         // Tasks and notes are passed as props, will be used in normalization below
 
-        // Fetch deals
+        // Fetch deals for this contact only (API must filter by contactId)
         const dealsRes = await fetch(`/api/deals?contactId=${contactId}`, {
           headers: { 'Authorization': `Bearer ${token}` },
         })
