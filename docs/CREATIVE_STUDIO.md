@@ -68,7 +68,7 @@
 - **Path:** Marketing → Creative Studio → **Ad Insights**
 - **Purpose:** View winning-strategy tips, use a research placeholder (competitor URL input; full research coming later), and jump to Product Studio or Image Ads to create creatives.
 - **Sections:** **Research** (enter competitor or ad page URL → **Analyze** fetches the page and uses AI to return a summary + suggested creative angles), **Saved competitors** (add/remove URLs; **Analyze** per URL with expandable result), Winning strategies (static best-practice list), Create high-performing creatives (links to Product Studio & Image Ads).
-- **Analyze API:** `POST /api/marketing/ad-insights/analyze` with `{ url }`. Requires Marketing module and tenant Google AI Studio API key. Fetches URL (server-side, timeout 12s), extracts title/meta/body text, calls Gemini 2.0 Flash for summary + 2–4 suggested creative angles. Returns `{ summary, suggestedAngles, url }`. Some sites may block server-side fetch.
+- **Analyze API:** `POST /api/marketing/ad-insights/analyze` with `{ url? }` and optional `{ pastedContent? }`. If `pastedContent` is at least 50 characters, the API uses it and skips fetching the URL (paste-content fallback when the site blocks access). Otherwise requires a valid URL; fetches (timeout 12s), extracts title/meta/body text, then Gemini 2.0 Flash returns summary + suggested creative angles. Returns `{ summary, suggestedAngles, url }`.
 
 ---
 
