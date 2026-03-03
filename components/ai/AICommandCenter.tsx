@@ -74,7 +74,24 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
     actionText: string,
     targetRevenue?: number,
     targetProgress?: number,
-    insightsMetrics?: { pendingInvoices?: number; totalPendingAmount?: number; overdueInvoices?: number; overdueAmount?: number }
+    insightsMetrics?: {
+      pendingInvoices?: number
+      totalPendingAmount?: number
+      overdueInvoices?: number
+      overdueAmount?: number
+      overdueTasks?: number
+      totalTasks?: number
+      pendingTasks?: number
+      dealsClosingSoonCount?: number
+      dealsClosingSoonValue?: number
+      highValueClosingCount?: number
+      highValueClosingValue?: number
+      dealsClosingThisMonthCount?: number
+      dealsClosingThisMonthValue?: number
+      activeDeals?: number
+      forecastedRevenue?: number
+      totalRevenue?: number
+    }
   ): ActionItem => {
     const lowerText = actionText.toLowerCase()
     
@@ -116,56 +133,64 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
       }
     }
     
-    // Parse overdue tasks
-    if (lowerText.includes('overdue task') || lowerText.includes('task')) {
-      const taskCount = stats?.overdueTasks || 0
+    // Parse overdue tasks – use insightsMetrics so Supporting Data matches narrative
+    if (lowerText.includes('overdue task') || (lowerText.includes('task') && lowerText.includes('overdue'))) {
+      const taskCount = insightsMetrics?.overdueTasks ?? stats?.overdueTasks ?? 0
+      const total = insightsMetrics?.totalTasks ?? stats?.totalTasks ?? 0
+      const pending = insightsMetrics?.pendingTasks ?? stats?.totalTasks ?? 0
+      const completionRate = total > 0 ? Math.round(((total - pending) / total) * 100) : 0
       return {
         text: actionText,
         type: 'task',
         navigationUrl: tenantId ? `/crm/${tenantId}/Tasks?filter=overdue` : undefined,
-        dataSource: 'Dashboard Stats API - Overdue tasks count',
+        dataSource: 'Finance / AI Insights - Overdue tasks count',
         supportingData: [
           { label: 'Overdue Tasks', value: taskCount },
-          { label: 'Total Tasks', value: stats?.totalTasks || 0 },
-          { label: 'Completion Rate', value: stats?.totalTasks ? `${Math.round(((stats.totalTasks - taskCount) / stats.totalTasks) * 100)}%` : '0%' }
+          { label: 'Total Tasks', value: total },
+          { label: 'Completion Rate', value: `${Math.min(100, Math.max(0, completionRate))}%` }
         ],
         calculation: `Found ${taskCount} task${taskCount !== 1 ? 's' : ''} with due date in the past and status not "completed"`
       }
     }
     
-    // Parse deals closing
-    if (lowerText.includes('deal') && (lowerText.includes('closing') || lowerText.includes('close'))) {
-      const dealsClosing = stats?.dealsClosingThisMonth || 0
-      const dealsValue = stats?.dealsClosingValue || 0
-      return {
-        text: actionText,
-        type: 'deal',
-        navigationUrl: tenantId ? `/crm/${tenantId}/Deals?category=closing&timePeriod=${timePeriod}` : undefined,
-        dataSource: 'Dashboard Stats API - Deals with expectedCloseDate in current period',
-        supportingData: [
-          { label: 'Deals Closing', value: dealsClosing },
-          { label: 'Total Value', value: formatINRForDisplay(dealsValue) },
-          { label: 'Avg Deal Value', value: dealsClosing > 0 ? formatINRForDisplay(Math.round(dealsValue / dealsClosing)) : '₹0' }
-        ],
-        calculation: `Identified ${dealsClosing} deal${dealsClosing !== 1 ? 's' : ''} with expectedCloseDate in ${getPeriodLabel()}`
-      }
-    }
-    
-    // Parse active deals / forecasted revenue
+    // Parse active deals / forecasted revenue FIRST so "67 active deal(s) ... forecasted revenue" matches this, not "deals closing"
     if (lowerText.includes('active deal') || lowerText.includes('forecasted revenue')) {
-      const activeDeals = stats?.activeDeals || 0
-      const forecastedRevenue = stats?.forecastedRevenue || 0
+      const activeDeals = insightsMetrics?.activeDeals ?? stats?.activeDeals ?? 0
+      const forecastedRevenue = insightsMetrics?.forecastedRevenue ?? stats?.forecastedRevenue ?? 0
       return {
         text: actionText,
         type: 'deal',
         navigationUrl: tenantId ? `/crm/${tenantId}/Deals` : undefined,
-        dataSource: 'Dashboard Stats API - Active deals and forecasted revenue',
+        dataSource: 'Finance / AI Insights - Active deals and forecasted revenue',
         supportingData: [
           { label: 'Active Deals', value: activeDeals },
           { label: 'Forecasted Revenue', value: formatINRForDisplay(forecastedRevenue) },
           { label: 'Avg Deal Value', value: activeDeals > 0 ? formatINRForDisplay(Math.round(forecastedRevenue / activeDeals)) : '₹0' }
         ],
         calculation: `Calculated from ${activeDeals} active deal${activeDeals !== 1 ? 's' : ''} with total forecasted value of ${formatINRForDisplay(forecastedRevenue)}`
+      }
+    }
+    
+    // Parse deals closing (high-value closing soon vs current month – use same source as narrative)
+    if (lowerText.includes('deal') && (lowerText.includes('closing') || lowerText.includes('close'))) {
+      const isHighValue = lowerText.includes('high-value') || lowerText.includes('80%')
+      const dealsClosing = isHighValue
+        ? (insightsMetrics?.highValueClosingCount ?? stats?.dealsClosingThisMonth ?? 0)
+        : (insightsMetrics?.dealsClosingThisMonthCount ?? insightsMetrics?.dealsClosingSoonCount ?? stats?.dealsClosingThisMonth ?? 0)
+      const dealsValue = isHighValue
+        ? (insightsMetrics?.highValueClosingValue ?? stats?.dealsClosingValue ?? 0)
+        : (insightsMetrics?.dealsClosingThisMonthValue ?? insightsMetrics?.dealsClosingSoonValue ?? stats?.dealsClosingValue ?? 0)
+      return {
+        text: actionText,
+        type: 'deal',
+        navigationUrl: tenantId ? `/crm/${tenantId}/Deals?category=closing&timePeriod=${timePeriod}` : undefined,
+        dataSource: 'Finance / AI Insights - Deals with expectedCloseDate in current period',
+        supportingData: [
+          { label: 'Deals Closing', value: dealsClosing },
+          { label: 'Total Value', value: formatINRForDisplay(dealsValue) },
+          { label: 'Avg Deal Value', value: dealsClosing > 0 ? formatINRForDisplay(Math.round(dealsValue / dealsClosing)) : '₹0' }
+        ],
+        calculation: `Identified ${dealsClosing} deal${dealsClosing !== 1 ? 's' : ''} with expectedCloseDate in ${getPeriodLabel()}`
       }
     }
     
@@ -189,9 +214,9 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
       }
     }
     
-    // Parse revenue/target
+    // Parse revenue/target – use insightsMetrics when available
     if (lowerText.includes('revenue') || lowerText.includes('target')) {
-      const currentRevenue = stats?.revenueThisMonth || 0
+      const currentRevenue = insightsMetrics?.totalRevenue ?? stats?.revenueThisMonth ?? 0
       const defaultTarget = 1000000
       const calculatedTarget = targetRevenue || (currentRevenue > 0 ? Math.max(defaultTarget, currentRevenue * 4) : defaultTarget)
       const calculatedProgress = targetProgress !== undefined ? targetProgress : Math.min(100, Math.round((currentRevenue / calculatedTarget) * 100))
@@ -290,6 +315,18 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
           totalPendingAmount: metrics.totalPendingAmount,
           overdueInvoices: metrics.overdueInvoices,
           overdueAmount: metrics.overdueAmount,
+          overdueTasks: metrics.overdueTasks,
+          totalTasks: metrics.totalTasks,
+          pendingTasks: metrics.pendingTasks,
+          dealsClosingSoonCount: metrics.dealsClosingSoonCount,
+          dealsClosingSoonValue: metrics.dealsClosingSoonValue,
+          highValueClosingCount: metrics.highValueClosingCount,
+          highValueClosingValue: metrics.highValueClosingValue,
+          dealsClosingThisMonthCount: metrics.dealsClosingThisMonthCount,
+          dealsClosingThisMonthValue: metrics.dealsClosingThisMonthValue,
+          activeDeals: metrics.activeDeals,
+          forecastedRevenue: metrics.forecastedRevenue,
+          totalRevenue: metrics.totalRevenue,
         }
         
         const currentRevenue = stats?.revenueThisMonth || 0
