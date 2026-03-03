@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,6 +21,7 @@ function getAuthHeaders() {
 
 export default function CreatePostPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const tenantId = params.tenantId as string
   const router = useRouter()
   const [topic, setTopic] = useState('')
@@ -34,6 +35,18 @@ export default function CreatePostPage() {
   const [showMediaLibrary, setShowMediaLibrary] = useState(false)
   const [mediaLibrary, setMediaLibrary] = useState<any[]>([])
   const [isLoadingMedia, setIsLoadingMedia] = useState(false)
+
+  // Pre-fill image from Image Studio "Use in post" link (?imageUrl=...)
+  useEffect(() => {
+    const imageUrl = searchParams.get('imageUrl')
+    if (imageUrl) {
+      try {
+        setSelectedImage(decodeURIComponent(imageUrl))
+      } catch {
+        setSelectedImage(imageUrl)
+      }
+    }
+  }, [searchParams])
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault()

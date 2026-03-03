@@ -255,20 +255,57 @@ export function ModuleGrid() {
         ))}
       </div>
 
-      {/* Module Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {displayModules.map((module) => {
-          // Ensure stable icon reference
-          const IconComponent = iconMap[module.icon];
+      {/* Module Grid: grouped by category when showing All */}
+      {(selectedCategory === 'all' || selectedCategory === null) ? (
+        (() => {
+          const core = displayModules.filter((m: any) => m.category === 'core');
+          const productivity = displayModules.filter((m: any) => m.category === 'productivity');
+          const ai = displayModules.filter((m: any) => m.category === 'ai');
+          const sections = [
+            { id: 'core', title: 'Core Business', modules: core },
+            { id: 'productivity', title: 'Productivity Suite', modules: productivity },
+            { id: 'ai', title: 'AI Services', modules: ai },
+          ];
           return (
-            <ModuleCard 
-              key={module.id} 
-              module={module} 
-              icon={IconComponent}
-            />
+            <div className="space-y-10">
+              {sections.map(({ id, title, modules: sectionModules }) =>
+                sectionModules.length > 0 ? (
+                  <div key={id}>
+                    <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
+                      {title}
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {sectionModules.map((module: any) => {
+                        const IconComponent = iconMap[module.icon];
+                        return (
+                          <ModuleCard
+                            key={module.id}
+                            module={module}
+                            icon={IconComponent}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null
+              )}
+            </div>
           );
-        })}
-      </div>
+        })()
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {displayModules.map((module: any) => {
+            const IconComponent = iconMap[module.icon];
+            return (
+              <ModuleCard
+                key={module.id}
+                module={module}
+                icon={IconComponent}
+              />
+            );
+          })}
+        </div>
+      )}
 
       {displayModules.length === 0 && (
         <div className="text-center py-12">

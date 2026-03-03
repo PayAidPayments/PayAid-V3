@@ -73,6 +73,7 @@ export default function FinanceInvoiceDetailPage() {
   const queryClient = useQueryClient()
   const { data: invoice, isLoading } = useInvoice(id)
   const [sendError, setSendError] = useState('')
+  const [sendErrorCode, setSendErrorCode] = useState<string | null>(null)
   const [sendSuccess, setSendSuccess] = useState('')
 
   const sendInvoiceMutation = useMutation({
@@ -90,18 +91,23 @@ export default function FinanceInvoiceDetailPage() {
       })
       if (!response.ok) {
         const error = await response.json().catch(() => ({}))
-        throw new Error(error.error || error.message || 'Failed to send invoice')
+        const msg = error.error || error.message || 'Failed to send invoice'
+        const err = new Error(msg) as Error & { code?: string }
+        err.code = error.code
+        throw err
       }
       return response.json()
     },
     onSuccess: (data) => {
       setSendSuccess(data.message || 'Invoice sent successfully with payment link!')
       setSendError('')
+      setSendErrorCode(null)
       queryClient.invalidateQueries({ queryKey: ['invoice', id] })
       setTimeout(() => setSendSuccess(''), 5000)
     },
-    onError: (err: Error) => {
+    onError: (err: Error & { code?: string }) => {
       setSendError(err.message)
+      setSendErrorCode(err.code || null)
       setSendSuccess('')
     },
   })
@@ -524,8 +530,15 @@ export default function FinanceInvoiceDetailPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               {sendError && (
-                <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                  {sendError}
+                <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md space-y-1">
+                  <p>{sendError}</p>
+                  {sendErrorCode === 'PAYMENT_GATEWAY_NOT_CONFIGURED' && (
+                    <p className="pt-1">
+                      <Link href="/dashboard/settings/payment-gateway" className="underline font-medium">
+                        Configure payment gateway in Settings →
+                      </Link>
+                    </p>
+                  )}
                 </div>
               )}
               {sendSuccess && (

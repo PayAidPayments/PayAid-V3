@@ -95,6 +95,16 @@ export const modules: ModuleConfig[] = [
     color: "#14B8A6"
   },
   {
+    id: "ai-studio",
+    name: "AI Studio",
+    description: "AI Co-founder, Chat, Insights, Websites, Logos, Knowledge, and Agent Marketplace in one place",
+    icon: "Sparkles",
+    url: "/ai-studio",
+    status: "active",
+    category: "ai",
+    color: "#9333EA"
+  },
+  {
     id: "ai-cofounder",
     name: "AI Co-founder",
     description: "Business AI assistant with 9 specialist agents for finance, sales, marketing, HR, and more",

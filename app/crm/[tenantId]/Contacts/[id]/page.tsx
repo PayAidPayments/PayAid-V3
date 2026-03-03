@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { PageLoading } from '@/components/ui/loading'
 import { ContactInfoTimelineCard } from '@/components/crm/contact/ContactInfoTimelineCard'
 import { QuickActionsCard } from '@/components/crm/contact/QuickActionsCard'
+import { NextBestActionCard } from '@/components/crm/contact/NextBestActionCard'
 import { AIFitScoreCard } from '@/components/crm/contact/AIFitScoreCard'
 import { LeadNurtureFlow } from '@/components/crm/LeadNurtureFlow'
 import { AIAssistCard } from '@/components/crm/contact/AIAssistCard'
@@ -182,6 +183,7 @@ export default function ContactDetailPage() {
 
           {/* Right Column: AI & Actions */}
           <section className="space-y-4">
+            <NextBestActionCard contactId={id} tenantId={tenantId} contact={contact} />
             <QuickActionsCard tenantId={tenantId} contactId={id} contact={contact} />
             {isProspect && (
               <AIFitScoreCard contact={contact} tenantId={tenantId} />

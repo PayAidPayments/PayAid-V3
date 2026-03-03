@@ -15,7 +15,7 @@ export default function NewDealPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const prefillContactId = searchParams.get('contactId')
-  const { data: contactsData } = useContacts()
+  const { data: contactsData } = useContacts({ tenantId })
   const createDeal = useCreateDeal()
   
   const [formData, setFormData] = useState({
@@ -45,8 +45,12 @@ export default function NewDealPage() {
       return
     }
 
-    if (!formData.contactId) {
-      setError('Please select a contact')
+    if (!formData.useNewContact && !formData.contactId) {
+      setError('Please select a contact or create a new one')
+      return
+    }
+    if (formData.useNewContact && !formData.contactName?.trim()) {
+      setError('Please enter the new contact name')
       return
     }
 

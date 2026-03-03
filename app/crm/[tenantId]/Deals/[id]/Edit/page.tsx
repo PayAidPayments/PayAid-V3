@@ -15,7 +15,7 @@ export default function EditDealPage() {
   const id = params.id as string
   const router = useRouter()
   const { data: deal, isLoading } = useDeal(id, tenantId)
-  const { data: contactsData } = useContacts()
+  const { data: contactsData } = useContacts({ tenantId })
   const updateDeal = useUpdateDeal()
   const contacts = contactsData?.contacts || []
   
@@ -175,7 +175,15 @@ export default function EditDealPage() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="contactId" className="text-sm font-medium text-gray-700 dark:text-gray-300">Contact *</label>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="contactId" className="text-sm font-medium text-gray-700 dark:text-gray-300">Contact *</label>
+                  <Link
+                    href={`/crm/${tenantId}/Contacts/new?returnTo=${encodeURIComponent(`/crm/${tenantId}/Deals/${id}/Edit`)}`}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    + Create new contact
+                  </Link>
+                </div>
                 <select
                   id="contactId"
                   name="contactId"
@@ -188,7 +196,7 @@ export default function EditDealPage() {
                   <option value="">Select Contact</option>
                   {contacts.map((contact: any) => (
                     <option key={contact.id} value={contact.id}>
-                      {contact.name}
+                      {contact.name} {contact.company ? `(${contact.company})` : ''}
                     </option>
                   ))}
                 </select>
