@@ -20,6 +20,7 @@ import {
   Workflow, 
   TrendingUp,
   Grid3x3,
+  LayoutGrid,
   X,
   Home,
   ShoppingCart,
@@ -122,6 +123,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   PackageSearch,
   ShieldCheck,
   Sparkles,
+  LayoutGrid,
   IndianRupee: Landmark,
   Briefcase: FolderKanban,
 }
@@ -164,27 +166,35 @@ export function ModuleSwitcher() {
         // Map icon names to components
         const iconName = config.icon
         const iconComponent = iconMap[iconName] || iconMap[config.id] || Users
-        
+        // Tenant-scoped URLs where applicable
+        let url = config.url
+        if (tenant?.id) {
+          if (config.id === 'ai-studio') url = `/ai-studio/${tenant.id}/Home`
+          else if (config.id === 'productivity') url = `/productivity/${tenant.id}/Home`
+        }
         modules.push({
           id: config.id,
           name: config.name,
           description: config.description,
           icon: config.icon,
-          url: config.url,
+          url,
           iconComponent,
         })
       }
     }
 
-    // Sort by category then name (excluding industry)
+    // Sort by category then name (excluding industry): Home first, then Core, Productivity, AI
     const categoryOrder: Record<string, number> = { 'core': 0, 'productivity': 1, 'ai': 2 }
+    const getCategory = (id: string) => {
+      if (id === 'home') return 'home'
+      const c = moduleConfigs.find(m => m.id === id)
+      return c?.category ?? 'core'
+    }
     modules.sort((a, b) => {
       if (a.id === 'home') return -1
       if (b.id === 'home') return 1
-      const configA = moduleConfigs.find(m => m.id === a.id)
-      const configB = moduleConfigs.find(m => m.id === b.id)
-      const orderA = configA ? categoryOrder[configA.category] || 99 : 99
-      const orderB = configB ? categoryOrder[configB.category] || 99 : 99
+      const orderA = categoryOrder[getCategory(a.id)] ?? 99
+      const orderB = categoryOrder[getCategory(b.id)] ?? 99
       if (orderA !== orderB) return orderA - orderB
       return a.name.localeCompare(b.name)
     })
@@ -239,41 +249,70 @@ export function ModuleSwitcher() {
           </SheetDescription>
         </SheetHeader>
         
-        <div className="mt-6 space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
-          <div className="px-1 text-xs font-semibold text-muted-foreground uppercase mb-2">
-            All Modules ({allAvailableModules.length})
-          </div>
-          {allAvailableModules.map((module) => {
-            const IconComponent = module.iconComponent || iconMap[module.icon] || Users
-            const isActive = currentModule === module.id
-
-            return (
-              <button
-                key={module.id}
-                onClick={() => handleModuleSelect(module.id)}
-                className={cn(
-                  'w-full flex items-center gap-4 rounded-lg border p-4 text-left transition-all hover:border-primary hover:bg-accent',
-                  isActive && 'border-primary bg-accent'
-                )}
-              >
-                <div className={cn(
-                  'rounded-lg p-3 flex-shrink-0',
-                  isActive ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                )}>
-                  <IconComponent className="h-6 w-6" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{module.name}</div>
-                  <div className="text-sm text-muted-foreground line-clamp-2">
-                    {module.description}
+        <div className="mt-6 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+          {(() => {
+            const homeModules = allAvailableModules.filter(m => m.id === 'home')
+            const coreModules = allAvailableModules.filter(m => {
+              const c = moduleConfigs.find(cfg => cfg.id === m.id)
+              return c?.category === 'core'
+            })
+            const productivityModules = allAvailableModules.filter(m => {
+              const c = moduleConfigs.find(cfg => cfg.id === m.id)
+              return c?.category === 'productivity'
+            })
+            const aiModules = allAvailableModules.filter(m => {
+              const c = moduleConfigs.find(cfg => cfg.id === m.id)
+              return c?.category === 'ai'
+            })
+            const sections: { title: string; modules: typeof allAvailableModules }[] = [
+              { title: 'Home', modules: homeModules },
+              { title: 'Core Business', modules: coreModules },
+              { title: 'Productivity Suite', modules: productivityModules },
+              { title: 'AI Services', modules: aiModules },
+            ]
+            return sections.map(({ title, modules: sectionModules }) => {
+              if (sectionModules.length === 0) return null
+              return (
+                <div key={title}>
+                  <div className="px-1 text-xs font-semibold text-muted-foreground uppercase mb-2">
+                    {title} ({sectionModules.length})
+                  </div>
+                  <div className="space-y-2">
+                    {sectionModules.map((module) => {
+                      const IconComponent = module.iconComponent || iconMap[module.icon] || Users
+                      const isActive = currentModule === module.id
+                      return (
+                        <button
+                          key={module.id}
+                          onClick={() => handleModuleSelect(module.id)}
+                          className={cn(
+                            'w-full flex items-center gap-4 rounded-lg border p-4 text-left transition-all hover:border-primary hover:bg-accent',
+                            isActive && 'border-primary bg-accent'
+                          )}
+                        >
+                          <div className={cn(
+                            'rounded-lg p-3 flex-shrink-0',
+                            isActive ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                          )}>
+                            <IconComponent className="h-6 w-6" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{module.name}</div>
+                            <div className="text-sm text-muted-foreground line-clamp-2">
+                              {module.description}
+                            </div>
+                          </div>
+                          {isActive && (
+                            <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                          )}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
-                {isActive && (
-                  <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-                )}
-              </button>
-            )
-          })}
+              )
+            })
+          })()}
         </div>
       </SheetContent>
     </Sheet>

@@ -119,6 +119,9 @@ export async function GET(request: NextRequest) {
 
     const pendingInvoices = invoices.filter(i => i.status === 'sent' && !i.paidAt)
     const totalPendingAmount = pendingInvoices.reduce((sum, i) => sum + i.total, 0)
+    const now = new Date()
+    const overdueInvoices = invoices.filter((i: any) => i.dueDate && new Date(i.dueDate) < now && !i.paidAt)
+    const overdueAmount = overdueInvoices.reduce((sum: number, i: any) => sum + i.total, 0)
 
     const activeDeals = deals.filter(d => d.stage !== 'won' && d.stage !== 'lost')
     const forecastedRevenue = activeDeals.reduce(
@@ -430,6 +433,8 @@ Be specific, actionable, and data-driven.`
         totalRevenue,
         pendingInvoices: pendingInvoices.length,
         totalPendingAmount,
+        overdueInvoices: overdueInvoices.length,
+        overdueAmount,
         forecastedRevenue,
         activeDeals: activeDeals.length,
         atRiskContacts,
@@ -564,12 +569,16 @@ Be specific, actionable, and data-driven.`
         improvements: parsedInsights.improvements?.length || 0,
       })
 
+      const overdueInvoicesFallback = invoices.filter((i: any) => i.dueDate && new Date(i.dueDate) < new Date() && !i.paidAt)
+      const overdueAmountFallback = overdueInvoicesFallback.reduce((sum: number, i: any) => sum + i.total, 0)
       return NextResponse.json({
         insights: parsedInsights,
         metrics: {
           totalRevenue,
           pendingInvoices: pendingInvoices.length,
           totalPendingAmount,
+          overdueInvoices: overdueInvoicesFallback.length,
+          overdueAmount: overdueAmountFallback,
           forecastedRevenue,
           activeDeals: activeDeals.length,
           atRiskContacts,

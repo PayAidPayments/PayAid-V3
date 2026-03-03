@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuthStore } from '@/lib/stores/auth'
 import { PageLoading } from '@/components/ui/loading'
+import { PLATFORM_SIZE_OPTIONS, NEGATIVE_PROMPT_PRESETS } from '@/lib/ai/image-presets'
 
 function getAuthHeaders() {
   const { token } = useAuthStore.getState()
@@ -18,11 +19,14 @@ function getAuthHeaders() {
   }
 }
 
+type PromptItem = { id: string; prompt: string; isSaved?: boolean; createdAt: string }
+
 export default function CreateImagePage() {
   const params = useParams()
   const tenantId = params.tenantId as string
   const router = useRouter()
   const [prompt, setPrompt] = useState('')
+  const [negativePrompt, setNegativePrompt] = useState('')
   const [style, setStyle] = useState('realistic')
   const [size, setSize] = useState('1024x1024')
   const [provider, setProvider] = useState<string>('auto')
@@ -38,6 +42,63 @@ export default function CreateImagePage() {
   const [isSavingToLibrary, setIsSavingToLibrary] = useState(false)
   const [savedToLibrary, setSavedToLibrary] = useState(false)
   const [imageCopied, setImageCopied] = useState(false)
+  // Rate limit & prompt history
+  const [limits, setLimits] = useState<{ limit: number; used: number; remaining: number; resetAt: string } | null>(null)
+  const [recentPrompts, setRecentPrompts] = useState<PromptItem[]>([])
+  const [savedPrompts, setSavedPrompts] = useState<PromptItem[]>([])
+  const [promptsLoading, setPromptsLoading] = useState(false)
+  const [genHistory, setGenHistory] = useState<Array<{ id: string; prompt: string; imageUrl: string | null; cached: boolean; createdAt: string }>>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
+  const fetchLimits = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ai/image/limits', { headers: getAuthHeaders() })
+      if (res.ok) {
+        const data = await res.json()
+        setLimits(data)
+      }
+    } catch {
+      setLimits(null)
+    }
+  }, [])
+
+  const fetchPrompts = useCallback(async () => {
+    setPromptsLoading(true)
+    try {
+      const res = await fetch('/api/ai/image/prompts', { headers: getAuthHeaders() })
+      if (res.ok) {
+        const data = await res.json()
+        setRecentPrompts(data.recent ?? [])
+        setSavedPrompts(data.saved ?? [])
+      }
+    } catch {
+      setRecentPrompts([])
+      setSavedPrompts([])
+    } finally {
+      setPromptsLoading(false)
+    }
+  }, [])
+
+  const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true)
+    try {
+      const res = await fetch('/api/ai/image/history', { headers: getAuthHeaders() })
+      if (res.ok) {
+        const data = await res.json()
+        setGenHistory(data.history ?? [])
+      }
+    } catch {
+      setGenHistory([])
+    } finally {
+      setHistoryLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchLimits()
+    fetchPrompts()
+    fetchHistory()
+  }, [fetchLimits, fetchPrompts, fetchHistory])
 
   useEffect(() => {
     const checkGoogleConnection = async () => {
@@ -83,7 +144,7 @@ export default function CreateImagePage() {
     setGeneratedImage(null)
 
     try {
-      const response = await fetch('/api/ai/generate-image', {
+      const response = await fetch('/api/ai/image/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -91,6 +152,7 @@ export default function CreateImagePage() {
         },
         body: JSON.stringify({
           prompt: prompt.trim(),
+          negativePrompt: negativePrompt.trim() || undefined,
           style,
           size,
           provider,
@@ -98,12 +160,20 @@ export default function CreateImagePage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         
         if (response.status === 401) {
           setError('Your session has expired. Please log in again.')
           useAuthStore.getState().logout()
           router.push('/login')
+          return
+        }
+        if (response.status === 429) {
+          setError(errorData.message || `Daily limit reached (${errorData.limit} images). Resets at ${errorData.resetAt ? new Date(errorData.resetAt).toLocaleString() : 'midnight UTC'}.`)
+          return
+        }
+        if (response.status === 400 && errorData.error === 'Prompt not allowed') {
+          setError(errorData.message || 'This prompt is not allowed by your organization.')
           return
         }
         
@@ -177,6 +247,9 @@ export default function CreateImagePage() {
       
       if (data.imageUrl || data.url) {
         setGeneratedImage(data.imageUrl || data.url)
+        fetchLimits()
+        fetchPrompts()
+        fetchHistory()
       } else {
         throw new Error('No image URL in response. The API may have returned an unexpected format.')
       }
@@ -365,16 +438,23 @@ export default function CreateImagePage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">AI Image Generation</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">AI Image Studio</h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
             Create custom images for your social media posts using AI
           </p>
         </div>
-        <Link href={`/marketing/${tenantId}/Social-Media`}>
-          <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Back to Social Media</Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          {limits != null && (
+            <span className="text-sm text-gray-600 dark:text-gray-400" title={`Resets ${new Date(limits.resetAt).toLocaleString()}`}>
+              {limits.remaining} / {limits.limit} images today
+            </span>
+          )}
+          <Link href={`/marketing/${tenantId}/Social-Media`}>
+            <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Back to Social Media</Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -404,6 +484,23 @@ export default function CreateImagePage() {
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Tip: Include style, subject, colors, and mood for better results
                 </p>
+              </div>
+
+              <div>
+                <label htmlFor="negativePrompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Avoid (optional)
+                </label>
+                <select
+                  id="negativePrompt"
+                  value={negativePrompt}
+                  onChange={(e) => setNegativePrompt(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isGenerating}
+                >
+                  {NEGATIVE_PROMPT_PRESETS.map((opt) => (
+                    <option key={opt.value || 'none'} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -476,7 +573,7 @@ export default function CreateImagePage() {
 
                 <div>
                   <label htmlFor="size" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Size
+                    Size / Platform
                   </label>
                   <select
                     id="size"
@@ -485,9 +582,9 @@ export default function CreateImagePage() {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={isGenerating}
                   >
-                    <option value="1024x1024">Square (1024x1024)</option>
-                    <option value="1024x1792">Portrait (1024x1792)</option>
-                    <option value="1792x1024">Landscape (1792x1024)</option>
+                    {PLATFORM_SIZE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -676,14 +773,19 @@ export default function CreateImagePage() {
                   )}
                 </div>
                 
-                <div className="flex gap-2">
-                  <Button onClick={handleDownload} className="flex-1 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
-                    Download Image
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={handleDownload} className="flex-1 min-w-[120px] dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
+                    Download
                   </Button>
+                  <Link href={generatedImage ? `/marketing/${tenantId}/Social-Media/Create-Post?imageUrl=${encodeURIComponent(generatedImage)}` : '#'} className="flex-1 min-w-[120px]">
+                    <Button variant="outline" className="w-full dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700" disabled={!generatedImage}>
+                      Use in post
+                    </Button>
+                  </Link>
                   <Button
                     onClick={handleSaveToLibrary}
                     variant="outline"
-                    className="flex-1 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                    className="flex-1 min-w-[120px] dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                     disabled={isSavingToLibrary || savedToLibrary}
                   >
                     {isSavingToLibrary ? (
@@ -694,15 +796,15 @@ export default function CreateImagePage() {
                     ) : savedToLibrary ? (
                       '✓ Saved to Library'
                     ) : (
-                      '💾 Save to Library'
+                      'Save to Library'
                     )}
                   </Button>
                   <Button
                     onClick={handleCopyImage}
                     variant="outline"
-                    className="flex-1 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                    className="flex-1 min-w-[100px] dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                   >
-                    {imageCopied ? '✓ Copied!' : 'Copy Image'}
+                    {imageCopied ? '✓ Copied!' : 'Copy'}
                   </Button>
                   <Button
                     variant="outline"
@@ -732,6 +834,112 @@ export default function CreateImagePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Recent & saved prompts */}
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <CardHeader>
+          <CardTitle className="dark:text-gray-100">Recent &amp; saved prompts</CardTitle>
+          <CardDescription className="dark:text-gray-400">
+            Click a prompt to use it. Saved prompts are pinned for quick access.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {promptsLoading ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Recent</h3>
+                <ul className="space-y-1 max-h-32 overflow-y-auto">
+                  {recentPrompts.length === 0 ? (
+                    <li className="text-xs text-gray-500 dark:text-gray-400">No recent prompts yet</li>
+                  ) : (
+                    recentPrompts.slice(0, 10).map((item) => (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          onClick={() => setPrompt(item.prompt)}
+                          className="text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded px-2 py-1 w-full truncate"
+                          title={item.prompt}
+                        >
+                          {item.prompt.length > 50 ? item.prompt.slice(0, 50) + '…' : item.prompt}
+                        </button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Saved</h3>
+                <ul className="space-y-1 max-h-32 overflow-y-auto">
+                  {savedPrompts.length === 0 ? (
+                    <li className="text-xs text-gray-500 dark:text-gray-400">No saved prompts</li>
+                  ) : (
+                    savedPrompts.slice(0, 10).map((item) => (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          onClick={() => setPrompt(item.prompt)}
+                          className="text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded px-2 py-1 w-full truncate"
+                          title={item.prompt}
+                        >
+                          {item.prompt.length > 50 ? item.prompt.slice(0, 50) + '…' : item.prompt}
+                        </button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Generation history (last 20) */}
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <CardHeader>
+          <CardTitle className="dark:text-gray-100">Generation history</CardTitle>
+          <CardDescription className="dark:text-gray-400">
+            Last 20 image generations for your account. Click a prompt to reuse.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {historyLoading ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+          ) : genHistory.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">No generations yet. Create your first image above.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+              {genHistory.map((item) => (
+                <div key={item.id} className="rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden bg-gray-50 dark:bg-gray-700/50">
+                  {item.imageUrl && (
+                    <a
+                      href={item.imageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block aspect-square bg-gray-200 dark:bg-gray-600"
+                    >
+                      <img
+                        src={item.imageUrl}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setPrompt(item.prompt)}
+                    className="w-full text-left px-2 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 truncate"
+                    title={item.prompt}
+                  >
+                    {item.prompt.length > 40 ? item.prompt.slice(0, 40) + '…' : item.prompt}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Tips */}
       <Card className="dark:bg-gray-800 dark:border-gray-700">

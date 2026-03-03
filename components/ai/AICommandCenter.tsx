@@ -68,14 +68,21 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
     fetchAIInsights()
   }, [tenantId, token, stats, timePeriod])
 
-  // Parse action text and create ActionItem with metadata
-  const parseAction = (actionText: string, targetRevenue?: number, targetProgress?: number): ActionItem => {
+  // Parse action text and create ActionItem with metadata.
+  // insightsMetrics: from same API that generated the action text, so supporting data matches the narrative.
+  const parseAction = (
+    actionText: string,
+    targetRevenue?: number,
+    targetProgress?: number,
+    insightsMetrics?: { pendingInvoices?: number; totalPendingAmount?: number; overdueInvoices?: number; overdueAmount?: number }
+  ): ActionItem => {
     const lowerText = actionText.toLowerCase()
     
     // Parse pending / overdue invoices (e.g. "Follow up on 7 pending invoice(s) worth ₹... to ensure timely payment")
+    // Use insightsMetrics first so Supporting Data matches the same source as the action text.
     if ((lowerText.includes('pending invoice') || lowerText.includes('invoice') && (lowerText.includes('follow up') || lowerText.includes('payment') || lowerText.includes('cash flow')))) {
-      const pendingCount = stats?.pendingInvoices ?? stats?.pendingCount ?? 0
-      const overdueCount = stats?.overdueInvoices ?? 0
+      const pendingCount = insightsMetrics?.pendingInvoices ?? stats?.pendingInvoices ?? stats?.pendingCount ?? 0
+      const overdueCount = insightsMetrics?.overdueInvoices ?? stats?.overdueInvoices ?? 0
       const isOverdue = lowerText.includes('overdue')
       return {
         text: actionText,
@@ -94,14 +101,16 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
       }
     }
     if (lowerText.includes('overdue') && lowerText.includes('invoice')) {
+      const overdueCount = insightsMetrics?.overdueInvoices ?? stats?.overdueInvoices ?? 0
+      const overdueAmount = insightsMetrics?.overdueAmount ?? stats?.overdueAmount ?? 0
       return {
         text: actionText,
         type: 'revenue',
         navigationUrl: tenantId ? `/finance/${tenantId}/Invoices?status=overdue` : undefined,
         dataSource: 'Finance - Overdue invoices',
         supportingData: [
-          { label: 'Overdue Invoices', value: stats?.overdueInvoices ?? 0 },
-          { label: 'Overdue Amount', value: formatINRForDisplay(stats?.overdueAmount ?? 0) },
+          { label: 'Overdue Invoices', value: overdueCount },
+          { label: 'Overdue Amount', value: formatINRForDisplay(overdueAmount) },
         ],
         calculation: 'Invoices past due date',
       }
@@ -274,6 +283,14 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
       if (response.ok) {
         const data = await response.json()
         const insights = data.insights || {}
+        const metrics = data.metrics || {}
+        // Use same metrics that produced the action text so Supporting Data matches the narrative
+        const insightsMetrics = {
+          pendingInvoices: metrics.pendingInvoices,
+          totalPendingAmount: metrics.totalPendingAmount,
+          overdueInvoices: metrics.overdueInvoices,
+          overdueAmount: metrics.overdueAmount,
+        }
         
         const currentRevenue = stats?.revenueThisMonth || 0
         const defaultTarget = 1000000
@@ -286,21 +303,21 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
         // Add urgent actions first
         if (insights.urgentActions && Array.isArray(insights.urgentActions)) {
           insights.urgentActions.slice(0, 2).forEach((action: string) => {
-            nextActions.push(parseAction(action, smartTarget, targetProgress))
+            nextActions.push(parseAction(action, smartTarget, targetProgress, insightsMetrics))
           })
         }
         
         // Add opportunities
         if (insights.opportunities && Array.isArray(insights.opportunities)) {
           insights.opportunities.slice(0, 2).forEach((opp: string) => {
-            nextActions.push(parseAction(opp, smartTarget, targetProgress))
+            nextActions.push(parseAction(opp, smartTarget, targetProgress, insightsMetrics))
           })
         }
         
         // Add recommendations
         if (insights.recommendations && Array.isArray(insights.recommendations)) {
           insights.recommendations.slice(0, 1).forEach((rec: string) => {
-            nextActions.push(parseAction(rec, smartTarget, targetProgress))
+            nextActions.push(parseAction(rec, smartTarget, targetProgress, insightsMetrics))
           })
         }
 

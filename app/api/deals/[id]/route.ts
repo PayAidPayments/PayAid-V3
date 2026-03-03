@@ -11,6 +11,8 @@ const updateDealSchema = z.object({
   expectedCloseDate: z.string().datetime().optional(),
   actualCloseDate: z.string().datetime().optional(),
   lostReason: z.string().optional(),
+  wonReason: z.string().optional(),
+  competitor: z.string().optional(),
 })
 
 // Resolve effective tenantId: use request tenant when user has access (matches list API behavior)
@@ -130,6 +132,8 @@ export async function PATCH(
       updateData.actualCloseDate = new Date(validated.actualCloseDate)
     }
     if (validated.lostReason !== undefined) updateData.lostReason = validated.lostReason
+    if (validated.wonReason !== undefined) updateData.wonReason = validated.wonReason
+    if (validated.competitor !== undefined) updateData.competitor = validated.competitor
 
     const deal = await prisma.deal.update({
       where: { id: resolvedParams.id },

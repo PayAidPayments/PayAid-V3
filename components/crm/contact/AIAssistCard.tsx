@@ -1,23 +1,28 @@
 'use client'
 
 import { useState } from 'react'
-import { Sparkles, Mail, MessageSquare, Copy, Send } from 'lucide-react'
+import { Sparkles, Mail, MessageSquare, Copy, Send, FileCode } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/lib/stores/auth'
+import { TemplatePickerModal } from './TemplatePickerModal'
 
 interface AIAssistCardProps {
   contact: any
   tenantId: string
   onEnriched?: () => void
+  dealId?: string | null
 }
 
-export const AIAssistCard: React.FC<AIAssistCardProps> = ({ contact, tenantId, onEnriched }) => {
+export const AIAssistCard: React.FC<AIAssistCardProps> = ({ contact, tenantId, onEnriched, dealId = null }) => {
   const [intent, setIntent] = useState('')
   const [generatedMessage, setGeneratedMessage] = useState<string | null>(null)
   const [messageType, setMessageType] = useState<'email' | 'whatsapp' | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isEnriching, setIsEnriching] = useState(false)
+  const [templateModal, setTemplateModal] = useState<'email' | 'whatsapp' | null>(null)
   const { token } = useAuthStore()
+  const hasEmail = !!contact?.email?.trim()
+  const hasPhone = !!contact?.phone?.trim()
 
   const handleEnrich = async () => {
     if (!token) {
@@ -140,9 +145,30 @@ export const AIAssistCard: React.FC<AIAssistCardProps> = ({ contact, tenantId, o
         </p>
       </div>
 
+      {/* Use template (Phase A4) */}
+      <div className="border-t border-slate-100 dark:border-gray-700 pt-3 space-y-2">
+        <p className="text-xs text-slate-500 dark:text-gray-400">Use a saved template with {{contact.name}}, {{deal.value}}.</p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setTemplateModal('email')}
+            className="flex-1 rounded-lg border border-slate-200 dark:border-gray-600 text-slate-700 dark:text-gray-300 text-xs font-medium py-2 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-1"
+          >
+            <FileCode className="w-3 h-3" />
+            Email template
+          </button>
+          <button
+            onClick={() => setTemplateModal('whatsapp')}
+            className="flex-1 rounded-lg border border-slate-200 dark:border-gray-600 text-slate-700 dark:text-gray-300 text-xs font-medium py-2 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-1"
+          >
+            <FileCode className="w-3 h-3" />
+            WhatsApp template
+          </button>
+        </div>
+      </div>
+
       {/* Generate Message */}
       <div className="border-t border-slate-100 dark:border-gray-700 pt-3 space-y-2">
-        <p className="text-xs text-slate-500 dark:text-gray-400">Describe your intent, then click Email or WhatsApp to generate a message.</p>
+        <p className="text-xs text-slate-500 dark:text-gray-400">Or describe your intent, then click Email or WhatsApp to generate a message.</p>
         <textarea
           value={intent}
           onChange={(e) => setIntent(e.target.value)}
@@ -196,6 +222,18 @@ export const AIAssistCard: React.FC<AIAssistCardProps> = ({ contact, tenantId, o
             </button>
           </div>
         </div>
+      )}
+
+      {templateModal && (
+        <TemplatePickerModal
+          channel={templateModal}
+          onClose={() => setTemplateModal(null)}
+          contact={{ id: contact.id, name: contact.name, email: contact.email, phone: contact.phone }}
+          tenantId={tenantId}
+          dealId={dealId}
+          hasEmail={hasEmail}
+          hasPhone={hasPhone}
+        />
       )}
     </div>
   )

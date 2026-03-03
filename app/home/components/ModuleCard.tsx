@@ -51,6 +51,10 @@ function ModuleCardComponent({ module, icon: Icon }: ModuleCardProps) {
     if (module.id === 'productivity' && tenantId) {
       return `/productivity/${tenantId}/Home`;
     }
+    // AI Studio: go to tenant-scoped home
+    if (module.id === 'ai-studio' && tenantId) {
+      return `/ai-studio/${tenantId}/Home`;
+    }
     // Other modules: base URL; entry point will redirect to /module/[tenantId]/Home/ when tenant loads
     return module.url;
   };

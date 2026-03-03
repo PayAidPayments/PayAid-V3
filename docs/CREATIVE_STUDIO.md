@@ -53,6 +53,22 @@
 - **Save to library:** Generated image(s) can be saved to the tenant **Media Library** (category `creative-studio`, source `image-ads`).
 - **Export:** Download as-is or export at platform size (Amazon, Meta Feed, Stories, Google, Pinterest).
 
+### 5. AI Image Studio (Create Image)
+
+- **Path:** Marketing → Social Media → **Create Image** (or direct link from Creative Studio / Image Ads).
+- **Purpose:** Generate static images from text prompts with cache, rate limits, and prompt history. Uses the same backend as above (Google AI Studio / Hugging Face) via a wrapped API that adds tenant controls.
+- **API:** `POST /api/ai/image/generate`
+  - **Body:** `{ prompt, negativePrompt?, style?, size?, provider? }`. Optional `negativePrompt` and platform `size` presets (e.g. Instagram Post, Story, LinkedIn Banner).
+  - **Response:** `{ imageUrl, revisedPrompt?, cached?, service? }`. Response headers: `X-Remaining-Images-Today`, `X-Limit-Reset`, `X-Image-Daily-Limit`.
+- **Behaviour:** Blocklist and brand guidelines (per tenant) are applied; daily limit (e.g. 50 Starter, 500 Pro) is enforced; identical prompt+params are served from cache when possible. Each generation is logged for audit and rate-limit count.
+- **UI:** Prompt + negative prompt presets; platform size presets (Square, Portrait, Instagram Post/Story, LinkedIn, etc.); recent and saved prompts; generation history (last 20); “Use in post” (opens Create Post with image pre-filled); Download, Save to Library, Copy.
+- **Other APIs:**
+  - `GET /api/ai/image/limits` – returns `{ limit, used, remaining, resetAt }` and rate-limit headers.
+  - `GET /api/ai/image/prompts` – recent and saved prompts; `POST` to record; `PATCH` to toggle saved.
+  - `GET /api/ai/image/history` – last 20 generations (prompt, imageUrl, createdAt).
+  - `GET/PATCH /api/ai/image/settings` – tenant settings: `promptBlocklist`, `brandGuidelines`, `dailyLimitOverride` (for admin).
+- **Audit:** All generations are stored in `AIImageGenerationLog` (tenant, user, prompt, params, imageUrl, cached, createdAt). An admin/super-admin “Image generations audit” view can list or export this data for abuse monitoring (future).
+
 ---
 
 ## Requirements

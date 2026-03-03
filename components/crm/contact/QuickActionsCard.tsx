@@ -1,14 +1,16 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Briefcase, FileText, Mail, MessageSquare, Phone, CheckCircle } from 'lucide-react'
+import { Briefcase, FileText, Mail, MessageSquare, Phone, CheckCircle, FileCode } from 'lucide-react'
+import { TemplatePickerModal } from './TemplatePickerModal'
 
 interface QuickActionsCardProps {
   tenantId: string
   contactId: string
   contact: any
+  dealId?: string | null
 }
 
 function formatWhatsAppPhone(phone: string | null | undefined): string {
@@ -20,7 +22,9 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
   tenantId,
   contactId,
   contact,
+  dealId = null,
 }) => {
+  const [templateModal, setTemplateModal] = useState<'email' | 'whatsapp' | null>(null)
   const hasEmail = !!contact?.email?.trim()
   const hasPhone = !!contact?.phone?.trim()
   const waNumber = formatWhatsAppPhone(contact?.phone)
@@ -55,6 +59,16 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
             Send Email
           </Button>
         )}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          onClick={() => setTemplateModal('email')}
+          title="Pick a template with {{contact.name}}, {{deal.value}}"
+        >
+          <FileCode className="w-3 h-3 mr-2" />
+          Email with template
+        </Button>
         {waUrl ? (
           <a href={waUrl} target="_blank" rel="noopener noreferrer">
             <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
@@ -68,6 +82,16 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
             Send WhatsApp
           </Button>
         )}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          onClick={() => setTemplateModal('whatsapp')}
+          title="Pick a template with {{contact.name}}, {{deal.value}}"
+        >
+          <FileCode className="w-3 h-3 mr-2" />
+          WhatsApp with template
+        </Button>
         <Link href={`/crm/${tenantId}/Dialer?contactId=${contactId}`}>
           <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
             <Phone className="w-3 h-3 mr-2" />
@@ -83,6 +107,18 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
           </Link>
         )}
       </div>
+
+      {templateModal && (
+        <TemplatePickerModal
+          channel={templateModal}
+          onClose={() => setTemplateModal(null)}
+          contact={{ id: contactId, name: contact?.name, email: contact?.email, phone: contact?.phone }}
+          tenantId={tenantId}
+          dealId={dealId}
+          hasEmail={hasEmail}
+          hasPhone={hasPhone}
+        />
+      )}
     </div>
   )
 }

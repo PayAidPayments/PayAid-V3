@@ -92,7 +92,7 @@ export default function TenantHomePage() {
             Trusted by 500+ Indian Businesses
           </p>
           <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
-            Manage your entire business with 28 powerful modules. From CRM and Finance to AI-powered insights, everything you need in one place.
+            Manage your entire business with Core, Productivity, and AI modules. From CRM and Finance to AI Studio and Marketing—everything in one place. Industry-specific solutions are configured separately.
           </p>
         </div>
 

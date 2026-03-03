@@ -15,7 +15,7 @@ export default function EditInvoicePage() {
   const id = params.id as string
   const router = useRouter()
   const { data: invoice, isLoading } = useInvoice(id)
-  const { data: contactsData } = useContacts()
+  const { data: contactsData } = useContacts({ tenantId })
   const updateInvoice = useUpdateInvoice()
   const contacts = contactsData?.contacts || []
   
@@ -27,6 +27,8 @@ export default function EditInvoicePage() {
     terms: '',
     status: 'draft' as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled',
   })
+  type ItemRow = { description: string; quantity: number; rate: number; gstRate?: number }
+  const [items, setItems] = useState<ItemRow[]>([])
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -39,6 +41,19 @@ export default function EditInvoicePage() {
         terms: invoice.terms || '',
         status: invoice.status || 'draft',
       })
+      const raw = invoice.items
+      if (Array.isArray(raw) && raw.length > 0) {
+        setItems(
+          raw.map((row: any) => ({
+            description: row.description || '',
+            quantity: Number(row.quantity) || 1,
+            rate: Number(row.rate) || 0,
+            gstRate: row.gstRate != null ? Number(row.gstRate) : 18,
+          }))
+        )
+      } else {
+        setItems([{ description: 'Item', quantity: 1, rate: invoice.subtotal ?? 0, gstRate: 18 }])
+      }
     }
   }, [invoice])
 
@@ -53,6 +68,12 @@ export default function EditInvoicePage() {
           ...formData,
           invoiceDate: formData.invoiceDate ? new Date(formData.invoiceDate).toISOString() : undefined,
           dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : undefined,
+          items: items.map((row) => ({
+            description: row.description,
+            quantity: row.quantity,
+            rate: row.rate,
+            gstRate: row.gstRate ?? 18,
+          })),
         },
       })
       router.push(`/finance/${tenantId}/Invoices/${id}`)
@@ -65,6 +86,14 @@ export default function EditInvoicePage() {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
+    })
+  }
+
+  const handleItemChange = (index: number, field: keyof ItemRow, value: string | number) => {
+    setItems((prev) => {
+      const next = [...prev]
+      next[index] = { ...next[index], [field]: value }
+      return next
     })
   }
 
@@ -204,11 +233,56 @@ export default function EditInvoicePage() {
               </div>
             </div>
 
-            <div className="p-4 bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-md">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                <strong>Note:</strong> Invoice items and GST details cannot be edited here. 
-                Please create a new invoice if you need to modify items.
-              </p>
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Line items (quantity, rate, description)</label>
+              <div className="border border-gray-200 dark:border-gray-600 rounded-md overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="text-left p-2 dark:text-gray-200">Description</th>
+                      <th className="text-right p-2 w-24 dark:text-gray-200">Qty</th>
+                      <th className="text-right p-2 w-28 dark:text-gray-200">Rate (₹)</th>
+                      <th className="text-right p-2 w-28 dark:text-gray-200">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((row, idx) => (
+                      <tr key={idx} className="border-t border-gray-200 dark:border-gray-600">
+                        <td className="p-2">
+                          <Input
+                            value={row.description}
+                            onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
+                            className="h-9 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <Input
+                            type="number"
+                            min={0.01}
+                            step={1}
+                            value={row.quantity}
+                            onChange={(e) => handleItemChange(idx, 'quantity', parseFloat(e.target.value) || 0)}
+                            className="h-9 text-right dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            step={0.01}
+                            value={row.rate}
+                            onChange={(e) => handleItemChange(idx, 'rate', parseFloat(e.target.value) || 0)}
+                            className="h-9 text-right dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                          />
+                        </td>
+                        <td className="p-2 text-right dark:text-gray-100">
+                          ₹{(row.quantity * row.rate).toLocaleString('en-IN')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <div className="flex justify-end gap-4">
