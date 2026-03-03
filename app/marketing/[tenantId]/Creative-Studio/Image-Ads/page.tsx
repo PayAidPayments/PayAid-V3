@@ -46,18 +46,18 @@ export default function ImageAdsPage() {
   const [error, setError] = useState<string | null>(null)
   const [savingId, setSavingId] = useState<string | null>(null)
 
-  const buildBody = () => ({
-    preset,
-    hook: hook || undefined,
-    price: price || undefined,
-    overlayStyle: overlayStyle !== 'none' ? overlayStyle : undefined,
-    ctaText: ctaText || undefined,
-    customPrompt: preset === 'custom' ? customPrompt : undefined,
-    ...((() => {
-      const b = getStoredBrand()
-      return b ? { brandColor: b.primaryColor, brandTagline: b.tagline } : {}
-    })(),
-  })
+  const buildBody = () => {
+    const brand = getStoredBrand()
+    return {
+      preset,
+      hook: hook || undefined,
+      price: price || undefined,
+      overlayStyle: overlayStyle !== 'none' ? overlayStyle : undefined,
+      ctaText: ctaText || undefined,
+      customPrompt: preset === 'custom' ? customPrompt : undefined,
+      ...(brand ? { brandColor: brand.primaryColor, brandTagline: brand.tagline } : {}),
+    }
+  }
 
   const handleGenerate = async () => {
     if (!token) return
