@@ -16,7 +16,13 @@ import {
   ImageIcon,
   Bookmark,
   Trash2,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
+import { useAuthStore } from '@/lib/stores/auth'
+
+type AnalysisResult = { summary: string; suggestedAngles: string[]; url: string }
 
 const SAVED_COMPETITORS_KEY = 'adInsightsSavedCompetitors'
 
@@ -67,9 +73,16 @@ const WINNING_STRATEGIES = [
 export default function AdInsightsPage() {
   const params = useParams()
   const tenantId = params?.tenantId as string
+  const { token } = useAuthStore()
   const [competitorUrl, setCompetitorUrl] = useState('')
   const [savedCompetitors, setSavedCompetitorsState] = useState<string[]>([])
-  const [researchMessage, setResearchMessage] = useState<string | null>(null)
+  const [researchResult, setResearchResult] = useState<AnalysisResult | null>(null)
+  const [researchError, setResearchError] = useState<string | null>(null)
+  const [researchLoading, setResearchLoading] = useState(false)
+  const [analysisByUrl, setAnalysisByUrl] = useState<Record<string, AnalysisResult>>({})
+  const [analyzingUrl, setAnalyzingUrl] = useState<string | null>(null)
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null)
+  const [expandedUrl, setExpandedUrl] = useState<string | null>(null)
 
   useEffect(() => {
     setSavedCompetitorsState(getSavedCompetitors())
@@ -88,14 +101,64 @@ export default function AdInsightsPage() {
     const next = savedCompetitors.filter((u) => u !== url)
     setSavedCompetitorsState(next)
     setSavedCompetitors(next)
+    setAnalysisByUrl((prev) => {
+      const nextMap = { ...prev }
+      delete nextMap[url]
+      return nextMap
+    })
+    if (expandedUrl === url) setExpandedUrl(null)
   }
 
-  const handleAnalyze = () => {
-    if (!competitorUrl.trim()) {
-      setResearchMessage('Enter a competitor page or ad URL to analyze (e.g. Facebook Ad Library link).')
+  const runAnalyze = async (url: string) => {
+    if (!token || !url.trim()) return
+    setResearchError(null)
+    setAnalyzeError(null)
+    if (url === competitorUrl.trim()) {
+      setResearchLoading(true)
+      setResearchResult(null)
+    } else {
+      setAnalyzingUrl(url)
+    }
+    try {
+      const res = await fetch('/api/marketing/ad-insights/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ url }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        const msg = data.message || data.error || 'Analysis failed'
+        if (url === competitorUrl.trim()) {
+          setResearchError(msg)
+        } else {
+          setAnalyzeError(msg)
+        }
+        return
+      }
+      const result: AnalysisResult = { summary: data.summary, suggestedAngles: data.suggestedAngles || [], url: data.url || url }
+      if (url === competitorUrl.trim()) {
+        setResearchResult(result)
+      } else {
+        setAnalysisByUrl((prev) => ({ ...prev, [url]: result }))
+        setExpandedUrl(url)
+      }
+    } catch {
+      const msg = 'Request failed. Try again.'
+      if (url === competitorUrl.trim()) setResearchError(msg)
+      else setAnalyzeError(msg)
+    } finally {
+      setResearchLoading(false)
+      setAnalyzingUrl(null)
+    }
+  }
+
+  const handleResearchAnalyze = () => {
+    const url = competitorUrl.trim()
+    if (!url) {
+      setResearchError('Enter a competitor page or ad URL to analyze.')
       return
     }
-    setResearchMessage('Competitor and market research is coming soon. We’ll analyze top creatives and suggest angles. For now, use the winning strategies below and create in Product Studio or Image Ads.')
+    runAnalyze(url)
   }
 
   return (
@@ -128,20 +191,37 @@ export default function AdInsightsPage() {
             <Input
               value={competitorUrl}
               onChange={(e) => setCompetitorUrl(e.target.value)}
-              placeholder="Competitor or ad page URL (e.g. Meta Ad Library)"
+              placeholder="Competitor or ad page URL (e.g. product or brand page)"
               className="flex-1 dark:bg-slate-900 dark:border-slate-700"
             />
-            <Button onClick={handleAnalyze} variant="secondary">
-              Analyze
+            <Button onClick={handleResearchAnalyze} variant="secondary" disabled={researchLoading || !competitorUrl.trim()}>
+              {researchLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {researchLoading ? ' Analyzing…' : 'Analyze'}
             </Button>
           </div>
-          {researchMessage && (
-            <p className="text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
-              {researchMessage}
+          {researchError && (
+            <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+              {researchError}
             </p>
           )}
+          {researchResult && (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4 space-y-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Summary</p>
+              <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{researchResult.summary}</p>
+              {researchResult.suggestedAngles.length > 0 && (
+                <>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 pt-2">Suggested creative angles</p>
+                  <ul className="list-disc list-inside text-sm text-slate-700 dark:text-slate-300 space-y-1">
+                    {researchResult.suggestedAngles.map((angle, i) => (
+                      <li key={i}>{angle}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          )}
           <p className="text-xs text-slate-500 dark:text-slate-500">
-            Future: Ad Library API integration, competitor ad inspiration (where compliant), and budget/creative suggestions.
+            We fetch the page and use AI to summarize it and suggest ad angles. Some sites may block automated access. Ad Library API integration may be added later.
           </p>
         </CardContent>
       </Card>
@@ -170,26 +250,70 @@ export default function AdInsightsPage() {
               Add
             </Button>
           </div>
+          {analyzeError && (
+            <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">
+              {analyzeError}
+            </p>
+          )}
           {savedCompetitors.length > 0 ? (
             <ul className="space-y-2">
-              {savedCompetitors.map((url) => (
-                <li
-                  key={url}
-                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
-                >
-                  <span className="text-sm text-slate-700 dark:text-slate-300 truncate flex-1 min-w-0" title={url}>
-                    {url}
-                  </span>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <Button variant="ghost" size="sm" disabled className="text-xs">
-                      Analyze (coming soon)
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => removeCompetitor(url)} className="text-red-600 hover:text-red-700 dark:text-red-400">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </li>
-              ))}
+              {savedCompetitors.map((url) => {
+                const analyzing = analyzingUrl === url
+                const result = analysisByUrl[url]
+                const expanded = expandedUrl === url
+                return (
+                  <li
+                    key={url}
+                    className="rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between gap-2 p-2">
+                      <span className="text-sm text-slate-700 dark:text-slate-300 truncate flex-1 min-w-0" title={url}>
+                        {url}
+                      </span>
+                      <div className="flex gap-1 flex-shrink-0 items-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={analyzing || !token}
+                          className="text-xs"
+                          onClick={() => runAnalyze(url)}
+                        >
+                          {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Analyze'}
+                        </Button>
+                        {result && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpandedUrl(expanded ? null : url)}
+                            className="text-slate-500"
+                          >
+                            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="sm" onClick={() => removeCompetitor(url)} className="text-red-600 hover:text-red-700 dark:text-red-400">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    {result && expanded && (
+                      <div className="border-t border-slate-200 dark:border-slate-700 p-3 space-y-2 text-sm">
+                        <p className="font-medium text-slate-600 dark:text-slate-400">Summary</p>
+                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{result.summary}</p>
+                        {result.suggestedAngles.length > 0 && (
+                          <>
+                            <p className="font-medium text-slate-600 dark:text-slate-400 pt-1">Suggested angles</p>
+                            <ul className="list-disc list-inside text-slate-700 dark:text-slate-300 space-y-0.5">
+                              {result.suggestedAngles.map((angle, i) => (
+                                <li key={i}>{angle}</li>
+                              ))}
+                            </ul>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           ) : (
             <p className="text-sm text-slate-500 dark:text-slate-400">No saved competitors yet. Add a URL above.</p>

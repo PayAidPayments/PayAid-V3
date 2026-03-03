@@ -177,7 +177,8 @@
 - **Export presets:** Product Studio and Image Ads support one-click export at platform sizes: Amazon (3000×3000), Meta Feed (1080×1080), Stories/Reels (1080×1920), Google (1200×1200), Pinterest (1000×1500). Client-side resize and download.
 - **Brand kit:** On Creative Studio hub, set primary color and tagline (stored in localStorage). Product Studio and Image Ads use them in prompts when generating for consistent brand look.
 - **Done (further ideas):** Batch Product Studio (multi-file upload, sequential generate, per-product results), Save to Media Library (Product Studio, Image Ads, Model Studio), Image Ads A/B variants (generate 2, side-by-side), Brand kit in backend (tenant DB + GET/PATCH API), Model Studio export presets + Save to library, Ad Insights saved competitors (localStorage list, add/remove, Analyze coming soon).
-- **Future:** Ad Library integration (Ad Insights), full competitor analysis.
+- **Ad Insights Analyze (done):** Research and Saved competitors “Analyze” buttons call `POST /api/marketing/ad-insights/analyze`; server fetches URL, extracts content, Gemini returns summary + suggested creative angles; results shown inline.
+- **Future:** Ad Library API integration (Meta etc.), deeper competitor analysis.
 
 ### New Module Ideas
 
