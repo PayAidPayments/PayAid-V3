@@ -75,6 +75,7 @@ export default function AdInsightsPage() {
   const tenantId = params?.tenantId as string
   const { token } = useAuthStore()
   const [competitorUrl, setCompetitorUrl] = useState('')
+  const [pastedContent, setPastedContent] = useState('')
   const [savedCompetitors, setSavedCompetitorsState] = useState<string[]>([])
   const [researchResult, setResearchResult] = useState<AnalysisResult | null>(null)
   const [researchError, setResearchError] = useState<string | null>(null)
@@ -109,34 +110,36 @@ export default function AdInsightsPage() {
     if (expandedUrl === url) setExpandedUrl(null)
   }
 
-  const runAnalyze = async (url: string) => {
-    if (!token || !url.trim()) return
+  const runAnalyze = async (url: string, pastedText?: string) => {
+    const isResearch = url === competitorUrl.trim() || (pastedText && pastedText.length >= 50)
+    if (!token) return
+    if (!url.trim() && !(pastedText && pastedText.length >= 50)) return
     setResearchError(null)
     setAnalyzeError(null)
-    if (url === competitorUrl.trim()) {
+    if (isResearch) {
       setResearchLoading(true)
       setResearchResult(null)
     } else {
       setAnalyzingUrl(url)
     }
     try {
+      const body = pastedText && pastedText.length >= 50
+        ? { pastedContent: pastedText, url: url.trim() || undefined }
+        : { url }
       const res = await fetch('/api/marketing/ad-insights/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) {
         const msg = data.message || data.error || 'Analysis failed'
-        if (url === competitorUrl.trim()) {
-          setResearchError(msg)
-        } else {
-          setAnalyzeError(msg)
-        }
+        if (isResearch) setResearchError(msg)
+        else setAnalyzeError(msg)
         return
       }
-      const result: AnalysisResult = { summary: data.summary, suggestedAngles: data.suggestedAngles || [], url: data.url || url }
-      if (url === competitorUrl.trim()) {
+      const result: AnalysisResult = { summary: data.summary, suggestedAngles: data.suggestedAngles || [], url: data.url || url || 'Pasted content' }
+      if (isResearch) {
         setResearchResult(result)
       } else {
         setAnalysisByUrl((prev) => ({ ...prev, [url]: result }))
@@ -144,7 +147,7 @@ export default function AdInsightsPage() {
       }
     } catch {
       const msg = 'Request failed. Try again.'
-      if (url === competitorUrl.trim()) setResearchError(msg)
+      if (isResearch) setResearchError(msg)
       else setAnalyzeError(msg)
     } finally {
       setResearchLoading(false)
@@ -154,11 +157,14 @@ export default function AdInsightsPage() {
 
   const handleResearchAnalyze = () => {
     const url = competitorUrl.trim()
-    if (!url) {
-      setResearchError('Enter a competitor page or ad URL to analyze.')
-      return
+    const paste = pastedContent.trim()
+    if (paste.length >= 50) {
+      runAnalyze(url || '', paste)
+    } else if (url) {
+      runAnalyze(url)
+    } else {
+      setResearchError('Enter a URL or paste content below (at least 50 characters).')
     }
-    runAnalyze(url)
   }
 
   return (
@@ -194,10 +200,26 @@ export default function AdInsightsPage() {
               placeholder="Competitor or ad page URL (e.g. product or brand page)"
               className="flex-1 dark:bg-slate-900 dark:border-slate-700"
             />
-            <Button onClick={handleResearchAnalyze} variant="secondary" disabled={researchLoading || !competitorUrl.trim()}>
+            <Button
+              onClick={handleResearchAnalyze}
+              variant="secondary"
+              disabled={researchLoading || (!competitorUrl.trim() && pastedContent.trim().length < 50)}
+            >
               {researchLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {researchLoading ? ' Analyzing…' : 'Analyze'}
             </Button>
+          </div>
+          <div>
+            <label className="block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">
+              Or paste content (when URL doesn’t load)
+            </label>
+            <textarea
+              value={pastedContent}
+              onChange={(e) => setPastedContent(e.target.value)}
+              placeholder="Paste page text or key points here (min 50 characters)..."
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 text-sm min-h-[100px] resize-y"
+              rows={4}
+            />
           </div>
           {researchError && (
             <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
@@ -221,7 +243,7 @@ export default function AdInsightsPage() {
             </div>
           )}
           <p className="text-xs text-slate-500 dark:text-slate-500">
-            We fetch the page and use AI to summarize it and suggest ad angles. Some sites may block automated access. Ad Library API integration may be added later.
+            We fetch the URL and use AI to summarize and suggest ad angles. If the site blocks access, paste the page content in the box above. Ad Library API integration may be added later.
           </p>
         </CardContent>
       </Card>

@@ -51,9 +51,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}))
     const url = typeof body.url === 'string' ? body.url.trim() : ''
-    if (!url || !isValidUrl(url)) {
+    const pastedContent = typeof body.pastedContent === 'string' ? body.pastedContent.trim() : ''
+    const usePaste = pastedContent.length >= 50
+
+    if (!usePaste && (!url || !isValidUrl(url))) {
       return NextResponse.json(
-        { error: 'Invalid URL', message: 'Provide a valid http or https URL.' },
+        { error: 'Invalid input', message: 'Provide a valid http/https URL or paste content (at least 50 characters).' },
         { status: 400 }
       )
     }
@@ -86,59 +89,66 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
-    let html: string
-    try {
-      const res = await fetch(url, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; PayAid-AdInsights/1.0)',
-          Accept: 'text/html,application/xhtml+xml',
-        },
-        redirect: 'follow',
-      })
-      clearTimeout(timeoutId)
-      if (!res.ok) {
+    let combined: string
+    const sourceLabel = usePaste ? (url || 'Pasted content') : url
+
+    if (usePaste) {
+      combined = pastedContent.slice(0, 28_000)
+    } else {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+      let html: string
+      try {
+        const res = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; PayAid-AdInsights/1.0)',
+            Accept: 'text/html,application/xhtml+xml',
+          },
+          redirect: 'follow',
+        })
+        clearTimeout(timeoutId)
+        if (!res.ok) {
+          return NextResponse.json(
+            { error: 'Fetch failed', message: `Page returned ${res.status}. The site may block automated access. Try pasting the page content instead.` },
+            { status: 422 }
+          )
+        }
+        const raw = await res.text()
+        html = raw.slice(0, MAX_HTML_LENGTH)
+      } catch (e) {
+        clearTimeout(timeoutId)
+        if ((e as Error).name === 'AbortError') {
+          return NextResponse.json(
+            { error: 'Timeout', message: 'The page took too long to load. Try pasting the page content instead.' },
+            { status: 408 }
+          )
+        }
         return NextResponse.json(
-          { error: 'Fetch failed', message: `Page returned ${res.status}. The site may block automated access.` },
+          { error: 'Fetch failed', message: 'Could not load the URL. Try pasting the page content instead.' },
           { status: 422 }
         )
       }
-      const raw = await res.text()
-      html = raw.slice(0, MAX_HTML_LENGTH)
-    } catch (e) {
-      clearTimeout(timeoutId)
-      if ((e as Error).name === 'AbortError') {
+
+      const { title, description } = extractMeta(html)
+      const bodyText = stripHtml(html)
+      combined = [
+        title && `Title: ${title}`,
+        description && `Meta description: ${description}`,
+        bodyText && `Page text (excerpt): ${bodyText}`,
+      ]
+        .filter(Boolean)
+        .join('\n\n')
+
+      if (!combined || combined.length < 50) {
         return NextResponse.json(
-          { error: 'Timeout', message: 'The page took too long to load. Try a different URL or try again later.' },
-          { status: 408 }
+          { error: 'Insufficient content', message: 'Could not extract enough text from the page. Try pasting content manually below.' },
+          { status: 422 }
         )
       }
-      return NextResponse.json(
-        { error: 'Fetch failed', message: 'Could not load the URL. The site may block automated access or the URL may be invalid.' },
-        { status: 422 }
-      )
     }
 
-    const { title, description } = extractMeta(html)
-    const bodyText = stripHtml(html)
-    const combined = [
-      title && `Title: ${title}`,
-      description && `Meta description: ${description}`,
-      bodyText && `Page text (excerpt): ${bodyText}`,
-    ]
-      .filter(Boolean)
-      .join('\n\n')
-
-    if (!combined || combined.length < 50) {
-      return NextResponse.json(
-        { error: 'Insufficient content', message: 'Could not extract enough text from the page. Try a different URL or paste key points manually.' },
-        { status: 422 }
-      )
-    }
-
-    const prompt = `You are an ad strategist. Below is content from a competitor or ad page (URL: ${url}).
+    const prompt = `You are an ad strategist. Below is content from a competitor or ad page (Source: ${sourceLabel}).
 
 Provide a short analysis in this exact format:
 1) SUMMARY: 2-3 sentences on what this page/brand is about and who it targets.
@@ -189,7 +199,7 @@ Keep the response concise and actionable. Use plain text; no markdown.`
       .filter((s) => s.length > 0)
       .slice(0, 6)
 
-    return NextResponse.json({ summary, suggestedAngles, url })
+    return NextResponse.json({ summary, suggestedAngles, url: sourceLabel })
   } catch (e) {
     console.error('Ad Insights analyze error:', e)
     return NextResponse.json(
