@@ -147,7 +147,7 @@ export const AIAssistCard: React.FC<AIAssistCardProps> = ({ contact, tenantId, o
 
       {/* Use template (Phase A4) */}
       <div className="border-t border-slate-100 dark:border-gray-700 pt-3 space-y-2">
-        <p className="text-xs text-slate-500 dark:text-gray-400">Use a saved template with {{contact.name}}, {{deal.value}}.</p>
+        <p className="text-xs text-slate-500 dark:text-gray-400">Use a saved template with {'{{contact.name}}'}, {'{{deal.value}}'}.</p>
         <div className="flex gap-2">
           <button
             onClick={() => setTemplateModal('email')}
