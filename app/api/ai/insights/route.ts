@@ -129,6 +129,35 @@ export async function GET(request: NextRequest) {
       0
     )
 
+    const overdueTasksList = tasks.filter((t: any) => t.dueDate && new Date(t.dueDate) < now)
+    const overdueTasks = overdueTasksList.length
+    const totalTasks = await prisma.task.count({ where: { tenantId } }).catch(() => tasks.length)
+
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+    const dealsClosingSoonList = deals.filter((d: any) => {
+      if (!d.expectedCloseDate || d.stage === 'won' || d.stage === 'lost') return false
+      const closeDate = new Date(d.expectedCloseDate)
+      return closeDate <= sevenDaysFromNow && closeDate >= now && (d.probability || 0) >= 70
+    })
+    const dealsClosingSoonCount = dealsClosingSoonList.length
+    const dealsClosingSoonValue = dealsClosingSoonList.reduce((sum: number, d: any) => sum + (d.value || 0), 0)
+    const highValueClosingDealsList = deals.filter((d: any) => {
+      if (!d.expectedCloseDate || d.stage === 'won' || d.stage === 'lost') return false
+      const closeDate = new Date(d.expectedCloseDate)
+      return closeDate <= sevenDaysFromNow && (d.probability || 0) >= 80 && (d.value || 0) >= 50000
+    })
+    const highValueClosingCount = highValueClosingDealsList.length
+    const highValueClosingValue = highValueClosingDealsList.reduce((sum: number, d: any) => sum + (d.value || 0), 0)
+    const dealsClosingThisMonthList = deals.filter((d: any) => {
+      if (!d.expectedCloseDate || d.stage === 'won' || d.stage === 'lost') return false
+      const closeDate = new Date(d.expectedCloseDate)
+      return closeDate >= startOfMonth && closeDate <= endOfMonth
+    })
+    const dealsClosingThisMonthCount = dealsClosingThisMonthList.length
+    const dealsClosingThisMonthValue = dealsClosingThisMonthList.reduce((sum: number, d: any) => sum + (d.value || 0), 0)
+
     const atRiskContacts = contacts.filter(c => c.churnRisk === true).length
     const highValueLeads = contacts.filter(c => c.likelyToBuy === true).length
 
@@ -440,6 +469,14 @@ Be specific, actionable, and data-driven.`
         atRiskContacts,
         highValueLeads,
         pendingTasks: tasks.length,
+        overdueTasks,
+        totalTasks,
+        dealsClosingSoonCount,
+        dealsClosingSoonValue,
+        highValueClosingCount,
+        highValueClosingValue,
+        dealsClosingThisMonthCount,
+        dealsClosingThisMonthValue,
       },
       generatedAt: new Date().toISOString(),
     })
@@ -569,8 +606,29 @@ Be specific, actionable, and data-driven.`
         improvements: parsedInsights.improvements?.length || 0,
       })
 
-      const overdueInvoicesFallback = invoices.filter((i: any) => i.dueDate && new Date(i.dueDate) < new Date() && !i.paidAt)
+      const nowFb = new Date()
+      const overdueInvoicesFallback = invoices.filter((i: any) => i.dueDate && new Date(i.dueDate) < nowFb && !i.paidAt)
       const overdueAmountFallback = overdueInvoicesFallback.reduce((sum: number, i: any) => sum + i.total, 0)
+      const overdueTasksFallback = tasks.filter((t: any) => t.dueDate && new Date(t.dueDate) < nowFb).length
+      const totalTasksFallback = await prisma.task.count({ where: { tenantId } }).catch(() => tasks.length)
+      const sevenDaysFromNowFb = new Date(nowFb.getTime() + 7 * 24 * 60 * 60 * 1000)
+      const startOfMonthFb = new Date(nowFb.getFullYear(), nowFb.getMonth(), 1)
+      const endOfMonthFb = new Date(nowFb.getFullYear(), nowFb.getMonth() + 1, 0, 23, 59, 59)
+      const dealsClosingSoonFb = deals.filter((d: any) => {
+        if (!d.expectedCloseDate || d.stage === 'won' || d.stage === 'lost') return false
+        const closeDate = new Date(d.expectedCloseDate)
+        return closeDate <= sevenDaysFromNowFb && closeDate >= nowFb && (d.probability || 0) >= 70
+      })
+      const highValueClosingFb = deals.filter((d: any) => {
+        if (!d.expectedCloseDate || d.stage === 'won' || d.stage === 'lost') return false
+        const closeDate = new Date(d.expectedCloseDate)
+        return closeDate <= sevenDaysFromNowFb && (d.probability || 0) >= 80 && (d.value || 0) >= 50000
+      })
+      const dealsClosingMonthFb = deals.filter((d: any) => {
+        if (!d.expectedCloseDate || d.stage === 'won' || d.stage === 'lost') return false
+        const closeDate = new Date(d.expectedCloseDate)
+        return closeDate >= startOfMonthFb && closeDate <= endOfMonthFb
+      })
       return NextResponse.json({
         insights: parsedInsights,
         metrics: {
@@ -584,6 +642,14 @@ Be specific, actionable, and data-driven.`
           atRiskContacts,
           highValueLeads,
           pendingTasks: tasks.length,
+          overdueTasks: overdueTasksFallback,
+          totalTasks: totalTasksFallback,
+          dealsClosingSoonCount: dealsClosingSoonFb.length,
+          dealsClosingSoonValue: dealsClosingSoonFb.reduce((s: number, d: any) => s + (d.value || 0), 0),
+          highValueClosingCount: highValueClosingFb.length,
+          highValueClosingValue: highValueClosingFb.reduce((s: number, d: any) => s + (d.value || 0), 0),
+          dealsClosingThisMonthCount: dealsClosingMonthFb.length,
+          dealsClosingThisMonthValue: dealsClosingMonthFb.reduce((s: number, d: any) => s + (d.value || 0), 0),
         },
         generatedAt: new Date().toISOString(),
       })
