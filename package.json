@@ -35,6 +35,7 @@
     "db:seed-campaigns": "npx tsx prisma/seed-campaigns.ts",
     "db:seed-all": "npx tsx prisma/seed-all-sample-data.ts",
     "db:seed-news": "npx tsx prisma/seed-news-items.ts",
+    "seed:demo-home-data": "npx tsx scripts/seed-demo-home-data.ts",
     "seed:demo-business": "npx tsx prisma/seeds/demo/run-demo-business-seed.ts",
     "seed:admin-users": "npx tsx prisma/seeds/seed-admin-users.ts",
     "seed:via-api": "npx tsx scripts/seed-via-api.ts",
