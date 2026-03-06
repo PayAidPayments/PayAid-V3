@@ -9,7 +9,7 @@
 --
 -- What it adds (idempotent; safe to run again):
 --   - 1 Department "General", 1 Designation "Staff"
---   - 3 Employees (DEMO-HOME-1/2/3) linked to that dept/designation
+--   - 4 Employees (DEMO-HOME-1/2/3/4) linked to that dept/designation (matches Home KPI + HR list)
 --   - 2 open Deals, 2 Tasks, 2 Invoices (1 sent, 1 paid)
 --
 -- If you get "Demo tenant not found", run the main Prisma seed against this DB
@@ -119,7 +119,7 @@ BEGIN
   END IF;
 
   -- ---------------------------------------------------------------------------
-  -- Employees (3) – same records on Home & HR/Payroll
+  -- Employees (4) – same records on Home & HR/Payroll (support pages show same count)
   -- ---------------------------------------------------------------------------
   INSERT INTO "Employee" (
     id, "employeeCode", "firstName", "lastName", "officialEmail",
@@ -128,7 +128,8 @@ BEGIN
   ) VALUES
     (gen_random_uuid()::text, 'DEMO-HOME-1', 'Demo', 'Employee 1', 'demo-home-1@demobusiness.com', '+91', '9876500003', v_join_date, 'ACTIVE', v_dept_id, v_design_id, v_tenant_id, v_now, v_now),
     (gen_random_uuid()::text, 'DEMO-HOME-2', 'Demo', 'Employee 2', 'demo-home-2@demobusiness.com', '+91', '9876500004', v_join_date, 'ACTIVE', v_dept_id, v_design_id, v_tenant_id, v_now, v_now),
-    (gen_random_uuid()::text, 'DEMO-HOME-3', 'Demo', 'Employee 3', 'demo-home-3@demobusiness.com', '+91', '9876500005', v_join_date, 'ACTIVE', v_dept_id, v_design_id, v_tenant_id, v_now, v_now)
+    (gen_random_uuid()::text, 'DEMO-HOME-3', 'Demo', 'Employee 3', 'demo-home-3@demobusiness.com', '+91', '9876500005', v_join_date, 'ACTIVE', v_dept_id, v_design_id, v_tenant_id, v_now, v_now),
+    (gen_random_uuid()::text, 'DEMO-HOME-4', 'Demo', 'Employee 4', 'demo-home-4@demobusiness.com', '+91', '9876500006', v_join_date, 'ACTIVE', v_dept_id, v_design_id, v_tenant_id, v_now, v_now)
   ON CONFLICT ("tenantId", "employeeCode")
   DO UPDATE SET
     "departmentId" = EXCLUDED."departmentId",

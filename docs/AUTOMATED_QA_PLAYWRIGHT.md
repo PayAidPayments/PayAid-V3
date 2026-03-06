@@ -36,6 +36,8 @@ The suite checks **every page, every same-origin link, and every button** on the
    ```
    Then run **`npm run test:e2e:share:localdb`** (or **`npm run test:e2e:ui-scanner:localdb`**) instead of `test:e2e:share` / `test:e2e:ui-scanner`. Start the app with the same local `DATABASE_URL` (e.g. in `.env` or `cross-env DATABASE_URL=postgresql://payaid:payaid@127.0.0.1:5433/payaid_v3?schema=public npm run dev`).
 
+   **Demo data (no 404/empty support pages):** So that Home KPIs (e.g. "4 employees") match the linked list pages (HR Employees, CRM Deals, Finance Invoices), seed the demo tenant. After `db:local:setup` or main seed, run the shared demo script in Supabase SQL Editor, or ensure `scripts/supabase-seed-demo-home-data.sql` has been applied. That adds 4 employees, 2 deals, 2 tasks, 2 invoices for the demo tenant so support pages show data instead of "Create your first …".
+
 2. **Run E2E tests** in another terminal:
    ```bash
    npm run test:e2e

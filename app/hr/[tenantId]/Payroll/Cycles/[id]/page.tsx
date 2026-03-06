@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery, useMutation } from '@tanstack/react-query'
+import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -49,20 +50,25 @@ export default function PayrollCycleDetailPage() {
   const params = useParams()
   const tenantId = params.tenantId as string
   const id = params.id as string
+  const token = useAuthStore((s) => s.token)
 
   const { data: cycle, isLoading, refetch } = useQuery<PayrollCycle>({
     queryKey: ['payroll-cycle', id],
     queryFn: async () => {
-      const response = await fetch(`/api/hr/payroll/cycles/${id}`)
+      const response = await fetch(`/api/hr/payroll/cycles/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!response.ok) throw new Error('Failed to fetch payroll cycle')
       return response.json()
     },
+    enabled: !!token,
   })
 
   const generateMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(`/api/hr/payroll/cycles/${id}/generate`, {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
       if (!response.ok) {
         const error = await response.json()
@@ -87,7 +93,9 @@ export default function PayrollCycleDetailPage() {
 
   const validateMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/hr/payroll/cycles/${id}/validate`)
+      const response = await fetch(`/api/hr/payroll/cycles/${id}/validate`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!response.ok) throw new Error('Validation failed')
       return response.json()
     },
@@ -98,7 +106,10 @@ export default function PayrollCycleDetailPage() {
 
   const processMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/hr/payroll/cycles/${id}/process`, { method: 'POST' })
+      const response = await fetch(`/api/hr/payroll/cycles/${id}/process`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || data.message || 'Process failed')
       return data
@@ -113,6 +124,7 @@ export default function PayrollCycleDetailPage() {
     mutationFn: async () => {
       const response = await fetch(`/api/hr/payroll/cycles/${id}/lock`, {
         method: 'PUT',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
       if (!response.ok) {
         const error = await response.json()
