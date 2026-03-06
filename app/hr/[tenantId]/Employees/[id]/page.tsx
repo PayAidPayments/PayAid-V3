@@ -50,10 +50,13 @@ export default function HREmployeeDetailPage() {
   const { data: employee, isLoading } = useQuery<Employee>({
     queryKey: ['employee', id],
     queryFn: async () => {
-      const response = await fetch(`/api/hr/employees/${id}`)
+      const response = await fetch(`/api/hr/employees/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!response.ok) throw new Error('Failed to fetch employee')
       return response.json()
     },
+    enabled: !!token,
   })
 
   const getStatusColor = (status: string) => {

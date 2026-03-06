@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageLoading } from '@/components/ui/loading'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns'
@@ -34,13 +35,18 @@ export default function HRAttendanceCalendarPage() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('')
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
+  const token = useAuthStore((s) => s.token)
+
   const { data: employees } = useQuery<{ employees: Array<{ id: string; employeeCode: string; firstName: string; lastName: string }> }>({
     queryKey: ['employees'],
     queryFn: async () => {
-      const response = await fetch('/api/hr/employees?limit=1000')
+      const response = await fetch('/api/hr/employees?limit=1000', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!response.ok) throw new Error('Failed to fetch employees')
       return response.json()
     },
+    enabled: !!token,
   })
 
   const { data: calendarData, isLoading } = useQuery<AttendanceCalendar>({
@@ -49,11 +55,13 @@ export default function HRAttendanceCalendarPage() {
       if (!selectedEmployeeId) return null
       const month = currentMonth.getMonth() + 1
       const year = currentMonth.getFullYear()
-      const response = await fetch(`/api/hr/attendance/calendar?employeeId=${selectedEmployeeId}&month=${month}&year=${year}`)
+      const response = await fetch(`/api/hr/attendance/calendar?employeeId=${selectedEmployeeId}&month=${month}&year=${year}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!response.ok) throw new Error('Failed to fetch attendance calendar')
       return response.json()
     },
-    enabled: !!selectedEmployeeId,
+    enabled: !!selectedEmployeeId && !!token,
   })
 
   const getStatusColor = (status: string | null) => {

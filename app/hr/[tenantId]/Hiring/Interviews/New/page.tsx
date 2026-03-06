@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery, useMutation } from '@tanstack/react-query'
+import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -34,29 +35,40 @@ export default function NewInterviewPage() {
   })
   const [error, setError] = useState('')
 
+  const token = useAuthStore((s) => s.token)
+
   const { data: candidatesData } = useQuery<{ candidates: Candidate[] }>({
     queryKey: ['candidates'],
     queryFn: async () => {
-      const response = await fetch('/api/hr/candidates?limit=1000')
+      const response = await fetch('/api/hr/candidates?limit=1000', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!response.ok) throw new Error('Failed to fetch candidates')
       return response.json()
     },
+    enabled: !!token,
   })
 
   const { data: employeesData } = useQuery<{ employees: Employee[] }>({
     queryKey: ['employees'],
     queryFn: async () => {
-      const response = await fetch('/api/hr/employees?limit=1000&status=ACTIVE')
+      const response = await fetch('/api/hr/employees?limit=1000&status=ACTIVE', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!response.ok) throw new Error('Failed to fetch employees')
       return response.json()
     },
+    enabled: !!token,
   })
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const response = await fetch('/api/hr/interviews', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           ...data,
           scheduledAt: new Date(data.scheduledAt).toISOString(),

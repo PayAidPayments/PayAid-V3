@@ -4,12 +4,13 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
 // ModuleTopBar is now in layout.tsx
-import { Users, Plus, RefreshCw, Download, Printer } from 'lucide-react'
+import { Users, Plus, RefreshCw, Download, Printer, AlertCircle } from 'lucide-react'
 
 interface Employee {
   id: string
@@ -28,16 +29,17 @@ interface Employee {
 export default function HREmployeesPage() {
   const params = useParams()
   const tenantId = params?.tenantId as string
+  const token = useAuthStore((s) => s.token)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [departmentFilter, setDepartmentFilter] = useState<string>('')
 
-  const { data, isLoading, refetch } = useQuery<{
+  const { data, isLoading, isError, error, refetch } = useQuery<{
     employees: Employee[]
     pagination: { page: number; limit: number; total: number; totalPages: number }
   }>({
-    queryKey: ['employees', page, search, statusFilter, departmentFilter],
+    queryKey: ['employees', tenantId, page, search, statusFilter, departmentFilter],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -47,10 +49,16 @@ export default function HREmployeesPage() {
       if (statusFilter) params.append('status', statusFilter)
       if (departmentFilter) params.append('departmentId', departmentFilter)
 
-      const response = await fetch(`/api/hr/employees?${params}`)
-      if (!response.ok) throw new Error('Failed to fetch employees')
+      const response = await fetch(`/api/hr/employees?${params}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}))
+        throw new Error(errBody.error || errBody.message || 'Failed to fetch employees')
+      }
       return response.json()
     },
+    enabled: !!token,
   })
 
   const employees = data?.employees || []
@@ -131,6 +139,13 @@ export default function HREmployeesPage() {
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
                 <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+              </div>
+            ) : isError ? (
+              <div className="text-center py-12">
+                <AlertCircle className="mx-auto h-10 w-10 text-amber-500 mb-4" />
+                <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Unable to load employees</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{error?.message ?? 'Please sign in again or try later.'}</p>
+                <Button variant="outline" onClick={() => refetch()}>Retry</Button>
               </div>
             ) : employees.length === 0 ? (
               <div className="text-center py-12 text-gray-500">

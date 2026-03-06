@@ -2,6 +2,7 @@
 
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
+import { useAuthStore } from '@/lib/stores/auth'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -26,23 +27,30 @@ import { Calendar, DollarSign, Users, FileText, TrendingUp } from 'lucide-react'
 export default function HRPayrollPage() {
   const params = useParams()
   const tenantId = params.tenantId as string
+  const token = useAuthStore((s) => s.token)
 
   const { data: cyclesData, isLoading: cyclesLoading } = useQuery({
     queryKey: ['payroll-cycles-summary'],
     queryFn: async () => {
-      const response = await fetch('/api/hr/payroll/cycles?limit=12')
+      const response = await fetch('/api/hr/payroll/cycles?limit=12', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!response.ok) throw new Error('Failed to fetch payroll cycles')
       return response.json()
     },
+    enabled: !!token,
   })
 
   const { data: runsData, isLoading: runsLoading } = useQuery({
     queryKey: ['payroll-runs-summary'],
     queryFn: async () => {
-      const response = await fetch('/api/hr/payroll/runs?limit=100')
+      const response = await fetch('/api/hr/payroll/runs?limit=100', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!response.ok) throw new Error('Failed to fetch payroll runs')
       return response.json()
     },
+    enabled: !!token,
   })
 
   if (cyclesLoading || runsLoading) {
