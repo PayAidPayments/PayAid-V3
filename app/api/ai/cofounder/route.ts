@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess } from '@/lib/middleware/license'
 import { routeToAgent, getAgent, getAllAgents, type AgentId } from '@/lib/ai/agents'
 import { getBusinessContext } from '@/lib/ai/business-context-builder'
+import { parseStructuredBlock, parseMarkdownTable, STRUCTURED_OUTPUT_INSTRUCTION } from '@/lib/ai/cofounder-structured'
+import type { ArtifactPayload, StructuredAction } from '@/lib/ai/cofounder-structured'
 import { prisma } from '@/lib/db/prisma'
 import { getIndustryConfig } from '@/lib/industries/config'
 import { z } from 'zod'
@@ -19,6 +21,7 @@ const cofounderSchema = z.object({
   }).optional(),
   timeRangeDays: z.union([z.number().min(1).max(365), z.string()]).optional(), // 7, 30, 90 or "custom" (treated as 30)
   conversationId: z.string().optional(), // Existing conversation ID
+  projectId: z.string().optional(), // Optional: conversation runs in this project (injects project instructions)
   useMultiSpecialist: z.boolean().optional().default(false), // Enable multi-specialist coordination
   useLangChain: z.boolean().optional().default(false), // Enable LangChain agent orchestration
 })
@@ -117,6 +120,20 @@ Use these insights to provide more relevant, industry-specific advice.`
       businessContext = 'Business context unavailable. Please try again.'
     }
 
+    // Project context memory: load project instructions if projectId provided
+    let projectInstructions = ''
+    if (validated.projectId) {
+      const project = await prisma.aIProject.findFirst({
+        where: { id: validated.projectId, tenantId, userId },
+        select: { name: true, instructions: true },
+      })
+      if (project?.instructions?.trim()) {
+        projectInstructions = `\n\nPROJECT CONTEXT ("${project.name}"):
+The user is working in a project with these persistent instructions. Apply them in every response.
+${project.instructions.trim()}`
+      }
+    }
+
     // Build system prompt with agent-specific instructions
     let systemPrompt = `${agent.systemPrompt}
 
@@ -137,10 +154,12 @@ ${contextModule ? `SCOPE: Only use data from the ${contextModule.toUpperCase()} 
 Current business context:
 ${businessContext || 'No specific business context available.'}
 ${industryPrompts}
+${projectInstructions}
 
 Tenant ID: ${tenantId}
 User ID: ${userId}
-${tenant?.industry ? `Industry: ${tenant.industry}${tenant.industrySubType ? ` (${tenant.industrySubType})` : ''}` : ''}`
+${tenant?.industry ? `Industry: ${tenant.industry}${tenant.industrySubType ? ` (${tenant.industrySubType})` : ''}` : ''}
+${STRUCTURED_OUTPUT_INSTRUCTION}`
 
     // Use the existing AI chat infrastructure
     // Import clients using the same pattern as chat route
@@ -205,29 +224,49 @@ ${tenant?.industry ? `Industry: ${tenant.industry}${tenant.industrySubType ? ` (
       }
     }
 
-    // Extract suggested actions from response (simple pattern matching)
-    const suggestedActions: Array<{ action: string; description: string; priority: 'low' | 'medium' | 'high' }> = []
-    
-    // Look for action patterns in the response
-    const actionPatterns = [
-      /(?:should|must|need to|recommend|suggest).*?([A-Z][^.!?]+[.!?])/gi,
-      /(?:action|task|step|next):\s*([A-Z][^.!?]+[.!?])/gi,
-    ]
-    
-    actionPatterns.forEach(pattern => {
-      const matches = response.matchAll(pattern)
-      for (const match of matches) {
-        if (match[1] && match[1].length > 10 && match[1].length < 200) {
-          suggestedActions.push({
-            action: match[1].trim(),
-            description: match[1].trim(),
-            priority: match[1].toLowerCase().includes('urgent') || match[1].toLowerCase().includes('critical') ? 'high' : 'medium',
-          })
-        }
+    // Parse structured block (artifact + inline actions) if present
+    const { cleanMessage, structured } = parseStructuredBlock(response)
+    const displayMessage = cleanMessage
+    let artifact: ArtifactPayload | undefined
+    let structuredActions: StructuredAction[] = []
+    if (structured?.artifact_type && structured?.artifact_data) {
+      artifact = {
+        type: structured.artifact_type,
+        data: structured.artifact_data,
+        title: structured.artifact_title,
       }
-    })
+    }
+    // Fallback: parse markdown table from response when model didn't emit structured block
+    if (!artifact) {
+      const mdTable = parseMarkdownTable(cleanMessage)
+      if (mdTable) {
+        artifact = { type: 'table', data: mdTable }
+      }
+    }
+    if (structured?.actions?.length) {
+      structuredActions = structured.actions.slice(0, 8)
+    }
 
-    // Limit to top 5 actions
+    // Fallback: extract suggested actions from text (simple pattern matching) when no structured actions
+    const suggestedActions: Array<{ action: string; description: string; priority: 'low' | 'medium' | 'high' }> = []
+    if (structuredActions.length === 0) {
+      const actionPatterns = [
+        /(?:should|must|need to|recommend|suggest).*?([A-Z][^.!?]+[.!?])/gi,
+        /(?:action|task|step|next):\s*([A-Z][^.!?]+[.!?])/gi,
+      ]
+      actionPatterns.forEach(pattern => {
+        const matches = response.matchAll(pattern)
+        for (const match of matches) {
+          if (match[1] && match[1].length > 10 && match[1].length < 200) {
+            suggestedActions.push({
+              action: match[1].trim(),
+              description: match[1].trim(),
+              priority: match[1].toLowerCase().includes('urgent') || match[1].toLowerCase().includes('critical') ? 'high' : 'medium',
+            })
+          }
+        }
+      })
+    }
     const topActions = suggestedActions.slice(0, 5)
 
     // Save conversation to database
@@ -239,12 +278,14 @@ ${tenant?.industry ? `Industry: ${tenant.industry}${tenant.industrySubType ? ` (
     }
     const assistantMessage = {
       role: 'assistant' as const,
-      content: response,
+      content: displayMessage,
       timestamp: new Date().toISOString(),
       agent: {
         id: agent.id,
         name: agent.name,
       },
+      ...(artifact && { artifact }),
+      ...(structuredActions.length > 0 && { structuredActions }),
     }
 
     try {
@@ -269,6 +310,7 @@ ${tenant?.industry ? `Industry: ${tenant.industry}${tenant.industrySubType ? ` (
               messageCount: updatedMessages.length,
               lastMessageAt: new Date(),
               suggestedActions: topActions.length > 0 ? (topActions as any) : existing.suggestedActions,
+              ...(validated.projectId && { projectId: validated.projectId }),
             },
           })
         } else {
@@ -283,6 +325,7 @@ ${tenant?.industry ? `Industry: ${tenant.industry}${tenant.industrySubType ? ` (
           data: {
             tenantId,
             userId,
+            projectId: validated.projectId || undefined,
             title,
             agentId: agent.id,
             messages: [userMessageData, assistantMessage],
@@ -298,14 +341,31 @@ ${tenant?.industry ? `Industry: ${tenant.industry}${tenant.industrySubType ? ` (
       // Don't fail the request if conversation saving fails
     }
 
+    // Audit: log to AIUsage for Settings → AI Usage (don't fail request if logging fails)
+    try {
+      await prisma.aIUsage.create({
+        data: {
+          tenantId,
+          service: 'cofounder',
+          requestType: 'chat',
+          modelUsed: usedService,
+          tokens: undefined, // Optional: add if LLM returns token counts
+        },
+      })
+    } catch (auditErr) {
+      console.warn('[COFOUNDER] Audit log failed:', auditErr)
+    }
+
     return NextResponse.json({
-      message: response,
+      message: displayMessage,
       agent: {
         id: agent.id,
         name: agent.name,
         description: agent.description,
       },
       suggestedActions: topActions,
+      structuredActions,
+      artifact: artifact ?? undefined,
       involvedAgents: involvedAgents,
       conversationId,
       context: {

@@ -99,6 +99,52 @@ export function parseStructuredBlock(raw: string): {
   return { cleanMessage, structured }
 }
 
+/** Match markdown table: lines with | ... | (header, optional separator, data rows) */
+const MARKDOWN_TABLE_LINE = /^\s*\|(.+)\|\s*$/
+const MARKDOWN_TABLE_SEPARATOR = /^\s*\|[\s\-:|]+\|\s*$/
+
+/**
+ * Parse the first markdown table found in text into TableArtifactData.
+ * Handles | Col1 | Col2 | header and | a | b | rows; skips | --- | --- | separator.
+ * Returns null if no valid table is found.
+ */
+export function parseMarkdownTable(text: string): TableArtifactData | null {
+  const lines = text.split(/\r?\n/)
+  let headerCells: string[] | null = null
+  const rows: Record<string, string | number>[] = []
+
+  for (const line of lines) {
+    const pipeMatch = line.match(MARKDOWN_TABLE_LINE)
+    if (!pipeMatch) continue
+
+    const cellStr = pipeMatch[1]
+    const cells = cellStr.split('|').map((c) => c.trim())
+
+    // Skip separator line (e.g. | --- | --- |)
+    if (MARKDOWN_TABLE_SEPARATOR.test(line)) continue
+
+    if (headerCells === null) {
+      if (cells.length >= 2 && cells.some(Boolean)) {
+        headerCells = cells.filter(Boolean)
+      }
+      continue
+    }
+
+    if (cells.length >= 2 && headerCells.length >= 1) {
+      const row: Record<string, string | number> = {}
+      headerCells.forEach((col, i) => {
+        const raw = cells[i] ?? ''
+        const num = Number(raw.replace(/[₹,\s]/g, ''))
+        row[col] = Number.isNaN(num) ? raw : num
+      })
+      rows.push(row)
+    }
+  }
+
+  if (!headerCells || headerCells.length === 0 || rows.length === 0) return null
+  return { columns: headerCells, rows }
+}
+
 /** System prompt snippet instructing the LLM to optionally emit the structured block */
 export const STRUCTURED_OUTPUT_INSTRUCTION = `
 When your response includes:
