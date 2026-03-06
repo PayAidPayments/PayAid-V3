@@ -49,6 +49,7 @@ model Tenant {
   aiCalls                      AICall[]
   aiCallingBots                AICallingBot[]
   aiCofounderConversations     AICofounderConversation[]
+  aiProjects                   AIProject[]
   aiUsage                      AIUsage[]
   aiGeneratedImageCaches      AIGeneratedImageCache[]
   aiPromptHistories           AIPromptHistory[]
@@ -679,6 +680,7 @@ model User {
   twoFactorEnabled           Boolean                    @default(false)
   locationTracking           LocationTracking[]
   aiCofounderConversations   AICofounderConversation[]  @relation("AICofounderConversations")
+  aiProjects                 AIProject[]                @relation("AIProjects")
   chatMembers                ChatMember[]               @relation("ChatMembers")
   emailAccounts              EmailAccount[]             @relation("EmailAccounts")
   receivedGRs                GoodsReceipt[]             @relation("GRReceivedBy")
@@ -953,25 +955,44 @@ model TenantAIImageSettings {
   @@index([tenantId])
 }
 
+model AIProject {
+  id           String   @id @default(cuid())
+  tenantId     String
+  userId       String
+  name         String
+  instructions String?   // Persistent context: e.g. "Always consider my restaurant margins"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user         User     @relation("AIProjects", fields: [userId], references: [id], onDelete: Cascade)
+  conversations AICofounderConversation[]
+
+  @@index([tenantId])
+  @@index([tenantId, userId])
+}
+
 model AICofounderConversation {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   tenantId         String
   userId           String
+  projectId        String?   // Optional: conversation belongs to a project (context memory)
   title            String?
   agentId          String
   messages         Json
-  messageCount     Int      @default(0)
-  lastMessageAt    DateTime @default(now())
+  messageCount     Int       @default(0)
+  lastMessageAt    DateTime  @default(now())
   suggestedActions Json?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user             User     @relation("AICofounderConversations", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user             User      @relation("AICofounderConversations", fields: [userId], references: [id], onDelete: Cascade)
+  project          AIProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([userId])
   @@index([tenantId, userId])
   @@index([lastMessageAt])
+  @@index([projectId])
 }
 
 model Deal {

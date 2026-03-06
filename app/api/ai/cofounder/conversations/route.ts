@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
           id: true,
           title: true,
           agentId: true,
+          projectId: true,
           messageCount: true,
           lastMessageAt: true,
           createdAt: true,

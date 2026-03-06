@@ -17,8 +17,16 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Send, Bot, User, Loader2, ChevronDown, LayoutGrid, History, AlertCircle, ExternalLink, Paperclip } from 'lucide-react'
+import { Send, Bot, User, Loader2, ChevronDown, LayoutGrid, History, AlertCircle, ExternalLink, Paperclip, Download, Table2, Zap, FolderPlus, Pencil } from 'lucide-react'
 import { formatINR } from '@/lib/utils/formatINR'
 import { getSuggestionsForAgent } from '@/lib/ai/co-founder-suggestions'
 import {
@@ -26,7 +34,9 @@ import {
   getCategoryForAgent,
   getRoleForAgent,
 } from '@/lib/ai/co-founder-specialists'
+import { getTemplatesForAgent } from '@/lib/ai/co-founder-templates'
 import type { AgentId } from '@/lib/ai/agents'
+import type { ArtifactPayload, StructuredAction } from '@/lib/ai/cofounder-structured'
 
 const PAYAID_PURPLE = '#53328A'
 
@@ -49,12 +59,102 @@ interface Message {
   content: string
   timestamp: Date
   agent?: { id: string; name: string }
+  artifact?: ArtifactPayload
+  structuredActions?: StructuredAction[]
 }
 
 interface Agent {
   id: AgentId
   name: string
   description: string
+}
+
+function StructuredActionButton({
+  action,
+  tenantId,
+  getAuthHeaders,
+  conversationId,
+}: {
+  action: StructuredAction
+  tenantId: string
+  getAuthHeaders: () => Record<string, string>
+  conversationId: string | null
+}) {
+  const label = action.label || (action.type === 'open_deal' ? 'Open deal' : action.type === 'open_crm' ? 'Open CRM' : action.type === 'open_finance' ? 'Open Finance' : action.type === 'open_hr' ? 'Open HR' : action.type === 'create_task' ? 'Create task' : action.type === 'open_invoice' ? 'Open invoice' : action.type === 'open_quotes' ? 'Open Quotes' : action.type)
+  if (action.type === 'open_deal' && action.dealId) {
+    return (
+      <Link href={`/crm/${tenantId}/Deals/${action.dealId}`}>
+        <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: PAYAID_PURPLE, color: PAYAID_PURPLE }}>
+          {label}
+        </Button>
+      </Link>
+    )
+  }
+  if (action.type === 'open_crm') {
+    return (
+      <Link href={`/crm/${tenantId}/Home`}>
+        <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: `${PAYAID_PURPLE}60` }}>{label}</Button>
+      </Link>
+    )
+  }
+  if (action.type === 'open_finance') {
+    return (
+      <Link href={`/finance/${tenantId}/Invoices`}>
+        <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: `${PAYAID_PURPLE}60` }}>{label}</Button>
+      </Link>
+    )
+  }
+  if (action.type === 'open_hr') {
+    return (
+      <Link href={`/hr/${tenantId}`}>
+        <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: `${PAYAID_PURPLE}60` }}>{label}</Button>
+      </Link>
+    )
+  }
+  if (action.type === 'open_invoice' && action.invoiceId) {
+    return (
+      <Link href={`/finance/${tenantId}/Invoices/${action.invoiceId}`}>
+        <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: `${PAYAID_PURPLE}60` }}>{label}</Button>
+      </Link>
+    )
+  }
+  if (action.type === 'open_quotes') {
+    return (
+      <Link href={`/crm/${tenantId}/Quotes`}>
+        <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: `${PAYAID_PURPLE}60` }}>{label}</Button>
+      </Link>
+    )
+  }
+  if (action.type === 'create_task') {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        className="text-xs"
+        style={{ borderColor: PAYAID_PURPLE, color: PAYAID_PURPLE }}
+        onClick={async () => {
+          try {
+            await fetch('/api/ai/cofounder/actions/convert-to-task', {
+              method: 'POST',
+              headers: getAuthHeaders(),
+              body: JSON.stringify({
+                action: action.title || label,
+                description: action.description,
+                priority: action.priority || 'medium',
+                dueDate: action.due,
+                conversationId: conversationId || undefined,
+              }),
+            })
+          } catch (e) {
+            console.error(e)
+          }
+        }}
+      >
+        {label}
+      </Button>
+    )
+  }
+  return null
 }
 
 function getAuthHeaders() {
@@ -83,6 +183,11 @@ export default function CoFounderPage() {
   const [showAllSpecialists, setShowAllSpecialists] = useState(false)
   const [specialistsOpen, setSpecialistsOpen] = useState(false)
   const [attachContextOpen, setAttachContextOpen] = useState(false)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false)
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null)
+  const [projectName, setProjectName] = useState('')
+  const [projectInstructions, setProjectInstructions] = useState('')
 
   const { data: agentsData } = useQuery<{ agents: Agent[] }>({
     queryKey: ['ai-agents'],
@@ -119,10 +224,24 @@ export default function CoFounderPage() {
     enabled: !!token,
   })
 
-  const agents = agentsData?.agents || []
+  const { data: projectsData, refetch: refetchProjects } = useQuery<{ projects: Array<{ id: string; name: string; instructions: string | null; _count: { conversations: number } }> }>({
+    queryKey: ['cofounder-projects'],
+    queryFn: async () => {
+      const res = await fetch('/api/ai/cofounder/projects', { headers: getAuthHeaders() })
+      if (!res.ok) return { projects: [] }
+      return res.json()
+    },
+    enabled: !!token,
+  })
 
+  const agents = agentsData?.agents || []
+  const projects = projectsData?.projects || []
+
+  type SendPayload = string | { message: string; agentId?: AgentId }
   const sendMessage = useMutation({
-    mutationFn: async (message: string) => {
+    mutationFn: async (payload: SendPayload) => {
+      const message = typeof payload === 'string' ? payload : payload.message
+      const agentId = typeof payload === 'string' ? selectedAgent : (payload.agentId ?? selectedAgent)
       const res = await fetch('/api/ai/cofounder', {
         method: 'POST',
         headers: {
@@ -131,9 +250,10 @@ export default function CoFounderPage() {
         },
         body: JSON.stringify({
           message,
-          agentId: selectedAgent,
+          agentId,
           conversationId: conversationId || undefined,
-          useMultiSpecialist: selectedAgent === 'cofounder',
+          projectId: selectedProjectId || undefined,
+          useMultiSpecialist: agentId === 'cofounder',
           context: { module: contextModules !== 'all' ? contextModules : undefined },
           timeRangeDays: timeRange === 'custom' ? 30 : parseInt(timeRange, 10) || 30,
         }),
@@ -145,14 +265,17 @@ export default function CoFounderPage() {
       return res.json()
     },
     onSuccess: (data, variables) => {
+      const userContent = typeof variables === 'string' ? variables : variables.message
       setMessages((prev) => [
         ...prev,
-        { role: 'user', content: variables, timestamp: new Date() },
+        { role: 'user', content: userContent, timestamp: new Date() },
         {
           role: 'assistant',
           content: data.message || 'No response',
           timestamp: new Date(),
           agent: data.agent,
+          ...(data.artifact && { artifact: data.artifact }),
+          ...(data.structuredActions?.length && { structuredActions: data.structuredActions }),
         },
       ])
       setInput('')
@@ -208,6 +331,15 @@ export default function CoFounderPage() {
   const selectedAgentMeta = agents.find((a) => a.id === selectedAgent)
   const roleInfo = getRoleForAgent(selectedAgent)
   const suggestionChips = getSuggestionsForAgent(selectedAgent)
+  const workflowTemplates = useMemo(() => getTemplatesForAgent(selectedAgent), [selectedAgent])
+
+  // Latest artifact for the right-panel "AI Output"
+  const latestArtifact = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'assistant' && messages[i].artifact) return messages[i].artifact
+    }
+    return null
+  }, [messages])
 
   // When user switches specialist, show a one-line "What I can help you with"
   const [prevAgent, setPrevAgent] = useState<AgentId | null>(null)
@@ -233,6 +365,11 @@ export default function CoFounderPage() {
     sendMessage.mutate(text.trim())
   }
 
+  const handleTemplateRun = (prompt: string, agentId: AgentId) => {
+    if (!prompt.trim() || sendMessage.isPending) return
+    sendMessage.mutate({ message: prompt.trim(), agentId })
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (input.trim() && !sendMessage.isPending) sendMessage.mutate(input.trim())
@@ -245,18 +382,65 @@ export default function CoFounderPage() {
       })
       if (!res.ok) return
       const data = await res.json()
-      const msgs = (data.messages || []).map((m: { role: string; content: string; timestamp: string; agent?: { id: string; name: string } }) => ({
+      const msgs = (data.messages || []).map((m: { role: string; content: string; timestamp: string; agent?: { id: string; name: string }; artifact?: ArtifactPayload; structuredActions?: StructuredAction[] }) => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
         timestamp: new Date(m.timestamp),
         agent: m.agent,
+        ...(m.artifact && { artifact: m.artifact }),
+        ...(m.structuredActions?.length && { structuredActions: m.structuredActions }),
       }))
       setMessages(msgs)
       setConversationId(data.id)
       setSuggestedActions(Array.isArray(data.suggestedActions) ? data.suggestedActions : [])
+      setSelectedProjectId(data.projectId ?? null)
     } catch (e) {
       console.error('Failed to load conversation:', e)
     }
+  }
+
+  const saveProject = useMutation({
+    mutationFn: async () => {
+      const headers = getAuthHeaders()
+      if (editingProjectId) {
+        const res = await fetch(`/api/ai/cofounder/projects/${editingProjectId}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ name: projectName.trim(), instructions: projectInstructions.trim() || null }),
+        })
+        if (!res.ok) throw new Error('Failed to update project')
+        return res.json()
+      }
+      const res = await fetch('/api/ai/cofounder/projects', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ name: projectName.trim(), instructions: projectInstructions.trim() || undefined }),
+      })
+      if (!res.ok) throw new Error('Failed to create project')
+      return res.json()
+    },
+    onSuccess: (data) => {
+      refetchProjects()
+      setProjectDialogOpen(false)
+      setEditingProjectId(null)
+      setProjectName('')
+      setProjectInstructions('')
+      if (data?.id && !editingProjectId) setSelectedProjectId(data.id)
+    },
+  })
+
+  const openNewProjectDialog = () => {
+    setEditingProjectId(null)
+    setProjectName('')
+    setProjectInstructions('')
+    setProjectDialogOpen(true)
+  }
+
+  const openEditProjectDialog = (p: { id: string; name: string; instructions: string | null }) => {
+    setEditingProjectId(p.id)
+    setProjectName(p.name)
+    setProjectInstructions(p.instructions || '')
+    setProjectDialogOpen(true)
   }
 
   const renderSpecialistsList = () => (
@@ -334,7 +518,83 @@ export default function CoFounderPage() {
             {agents.length === 0 ? (
               <div className="py-6 text-sm text-slate-500">Loading specialists…</div>
             ) : (
-              renderSpecialistsList()
+              <>
+                {renderSpecialistsList()}
+                {/* Projects: context memory */}
+                <div className="pt-4 pb-2 border-t border-slate-200 dark:border-slate-800 mt-4">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 px-3 flex items-center gap-1.5">
+                    <FolderPlus className="w-3.5 h-3.5" style={{ color: PAYAID_PURPLE }} />
+                    Project
+                  </h3>
+                  <div className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProjectId(null)}
+                      className={`w-full text-left rounded-xl px-3 py-2 text-sm border transition-all ${
+                        selectedProjectId === null
+                          ? 'border-[#53328A]/50 bg-[#53328A]/10 dark:bg-[#53328A]/20'
+                          : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      }`}
+                    >
+                      No project (general chat)
+                    </button>
+                    {projects.map((p) => (
+                      <div key={p.id} className="flex items-center gap-1 group">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProjectId(p.id)}
+                          className={`flex-1 min-w-0 text-left rounded-xl px-3 py-2 text-sm border transition-all truncate ${
+                            selectedProjectId === p.id
+                              ? 'border-[#53328A]/50 bg-[#53328A]/10 dark:bg-[#53328A]/20'
+                              : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                          }`}
+                          title={p.instructions || p.name}
+                        >
+                          {p.name}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openEditProjectDialog(p)}
+                          className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-700"
+                          title="Edit project"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-slate-500" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={openNewProjectDialog}
+                      className="w-full text-left rounded-xl px-3 py-2 text-sm border border-dashed border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                    >
+                      + New project
+                    </button>
+                  </div>
+                </div>
+                {workflowTemplates.length > 0 && (
+                  <div className="pt-4 pb-6 border-t border-slate-200 dark:border-slate-800 mt-4">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 px-3 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5" style={{ color: PAYAID_PURPLE }} />
+                      Workflows
+                    </h3>
+                    <div className="space-y-1.5">
+                      {workflowTemplates.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          disabled={sendMessage.isPending}
+                          title={t.description}
+                          onClick={() => handleTemplateRun(t.prompt, t.agentId)}
+                          className="w-full text-left rounded-xl px-3 py-2.5 transition-all border border-slate-200 dark:border-slate-700 hover:border-[#53328A]/50 hover:bg-[#53328A]/8 dark:hover:bg-[#53328A]/12 text-sm disabled:opacity-50"
+                        >
+                          <span className="font-medium text-slate-900 dark:text-slate-100 block truncate">{t.label}</span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">{t.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </ScrollArea>
         </aside>
@@ -359,6 +619,48 @@ export default function CoFounderPage() {
                   </SheetHeader>
                   <ScrollArea className="h-[calc(100vh-80px)]">
                     {renderSpecialistsList()}
+                    <div className="pt-4 px-3 border-t border-slate-200 dark:border-slate-800 mt-4">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+                        <FolderPlus className="w-3.5 h-3.5" style={{ color: PAYAID_PURPLE }} />
+                        Project
+                      </h3>
+                      <div className="space-y-1">
+                        <button type="button" onClick={() => { setSelectedProjectId(null); setSpecialistsOpen(false) }} className="w-full text-left rounded-xl px-3 py-2 text-sm border border-slate-200 dark:border-slate-700">
+                          No project
+                        </button>
+                        {projects.map((p) => (
+                          <button key={p.id} type="button" onClick={() => { setSelectedProjectId(p.id); setSpecialistsOpen(false) }} className="w-full text-left rounded-xl px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 truncate">
+                            {p.name}
+                          </button>
+                        ))}
+                        <button type="button" onClick={() => { openNewProjectDialog(); setSpecialistsOpen(false) }} className="w-full text-left rounded-xl px-3 py-2 text-sm border border-dashed text-slate-600 dark:text-slate-400">
+                          + New project
+                        </button>
+                      </div>
+                    </div>
+                    {workflowTemplates.length > 0 && (
+                      <div className="pt-4 pb-6 border-t border-slate-200 dark:border-slate-800 mt-4 px-3">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+                          <Zap className="w-3.5 h-3.5" style={{ color: PAYAID_PURPLE }} />
+                          Workflows
+                        </h3>
+                        <div className="space-y-1.5">
+                          {workflowTemplates.map((t) => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              disabled={sendMessage.isPending}
+                              title={t.description}
+                              onClick={() => { handleTemplateRun(t.prompt, t.agentId); setSpecialistsOpen(false) }}
+                              className="w-full text-left rounded-xl px-3 py-2.5 border border-slate-200 dark:border-slate-700 hover:bg-[#53328A]/8 text-sm"
+                            >
+                              <span className="font-medium block truncate">{t.label}</span>
+                              <span className="text-[10px] text-slate-500 line-clamp-2 mt-0.5">{t.description}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </ScrollArea>
                 </SheetContent>
               </Sheet>
@@ -470,7 +772,13 @@ export default function CoFounderPage() {
                         <div className="text-xs font-medium text-white/80 mb-1.5">You</div>
                       )}
                       <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
-                      {msg.role === 'assistant' && suggestedActions.length > 0 && isLastAssistantMessage && (
+                      {msg.role === 'assistant' && isLastAssistantMessage && (msg.structuredActions?.length ? (
+                        <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700 flex flex-wrap gap-2">
+                          {msg.structuredActions.map((action, i) => (
+                            <StructuredActionButton key={i} action={action} tenantId={tenantId} getAuthHeaders={getAuthHeaders} conversationId={conversationId} />
+                          ))}
+                        </div>
+                      ) : suggestedActions.length > 0 ? (
                         <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700 flex flex-wrap gap-2">
                           <Button
                             size="sm"
@@ -507,7 +815,7 @@ export default function CoFounderPage() {
                             </Button>
                           </Link>
                         </div>
-                      )}
+                      ) : null)}
                     </div>
                     {msg.role === 'user' && (
                       <div className="w-9 h-9 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center flex-shrink-0">
@@ -622,8 +930,88 @@ export default function CoFounderPage() {
           </div>
         </main>
 
-        {/* Right: Context — fixed width, stack below on small */}
+        {/* Right: Context + AI Output (Artifacts) — fixed width, stack below on small */}
         <aside className="hidden xl:flex flex-col w-[280px] flex-shrink-0 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-4 overflow-y-auto">
+          {latestArtifact && (
+            <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
+                <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                  <Table2 className="w-4 h-4 flex-shrink-0" style={{ color: PAYAID_PURPLE }} />
+                  <span className="truncate">{latestArtifact.title || 'AI Output'}</span>
+                </CardTitle>
+                {latestArtifact.type === 'table' && 'columns' in latestArtifact.data && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => {
+                      const d = latestArtifact!.data as { columns: string[]; rows: Record<string, string | number>[] }
+                      const header = d.columns.join(',')
+                      const body = d.rows.map((r) => d.columns.map((c) => String(r[c] ?? '')).join(',')).join('\n')
+                      const csv = `${header}\n${body}`
+                      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = `ai-output-${new Date().toISOString().slice(0, 10)}.csv`
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    }}
+                    title="Download CSV"
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent className="p-0">
+                {latestArtifact.type === 'table' && 'columns' in latestArtifact.data && (
+                  <div className="overflow-x-auto max-h-64 overflow-y-auto">
+                    <table className="w-full text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                          {latestArtifact.data.columns.map((col) => (
+                            <th key={col} className="text-left px-3 py-2 font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                              {col}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {latestArtifact.data.rows.slice(0, 20).map((row, ri) => (
+                          <tr key={ri} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                            {latestArtifact!.data.columns.map((col) => (
+                              <td key={col} className="px-3 py-1.5 text-slate-600 dark:text-slate-400">
+                                {String(row[col] ?? '')}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {latestArtifact.data.rows.length > 20 && (
+                      <p className="text-[10px] text-slate-500 px-3 py-1">Showing first 20 of {latestArtifact.data.rows.length} rows</p>
+                    )}
+                  </div>
+                )}
+                {latestArtifact.type === 'checklist' && 'items' in latestArtifact.data && (
+                  <ul className="px-4 pb-4 space-y-2 max-h-64 overflow-y-auto">
+                    {latestArtifact.data.items.map((item, i) => (
+                      <li key={i} className="flex items-center gap-2 text-sm">
+                        <span className={item.done ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-slate-300'}>
+                          {item.done ? '☑' : '☐'} {item.label}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {latestArtifact.type === 'chart' && 'labels' in latestArtifact.data && (
+                  <div className="px-4 pb-4 text-xs text-slate-500">
+                    Chart: {latestArtifact.data.title || latestArtifact.data.labels?.join(', ')} — open in full view soon.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
           <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -739,7 +1127,63 @@ export default function CoFounderPage() {
 
       {/* On xl breakpoint, show right panel below center when stacked */}
       <div className="xl:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
-        <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="max-w-3xl mx-auto space-y-4">
+          {latestArtifact && (
+            <Card className="rounded-2xl border-slate-200 dark:border-slate-700 overflow-hidden">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+                  <Table2 className="w-4 h-4" style={{ color: PAYAID_PURPLE }} />
+                  {latestArtifact.title || 'AI Output'}
+                </CardTitle>
+                {latestArtifact.type === 'table' && 'columns' in latestArtifact.data && (
+                  <Button variant="ghost" size="sm" onClick={() => {
+                    const d = latestArtifact!.data as { columns: string[]; rows: Record<string, string | number>[] }
+                    const csv = [d.columns.join(','), ...d.rows.map((r) => d.columns.map((c) => String(r[c] ?? '')).join(','))].join('\n')
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+                    const a = document.createElement('a')
+                    a.href = URL.createObjectURL(blob)
+                    a.download = `ai-output-${new Date().toISOString().slice(0, 10)}.csv`
+                    a.click()
+                    URL.revokeObjectURL(a.href)
+                  }}>
+                    <Download className="w-4 h-4 mr-1" /> CSV
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent className="p-0">
+                {latestArtifact.type === 'table' && 'columns' in latestArtifact.data && (
+                  <div className="overflow-x-auto max-h-48 overflow-y-auto">
+                    <table className="w-full text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b bg-slate-50 dark:bg-slate-800/50">
+                          {latestArtifact.data.columns.map((c) => (
+                            <th key={c} className="text-left px-3 py-2 font-semibold">{c}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {latestArtifact.data.rows.slice(0, 10).map((row, ri) => (
+                          <tr key={ri} className="border-b border-slate-100">
+                            {latestArtifact!.data.columns.map((col) => (
+                              <td key={col} className="px-3 py-1.5">{String(row[col] ?? '')}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {latestArtifact.type === 'checklist' && 'items' in latestArtifact.data && (
+                  <ul className="px-4 pb-4 space-y-1 text-sm">
+                    {latestArtifact.data.items.slice(0, 8).map((item, i) => (
+                      <li key={i}>{item.done ? '☑' : '☐'} {item.label}</li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="rounded-2xl border-slate-200 dark:border-slate-700">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">Key metrics</CardTitle>
@@ -797,8 +1241,50 @@ export default function CoFounderPage() {
               </Link>
             </CardContent>
           </Card>
+          </div>
         </div>
       </div>
+
+      {/* Create / Edit Project dialog */}
+      <Dialog open={projectDialogOpen} onOpenChange={setProjectDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingProjectId ? 'Edit project' : 'New project'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">Name</label>
+              <Input
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="e.g. Restaurant margins"
+                className="rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">Instructions (optional)</label>
+              <Textarea
+                value={projectInstructions}
+                onChange={(e) => setProjectInstructions(e.target.value)}
+                placeholder="e.g. Always consider my restaurant margins and peak hours."
+                rows={4}
+                className="rounded-xl resize-none"
+              />
+              <p className="text-xs text-slate-500 mt-1">The AI will remember this context for all chats in this project.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProjectDialogOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!projectName.trim() || saveProject.isPending}
+              onClick={() => saveProject.mutate()}
+              style={{ backgroundColor: PAYAID_PURPLE }}
+            >
+              {saveProject.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : editingProjectId ? 'Save' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

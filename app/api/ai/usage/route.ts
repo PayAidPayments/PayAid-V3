@@ -29,6 +29,26 @@ export async function GET(request: NextRequest) {
     const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     
+    const searchParams = request.nextUrl.searchParams
+    const recentLimit = searchParams.get('recent')
+    if (recentLimit) {
+      const limit = Math.min(100, Math.max(1, parseInt(recentLimit, 10) || 20))
+      const recent = await prisma.aIUsage.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        select: {
+          id: true,
+          service: true,
+          requestType: true,
+          modelUsed: true,
+          tokens: true,
+          createdAt: true,
+        },
+      })
+      return NextResponse.json({ recent })
+    }
+
     const dbUsage = await prisma.aIUsage.groupBy({
       by: ['service'],
       where: {
