@@ -301,31 +301,60 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
-      <div className="absolute top-4 left-4">
-        <Logo href="/" />
-      </div>
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <div className="flex items-center justify-between mb-2">
-            <Link 
-              href="/" 
-              className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Home
-            </Link>
+    <div className="min-h-screen flex bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/20">
+      {/* Left column: branding + reassurance (40–45%) */}
+      <div className="hidden lg:flex lg:w-[42%] flex-col justify-between p-8 xl:p-12">
+        <div>
+          <Logo href="/" />
+          <p className="mt-6 text-lg font-medium text-slate-600 dark:text-slate-400">Business OS</p>
+          <ul className="mt-6 space-y-3 text-sm text-slate-600 dark:text-slate-400">
+            <li className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" /> Unified CRM, Finance, HR
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" /> AI copilots for every team
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" /> Powered by PayAid Payments
+            </li>
+          </ul>
+        </div>
+        <div className="rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 p-5 shadow-sm">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Platform at a glance</p>
+          <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+            <div><p className="text-xl font-bold text-slate-900 dark:text-gray-100">28+</p><p className="text-xs text-slate-500">Modules</p></div>
+            <div><p className="text-xl font-bold text-slate-900 dark:text-gray-100">500+</p><p className="text-xs text-slate-500">Businesses</p></div>
+            <div><p className="text-xl font-bold text-slate-900 dark:text-gray-100">1</p><p className="text-xs text-slate-500">Login</p></div>
           </div>
-          <CardTitle className="text-2xl font-bold text-center">
-            Sign in to PayAid V3
-          </CardTitle>
-          <CardDescription className="text-center">
-            Enter your email and password to access your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        </div>
+      </div>
+
+      {/* Right column: form */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+        <div className="absolute top-4 left-4 lg:hidden">
+          <Logo href="/" />
+        </div>
+        <Card className="w-full max-w-md shadow-lg border-slate-200/80 dark:border-slate-700">
+          <CardHeader className="space-y-1">
+            <div className="flex items-center justify-between mb-2">
+              <Link 
+                href="/" 
+                className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 flex items-center gap-1 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Home
+              </Link>
+            </div>
+            <CardTitle className="text-2xl font-bold text-center">
+              Sign in to PayAid V3
+            </CardTitle>
+            <CardDescription className="text-center">
+              Enter your email and password to access your account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
             {error && (
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
@@ -426,7 +455,7 @@ export default function LoginPage() {
             <div className="text-center">
               <Link 
                 href="/" 
-                className="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1 transition-colors"
+                className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 inline-flex items-center gap-1 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -434,9 +463,13 @@ export default function LoginPage() {
                 Return to Home Page
               </Link>
             </div>
+            <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              Trusted by 500+ Indian businesses
+            </p>
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

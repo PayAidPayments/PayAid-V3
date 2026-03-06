@@ -19,6 +19,7 @@ import { CurrencyDisplay } from '@/components/currency/CurrencyDisplay'
 import { TaxRuleSelector } from '@/components/tax/TaxRuleSelector'
 import { TaxBreakdown } from '@/components/tax/TaxBreakdown'
 import { getAuthHeaders } from '@/lib/api/client'
+import { PAYMENT_TERMS, calculateDueDateFromTerms, normalizePaymentTerm } from '@/lib/finance/payment-terms'
 
 // Invoice template options (matching settings page)
 const invoiceTemplates = [
@@ -239,7 +240,7 @@ export default function NewInvoicePage() {
       setFormData(prev => ({
         ...prev,
         reverseCharge: invoiceSettings.defaultReverseCharge || false,
-        terms: invoiceSettings.defaultPaymentTerms || prev.terms,
+        terms: normalizePaymentTerm(invoiceSettings.defaultPaymentTerms) || prev.terms,
         notes: invoiceSettings.defaultNotes || prev.notes,
       }))
     }
@@ -271,43 +272,10 @@ export default function NewInvoicePage() {
     }
   }, [prefillCustomerId, contacts, tenantData])
 
-  // Helper function to calculate due date from payment terms
+  // Helper function to calculate due date from payment terms (shared + normalized)
   const calculateDueDate = (terms: string, invoiceDate: string): string => {
-    if (!terms || !invoiceDate || terms === 'Custom') {
-      return ''
-    }
-
-    const invoiceDateObj = new Date(invoiceDate)
-    if (isNaN(invoiceDateObj.getTime())) {
-      return ''
-    }
-
-    let daysToAdd = 0
-
-    switch (terms) {
-      case 'Due on Receipt':
-        daysToAdd = 0
-        break
-      case 'Net 15':
-        daysToAdd = 15
-        break
-      case 'Net 30':
-        daysToAdd = 30
-        break
-      case 'Net 45':
-        daysToAdd = 45
-        break
-      case 'Net 60':
-        daysToAdd = 60
-        break
-      default:
-        return ''
-    }
-
-    const dueDateObj = new Date(invoiceDateObj)
-    dueDateObj.setDate(dueDateObj.getDate() + daysToAdd)
-    
-    return dueDateObj.toISOString().split('T')[0]
+    const normalized = normalizePaymentTerm(terms)
+    return calculateDueDateFromTerms(normalized, invoiceDate)
   }
 
   // Auto-populate due date based on payment terms and invoice date
@@ -870,13 +838,11 @@ export default function NewInvoicePage() {
                       disabled={createInvoice.isPending}
                     >
                       <option value="">Select Terms</option>
-                      <option value="Due on Receipt">Due on Receipt</option>
-                      <option value="Net 15">Net 15</option>
-                      <option value="Net 30">Net 30</option>
-                      <option value="Net 45">Net 45</option>
-                      <option value="Net 60">Net 60</option>
-                      <option value="Due on Receipt">Due on Receipt</option>
-                      <option value="Custom">Custom</option>
+                      {PAYMENT_TERMS.map((t) => (
+                        <option key={t.value} value={t.label}>
+                          {t.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div className="space-y-2">

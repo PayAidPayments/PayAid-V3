@@ -206,6 +206,24 @@ async function verifyDatabaseConnection() {
 
   if (failed > 0) {
     console.log('\n❌ Some checks failed. Please review the results above.')
+    const failureText = results
+      .filter((r) => r.status === 'fail')
+      .map((r) => `${r.step}: ${r.message} ${typeof r.details?.error === 'string' ? r.details.error : ''}`)
+      .join('\n');
+    if (failureText.includes('P1001') || failureText.includes("Can't reach database server")) {
+      console.log('\n💡 Hint: Prisma cannot reach your database host. If you are using a remote Supabase pooler, your network/VPN/firewall may be blocking it.')
+      console.log('   Use a local Docker Postgres for stable E2E:')
+      console.log('     npm run db:local:up')
+      console.log('     npm run db:local:setup')
+      console.log('     npm run verify:db:local')
+    } else if (failureText.toLowerCase().includes('tenant or user not found')) {
+      console.log('\n💡 Hint: Your DATABASE_URL is reachable but authentication failed ("Tenant or user not found").')
+      console.log('   This often means the Supabase pooler user/password or project host is wrong for this environment.')
+      console.log('   For stable E2E, use a local Docker Postgres:')
+      console.log('     npm run db:local:up')
+      console.log('     npm run db:local:setup')
+      console.log('     npm run verify:db:local')
+    }
     process.exit(1)
   } else if (warnings > 0) {
     console.log('\n⚠️  Some warnings found. Review recommendations above.')

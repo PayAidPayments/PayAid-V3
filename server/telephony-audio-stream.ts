@@ -11,7 +11,7 @@
 import { config } from 'dotenv';
 import { resolve } from 'path';
 import { WebSocketServer, WebSocket } from 'ws';
-import { prisma } from '../lib/db/prisma';
+import { prisma } from './db-prisma';
 import { TelephonyVoiceOrchestrator } from '../lib/voice-agent/telephony-orchestrator';
 import { FreeStackVoiceOrchestrator } from '../lib/voice-agent/free-stack-orchestrator';
 
@@ -87,12 +87,14 @@ export function createTelephonyAudioStreamServer() {
         ? new FreeStackVoiceOrchestrator({
             agent,
             call,
-            webSocket: ws
+            webSocket: ws,
+            prisma
           })
         : new TelephonyVoiceOrchestrator({
             agent,
             call,
-            webSocket: ws
+            webSocket: ws,
+            prisma
           });
       
       console.log(`[Telephony Audio Stream] Using ${useFreeStack ? 'Free Stack' : 'Paid Services'} orchestrator`);

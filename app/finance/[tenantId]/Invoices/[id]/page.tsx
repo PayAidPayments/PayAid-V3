@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useInvoice } from '@/lib/hooks/use-api'
 import { useAuthStore } from '@/lib/stores/auth'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageLoading } from '@/components/ui/loading'
@@ -77,6 +77,21 @@ export default function FinanceInvoiceDetailPage() {
   const [sendSuccess, setSendSuccess] = useState('')
   const [portalLinkCopied, setPortalLinkCopied] = useState(false)
   const { token } = useAuthStore()
+
+  const { data: gatewaySettings } = useQuery({
+    queryKey: ['settings', 'payment-gateway', 'status'],
+    queryFn: async () => {
+      const response = await fetch('/api/settings/payment-gateway', {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      })
+      if (!response.ok) return { isConfigured: false, isActive: false }
+      return response.json()
+    },
+    enabled: Boolean(token),
+  })
+  const canSendPaymentLink = Boolean(gatewaySettings?.isConfigured && gatewaySettings?.isActive)
 
   const sendInvoiceMutation = useMutation({
     mutationFn: async () => {
@@ -181,11 +196,20 @@ export default function FinanceInvoiceDetailPage() {
           {invoice.customer?.email && invoice.status !== 'paid' && (
             <Button
               onClick={() => sendInvoiceMutation.mutate()}
-              disabled={sendInvoiceMutation.isPending}
+              disabled={sendInvoiceMutation.isPending || !canSendPaymentLink}
               className="bg-green-600 hover:bg-green-700"
             >
               {sendInvoiceMutation.isPending ? 'Sending...' : '📧 Send with Payment Link'}
             </Button>
+          )}
+          {!canSendPaymentLink && invoice.customer?.email && invoice.status !== 'paid' && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs">
+              Enable Payment Gateway in{' '}
+              <Link href={tenantId ? `/settings/${tenantId}/Billing#gateway` : '/settings'} className="underline font-medium">
+                Settings → Billing
+              </Link>
+              {' '}to send payment links.
+            </p>
           )}
           {invoice.customer?.id && (
             <Button
@@ -559,7 +583,7 @@ export default function FinanceInvoiceDetailPage() {
                   <p>{sendError}</p>
                   {sendErrorCode === 'PAYMENT_GATEWAY_NOT_CONFIGURED' && (
                     <p className="pt-1">
-                      <Link href={tenantId ? `/settings/${tenantId}/Billing` : '/settings'} className="underline font-medium">
+                      <Link href={tenantId ? `/settings/${tenantId}/Billing#gateway` : '/settings'} className="underline font-medium">
                         Configure payment gateway in Settings →
                       </Link>
                     </p>
@@ -575,10 +599,19 @@ export default function FinanceInvoiceDetailPage() {
                 <Button
                   className="w-full bg-green-600 hover:bg-green-700"
                   onClick={() => sendInvoiceMutation.mutate()}
-                  disabled={sendInvoiceMutation.isPending}
+                  disabled={sendInvoiceMutation.isPending || !canSendPaymentLink}
                 >
                   {sendInvoiceMutation.isPending ? 'Sending...' : '📧 Send Invoice with Payment Link'}
                 </Button>
+              )}
+              {!canSendPaymentLink && invoice.customer?.email && invoice.status !== 'paid' && (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Enable Payment Gateway in{' '}
+                  <Link href={tenantId ? `/settings/${tenantId}/Billing#gateway` : '/settings'} className="underline font-medium">
+                    Settings → Billing
+                  </Link>
+                  .
+                </p>
               )}
               {invoice.paymentLinkUrl && (
                 <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">

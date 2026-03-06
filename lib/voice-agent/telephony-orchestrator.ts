@@ -19,14 +19,15 @@ try {
 } catch {
   // OpenAI not installed - will need to handle this in code
 }
+import type { PrismaClient } from '@prisma/client';
 import { VoiceAgent, VoiceAgentCall } from '@prisma/client';
 import WebSocket from 'ws';
-import { prisma } from '@/lib/db/prisma';
 
 interface OrchestratorConfig {
   agent: VoiceAgent;
   call: VoiceAgentCall;
   webSocket: WebSocket;
+  prisma: PrismaClient;
 }
 
 interface ConversationMessage {
@@ -39,12 +40,13 @@ export class TelephonyVoiceOrchestrator {
   private agent: VoiceAgent;
   private call: VoiceAgentCall;
   private ws: WebSocket;
-  
+  private readonly prisma: PrismaClient;
+
   // AI Services
   private deepgram: Deepgram;
   private elevenlabs: ElevenLabsClient;
   private openai: any; // OpenAI client (optional dependency)
-  
+
   // Streams
   private sttStream: any; // Deepgram live transcription
   private conversationHistory: ConversationMessage[] = [];
@@ -55,6 +57,7 @@ export class TelephonyVoiceOrchestrator {
     this.agent = config.agent;
     this.call = config.call;
     this.ws = config.webSocket;
+    this.prisma = config.prisma;
     
     // ===== INITIALIZE AI SERVICES =====
     this.deepgram = new Deepgram(process.env.DEEPGRAM_API_KEY || '');
@@ -126,7 +129,7 @@ export class TelephonyVoiceOrchestrator {
           });
 
           // Save to database
-          await prisma.callMessage.create({
+          await this.prisma.callMessage.create({
             data: {
               callId: this.call.id,
               role: 'user',
@@ -398,7 +401,7 @@ export class TelephonyVoiceOrchestrator {
       .map(msg => `${msg.role === 'user' ? 'User' : 'Agent'}: ${msg.content}`)
       .join('\n\n');
 
-    await prisma.voiceAgentCall.update({
+    await this.prisma.voiceAgentCall.update({
       where: { id: this.call.id },
       data: {
         transcript,

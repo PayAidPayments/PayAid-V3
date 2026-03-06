@@ -1,30 +1,54 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/stores/auth'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Badge } from '@/components/ui/badge'
-import { Send, Bot, User, Loader2, TrendingUp, DollarSign, Users, FileText, Zap, History, CheckCircle, Download, Mail } from 'lucide-react'
+import { Select } from '@/components/ui/select'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Send, Bot, User, Loader2, ChevronDown, LayoutGrid, History, AlertCircle, ExternalLink, Paperclip } from 'lucide-react'
+import { formatINR } from '@/lib/utils/formatINR'
+import { getSuggestionsForAgent } from '@/lib/ai/co-founder-suggestions'
+import {
+  SPECIALIST_CATEGORY_ORDER,
+  getCategoryForAgent,
+  getRoleForAgent,
+} from '@/lib/ai/co-founder-specialists'
 import type { AgentId } from '@/lib/ai/agents'
 
-// PayAid brand colors
 const PAYAID_PURPLE = '#53328A'
-const PAYAID_GOLD = '#F5C700'
-const PAYAID_DARK_PURPLE = '#2D1B47'
-const PAYAID_LIGHT_PURPLE = '#6B4BA1'
+
+const CONTEXT_OPTIONS = [
+  { value: 'all', label: 'All modules' },
+  { value: 'crm', label: 'CRM only' },
+  { value: 'finance', label: 'Finance only' },
+  { value: 'hr', label: 'HR only' },
+]
+
+const TIME_RANGE_OPTIONS = [
+  { value: '7', label: 'Last 7 days' },
+  { value: '30', label: 'Last 30 days' },
+  { value: '90', label: 'This quarter' },
+  { value: 'custom', label: 'Custom' },
+]
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
-  agent?: {
-    id: string
-    name: string
-  }
+  agent?: { id: string; name: string }
 }
 
 interface Agent {
@@ -41,60 +65,65 @@ function getAuthHeaders() {
   }
 }
 
+const INITIAL_SPECIALISTS_VISIBLE = 8
+
 export default function CoFounderPage() {
+  const params = useParams()
+  const tenantId = (params?.tenantId as string) || ''
   const { token } = useAuthStore()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [selectedAgent, setSelectedAgent] = useState<AgentId>('cofounder')
   const [conversationId, setConversationId] = useState<string | null>(null)
-  const [suggestedActions, setSuggestedActions] = useState<Array<{ action: string; description: string; priority?: string }>>([])
-  const [showConversations, setShowConversations] = useState(false)
+  const [suggestedActions, setSuggestedActions] = useState<
+    Array<{ action: string; description: string; priority?: string }>
+  >([])
+  const [contextModules, setContextModules] = useState('all')
+  const [timeRange, setTimeRange] = useState('30')
+  const [showAllSpecialists, setShowAllSpecialists] = useState(false)
+  const [specialistsOpen, setSpecialistsOpen] = useState(false)
+  const [attachContextOpen, setAttachContextOpen] = useState(false)
 
-  // Fetch available agents
   const { data: agentsData } = useQuery<{ agents: Agent[] }>({
     queryKey: ['ai-agents'],
     queryFn: async () => {
-      const response = await fetch('/api/ai/cofounder', {
+      const res = await fetch('/api/ai/cofounder', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
-      if (!response.ok) throw new Error('Failed to fetch agents')
-      return response.json()
+      if (!res.ok) throw new Error('Failed to fetch agents')
+      return res.json()
     },
     enabled: !!token,
   })
 
-  // Fetch business context (dashboard stats)
   const { data: businessContext } = useQuery({
     queryKey: ['business-context'],
     queryFn: async () => {
-      const response = await fetch('/api/dashboard/stats', {
-        headers: getAuthHeaders(),
-      })
-      if (!response.ok) return null
-      return response.json()
+      const res = await fetch('/api/dashboard/stats', { headers: getAuthHeaders() })
+      if (!res.ok) return null
+      return res.json()
     },
     enabled: !!token,
     staleTime: 2 * 60 * 1000,
   })
 
-  const agents = agentsData?.agents || []
-
-  // Fetch conversation history
   const { data: conversationsData, refetch: refetchConversations } = useQuery({
     queryKey: ['cofounder-conversations'],
     queryFn: async () => {
-      const response = await fetch('/api/ai/cofounder/conversations', {
+      const res = await fetch('/api/ai/cofounder/conversations', {
         headers: getAuthHeaders(),
       })
-      if (!response.ok) return { conversations: [], total: 0 }
-      return response.json()
+      if (!res.ok) return { conversations: [], total: 0 }
+      return res.json()
     },
     enabled: !!token,
   })
 
+  const agents = agentsData?.agents || []
+
   const sendMessage = useMutation({
     mutationFn: async (message: string) => {
-      const response = await fetch('/api/ai/cofounder', {
+      const res = await fetch('/api/ai/cofounder', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -104,16 +133,16 @@ export default function CoFounderPage() {
           message,
           agentId: selectedAgent,
           conversationId: conversationId || undefined,
-          useMultiSpecialist: selectedAgent === 'cofounder', // Enable multi-specialist for cofounder
+          useMultiSpecialist: selectedAgent === 'cofounder',
+          context: { module: contextModules !== 'all' ? contextModules : undefined },
+          timeRangeDays: timeRange === 'custom' ? 30 : parseInt(timeRange, 10) || 30,
         }),
       })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || errorData.error || 'Failed to send message')
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || err.error || 'Failed to send message')
       }
-
-      return response.json()
+      return res.json()
     },
     onSuccess: (data, variables) => {
       setMessages((prev) => [
@@ -127,16 +156,8 @@ export default function CoFounderPage() {
         },
       ])
       setInput('')
-      
-      // Update conversation ID and suggested actions
-      if (data.conversationId) {
-        setConversationId(data.conversationId)
-      }
-      if (data.suggestedActions && data.suggestedActions.length > 0) {
-        setSuggestedActions(data.suggestedActions)
-      }
-      
-      // Refetch conversations list
+      if (data.conversationId) setConversationId(data.conversationId)
+      if (data.suggestedActions?.length) setSuggestedActions(data.suggestedActions)
       refetchConversations()
     },
     onError: (err) => {
@@ -144,459 +165,638 @@ export default function CoFounderPage() {
         ...prev,
         {
           role: 'assistant',
-          content: `Error: ${err instanceof Error ? err.message : 'An error occurred'}`,
+          content: `Error: ${err instanceof Error ? err.message : 'Something went wrong'}`,
           timestamp: new Date(),
         },
       ])
     },
   })
 
+  const groupedAgents = useMemo(() => {
+    const byCategory: Record<string, Agent[]> = {}
+    for (const cat of SPECIALIST_CATEGORY_ORDER) {
+      byCategory[cat] = []
+    }
+    for (const agent of agents) {
+      const cat = getCategoryForAgent(agent.id)
+      if (!byCategory[cat]) byCategory[cat] = []
+      byCategory[cat].push(agent)
+    }
+    return SPECIALIST_CATEGORY_ORDER.map((cat) => ({
+      category: cat,
+      agents: byCategory[cat] || [],
+    })).filter((g) => g.agents.length > 0)
+  }, [agents])
+
+  const visibleGroups = useMemo(() => {
+    if (showAllSpecialists) return groupedAgents
+    let count = 0
+    const result: typeof groupedAgents = []
+    for (const g of groupedAgents) {
+      const take = Math.max(0, INITIAL_SPECIALISTS_VISIBLE - count)
+      if (take === 0) break
+      result.push({
+        category: g.category,
+        agents: take >= g.agents.length ? g.agents : g.agents.slice(0, take),
+      })
+      count += result[result.length - 1].agents.length
+    }
+    return result
+  }, [groupedAgents, showAllSpecialists])
+
+  const hasMoreSpecialists = agents.length > INITIAL_SPECIALISTS_VISIBLE && !showAllSpecialists
+  const selectedAgentMeta = agents.find((a) => a.id === selectedAgent)
+  const roleInfo = getRoleForAgent(selectedAgent)
+  const suggestionChips = getSuggestionsForAgent(selectedAgent)
+
+  // When user switches specialist, show a one-line "What I can help you with"
+  const [prevAgent, setPrevAgent] = useState<AgentId | null>(null)
+  useEffect(() => {
+    if (prevAgent !== null && prevAgent !== selectedAgent) {
+      const { role } = getRoleForAgent(selectedAgent)
+      const name = agents.find((a) => a.id === selectedAgent)?.name ?? 'Co-Founder'
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: `I'm ${name}. I can help with: ${role}. Ask me anything.`,
+          timestamp: new Date(),
+          agent: { id: selectedAgent, name },
+        },
+      ])
+    }
+    setPrevAgent(selectedAgent)
+  }, [selectedAgent, agents, prevAgent])
+
+  const handleChipSend = (text: string) => {
+    if (!text.trim() || sendMessage.isPending) return
+    sendMessage.mutate(text.trim())
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (input.trim() && !sendMessage.isPending) {
-      sendMessage.mutate(input.trim())
+    if (input.trim() && !sendMessage.isPending) sendMessage.mutate(input.trim())
+  }
+
+  const loadConversation = async (convId: string) => {
+    try {
+      const res = await fetch(`/api/ai/cofounder/conversations/${convId}`, {
+        headers: getAuthHeaders(),
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      const msgs = (data.messages || []).map((m: { role: string; content: string; timestamp: string; agent?: { id: string; name: string } }) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+        timestamp: new Date(m.timestamp),
+        agent: m.agent,
+      }))
+      setMessages(msgs)
+      setConversationId(data.id)
+      setSuggestedActions(Array.isArray(data.suggestedActions) ? data.suggestedActions : [])
+    } catch (e) {
+      console.error('Failed to load conversation:', e)
     }
   }
 
-  // Quick actions
-  const quickActions = [
-    { label: 'Generate Business Plan', icon: FileText, action: () => setInput('Generate a comprehensive business plan for my company') },
-    { label: 'Create Pitch Deck', icon: Zap, action: () => setInput('Help me create a pitch deck for investors') },
-    { label: 'Analyze Revenue', icon: DollarSign, action: () => setInput('Analyze my revenue trends and provide insights') },
-    { label: 'Growth Strategy', icon: TrendingUp, action: () => setInput('Suggest growth strategies for my business') },
-  ]
-
-  // Agent colors using PayAid theme
-  const agentColors: Record<AgentId, string> = {
-    cofounder: PAYAID_PURPLE,
-    finance: '#10B981', // Green
-    sales: PAYAID_PURPLE,
-    marketing: '#EC4899', // Pink
-    hr: '#F59E0B', // Orange
-    website: '#6366F1', // Indigo
-    restaurant: '#EF4444', // Red
-    retail: PAYAID_GOLD,
-    manufacturing: '#6B7280', // Gray
-    'growth-strategist': PAYAID_GOLD,
-    'operations': PAYAID_LIGHT_PURPLE,
-    'product': '#8B5CF6', // Purple
-    'industry-expert': '#14B8A6', // Teal
-    'analytics': '#3B82F6', // Blue
-    'customer-success': '#06B6D4', // Cyan
-    'compliance': '#F97316', // Orange
-    'fundraising': PAYAID_GOLD,
-    'market-research': '#A855F7', // Purple
-    'scaling': PAYAID_PURPLE,
-    'tech-advisor': '#6366F1', // Indigo
-    'design': '#EC4899', // Pink
-    'documentation': '#64748B', // Slate
-    'email-parser': '#10B981', // Green
-    'form-filler': '#3B82F6', // Blue
-    'document-reviewer': '#8B5CF6', // Purple
-  }
-
-  return (
-    <div className="flex h-screen" style={{ background: 'linear-gradient(135deg, #F8F7F3 0%, #FFFFFF 100%)' }}>
-      {/* Agent Selector Sidebar */}
-      <div className="w-72 bg-white border-r-2 p-4 overflow-y-auto" style={{ borderColor: PAYAID_PURPLE }}>
-        <div className="mb-6">
-          <h2 className="text-xl font-bold mb-2" style={{ color: PAYAID_PURPLE }}>AI Co-Founder Hub</h2>
-          <p className="text-sm text-gray-600">17 Specialist Agents</p>
-        </div>
-        
-        <div className="space-y-2">
-          {agents.length === 0 ? (
-            <div className="text-sm text-gray-500 p-3">Loading agents...</div>
-          ) : (
-            agents.map((agent) => (
-              <button
-                key={agent.id}
-                onClick={() => setSelectedAgent(agent.id)}
-                className={`w-full text-left p-3 rounded-lg transition-all ${
-                  selectedAgent === agent.id
-                    ? 'shadow-lg border-2'
-                    : 'border-2 border-transparent hover:bg-gray-50'
-                }`}
-                style={{
-                  backgroundColor: selectedAgent === agent.id ? `${PAYAID_PURPLE}15` : 'transparent',
-                  borderColor: selectedAgent === agent.id ? agentColors[agent.id] || PAYAID_PURPLE : 'transparent',
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="w-4 h-4 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: agentColors[agent.id] || PAYAID_PURPLE }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm" style={{ color: PAYAID_PURPLE }}>{agent.name}</div>
-                    <div className="text-xs text-gray-500 truncate">{agent.description}</div>
-                  </div>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mt-8 pt-6 border-t-2" style={{ borderColor: PAYAID_PURPLE + '20' }}>
-          <h3 className="text-sm font-bold mb-3" style={{ color: PAYAID_PURPLE }}>Quick Actions</h3>
-          <div className="space-y-2">
-            {quickActions.map((action, idx) => {
-              const Icon = action.icon
+  const renderSpecialistsList = () => (
+    <div className="space-y-6 py-2">
+      {visibleGroups.map(({ category, agents: list }) => (
+        <div key={category}>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 px-3">
+            {category}
+          </h3>
+          <div className="space-y-1.5">
+            {list.map((agent) => {
+              const isSelected = selectedAgent === agent.id
+              const { role, tooltip } = getRoleForAgent(agent.id)
               return (
                 <button
-                  key={idx}
-                  onClick={action.action}
-                  className="w-full text-left p-2 rounded-lg hover:shadow-md transition-all flex items-center gap-2 text-sm"
-                  style={{
-                    backgroundColor: `${PAYAID_GOLD}15`,
-                    border: `1px solid ${PAYAID_GOLD}40`,
+                  key={agent.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedAgent(agent.id as AgentId)
+                    setSpecialistsOpen(false)
                   }}
+                  title={tooltip}
+                  className={`w-full text-left rounded-xl px-3 py-3 transition-all border-l-4 ${
+                    isSelected
+                      ? 'bg-[#53328A]/12 dark:bg-[#53328A]/20 border-[#53328A] shadow-sm'
+                      : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-800/50'
+                  }`}
                 >
-                  <Icon className="w-4 h-4" style={{ color: PAYAID_GOLD }} />
-                  <span className="font-medium" style={{ color: PAYAID_PURPLE }}>{action.label}</span>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: isSelected ? PAYAID_PURPLE : '#94a3b8' }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
+                        {agent.name}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                        {role}
+                      </div>
+                    </div>
+                  </div>
                 </button>
               )
             })}
           </div>
         </div>
-      </div>
+      ))}
+      {hasMoreSpecialists && (
+        <button
+          type="button"
+          onClick={() => setShowAllSpecialists(true)}
+          className="w-full text-center text-sm text-[#53328A] font-medium py-2 hover:underline"
+        >
+          Show all specialists
+        </button>
+      )}
+    </div>
+  )
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="bg-white border-b-2 p-4" style={{ borderColor: PAYAID_PURPLE }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold" style={{ color: PAYAID_PURPLE }}>AI Co-Founder</h1>
-                <div className="group relative">
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded cursor-help">ℹ️</span>
-                  <div className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-white border-2 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50" style={{ borderColor: PAYAID_PURPLE }}>
-                    <p className="text-xs font-semibold mb-1" style={{ color: PAYAID_PURPLE }}>AI Co-Founder</p>
-                    <p className="text-xs text-gray-600">Business-focused AI with specialized agents. Access your business data, get context-aware responses, and execute actions across modules.</p>
-                    <p className="text-xs text-gray-500 mt-2">Use for: Business questions, data analysis, strategic advice</p>
-                  </div>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600">
-                {agents.find(a => a.id === selectedAgent)?.description || 'Your strategic business partner with access to your business data'}
-              </p>
-            </div>
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col">
+      <div className="flex flex-1 min-h-0 max-w-[1600px] w-full mx-auto">
+        {/* Left: Specialists — fixed width, hide on small */}
+        <aside className="hidden lg:flex flex-col w-[280px] flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-800">
+            <h2 className="text-lg font-semibold" style={{ color: PAYAID_PURPLE }}>
+              Specialists
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Choose who&apos;s in the room
+            </p>
           </div>
-        </div>
-
-        <div className="flex-1 flex overflow-hidden">
-          {/* Messages */}
-          <ScrollArea className="flex-1 p-6">
-            <div className="space-y-4 max-w-4xl mx-auto">
-              {messages.length === 0 && (
-                <div className="text-center text-gray-500 mt-20">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: `${PAYAID_PURPLE}15` }}>
-                    <Bot className="w-10 h-10" style={{ color: PAYAID_PURPLE }} />
-                  </div>
-                  <p className="text-xl font-semibold mb-2" style={{ color: PAYAID_PURPLE }}>Start a conversation with your AI Co-Founder</p>
-                  <p className="text-sm mt-2">Ask about your business, get strategic advice, or consult a specialist</p>
-                </div>
-              )}
-
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {message.role === 'assistant' && (
-                    <div 
-                      className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-md"
-                      style={{ backgroundColor: agentColors[message.agent?.id as AgentId] || PAYAID_PURPLE }}
-                    >
-                      <Bot className="w-5 h-5 text-white" />
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[80%] rounded-lg p-4 shadow-md ${
-                      message.role === 'user'
-                        ? 'text-white'
-                        : 'bg-white border-2'
-                    }`}
-                    style={{
-                      backgroundColor: message.role === 'user' ? PAYAID_PURPLE : 'white',
-                      borderColor: message.role === 'assistant' ? (agentColors[message.agent?.id as AgentId] || PAYAID_PURPLE) : 'transparent',
-                    }}
-                  >
-                    {message.agent && message.role === 'assistant' && (
-                      <Badge 
-                        className="mb-2 text-xs"
-                        style={{ 
-                          backgroundColor: `${agentColors[message.agent.id as AgentId] || PAYAID_PURPLE}20`,
-                          color: agentColors[message.agent.id as AgentId] || PAYAID_PURPLE,
-                          borderColor: agentColors[message.agent.id as AgentId] || PAYAID_PURPLE,
-                        }}
-                      >
-                        {message.agent.name}
-                      </Badge>
-                    )}
-                    <div className="whitespace-pre-wrap">{message.content}</div>
-                    <div
-                      className={`text-xs mt-2 ${
-                        message.role === 'user' ? 'text-white/70' : 'text-gray-400'
-                      }`}
-                    >
-                      {message.timestamp.toLocaleTimeString()}
-                    </div>
-                  </div>
-                  {message.role === 'user' && (
-                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-                      <User className="w-5 h-5 text-white" />
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {sendMessage.isPending && (
-                <div className="flex gap-3 justify-start">
-                  <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center shadow-md"
-                    style={{ backgroundColor: agentColors[selectedAgent] || PAYAID_PURPLE }}
-                  >
-                    <Bot className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="bg-white border-2 rounded-lg p-4 shadow-md" style={{ borderColor: PAYAID_PURPLE + '40' }}>
-                    <Loader2 className="w-5 h-5 animate-spin" style={{ color: PAYAID_PURPLE }} />
-                  </div>
-                </div>
-              )}
-            </div>
+          <ScrollArea className="flex-1 px-3">
+            {agents.length === 0 ? (
+              <div className="py-6 text-sm text-slate-500">Loading specialists…</div>
+            ) : (
+              renderSpecialistsList()
+            )}
           </ScrollArea>
+        </aside>
 
-          {/* Business Context Panel */}
-          <div className="w-80 bg-white border-l-2 p-4 overflow-y-auto" style={{ borderColor: PAYAID_PURPLE }}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>Business Context</h3>
-              <button
-                onClick={() => setShowConversations(!showConversations)}
-                className="p-2 rounded-lg hover:bg-gray-100"
-                title="Conversation History"
-              >
-                <History className="w-5 h-5" style={{ color: PAYAID_PURPLE }} />
-              </button>
-            </div>
-
-            {/* Suggested Actions */}
-            {suggestedActions.length > 0 && (
-              <Card className="border-2 mb-4" style={{ borderColor: PAYAID_GOLD }}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: PAYAID_PURPLE }}>
-                    <CheckCircle className="w-4 h-4" />
-                    Suggested Actions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {suggestedActions.map((action, idx) => (
-                    <div
-                      key={idx}
-                      className="p-2 rounded-lg text-sm"
-                      style={{ backgroundColor: `${PAYAID_GOLD}10` }}
-                    >
-                      <div className="font-medium mb-1" style={{ color: PAYAID_PURPLE }}>{action.action}</div>
-                      {action.description && (
-                        <div className="text-xs text-gray-600">{action.description}</div>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="mt-2 w-full text-xs"
-                        style={{ borderColor: PAYAID_PURPLE, color: PAYAID_PURPLE }}
-                        onClick={async () => {
-                          try {
-                            const response = await fetch('/api/ai/cofounder/actions/convert-to-task', {
-                              method: 'POST',
-                              headers: getAuthHeaders(),
-                              body: JSON.stringify({
-                                action: action.action,
-                                description: action.description,
-                                priority: action.priority || 'medium',
-                                conversationId: conversationId || undefined,
-                              }),
-                            })
-                            if (response.ok) {
-                              alert('Task created successfully!')
-                            }
-                          } catch (err) {
-                            console.error('Failed to create task:', err)
-                          }
-                        }}
-                      >
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Convert to Task
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Conversation History */}
-            {showConversations && (
-              <Card className="border-2 mb-4" style={{ borderColor: PAYAID_PURPLE }}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: PAYAID_PURPLE }}>
-                    <History className="w-4 h-4" />
-                    Recent Conversations
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-64">
-                    {conversationsData?.conversations?.length > 0 ? (
-                      <div className="space-y-2">
-                        {conversationsData.conversations.map((conv: any) => (
-                          <button
-                            key={conv.id}
-                            onClick={() => {
-                              // Load conversation
-                              fetch(`/api/ai/cofounder/conversations/${conv.id}`, {
-                                headers: getAuthHeaders(),
-                              })
-                                .then(res => res.json())
-                                .then(data => {
-                                  if (data.messages) {
-                                    setMessages(data.messages.map((m: any) => ({
-                                      role: m.role,
-                                      content: m.content,
-                                      timestamp: new Date(m.timestamp),
-                                      agent: m.agent,
-                                    })))
-                                    setConversationId(conv.id)
-                                    setShowConversations(false)
-                                  }
-                                })
-                            }}
-                            className="w-full text-left p-2 rounded-lg hover:bg-gray-50 text-sm"
-                          >
-                            <div className="font-medium truncate" style={{ color: PAYAID_PURPLE }}>
-                              {conv.title || 'Untitled Conversation'}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {new Date(conv.lastMessageAt).toLocaleDateString()}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-gray-500 text-center py-4">No conversations yet</div>
-                    )}
+        {/* Center: Chat */}
+        <main className="flex-1 flex flex-col min-w-0 lg:min-w-[400px]">
+          {/* Header */}
+          <header className="flex-shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Drawer trigger on small */}
+              <Sheet open={specialistsOpen} onOpenChange={setSpecialistsOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="lg:hidden gap-2">
+                    <LayoutGrid className="w-4 h-4" />
+                    Specialists
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[280px] p-0">
+                  <SheetHeader className="p-4 border-b">
+                    <SheetTitle>Specialists</SheetTitle>
+                  </SheetHeader>
+                  <ScrollArea className="h-[calc(100vh-80px)]">
+                    {renderSpecialistsList()}
                   </ScrollArea>
-                </CardContent>
-              </Card>
-            )}
-            
-            {businessContext ? (
-              <div className="space-y-4">
-                <Card className="border-2" style={{ borderColor: PAYAID_PURPLE }}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-semibold" style={{ color: PAYAID_PURPLE }}>Key Metrics</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Contacts</span>
-                      <span className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>{businessContext.counts?.contacts || 0}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Deals</span>
-                      <span className="text-lg font-bold" style={{ color: PAYAID_GOLD }}>{businessContext.counts?.deals || 0}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Invoices</span>
-                      <span className="text-lg font-bold" style={{ color: PAYAID_PURPLE }}>{businessContext.counts?.invoices || 0}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Orders</span>
-                      <span className="text-lg font-bold" style={{ color: PAYAID_GOLD }}>{businessContext.counts?.orders || 0}</span>
-                    </div>
-                  </CardContent>
-                </Card>
+                </SheetContent>
+              </Sheet>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: PAYAID_PURPLE }}
+                />
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {selectedAgentMeta?.name ?? 'Co-Founder'}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">
+                  {roleInfo.role}
+                </span>
+              </div>
+              <Select
+                value={contextModules}
+                onChange={(e) => setContextModules(e.target.value)}
+                className="w-[160px] h-8 text-xs border rounded-lg bg-background"
+                style={{ borderColor: `${PAYAID_PURPLE}40` }}
+              >
+                {CONTEXT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </Select>
+              <Select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="w-[140px] h-8 text-xs border rounded-lg bg-background"
+                style={{ borderColor: `${PAYAID_PURPLE}40` }}
+              >
+                {TIME_RANGE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </Select>
+            </div>
+          </header>
 
-                <Card className="border-2" style={{ borderColor: PAYAID_GOLD }}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-semibold" style={{ color: PAYAID_PURPLE }}>Revenue</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold mb-1" style={{ color: PAYAID_GOLD }}>
-                      ₹{businessContext.revenue?.last30Days?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
+          {/* Messages area */}
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <ScrollArea className="flex-1 p-6">
+              <div className="max-w-3xl mx-auto space-y-6">
+                {messages.length === 0 && (
+                  <div className="flex flex-col items-center justify-center min-h-[320px] text-center px-4">
+                    <div
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
+                      style={{ backgroundColor: `${PAYAID_PURPLE}15` }}
+                    >
+                      <Bot className="w-8 h-8" style={{ color: PAYAID_PURPLE }} />
                     </div>
-                    <CardDescription className="text-xs">Last 30 days</CardDescription>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-2" style={{ borderColor: PAYAID_PURPLE }}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-semibold" style={{ color: PAYAID_PURPLE }}>Pipeline</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold mb-1" style={{ color: PAYAID_PURPLE }}>
-                      ₹{businessContext.pipeline?.value?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
+                    <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                      Plan your next move with AI Co‑founder
+                    </h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-md">
+                      Choose a question or type your own. Co‑founder sees CRM, Finance, HR, and more.
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {suggestionChips.slice(0, 4).map((text, i) => (
+                        <Button
+                          key={i}
+                          variant="outline"
+                          size="sm"
+                          className="text-left h-auto py-2 px-4 whitespace-normal max-w-[280px]"
+                          style={{ borderColor: `${PAYAID_PURPLE}50` }}
+                          onClick={() => handleChipSend(text)}
+                        >
+                          {text}
+                        </Button>
+                      ))}
                     </div>
-                    <CardDescription className="text-xs">{businessContext.pipeline?.activeDeals || 0} active deals</CardDescription>
-                  </CardContent>
-                </Card>
+                  </div>
+                )}
 
-                {(businessContext.alerts?.overdueInvoices > 0 || businessContext.alerts?.pendingTasks > 0) && (
-                  <Card className="border-2 border-red-300 bg-red-50">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold text-red-800">Alerts</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {businessContext.alerts?.overdueInvoices > 0 && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-red-700">Overdue Invoices</span>
-                          <span className="text-lg font-bold text-red-600">{businessContext.alerts.overdueInvoices}</span>
+                {messages.map((msg, idx) => {
+                  const isLastAssistantMessage =
+                    msg.role === 'assistant' &&
+                    !messages.slice(idx + 1).some((m) => m.role === 'assistant')
+                  return (
+                  <div
+                    key={idx}
+                    className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    {msg.role === 'assistant' && (
+                      <div
+                        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: PAYAID_PURPLE }}
+                      >
+                        <Bot className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                        msg.role === 'user'
+                          ? 'text-white'
+                          : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm'
+                      }`}
+                      style={
+                        msg.role === 'user'
+                          ? { backgroundColor: PAYAID_PURPLE }
+                          : undefined
+                      }
+                    >
+                      {msg.role === 'assistant' && msg.agent && (
+                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
+                          {msg.agent.name}&apos;s view
                         </div>
                       )}
-                      {businessContext.alerts?.pendingTasks > 0 && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-red-700">Pending Tasks</span>
-                          <span className="text-lg font-bold text-red-600">{businessContext.alerts.pendingTasks}</span>
+                      {msg.role === 'user' && (
+                        <div className="text-xs font-medium text-white/80 mb-1.5">You</div>
+                      )}
+                      <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
+                      {msg.role === 'assistant' && suggestedActions.length > 0 && isLastAssistantMessage && (
+                        <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700 flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs"
+                            style={{ borderColor: PAYAID_PURPLE, color: PAYAID_PURPLE }}
+                            onClick={async () => {
+                              try {
+                                await fetch('/api/ai/cofounder/actions/convert-to-task', {
+                                  method: 'POST',
+                                  headers: getAuthHeaders(),
+                                  body: JSON.stringify({
+                                    action: suggestedActions[0].action,
+                                    description: suggestedActions[0].description,
+                                    priority: suggestedActions[0].priority || 'medium',
+                                    conversationId: conversationId || undefined,
+                                  }),
+                                })
+                              } catch (e) {
+                                console.error(e)
+                              }
+                            }}
+                          >
+                            Create tasks from this plan
+                          </Button>
+                          <Link href={`/crm/${tenantId}/Home`}>
+                            <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: `${PAYAID_PURPLE}60` }}>
+                              Open CRM to see these deals
+                            </Button>
+                          </Link>
+                          <Link href={`/finance/${tenantId}/Invoices`}>
+                            <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: `${PAYAID_PURPLE}60` }}>
+                              Open Finance forecast
+                            </Button>
+                          </Link>
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                    {msg.role === 'user' && (
+                      <div className="w-9 h-9 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center flex-shrink-0">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                  </div>
+                )
+                })}
+
+                {sendMessage.isPending && (
+                  <div className="flex gap-3 justify-start">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: PAYAID_PURPLE }}
+                    >
+                      <Bot className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="rounded-2xl px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                      <Loader2 className="w-5 h-5 animate-spin" style={{ color: PAYAID_PURPLE }} />
+                    </div>
+                  </div>
                 )}
               </div>
-            ) : (
-              <div className="text-sm text-gray-500 p-4 text-center">
-                Loading business context...
-              </div>
-            )}
-          </div>
-        </div>
+            </ScrollArea>
 
-        {/* Input */}
-        <div className="bg-white border-t-2 p-4" style={{ borderColor: PAYAID_PURPLE }}>
-          <form onSubmit={handleSubmit} className="max-w-4xl mx-auto flex gap-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={`Ask ${agents.find(a => a.id === selectedAgent)?.name || 'AI Co-Founder'} anything...`}
-              disabled={sendMessage.isPending}
-              className="flex-1 border-2"
-              style={{ borderColor: PAYAID_PURPLE + '40' }}
-            />
-            <Button 
-              type="submit" 
-              disabled={sendMessage.isPending || !input.trim()}
-              style={{ 
-                backgroundColor: PAYAID_PURPLE,
-                color: 'white',
-              }}
-              className="hover:opacity-90"
-            >
-              {sendMessage.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
+            {/* Input + chips */}
+            <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+              <div className="max-w-3xl mx-auto space-y-3">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                  {suggestionChips.slice(0, 5).map((text, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => handleChipSend(text)}
+                      disabled={sendMessage.isPending}
+                      className="flex-shrink-0 text-xs px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-50"
+                    >
+                      {text.length > 45 ? `${text.slice(0, 45)}…` : text}
+                    </button>
+                  ))}
+                </div>
+                <form onSubmit={handleSubmit} className="flex gap-2 items-center">
+                  <Popover open={attachContextOpen} onOpenChange={setAttachContextOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10 rounded-xl flex-shrink-0"
+                        title="Attach context (module & time range)"
+                        style={{ borderColor: `${PAYAID_PURPLE}50` }}
+                      >
+                        <Paperclip className="w-4 h-4" style={{ color: PAYAID_PURPLE }} />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 p-4" align="start">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-3">Context for this conversation</p>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Modules</label>
+                          <Select
+                            value={contextModules}
+                            onChange={(e) => setContextModules(e.target.value)}
+                            className="h-9 w-full text-xs border rounded-lg bg-background"
+                            style={{ borderColor: `${PAYAID_PURPLE}40` }}
+                          >
+                            {CONTEXT_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                          </Select>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Time range</label>
+                          <Select
+                            value={timeRange}
+                            onChange={(e) => setTimeRange(e.target.value)}
+                            className="h-9 w-full text-xs border rounded-lg bg-background"
+                            style={{ borderColor: `${PAYAID_PURPLE}40` }}
+                          >
+                            {TIME_RANGE_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                          </Select>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Applied to the next message you send.</p>
+                    </PopoverContent>
+                  </Popover>
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder={`Ask ${selectedAgentMeta?.name ?? 'Co-Founder'}…`}
+                    disabled={sendMessage.isPending}
+                    className="flex-1 rounded-xl border-slate-200 dark:border-slate-700"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={sendMessage.isPending || !input.trim()}
+                    className="rounded-xl"
+                    style={{ backgroundColor: PAYAID_PURPLE }}
+                  >
+                    {sendMessage.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        {/* Right: Context — fixed width, stack below on small */}
+        <aside className="hidden xl:flex flex-col w-[280px] flex-shrink-0 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-4 overflow-y-auto">
+          <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Key metrics
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Revenue (30d)</span>
+                <span className="font-semibold" style={{ color: PAYAID_PURPLE }}>
+                  {businessContext?.revenue?.last30Days != null
+                    ? formatINR(Number(businessContext.revenue.last30Days))
+                    : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Pipeline</span>
+                <span className="font-semibold" style={{ color: PAYAID_PURPLE }}>
+                  {businessContext?.pipeline?.value != null
+                    ? formatINR(Number(businessContext.pipeline.value))
+                    : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Active customers</span>
+                <span className="font-semibold">
+                  {businessContext?.counts?.contacts ?? '—'}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
+                <AlertCircle className="w-4 h-4" />
+                Alerts
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {(businessContext?.alerts?.overdueInvoices ?? 0) > 0 && (
+                <div className="flex justify-between text-amber-700 dark:text-amber-400">
+                  <span>Overdue invoices</span>
+                  <span className="font-semibold">{businessContext.alerts.overdueInvoices}</span>
+                </div>
               )}
-            </Button>
-          </form>
+              {(businessContext?.alerts?.pendingTasks ?? 0) > 0 && (
+                <div className="flex justify-between text-amber-700 dark:text-amber-400">
+                  <span>Pending tasks</span>
+                  <span className="font-semibold">{businessContext.alerts.pendingTasks}</span>
+                </div>
+              )}
+              {(!businessContext?.alerts?.overdueInvoices && !businessContext?.alerts?.pendingTasks) && (
+                <p className="text-slate-500 text-xs">No alerts</p>
+              )}
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Shortcuts
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              <Link href={`/crm/${tenantId}/Home`}>
+                <Button variant="outline" size="sm" className="w-full justify-start text-xs" style={{ borderColor: `${PAYAID_PURPLE}50` }}>
+                  <ExternalLink className="w-3.5 h-3.5 mr-2" />
+                  CRM dashboard
+                </Button>
+              </Link>
+              <Link href={`/finance/${tenantId}/Invoices`}>
+                <Button variant="outline" size="sm" className="w-full justify-start text-xs" style={{ borderColor: `${PAYAID_PURPLE}50` }}>
+                  <ExternalLink className="w-3.5 h-3.5 mr-2" />
+                  View invoices
+                </Button>
+              </Link>
+              <Link href={`/hr/${tenantId}`}>
+                <Button variant="outline" size="sm" className="w-full justify-start text-xs" style={{ borderColor: `${PAYAID_PURPLE}50` }}>
+                  <ExternalLink className="w-3.5 h-3.5 mr-2" />
+                  HR dashboard
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+          {conversationsData?.conversations?.length > 0 && (
+            <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                  <History className="w-4 h-4" />
+                  Recent conversations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-48">
+                  <div className="space-y-1">
+                    {conversationsData.conversations.map((conv: { id: string; title: string; lastMessageAt: string }) => (
+                      <button
+                        key={conv.id}
+                        type="button"
+                        onClick={() => loadConversation(conv.id)}
+                        className="w-full text-left px-2 py-2 rounded-lg text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 truncate"
+                      >
+                        <span className="block truncate font-medium">{conv.title || 'Untitled'}</span>
+                        <span className="text-slate-500">{new Date(conv.lastMessageAt).toLocaleDateString('en-IN')}</span>
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
+        </aside>
+      </div>
+
+      {/* On xl breakpoint, show right panel below center when stacked */}
+      <div className="xl:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+        <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card className="rounded-2xl border-slate-200 dark:border-slate-700">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold">Key metrics</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Revenue (30d)</span>
+                <span className="font-semibold" style={{ color: PAYAID_PURPLE }}>
+                  {businessContext?.revenue?.last30Days != null
+                    ? formatINR(Number(businessContext.revenue.last30Days))
+                    : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Pipeline</span>
+                <span className="font-semibold" style={{ color: PAYAID_PURPLE }}>
+                  {businessContext?.pipeline?.value != null
+                    ? formatINR(Number(businessContext.pipeline.value))
+                    : '—'}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl border-slate-200 dark:border-slate-700">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4" /> Alerts
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">
+              {businessContext?.alerts?.overdueInvoices > 0 && (
+                <span className="text-amber-600">Overdue: {businessContext.alerts.overdueInvoices}</span>
+              )}
+              {businessContext?.alerts?.pendingTasks > 0 && (
+                <span className="text-amber-600 ml-2">Tasks: {businessContext.alerts.pendingTasks}</span>
+              )}
+              {!businessContext?.alerts?.overdueInvoices && !businessContext?.alerts?.pendingTasks && (
+                <span className="text-slate-500">No alerts</span>
+              )}
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl border-slate-200 dark:border-slate-700">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold">Shortcuts</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-1">
+              <Link href={`/crm/${tenantId}/Home`} className="text-xs" style={{ color: PAYAID_PURPLE }}>
+                CRM dashboard
+              </Link>
+              <Link href={`/finance/${tenantId}/Invoices`} className="text-xs" style={{ color: PAYAID_PURPLE }}>
+                View invoices
+              </Link>
+              <Link href={`/hr/${tenantId}`} className="text-xs" style={{ color: PAYAID_PURPLE }}>
+                HR dashboard
+              </Link>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

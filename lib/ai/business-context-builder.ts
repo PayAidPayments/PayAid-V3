@@ -5,14 +5,46 @@
 
 import { prisma } from '@/lib/db/prisma'
 
+export interface BusinessContextOptions {
+  /** Scope to a single module: 'crm' | 'finance' | 'hr'. Omit or 'all' for full context. */
+  module?: string
+  /** Limit data to last N days (e.g. 7, 30, 90). Omit for no date filter. */
+  timeRangeDays?: number
+}
+
+/** True if this section should be included given context module and agent data scopes */
+function includeSection(
+  contextModule: string | undefined,
+  section: 'crm' | 'finance' | 'hr',
+  dataScopes: string[]
+): boolean {
+  if (contextModule && contextModule !== 'all') {
+    if (contextModule !== section) return false
+  }
+  if (section === 'finance') return dataScopes.includes('all') || dataScopes.includes('invoices') || dataScopes.includes('payments') || dataScopes.includes('orders')
+  if (section === 'crm') return dataScopes.includes('all') || dataScopes.includes('leads') || dataScopes.includes('deals') || dataScopes.includes('contacts')
+  if (section === 'hr') return dataScopes.includes('all') || dataScopes.includes('employees') || dataScopes.includes('payroll')
+  return true
+}
+
 export async function getBusinessContext(
-  tenantId: string, 
+  tenantId: string,
   userMessage?: string,
-  dataScopes: string[] = ['all']
+  dataScopes: string[] = ['all'],
+  options: BusinessContextOptions = {}
 ): Promise<string> {
+  const { module: contextModule, timeRangeDays } = options
+  const since = timeRangeDays
+    ? (() => {
+        const d = new Date()
+        d.setDate(d.getDate() - timeRangeDays)
+        return d
+      })()
+    : undefined
+
   try {
     // IMPORTANT: All queries MUST filter by tenantId for tenant isolation
-    
+
     // Get tenant business information
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
@@ -30,8 +62,11 @@ export async function getBusinessContext(
       },
     })
 
+    const scopeNote = contextModule && contextModule !== 'all' ? `\nCONTEXT: Data scoped to ${contextModule.toUpperCase()} only.\n` : ''
+    const timeNote = timeRangeDays ? `\nTIME RANGE: Last ${timeRangeDays} days.\n` : ''
     let context = `=== BUSINESS DATA ===
 IMPORTANT: Use ONLY this data to answer questions. Do NOT give generic responses.
+${scopeNote}${timeNote}
 
 YOUR BUSINESS (${tenant?.name || 'Business'}):
 ${tenant ? `
@@ -44,14 +79,18 @@ ${tenant ? `
 
 `
 
-    // Finance-related data
-    if (dataScopes.includes('all') || dataScopes.includes('invoices') || dataScopes.includes('payments')) {
-      const invoicesCount = await prisma.invoice.count({ where: { tenantId } })
+    // Finance-related data (when scope includes finance or all)
+    const includeFinance = includeSection(contextModule, 'finance', dataScopes)
+    if (includeFinance) {
+      const invoiceWhere: any = { tenantId }
+      if (since) invoiceWhere.createdAt = { gte: since }
+      const invoicesCount = await prisma.invoice.count({ where: invoiceWhere })
       const pendingInvoices = await prisma.invoice.findMany({
         where: {
           tenantId,
           status: { in: ['sent', 'draft'] },
           paidAt: null,
+          ...(since && { createdAt: { gte: since } }),
         },
         select: {
           invoiceNumber: true,
@@ -75,12 +114,19 @@ ${pendingInvoices.slice(0, 5).map(i => `  - ${i.invoiceNumber}: ₹${i.total.toL
 `
     }
 
-    // Sales-related data
-    if (dataScopes.includes('all') || dataScopes.includes('leads') || dataScopes.includes('deals')) {
-      const contactsCount = await prisma.contact.count({ where: { tenantId } })
-      const dealsCount = await prisma.deal.count({ where: { tenantId } })
+    // Sales-related data (when scope includes crm or all)
+    const includeCrm = includeSection(contextModule, 'crm', dataScopes)
+    if (includeCrm) {
+      const contactWhere: any = { tenantId }
+      const dealWhere: any = { tenantId }
+      if (since) {
+        contactWhere.createdAt = { gte: since }
+        dealWhere.updatedAt = { gte: since }
+      }
+      const contactsCount = await prisma.contact.count({ where: contactWhere })
+      const dealsCount = await prisma.deal.count({ where: dealWhere })
       const activeDeals = await prisma.deal.findMany({
-        where: { tenantId, stage: { not: 'lost' } },
+        where: { ...dealWhere, stage: { not: 'lost' } },
         select: {
           name: true,
           value: true,
@@ -147,51 +193,64 @@ ${highValueLeads.length > 0 ? `
 `
     }
 
-    // Marketing-related data
-    if (dataScopes.includes('all') || dataScopes.includes('campaigns') || dataScopes.includes('sequences')) {
-      // Add marketing data queries here
-      context += `MARKETING DATA:
+    // Marketing-related data (only when not scoped to single module)
+    if (!contextModule || contextModule === 'all') {
+      if (dataScopes.includes('all') || dataScopes.includes('campaigns') || dataScopes.includes('sequences')) {
+        context += `MARKETING DATA:
 - Marketing data available
 `
+      }
     }
 
-    // HR-related data
-    if (dataScopes.includes('all') || dataScopes.includes('employees') || dataScopes.includes('payroll')) {
-      const employeesCount = await prisma.employee.count({ where: { tenantId } })
+    // HR-related data (when scope includes hr or all)
+    const includeHr = includeSection(contextModule, 'hr', dataScopes)
+    if (includeHr) {
+      const employeeWhere: any = { tenantId }
+      if (since) employeeWhere.createdAt = { gte: since }
+      const employeesCount = await prisma.employee.count({ where: employeeWhere })
       context += `HR DATA:
 - Total Employees: ${employeesCount}
 `
     }
 
-    // Products/Inventory
-    if (dataScopes.includes('all') || dataScopes.includes('products')) {
-      const productsCount = await prisma.product.count({ where: { tenantId } })
-      context += `PRODUCTS:
+    // Products/Inventory (only when not scoped)
+    if (!contextModule || contextModule === 'all') {
+      if (dataScopes.includes('all') || dataScopes.includes('products')) {
+        const productsCount = await prisma.product.count({ where: { tenantId } })
+        context += `PRODUCTS:
 - Total Products: ${productsCount}
 `
+      }
     }
 
-    // Orders
-    if (dataScopes.includes('all') || dataScopes.includes('orders')) {
-      const ordersCount = await prisma.order.count({ where: { tenantId } })
+    // Orders (finance scope or all)
+    if (includeFinance || !contextModule || contextModule === 'all') {
+      const orderWhere: any = { tenantId }
+      if (since) orderWhere.createdAt = { gte: since }
+      const ordersCount = await prisma.order.count({ where: orderWhere })
       const recentOrders = await prisma.order.findMany({
-        where: { tenantId },
+        where: orderWhere,
         select: { total: true },
         take: 30,
         orderBy: { createdAt: 'desc' },
       })
       const totalRevenue = recentOrders.reduce((sum, o) => sum + o.total, 0)
+      const periodLabel = timeRangeDays ? `Last ${timeRangeDays} days` : 'Last 30 Days'
       context += `ORDERS:
 - Total Orders: ${ordersCount}
-- Revenue (Last 30 Days): ₹${totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+- Revenue (${periodLabel}): ₹${totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
 `
     }
 
-    // Tasks
-    if (dataScopes.includes('all') || dataScopes.includes('tasks')) {
+    // Tasks (all or crm)
+    if (includeCrm || (!contextModule || contextModule === 'all') && (dataScopes.includes('all') || dataScopes.includes('tasks'))) {
       const tasksCount = await prisma.task.count({ where: { tenantId } })
       const pendingTasks = await prisma.task.findMany({
-        where: { tenantId, status: { not: 'completed' } },
+        where: {
+          tenantId,
+          status: { not: 'completed' },
+          ...(since && { dueDate: { gte: since } }),
+        },
         select: { title: true, priority: true, dueDate: true },
         take: 10,
         orderBy: { dueDate: 'asc' },

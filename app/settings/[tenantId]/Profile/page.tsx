@@ -7,6 +7,7 @@ import { useTheme } from '@/lib/contexts/theme-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Switch } from '@/components/ui/switch'
 import { Moon, Sun } from 'lucide-react'
 
 function getAuthHeaders() {
@@ -30,6 +31,33 @@ export default function ProfileSettingsPage() {
   })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [prefs, setPrefs] = useState({
+    emailNotifications: true,
+    inAppNotifications: true,
+    weeklyDigest: true,
+    dealReminders: true,
+  })
+
+  useEffect(() => {
+    try {
+      const key = `payaid:prefs:${user?.id || 'me'}`
+      const raw = localStorage.getItem(key)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as Partial<typeof prefs>
+      setPrefs((p) => ({ ...p, ...parsed }))
+    } catch {
+      // ignore
+    }
+  }, [user?.id])
+
+  useEffect(() => {
+    try {
+      const key = `payaid:prefs:${user?.id || 'me'}`
+      localStorage.setItem(key, JSON.stringify(prefs))
+    } catch {
+      // ignore
+    }
+  }, [prefs, user?.id])
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['user-profile'],
@@ -140,9 +168,69 @@ export default function ProfileSettingsPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setTheme('light')} className={`px-4 py-2 rounded-md text-sm font-medium ${theme === 'light' ? 'bg-violet-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`}>Light</button>
-              <button type="button" onClick={() => setTheme('dark')} className={`px-4 py-2 rounded-md text-sm font-medium ${theme === 'dark' ? 'bg-violet-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`}>Dark</button>
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  theme === 'light'
+                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'
+                }`}
+              >
+                Light
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  theme === 'dark'
+                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'
+                }`}
+              >
+                Dark
+              </button>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader>
+          <CardTitle className="text-slate-900 dark:text-slate-100">Notifications</CardTitle>
+          <CardDescription>Control how you receive alerts and reminders</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Email notifications</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">Invoice, tasks, and system notifications</div>
+            </div>
+            <Switch checked={prefs.emailNotifications} onCheckedChange={(v) => setPrefs((p) => ({ ...p, emailNotifications: v }))} />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-medium text-slate-900 dark:text-slate-100">In-app notifications</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">Bell notifications inside PayAid</div>
+            </div>
+            <Switch checked={prefs.inAppNotifications} onCheckedChange={(v) => setPrefs((p) => ({ ...p, inAppNotifications: v }))} />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Weekly digest</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">A weekly summary of key KPIs</div>
+            </div>
+            <Switch checked={prefs.weeklyDigest} onCheckedChange={(v) => setPrefs((p) => ({ ...p, weeklyDigest: v }))} />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Deal reminders</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">Upcoming close dates and stalled pipeline</div>
+            </div>
+            <Switch checked={prefs.dealReminders} onCheckedChange={(v) => setPrefs((p) => ({ ...p, dealReminders: v }))} />
+          </div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            Preferences are saved locally per browser for now.
           </div>
         </CardContent>
       </Card>

@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { format, isThisMonth, isPast, isWithinInterval } from 'date-fns'
-import { Briefcase, TrendingUp, CheckCircle2, XCircle, Calendar, DollarSign, AlertCircle, Filter, LayoutGrid, List } from 'lucide-react'
+import { Briefcase, TrendingUp, CheckCircle2, XCircle, Calendar, DollarSign, AlertCircle, Filter, LayoutGrid, List, Columns3 } from 'lucide-react'
 // ModuleTopBar is now in layout.tsx
 import { PageLoading } from '@/components/ui/loading'
 import { getTimePeriodBounds, validateFilterParams, type DealCategory, type TimePeriod } from '@/lib/utils/crm-filters'
@@ -89,7 +89,7 @@ export default function CRMDealsPage() {
     const searchParams = useSearchParams()
     const tenantId = params?.tenantId as string
     const { token } = useAuthStore()
-    const [page, setPage] = useState(1)
+    const [uiPage, setUiPage] = useState(1)
     const [stageFilter, setStageFilter] = useState<string>('')
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
     const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
@@ -97,7 +97,7 @@ export default function CRMDealsPage() {
     // Use bypassCache on initial load to ensure fresh data after seeding.
     // Pass tenantId from the route so the API returns deals for the tenant we're viewing.
     const { data, isLoading, error: dealsError, refetch } = useDeals({ 
-      page, 
+      page: 1, 
       limit: 1000, 
       stage: stageFilter || undefined,
       bypassCache: true, // Always bypass cache to get fresh data
@@ -111,7 +111,12 @@ export default function CRMDealsPage() {
     const [diagnosticsOpen, setDiagnosticsOpen] = useState(false)
     const [diagnosticsResult, setDiagnosticsResult] = useState<string | null>(null)
     const hasTriggeredEnsureDemoRef = useRef(false)
-    const [viewMode, setViewMode] = useState<'list' | 'pipeline'>('list')
+    const [viewMode, setViewMode] = useState<'list' | 'pipeline' | 'board'>('list')
+    const [rowsPerPage, setRowsPerPage] = useState<10 | 20 | 50 | 100>(10)
+    const [sortKey, setSortKey] = useState<'value' | 'stage' | 'expectedCloseDate'>('expectedCloseDate')
+    const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+    const [selectedDealIds, setSelectedDealIds] = useState<string[]>([])
+    const [bulkStage, setBulkStage] = useState<string>('')
 
     // When page loads with 0 deals, ensure demo data once so demos are never empty
     useEffect(() => {
@@ -399,6 +404,35 @@ export default function CRMDealsPage() {
     }
   }, [categorizedDeals, timePeriod])
 
+  const pipeline = useMemo(() => {
+    const stageOrder = ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
+    const stageMeta: Record<string, { label: string; color: string }> = {
+      lead: { label: 'Lead', color: 'bg-blue-500' },
+      qualified: { label: 'Qualified', color: 'bg-teal-500' },
+      proposal: { label: 'Proposal', color: 'bg-purple-500' },
+      negotiation: { label: 'Negotiation', color: 'bg-amber-500' },
+      won: { label: 'Won', color: 'bg-emerald-500' },
+      lost: { label: 'Lost', color: 'bg-red-500' },
+    }
+    const segments = stageOrder.map((stage) => {
+      const dealsInStage = categorizedDeals.byStage?.[stage] ?? []
+      const value = dealsInStage.reduce((s: number, d: any) => s + (Number(d?.value) || 0), 0)
+      return {
+        stage,
+        label: stageMeta[stage]?.label ?? stage,
+        color: stageMeta[stage]?.color ?? 'bg-slate-400',
+        count: dealsInStage.length,
+        value,
+      }
+    })
+    const totalValue = segments.reduce((s, seg) => s + seg.value, 0)
+    return { totalValue, segments }
+  }, [categorizedDeals.byStage])
+
+  const topClosingDeals = useMemo(() => {
+    return (categorizedDeals.closing ?? []).slice(0, 10)
+  }, [categorizedDeals.closing])
+
   // Handle errors gracefully
   if (pageError) {
     return (
@@ -425,6 +459,59 @@ export default function CRMDealsPage() {
   }
 
   const deals = Array.isArray(data?.deals) ? data.deals : []
+
+  const sortedDeals = useMemo(() => {
+    const list = [...deals]
+    const dir = sortDir === 'asc' ? 1 : -1
+    list.sort((a: any, b: any) => {
+      if (sortKey === 'value') {
+        return (Number(a?.value) - Number(b?.value)) * dir
+      }
+      if (sortKey === 'stage') {
+        return String(a?.stage ?? '').localeCompare(String(b?.stage ?? '')) * dir
+      }
+      // expectedCloseDate
+      const aTime = a?.expectedCloseDate ? new Date(a.expectedCloseDate).getTime() : Number.POSITIVE_INFINITY
+      const bTime = b?.expectedCloseDate ? new Date(b.expectedCloseDate).getTime() : Number.POSITIVE_INFINITY
+      return (aTime - bTime) * dir
+    })
+    return list
+  }, [deals, sortKey, sortDir])
+
+  const totalDeals = sortedDeals.length
+  const pageCount = Math.max(1, Math.ceil(totalDeals / rowsPerPage))
+  const currentPage = Math.min(Math.max(1, uiPage), pageCount)
+  const pageStart = (currentPage - 1) * rowsPerPage
+  const pageEnd = Math.min(totalDeals, pageStart + rowsPerPage)
+  const pagedDeals = sortedDeals.slice(pageStart, pageEnd)
+
+  useEffect(() => {
+    if (uiPage !== currentPage) setUiPage(currentPage)
+    // When page changes, clear selection to avoid accidental bulk actions
+    // (keeps selection behavior predictable)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage])
+
+  const toggleSort = (key: typeof sortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }
+
+  const allOnPageSelected =
+    pagedDeals.length > 0 && pagedDeals.every((d: any) => selectedDealIds.includes(d.id))
+
+  const toggleSelectAllOnPage = () => {
+    const ids = pagedDeals.map((d: any) => d.id)
+    if (allOnPageSelected) {
+      setSelectedDealIds((prev) => prev.filter((id) => !ids.includes(id)))
+    } else {
+      setSelectedDealIds((prev) => Array.from(new Set([...prev, ...ids])))
+    }
+  }
 
   // Get deals to display based on selected category
   const getDealsToDisplay = () => {
@@ -477,6 +564,18 @@ export default function CRMDealsPage() {
                 <LayoutGrid className="w-4 h-4" />
                 Pipeline
               </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('board')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'board'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+              >
+                <Columns3 className="w-4 h-4" />
+                Board
+              </button>
             </div>
             {viewMode === 'list' && (
               <div className="flex items-center gap-2 border border-purple-200 dark:border-purple-800 rounded-lg px-3 py-1.5 bg-purple-50 dark:bg-purple-900/30">
@@ -502,7 +601,7 @@ export default function CRMDealsPage() {
           </div>
         </div>
 
-        {viewMode === 'pipeline' ? (
+        {viewMode !== 'list' ? (
           <DealsKanban tenantId={tenantId} />
         ) : (
           <>
@@ -596,6 +695,104 @@ export default function CRMDealsPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Under summary cards: mini pipeline + top 10 deals closing */}
+        {!selectedCategory && deals.length > 0 && (
+          <div className="space-y-4">
+            <Card className="border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold text-slate-900 dark:text-gray-100">
+                  Pipeline by stage (value)
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  A quick snapshot of value distribution across stages.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-3 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-800 flex">
+                  {pipeline.totalValue > 0 ? (
+                    pipeline.segments.map((seg) => {
+                      const pct = Math.max(0, (seg.value / pipeline.totalValue) * 100)
+                      if (pct <= 0) return null
+                      return (
+                        <div
+                          key={seg.stage}
+                          className={seg.color}
+                          style={{ width: `${pct}%` }}
+                          title={`${seg.label}: ₹${seg.value.toLocaleString('en-IN')} · ${seg.count} deal(s)`}
+                        />
+                      )
+                    })
+                  ) : (
+                    <div className="w-full bg-slate-300/60 dark:bg-slate-700/60" />
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-600 dark:text-gray-400">
+                  {pipeline.segments.map((seg) => (
+                    <div key={seg.stage} className="flex items-center gap-2">
+                      <span className={`h-2.5 w-2.5 rounded-sm ${seg.color}`} />
+                      <span className="font-medium">{seg.label}</span>
+                      <span className="text-slate-500 dark:text-gray-500">
+                        · ₹{(seg.value / 1_00_000).toFixed(1)} L · {seg.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold text-slate-900 dark:text-gray-100">
+                  Top deals closing {stats.periodLabel.toLowerCase()}
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Highest priority deals expected to close soon.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {topClosingDeals.length === 0 ? (
+                  <div className="text-sm text-slate-600 dark:text-gray-400">
+                    No deals are marked as closing {stats.periodLabel.toLowerCase()}.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {topClosingDeals.map((deal: any) => (
+                      <div key={deal.id} className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
+                        <div className="min-w-0">
+                          <Link href={`/crm/${tenantId}/Deals/${deal.id}`} className="text-sm font-medium text-slate-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 truncate block">
+                            {deal.name}
+                          </Link>
+                          <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-gray-400">
+                            {deal.stage && (
+                              <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 capitalize">
+                                {deal.stage}
+                              </span>
+                            )}
+                            {deal.expectedCloseDate && (
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {format(new Date(deal.expectedCloseDate), 'MMM dd')}
+                              </span>
+                            )}
+                            {typeof deal.probability === 'number' && (
+                              <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-200">
+                                {deal.probability}% probability
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-gray-100 whitespace-nowrap ml-3">
+                          ₹{Number(deal.value ?? 0).toLocaleString('en-IN')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Show filtered view when a stat card is clicked */}
         {selectedCategory && displayedDeals !== null && (
@@ -901,7 +1098,7 @@ export default function CRMDealsPage() {
                   value={stageFilter}
                   onChange={(e) => {
                     setStageFilter(e.target.value)
-                    setPage(1)
+                    setUiPage(1)
                     if (e.target.value) {
                       setSelectedCategory(`stage-${e.target.value}`)
                     }
@@ -921,7 +1118,13 @@ export default function CRMDealsPage() {
             <CardContent>
               {deals.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">No deals found</p>
+                  <div className="mx-auto mb-4 h-12 w-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                    <Briefcase className="h-6 w-6 text-slate-500 dark:text-slate-400" />
+                  </div>
+                  <p className="text-slate-900 dark:text-gray-100 font-semibold mb-1">No deals yet</p>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Create your first deal or seed demo data to explore the pipeline views.
+                  </p>
                   {seedStatus?.running ? (
                     <div className="text-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent mx-auto mb-4"></div>
@@ -1167,12 +1370,207 @@ export default function CRMDealsPage() {
                   )}
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {Array.isArray(deals) ? deals.map((deal: any) => (
-                    <DealRow key={deal.id} deal={deal} tenantId={tenantId} onDelete={handleDelete} />
-                  )) : (
-                    <p className="text-gray-600 dark:text-gray-400">Deals data is not in the expected format</p>
-                  )}
+                <div className="space-y-4">
+                  {/* Bulk actions + rows per page */}
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                    <div className="text-sm text-slate-600 dark:text-gray-400">
+                      {selectedDealIds.length > 0 ? (
+                        <span>
+                          <span className="font-semibold text-slate-900 dark:text-gray-100">{selectedDealIds.length}</span>{' '}
+                          selected
+                        </span>
+                      ) : (
+                        <span>
+                          Showing <span className="font-semibold text-slate-900 dark:text-gray-100">{pageStart + 1}</span>–
+                          <span className="font-semibold text-slate-900 dark:text-gray-100">{pageEnd}</span> of{' '}
+                          <span className="font-semibold text-slate-900 dark:text-gray-100">{totalDeals}</span>
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500 dark:text-gray-400">Rows per page</span>
+                        <select
+                          value={rowsPerPage}
+                          onChange={(e) => {
+                            setRowsPerPage(Number(e.target.value) as any)
+                            setUiPage(1)
+                          }}
+                          className="h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-sm"
+                        >
+                          <option value={10}>10</option>
+                          <option value={20}>20</option>
+                          <option value={50}>50</option>
+                          <option value={100}>100</option>
+                        </select>
+                      </div>
+
+                      <select
+                        value={bulkStage}
+                        onChange={(e) => setBulkStage(e.target.value)}
+                        className="h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-sm"
+                        disabled={selectedDealIds.length === 0}
+                        title={selectedDealIds.length === 0 ? 'Select deals to enable bulk actions' : undefined}
+                      >
+                        <option value="">Change stage…</option>
+                        <option value="lead">Lead</option>
+                        <option value="qualified">Qualified</option>
+                        <option value="proposal">Proposal</option>
+                        <option value="negotiation">Negotiation</option>
+                        <option value="won">Won</option>
+                        <option value="lost">Lost</option>
+                      </select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={selectedDealIds.length === 0 || !bulkStage}
+                        onClick={async () => {
+                          if (!token) return
+                          if (!bulkStage) return
+                          if (!confirm(`Change stage for ${selectedDealIds.length} deal(s) to "${bulkStage}"?`)) return
+                          try {
+                            await Promise.all(
+                              selectedDealIds.map(async (dealId) => {
+                                const res = await fetch(`/api/deals/${dealId}?tenantId=${encodeURIComponent(tenantId)}`, {
+                                  method: 'PATCH',
+                                  headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ stage: bulkStage }),
+                                })
+                                if (!res.ok) throw new Error('Stage update failed')
+                              })
+                            )
+                            setSelectedDealIds([])
+                            setBulkStage('')
+                            queryClient.invalidateQueries({ queryKey: ['deals'] })
+                            await refetch()
+                          } catch (e) {
+                            alert(e instanceof Error ? e.message : 'Bulk update failed')
+                          }
+                        }}
+                      >
+                        Apply
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-red-200 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/20"
+                        disabled={selectedDealIds.length === 0}
+                        onClick={async () => {
+                          if (!confirm(`Delete ${selectedDealIds.length} deal(s)? This cannot be undone.`)) return
+                          try {
+                            await Promise.all(selectedDealIds.map((dealId) => deleteDeal.mutateAsync({ id: dealId, tenantId })))
+                            setSelectedDealIds([])
+                            queryClient.invalidateQueries({ queryKey: ['deals'] })
+                            await refetch()
+                          } catch (e) {
+                            alert(e instanceof Error ? e.message : 'Bulk delete failed')
+                          }
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Deals table */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-white dark:bg-slate-900 z-10">
+                        <TableRow className="border-b border-slate-200 dark:border-slate-700">
+                          <TableHead className="w-10">
+                            <input type="checkbox" checked={allOnPageSelected} onChange={toggleSelectAllOnPage} />
+                          </TableHead>
+                          <TableHead className="min-w-[220px]">Deal</TableHead>
+                          <TableHead className="min-w-[160px]">Contact</TableHead>
+                          <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('stage')}>
+                            Stage {sortKey === 'stage' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+                          </TableHead>
+                          <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('value')}>
+                            Value {sortKey === 'value' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+                          </TableHead>
+                          <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('expectedCloseDate')}>
+                            Expected Close {sortKey === 'expectedCloseDate' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+                          </TableHead>
+                          <TableHead className="w-28 text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pagedDeals.map((deal: any) => (
+                          <TableRow key={deal.id} className="border-b border-slate-100 dark:border-slate-800">
+                            <TableCell>
+                              <input
+                                type="checkbox"
+                                checked={selectedDealIds.includes(deal.id)}
+                                onChange={() => {
+                                  setSelectedDealIds((prev) =>
+                                    prev.includes(deal.id) ? prev.filter((id) => id !== deal.id) : [...prev, deal.id]
+                                  )
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              <Link href={`/crm/${tenantId}/Deals/${deal.id}`} className="hover:text-indigo-600 dark:hover:text-indigo-400">
+                                {deal.name}
+                              </Link>
+                              {deal.expectedCloseDate && (
+                                <div className="text-xs text-slate-500 dark:text-gray-400">
+                                  {format(new Date(deal.expectedCloseDate), 'MMM dd, yyyy')}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-slate-700 dark:text-gray-300">
+                              {deal.contact?.name || deal.contact?.email || '—'}
+                            </TableCell>
+                            <TableCell className="capitalize text-sm">{deal.stage || 'lead'}</TableCell>
+                            <TableCell className="text-sm font-semibold">₹{Number(deal.value ?? 0).toLocaleString('en-IN')}</TableCell>
+                            <TableCell className="text-sm">
+                              {deal.expectedCloseDate ? format(new Date(deal.expectedCloseDate), 'MMM dd') : '—'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Link href={`/crm/${tenantId}/Deals/${deal.id}`}>
+                                  <Button variant="ghost" size="sm">View</Button>
+                                </Link>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDelete(deal.id)}
+                                  className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Pagination controls */}
+                  <div className="flex items-center justify-end gap-2 text-sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage <= 1}
+                      onClick={() => setUiPage(Math.max(1, currentPage - 1))}
+                    >
+                      Prev
+                    </Button>
+                    <span className="px-2 text-slate-600 dark:text-gray-400">
+                      Page <span className="font-medium text-slate-900 dark:text-gray-100">{currentPage}</span> of{' '}
+                      <span className="font-medium text-slate-900 dark:text-gray-100">{pageCount}</span>
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage >= pageCount}
+                      onClick={() => setUiPage(Math.min(pageCount, currentPage + 1))}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
