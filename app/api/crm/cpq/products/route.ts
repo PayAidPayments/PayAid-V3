@@ -2,46 +2,43 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 
-// GET /api/crm/cpq/products - Get products for CPQ
+// GET /api/crm/cpq/products - Get products for CPQ (from Product model, tenant-scoped)
 export async function GET(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    // Get products from inventory or create sample data
-    // In production, this would fetch from Product model
-    const sampleProducts = [
-      {
-        id: 'product-1',
-        name: 'Enterprise License',
-        description: 'Full enterprise license with all features',
-        basePrice: 9999,
-        unit: 'license',
-        category: 'Software',
+    const products = await prisma.product.findMany({
+      where: { tenantId },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        sku: true,
+        salePrice: true,
+        hsnCode: true,
+        sacCode: true,
+        categories: true,
       },
-      {
-        id: 'product-2',
-        name: 'Professional License',
-        description: 'Professional license with core features',
-        basePrice: 4999,
-        unit: 'license',
-        category: 'Software',
-      },
-      {
-        id: 'product-3',
-        name: 'Implementation Services',
-        description: 'On-site implementation and training',
-        basePrice: 50000,
-        unit: 'project',
-        category: 'Services',
-      },
-    ]
+      orderBy: { name: 'asc' },
+    })
 
-    return NextResponse.json({ products: sampleProducts })
+    const list = products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description ?? undefined,
+      sku: p.sku,
+      basePrice: p.salePrice,
+      unit: 'unit',
+      category: Array.isArray(p.categories) && p.categories[0] ? String(p.categories[0]) : undefined,
+      hsnCode: p.hsnCode ?? undefined,
+      sacCode: p.sacCode ?? undefined,
+    }))
+
+    return NextResponse.json({ success: true, products: list })
   } catch (error: any) {
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }
-
     console.error('Get products error:', error)
     return NextResponse.json(
       { error: 'Failed to fetch products', message: error?.message },

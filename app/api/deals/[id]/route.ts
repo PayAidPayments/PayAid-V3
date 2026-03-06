@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { logCrmAudit } from '@/lib/audit-log-crm'
 import { z } from 'zod'
 
 const updateDealSchema = z.object({
@@ -161,6 +162,17 @@ export async function PATCH(
       })
     }
 
+    await logCrmAudit({
+      tenantId,
+      userId,
+      entityType: 'deal',
+      entityId: resolvedParams.id,
+      action: 'update',
+      changeSummary: validated.stage ? `Deal stage: ${existing.stage} → ${validated.stage}` : 'Deal updated',
+      beforeSnapshot: { stage: existing.stage, value: existing.value, name: existing.name },
+      afterSnapshot: { stage: deal.stage, value: deal.value, name: deal.name },
+    })
+
     return NextResponse.json(deal)
   } catch (error) {
     // Handle license errors
@@ -206,6 +218,16 @@ export async function DELETE(
         { status: 404 }
       )
     }
+
+    await logCrmAudit({
+      tenantId,
+      userId,
+      entityType: 'deal',
+      entityId: resolvedParams.id,
+      action: 'delete',
+      changeSummary: `Deal deleted: ${existing.name}`,
+      beforeSnapshot: { name: existing.name, stage: existing.stage, value: existing.value },
+    })
 
     await prisma.deal.delete({
       where: { id: resolvedParams.id },

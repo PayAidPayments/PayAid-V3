@@ -7,6 +7,7 @@ import { determineGSTType } from '@/lib/invoicing/gst-state'
 import { generateInvoicePDF } from '@/lib/invoicing/pdf'
 import { multiLayerCache } from '@/lib/cache/multi-layer'
 import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
+import { logAudit } from '@/lib/audit/log'
 import { z } from 'zod'
 import { mediumPriorityQueue } from '@/lib/queue/bull'
 
@@ -137,7 +138,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check Finance module license
-    const { tenantId } = await requireModuleAccess(request, 'finance')
+    const { tenantId, userId } = await requireModuleAccess(request, 'finance')
 
     // Check tenant limits
     const canCreate = await checkTenantLimits(tenantId, 'invoices')
@@ -369,6 +370,18 @@ export async function POST(request: NextRequest) {
     await multiLayerCache.delete(`dashboard:stats:${tenantId}`).catch(() => {
       // Ignore cache errors - not critical
     })
+
+    // Audit trail
+    logAudit({
+      module: 'finance',
+      action: 'invoice.create',
+      entityType: 'invoice',
+      entityId: invoice.id,
+      tenantId,
+      userId,
+      summary: `Invoice ${invoice.invoiceNumber} created`,
+      diff: { after: { invoiceNumber: invoice.invoiceNumber, total: invoice.total, status: invoice.status } },
+    }).catch(() => {})
 
     // Trigger workflow automation (e.g. send confirmation, create task)
     triggerWorkflowsByEvent({

@@ -27,7 +27,8 @@ interface Appointment {
 }
 
 export default function AppointmentsPage() {
-  const { token } = useAuthStore()
+  const { token, tenant } = useAuthStore()
+  const tenantId = tenant?.id
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'list' | 'calendar'>('list')
@@ -103,7 +104,7 @@ export default function AppointmentsPage() {
               <Calendar className="w-4 h-4 mr-2" />
               Calendar
             </Button>
-            <Link href="/dashboard/appointments/new">
+            <Link href={tenantId ? `/appointments/${tenantId}/Home` : '/dashboard/appointments/new'}>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
                 New Appointment
@@ -140,7 +141,7 @@ export default function AppointmentsPage() {
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Get started by creating your first appointment
               </p>
-              <Link href="/dashboard/appointments/new">
+              <Link href={tenantId ? `/appointments/${tenantId}/Home` : '/dashboard/appointments/new'}>
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
                   Create Appointment
@@ -223,7 +224,7 @@ export default function AppointmentsPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Link href={`/dashboard/appointments/${appointment.id}`}>
+                      <Link href={tenantId ? `/appointments/${tenantId}/Home?appointment=${appointment.id}` : `/dashboard/appointments/${appointment.id}`}>
                         <Button variant="outline" size="sm">
                           View
                         </Button>

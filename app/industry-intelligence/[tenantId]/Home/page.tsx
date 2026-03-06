@@ -232,7 +232,7 @@ export default function IndustryIntelligenceDashboardPage() {
       <div className="p-6 space-y-8">
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link href={`/dashboard/news`}>
+          <Link href={tenantId ? `/industry-intelligence/${tenantId}/Home` : '/industry-intelligence'}>
             <GlassCard delay={0} className="cursor-pointer hover:shadow-lg transition-shadow">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
@@ -251,7 +251,7 @@ export default function IndustryIntelligenceDashboardPage() {
             </GlassCard>
           </Link>
 
-          <Link href={`/dashboard/competitors`}>
+          <Link href={tenantId ? `/industry-intelligence/${tenantId}/Home` : '/industry-intelligence'}>
             <GlassCard delay={0.1} className="cursor-pointer hover:shadow-lg transition-shadow">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
@@ -279,7 +279,7 @@ export default function IndustryIntelligenceDashboardPage() {
                 <CardTitle className="text-lg font-semibold">Industry News Overview</CardTitle>
                 <CardDescription>Latest industry news and updates relevant to your business</CardDescription>
               </div>
-              <Link href="/dashboard/news">
+              <Link href={tenantId ? `/industry-intelligence/${tenantId}/Home` : '/industry-intelligence'}>
                 <Button variant="outline" size="sm">
                   View All
                 </Button>
@@ -386,7 +386,7 @@ export default function IndustryIntelligenceDashboardPage() {
                 <CardTitle className="text-lg font-semibold">Competitor Tracking</CardTitle>
                 <CardDescription>Monitor competitor prices, locations, and market movements</CardDescription>
               </div>
-              <Link href="/dashboard/competitors">
+              <Link href={tenantId ? `/industry-intelligence/${tenantId}/Home` : '/industry-intelligence'}>
                 <Button variant="outline" size="sm">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Competitor
@@ -454,7 +454,7 @@ export default function IndustryIntelligenceDashboardPage() {
               <div className="text-center py-12 text-gray-500">
                 <Target className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                 <p className="mb-4">No competitors tracked yet.</p>
-                <Link href="/dashboard/competitors">
+                <Link href={tenantId ? `/industry-intelligence/${tenantId}/Home` : '/industry-intelligence'}>
                   <Button variant="outline" size="sm">
                     <Plus className="w-4 h-4 mr-2" />
                     Start Tracking Competitors

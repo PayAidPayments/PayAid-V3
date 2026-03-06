@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { ThemeProvider } from '@/lib/contexts/theme-context'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ModuleProvider } from '@/contexts/ModuleContext'
+import { AIAssistantFAB } from '@/components/ai/AIAssistantFAB'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -30,6 +31,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <ThemeProvider>
           <ModuleProvider>
             {children}
+            <AIAssistantFAB />
           </ModuleProvider>
         </ThemeProvider>
       </QueryClientProvider>

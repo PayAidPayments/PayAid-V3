@@ -46,7 +46,7 @@ export default function SlidesPresentationsPage() {
               />
             </div>
             <Link
-              href="/dashboard/slides/new"
+              href={tenantId ? `/slides/${tenantId}/Presentations` : '/slides'}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
             >
               <Plus className="h-5 w-5" /> New Presentation
@@ -56,7 +56,7 @@ export default function SlidesPresentationsPage() {
             {filtered.map((p) => (
               <Link
                 key={p.id}
-                href={`/dashboard/slides/${p.id}`}
+                href={tenantId ? `/slides/${tenantId}/Presentations/${p.id}` : '#'}
                 className="p-4 border rounded-lg hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center gap-3"
               >
                 <Presentation className="h-8 w-8 text-purple-600 shrink-0" />

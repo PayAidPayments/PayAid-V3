@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { calculateGST } from '@/lib/invoicing/gst'
+import { logAudit } from '@/lib/audit/log'
 import { z } from 'zod'
 
 const itemSchema = z.object({
@@ -73,7 +74,7 @@ export async function PATCH(
 ) {
   try {
     const resolvedParams = await params
-    const { tenantId } = await requireModuleAccess(request, 'finance')
+    const { tenantId, userId } = await requireModuleAccess(request, 'finance')
 
     const body = await request.json()
     const validated = updateInvoiceSchema.parse(body)
@@ -140,6 +141,20 @@ export async function PATCH(
         },
       },
     })
+
+    logAudit({
+      module: 'finance',
+      action: 'invoice.update',
+      entityType: 'invoice',
+      entityId: invoice.id,
+      tenantId,
+      userId,
+      summary: `Invoice ${invoice.invoiceNumber} updated`,
+      diff: {
+        before: { status: existing.status, total: existing.total },
+        after: { status: invoice.status, total: invoice.total },
+      },
+    }).catch(() => {})
 
     return NextResponse.json(invoice)
   } catch (error) {

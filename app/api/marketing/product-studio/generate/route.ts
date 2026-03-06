@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db/prisma'
 import { prismaWithRetry } from '@/lib/db/connection-retry'
 import { decrypt } from '@/lib/encryption'
 import { getProductStudioTemplate } from '@/lib/marketing/product-studio-templates'
+import { isSelfHostedImageAvailable, generateSelfHostedImage } from '@/lib/ai/self-hosted-image'
+import { getHuggingFaceClient } from '@/lib/ai/huggingface'
 
 const MARKETPLACES = ['amazon', 'flipkart', 'myntra', 'shopify'] as const
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
@@ -21,12 +23,14 @@ function getPrompts(marketplace: string, templateSuffix?: string, brandSuffix?: 
 
 const GEMINI_IMAGE_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent'
 
+type GeminiImageResult = { image: string | null; reason?: string; status?: number }
+
 async function callGeminiWithImage(
   apiKey: string,
   imageBase64: string,
   mimeType: string,
   textPrompt: string
-): Promise<string | null> {
+): Promise<GeminiImageResult> {
   const response = await fetch(GEMINI_IMAGE_URL, {
     method: 'POST',
     headers: {
@@ -42,25 +46,42 @@ async function callGeminiWithImage(
           ],
         },
       ],
-      generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 1024 },
+      generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 8192 },
     }),
   })
 
+  const data = await response.json().catch(() => ({}))
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}))
-    console.error('Gemini product-studio error:', response.status, err)
-    return null
+    const errMsg = data.error?.message || data.message || `HTTP ${response.status}`
+    console.error('Gemini product-studio error:', response.status, errMsg)
+    const isQuota = response.status === 429 || /quota|rate|limit/i.test(String(errMsg))
+    return {
+      image: null,
+      reason: isQuota ? 'quota' : 'api_error',
+      status: response.status,
+    }
   }
 
-  const data = await response.json()
-  const parts = data.candidates?.[0]?.content?.parts || []
+  const promptFeedback = data.promptFeedback
+  if (promptFeedback?.blockReason) {
+    console.warn('Gemini blockReason:', promptFeedback.blockReason)
+    return { image: null, reason: 'blocked' }
+  }
+  const candidate = data.candidates?.[0]
+  const finishReason = candidate?.finishReason
+  if (finishReason && finishReason !== 'STOP' && finishReason !== 'END_TURN') {
+    console.warn('Gemini finishReason:', finishReason)
+    return { image: null, reason: finishReason === 'SAFETY' ? 'safety' : 'rejected' }
+  }
+
+  const parts = candidate?.content?.parts || []
   for (const part of parts) {
     if (part.inlineData?.data) {
       const mt = part.inlineData.mimeType || 'image/png'
-      return `data:${mt};base64,${part.inlineData.data}`
+      return { image: `data:${mt};base64,${part.inlineData.data}` }
     }
   }
-  return null
+  return { image: null, reason: 'no_image' }
 }
 
 async function callGeminiTextOnly(apiKey: string, textPrompt: string): Promise<string | null> {
@@ -195,12 +216,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!apiKey) {
+    const hasHuggingFace = Boolean(process.env.HUGGINGFACE_API_KEY)
+    if (!apiKey && !isSelfHostedImageAvailable() && !hasHuggingFace) {
       return NextResponse.json(
         {
-          error: 'Google AI Studio not configured',
-          message: 'Google AI Studio API key is not configured. Add your key in Settings > AI Integrations to use Product Studio.',
-          hint: 'Get your free API key from https://aistudio.google.com/app/apikey',
+          error: 'Image generation not configured',
+          message: 'Configure one of: self-hosted worker (IMAGE_WORKER_URL), Google AI Studio key (Settings > AI Integrations), or Hugging Face key (HUGGINGFACE_API_KEY).',
+          hint: 'Zero cost: get a free key from https://huggingface.co/settings/tokens and set HUGGINGFACE_API_KEY in your server env.',
         },
         { status: 403 }
       )
@@ -213,33 +235,92 @@ export async function POST(request: NextRequest) {
 
     const prompts = getPrompts(marketplace, templateSuffix, brandSuffix)
 
-    const withRetry = async (
-      fn: () => Promise<string | null>
-    ): Promise<string | null> => {
-      let r = await fn()
-      if (r) return r
-      r = await fn()
-      return r
+    // Prefer self-hosted image worker when configured (no Google quota or key required for images)
+    if (isSelfHostedImageAvailable()) {
+      const description = apiKey
+        ? await describeProduct(apiKey, imageBase64, mimeType)
+        : ''
+      const desc = description ? ` Product: ${description}.` : ' Product.'
+      const mainRes = await generateSelfHostedImage({
+        prompt: prompts.main + desc,
+        style: 'realistic',
+        size: '1024x1024',
+      })
+      const lifestyleRes = await generateSelfHostedImage({
+        prompt: prompts.lifestyle + desc,
+        style: 'realistic',
+        size: '1024x1024',
+      })
+      const infographicRes = await generateSelfHostedImage({
+        prompt: prompts.infographic + desc,
+        style: 'realistic',
+        size: '1024x1024',
+      })
+      if (mainRes?.imageUrl && lifestyleRes?.imageUrl && infographicRes?.imageUrl) {
+        console.log('✅ Product Studio: images from self-hosted worker')
+        return NextResponse.json({
+          main: mainRes.imageUrl,
+          lifestyle: lifestyleRes.imageUrl,
+          infographic: infographicRes.imageUrl,
+          marketplace,
+        })
+      }
     }
 
-    let main = await withRetry(() => callGeminiWithImage(apiKey, imageBase64, mimeType, prompts.main))
-    let lifestyle = await withRetry(() => callGeminiWithImage(apiKey, imageBase64, mimeType, prompts.lifestyle))
-    let infographic = await withRetry(() => callGeminiWithImage(apiKey, imageBase64, mimeType, prompts.infographic))
+    let main: string | null = null
+    let lifestyle: string | null = null
+    let infographic: string | null = null
+
+    if (apiKey) {
+      const withRetry = async (
+        fn: () => Promise<GeminiImageResult>
+      ): Promise<string | null> => {
+        let r = await fn()
+        if (r.image) return r.image
+        r = await fn()
+        return r.image
+      }
+      main = (await withRetry(() => callGeminiWithImage(apiKey, imageBase64, mimeType, prompts.main))) ?? null
+      lifestyle = (await withRetry(() => callGeminiWithImage(apiKey, imageBase64, mimeType, prompts.lifestyle))) ?? null
+      infographic = (await withRetry(() => callGeminiWithImage(apiKey, imageBase64, mimeType, prompts.infographic))) ?? null
+      if (!main || !lifestyle || !infographic) {
+        const description = await describeProduct(apiKey, imageBase64, mimeType)
+        const desc = description ? ` Product: ${description}.` : ''
+        if (!main) main = await callGeminiTextOnly(apiKey, prompts.main + desc)
+        if (!lifestyle) lifestyle = await callGeminiTextOnly(apiKey, prompts.lifestyle + desc)
+        if (!infographic) infographic = await callGeminiTextOnly(apiKey, prompts.infographic + desc)
+      }
+    }
+
+    if ((!main || !lifestyle || !infographic) && hasHuggingFace) {
+      const hf = getHuggingFaceClient()
+      const desc = ' Product. High quality, professional.'
+      try {
+        if (!main) {
+          const r = await hf.textToImage({ prompt: prompts.main + desc, style: 'realistic', size: '1024x1024' })
+          main = r.image_url
+        }
+        if (!lifestyle) {
+          const r = await hf.textToImage({ prompt: prompts.lifestyle + desc, style: 'realistic', size: '1024x1024' })
+          lifestyle = r.image_url
+        }
+        if (!infographic) {
+          const r = await hf.textToImage({ prompt: prompts.infographic + desc, style: 'realistic', size: '1024x1024' })
+          infographic = r.image_url
+        }
+      } catch (e) {
+        console.warn('Product Studio Hugging Face fallback error:', e)
+      }
+    }
 
     if (!main || !lifestyle || !infographic) {
-      const description = await describeProduct(apiKey, imageBase64, mimeType)
-      const desc = description ? ` Product: ${description}.` : ''
-      if (!main) main = await callGeminiTextOnly(apiKey, prompts.main + desc)
-      if (!lifestyle) lifestyle = await callGeminiTextOnly(apiKey, prompts.lifestyle + desc)
-      if (!infographic) infographic = await callGeminiTextOnly(apiKey, prompts.infographic + desc)
-    }
-
-    if (!main && !lifestyle && !infographic) {
+      const hintPhoto = 'Try a clearer product photo (good lighting, single product, minimal background).'
+      const hintQuota = 'If using Google: check quota at https://aistudio.google.com. Zero cost: set HUGGINGFACE_API_KEY (free at https://huggingface.co/settings/tokens).'
       return NextResponse.json(
         {
           error: 'Generation failed',
-          message: 'Google AI Studio did not return images. The model may not support image editing with your input. Try a different photo or check your API quota.',
-          hint: 'Ensure your Google AI Studio key has access to Gemini 2.5 Flash Image and has quota remaining.',
+          message: 'No image provider returned images. ' + hintPhoto + ' ' + hintQuota,
+          hint: hintQuota,
         },
         { status: 502 }
       )

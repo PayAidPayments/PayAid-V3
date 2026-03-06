@@ -15,10 +15,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { format, isThisMonth, isPast, isWithinInterval } from 'date-fns'
-import { Briefcase, TrendingUp, CheckCircle2, XCircle, Calendar, DollarSign, AlertCircle, Filter } from 'lucide-react'
+import { Briefcase, TrendingUp, CheckCircle2, XCircle, Calendar, DollarSign, AlertCircle, Filter, LayoutGrid, List } from 'lucide-react'
 // ModuleTopBar is now in layout.tsx
 import { PageLoading } from '@/components/ui/loading'
 import { getTimePeriodBounds, validateFilterParams, type DealCategory, type TimePeriod } from '@/lib/utils/crm-filters'
+import { DealsKanban } from '@/components/crm/DealsKanban'
 
 // Deal Row Component
 function DealRow({ deal, tenantId, onDelete }: { deal: any; tenantId: string; onDelete: (id: string) => void }) {
@@ -110,6 +111,7 @@ export default function CRMDealsPage() {
     const [diagnosticsOpen, setDiagnosticsOpen] = useState(false)
     const [diagnosticsResult, setDiagnosticsResult] = useState<string | null>(null)
     const hasTriggeredEnsureDemoRef = useRef(false)
+    const [viewMode, setViewMode] = useState<'list' | 'pipeline'>('list')
 
     // When page loads with 0 deals, ensure demo data once so demos are never empty
     useEffect(() => {
@@ -450,28 +452,60 @@ export default function CRMDealsPage() {
             <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your sales deals and pipeline</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 border border-purple-200 dark:border-purple-800 rounded-lg px-3 py-1.5 bg-purple-50 dark:bg-purple-900/30">
-              <Filter className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <select
-                value={timePeriod}
-                onChange={(e) => {
-                  setTimePeriod(e.target.value as 'month' | 'quarter' | 'financial-year' | 'year')
-                  setSelectedCategory(null) // Reset filter when period changes
-                }}
-                className="text-sm font-medium text-purple-700 dark:text-purple-300 bg-transparent border-0 focus:outline-none cursor-pointer"
+            <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 bg-gray-100 dark:bg-gray-800">
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
               >
-                <option value="month">This Month</option>
-                <option value="quarter">This Quarter</option>
-                <option value="financial-year">This Financial Year</option>
-                <option value="year">This Year</option>
-              </select>
+                <List className="w-4 h-4" />
+                List
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('pipeline')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'pipeline'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+                Pipeline
+              </button>
             </div>
+            {viewMode === 'list' && (
+              <div className="flex items-center gap-2 border border-purple-200 dark:border-purple-800 rounded-lg px-3 py-1.5 bg-purple-50 dark:bg-purple-900/30">
+                <Filter className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <select
+                  value={timePeriod}
+                  onChange={(e) => {
+                    setTimePeriod(e.target.value as 'month' | 'quarter' | 'financial-year' | 'year')
+                    setSelectedCategory(null)
+                  }}
+                  className="text-sm font-medium text-purple-700 dark:text-purple-300 bg-transparent border-0 focus:outline-none cursor-pointer"
+                >
+                  <option value="month">This Month</option>
+                  <option value="quarter">This Quarter</option>
+                  <option value="financial-year">This Financial Year</option>
+                  <option value="year">This Year</option>
+                </select>
+              </div>
+            )}
             <Link href={`/crm/${tenantId}/Deals/new`}>
               <Button>New Deal</Button>
             </Link>
           </div>
         </div>
 
+        {viewMode === 'pipeline' ? (
+          <DealsKanban tenantId={tenantId} />
+        ) : (
+          <>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card 
@@ -1143,6 +1177,8 @@ export default function CRMDealsPage() {
               )}
             </CardContent>
           </Card>
+        )}
+          </>
         )}
       </div>
     </div>

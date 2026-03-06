@@ -6,15 +6,16 @@
 
 echo "🔍 Running pre-commit checks..."
 
-# Check for dollar symbols in staged files
+# Check for dollar symbols in staged files (exclude regex placeholders e.g. lib/dashboard-redirects.ts $1, $2)
 echo "💰 Checking for dollar symbols..."
-if git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx|css|scss|md)$' | xargs grep -l '\$[0-9]' 2>/dev/null; then
+FILES_TO_CHECK=$(git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx|css|scss|md)$' | grep -v 'lib/dashboard-redirects\.ts' || true)
+if [ -n "$FILES_TO_CHECK" ] && echo "$FILES_TO_CHECK" | xargs grep -l '\$[0-9]' 2>/dev/null; then
   echo "❌ ERROR: Dollar symbols (\$) found in code!"
   echo "   PayAid V3 uses Indian Rupee (₹) only."
   echo "   Please replace all dollar symbols with formatINR() or formatINRForDisplay()"
   echo ""
   echo "   Files with dollar symbols:"
-  git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx|css|scss|md)$' | xargs grep -n '\$[0-9]' 2>/dev/null || true
+  echo "$FILES_TO_CHECK" | xargs grep -n '\$[0-9]' 2>/dev/null || true
   exit 1
 fi
 

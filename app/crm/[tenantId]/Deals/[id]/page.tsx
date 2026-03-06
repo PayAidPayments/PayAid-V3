@@ -64,36 +64,34 @@ export default function DealDetailPage() {
           <Button
             onClick={async () => {
               try {
-                // Navigate to quote generation page or open modal
-                const response = await fetch(`/api/quotes`, {
+                const response = await fetch('/api/crm/cpq/quotes', {
                   method: 'POST',
                   headers: getAuthHeaders(),
                   body: JSON.stringify({
                     dealId: id,
+                    contactId: deal.contact?.id ?? undefined,
                     lineItems: [
-                      {
-                        productName: deal.name,
-                        quantity: 1,
-                        unitPrice: deal.value,
-                      },
+                      { productName: deal.name, quantity: 1, unitPrice: deal.value ?? 0 },
                     ],
                   }),
                 })
-                if (response.ok) {
-                  const data = await response.json()
-                  router.push(`/crm/${tenantId}/Quotes/${data.data.id}`)
+                const data = await response.json()
+                if (response.ok && data.quote) {
+                  toast({ title: 'Quote created', description: `Quote ${data.quote.quoteNumber} created for this deal.` })
+                  queryClient.invalidateQueries({ queryKey: ['deals'] })
+                  router.push(`/crm/${tenantId}/Quotes`)
                 } else {
-                  alert('Failed to generate quote. Please try again.')
+                  toast({ title: 'Quote failed', description: data.error || 'Failed to create quote', variant: 'destructive' })
                 }
               } catch (error) {
                 console.error('Error generating quote:', error)
-                alert('Failed to generate quote')
+                toast({ title: 'Error', description: 'Failed to create quote', variant: 'destructive' })
               }
             }}
             className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
           >
             <FileText className="h-4 w-4 mr-2" />
-            Generate Quote
+            Create Quote
           </Button>
           {deal.contact && (
             <Link href={`/finance/${tenantId}/Invoices/new?customerId=${deal.contact.id}`}>
@@ -246,6 +244,7 @@ export default function DealDetailPage() {
         <CloseDealModal
           outcome={closeModal}
           dealName={deal.name}
+          tenantId={tenantId}
           onClose={() => setCloseModal(null)}
           onConfirm={async ({ reason, competitor: comp }) => {
             await updateDeal.mutateAsync({

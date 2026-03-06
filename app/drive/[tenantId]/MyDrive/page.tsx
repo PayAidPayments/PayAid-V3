@@ -33,7 +33,7 @@ export default function DriveMyDrivePage() {
           <CardDescription>Your files and folders</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Link href="/dashboard/drive" className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+          <Link href={tenantId ? `/drive/${tenantId}/MyDrive` : '/drive'} className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
             <Upload className="h-5 w-5" /> Open Drive (upload and manage)
           </Link>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -56,7 +56,7 @@ export default function DriveMyDrivePage() {
               <div className="col-span-full text-center py-12 text-gray-500">
                 <Folder className="h-16 w-16 mx-auto mb-4 text-gray-300" />
                 <p>No files yet. Upload from Drive.</p>
-                <Link href="/dashboard/drive" className="mt-2 inline-block text-purple-600 hover:underline">Go to Drive</Link>
+                <Link href={tenantId ? `/drive/${tenantId}/MyDrive` : '/drive'} className="mt-2 inline-block text-purple-600 hover:underline">Go to Drive</Link>
               </div>
             )}
           </div>

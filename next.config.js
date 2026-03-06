@@ -187,17 +187,14 @@ const nextConfig = {
   },
   // Internal rewrites to map tenant-scoped URLs to existing routes
   // This allows /dashboard/[tenantId]/websites to internally route to /dashboard/websites
-  // while keeping the tenant ID in the browser URL
+  // while keeping the tenant ID in the browser URL.
+  // Do NOT rewrite /home/:tenantId to /tenant-home/:tenantId - that caused an infinite
+  // redirect loop (tenant-home shows "Redirecting..." and sends back to /home/:tenantId).
   async rewrites() {
     return [
       {
         source: '/dashboard/:tenantId/:path*',
         destination: '/dashboard/:path*',
-      },
-      // Serve /home/:tenantId via tenant-home route (avoids app/home/[tenantId] 404 on Windows)
-      {
-        source: '/home/:tenantId',
-        destination: '/tenant-home/:tenantId',
       },
     ]
   },

@@ -6,6 +6,7 @@ import { checkTenantLimits } from '@/lib/middleware/tenant'
 import { z } from 'zod'
 import { multiLayerCache } from '@/lib/cache/multi-layer'
 import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
+import { logCrmAudit } from '@/lib/audit-log-crm'
 
 // Optional email/phone: allow empty string from forms and coerce to undefined for DB
 const optionalEmail = z.union([z.string().email(), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v))
@@ -360,7 +361,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check CRM module license
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
     // Check tenant limits
     const canCreate = await checkTenantLimits(tenantId, 'contacts')
@@ -374,20 +375,34 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = createContactSchema.parse(body)
 
-    // Check for duplicate email if provided (select only id to avoid depending on optional Phase 1B columns)
+    // Duplicate detection: email and/or phone within tenant
     if (validated.email) {
-      const existing = await prisma.contact.findFirst({
+      const existingByEmail = await prisma.contact.findFirst({
         where: {
           tenantId: tenantId,
           email: validated.email,
         },
-        select: { id: true },
+        select: { id: true, name: true },
       })
-
-      if (existing) {
+      if (existingByEmail) {
         return NextResponse.json(
-          { error: 'Contact with this email already exists' },
-          { status: 400 }
+          { error: 'A contact with this email already exists', code: 'DUPLICATE_EMAIL', existingId: existingByEmail.id },
+          { status: 409 }
+        )
+      }
+    }
+    if (validated.phone?.trim()) {
+      const existingByPhone = await prisma.contact.findFirst({
+        where: {
+          tenantId: tenantId,
+          phone: validated.phone.trim(),
+        },
+        select: { id: true, name: true },
+      })
+      if (existingByPhone) {
+        return NextResponse.json(
+          { error: 'A contact with this phone number already exists', code: 'DUPLICATE_PHONE', existingId: existingByPhone.id },
+          { status: 409 }
         )
       }
     }
@@ -401,6 +416,16 @@ export async function POST(request: NextRequest) {
         stage: stage, // Set stage based on type or provided value
         tenantId: tenantId,
       },
+    })
+
+    await logCrmAudit({
+      tenantId,
+      userId,
+      entityType: 'contact',
+      entityId: contact.id,
+      action: 'create',
+      changeSummary: `Created contact: ${contact.name}`,
+      afterSnapshot: { name: contact.name, email: contact.email, stage: contact.stage },
     })
 
     // Invalidate cache (multi-layer: clears both L1 and L2)

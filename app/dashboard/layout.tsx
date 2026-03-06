@@ -21,6 +21,7 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { cn } from '@/lib/utils/cn'
 import { detectModuleFromPath } from '@/lib/utils/module-detection'
 import { validateSSOTokenFromQuery } from '@/lib/sso/token-manager'
+import { getRedirectForDashboardPath } from '@/lib/dashboard-redirects'
 
 export default function DashboardLayout({
   children,
@@ -155,11 +156,36 @@ export default function DashboardLayout({
     }
   }, [token, tenant?.licensedModules?.length, fetchUser])
 
+  // Redirect old dashboard settings URLs to decoupled /settings/[tenantId]/...
+  useEffect(() => {
+    if (!pathname || typeof window === 'undefined') return
+    const tid = tenant?.id || (params?.tenantId as string)
+    if (!tid) return
+    if (pathname.includes('/settings/profile')) {
+      router.replace(`/settings/${tid}/Profile`)
+      return
+    }
+    if (pathname.includes('/settings/tenant')) {
+      router.replace(`/settings/${tid}/Tenant`)
+      return
+    }
+  }, [pathname, tenant?.id, params?.tenantId, router])
+
+  // Deprecate /dashboard/: redirect to decoupled module routes when a mapping exists
+  useEffect(() => {
+    if (!pathname || typeof window === 'undefined') return
+    const tid = tenant?.id
+    if (!tid) return
+    const target = getRedirectForDashboardPath(pathname, tid)
+    if (target) {
+      router.replace(target)
+    }
+  }, [pathname, tenant?.id, router])
+
   // Verify tenantId matches logged-in tenant
   useEffect(() => {
     if (tenant?.id && tenantIdFromUrl && tenant.id !== tenantIdFromUrl) {
-      // Tenant mismatch - redirect to correct tenant dashboard
-      router.replace(`/dashboard/${tenant.id}`)
+      router.replace(`/home/${tenant.id}`)
     }
   }, [tenant?.id, tenantIdFromUrl, router])
 

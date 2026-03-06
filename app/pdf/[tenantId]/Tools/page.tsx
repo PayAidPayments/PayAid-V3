@@ -9,13 +9,14 @@ export default function PDFToolsPage() {
   const params = useParams()
   const tenantId = params?.tenantId as string
 
+  const base = tenantId ? `/pdf/${tenantId}/Tools` : '/pdf'
   const tools = [
-    { name: 'PDF Reader', desc: 'View and annotate PDFs', href: '/dashboard/pdf/reader', icon: FileText },
-    { name: 'PDF Editor', desc: 'Edit text and forms', href: '/dashboard/pdf/editor', icon: FileCheck },
-    { name: 'Merge PDFs', desc: 'Combine multiple PDFs', href: '/dashboard/pdf/merge', icon: Merge },
-    { name: 'Split PDF', desc: 'Extract or split pages', href: '/dashboard/pdf/split', icon: Scissors },
-    { name: 'Compress PDF', desc: 'Reduce file size', href: '/dashboard/pdf/compress', icon: Archive },
-    { name: 'Convert', desc: 'To/from other formats', href: '/dashboard/pdf/convert', icon: FileText },
+    { name: 'PDF Reader', desc: 'View and annotate PDFs', href: `${base}#reader`, icon: FileText },
+    { name: 'PDF Editor', desc: 'Edit text and forms', href: `${base}#editor`, icon: FileCheck },
+    { name: 'Merge PDFs', desc: 'Combine multiple PDFs', href: `${base}#merge`, icon: Merge },
+    { name: 'Split PDF', desc: 'Extract or split pages', href: `${base}#split`, icon: Scissors },
+    { name: 'Compress PDF', desc: 'Reduce file size', href: `${base}#compress`, icon: Archive },
+    { name: 'Convert', desc: 'To/from other formats', href: `${base}#convert`, icon: FileText },
   ]
 
   return (

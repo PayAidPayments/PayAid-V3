@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { logAudit } from '@/lib/audit/log'
 
 // PUT /api/hr/payroll/runs/[id]/approve - Approve a payroll run
 export async function PUT(
@@ -9,8 +10,7 @@ export async function PUT(
 ) {
   try {
   const resolvedParams = await params
-    // Check HR module license
-    const { tenantId } = await requireModuleAccess(request, 'hr')
+    const { tenantId, userId } = await requireModuleAccess(request, 'hr')
 
     const payrollRun = await prisma.payrollRun.findFirst({
       where: {
@@ -42,6 +42,16 @@ export async function PUT(
         approvedAt: new Date(),
       },
     })
+
+    logAudit({
+      module: 'hr',
+      action: 'payroll_run.approve',
+      entityType: 'payrollRun',
+      entityId: updated.id,
+      tenantId,
+      userId,
+      summary: `Payroll run ${resolvedParams.id} approved`,
+    }).catch(() => {})
 
     return NextResponse.json(updated)
   } catch (error) {

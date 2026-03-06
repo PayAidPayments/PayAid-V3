@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { useContacts, useDeleteContact } from '@/lib/hooks/use-api'
+import { useContacts, useDeleteContact, getAuthHeaders } from '@/lib/hooks/use-api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -12,14 +12,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format } from 'date-fns'
 import { LeadScoringBadge } from '@/components/LeadScoringBadge'
 import { 
-  Search, 
-  Plus, 
-  Bell, 
-  HelpCircle, 
-  Settings, 
+  Search,
+  Plus,
+  Bell,
+  HelpCircle,
+  Settings,
   ChevronDown,
   Download,
   Upload,
+  List,
+  LayoutGrid,
   Trash2,
   Edit,
   Users,
@@ -57,13 +59,19 @@ import { EntityPageLayout } from '@/components/crm/layout/EntityPageLayout'
 import { KPIBar } from '@/components/crm/layout/KPIBar'
 import { RowActionsMenu } from '@/components/crm/RowActionsMenu'
 import { BulkActionsBar } from '@/components/crm/BulkActionsBar'
+import ContactImportDialog from '@/components/contacts/contact-import-dialog'
+import { LeadsKanban } from '@/components/crm/LeadsKanban'
+import { useQueryClient } from '@tanstack/react-query'
 
 export default function CRMContactsPage() {
   const params = useParams()
   const searchParams = useSearchParams()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const tenantId = params?.tenantId as string
   const { user, logout } = useAuthStore()
+  const [showImportDialog, setShowImportDialog] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'pipeline'>('list')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(100)
   const [search, setSearch] = useState('')
@@ -95,6 +103,11 @@ export default function CRMContactsPage() {
   })
   const actionsMenuRef = useRef<HTMLDivElement>(null)
   const createMenuRef = useRef<HTMLDivElement>(null)
+
+  // Open import dialog when URL has ?import=1
+  useEffect(() => {
+    if (searchParams?.get('import') === '1') setShowImportDialog(true)
+  }, [searchParams])
 
   // Handle URL query parameters for filtering
   useEffect(() => {
@@ -362,6 +375,32 @@ export default function CRMContactsPage() {
     <>
       {/* Action buttons in header area */}
       <div className="fixed top-16 right-6 z-50 flex items-center gap-2">
+            <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 bg-gray-100 dark:bg-gray-800">
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+              >
+                <List className="w-4 h-4" />
+                List
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('pipeline')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'pipeline'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+                Pipeline
+              </button>
+            </div>
             {/* Create Contact Dropdown */}
             <div className="relative" ref={createMenuRef}>
               <button
@@ -381,7 +420,8 @@ export default function CRMContactsPage() {
                     <button
                       onClick={() => {
                         setCreateMenuOpen(false)
-                        router.push(`/crm/${tenantId}/Contacts?import=1`)
+                        setShowImportDialog(true)
+                        router.replace(`/crm/${tenantId}/Contacts?import=1`)
                       }}
                       className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
                     >
@@ -647,6 +687,11 @@ export default function CRMContactsPage() {
           </div>
         }
         mainContent={
+          viewMode === 'pipeline' ? (
+            <div className="p-4">
+              <LeadsKanban tenantId={tenantId} />
+            </div>
+          ) : (
           <div className="flex flex-col flex-1 min-w-0 p-4 sm:p-6">
             {/* Contacts Table - full width, Name and Company use empty space */}
             <Card className="flex-1 min-w-0 border-0 shadow-sm rounded-xl overflow-hidden">
@@ -745,6 +790,7 @@ export default function CRMContactsPage() {
               </CardContent>
             </Card>
           </div>
+          )
         }
       />
 
@@ -760,15 +806,21 @@ export default function CRMContactsPage() {
           }
         }}
         onDelete={async () => {
-          if (selectedContacts.length > 0 && confirm(`Are you sure you want to delete ${selectedContacts.length} contact(s)?`)) {
+          if (selectedContacts.length > 0 && confirm(`Are you sure you want to archive ${selectedContacts.length} contact(s)? They can be filtered back via status.`)) {
             try {
-              for (const id of selectedContacts) {
-                await deleteContact.mutateAsync({ id, tenantId })
+              const res = await fetch('/api/crm/contacts/bulk-delete', {
+                method: 'POST',
+                headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contactIds: selectedContacts }),
+              })
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({}))
+                throw new Error(err.error || err.message || 'Bulk delete failed')
               }
               setSelectedContacts([])
-              window.location.reload()
+              queryClient.invalidateQueries({ queryKey: ['contacts'] })
             } catch (error) {
-              alert('Failed to delete some contacts')
+              alert(error instanceof Error ? error.message : 'Failed to delete some contacts')
             }
           }
         }}
@@ -870,6 +922,20 @@ export default function CRMContactsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {showImportDialog && (
+        <ContactImportDialog
+          onClose={() => {
+            setShowImportDialog(false)
+            router.replace(`/crm/${tenantId}/Contacts`, { scroll: false })
+          }}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['contacts'] })
+          }}
+          segmentsApiUrl="/api/crm/segments"
+          organizationId={tenantId}
+        />
+      )}
     </>
   )
 }

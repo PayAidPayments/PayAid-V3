@@ -75,6 +75,8 @@ export default function FinanceInvoiceDetailPage() {
   const [sendError, setSendError] = useState('')
   const [sendErrorCode, setSendErrorCode] = useState<string | null>(null)
   const [sendSuccess, setSendSuccess] = useState('')
+  const [portalLinkCopied, setPortalLinkCopied] = useState(false)
+  const { token } = useAuthStore()
 
   const sendInvoiceMutation = useMutation({
     mutationFn: async () => {
@@ -175,7 +177,7 @@ export default function FinanceInvoiceDetailPage() {
             {invoice.customer?.name || 'N/A'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {invoice.customer?.email && invoice.status !== 'paid' && (
             <Button
               onClick={() => sendInvoiceMutation.mutate()}
@@ -183,6 +185,29 @@ export default function FinanceInvoiceDetailPage() {
               className="bg-green-600 hover:bg-green-700"
             >
               {sendInvoiceMutation.isPending ? 'Sending...' : '📧 Send with Payment Link'}
+            </Button>
+          )}
+          {invoice.customer?.id && (
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (!token || !tenantId) return
+                try {
+                  const r = await fetch(`/api/portal/token?tenantId=${encodeURIComponent(tenantId)}&contactId=${encodeURIComponent(invoice.customer.id)}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  })
+                  const data = await r.json()
+                  if (data.portalUrl) {
+                    await navigator.clipboard.writeText(data.portalUrl)
+                    setPortalLinkCopied(true)
+                    setTimeout(() => setPortalLinkCopied(false), 2000)
+                  }
+                } catch {
+                  // ignore
+                }
+              }}
+            >
+              {portalLinkCopied ? 'Copied!' : 'Copy portal link'}
             </Button>
           )}
           <Button variant="outline" onClick={downloadPDF}>
@@ -534,7 +559,7 @@ export default function FinanceInvoiceDetailPage() {
                   <p>{sendError}</p>
                   {sendErrorCode === 'PAYMENT_GATEWAY_NOT_CONFIGURED' && (
                     <p className="pt-1">
-                      <Link href="/dashboard/settings/payment-gateway" className="underline font-medium">
+                      <Link href={tenantId ? `/settings/${tenantId}/Billing` : '/settings'} className="underline font-medium">
                         Configure payment gateway in Settings →
                       </Link>
                     </p>

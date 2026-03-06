@@ -15,7 +15,8 @@ import {
   User,
   Tag,
   Calendar,
-  Briefcase
+  Briefcase,
+  XCircle
 } from 'lucide-react'
 
 interface RowActionsMenuProps {
@@ -25,6 +26,7 @@ interface RowActionsMenuProps {
   onEdit?: () => void
   onDelete?: () => void
   onConvert?: () => void
+  onDisqualify?: () => void
   onAssign?: () => void
   onView?: () => void
   onDuplicate?: () => void
@@ -42,6 +44,7 @@ export const RowActionsMenu: React.FC<RowActionsMenuProps> = ({
   onEdit,
   onDelete,
   onConvert,
+  onDisqualify,
   onAssign,
   onView,
   onDuplicate,
@@ -162,6 +165,19 @@ export const RowActionsMenu: React.FC<RowActionsMenuProps> = ({
               >
                 <CheckCircle className="w-4 h-4 mr-3" />
                 Convert to Contact
+              </button>
+            )}
+
+            {entityType === 'prospect' && onDisqualify && (
+              <button
+                onClick={() => {
+                  onDisqualify()
+                  setIsOpen(false)
+                }}
+                className="w-full flex items-center px-4 py-2 text-sm text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors text-left"
+              >
+                <XCircle className="w-4 h-4 mr-3" />
+                Disqualify lead
               </button>
             )}
 

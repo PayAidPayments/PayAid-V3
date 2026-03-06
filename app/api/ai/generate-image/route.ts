@@ -3,6 +3,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { aiGateway } from '@/lib/ai/gateway'
 import { getHuggingFaceClient } from '@/lib/ai/huggingface'
 import { getNanoBananaClient } from '@/lib/ai/nanobanana'
+import { isSelfHostedImageAvailable, generateSelfHostedImage } from '@/lib/ai/self-hosted-image'
 import { prisma } from '@/lib/db/prisma'
 import { prismaWithRetry } from '@/lib/db/connection-retry'
 import { enhanceImagePrompt } from '@/lib/ai/prompt-enhancer'
@@ -33,7 +34,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Get provider preference from request (default: auto-detect)
-    const provider = body.provider || 'auto' // 'auto', 'self-hosted', 'google-ai-studio', 'huggingface' (free options only)
+    const provider = body.provider || 'auto' // 'auto', 'self-hosted', 'google-ai-studio', 'huggingface', 'nanobanana'
+
+    // Self-hosted image generator (your own SDXL/worker — no Google key or quota)
+    const useSelfHosted = provider === 'self-hosted' || (provider === 'auto' && isSelfHostedImageAvailable())
+    if (useSelfHosted) {
+      const result = await generateSelfHostedImage({
+        prompt: validated.prompt,
+        style: validated.style,
+        size: validated.size,
+      })
+      if (result) {
+        console.log('✅ Image generated with self-hosted worker')
+        return NextResponse.json({
+          imageUrl: result.imageUrl,
+          revisedPrompt: result.revisedPrompt,
+          service: 'self-hosted',
+          generationTime: result.generationTime,
+        })
+      }
+      if (provider === 'self-hosted') {
+        return NextResponse.json({
+          error: 'Self-hosted image service unavailable',
+          message: 'The image worker did not return an image. Check that IMAGE_WORKER_URL is correct and the service is running (e.g. docker or python server).',
+          hint: 'Start the worker: see services/text-to-image/README or set IMAGE_WORKER_URL to your worker URL.',
+        }, { status: 503 })
+      }
+      // auto: fall through to other providers
+    }
 
     // If Nano Banana is explicitly selected, use it directly
     if (provider === 'nanobanana') {
@@ -268,8 +296,8 @@ export async function POST(request: NextRequest) {
     
     // Check provider-specific errors
     if (provider === 'self-hosted') {
-      errorMessage = 'Self-hosted image generation is no longer available. Docker services for image generation have been removed.'
-      hint = 'Please use cloud APIs instead:\n- Google AI Studio (free, per-tenant API key)\n- Hugging Face Cloud API (free tier)\n\nSee CLOUD_ONLY_SETUP.md for details.'
+      errorMessage = 'Self-hosted image worker is not configured or not responding.'
+      hint = 'Set IMAGE_WORKER_URL in your environment to your text-to-image service (e.g. http://localhost:7860). See services/text-to-image/ for the included SDXL server.'
     } else if (provider === 'google-ai-studio') {
       errorMessage = 'Google AI Studio API key is not configured for your account. Each tenant must use their own API key.'
       hint = 'Get your free API key from https://aistudio.google.com/app/apikey\n\n1. Go to https://aistudio.google.com/app/apikey\n2. Click "Create API Key"\n3. Copy the API key\n4. Go to Settings > AI Integrations\n5. Add your API key in the Google AI Studio section'

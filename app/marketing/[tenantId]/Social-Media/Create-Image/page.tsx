@@ -515,11 +515,12 @@ export default function CreateImagePage() {
                   disabled={isGenerating}
                 >
                   <option value="auto">Auto (Recommended)</option>
+                  <option value="self-hosted">PayAid Image Generator (self-hosted)</option>
                   <option value="google-ai-studio">Google AI Studio</option>
-                  <option value="huggingface">PayAid AI Image Generation</option>
+                  <option value="huggingface">Hugging Face (cloud)</option>
                 </select>
                 <p className="mt-1 text-xs">
-                  {provider === 'auto' && <span className="text-gray-500 dark:text-gray-400">Will try Google AI Studio first, then PayAid AI Image Generation</span>}
+                  {provider === 'auto' && <span className="text-gray-500 dark:text-gray-400">Uses your self-hosted generator first if configured, then Google or Hugging Face</span>}
                   {provider === 'google-ai-studio' && (
                     <>
                       {isCheckingConnection ? (
@@ -531,7 +532,8 @@ export default function CreateImagePage() {
                       )}
                     </>
                   )}
-                  {provider === 'huggingface' && <span className="text-gray-500 dark:text-gray-400">PayAid's built-in AI image generation service</span>}
+                  {provider === 'self-hosted' && <span className="text-gray-500 dark:text-gray-400">Your own image worker (no API key, no quota). Set IMAGE_WORKER_URL on the server.</span>}
+                  {provider === 'huggingface' && <span className="text-gray-500 dark:text-gray-400">Hugging Face cloud API (platform key)</span>}
                 </p>
                 {provider === 'google-ai-studio' && !isCheckingConnection && !googleConnected && (
                   <div className="mt-2 p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-md">

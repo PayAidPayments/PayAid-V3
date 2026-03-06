@@ -2,6 +2,7 @@
 
 import { useParams } from 'next/navigation'
 import { UniversalModuleLayout } from '@/components/modules/UniversalModuleLayout'
+import { getFinanceTopBarItems } from '@/lib/finance/finance-top-bar-items'
 
 export default function FinanceTenantLayout({
   children,
@@ -10,22 +11,7 @@ export default function FinanceTenantLayout({
 }) {
   const params = useParams()
   const tenantId = params.tenantId as string
-
-  const topBarItems = [
-    { name: 'Home', href: `/finance/${tenantId}/Home` },
-    { name: 'Invoices', href: `/finance/${tenantId}/Invoices` },
-    { name: 'Credit Notes', href: `/finance/${tenantId}/Credit-Notes` },
-    { name: 'Debit Notes', href: `/finance/${tenantId}/Debit-Notes` },
-    { name: 'Accounting', href: `/finance/${tenantId}/Accounting` },
-    { name: 'Purchase Orders', href: `/finance/${tenantId}/Purchase-Orders` },
-    { name: 'GST Reports', href: `/finance/${tenantId}/GST` },
-    { name: 'TDS', href: `/finance/${tenantId}/TDS` },
-    { name: 'E-Invoicing', href: `/finance/${tenantId}/E-Invoicing` },
-    { name: 'Bank Reconciliation', href: `/finance/${tenantId}/Bank-Reconciliation` },
-    { name: 'Advances', href: `/finance/${tenantId}/Advances` },
-    { name: 'Tally Export', href: `/finance/${tenantId}/Tally-Export` },
-    { name: 'CA Assistant', href: `/finance/${tenantId}/ca-assistant` },
-  ]
+  const topBarItems = getFinanceTopBarItems(tenantId)
 
   return (
     <UniversalModuleLayout

@@ -557,7 +557,7 @@ export async function GET(request: NextRequest) {
           `You have an appointment with ${apt.contactName} at ${apt.startTime}`,
           'MEDIUM',
           now,
-          `/dashboard/appointments/${apt.id}`
+          user.tenantId ? `/appointments/${user.tenantId}/Home?appointment=${apt.id}` : `/dashboard/appointments/${apt.id}`
         )
       })
     }
