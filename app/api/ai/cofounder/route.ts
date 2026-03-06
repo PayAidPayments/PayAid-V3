@@ -8,6 +8,16 @@ import { prisma } from '@/lib/db/prisma'
 import { getIndustryConfig } from '@/lib/industries/config'
 import { z } from 'zod'
 
+/** Fix common brand-name misspellings in AI-generated text (e.g. "Linked in" → "LinkedIn"). */
+function fixBrandSpelling(text: string): string {
+  return text
+    .replace(/\bLinked\s+in\b/gi, 'LinkedIn')
+    .replace(/\bYou\s+tube\b/gi, 'YouTube')
+    .replace(/\bFace\s+book\b/gi, 'Facebook')
+    .replace(/\bInsta\s+gram\b/gi, 'Instagram')
+    .replace(/\bWhats\s+app\b/gi, 'WhatsApp')
+}
+
 const cofounderSchema = z.object({
   message: z.string().min(1),
   agentId: z.enum([
@@ -159,6 +169,8 @@ ${projectInstructions}
 Tenant ID: ${tenantId}
 User ID: ${userId}
 ${tenant?.industry ? `Industry: ${tenant.industry}${tenant.industrySubType ? ` (${tenant.industrySubType})` : ''}` : ''}
+
+Writing: Always spell brand names correctly. Use: LinkedIn (not "Linked in"), WhatsApp, Facebook, Instagram, YouTube (not "You tube").
 ${STRUCTURED_OUTPUT_INSTRUCTION}`
 
     // Use the existing AI chat infrastructure
@@ -226,7 +238,8 @@ ${STRUCTURED_OUTPUT_INSTRUCTION}`
 
     // Parse structured block (artifact + inline actions) if present
     const { cleanMessage, structured } = parseStructuredBlock(response)
-    const displayMessage = cleanMessage
+    // Fix common brand-name misspellings in AI output (e.g. "Linked in" → "LinkedIn")
+    const displayMessage = fixBrandSpelling(cleanMessage)
     let artifact: ArtifactPayload | undefined
     let structuredActions: StructuredAction[] = []
     if (structured?.artifact_type && structured?.artifact_data) {
