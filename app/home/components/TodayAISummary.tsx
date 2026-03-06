@@ -30,11 +30,11 @@ export function TodayAISummary({ bullets, tenantId, loading }: TodayAISummaryPro
         </ul>
       ) : (
         <p className="text-sm text-slate-500 dark:text-gray-400 mb-4">
-          No summary yet. Open modules to see insights here.
+          No summary yet. Add deals, invoices, or tasks in CRM, Finance, or Projects to see your daily briefing here.
         </p>
       )}
       <Link
-        href={`/ai-cofounder/${tid}/Home`}
+        href={`/ai-studio/${tid}/Cofounder`}
         className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
       >
         Ask AI more

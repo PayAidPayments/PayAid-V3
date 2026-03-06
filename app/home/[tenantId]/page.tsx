@@ -7,7 +7,7 @@ import { TodayAISummary } from '../components/TodayAISummary'
 import { ModuleGrid } from '../components/ModuleGrid'
 import { NewsSidebar } from '@/components/news/NewsSidebar'
 import Link from 'next/link'
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useParams, useRouter } from 'next/navigation'
 import { PAYAID_MODULES } from '@/lib/config/payaid-modules.config'
@@ -51,7 +51,10 @@ export default function TenantHomePage() {
   const [mounted, setMounted] = useState(false)
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
   const [summary, setSummary] = useState<HomeSummary | null>(null)
+  const [summaryLoading, setSummaryLoading] = useState(true)
+  const [summaryError, setSummaryError] = useState(false)
   const [briefingBullets, setBriefingBullets] = useState<string[]>([])
+  const [briefingLoading, setBriefingLoading] = useState(true)
   const params = useParams()
   const router = useRouter()
   const { tenant, token } = useAuthStore()
@@ -121,25 +124,69 @@ export default function TenantHomePage() {
     return () => clearTimeout(t)
   }, [tenantId, hasCheckedAuth])
 
-  useEffect(() => {
-    if (!tenantId || !token) return
-    fetch(`/api/home/summary?tenantId=${encodeURIComponent(tenantId)}`, {
-      headers: { Authorization: `Bearer ${token}` },
+  // Use tenant id from auth (store or storage) so we always request the logged-in tenant's data
+  const authTenantId =
+    tenant?.id ??
+    (typeof window !== 'undefined' ? getAuthFromStorage().tenant?.id : null) ??
+    tenantId
+
+  const fetchSummary = useCallback(() => {
+    if (!authTenantId) {
+      setSummaryLoading(false)
+      setSummaryError(true)
+      return
+    }
+    const authToken = useAuthStore.getState().token ?? getAuthFromStorage().token
+    if (!authToken) {
+      setSummaryLoading(false)
+      setSummaryError(true)
+      return
+    }
+    setSummaryLoading(true)
+    setSummaryError(false)
+    fetch(`/api/home/summary?tenantId=${encodeURIComponent(authTenantId)}`, {
+      headers: { Authorization: `Bearer ${authToken}` },
     })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => data && setSummary(data))
-      .catch(() => {})
-  }, [tenantId, token])
+      .then((res) => {
+        if (!res.ok) {
+          setSummaryError(true)
+          return null
+        }
+        return res.json()
+      })
+      .then((data) => {
+        if (data?.kpis) setSummary(data)
+      })
+      .catch(() => setSummaryError(true))
+      .finally(() => setSummaryLoading(false))
+  }, [authTenantId])
 
   useEffect(() => {
-    if (!tenantId || !token) return
-    fetch(`/api/home/briefing?tenantId=${encodeURIComponent(tenantId)}`, {
-      headers: { Authorization: `Bearer ${token}` },
+    if (!hasCheckedAuth) return
+    fetchSummary()
+  }, [hasCheckedAuth, fetchSummary])
+
+  useEffect(() => {
+    if (!authTenantId || !hasCheckedAuth) {
+      setBriefingLoading(false)
+      return
+    }
+    const authToken = useAuthStore.getState().token ?? getAuthFromStorage().token
+    if (!authToken) {
+      setBriefingLoading(false)
+      return
+    }
+    setBriefingLoading(true)
+    fetch(`/api/home/briefing?tenantId=${encodeURIComponent(authTenantId)}`, {
+      headers: { Authorization: `Bearer ${authToken}` },
     })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => data?.bullets && setBriefingBullets(data.bullets))
+      .then((data) => {
+        if (data?.bullets && Array.isArray(data.bullets)) setBriefingBullets(data.bullets)
+      })
       .catch(() => {})
-  }, [tenantId, token])
+      .finally(() => setBriefingLoading(false))
+  }, [authTenantId, hasCheckedAuth])
 
   if (!mounted || !hasCheckedAuth) {
     return (
@@ -162,7 +209,7 @@ export default function TenantHomePage() {
           userName={undefined}
         />
 
-        {/* Hero row: 3 fixed metric cards (always shown, use 0 when no data) */}
+        {/* Hero row: 3 fixed metric cards (show loading, then 0 or values; never blank) */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Link
             href={`/crm/${tenantId}/Deals`}
@@ -170,10 +217,18 @@ export default function TenantHomePage() {
           >
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Today&apos;s overview</p>
             <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-              {summary?.kpis ? `${summary.kpis.overdueTasks} tasks · ${summary.kpis.overdueInvoices} overdue` : '—'}
+              {summaryLoading ? (
+                <span className="text-slate-400 dark:text-slate-500">Loading…</span>
+              ) : summaryError ? (
+                <span className="text-amber-600 dark:text-amber-400 text-base">Unable to load</span>
+              ) : summary?.kpis != null ? (
+                `${summary.kpis.overdueTasks} tasks · ${summary.kpis.overdueInvoices} overdue`
+              ) : (
+                '0 tasks · 0 overdue'
+              )}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {summary?.kpis ? `${summary.kpis.openDeals} deals closing` : '—'}
+              {summaryLoading || summaryError ? '' : summary?.kpis != null ? `${summary.kpis.openDeals} deals closing` : '0 deals closing'}
             </p>
           </Link>
           <Link
@@ -182,7 +237,15 @@ export default function TenantHomePage() {
           >
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">This month</p>
             <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-              {summary?.kpis ? `₹${(summary.kpis.pendingInvoicesTotal / 1_00_000).toFixed(1)} L` : '—'}
+              {summaryLoading ? (
+                <span className="text-slate-400 dark:text-slate-500">Loading…</span>
+              ) : summaryError ? (
+                <span className="text-amber-600 dark:text-amber-400 text-base">Unable to load</span>
+              ) : summary?.kpis != null ? (
+                `₹${(summary.kpis.pendingInvoicesTotal / 1_00_000).toFixed(1)} L`
+              ) : (
+                '₹0 L'
+              )}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Receivables</p>
           </Link>
@@ -192,18 +255,34 @@ export default function TenantHomePage() {
           >
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Team activity</p>
             <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-              {summary?.kpis ? summary.kpis.activeEmployees : '—'}
+              {summaryLoading ? (
+                <span className="text-slate-400 dark:text-slate-500">Loading…</span>
+              ) : summaryError ? (
+                <span className="text-amber-600 dark:text-amber-400 text-base">Unable to load</span>
+              ) : summary?.kpis != null ? (
+                summary.kpis.activeEmployees
+              ) : (
+                '0'
+              )}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Active employees</p>
           </Link>
         </section>
+        {summaryError && (
+          <p className="text-sm text-amber-600 dark:text-amber-400 mb-4">
+            Couldn&apos;t load metrics.{' '}
+            <button type="button" onClick={() => fetchSummary()} className="underline font-medium hover:no-underline">
+              Retry
+            </button>
+          </p>
+        )}
 
         {/* AI Briefing: full-width, directly under hero cards */}
         <section className="mb-8">
           <TodayAISummary
             tenantId={tenantId}
             bullets={briefingBullets}
-            loading={false}
+            loading={briefingLoading}
           />
         </section>
 
@@ -214,8 +293,8 @@ export default function TenantHomePage() {
           availableModuleIds={PAYAID_MODULES.filter((m) => m.id !== 'home').map((m) => m.id)}
         />
 
-        {/* At a glance: compact KPI strip (only when we have data) */}
-        {summary?.kpis && (
+        {/* At a glance: compact KPI strip (when we have data; hide when loading or error) */}
+        {!summaryLoading && !summaryError && summary?.kpis && (
           <section className="mb-8">
             <h2 className="text-sm font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide mb-3">
               At a glance

@@ -162,5 +162,6 @@ Rules:
 - For checklists: artifact_type "checklist", artifact_data: {"items":[{"label":"Item 1","done":false},...]}.
 - For actions: use type "open_deal" with "dealId" when you reference a specific deal; "create_task" with "title","description","due","priority"; "open_crm"/"open_finance"/"open_hr" for navigation. Include "label" for button text.
 - If no tabular/checklist data or no concrete in-app actions, omit the block or use null for artifact_type and [] for actions.
-- Currency must be in INR (₹). Do not use $. 
+- Currency must be in INR (₹). Do not use $.
+- Spell brand names correctly: LinkedIn (not "Linked in"), WhatsApp, Facebook, Instagram, etc.
 `
