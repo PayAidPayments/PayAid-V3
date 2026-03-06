@@ -3,11 +3,11 @@
  * Coordinates STT → LLM → TTS pipeline for voice conversations
  */
 
+import type { PrismaClient } from '@prisma/client'
 import { transcribeAudio } from './stt'
 import { generateVoiceResponse } from './llm'
 import { synthesizeSpeech } from './tts'
 import { searchKnowledgeBase } from './knowledge-base'
-import { prisma } from '@/lib/db/prisma'
 import { ToolExecutor, Tool } from './tool-executor'
 
 export interface ConversationTurn {
@@ -25,10 +25,15 @@ export interface VoiceAgentConfig {
 }
 
 export class VoiceAgentOrchestrator {
+  private readonly prisma: PrismaClient
   private conversationHistory: Map<string, ConversationTurn[]> = new Map()
   private readonly MAX_HISTORY = 10 // Keep last 10 turns
   private toolExecutor: ToolExecutor = new ToolExecutor()
   private agentTools: Map<string, Tool[]> = new Map() // Tools per agent
+
+  constructor(prismaClient: PrismaClient) {
+    this.prisma = prismaClient
+  }
 
   /**
    * Process a voice call turn
@@ -148,7 +153,7 @@ export class VoiceAgentOrchestrator {
    * Get agent configuration from database
    */
   private async getAgentConfig(agentId: string): Promise<VoiceAgentConfig | null> {
-    const agent = await prisma.voiceAgent.findUnique({
+    const agent = await this.prisma.voiceAgent.findUnique({
       where: { id: agentId },
       select: {
         id: true,

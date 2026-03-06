@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useParams, useRouter } from 'next/navigation'
+import { PAYAID_MODULES } from '@/lib/config/payaid-modules.config'
 
 interface HomeSummaryKPIs {
   openDeals: number
@@ -161,21 +162,59 @@ export default function TenantHomePage() {
           userName={undefined}
         />
 
-        {/* Pinned & Recent + Today's AI summary */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-8 mb-10">
-          <PinnedModules
-            tenantId={tenantId}
-            moduleSummaries={summary?.moduleSummaries}
-            availableModuleIds={['crm', 'finance', 'hr', 'marketing', 'sales', 'projects', 'inventory', 'ai-studio', 'analytics', 'productivity']}
-          />
+        {/* Hero row: 3 fixed metric cards (always shown, use 0 when no data) */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Link
+            href={`/crm/${tenantId}/Deals`}
+            className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-5 py-4 hover:shadow-md hover:-translate-y-px transition-all duration-150 h-28 flex flex-col justify-center"
+          >
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Today&apos;s overview</p>
+            <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
+              {summary?.kpis ? `${summary.kpis.overdueTasks} tasks · ${summary.kpis.overdueInvoices} overdue` : '—'}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {summary?.kpis ? `${summary.kpis.openDeals} deals closing` : '—'}
+            </p>
+          </Link>
+          <Link
+            href={`/finance/${tenantId}/Invoices`}
+            className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-5 py-4 hover:shadow-md hover:-translate-y-px transition-all duration-150 h-28 flex flex-col justify-center"
+          >
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">This month</p>
+            <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
+              {summary?.kpis ? `₹${(summary.kpis.pendingInvoicesTotal / 1_00_000).toFixed(1)} L` : '—'}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Receivables</p>
+          </Link>
+          <Link
+            href={`/hr/${tenantId}/Employees`}
+            className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-5 py-4 hover:shadow-md hover:-translate-y-px transition-all duration-150 h-28 flex flex-col justify-center"
+          >
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Team activity</p>
+            <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
+              {summary?.kpis ? summary.kpis.activeEmployees : '—'}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Active employees</p>
+          </Link>
+        </section>
+
+        {/* AI Briefing: full-width, directly under hero cards */}
+        <section className="mb-8">
           <TodayAISummary
             tenantId={tenantId}
             bullets={briefingBullets}
             loading={false}
           />
-        </div>
+        </section>
 
-        {/* At a glance: compact KPI strip */}
+        {/* Pinned & Recent: full width */}
+        <PinnedModules
+          tenantId={tenantId}
+          moduleSummaries={summary?.moduleSummaries}
+          availableModuleIds={PAYAID_MODULES.filter((m) => m.id !== 'home').map((m) => m.id)}
+        />
+
+        {/* At a glance: compact KPI strip (only when we have data) */}
         {summary?.kpis && (
           <section className="mb-8">
             <h2 className="text-sm font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide mb-3">

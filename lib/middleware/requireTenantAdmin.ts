@@ -4,6 +4,7 @@
  */
 
 import { cookies } from 'next/headers'
+import { headers } from 'next/headers'
 import { verifyToken } from '@/lib/auth/jwt'
 import type { JWTPayload } from '@/lib/auth/jwt'
 
@@ -12,7 +13,17 @@ const TENANT_ADMIN_ROLES = ['BUSINESS_ADMIN', 'business_admin', 'admin']
 
 export async function requireTenantAdmin(): Promise<JWTPayload> {
   const cookieStore = await cookies()
-  const token = cookieStore.get('token')?.value
+  let token = cookieStore.get('token')?.value
+
+  // Fallback for clients that use Bearer tokens (e.g. SPA fetch with Authorization header)
+  if (!token) {
+    const headerStore = await headers()
+    const authHeader = headerStore.get('authorization')
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.substring('Bearer '.length)
+    }
+  }
+
   if (!token) throw new Error('Unauthorized')
   const decoded = verifyToken(token)
   const roles = decoded.roles ?? (decoded.role ? [decoded.role] : [])

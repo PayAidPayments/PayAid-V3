@@ -17,6 +17,7 @@ const cofounderSchema = z.object({
     module: z.string().optional(),
     tenantId: z.string().optional(),
   }).optional(),
+  timeRangeDays: z.union([z.number().min(1).max(365), z.string()]).optional(), // 7, 30, 90 or "custom" (treated as 30)
   conversationId: z.string().optional(), // Existing conversation ID
   useMultiSpecialist: z.boolean().optional().default(false), // Enable multi-specialist coordination
   useLangChain: z.boolean().optional().default(false), // Enable LangChain agent orchestration
@@ -89,10 +90,28 @@ Use these insights to provide more relevant, industry-specific advice.`
       }
     }
 
-    // Get business context for this agent's data scopes
+    // Resolve time range: "7" | "30" | "90" | "custom" -> number of days
+    const timeRangeDays = (() => {
+      const v = validated.timeRangeDays
+      if (v === undefined) return 30
+      if (typeof v === 'number') return Math.min(365, Math.max(1, v))
+      if (v === 'custom' || v === '') return 30
+      const n = parseInt(String(v), 10)
+      return Number.isNaN(n) ? 30 : Math.min(365, Math.max(1, n))
+    })()
+
+    // Scope data by context.module if set (all | crm | finance | hr)
+    const contextModule = validated.context?.module === 'all' || !validated.context?.module
+      ? undefined
+      : validated.context?.module
+
+    // Get business context for this agent's data scopes, with optional module and time filter
     let businessContext = ''
     try {
-      businessContext = await getBusinessContext(tenantId, validated.message, agent.dataScopes)
+      businessContext = await getBusinessContext(tenantId, validated.message, agent.dataScopes, {
+        module: contextModule,
+        timeRangeDays,
+      })
     } catch (contextError) {
       console.error('[COFOUNDER] Error getting business context:', contextError)
       businessContext = 'Business context unavailable. Please try again.'
@@ -112,6 +131,8 @@ You should synthesize insights from multiple perspectives and provide comprehens
     }
 
     systemPrompt += `
+
+${contextModule ? `SCOPE: Only use data from the ${contextModule.toUpperCase()} module in your answer.\n` : ''}${timeRangeDays !== 30 ? `TIME RANGE: Metrics and analysis should focus on the last ${timeRangeDays} days.\n` : ''}
 
 Current business context:
 ${businessContext || 'No specific business context available.'}

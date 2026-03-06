@@ -97,11 +97,20 @@ export default function QuotesPage() {
                       {quote.lineItems?.length || 0} line item(s)
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/crm/${tenantId}/Deals/${quote.deal?.id || ''}`}>
-                      View deal
-                    </Link>
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/crm/${tenantId}/Quotes/${quote.id}`}>
+                        View
+                      </Link>
+                    </Button>
+                    {quote.deal?.id && (
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/crm/${tenantId}/Deals/${quote.deal.id}`}>
+                          Deal
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

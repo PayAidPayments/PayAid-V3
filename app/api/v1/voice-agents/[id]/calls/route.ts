@@ -66,7 +66,7 @@ export async function POST(
     // If audio data provided, process immediately
     if (validated.audioData) {
       try {
-        const orchestrator = new VoiceAgentOrchestrator()
+        const orchestrator = new VoiceAgentOrchestrator(prisma)
         const audioBuffer = Buffer.from(validated.audioData, 'base64')
         
         const result = await orchestrator.processVoiceCall(

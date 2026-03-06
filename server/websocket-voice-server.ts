@@ -52,7 +52,7 @@ class VoiceWebSocketServer {
 
   constructor(port: number) {
     this.wss = new WebSocketServer({ port })
-    this.orchestrator = new VoiceAgentOrchestrator()
+    this.orchestrator = new VoiceAgentOrchestrator(prisma)
     this.vad = new VoiceActivityDetector({
       energyThreshold: 0.01,
       silenceDuration: 1000, // 1 second

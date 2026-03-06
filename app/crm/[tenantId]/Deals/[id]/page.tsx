@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useDeal, useUpdateDeal, getAuthHeaders } from '@/lib/hooks/use-api'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { format } from 'date-fns'
@@ -24,6 +24,16 @@ export default function DealDetailPage() {
   const updateDeal = useUpdateDeal()
   const [closeModal, setCloseModal] = useState<'won' | 'lost' | null>(null)
   const { toast } = useToast()
+
+  const { data: relatedQuotes } = useQuery({
+    queryKey: ['crm', 'quotes', 'deal', id],
+    queryFn: async () => {
+      const res = await fetch(`/api/crm/cpq/quotes?dealId=${encodeURIComponent(id)}`, { headers: getAuthHeaders() })
+      if (!res.ok) return []
+      const json = await res.json().catch(() => ({}))
+      return (json.quotes || []) as any[]
+    },
+  })
 
   if (isLoading) {
     return <PageLoading message="Loading deal..." fullScreen={false} />
@@ -60,32 +70,13 @@ export default function DealDetailPage() {
             {deal.contact?.name || 'No contact'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             onClick={async () => {
               try {
-                const response = await fetch('/api/crm/cpq/quotes', {
-                  method: 'POST',
-                  headers: getAuthHeaders(),
-                  body: JSON.stringify({
-                    dealId: id,
-                    contactId: deal.contact?.id ?? undefined,
-                    lineItems: [
-                      { productName: deal.name, quantity: 1, unitPrice: deal.value ?? 0 },
-                    ],
-                  }),
-                })
-                const data = await response.json()
-                if (response.ok && data.quote) {
-                  toast({ title: 'Quote created', description: `Quote ${data.quote.quoteNumber} created for this deal.` })
-                  queryClient.invalidateQueries({ queryKey: ['deals'] })
-                  router.push(`/crm/${tenantId}/Quotes`)
-                } else {
-                  toast({ title: 'Quote failed', description: data.error || 'Failed to create quote', variant: 'destructive' })
-                }
-              } catch (error) {
-                console.error('Error generating quote:', error)
-                toast({ title: 'Error', description: 'Failed to create quote', variant: 'destructive' })
+                router.push(`/crm/${tenantId}/Quotes/New?dealId=${encodeURIComponent(id)}`)
+              } catch (_) {
+                toast({ title: 'Navigation failed', description: 'Could not open quote builder', variant: 'destructive' })
               }
             }}
             className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
@@ -95,7 +86,9 @@ export default function DealDetailPage() {
           </Button>
           {deal.contact && (
             <Link href={`/finance/${tenantId}/Invoices/new?customerId=${deal.contact.id}`}>
-              <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600">
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+              >
                 🧾 Create Invoice
               </Button>
             </Link>
@@ -234,6 +227,38 @@ export default function DealDetailPage() {
                     Mark as Lost
                   </Button>
                 </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
+            <CardHeader>
+              <CardTitle className="dark:text-gray-100">Related Quotes</CardTitle>
+              <CardDescription>Quotes linked to this deal</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {Array.isArray(relatedQuotes) && relatedQuotes.length > 0 ? (
+                <div className="space-y-2">
+                  {relatedQuotes.map((q: any) => (
+                    <Link
+                      key={q.id}
+                      href={`/crm/${tenantId}/Quotes/${q.id}`}
+                      className="block rounded-lg border border-slate-200 dark:border-gray-700 p-3 hover:bg-slate-50 dark:hover:bg-gray-700/40 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-semibold text-slate-900 dark:text-gray-100">{q.quoteNumber}</div>
+                          <div className="text-xs text-slate-500 dark:text-gray-400 capitalize">{q.status}</div>
+                        </div>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-gray-100">
+                          ₹{Number(q.total ?? 0).toLocaleString('en-IN')}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-gray-400">No quotes yet. Click “Create Quote”.</p>
               )}
             </CardContent>
           </Card>

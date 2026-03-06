@@ -9,9 +9,9 @@
  * and uses only free alternatives.
  */
 
+import type { PrismaClient } from '@prisma/client';
 import { VoiceAgent, VoiceAgentCall } from '@prisma/client';
 import WebSocket from 'ws';
-import { prisma } from '@/lib/db/prisma';
 import { transcribeAudioFree } from './stt-free'; // Uses Whisper (free)
 import { synthesizeSpeechFree } from './tts-free'; // Uses Coqui TTS (free)
 import { generateVoiceResponseFree } from './llm-free'; // Uses Ollama (free)
@@ -44,6 +44,7 @@ interface OrchestratorConfig {
   agent: VoiceAgent;
   call: VoiceAgentCall;
   webSocket: WebSocket;
+  prisma: PrismaClient;
 }
 
 interface ConversationMessage {
@@ -56,7 +57,8 @@ export class FreeStackVoiceOrchestrator {
   private agent: VoiceAgent;
   private call: VoiceAgentCall;
   private ws: WebSocket;
-  
+  private readonly prisma: PrismaClient;
+
   // Conversation state
   private conversationHistory: ConversationMessage[] = [];
   private isProcessing = false;
@@ -69,6 +71,7 @@ export class FreeStackVoiceOrchestrator {
     this.agent = config.agent;
     this.call = config.call;
     this.ws = config.webSocket;
+    this.prisma = config.prisma;
   }
 
   /**
@@ -150,7 +153,7 @@ export class FreeStackVoiceOrchestrator {
       });
 
       // Save to database
-      await prisma.callMessage.create({
+      await this.prisma.callMessage.create({
         data: {
           callId: this.call.id,
           role: 'user',
@@ -215,7 +218,7 @@ export class FreeStackVoiceOrchestrator {
       });
 
       // Save to database
-      await prisma.callMessage.create({
+      await this.prisma.callMessage.create({
         data: {
           callId: this.call.id,
           role: 'assistant',
@@ -315,7 +318,7 @@ export class FreeStackVoiceOrchestrator {
       .map(msg => `${msg.role === 'user' ? 'User' : 'Agent'}: ${msg.content}`)
       .join('\n\n');
 
-    await prisma.voiceAgentCall.update({
+    await this.prisma.voiceAgentCall.update({
       where: { id: this.call.id },
       data: {
         transcript,

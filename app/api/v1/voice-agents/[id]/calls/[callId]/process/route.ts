@@ -45,7 +45,7 @@ export async function POST(
     const validated = processCallSchema.parse(body)
 
     // Process audio
-    const orchestrator = new VoiceAgentOrchestrator()
+    const orchestrator = new VoiceAgentOrchestrator(prisma)
     const audioBuffer = Buffer.from(validated.audioData, 'base64')
     
     const result = await orchestrator.processVoiceCall(

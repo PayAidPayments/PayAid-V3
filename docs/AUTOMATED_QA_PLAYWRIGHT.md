@@ -9,8 +9,8 @@ Playwright runs as a robot user: it hits every route, checks links and buttons, 
 The suite checks **every page, every same-origin link, and every button** on the platform (see `tests/fixtures/all-routes.ts` for the full list):
 
 1. **Route health** (`tests/route-health.spec.ts`) — HTTP GET each route; must not be 404/500 or show the Next.js error overlay.
-2. **Links** (`tests/ui-scanner.spec.ts` [LINKS]) — On each page, every same-origin `<a href>` is requested; any returning ≥ 400 is reported with URL and status.
-3. **Buttons** (`tests/ui-scanner.spec.ts` [BUTTONS]) — On each page, every visible enabled button is clicked; any page that shows "Application error" is reported with the button label.
+2. **Links** (`tests/ui-scanner-impl.ts` [LINKS], entry: `tests/ui-scanner-run.spec.ts`) — On each page, same-origin links are checked (tenant/dashboard/API paths skipped for GET); any ≥ 400 is reported.
+3. **Buttons** (`tests/ui-scanner-impl.ts` [BUTTONS]) — On each page, every visible enabled button is clicked; any page that shows "Application error" is reported with the button label.
 4. **Flow tests** — Add in `tests/flows/` or `tests/modules/` for critical journeys (create lead, raise invoice, etc.).
 
 ---
@@ -21,6 +21,20 @@ The suite checks **every page, every same-origin link, and every button** on the
    ```bash
    npm run dev
    ```
+
+   **Database requirement:** E2E runs require a working PostgreSQL connection (Prisma). If your `DATABASE_URL` points to a remote Supabase pooler and your network blocks it, the dev server will crash and Playwright will show `net::ERR_CONNECTION_RESET` / timeouts. Before running E2E, verify DB connectivity:
+
+   ```bash
+   npm run verify:db
+   ```
+
+   **Local DB (recommended for stable E2E):** If `verify:db` fails with **"Tenant or user not found"** (Supabase pooler auth), use local Postgres and the `:localdb` scripts:
+   ```bash
+   npm run db:local:up
+   npm run db:local:setup
+   npm run verify:db:local
+   ```
+   Then run **`npm run test:e2e:share:localdb`** (or **`npm run test:e2e:ui-scanner:localdb`**) instead of `test:e2e:share` / `test:e2e:ui-scanner`. Start the app with the same local `DATABASE_URL` (e.g. in `.env` or `cross-env DATABASE_URL=postgresql://payaid:payaid@127.0.0.1:5433/payaid_v3?schema=public npm run dev`).
 
 2. **Run E2E tests** in another terminal:
    ```bash
@@ -44,23 +58,35 @@ The suite checks **every page, every same-origin link, and every button** on the
    ```
    For a **fast** route check, run against a production build: `npm run build && npm run start` (in one terminal), then `PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:e2e:route-health` (no on-demand compile).
 
-4. **HTML report**
+4. **Run only UI scanner (links + buttons)**  
+   Use the dedicated entry so the scanner uses a 5‑min timeout for tenant routes and retries on connection errors:
+   ```bash
+   npm run test:e2e:ui-scanner
+   ```
+   This runs **`tests/ui-scanner-run.spec.ts`** → **`tests/ui-scanner-impl.ts`**. There is no `ui-scanner.spec.ts`; the old spec was removed so only this entry is used.
+
+   If your DB is remote/flaky, run the local-DB variant:
+   ```bash
+   npm run test:e2e:ui-scanner:localdb
+   ```
+
+5. **HTML report**
    ```bash
    npm run test:e2e:report
    npm run test:e2e:show-report
    ```
 
-5. **Visual runner (watch mode)**
+6. **Visual runner (watch mode)**
    ```bash
    npm run test:e2e:ui
    ```
 
-6. **Record a test from your clicks**
+7. **Record a test from your clicks**
    ```bash
    npm run test:e2e:codegen
    ```
 
-7. **Full platform check and share results to Cursor**
+8. **Full platform check and share results to Cursor**
    - Start the app: `npm run dev` (wait until Ready).
    - In another terminal run:
      ```bash
@@ -106,7 +132,11 @@ Run the full suite with the share script so the markdown file is generated:
 ```bash
 npm run test:e2e:share
 ```
-When it finishes, open **`E2E_RESULTS.md`** in the project root. Copy the **"Fix these (paste to Cursor)"** block and paste it into Cursor with: *"Fix all of these E2E failures in the app."*
+If **`verify:db`** fails (e.g. Supabase **"Tenant or user not found"**), use local DB and the share script that skips remote DB:
+```bash
+npm run test:e2e:share:localdb
+```
+Start the app with local `DATABASE_URL` first (see Quick start → Local DB). When the run finishes, open **`E2E_RESULTS.md`** in the project root. Copy the **"Fix these (paste to Cursor)"** block and paste it into Cursor with: *"Fix all of these E2E failures in the app."*
 
 If Node runs **out of memory** (OOM) during the run, use the memory-safe script:
 ```bash
@@ -182,6 +212,7 @@ Fix any red failures and re-run until green.
 | `npm run test:e2e:show-report` | Open last HTML report |
 | `npm run test:e2e:codegen` | Record clicks and generate test code |
 | `npm run test:e2e:share` | Run full E2E with 1 worker, then generate `E2E_RESULTS.md` for sharing |
+| `npm run test:e2e:share:localdb` | Same as above using local Postgres (no remote DB); use when `verify:db` fails with "Tenant or user not found" |
 
 ---
 

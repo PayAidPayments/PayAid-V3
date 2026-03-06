@@ -77,10 +77,13 @@ export async function proxy(request: NextRequest) {
         // For routes with tenantId (e.g., /crm/[tenantId]/Home), check access
         const token = getTokenFromRequest(request)
 
-        // For CRM and HR specifically, always allow through - client-side will handle auth
-        // This prevents redirect loops and allows users to access modules even if token is expired
-        if ((moduleId === 'crm' || moduleId === 'hr') && pathname.match(/^\/(crm|hr)\/[^\/]+\//)) {
-          // Allow CRM and HR routes through - client-side will handle auth checks
+        // For tenant module routes, allow through - client-side will handle auth
+        // This prevents redirect loops and allows E2E/unauthenticated requests to load the page (200)
+        const tenantModuleAllowThrough = [
+          'crm', 'hr', 'marketing', 'sales', 'finance', 'projects', 'inventory',
+          'industry-intelligence', 'ai-studio', 'productivity', 'spreadsheet', 'meet', 'settings',
+        ]
+        if (tenantModuleAllowThrough.includes(moduleId) && pathname.match(new RegExp(`^/${moduleId}/[^/]+/`))) {
           return NextResponse.next()
         }
 

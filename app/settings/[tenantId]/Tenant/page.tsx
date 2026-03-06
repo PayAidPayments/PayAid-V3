@@ -6,6 +6,7 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Switch } from '@/components/ui/switch'
 import { INDIAN_STATES } from '@/lib/utils/indian-states'
 
 function getAuthHeaders() {
@@ -34,6 +35,11 @@ export default function TenantSettingsPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [copied, setCopied] = useState(false)
+  const [branding, setBranding] = useState({
+    brandColor: '#0f172a',
+    useBrandColor: true,
+    showLogoInHeader: true,
+  })
 
   const { data: tenant, isLoading } = useQuery({
     queryKey: ['tenant-settings'],
@@ -83,6 +89,27 @@ export default function TenantSettingsPage() {
     }
   }, [tenant])
 
+  useEffect(() => {
+    try {
+      const key = `payaid:workspaceBranding:${tenant?.id || 'tenant'}`
+      const raw = localStorage.getItem(key)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as Partial<typeof branding>
+      setBranding((p) => ({ ...p, ...parsed }))
+    } catch {
+      // ignore
+    }
+  }, [tenant?.id])
+
+  useEffect(() => {
+    try {
+      const key = `payaid:workspaceBranding:${tenant?.id || 'tenant'}`
+      localStorage.setItem(key, JSON.stringify(branding))
+    } catch {
+      // ignore
+    }
+  }, [branding, tenant?.id])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -129,6 +156,64 @@ export default function TenantSettingsPage() {
           </CardContent>
         </Card>
       )}
+
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader>
+          <CardTitle className="text-slate-900 dark:text-slate-100">Workspace branding</CardTitle>
+          <CardDescription>Logo and accent color used across the app</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-start gap-4">
+            <div className="h-14 w-14 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden">
+              {formData.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={formData.logo} alt="Logo preview" className="h-full w-full object-contain" />
+              ) : (
+                <span className="text-xs text-slate-400">Logo</span>
+              )}
+            </div>
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Brand color</div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={branding.brandColor}
+                    onChange={(e) => setBranding((p) => ({ ...p, brandColor: e.target.value }))}
+                    className="h-10 w-14 rounded-md border border-slate-200 dark:border-slate-700 bg-transparent p-1"
+                    aria-label="Brand color"
+                  />
+                  <Input
+                    value={branding.brandColor}
+                    onChange={(e) => setBranding((p) => ({ ...p, brandColor: e.target.value }))}
+                    placeholder="#0f172a"
+                  />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Use brand color accents</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">Buttons, highlights, and charts</div>
+                  </div>
+                  <Switch checked={branding.useBrandColor} onCheckedChange={(v) => setBranding((p) => ({ ...p, useBrandColor: v }))} />
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Show logo in header</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">Module top bar branding</div>
+                  </div>
+                  <Switch checked={branding.showLogoInHeader} onCheckedChange={(v) => setBranding((p) => ({ ...p, showLogoInHeader: v }))} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            Branding preferences are saved locally per browser for now.
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="border-slate-200 dark:border-slate-800">
         <CardHeader>

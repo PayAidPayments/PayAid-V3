@@ -154,6 +154,9 @@ function ModuleCardComponent({ module, icon: _Icon, metrics }: ModuleCardProps) 
                       const arr = JSON.parse(raw) as string[];
                       if (!arr.includes(module.id)) {
                         localStorage.setItem('home-pinned-modules', JSON.stringify([module.id, ...arr].slice(0, 8)));
+                        if (typeof window !== 'undefined') {
+                          window.dispatchEvent(new CustomEvent('home-pinned-modules-changed'));
+                        }
                       }
                       setMenuOpen(false);
                     } catch (_) {}

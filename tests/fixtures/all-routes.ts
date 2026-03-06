@@ -1,14 +1,17 @@
 /**
  * Single source of truth for all platform routes to check.
- * Used by route-health.spec.ts and ui-scanner.spec.ts.
+ * Used by route-health.spec.ts and ui-scanner-impl.ts (via ui-scanner-run.spec.ts).
  */
-export const T = process.env.PLAYWRIGHT_TENANT_ID ?? 'cmjptk2mw0000aocw31u48n64';
+// Tenant identifier for E2E. Prefer a stable slug like "demo" for local DB runs (seed creates demo tenant).
+// Override with PLAYWRIGHT_TENANT_ID if you want to target a specific tenant id/slug.
+export const T = process.env.PLAYWRIGHT_TENANT_ID ?? 'demo';
 
 export const ALL_ROUTES: string[] = [
   '/',
   '/login',
   `/home/${T}`,
   `/crm/${T}/Home`,
+  `/crm/${T}/Activities`,
   `/crm/${T}/Leads`,
   `/crm/${T}/Contacts`,
   `/crm/${T}/AllPeople`,

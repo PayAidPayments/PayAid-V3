@@ -33,7 +33,7 @@ import {
 import { format } from 'date-fns'
 import { formatINR, formatINRCompact, formatINRForDisplay } from '@/lib/utils/formatINR'
 import { StatCard } from '@/components/ui/StatCard'
-import { DashboardLoading } from '@/components/ui/loading'
+// Note: We intentionally avoid full-screen loading here. Use skeletons in-place.
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 // ModuleTopBar is now in layout.tsx
@@ -112,6 +112,50 @@ const WARNING = '#D97706' // Warning (Amber)
 const ERROR = '#DC2626' // Error (Red)
 const INFO = '#0284C7' // Info (Blue)
 const CHART_COLORS = [PURPLE_PRIMARY, GOLD_ACCENT, SUCCESS, INFO, WARNING, '#8B5CF6']
+
+function CRMDashboardSkeleton() {
+  return (
+    <div className="w-full bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-50 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 relative transition-colors min-h-screen">
+      {/* Welcome banner skeleton (anchored, not full-screen white) */}
+      <div className="bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 px-6 py-8 shadow-xl">
+        <div className="max-w-7xl mx-auto">
+          <div className="h-8 w-72 bg-white/20 rounded-lg animate-pulse" />
+          <div className="mt-3 h-3 w-40 bg-white/20 rounded animate-pulse" />
+          {/* Inline loading bar under heading */}
+          <div className="mt-4 h-1.5 w-56 rounded-full bg-white/20 overflow-hidden">
+            <div className="h-full w-1/3 bg-white/60 animate-pulse" />
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+        {/* Band 0 skeleton: KPI row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-28 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-sm animate-pulse"
+            />
+          ))}
+        </div>
+
+        {/* Band 1 skeleton: AI Command Center */}
+        <div className="h-44 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-sm animate-pulse" />
+
+        {/* Bands 2–4 skeleton: charts + lists */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="h-72 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-sm animate-pulse" />
+          <div className="h-72 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-sm animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="h-56 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-sm animate-pulse" />
+          <div className="h-56 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-sm animate-pulse" />
+          <div className="h-56 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-sm animate-pulse" />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function CRMDashboardPage() {
   const params = useParams()
@@ -910,11 +954,11 @@ export default function CRMDashboardPage() {
 
   // Show loading if tenantId is not available yet or not a valid string
   if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
-    return <DashboardLoading message="Loading CRM dashboard..." />
+    return <CRMDashboardSkeleton />
   }
 
   if (loading) {
-    return <DashboardLoading message="Loading CRM dashboard..." />
+    return <CRMDashboardSkeleton />
   }
 
   // CRITICAL: If we have an error and no stats, show error but don't crash
@@ -1577,6 +1621,42 @@ export default function CRMDashboardPage() {
         <div className="dashboard-container">
           <div className="dashboard-grid">
 
+          {/* Filters strip (quick period) */}
+          <div className="flex justify-end" style={{ gridColumn: '1 / -1' }}>
+            <div className="inline-flex items-center gap-1 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 p-1 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setTimePeriod('month')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  timePeriod === 'month'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                This Month
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimePeriod('quarter')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  timePeriod === 'quarter'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                Quarter
+              </button>
+              <button
+                type="button"
+                disabled
+                title="Custom date ranges coming soon"
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 dark:text-slate-500 cursor-not-allowed"
+              >
+                Custom
+              </button>
+            </div>
+          </div>
+
           {/* Band 0: Top stat bar – 4 cards (blueprint) */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" style={{ gridColumn: '1 / -1' }}>
             <Link href={tenantId ? `/crm/${tenantId}/Deals?category=created&timePeriod=${timePeriod}` : '#'} className="block">
@@ -1621,403 +1701,383 @@ export default function CRMDashboardPage() {
             </Link>
           </div>
 
-          {/* Band 3: Charts – 3 equal columns (no empty space) */}
+          {/* Main dashboard grid under AI + KPI row: 60/40 split */}
           {safeStats && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" style={{ gridColumn: '1 / -1' }}>
-            {/* Chart 1: Pipeline by Stage */}
-            <motion.div 
-              className="chart-panel"
-              style={{ gridColumn: 'span 1' }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.4 }}
-              whileHover={{ y: -2 }}
+            <div
+              className="grid grid-cols-1 lg:grid-cols-[3fr,2fr] gap-4"
+              style={{ gridColumn: '1 / -1' }}
             >
-              <Card className="border-0 rounded-xl" style={{ height: '100%', padding: 0, borderRadius: 0, background: 'transparent' }}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold text-purple-900">Pipeline by Stage</CardTitle>
-                  <CardDescription className="text-sm">Distribution of deals across pipeline stages</CardDescription>
-                </CardHeader>
-                <CardContent style={{ height: 'calc(100% - 80px)', overflow: 'hidden', position: 'relative', padding: '16px 16px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {Array.isArray(pipelineChartData) && pipelineChartData.length > 0 ? (
-                  <div style={{ width: '100%', height: '260px', minWidth: 0, minHeight: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <ResponsiveContainer width="100%" height={260} minWidth={0} minHeight={260}>
-                    <PieChart>
-                      <Pie
-                        data={Array.isArray(pipelineChartData) ? pipelineChartData : []}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={5}
-                        dataKey="value"
-                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
-                          const RADIAN = Math.PI / 180
-                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5
-                          const x = cx + radius * Math.cos(-midAngle * RADIAN)
-                          const y = cy + radius * Math.sin(-midAngle * RADIAN)
-                          
-                          return (
-                            <text 
-                              x={x} 
-                              y={y} 
-                              fill={isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)'}
-                              textAnchor={x > cx ? 'start' : 'end'} 
-                              dominantBaseline="central"
-                              fontSize={12}
-                              fontWeight={500}
-                            >
-                              {`${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`}
-                            </text>
-                          )
-                        }}
-                        labelLine={false}
-                      >
-                        {Array.isArray(pipelineChartData) && pipelineChartData.length > 0 ? pipelineChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        )) : null}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(value: any) => [value, 'Deals']}
-                        contentStyle={{
-                          backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
-                          color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
-                          border: `1px solid ${PURPLE_PRIMARY}`,
-                          borderRadius: '8px',
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                ) : (
-                  <div className="flex items-center justify-center text-gray-500 dark:text-gray-400" style={{ height: '100%' }}>
-                    <p>No pipeline data available</p>
-                  </div>
-                )}
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Chart 2: Monthly Lead Creation */}
-            <motion.div 
-              className="chart-panel"
-              style={{ gridColumn: 'span 1' }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.45 }}
-              whileHover={{ y: -2 }}
-            >
-              <Card className="border-0 rounded-xl" style={{ height: '100%', padding: 0, borderRadius: 0, background: 'transparent' }}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold">Monthly Lead Creation</CardTitle>
-                  <CardDescription className="text-sm">Lead generation trend over time</CardDescription>
-                </CardHeader>
-                <CardContent style={{ height: 'calc(100% - 80px)', overflow: 'hidden', position: 'relative', padding: '16px 16px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {Array.isArray(monthlyLeadData) && monthlyLeadData.length > 0 ? (
-                  <div style={{ width: '100%', height: '260px', minWidth: 0, minHeight: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <ResponsiveContainer width="100%" height={260} minWidth={0} minHeight={260}>
-                    <AreaChart data={Array.isArray(monthlyLeadData) ? monthlyLeadData : []}>
-                      <defs>
-                        <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={PURPLE_PRIMARY} stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor={PURPLE_PRIMARY} stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#f0f0f0'} />
-                      <XAxis 
-                        dataKey="month" 
-                        stroke={isDark ? '#D1D5DB' : '#666'}
-                        tick={{ fontSize: 12, fill: isDark ? '#D1D5DB' : '#666' }}
-                      />
-                      <YAxis 
-                        stroke={isDark ? '#D1D5DB' : '#666'}
-                        tick={{ fontSize: 12, fill: isDark ? '#D1D5DB' : '#666' }}
-                      />
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
-                          color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
-                          border: `1px solid ${PURPLE_PRIMARY}`,
-                          borderRadius: '8px',
-                        }}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="leads" 
-                        stroke={PURPLE_PRIMARY} 
-                        fillOpacity={1} 
-                        fill="url(#colorLeads)" 
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-                ) : (
-                  <div className="flex items-center justify-center text-gray-500 dark:text-gray-400" style={{ height: '100%' }}>
-                    <p>No lead creation data available</p>
-                  </div>
-                )}
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Chart 3: TOP 10 Lead Sources */}
-            <motion.div 
-              className="chart-panel"
-              style={{ gridColumn: 'span 1' }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.5 }}
-              whileHover={{ y: -2 }}
-            >
-              <Card className="border-0 rounded-xl" style={{ height: '100%', padding: 0, borderRadius: 0, background: 'transparent' }}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold text-purple-900">TOP 10 Lead Sources</CardTitle>
-                  <CardDescription className="text-sm">Best performing lead sources</CardDescription>
-                </CardHeader>
-                <CardContent style={{ height: 'calc(100% - 80px)', overflow: 'hidden', position: 'relative', padding: '16px' }}>
-                {Array.isArray(topLeadSourcesData) && topLeadSourcesData.length > 0 ? (
-                  <div style={{ width: '100%', height: '260px', minWidth: 0, minHeight: 260 }}>
-                    <ResponsiveContainer width="100%" height={260} minWidth={0} minHeight={260}>
-                    <BarChart 
-                      data={Array.isArray(topLeadSourcesData) ? topLeadSourcesData.slice(0, 10) : []} 
-                      layout="vertical"
-                      margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#f0f0f0'} />
-                      <XAxis 
-                        type="number" 
-                        stroke={isDark ? '#D1D5DB' : '#666'}
-                        tick={{ fontSize: 12, fill: isDark ? '#D1D5DB' : '#666' }}
-                      />
-                      <YAxis 
-                        dataKey="name" 
-                        type="category" 
-                        stroke={isDark ? '#D1D5DB' : '#666'}
-                        width={120}
-                        tick={{ fontSize: 10, fill: isDark ? '#D1D5DB' : '#666' }}
-                        interval={0}
-                        angle={0}
-                        textAnchor="end"
-                        dx={-5}
-                      />
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
-                          color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
-                          border: `1px solid ${PURPLE_PRIMARY}`,
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                        }}
-                        content={({ active, payload, label }) => {
-                          if (active && payload && payload.length) {
-                            const sortedPayload = [...payload].sort((a, b) => {
-                              if (a.dataKey === 'leadsCount') return -1
-                              if (b.dataKey === 'leadsCount') return 1
-                              if (a.dataKey === 'conversionsCount') return -1
-                              if (b.dataKey === 'conversionsCount') return 1
-                              return 0
-                            })
-                            
-                            return (
-                              <div className="bg-white dark:bg-gray-800 border border-purple-600 rounded-lg p-3 shadow-lg">
-                                <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">{label}</p>
-                                {Array.isArray(sortedPayload) && sortedPayload.length > 0 ? sortedPayload.map((entry: any, index: number) => {
-                                  let label = entry.name
-                                  let value = entry.value
-                                  
-                                  if (entry.dataKey === 'leadsCount') {
-                                    label = 'Leads'
-                                    value = value
-                                  } else if (entry.dataKey === 'conversionsCount') {
-                                    label = 'Conversions'
-                                    value = value
-                                  } else if (entry.dataKey === 'totalValue') {
-                                    label = 'Total Value'
-                                    value = formatINRForDisplay(value)
-                                  } else if (entry.dataKey === 'conversionRate') {
-                                    label = 'Conversion Rate'
-                                    value = `${value.toFixed(1)}%`
-                                  }
-                                  
+              {/* Left (60%): charts */}
+              <div className="space-y-4">
+                {/* Chart 1: Pipeline by Stage */}
+                <motion.div
+                  className="chart-panel"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.4 }}
+                  whileHover={{ y: -2 }}
+                >
+                  <Card className="border-0 rounded-xl" style={{ height: '100%', padding: 0, borderRadius: 0, background: 'transparent' }}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg font-semibold text-purple-900">Pipeline by Stage</CardTitle>
+                      <CardDescription className="text-sm">Distribution of deals across pipeline stages</CardDescription>
+                    </CardHeader>
+                    <CardContent style={{ height: '260px', overflow: 'hidden', position: 'relative', padding: '16px 16px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {Array.isArray(pipelineChartData) && pipelineChartData.length > 0 ? (
+                        <div style={{ width: '100%', height: '260px', minWidth: 0, minHeight: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <ResponsiveContainer width="100%" height={260} minWidth={0} minHeight={260}>
+                            <PieChart>
+                              <Pie
+                                data={Array.isArray(pipelineChartData) ? pipelineChartData : []}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={100}
+                                paddingAngle={5}
+                                dataKey="value"
+                                label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
+                                  const RADIAN = Math.PI / 180
+                                  const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+                                  const x = cx + radius * Math.cos(-midAngle * RADIAN)
+                                  const y = cy + radius * Math.sin(-midAngle * RADIAN)
                                   return (
-                                    <p key={index} className="text-sm" style={{ color: entry.color }}>
-                                      <span className="font-medium">{label}:</span> {value}
-                                    </p>
+                                    <text
+                                      x={x}
+                                      y={y}
+                                      fill={isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)'}
+                                      textAnchor={x > cx ? 'start' : 'end'}
+                                      dominantBaseline="central"
+                                      fontSize={12}
+                                      fontWeight={500}
+                                    >
+                                      {`${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`}
+                                    </text>
                                   )
-                                }) : null}
-                              </div>
-                            )
-                          }
-                          return null
-                        }}
-                        labelStyle={{ color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)' }}
-                      />
-                      <Legend 
-                        wrapperStyle={{
-                          fontSize: '12px',
-                          color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
-                        }}
-                      />
-                      <Bar dataKey="leadsCount" fill={PURPLE_PRIMARY} name="Leads" radius={[0, 8, 8, 0]} />
-                      <Bar dataKey="conversionsCount" fill={GOLD_ACCENT} name="Conversions" radius={[0, 8, 8, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 space-y-3" style={{ height: '100%' }}>
-                    <p className="text-base font-medium">No lead source data available</p>
-                    <p className="text-sm text-gray-400 dark:text-gray-500 max-w-md text-center">
-                      Lead sources will appear here once contacts are assigned to sources.
-                    </p>
-                  </div>
-                )}
-                </CardContent>
-              </Card>
-            </motion.div>
+                                }}
+                                labelLine={false}
+                              >
+                                {Array.isArray(pipelineChartData) && pipelineChartData.length > 0 ? pipelineChartData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                                )) : null}
+                              </Pie>
+                              <Tooltip
+                                formatter={(value: any) => [value, 'Deals']}
+                                contentStyle={{
+                                  backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
+                                  color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
+                                  border: `1px solid ${PURPLE_PRIMARY}`,
+                                  borderRadius: '8px',
+                                }}
+                              />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center text-gray-500 dark:text-gray-400" style={{ height: '100%' }}>
+                          <p>No pipeline data available</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+
+                {/* Chart 2: Monthly Lead Creation */}
+                <motion.div
+                  className="chart-panel"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.45 }}
+                  whileHover={{ y: -2 }}
+                >
+                  <Card className="border-0 rounded-xl" style={{ height: '100%', padding: 0, borderRadius: 0, background: 'transparent' }}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg font-semibold">Monthly Lead Creation</CardTitle>
+                      <CardDescription className="text-sm">Lead generation trend over time</CardDescription>
+                    </CardHeader>
+                    <CardContent style={{ height: '260px', overflow: 'hidden', position: 'relative', padding: '16px 16px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {Array.isArray(monthlyLeadData) && monthlyLeadData.length > 0 ? (
+                        <div style={{ width: '100%', height: '260px', minWidth: 0, minHeight: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <ResponsiveContainer width="100%" height={260} minWidth={0} minHeight={260}>
+                            <AreaChart data={Array.isArray(monthlyLeadData) ? monthlyLeadData : []}>
+                              <defs>
+                                <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor={PURPLE_PRIMARY} stopOpacity={0.8} />
+                                  <stop offset="95%" stopColor={PURPLE_PRIMARY} stopOpacity={0} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#f0f0f0'} />
+                              <XAxis dataKey="month" stroke={isDark ? '#D1D5DB' : '#666'} tick={{ fontSize: 12, fill: isDark ? '#D1D5DB' : '#666' }} />
+                              <YAxis stroke={isDark ? '#D1D5DB' : '#666'} tick={{ fontSize: 12, fill: isDark ? '#D1D5DB' : '#666' }} />
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
+                                  color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
+                                  border: `1px solid ${PURPLE_PRIMARY}`,
+                                  borderRadius: '8px',
+                                }}
+                              />
+                              <Area type="monotone" dataKey="leads" stroke={PURPLE_PRIMARY} fillOpacity={1} fill="url(#colorLeads)" />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center text-gray-500 dark:text-gray-400" style={{ height: '100%' }}>
+                          <p>No lead creation data available</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+
+                {/* Chart 3: TOP 10 Lead Sources */}
+                <motion.div
+                  className="chart-panel"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.5 }}
+                  whileHover={{ y: -2 }}
+                >
+                  <Card className="border-0 rounded-xl" style={{ height: '100%', padding: 0, borderRadius: 0, background: 'transparent' }}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg font-semibold text-purple-900">TOP 10 Lead Sources</CardTitle>
+                      <CardDescription className="text-sm">Best performing lead sources</CardDescription>
+                    </CardHeader>
+                    <CardContent style={{ height: '260px', overflow: 'hidden', position: 'relative', padding: '16px' }}>
+                      {Array.isArray(topLeadSourcesData) && topLeadSourcesData.length > 0 ? (
+                        <div style={{ width: '100%', height: '260px', minWidth: 0, minHeight: 260 }}>
+                          <ResponsiveContainer width="100%" height={260} minWidth={0} minHeight={260}>
+                            <BarChart
+                              data={Array.isArray(topLeadSourcesData) ? topLeadSourcesData.slice(0, 10) : []}
+                              layout="vertical"
+                              margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#f0f0f0'} />
+                              <XAxis type="number" stroke={isDark ? '#D1D5DB' : '#666'} tick={{ fontSize: 12, fill: isDark ? '#D1D5DB' : '#666' }} />
+                              <YAxis
+                                dataKey="name"
+                                type="category"
+                                stroke={isDark ? '#D1D5DB' : '#666'}
+                                width={120}
+                                tick={{ fontSize: 10, fill: isDark ? '#D1D5DB' : '#666' }}
+                                interval={0}
+                                angle={0}
+                                textAnchor="end"
+                                dx={-5}
+                              />
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: isDark ? 'rgb(31, 41, 55)' : '#fff',
+                                  color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
+                                  border: `1px solid ${PURPLE_PRIMARY}`,
+                                  borderRadius: '8px',
+                                  fontSize: '12px',
+                                }}
+                                content={({ active, payload, label }) => {
+                                  if (active && payload && payload.length) {
+                                    const sortedPayload = [...payload].sort((a, b) => {
+                                      if (a.dataKey === 'leadsCount') return -1
+                                      if (b.dataKey === 'leadsCount') return 1
+                                      if (a.dataKey === 'conversionsCount') return -1
+                                      if (b.dataKey === 'conversionsCount') return 1
+                                      return 0
+                                    })
+                                    return (
+                                      <div className="bg-white dark:bg-gray-800 border border-purple-600 rounded-lg p-3 shadow-lg">
+                                        <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">{label}</p>
+                                        {Array.isArray(sortedPayload) && sortedPayload.length > 0 ? sortedPayload.map((entry: any, index: number) => {
+                                          let label = entry.name
+                                          let value = entry.value
+                                          if (entry.dataKey === 'leadsCount') {
+                                            label = 'Leads'
+                                            value = value
+                                          } else if (entry.dataKey === 'conversionsCount') {
+                                            label = 'Conversions'
+                                            value = value
+                                          } else if (entry.dataKey === 'totalValue') {
+                                            label = 'Total Value'
+                                            value = formatINRForDisplay(value)
+                                          } else if (entry.dataKey === 'conversionRate') {
+                                            label = 'Conversion Rate'
+                                            value = `${value.toFixed(1)}%`
+                                          }
+                                          return (
+                                            <p key={index} className="text-sm" style={{ color: entry.color }}>
+                                              <span className="font-medium">{label}:</span> {value}
+                                            </p>
+                                          )
+                                        }) : null}
+                                      </div>
+                                    )
+                                  }
+                                  return null
+                                }}
+                                labelStyle={{ color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)' }}
+                              />
+                              <Legend
+                                wrapperStyle={{
+                                  fontSize: '12px',
+                                  color: isDark ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
+                                }}
+                              />
+                              <Bar dataKey="leadsCount" fill={PURPLE_PRIMARY} name="Leads" radius={[0, 8, 8, 0]} />
+                              <Bar dataKey="conversionsCount" fill={GOLD_ACCENT} name="Conversions" radius={[0, 8, 8, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 space-y-3" style={{ height: '100%' }}>
+                          <p className="text-base font-medium">No lead source data available</p>
+                          <p className="text-sm text-gray-400 dark:text-gray-500 max-w-md text-center">
+                            Lead sources will appear here once contacts are assigned to sources.
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </div>
+
+              {/* Right (40%): alerts/lists stacked */}
+              <div className="space-y-4">
+                {/* Widget 1: Customer Issues */}
+                <motion.div
+                  className="widget-card"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.75 }}
+                  whileHover={{ y: -2 }}
+                >
+                  <Card className="border-0 rounded-xl" style={{ height: '100%', padding: 0, borderRadius: 0, background: 'transparent' }}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                        <AlertCircle className="h-5 w-5 text-amber-500" />
+                        Customer Issues
+                      </CardTitle>
+                      <CardDescription className="text-sm">Open tickets and SLA status</CardDescription>
+                    </CardHeader>
+                    <CardContent style={{ overflow: 'visible', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center justify-between p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                          <div>
+                            <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Open Tickets</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Requires attention</p>
+                          </div>
+                          <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300">
+                            0
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                          <div>
+                            <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">SLA Status</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">All on track</p>
+                          </div>
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        </div>
+                      </div>
+                      <Link href={tenantId ? `/crm/${tenantId}/Tickets` : '#'} className="mt-auto">
+                        <Button variant="outline" className="w-full mt-2 text-xs py-1">
+                          View All Tickets
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+
+                {/* Widget 2: Latest Campaigns */}
+                <motion.div
+                  className="widget-card"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.8 }}
+                  whileHover={{ y: -2 }}
+                >
+                  <Card className="border-0 rounded-xl" style={{ height: '100%', padding: 0, borderRadius: 0, background: 'transparent' }}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                        <Mail className="h-5 w-5 text-purple-600" />
+                        Latest Campaigns
+                      </CardTitle>
+                      <CardDescription className="text-sm">Recent marketing campaigns</CardDescription>
+                    </CardHeader>
+                    <CardContent style={{ overflow: 'visible', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div className="space-y-2 flex-1">
+                        <div className="p-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="font-medium text-sm text-gray-900 dark:text-gray-100">Q4 Product Launch</p>
+                            <Badge variant="outline" className="text-xs">Active</Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 mt-1">
+                            <span>Sent: 1,250</span>
+                            <span>Open: 42%</span>
+                          </div>
+                        </div>
+                        <div className="p-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="font-medium text-sm text-gray-900 dark:text-gray-100">Holiday Promotion</p>
+                            <Badge variant="outline" className="text-xs bg-gray-100">Completed</Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 mt-1">
+                            <span>Sent: 2,100</span>
+                            <span>Open: 38%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <Link href={tenantId ? `/crm/${tenantId}/Campaigns` : '#'} className="mt-auto">
+                        <Button variant="outline" className="w-full mt-2 text-xs py-1">
+                          View All Campaigns
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+
+                {/* Widget 3: Deals Closing Soon */}
+                <motion.div
+                  className="widget-card"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.85 }}
+                  whileHover={{ y: -2 }}
+                >
+                  <Card className="border-0 rounded-xl" style={{ height: '100%', padding: 0, borderRadius: 0, background: 'transparent' }}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                        <Target className="h-5 w-5 text-indigo-600" />
+                        Deals Closing Soon
+                      </CardTitle>
+                      <CardDescription className="text-sm">Expected to close this period</CardDescription>
+                    </CardHeader>
+                    <CardContent style={{ overflow: 'visible', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center justify-between p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                          <div>
+                            <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Deals closing</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">This month / quarter</p>
+                          </div>
+                          <Badge variant="outline" className="bg-indigo-100 text-indigo-700 border-indigo-300 dark:bg-indigo-900/40 dark:border-indigo-700">
+                            {safeStats.dealsClosingThisMonth ?? 0}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                          <div>
+                            <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Pipeline value</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Active deals total</p>
+                          </div>
+                          <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                            {formatINRForDisplay((safeStats.pipelineByStage || []).reduce((s: number, p: any) => s + (Number(p?.value) || 0), 0) || 0)}
+                          </span>
+                        </div>
+                      </div>
+                      <Link href={tenantId ? `/crm/${tenantId}/Deals?category=closing&timePeriod=${timePeriod}` : '#'} className="mt-auto">
+                        <Button variant="outline" className="w-full mt-2 text-xs py-1">
+                          View Closing Deals
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </div>
             </div>
-          )}
-
-          {/* Band 4: Alerts / lists – 3 cards (blueprint lg:grid-cols-3) */}
-          {stats && safeStats && (
-            <>
-            {/* Widget 1: Customer Issues */}
-            <motion.div 
-              className="widget-card"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.75 }}
-              whileHover={{ y: -2 }}
-            >
-              <Card className="border-0 rounded-xl" style={{ height: '100%', padding: 0, borderRadius: 0, background: 'transparent' }}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5 text-amber-500" />
-                    Customer Issues
-                  </CardTitle>
-                  <CardDescription className="text-sm">Open tickets and SLA status</CardDescription>
-                </CardHeader>
-                <CardContent style={{ height: 'calc(100% - 100px)', overflow: 'visible', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center justify-between p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                      <div>
-                        <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Open Tickets</p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Requires attention</p>
-                      </div>
-                      <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300">
-                        0
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                      <div>
-                        <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">SLA Status</p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">All on track</p>
-                      </div>
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    </div>
-                  </div>
-                  <Link href={tenantId ? `/crm/${tenantId}/Tickets` : '#'} className="mt-auto">
-                    <Button variant="outline" className="w-full mt-2 text-xs py-1">
-                      View All Tickets
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Widget 2: Latest Campaigns */}
-            <motion.div 
-              className="widget-card"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.8 }}
-              whileHover={{ y: -2 }}
-            >
-              <Card className="border-0 rounded-xl" style={{ height: '100%', padding: 0, borderRadius: 0, background: 'transparent' }}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Mail className="h-5 w-5 text-purple-600" />
-                    Latest Campaigns
-                  </CardTitle>
-                  <CardDescription className="text-sm">Recent marketing campaigns</CardDescription>
-                </CardHeader>
-                <CardContent style={{ height: 'calc(100% - 100px)', overflow: 'visible', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div className="space-y-2 flex-1">
-                    <div className="p-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="font-medium text-sm text-gray-900 dark:text-gray-100">Q4 Product Launch</p>
-                        <Badge variant="outline" className="text-xs">Active</Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 mt-1">
-                        <span>Sent: 1,250</span>
-                        <span>Open: 42%</span>
-                      </div>
-                    </div>
-                    <div className="p-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="font-medium text-sm text-gray-900 dark:text-gray-100">Holiday Promotion</p>
-                        <Badge variant="outline" className="text-xs bg-gray-100">Completed</Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 mt-1">
-                        <span>Sent: 2,100</span>
-                        <span>Open: 38%</span>
-                      </div>
-                    </div>
-                  </div>
-                  <Link href={tenantId ? `/crm/${tenantId}/Campaigns` : '#'} className="mt-auto">
-                    <Button variant="outline" className="w-full mt-2 text-xs py-1">
-                      View All Campaigns
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Widget 3: Deals Closing Soon – fills Band 4 third slot */}
-            <motion.div 
-              className="widget-card"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.85 }}
-              whileHover={{ y: -2 }}
-            >
-              <Card className="border-0 rounded-xl" style={{ height: '100%', padding: 0, borderRadius: 0, background: 'transparent' }}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Target className="h-5 w-5 text-indigo-600" />
-                    Deals Closing Soon
-                  </CardTitle>
-                  <CardDescription className="text-sm">Expected to close this period</CardDescription>
-                </CardHeader>
-                <CardContent style={{ height: 'calc(100% - 100px)', overflow: 'visible', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center justify-between p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-                      <div>
-                        <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Deals closing</p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">This month / quarter</p>
-                      </div>
-                      <Badge variant="outline" className="bg-indigo-100 text-indigo-700 border-indigo-300 dark:bg-indigo-900/40 dark:border-indigo-700">
-                        {safeStats.dealsClosingThisMonth ?? 0}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                      <div>
-                        <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">Pipeline value</p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Active deals total</p>
-                      </div>
-                      <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                        {formatINRForDisplay((safeStats.pipelineByStage || []).reduce((s: number, p: any) => s + (Number(p?.value) || 0), 0) || 0)}
-                      </span>
-                    </div>
-                  </div>
-                  <Link href={tenantId ? `/crm/${tenantId}/Deals?category=closing&timePeriod=${timePeriod}` : '#'} className="mt-auto">
-                    <Button variant="outline" className="w-full mt-2 text-xs py-1">
-                      View Closing Deals
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </motion.div>
-            </>
           )}
 
           {/* Band 3: Row 5 - Quarterly Table (full width) */}
