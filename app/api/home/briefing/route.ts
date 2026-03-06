@@ -48,13 +48,22 @@ function parseAIBullets(text: string): string[] {
 export async function GET(request: NextRequest) {
   try {
     const payload = await authenticateRequest(request)
-    if (!payload?.tenantId) {
+    const authTenantId = payload?.tenantId ?? (payload as { tenant_id?: string })?.tenant_id
+    if (!authTenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const url = request.nextUrl
     const queryTenantId = url.searchParams.get('tenantId')?.trim()
-    const tenantId = queryTenantId && payload.tenantId === queryTenantId ? queryTenantId : payload.tenantId
+    let tenantId = queryTenantId && authTenantId === queryTenantId ? queryTenantId : authTenantId
+    // Resolve slug to tenant id when query param is a slug (only allow if it's the auth tenant)
+    if (queryTenantId && queryTenantId !== authTenantId && queryTenantId.length < 30) {
+      const bySlug = await prisma.tenant.findFirst({
+        where: { slug: queryTenantId },
+        select: { id: true },
+      })
+      if (bySlug && bySlug.id === authTenantId) tenantId = bySlug.id
+    }
 
     const [
       openDeals,
