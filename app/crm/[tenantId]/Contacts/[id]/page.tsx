@@ -29,8 +29,10 @@ import {
   Briefcase,
   ArrowLeft,
   Edit,
-  Trash2
+  Trash2,
+  Link2
 } from 'lucide-react'
+import { useAuthStore } from '@/lib/stores/auth'
 
 export default function ContactDetailPage() {
   const params = useParams()
@@ -44,6 +46,8 @@ export default function ContactDetailPage() {
   const [showAllocationDialog, setShowAllocationDialog] = useState(false)
   const [showNurtureDialog, setShowNurtureDialog] = useState(false)
   const [sequences, setSequences] = useState<any[]>([])
+  const [portalLinkCopied, setPortalLinkCopied] = useState(false)
+  const { token } = useAuthStore()
 
   const handleDelete = async () => {
     if (confirm('Are you sure you want to delete this contact? This action cannot be undone.')) {
@@ -154,6 +158,30 @@ export default function ContactDetailPage() {
                 </Button>
               </Link>
             )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              onClick={async () => {
+                if (!token || !tenantId) return
+                try {
+                  const r = await fetch(`/api/portal/token?tenantId=${encodeURIComponent(tenantId)}&contactId=${encodeURIComponent(id)}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  })
+                  const data = await r.json()
+                  if (data.portalUrl) {
+                    await navigator.clipboard.writeText(data.portalUrl)
+                    setPortalLinkCopied(true)
+                    setTimeout(() => setPortalLinkCopied(false), 2000)
+                  }
+                } catch {
+                  // ignore
+                }
+              }}
+            >
+              <Link2 className="w-3 h-3 mr-1" />
+              {portalLinkCopied ? 'Copied!' : 'Copy portal link'}
+            </Button>
             <Link href={`/crm/${tenantId}/Contacts/${id}/Edit`}>
               <Button size="sm" variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
                 <Edit className="w-3 h-3 mr-1" />

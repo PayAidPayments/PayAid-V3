@@ -27,7 +27,8 @@ interface Service {
 
 export default function NewAppointmentPage() {
   const router = useRouter()
-  const { token } = useAuthStore()
+  const { token, tenant } = useAuthStore()
+  const tenantId = tenant?.id
   const [loading, setLoading] = useState(false)
   const [contacts, setContacts] = useState<Contact[]>([])
   const [services, setServices] = useState<Service[]>([])
@@ -142,7 +143,7 @@ export default function NewAppointmentPage() {
       })
 
       if (response.ok) {
-        router.push('/dashboard/appointments')
+        router.push(tenantId ? `/appointments/${tenantId}/Home` : '/dashboard/appointments')
       } else {
         const error = await response.json()
         alert(error.error || 'Failed to create appointment')
@@ -160,7 +161,7 @@ export default function NewAppointmentPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Link href="/dashboard/appointments">
+          <Link href={tenantId ? `/appointments/${tenantId}/Home` : '/dashboard/appointments'}>
             <Button variant="outline" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
@@ -357,7 +358,7 @@ export default function NewAppointmentPage() {
 
               {/* Submit Button */}
               <div className="flex justify-end gap-3">
-                <Link href="/dashboard/appointments">
+                <Link href={tenantId ? `/appointments/${tenantId}/Home` : '/dashboard/appointments'}>
                   <Button type="button" variant="outline">
                     Cancel
                   </Button>

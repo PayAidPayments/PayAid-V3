@@ -1,6 +1,6 @@
 # Creative Studio (Marketing)
 
-**Overview:** Creative Studio is a set of AI-powered tools under the Marketing module for creating ad creatives and marketplace-ready visuals without external agencies or shoots. It is inspired by Scalio-style workflows and uses the tenant’s **Google AI Studio** API key (configured in **Settings > AI Integrations**).
+**Overview:** Creative Studio is a set of AI-powered tools under the Marketing module for creating ad creatives and marketplace-ready visuals without external agencies or shoots. It is inspired by Scalio-style workflows. Image generation can use **your own self-hosted image worker** (recommended; no API key or quota) or the tenant’s **Google AI Studio** API key (Settings > AI Integrations) as fallback.
 
 ---
 
@@ -21,7 +21,7 @@
 - **API:** `POST /api/marketing/product-studio/generate`
   - **Body:** `FormData` with `file` (image), `marketplace` (amazon | flipkart | myntra | shopify), optional `templateId` (50+ category templates), optional `brandColor`, `brandTagline` (from Brand kit).
   - **Response:** `{ main, lifestyle, infographic, marketplace }` (data URLs or null).
-- **Behaviour:** Tries image-in generation with Gemini; on failure, retries once and then falls back to text-only using an AI-generated product description. Category template tailors the prompt (e.g. Electronics, Fashion, Beauty, Home, Food, Health, Sports, Toys, Auto, Office, Pet, Books, Jewellery). Brand kit (primary color, tagline) is applied when set on the hub.
+- **Behaviour:** When **IMAGE_WORKER_URL** is set (self-hosted worker), generates all three images with your own SDXL/worker — no Google key or quota. Optional: tenant Google key can be used for a short product description to improve prompts. When self-hosted is not configured, uses Gemini (image-in or text-only with product description). Category template and brand kit apply in both cases.
 - **Batch mode:** Toggle **Batch** to upload multiple product images; generate runs sequentially (one set per product). Results appear as a list of image sets with Download and Save to library per image.
 - **Save to library:** Each generated image (main, lifestyle, infographic) has a **Save to library** button that stores the image in the tenant **Media Library** (category `creative-studio`, source `product-studio`).
 - **Export:** Each result image can be downloaded as-is or exported at platform size: Amazon (3000×3000), Meta Feed (1080×1080), Stories (1080×1920), Google (1200×1200), Pinterest (1000×1500).
@@ -48,7 +48,7 @@
 - **API:** `POST /api/marketing/image-ads/generate`
   - **Body:** `JSON` with `preset` (hook-product | price-drop | benefit-cta | custom), optional `hook`, `price`, `overlayStyle` (none | minimal | bold-cta | price-badge | discount-sticker | trust-badge | countdown), `ctaText` (e.g. "Shop Now"), `customPrompt` (when preset is custom), optional `brandColor`, `brandTagline` (from Brand kit).
   - **Response:** `{ imageUrl, preset }`.
-- **Behaviour:** Text-to-image via Gemini; one retry. Overlay style and CTA text shape the prompt. Brand kit applied when set.
+- **Behaviour:** When **IMAGE_WORKER_URL** is set, uses your self-hosted image worker (no Google key). Otherwise uses Gemini; one retry. Overlay style and CTA text shape the prompt. Brand kit applied when set.
 - **A/B variants:** Check **Generate 2 variants (A/B)** to get two images in one run; both are shown side-by-side (Variant A, Variant B) with Download, Save to library, and Export as for each.
 - **Save to library:** Generated image(s) can be saved to the tenant **Media Library** (category `creative-studio`, source `image-ads`).
 - **Export:** Download as-is or export at platform size (Amazon, Meta Feed, Stories, Google, Pinterest).
@@ -71,10 +71,20 @@
 
 ---
 
+## Self-hosted image generator (recommended)
+
+To avoid Google quota, region, and key setup for users, run your own image worker and set **IMAGE_WORKER_URL** (or **TEXT_TO_IMAGE_SERVICE_URL**) in the server environment.
+
+- **Included service:** `services/text-to-image/server.py` — Stable Diffusion XL, exposes `POST /generate` (prompt, style, size). Run with Python + diffusers (see service folder). Default port 7860.
+- **Env:** `IMAGE_WORKER_URL=http://localhost:7860` (or `http://image-worker:8000` in Docker).
+- **Used by:** Create Image (AI Image Studio), Product Studio, Image Ads. When set, it is tried first; Google/Hugging Face are fallbacks. Product Studio and Image Ads work **without** a tenant Google key when the worker is configured.
+
+---
+
 ## Requirements
 
 - **Module:** User must have **Marketing** module access.
-- **Google AI Studio:** Tenant must have a Google AI Studio API key set in **Settings > AI Integrations**. Same key is used for Product Studio, Model Studio, and Image Ads.
+- **Image generation:** Either **IMAGE_WORKER_URL** (self-hosted) or tenant **Google AI Studio** API key (Settings > AI Integrations). Model Studio still requires Google AI Studio for on-model generation.
 - **Limits:** Product and Model Studio accept images up to **10MB**.
 
 ---

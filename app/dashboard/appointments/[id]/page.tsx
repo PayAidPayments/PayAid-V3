@@ -38,7 +38,8 @@ interface Appointment {
 export default function AppointmentDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const { token } = useAuthStore()
+  const { token, tenant } = useAuthStore()
+  const tenantId = tenant?.id
   const appointmentId = params?.id as string
   
   const [appointment, setAppointment] = useState<Appointment | null>(null)
@@ -129,7 +130,7 @@ export default function AppointmentDetailPage() {
       })
 
       if (response.ok) {
-        router.push('/dashboard/appointments')
+        router.push(tenantId ? `/appointments/${tenantId}/Home` : '/dashboard/appointments')
       } else {
         const error = await response.json()
         alert(error.error || 'Failed to delete appointment')
@@ -177,11 +178,11 @@ export default function AppointmentDetailPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-gray-600 dark:text-gray-400">Appointment not found</p>
-              <Link href="/dashboard/appointments">
-                <Button variant="outline" className="mt-4">
-                  Back to Appointments
-                </Button>
-              </Link>
+<Link href={tenantId ? `/appointments/${tenantId}/Home` : '/dashboard/appointments'}>
+                  <Button variant="outline" className="mt-4">
+                    Back to Appointments
+                  </Button>
+                </Link>
             </CardContent>
           </Card>
         </div>
@@ -195,12 +196,12 @@ export default function AppointmentDetailPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard/appointments">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-            </Link>
+<Link href={tenantId ? `/appointments/${tenantId}/Home` : '/dashboard/appointments'}>
+                <Button variant="outline" size="sm">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+              </Link>
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                 {appointment.contactName}

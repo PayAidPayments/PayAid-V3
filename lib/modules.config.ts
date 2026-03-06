@@ -179,7 +179,7 @@ export const modules: ModuleConfig[] = [
     name: "Analytics",
     description: "Business analytics, reports, and performance dashboards",
     icon: "BarChart3",
-    url: "/dashboard/analytics",
+    url: "/analytics",
     status: "active",
     category: "core",
     color: "#14B8A6"
@@ -189,7 +189,7 @@ export const modules: ModuleConfig[] = [
     name: "Industry Intelligence",
     description: "Industry news, trends, and business intelligence tailored to your business",
     icon: "Newspaper",
-    url: "/dashboard/news",
+    url: "/industry-intelligence",
     status: "active",
     category: "core",
     color: "#8B5CF6"
@@ -199,7 +199,7 @@ export const modules: ModuleConfig[] = [
     name: "Appointments",
     description: "Schedule appointments, manage calendars, send reminders, and track customer bookings",
     icon: "Calendar",
-    url: "/dashboard/appointments",
+    url: "/appointments",
     status: "active",
     category: "core",
     color: "#10B981"

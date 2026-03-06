@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { hashPassword } from '@/lib/auth/password'
+import { generateUniqueTenantSlug } from '@/lib/utils/generate-tenant-slug'
 
 const SUPER_ADMIN_EMAIL = 'admin@payaidpayments.com'
 const SUPER_ADMIN_NAME = 'PayAid Super Admin'
@@ -23,12 +24,17 @@ async function createUsers() {
 
   // 1. PayAid Platform tenant (for Super Admin), or use first existing tenant
   let payaidTenant: { id: string }
+  const existingSlugsForCreate = new Set(
+    (await prisma.tenant.findMany({ where: { slug: { not: null } }, select: { slug: true } }))
+      .map((t) => t.slug as string)
+  )
   try {
     payaidTenant = await prisma.tenant.upsert({
       where: { subdomain: 'payaid-platform' },
       update: {},
       create: {
         name: 'PayAid Platform',
+        slug: generateUniqueTenantSlug('PayAid Platform', existingSlugsForCreate),
         subdomain: 'payaid-platform',
         plan: 'enterprise',
         status: 'active',
@@ -71,9 +77,14 @@ async function createUsers() {
     where: { subdomain: 'demo' },
   })
   if (!demoTenant) {
+    const existingSlugs = new Set(
+      (await prisma.tenant.findMany({ where: { slug: { not: null } }, select: { slug: true } }))
+        .map((t) => t.slug as string)
+    )
     demoTenant = await prisma.tenant.create({
       data: {
         name: 'Demo Business Pvt Ltd',
+        slug: generateUniqueTenantSlug('Demo Business Pvt Ltd', existingSlugs),
         subdomain: 'demo',
         plan: 'professional',
         status: 'active',

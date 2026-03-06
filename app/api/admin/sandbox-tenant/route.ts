@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
+import { generateUniqueTenantSlug } from '@/lib/utils/generate-tenant-slug'
 
 const createSandboxSchema = z.object({
   name: z.string().min(1),
@@ -47,10 +48,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = createSandboxSchema.parse(body)
 
-    // Create sandbox tenant
+    const existingSlugs = new Set(
+      (await prisma.tenant.findMany({ where: { slug: { not: null } }, select: { slug: true } }))
+        .map((t) => t.slug as string)
+    )
     const sandbox = await prisma.tenant.create({
       data: {
         name: validated.name,
+        slug: generateUniqueTenantSlug(validated.name, existingSlugs),
         industry: 'service-business', // Default industry
         industrySettings: {
           isSandbox: true,

@@ -1,10 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Building2, CreditCard, Shield, Puzzle } from 'lucide-react'
 
 export default function AdminSettingsPage() {
+  const { tenant } = useAuthStore()
+  const tenantId = tenant?.id
+
   return (
     <div className="space-y-6">
       <div>
@@ -15,7 +19,7 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Link href="/dashboard/settings/tenant">
+        <Link href={tenantId ? `/settings/${tenantId}/Tenant` : '/settings'}>
           <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

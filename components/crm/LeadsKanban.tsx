@@ -129,7 +129,7 @@ export function LeadsKanban({ tenantId }: LeadsKanbanProps) {
   const { data, isLoading } = useQuery({
     queryKey: ['contacts', 'kanban', tenantId],
     queryFn: async () => {
-      const res = await fetch(`/api/contacts?limit=500`, { headers: getAuthHeaders() })
+      const res = await fetch(`/api/contacts?limit=500&tenantId=${encodeURIComponent(tenantId)}`, { headers: getAuthHeaders() })
       if (!res.ok) throw new Error('Failed to fetch contacts')
       const json = await res.json()
       return json.contacts as Array<{ id: string; name: string; company?: string | null; email?: string | null; phone?: string | null; stage?: string | null; leadScore?: number | null; lastContactedAt?: string | null; createdAt?: string }>

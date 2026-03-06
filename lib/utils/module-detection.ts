@@ -11,6 +11,9 @@ export type ModuleId = 'crm' | 'finance' | 'sales' | 'marketing' | 'communicatio
 export function detectModuleFromPath(pathname: string): ModuleId {
   if (!pathname) return null
 
+  // Decoupled module paths (one feature = one URL)
+  if (pathname.startsWith('/analytics/')) return 'analytics'
+
   // Remove tenant ID from path if present
   // Handles both /dashboard/contacts and /dashboard/[tenantId]/contacts
   let cleanPath = pathname

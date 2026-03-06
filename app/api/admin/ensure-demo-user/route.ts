@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import * as bcrypt from 'bcryptjs'
+import { generateUniqueTenantSlug } from '@/lib/utils/generate-tenant-slug'
 
 /**
  * GET /api/admin/ensure-demo-user
@@ -55,10 +56,15 @@ export async function GET(request: NextRequest) {
     })
 
     if (!tenant) {
-      // Create demo tenant
+      const existingSlugs = new Set(
+        (await prisma.tenant.findMany({ where: { slug: { not: null } }, select: { slug: true } }))
+          .map((t) => t.slug as string)
+      )
+      const slug = generateUniqueTenantSlug('Demo Business Pvt Ltd', existingSlugs)
       tenant = await prisma.tenant.create({
         data: {
           name: 'Demo Business Pvt Ltd',
+          slug,
           subdomain: 'demo',
           plan: 'professional',
           status: 'active',
@@ -127,7 +133,29 @@ export async function POST(request: NextRequest) {
     // Hash new password
     const hashedPassword = await bcrypt.hash('Test@1234', 10)
 
-    // Update or create user
+    let demoTenant = await prisma.tenant.findFirst({
+      where: {
+        OR: [
+          { subdomain: 'demo' },
+          { name: { contains: 'Demo', mode: 'insensitive' } },
+        ],
+      },
+    })
+    if (!demoTenant) {
+      const existingSlugs = new Set(
+        (await prisma.tenant.findMany({ where: { slug: { not: null } }, select: { slug: true } }))
+          .map((t) => t.slug as string)
+      )
+      demoTenant = await prisma.tenant.create({
+        data: {
+          name: 'Demo Business Pvt Ltd',
+          slug: generateUniqueTenantSlug('Demo Business Pvt Ltd', existingSlugs),
+          subdomain: 'demo',
+          plan: 'professional',
+          status: 'active',
+        },
+      })
+    }
     const user = await prisma.user.upsert({
       where: { email: 'admin@demo.com' },
       update: {
@@ -138,21 +166,7 @@ export async function POST(request: NextRequest) {
         name: 'Admin User',
         password: hashedPassword,
         role: 'owner',
-        tenantId: (await prisma.tenant.findFirst({
-          where: {
-            OR: [
-              { subdomain: 'demo' },
-              { name: { contains: 'Demo', mode: 'insensitive' } },
-            ],
-          },
-        }))?.id || (await prisma.tenant.create({
-          data: {
-            name: 'Demo Business Pvt Ltd',
-            subdomain: 'demo',
-            plan: 'professional',
-            status: 'active',
-          },
-        })).id,
+        tenantId: demoTenant.id,
       },
     })
 

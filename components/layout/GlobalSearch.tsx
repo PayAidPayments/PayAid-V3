@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { useAuthStore } from '@/lib/stores/auth'
 
 /**
  * Company-wide search in the top nav. Same component across all modules.
@@ -14,6 +15,7 @@ export function GlobalSearch() {
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+  const { tenant } = useAuthStore()
 
   useEffect(() => {
     if (open) {
@@ -24,9 +26,9 @@ export function GlobalSearch() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!query.trim()) return
-    // Global search: navigate to search results or command palette
-    // For now, redirect to dashboard with query (can be replaced with dedicated /search?q=)
-    router.push(`/dashboard?q=${encodeURIComponent(query.trim())}`)
+    const q = encodeURIComponent(query.trim())
+    const target = tenant?.id ? `/home/${tenant.id}?q=${q}` : `/home?q=${q}`
+    router.push(target)
     setOpen(false)
     setQuery('')
   }

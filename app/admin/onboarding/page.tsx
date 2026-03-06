@@ -2,19 +2,26 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { CheckCircle, Circle, FileCheck, CreditCard, Users, Settings } from 'lucide-react'
 
-const STEPS = [
-  { id: 'company', label: 'Company profile', href: '/dashboard/settings/tenant', icon: Settings },
-  { id: 'kyc', label: 'KYC / Documents', href: '/dashboard/settings/kyc', icon: FileCheck },
-  { id: 'billing', label: 'Billing & payment', href: '/admin/billing', icon: CreditCard },
-  { id: 'users', label: 'Team & users', href: '/admin/users', icon: Users },
-]
+function getSteps(tenantId: string | undefined) {
+  const base = tenantId ? `/settings/${tenantId}` : '/settings'
+  return [
+    { id: 'company', label: 'Company profile', href: tenantId ? `${base}/Tenant` : '/settings', icon: Settings },
+    { id: 'kyc', label: 'KYC / Documents', href: tenantId ? `${base}` : '/settings', icon: FileCheck },
+    { id: 'billing', label: 'Billing & payment', href: '/admin/billing', icon: CreditCard },
+    { id: 'users', label: 'Team & users', href: tenantId ? `${base}/Users` : '/settings', icon: Users },
+  ]
+}
 
 export default function AdminOnboardingPage() {
+  const { tenant } = useAuthStore()
+  const tenantId = tenant?.id
+  const STEPS = getSteps(tenantId)
   const [progress, setProgress] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
 

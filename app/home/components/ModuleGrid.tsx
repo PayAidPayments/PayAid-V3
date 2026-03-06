@@ -4,6 +4,7 @@ import { ModuleCard } from './ModuleCard';
 import { Loading } from '@/components/ui/loading';
 import { useState, useEffect, useMemo } from 'react';
 import { useAuthStore } from '@/lib/stores/auth';
+import { Search } from 'lucide-react';
 
 // Lazy import to avoid SSR evaluation
 let modulesConfig: typeof import('@/lib/modules.config') | null = null;
@@ -15,8 +16,15 @@ async function getModulesConfig() {
   return modulesConfig;
 }
 
-export function ModuleGrid() {
+const CATEGORY_LABELS: Record<string, string> = {
+  core: 'Core Business',
+  productivity: 'Productivity & Collaboration',
+  ai: 'AI Copilots & Automation',
+}
+
+export function ModuleGrid({ moduleSummaries }: { moduleSummaries?: Record<string, string> }) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [mounted, setMounted] = useState(false);
   const [modules, setModules] = useState<any[]>([]);
   const [categorizedModules, setCategorizedModules] = useState<{ core: any[]; productivity: any[]; ai: any[] }>({ core: [], productivity: [], ai: [] });
@@ -94,21 +102,9 @@ export function ModuleGrid() {
     // If not authenticated or userData not loaded yet, show all modules (will be filtered once data loads)
     if (!isAuthenticated || !userData) {
       return [
-        { 
-          id: 'core', 
-          name: 'Core Business', 
-          count: allNonIndustryModules.filter((m: any) => m.category === 'core').length 
-        },
-        { 
-          id: 'productivity', 
-          name: 'Productivity Suite', 
-          count: allNonIndustryModules.filter((m: any) => m.category === 'productivity').length 
-        },
-        { 
-          id: 'ai', 
-          name: 'AI Services', 
-          count: allNonIndustryModules.filter((m: any) => m.category === 'ai').length 
-        }
+        { id: 'core', name: CATEGORY_LABELS.core, count: allNonIndustryModules.filter((m: any) => m.category === 'core').length },
+        { id: 'productivity', name: CATEGORY_LABELS.productivity, count: allNonIndustryModules.filter((m: any) => m.category === 'productivity').length },
+        { id: 'ai', name: CATEGORY_LABELS.ai, count: allNonIndustryModules.filter((m: any) => m.category === 'ai').length },
       ];
     }
     
@@ -144,21 +140,9 @@ export function ModuleGrid() {
     // If in trial or userData not loaded, show all modules (already set above)
     
     return [
-      { 
-        id: 'core', 
-        name: 'Core Business', 
-        count: filteredForCount.filter((m: any) => m.category === 'core').length 
-      },
-      { 
-        id: 'productivity', 
-        name: 'Productivity Suite', 
-        count: filteredForCount.filter((m: any) => m.category === 'productivity').length 
-      },
-      { 
-        id: 'ai', 
-        name: 'AI Services', 
-        count: filteredForCount.filter((m: any) => m.category === 'ai').length 
-      }
+      { id: 'core', name: CATEGORY_LABELS.core, count: filteredForCount.filter((m: any) => m.category === 'core').length },
+      { id: 'productivity', name: CATEGORY_LABELS.productivity, count: filteredForCount.filter((m: any) => m.category === 'productivity').length },
+      { id: 'ai', name: CATEGORY_LABELS.ai, count: filteredForCount.filter((m: any) => m.category === 'ai').length },
     ];
   }, [mounted, modules, licensedModules, trialEndsAt, userData, isAuthenticated]);
 
@@ -214,13 +198,21 @@ export function ModuleGrid() {
     return filteredModules;
   }, [mounted, modules, licensedModules, userRole, trialEndsAt, userData]);
 
-  // Filter by category if selected
+  // Filter by category and search
   const displayModules = useMemo(() => {
+    let list = allAvailableModules;
     if (selectedCategory && selectedCategory !== 'all') {
-      return allAvailableModules.filter((m: any) => m.category === selectedCategory);
+      list = list.filter((m: any) => m.category === selectedCategory);
     }
-    return allAvailableModules;
-  }, [selectedCategory, allAvailableModules]);
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (m: any) =>
+          m.name?.toLowerCase().includes(q) || m.description?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [selectedCategory, allAvailableModules, searchQuery]);
 
   if (!mounted || modules.length === 0) {
     return <Loading message="Loading modules..." variant="dots" />;
@@ -228,31 +220,43 @@ export function ModuleGrid() {
 
   return (
     <div className="w-full">
-      {/* Category Filter */}
-      <div className="mb-8 flex flex-wrap gap-3">
-        <button
-          onClick={() => setSelectedCategory('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            selectedCategory === 'all' || selectedCategory === null
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-          }`}
-        >
-          All Modules ({allAvailableModules.length || 0})
-        </button>
-        {categories.map(category => (
+      {/* Search + Segmented control */}
+      <div className="mb-6 space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="search"
+            placeholder="Search apps…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full max-w-sm pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-gray-100 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+        <div className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700">
           <button
-            key={category.id}
-            onClick={() => setSelectedCategory(category.id)}
+            onClick={() => setSelectedCategory('all')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              selectedCategory === category.id
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              selectedCategory === 'all' || selectedCategory === null
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-gray-100 shadow-sm'
+                : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-gray-100'
             }`}
           >
-            {category.name} ({category.count})
+            All ({allAvailableModules.length || 0})
           </button>
-        ))}
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedCategory === category.id
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-gray-100 shadow-sm'
+                  : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-gray-100'
+              }`}
+            >
+              {category.name} ({category.count})
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Module Grid: grouped by category when showing All */}
@@ -262,9 +266,9 @@ export function ModuleGrid() {
           const productivity = displayModules.filter((m: any) => m.category === 'productivity');
           const ai = displayModules.filter((m: any) => m.category === 'ai');
           const sections = [
-            { id: 'core', title: 'Core Business', modules: core },
-            { id: 'productivity', title: 'Productivity Suite', modules: productivity },
-            { id: 'ai', title: 'AI Services', modules: ai },
+            { id: 'core', title: CATEGORY_LABELS.core, modules: core },
+            { id: 'productivity', title: CATEGORY_LABELS.productivity, modules: productivity },
+            { id: 'ai', title: CATEGORY_LABELS.ai, modules: ai },
           ];
           return (
             <div className="space-y-10">
@@ -274,7 +278,7 @@ export function ModuleGrid() {
                     <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
                       {title}
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                       {sectionModules.map((module: any) => {
                         const IconComponent = iconMap[module.icon];
                         return (
@@ -282,6 +286,7 @@ export function ModuleGrid() {
                             key={module.id}
                             module={module}
                             icon={IconComponent}
+                            metrics={moduleSummaries?.[module.id]}
                           />
                         );
                       })}
@@ -293,7 +298,7 @@ export function ModuleGrid() {
           );
         })()
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {displayModules.map((module: any) => {
             const IconComponent = iconMap[module.icon];
             return (
@@ -301,6 +306,7 @@ export function ModuleGrid() {
                 key={module.id}
                 module={module}
                 icon={IconComponent}
+                metrics={moduleSummaries?.[module.id]}
               />
             );
           })}

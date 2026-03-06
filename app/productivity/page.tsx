@@ -49,7 +49,7 @@ export default function ProductivityModulePage() {
     if (effectiveTenantId) {
       router.replace(`/productivity/${effectiveTenantId}/Home`)
     } else {
-      router.replace('/dashboard')
+      router.replace('/home')
     }
   }, [isAuthenticated, tenant?.id, router])
 

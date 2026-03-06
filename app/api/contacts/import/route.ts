@@ -174,9 +174,11 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        const stage = validated.type === 'customer' ? 'customer' : validated.type === 'lead' ? 'prospect' : 'contact'
         contactsToCreate.push({
           ...validated,
           tenantId: tenantId,
+          stage,
         })
       } catch (error) {
         if (error instanceof z.ZodError) {

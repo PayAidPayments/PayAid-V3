@@ -1,69 +1,146 @@
 'use client'
 
 import { Header } from '../components/Header'
+import { HeroSection } from '../components/HeroSection'
+import { PinnedModules } from '../components/PinnedModules'
+import { TodayAISummary } from '../components/TodayAISummary'
 import { ModuleGrid } from '../components/ModuleGrid'
-import { NewsSidebar } from '@/components/news/NewsSidebar';
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useAuthStore } from '@/lib/stores/auth';
-import { useParams, useRouter } from 'next/navigation';
+import { NewsSidebar } from '@/components/news/NewsSidebar'
+import Link from 'next/link'
+import { useEffect, useState, useRef } from 'react'
+import { useAuthStore } from '@/lib/stores/auth'
+import { useParams, useRouter } from 'next/navigation'
+
+interface HomeSummaryKPIs {
+  openDeals: number
+  openDealsValue: number
+  contacts: number
+  activeEmployees: number
+  pendingInvoices: number
+  pendingInvoicesTotal: number
+  overdueInvoices: number
+  overdueTasks: number
+  products: number
+}
+
+interface HomeSummary {
+  kpis: HomeSummaryKPIs
+  moduleSummaries?: Record<string, string>
+}
+
+function getAuthFromStorage() {
+  let token: string | null = null;
+  let tenant: { id?: string } | null = null;
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('auth-storage');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        token = parsed.state?.token ?? null;
+        tenant = parsed.state?.tenant ?? null;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return { token, tenant };
+}
 
 export default function TenantHomePage() {
-  const [mounted, setMounted] = useState(false);
-  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
-  const params = useParams();
-  const router = useRouter();
-  const { tenant, isAuthenticated } = useAuthStore();
-  const tenantId = params.tenantId as string;
+  const [mounted, setMounted] = useState(false)
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
+  const [summary, setSummary] = useState<HomeSummary | null>(null)
+  const [briefingBullets, setBriefingBullets] = useState<string[]>([])
+  const params = useParams()
+  const router = useRouter()
+  const { tenant, token } = useAuthStore()
+  const tenantId = params.tenantId as string
+  const didRedirect = useRef(false)
 
   useEffect(() => {
-    setMounted(true);
-    
-    const checkAuth = () => {
-      if (hasCheckedAuth) return;
-      setHasCheckedAuth(true);
+    setMounted(true)
+  }, [])
 
-      let tokenFromStorage: string | null = null;
-      let tenantFromStorage: any = null;
-      
-      if (typeof window !== 'undefined') {
-        try {
-          const stored = localStorage.getItem('auth-storage');
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            tokenFromStorage = parsed.state?.token || null;
-            tenantFromStorage = parsed.state?.tenant || null;
-          }
-        } catch (error) {
-          console.error('[HOME] Error reading from localStorage:', error);
-        }
-      }
+  // Auth check: run on every mount so Strict Mode remount still gets content
+  useEffect(() => {
+    if (!tenantId) return
 
-      const currentState = useAuthStore.getState();
-      const finalIsAuthenticated = currentState.isAuthenticated || !!tokenFromStorage;
-      const finalTenant = currentState.tenant || tenantFromStorage;
-
-      if (!finalIsAuthenticated && !tokenFromStorage) {
-        router.replace('/login');
-        return;
-      }
+    const runAuthCheck = (isRetry = false) => {
+      const { token: tokenFromStorage, tenant: tenantFromStorage } = getAuthFromStorage()
+      const currentState = useAuthStore.getState()
+      const finalIsAuthenticated = currentState.isAuthenticated || !!tokenFromStorage
+      const finalTenant = currentState.tenant ?? tenantFromStorage
 
       if (finalIsAuthenticated && finalTenant?.id && tenantId !== finalTenant.id) {
-        router.replace(`/home/${finalTenant.id}`);
-        return;
+        if (!didRedirect.current) {
+          didRedirect.current = true
+          router.replace(`/home/${finalTenant.id}`)
+        }
+        return
       }
-
       if (finalIsAuthenticated && finalTenant?.id && !tenantId) {
-        router.replace(`/home/${finalTenant.id}`);
-        return;
+        if (!didRedirect.current) {
+          didRedirect.current = true
+          router.replace(`/home/${finalTenant.id}`)
+        }
+        return
       }
-    };
+      if (finalIsAuthenticated && finalTenant?.id && tenantId === finalTenant.id) {
+        setHasCheckedAuth(true)
+        return
+      }
+      if (!finalIsAuthenticated && !tokenFromStorage) {
+        if (!isRetry) {
+          setTimeout(() => runAuthCheck(true), 400)
+          return
+        }
+        if (!didRedirect.current) {
+          didRedirect.current = true
+          router.replace('/login')
+        }
+        return
+      }
+      setHasCheckedAuth(true)
+    }
 
-    const timeoutId = setTimeout(checkAuth, 200);
-    return () => clearTimeout(timeoutId);
-  }, [tenantId, router]);
+    runAuthCheck()
+  }, [tenantId, router])
 
-  if (!mounted || (!hasCheckedAuth && isAuthenticated && tenant?.id !== tenantId)) {
+  // Fallback: if URL has tenantId and we have matching auth in storage, show page after a short delay
+  // (avoids being stuck on Loading when effect order or rehydration is delayed)
+  useEffect(() => {
+    if (!tenantId || hasCheckedAuth) return
+    const t = setTimeout(() => {
+      const { tenant: tenantFromStorage } = getAuthFromStorage()
+      const storedId = tenantFromStorage?.id ?? useAuthStore.getState().tenant?.id
+      if (storedId === tenantId) {
+        setHasCheckedAuth(true)
+      }
+    }, 800)
+    return () => clearTimeout(t)
+  }, [tenantId, hasCheckedAuth])
+
+  useEffect(() => {
+    if (!tenantId || !token) return
+    fetch(`/api/home/summary?tenantId=${encodeURIComponent(tenantId)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data && setSummary(data))
+      .catch(() => {})
+  }, [tenantId, token])
+
+  useEffect(() => {
+    if (!tenantId || !token) return
+    fetch(`/api/home/briefing?tenantId=${encodeURIComponent(tenantId)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data?.bullets && setBriefingBullets(data.bullets))
+      .catch(() => {})
+  }, [tenantId, token])
+
+  if (!mounted || !hasCheckedAuth) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -71,32 +148,69 @@ export default function TenantHomePage() {
           <p className="text-gray-600 dark:text-gray-400">Loading...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-900 transition-colors">
       <Header />
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            All-in-One Business Platform
-          </h1>
-          {mounted && tenant && (
-            <p className="text-xl text-gray-600 dark:text-gray-400 mb-2">
-              Welcome, {tenant.name || 'Demo Business Pvt Ltd'}
-            </p>
-          )}
-          <p className="text-xl text-gray-600 dark:text-gray-400 mb-2">
-            Trusted by 500+ Indian Businesses
-          </p>
-          <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
-            Manage your entire business with Core, Productivity, and AI modules. From CRM and Finance to AI Studio and Marketing—everything in one place. Industry-specific solutions are configured separately.
-          </p>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <HeroSection
+          businessName={tenant?.name || 'Demo Business Pvt Ltd'}
+          userName={undefined}
+        />
+
+        {/* Pinned & Recent + Today's AI summary */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-8 mb-10">
+          <PinnedModules
+            tenantId={tenantId}
+            moduleSummaries={summary?.moduleSummaries}
+            availableModuleIds={['crm', 'finance', 'hr', 'marketing', 'sales', 'projects', 'inventory', 'ai-studio', 'analytics', 'productivity']}
+          />
+          <TodayAISummary
+            tenantId={tenantId}
+            bullets={briefingBullets}
+            loading={false}
+          />
         </div>
 
-        <ModuleGrid />
+        {/* At a glance: compact KPI strip */}
+        {summary?.kpis && (
+          <section className="mb-8">
+            <h2 className="text-sm font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+              At a glance
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              <Link href={`/crm/${tenantId}/Deals`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Open Deals</span>
+                <span className="ml-2 text-lg font-semibold text-slate-900 dark:text-slate-50">{summary.kpis.openDeals}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">· ₹{(summary.kpis.openDealsValue / 1_00_000).toFixed(1)} L</span>
+              </Link>
+              <Link href={`/crm/${tenantId}/Contacts`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Contacts</span>
+                <span className="ml-2 text-lg font-semibold text-slate-900 dark:text-slate-50">{summary.kpis.contacts}</span>
+              </Link>
+              <Link href={`/finance/${tenantId}/Invoices`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Pending Invoices</span>
+                <span className="ml-2 text-lg font-semibold text-slate-900 dark:text-slate-50">{summary.kpis.pendingInvoices}</span>
+                {summary.kpis.overdueInvoices > 0 && (
+                  <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">· {summary.kpis.overdueInvoices} overdue</span>
+                )}
+              </Link>
+              <Link href={`/hr/${tenantId}/Employees`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Employees</span>
+                <span className="ml-2 text-lg font-semibold text-slate-900 dark:text-slate-50">{summary.kpis.activeEmployees}</span>
+              </Link>
+              <Link href={`/approvals/${tenantId}`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Approvals</span>
+                <span className="ml-2 text-sm font-semibold text-slate-900 dark:text-slate-50">Expense · Leave · PO</span>
+              </Link>
+            </div>
+          </section>
+        )}
+
+        <ModuleGrid moduleSummaries={summary?.moduleSummaries} />
 
         <footer className="mt-20 border-t border-gray-200 dark:border-gray-700 pt-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">

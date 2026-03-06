@@ -29,7 +29,7 @@ export default async function AdminRootLayout({
     const isSuperAdmin = roles.some((r: string) => SUPER_ADMIN_ROLES.includes(r))
     const isTenantAdmin = roles.some((r: string) => TENANT_ADMIN_ROLES.includes(r))
     if (!isSuperAdmin && !isTenantAdmin) {
-      redirect('/dashboard')
+      redirect('/home')
     }
   } catch {
     redirect('/login?redirect=/admin')

@@ -58,6 +58,7 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
 
   useEffect(() => {
     if (!tenantId || !token) {
+      setLoading(false)
       // Generate fallback summary from stats
       if (stats) {
         generateFallbackSummary()
@@ -65,7 +66,23 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
       return
     }
 
-    fetchAIInsights()
+    let cancelled = false
+    const run = async () => {
+      try {
+        await fetchAIInsights()
+      } catch (err) {
+        if (cancelled) return
+        const message = err instanceof Error ? err.message : String(err)
+        console.warn('[AICommandCenter] Insights fetch failed, using fallback:', message)
+        try {
+          generateFallbackSummary()
+        } finally {
+          setLoading(false)
+        }
+      }
+    }
+    void run()
+    return () => { cancelled = true }
   }, [tenantId, token, stats, timePeriod])
 
   // Parse action text and create ActionItem with metadata.
@@ -297,8 +314,8 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
   }
 
   const fetchAIInsights = async () => {
+    setLoading(true)
     try {
-      setLoading(true)
       const response = await fetch(`/api/ai/insights?tenantId=${tenantId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -377,7 +394,8 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
         generateFallbackSummary()
       }
     } catch (error) {
-      console.error('[AICommandCenter] Error fetching insights:', error)
+      const err = error instanceof Error ? error : new Error(String(error))
+      console.warn('[AICommandCenter] Insights unavailable, using fallback:', err.message)
       generateFallbackSummary()
     } finally {
       setLoading(false)

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight, Clock, User } from 'lucide-react'
@@ -27,6 +28,8 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ appointments, loading, token }: CalendarViewProps) {
+  const { tenant } = useAuthStore()
+  const tenantId = tenant?.id
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<'month' | 'week' | 'day'>('month')
   const [calendarData, setCalendarData] = useState<any>(null)
@@ -231,7 +234,7 @@ export function CalendarView({ appointments, loading, token }: CalendarViewProps
                           {dayAppointments.slice(0, 3).map((apt: Appointment) => (
                             <Link
                               key={apt.id}
-                              href={`/dashboard/appointments/${apt.id}`}
+                              href={tenantId ? `/appointments/${tenantId}/Home?appointment=${apt.id}` : `/dashboard/appointments/${apt.id}`}
                               className="block"
                             >
                               <div

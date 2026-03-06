@@ -260,9 +260,9 @@ const navigationSections = [
     items: [
       { name: 'Advanced Reporting', href: '/dashboard/reports', icon: 'reports-analytics', module: 'analytics' },
       { name: 'Custom Dashboards', href: '/dashboard/dashboards/custom', icon: 'custom-dashboards', module: 'analytics' },
-      { name: 'Analytics', href: '/dashboard/analytics', icon: 'analytics', module: 'analytics' },
-      { name: 'AI Query', href: '/dashboard/analytics/ai-query', icon: 'analytics', module: 'analytics' },
-      { name: 'Scenario Planning', href: '/dashboard/analytics/scenario', icon: 'analytics', module: 'analytics' },
+      { name: 'Analytics', href: '/analytics', icon: 'analytics', module: 'analytics' },
+      { name: 'AI Query', href: '/analytics/ai-query', icon: 'analytics', module: 'analytics' },
+      { name: 'Scenario Planning', href: '/analytics/scenario', icon: 'analytics', module: 'analytics' },
       { name: 'GST Reports', href: '/dashboard/gst/gstr-1', icon: 'gst', module: 'finance' },
       { name: 'GSTR-3B', href: '/dashboard/gst/gstr-3b', icon: 'gst', module: 'finance' },
       { name: 'GST Hub', href: '/dashboard/gst', icon: 'gst', module: 'finance' },
@@ -369,6 +369,8 @@ function NavItem({
   } else if (item.module === 'voice-agents' && tenantId) {
     // Voice Agents uses decoupled architecture: /voice-agents/[tenantId]/Home
     finalUrl = `/voice-agents/${tenantId}/Home`
+  } else if (item.module === 'analytics' && tenantId) {
+    finalUrl = `/analytics/${tenantId}/Home`
   } else {
     const dashboardUrl = useDashboardUrl(item.href || '/dashboard')
     
@@ -464,6 +466,9 @@ function NavSection({ section, pathname, onLinkClick }: { section: typeof naviga
     }
     if (item.module === 'voice-agents' && tenantId) {
       return pathname?.startsWith(`/voice-agents/${tenantId}`)
+    }
+    if (item.module === 'analytics' && tenantId) {
+      return pathname?.startsWith(`/analytics/${tenantId}`)
     }
     
     if (!tenantId) {

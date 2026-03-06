@@ -9,6 +9,10 @@ import { useQuery } from '@tanstack/react-query'
 interface ContactImportDialogProps {
   onClose: () => void
   onSuccess: () => void
+  /** When provided, fetch segments from this URL (e.g. /api/crm/segments) with organizationId query. */
+  segmentsApiUrl?: string
+  /** Tenant/organization ID for CRM segments fetch. */
+  organizationId?: string
 }
 
 function getAuthHeaders() {
@@ -19,7 +23,7 @@ function getAuthHeaders() {
   }
 }
 
-export default function ContactImportDialog({ onClose, onSuccess }: ContactImportDialogProps) {
+export default function ContactImportDialog({ onClose, onSuccess, segmentsApiUrl, organizationId }: ContactImportDialogProps) {
   const [file, setFile] = useState<File | null>(null)
   const [selectedSegments, setSelectedSegments] = useState<string[]>([])
   const [additionalTags, setAdditionalTags] = useState('')
@@ -27,16 +31,23 @@ export default function ContactImportDialog({ onClose, onSuccess }: ContactImpor
   const [uploadResult, setUploadResult] = useState<any>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch segments
+  // Fetch segments (CRM or marketing)
   const { data: segmentsData } = useQuery({
-    queryKey: ['segments'],
+    queryKey: ['segments', segmentsApiUrl ?? 'marketing', organizationId],
     queryFn: async () => {
-      const response = await fetch('/api/marketing/segments', {
-        headers: getAuthHeaders(),
-      })
+      if (segmentsApiUrl && organizationId) {
+        const response = await fetch(`${segmentsApiUrl}?organizationId=${encodeURIComponent(organizationId)}`, {
+          headers: getAuthHeaders(),
+        })
+        if (!response.ok) throw new Error('Failed to fetch segments')
+        const json = await response.json()
+        return { segments: json.data ?? json }
+      }
+      const response = await fetch('/api/marketing/segments', { headers: getAuthHeaders() })
       if (!response.ok) throw new Error('Failed to fetch segments')
       return response.json()
     },
+    enabled: !segmentsApiUrl || !!organizationId,
   })
 
   const segments = segmentsData?.segments || []

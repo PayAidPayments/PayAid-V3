@@ -87,9 +87,9 @@ export function Header() {
 
   const getProfileUrl = () => {
     if (tenant?.id) {
-      return `/dashboard/${tenant.id}/settings/profile`;
+      return `/settings/${tenant.id}/Profile`;
     }
-    return '/dashboard/settings/profile';
+    return '/settings';
   };
 
   return (

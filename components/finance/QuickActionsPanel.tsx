@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, FileText, ShoppingCart, IndianRupee, Bell, Landmark, RefreshCw, CreditCard, Calendar, ArrowLeftRight, ArrowRightLeft } from 'lucide-react'
+import { Plus, FileText, ShoppingCart, IndianRupee, Bell, Landmark, RefreshCw, CreditCard, Calendar, ArrowLeftRight, ArrowRightLeft, CheckCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import {
@@ -49,6 +49,14 @@ const actions = [
     shortcut: 'Ctrl+R',
     dialog: 'payment-reminder',
     color: 'bg-yellow-500 hover:bg-yellow-600',
+  },
+  {
+    id: 'approvals',
+    label: 'Approvals',
+    icon: <CheckCircle className="w-5 h-5" />,
+    shortcut: '',
+    href: (tenantId: string) => `/approvals/${tenantId}`,
+    color: 'bg-emerald-500 hover:bg-emerald-600',
   },
   {
     id: 'gst-report',

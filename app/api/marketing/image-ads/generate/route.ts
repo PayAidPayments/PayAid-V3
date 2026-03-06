@@ -3,6 +3,8 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { prisma } from '@/lib/db/prisma'
 import { prismaWithRetry } from '@/lib/db/connection-retry'
 import { decrypt } from '@/lib/encryption'
+import { isSelfHostedImageAvailable, generateSelfHostedImage } from '@/lib/ai/self-hosted-image'
+import { getHuggingFaceClient } from '@/lib/ai/huggingface'
 
 const PRESETS = ['hook-product', 'price-drop', 'benefit-cta', 'custom'] as const
 const OVERLAY_STYLES = ['none', 'minimal', 'bold-cta', 'price-badge', 'discount-sticker', 'trust-badge', 'countdown'] as const
@@ -155,27 +157,50 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!apiKey) {
+    const hasHuggingFace = Boolean(process.env.HUGGINGFACE_API_KEY)
+    if (!apiKey && !isSelfHostedImageAvailable() && !hasHuggingFace) {
       return NextResponse.json(
         {
-          error: 'Google AI Studio not configured',
-          message: 'Google AI Studio API key is not configured. Add your key in Settings > AI Integrations to use Image Ads.',
-          hint: 'Get your free API key from https://aistudio.google.com/app/apikey',
+          error: 'Image generation not configured',
+          message: 'Configure one of: self-hosted worker (IMAGE_WORKER_URL), Google AI Studio key (Settings > AI Integrations), or Hugging Face key (HUGGINGFACE_API_KEY).',
+          hint: 'Zero cost: get a free key from https://huggingface.co/settings/tokens and set HUGGINGFACE_API_KEY in your server env.',
         },
         { status: 403 }
       )
     }
 
     const prompt = buildAdPrompt(preset, hook, price, customPrompt, overlayStyle, ctaText, brandSuffix)
-    let imageUrl = await callGeminiTextOnly(apiKey, prompt)
-    if (!imageUrl) imageUrl = await callGeminiTextOnly(apiKey, prompt)
+    let imageUrl: string | null = null
+
+    if (isSelfHostedImageAvailable()) {
+      const res = await generateSelfHostedImage({
+        prompt,
+        style: 'realistic',
+        size: '1024x1024',
+      })
+      imageUrl = res?.imageUrl ?? null
+    }
+    if (!imageUrl && apiKey) {
+      imageUrl = await callGeminiTextOnly(apiKey, prompt)
+      if (!imageUrl) imageUrl = await callGeminiTextOnly(apiKey, prompt)
+    }
+    if (!imageUrl && hasHuggingFace) {
+      try {
+        const r = await getHuggingFaceClient().textToImage({ prompt, style: 'realistic', size: '1024x1024' })
+        imageUrl = r.image_url
+      } catch (e) {
+        console.warn('Image Ads Hugging Face fallback error:', e)
+      }
+    }
 
     if (!imageUrl) {
       return NextResponse.json(
         {
           error: 'Generation failed',
-          message: 'Google AI Studio did not return an image. Try a different preset or check your API quota.',
-          hint: 'Ensure your Google AI Studio key has access to Gemini 2.5 Flash Image.',
+          message: isSelfHostedImageAvailable()
+            ? 'Self-hosted worker did not return an image. Check IMAGE_WORKER_URL and worker logs.'
+            : 'No image provider returned an image. Try Hugging Face (set HUGGINGFACE_API_KEY) or check Google quota.',
+          hint: hasHuggingFace ? 'Check server logs. Free key: https://huggingface.co/settings/tokens' : 'Set HUGGINGFACE_API_KEY for zero-cost generation.',
         },
         { status: 502 }
       )

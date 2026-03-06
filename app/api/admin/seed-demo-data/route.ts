@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import * as bcrypt from 'bcryptjs'
 import { generateTenantId } from '@/lib/utils/tenant-id'
+import { generateUniqueTenantSlug } from '@/lib/utils/generate-tenant-slug'
 import { seedAllModules } from '@/lib/seed/module-seeders'
 import { seedDemoBusiness } from '@/prisma/seeds/demo/demo-business-master-seed'
 import { seedSalesAndBillingModule } from '@/prisma/seeds/demo/seed-sales-billing'
@@ -1264,11 +1265,18 @@ async function seedDemoData() {
       const existingIds = existingTenants.map(t => t.id)
       const personalizedTenantId = generateTenantId(businessName, existingIds)
 
-      // Create demo tenant with personalized ID
+      const existingSlugs = new Set(
+        (await prisma.tenant.findMany({ where: { slug: { not: null } }, select: { slug: true } }))
+          .map((t) => t.slug as string)
+      )
+      const slug = generateUniqueTenantSlug(businessName, existingSlugs)
+
+      // Create demo tenant with personalized ID and slug
       tenant = await prisma.tenant.create({
         data: {
           id: personalizedTenantId, // Use personalized ID instead of default CUID
           name: businessName,
+          slug,
           subdomain: 'demo',
           plan: 'professional',
           status: 'active',

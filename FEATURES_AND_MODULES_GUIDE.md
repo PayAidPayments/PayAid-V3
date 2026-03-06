@@ -1,6 +1,6 @@
 # PayAid V3 - Complete Features & Modules Guide
 
-**Last Updated:** December 29, 2025  
+**Last Updated:** March 2026  
 **Platform URL:** https://payaid-v3.vercel.app  
 **Version:** 3.2 (Latest)  
 **Completion Status:** 100% Complete (21 modules at 100%)  
@@ -8,11 +8,34 @@
 
 ---
 
-## 📊 **Dashboard Overview**
+## 🧭 **URL convention: prefer decoupled URLs**
 
-**Location:** `/dashboard` or `/dashboard/[tenantId]`
+PayAid V3 uses **decoupled routes** as the primary way to access features. Use these everywhere in docs, links, and config.
 
-The main dashboard provides:
+- **Pattern:** `/{module}/{tenantId}/{Feature}` (e.g. `/crm/{tenantId}/Home`, `/finance/{tenantId}/Invoices`).
+- **Entry:** Module Switcher (top bar) → pick module → lands on that module’s Home. Per-module top bar or sidebar lists features.
+- **Legacy:** `/dashboard/...` routes exist for backward compatibility but are deprecated; new links should point to decoupled URLs only.
+
+**Key decoupled entry points:**
+
+| What | URL |
+|------|-----|
+| **Command Center** (cross-module home) | `/home/[tenantId]` |
+| **Tax (GST & TDS)** | `/finance/[tenantId]/Tax` (or `/finance/[tenantId]/GST`, `/finance/[tenantId]/TDS`) |
+| **Activities** (tasks, meetings) | `/crm/[tenantId]/Activities` |
+| **Notifications** | `/notifications/[tenantId]` |
+| **Settings** (profile, workspace, billing, users, modules) | `/settings/[tenantId]`, `/settings/[tenantId]/Profile`, `/settings/[tenantId]/Tenant`, etc. |
+| **Customer Portal** | `/portal/[tenantId]/customer/[customerId]` |
+
+See **“Where do I find X?”** below for a quick lookup table. For full module × feature × URL details, see `docs/MODULE_FEATURE_BLUEPRINT.md`.
+
+---
+
+## 📊 **Command Center (Home) & legacy dashboard**
+
+**Preferred:** **Command Center** at `/home/[tenantId]` — cross-module KPIs, quick actions, and links to all modules.
+
+**Legacy:** `/dashboard` or `/dashboard/[tenantId]` still works but is deprecated. The main dashboard provides:
 - Real-time statistics (Contacts, Deals, Orders, Invoices, Tasks)
 - Interactive charts (Sales Performance, Revenue Trends, Market Share)
 - Clickable cards linking to detailed pages
@@ -414,23 +437,24 @@ The main dashboard provides:
 
 ## ⚙️ **Settings & Configuration**
 
-**Access:** Settings (bottom of sidebar)
+**Access (preferred):** Decoupled Settings at `/settings/[tenantId]` (sidebar: Overview, Profile, Workspace, Billing, Users, Modules).
 
-### **User Settings**
-- **Profile:** `/dashboard/settings/profile`
-- **Features:** Name, email, password, preferences
+### **Decoupled Settings (prefer these URLs)**
+- **Overview:** `/settings/{tenantId}`
+- **Profile:** `/settings/{tenantId}/Profile` — name, email, password, preferences
+- **Workspace (tenant):** `/settings/{tenantId}/Tenant` — business name, address, GSTIN, API keys
+- **Billing:** `/settings/{tenantId}/Billing`
+- **Users:** `/settings/{tenantId}/Users`
+- **Modules:** `/settings/{tenantId}/Modules`
 
-### **Business Settings**
-- **Tenant Settings:** `/dashboard/settings/tenant`
-- **Features:** Business name, address, GST number, API keys
-
-### **Module Settings**
-- **AI Integrations:** `/dashboard/settings/ai`
-  - **Features:** Google AI Studio API key, encryption, image generation settings
-- **Invoice Settings:** `/dashboard/settings/invoices`
-- **Payment Gateway:** `/dashboard/settings/payment-gateway`
-- **Sales Reps:** `/dashboard/settings/sales-reps`
-- **KYC:** `/dashboard/settings/kyc`
+### **Legacy dashboard settings** (deprecated)
+- Profile: `/dashboard/settings/profile`
+- Tenant: `/dashboard/settings/tenant`
+- AI Integrations: `/dashboard/settings/ai`
+- Invoice Settings: `/dashboard/settings/invoices`
+- Payment Gateway: `/dashboard/settings/payment-gateway`
+- Sales Reps: `/dashboard/settings/sales-reps`
+- KYC: `/dashboard/settings/kyc`
 
 ---
 
@@ -466,12 +490,24 @@ The main dashboard provides:
 
 ## 🔗 **Quick Access Links**
 
-### **Most Used Features**
-1. **Dashboard:** `/dashboard` or `/dashboard/[tenantId]`
-2. **Contacts:** `/dashboard/contacts` or `/dashboard/[tenantId]/contacts`
-3. **Deals:** `/dashboard/deals` or `/dashboard/[tenantId]/deals`
-4. **Invoices:** `/dashboard/invoices` or `/dashboard/[tenantId]/invoices`
-5. **AI Co-founder:** `/dashboard/cofounder` or `/dashboard/[tenantId]/cofounder`
+### **Most Used Features (decoupled — prefer these)**
+1. **Command Center:** `/home/[tenantId]`
+2. **Contacts:** `/crm/[tenantId]/Contacts`
+3. **Deals:** `/crm/[tenantId]/Deals`
+4. **Invoices:** `/finance/[tenantId]/Invoices`
+5. **AI Co-founder:** `/ai-studio/[tenantId]/Cofounder`
+6. **Settings (profile):** `/settings/[tenantId]/Profile`
+7. **Tax (GST/TDS):** `/finance/[tenantId]/Tax` (or `/finance/[tenantId]/GST`, `.../TDS`)
+8. **Activities:** `/crm/[tenantId]/Activities`
+9. **Notifications:** `/notifications/[tenantId]`
+10. **Customer Portal:** `/portal/[tenantId]/customer/[customerId]`
+
+### **Legacy (dashboard)**
+- Dashboard: `/dashboard` or `/dashboard/[tenantId]`
+- Contacts: `/dashboard/contacts` or `/dashboard/[tenantId]/contacts`
+- Deals: `/dashboard/deals` or `/dashboard/[tenantId]/deals`
+- Invoices: `/dashboard/invoices` or `/dashboard/[tenantId]/invoices`
+- AI Co-founder: `/dashboard/cofounder` or `/dashboard/[tenantId]/cofounder`
 
 ### **New Features (Recently Added)**
 1. **Project Management:** `/dashboard/projects` ✅ **NEW**
@@ -546,19 +582,57 @@ The main dashboard provides:
 
 ## 🎯 **How to Access Features**
 
-1. **From Sidebar:** All modules are organized in the left sidebar navigation
-2. **From Dashboard:** Click on any card to navigate to detailed pages
-3. **Direct URL:** Use the URLs listed above (tenant-aware routing supported)
-4. **Module Licensing:** Some features require module activation (see Admin > Module Management)
+1. **From Module Switcher:** Top bar → pick module → lands on that module’s Home (decoupled URL).
+2. **From Command Center:** `/home/[tenantId]` — cross-module cards and quick links.
+3. **From Sidebar:** When on legacy dashboard, the left sidebar lists modules (prefer switching to decoupled module routes).
+4. **Direct URL:** Prefer decoupled URLs: `/{module}/{tenantId}/{Feature}` (see table below).
+5. **Module Licensing:** Some features require module activation (see Admin > Module Management).
+
+---
+
+## 📍 **Where do I find X?**
+
+Short lookup: **feature → module → how to get there (decoupled URL).**
+
+| Looking for… | Module | Top bar / entry | URL pattern (decoupled) |
+|--------------|--------|------------------|--------------------------|
+| **Command Center** (cross-module home) | Home | Module Switcher → Home | `/home/{tenantId}` |
+| **Leads / prospects** | CRM | Prospects | `/crm/{tenantId}/Leads` |
+| **Deals, pipeline** | CRM | Deals | `/crm/{tenantId}/Deals` |
+| **Contacts, people** | CRM | Contacts / All People | `/crm/{tenantId}/Contacts`, `/crm/{tenantId}/AllPeople` |
+| **Activities** (tasks, meetings) | CRM | Activities | `/crm/{tenantId}/Activities` |
+| **Landing / checkout pages** | Sales | Landing Pages, Checkout Pages | `/sales/{tenantId}/Landing-Pages`, `.../Checkout-Pages` |
+| **Orders (sales)** | Sales | Orders | `/sales/{tenantId}/Orders` |
+| **Campaigns, sequences, ads** | Marketing | Campaigns, Sequences, Ads | `/marketing/{tenantId}/Campaigns`, etc. |
+| **Creative Studio** (Product/Model Studio) | Marketing | Creative Studio | `/marketing/{tenantId}/Creative-Studio` |
+| **Social posts, scheduling** | Marketing | Social | `/marketing/{tenantId}/Social-Media` |
+| **Invoices, accounting** | Finance | Invoices, Accounting | `/finance/{tenantId}/Invoices`, `.../Accounting` |
+| **Tax (GST & TDS)** | Finance | GST Reports, TDS | `/finance/{tenantId}/Tax`, `/finance/{tenantId}/GST`, `/finance/{tenantId}/TDS` |
+| **Purchase orders, vendors** | Finance | Purchase Orders | `/finance/{tenantId}/Purchase-Orders`, `.../Vendors` |
+| **Employees, payroll, attendance, leave** | HR | Employees, Payroll Runs, Attendance, Leaves & Holidays | `/hr/{tenantId}/Employees`, `.../Payroll-Runs`, etc. |
+| **Hiring** (reqs, candidates, interviews) | HR | Recruitment | `/hr/{tenantId}/Hiring/` |
+| **Projects, tasks, Gantt, time** | Projects | All Projects, Tasks, Time Tracking, Gantt Chart | `/projects/{tenantId}/Projects`, etc. |
+| **Products, warehouses, stock** | Inventory | Products, Warehouses, Stock Movements, Reports | `/inventory/{tenantId}/Products`, etc. |
+| **AI Co-founder, Chat, Insights, Websites, Logos, Knowledge** | AI Studio | (Module Switcher / AI) | `/ai-studio/{tenantId}/Cofounder`, `.../Chat`, etc. |
+| **Industry news / trends** | Industry Intelligence | Module Switcher | `/industry-intelligence/{tenantId}/Home` |
+| **Analytics & reports** | Analytics | More Apps / Reports | `/analytics/{tenantId}/Home` |
+| **Appointments** | Appointments | More Apps | `/appointments/{tenantId}/Home` |
+| **Notifications** | Notifications | Bell icon / More Apps | `/notifications/{tenantId}` |
+| **Settings** (profile, workspace, billing, users, modules) | Settings | User menu / More Apps | `/settings/{tenantId}`, `/settings/{tenantId}/Profile`, `/settings/{tenantId}/Tenant`, etc. |
+| **Customer Portal** | Portal | (Shared link / external) | `/portal/{tenantId}/customer/{customerId}` |
+
+*Full module × feature × URL details: `docs/MODULE_FEATURE_BLUEPRINT.md`.*
 
 ---
 
 ## 📝 **Notes**
 
-- All routes support tenant-aware URLs: `/dashboard/[tenantId]/[path]`
-- Module licensing controls access to specific features
-- Admin users can manage modules from `/dashboard/admin/modules`
-- Settings are always accessible regardless of module licensing
+- **Prefer decoupled URLs:** `/{module}/{tenantId}/{Feature}` (e.g. `/crm/{tenantId}/Home`, `/settings/{tenantId}/Profile`). Legacy `/dashboard/...` is deprecated for new links.
+- All routes are tenant-aware; use `[tenantId]` from auth/context when building links.
+- Module licensing controls access to specific features.
+- Admin users can manage modules from `/dashboard/admin/modules` (or decoupled Settings when available).
+- Settings (profile, workspace, billing, users, modules) live under `/settings/[tenantId]/...` and are always accessible.
+- For “where does feature X live?” and nav structure, see `docs/MODULE_FEATURE_BLUEPRINT.md`.
 
 ## 🚀 **Latest Enhancements (December 29, 2025)**
 

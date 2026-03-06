@@ -2,130 +2,92 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useAuthStore } from '@/lib/stores/auth'
-import { ChevronDown, Home, Briefcase, DollarSign, ShoppingCart, Users, BarChart3, FolderKanban, Package, TrendingUp } from 'lucide-react'
+import {
+  ChevronDown,
+  Home,
+  Briefcase,
+  ShoppingCart,
+  Users,
+  FolderKanban,
+  Package,
+  Megaphone,
+  Sparkles,
+  LayoutGrid,
+  Bell,
+  Settings,
+  type LucideIcon,
+} from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import {
+  getPrimaryModules,
+  getSecondaryModulesByGroup,
+  getSecondaryGroupLabel,
+  getModuleHomeUrl,
+  type PayAidModuleConfig,
+} from '@/lib/config/payaid-modules.config'
 
-interface Module {
-  id: string
-  name: string
-  url: string
-  icon: React.ComponentType<{ className?: string }> | ((props: { className?: string }) => React.ReactElement)
-  description: string
-}
-
-// Rupee symbol component
 const RupeeIcon = ({ className }: { className?: string }) => (
   <span className={className} style={{ fontSize: '1rem', fontWeight: 'bold' }}>₹</span>
 )
 
-// Module configuration for decoupled architecture
-// Each module is a separate Next.js app on its own subdomain
-const modules: Module[] = [
-  {
-    id: 'crm',
-    name: 'CRM',
-    url: '/crm', // Will be crm.payaid.in in production
-    icon: Users,
-    description: 'Customer relationships'
-  },
-  {
-    id: 'projects',
-    name: 'Projects',
-    url: '/projects', // Will be projects.payaid.in in production
-    icon: FolderKanban,
-    description: 'Project management'
-  },
-  {
-    id: 'sales',
-    name: 'Sales',
-    url: '/sales', // Will be sales.payaid.in in production
-    icon: ShoppingCart,
-    description: 'Landing pages & orders'
-  },
-  {
-    id: 'inventory',
-    name: 'Inventory',
-    url: '/inventory', // Will be inventory.payaid.in in production
-    icon: Package,
-    description: 'Products & stock'
-  },
-  {
-    id: 'finance',
-    name: 'Finance',
-    url: '/finance', // Will be finance.payaid.in in production
-    icon: RupeeIcon,
-    description: 'Invoices & accounting'
-  },
-  {
-    id: 'marketing',
-    name: 'Marketing',
-    url: '/marketing',
-    icon: BarChart3,
-    description: 'Campaigns & email'
-  },
-  {
-    id: 'hr',
-    name: 'HR',
-    url: '/hr',
-    icon: Briefcase,
-    description: 'Employees & payroll'
-  },
-  {
-    id: 'industry-intelligence',
-    name: 'Industry Intelligence',
-    url: '/industry-intelligence',
-    icon: TrendingUp,
-    description: 'News & market trends'
-  },
-]
+const iconMap: Record<string, LucideIcon | typeof RupeeIcon> = {
+  Home,
+  Users,
+  UserCog: Briefcase,
+  ShoppingCart,
+  Megaphone,
+  IndianRupee: RupeeIcon as unknown as LucideIcon,
+  FolderKanban,
+  Package,
+  Sparkles,
+  BarChart3: Megaphone,
+  MessageSquare: Megaphone,
+  Lightbulb: Megaphone,
+  Globe: Megaphone,
+  Palette: Megaphone,
+  BookOpen: Megaphone,
+  Phone: Megaphone,
+  LayoutGrid,
+  Table: Megaphone,
+  FileEdit: Megaphone,
+  Folder: Megaphone,
+  Video: Megaphone,
+  FileText: Megaphone,
+  Presentation: Megaphone,
+  TrendingUp: Megaphone,
+  GitBranch: Megaphone,
+  ShieldCheck: Megaphone,
+  GraduationCap: Megaphone,
+  Calendar: Megaphone,
+  Headphones: Megaphone,
+  Bell,
+  Settings,
+}
+
+function getIcon(iconName: string) {
+  return iconMap[iconName] ?? Home
+}
 
 export function ModuleSwitcher({ currentModule }: { currentModule?: string }) {
   const [open, setOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
   const { tenant } = useAuthStore()
   const router = useRouter()
   const tenantId = tenant?.id
 
-  const currentModuleData = modules.find(m => m.id === currentModule)
-  const otherModules = modules.filter(m => m.id !== currentModule)
+  const primaryModules = getPrimaryModules()
+  const secondaryByGroup = getSecondaryModulesByGroup()
+  const currentModuleData = primaryModules.find((m) => m.id === currentModule)
 
-  const handleModuleSwitch = async (module: Module) => {
-    // Get SSO token from current session
+  const handleModuleSwitch = (mod: PayAidModuleConfig) => {
     const token = useAuthStore.getState().token
-    
-    // Build URL with tenant ID if available
-    let targetUrl = module.url
-    if (tenantId) {
-      // For module-specific routes (crm, sales, finance)
-      targetUrl = `${module.url}/${tenantId}/Home/`
+    const targetUrl = tenantId ? getModuleHomeUrl(mod.id, tenantId) : mod.basePath
+    if (token && typeof window !== 'undefined') {
+      sessionStorage.setItem('sso_token', token)
     }
-    
-    // In decoupled architecture with subdomains, use OAuth2 flow
-    // Check if target is a different subdomain
-    const currentHost = typeof window !== 'undefined' ? window.location.hostname : ''
-    const targetHost = new URL(targetUrl, window.location.origin).hostname
-    
-    if (currentHost !== targetHost && targetHost.includes('.')) {
-      // Cross-subdomain navigation - use OAuth2 flow
-      const apiUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
-      const authUrl = new URL('/api/oauth/authorize', apiUrl)
-      authUrl.searchParams.set('client_id', 'payaid-client')
-      authUrl.searchParams.set('redirect_uri', `${targetUrl}?sso=true`)
-      authUrl.searchParams.set('response_type', 'code')
-      authUrl.searchParams.set('state', encodeURIComponent(targetUrl))
-      
-      // Redirect to OAuth authorization
-      window.location.href = authUrl.toString()
-    } else {
-      // Same domain - use cookie-based SSO (token already in cookie)
-      // Store token in sessionStorage as fallback
-      if (token && typeof window !== 'undefined') {
-        sessionStorage.setItem('sso_token', token)
-      }
-      
-      router.push(targetUrl)
-    }
-    
+    router.push(targetUrl)
     setOpen(false)
+    setMoreOpen(false)
   }
 
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -155,8 +117,15 @@ export function ModuleSwitcher({ currentModule }: { currentModule?: string }) {
       >
         {currentModuleData ? (
           <>
-            <currentModuleData.icon className="w-4 h-4" />
-            <span>{currentModuleData.name}</span>
+            {currentModuleData.id === 'finance' ? (
+              <RupeeIcon className="w-4 h-4" />
+            ) : (
+              (() => {
+                const Icon = getIcon(currentModuleData.icon)
+                return <Icon className="w-4 h-4" />
+              })()
+            )}
+            <span>{currentModuleData.label}</span>
           </>
         ) : (
           <>
@@ -168,42 +137,85 @@ export function ModuleSwitcher({ currentModule }: { currentModule?: string }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase">
-            Switch Module
+        <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 py-2 z-50 max-h-[80vh] overflow-y-auto">
+          <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">
+            Primary
           </div>
-          {otherModules.map((module) => {
-            const Icon = module.icon
+          {primaryModules.map((mod) => {
+            const Icon = getIcon(mod.icon)
             return (
               <button
-                key={module.id}
-                onClick={() => handleModuleSwitch(module)}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left hover:bg-gray-50 transition-colors cursor-pointer"
+                key={mod.id}
+                onClick={() => handleModuleSwitch(mod)}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                {module.id === 'finance' ? (
-                  <RupeeIcon className="w-4 h-4 text-gray-500" />
+                {mod.id === 'finance' ? (
+                  <RupeeIcon className="w-4 h-4 text-gray-500 dark:text-slate-400" />
                 ) : (
-                  <Icon className="w-4 h-4 text-gray-500" />
+                  <Icon className="w-4 h-4 text-gray-500 dark:text-slate-400" />
                 )}
                 <div className="flex flex-col">
-                  <span className="font-medium">{module.name}</span>
-                  <span className="text-xs text-gray-500">{module.description}</span>
+                  <span className="font-medium text-gray-900 dark:text-slate-100">{mod.label}</span>
+                  <span className="text-xs text-gray-500 dark:text-slate-400">{mod.description}</span>
                 </div>
               </button>
             )
           })}
-          <div className="border-t border-gray-200 my-1" />
+          <div className="border-t border-gray-200 dark:border-slate-700 my-2" />
+          <div className="px-3 py-1.5">
+            <button
+              onClick={() => setMoreOpen(!moreOpen)}
+              className="w-full flex items-center gap-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+            >
+              <LayoutGrid className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+              <span className="font-medium text-gray-900 dark:text-slate-100">More Apps</span>
+              <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {moreOpen && (
+              <div className="pl-7 pt-1 space-y-3">
+                {(['ai', 'communication', 'productivity', 'intelligence', 'operations', 'support'] as const).map(
+                  (group) => {
+                    const mods = secondaryByGroup[group]
+                    if (!mods.length) return null
+                    return (
+                      <div key={group}>
+                        <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+                          {getSecondaryGroupLabel(group)}
+                        </p>
+                        <div className="space-y-0.5">
+                          {mods.map((mod) => {
+                            const Icon = getIcon(mod.icon)
+                            return (
+                              <button
+                                key={mod.id}
+                                onClick={() => handleModuleSwitch(mod)}
+                                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-left hover:bg-gray-50 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                              >
+                                <Icon className="w-3.5 h-3.5 text-gray-500 dark:text-slate-400 shrink-0" />
+                                <span className="text-gray-700 dark:text-slate-300 truncate">{mod.label}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  }
+                )}
+              </div>
+            )}
+          </div>
+          <div className="border-t border-gray-200 dark:border-slate-700 my-2" />
           <button
             onClick={() => {
-              router.push('/home')
+              router.push(tenantId ? `/home/${tenantId}` : '/home')
               setOpen(false)
             }}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left hover:bg-gray-50 transition-colors cursor-pointer"
+            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
-            <Home className="w-4 h-4 text-gray-500" />
+            <Home className="w-4 h-4 text-gray-500 dark:text-slate-400" />
             <div className="flex flex-col">
-              <span className="font-medium">Back to Apps</span>
-              <span className="text-xs text-gray-500">View all modules</span>
+              <span className="font-medium text-gray-900 dark:text-slate-100">Command Center</span>
+              <span className="text-xs text-gray-500 dark:text-slate-400">Cross-module dashboard</span>
             </div>
           </button>
         </div>

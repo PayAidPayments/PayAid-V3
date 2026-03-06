@@ -10,6 +10,7 @@ datasource db {
 model Tenant {
   id                           String                        @id @default(cuid())
   name                         String
+  slug                         String?                       @unique // URL-safe; see docs/TENANT_SLUG_DESIGN.md
   subdomain                    String?                       @unique
   domain                       String?                       @unique
   plan                         String                        @default("free")

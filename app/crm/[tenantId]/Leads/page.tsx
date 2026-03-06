@@ -54,10 +54,14 @@ import { KPIBar } from '@/components/crm/layout/KPIBar'
 import { RowActionsMenu } from '@/components/crm/RowActionsMenu'
 import { BulkActionsBar } from '@/components/crm/BulkActionsBar'
 import { LeadsKanban } from '@/components/crm/LeadsKanban'
+import ContactImportDialog from '@/components/contacts/contact-import-dialog'
+import { DisqualifyLeadModal } from '@/components/crm/DisqualifyLeadModal'
+import { useQueryClient } from '@tanstack/react-query'
 
 export default function CRMLeadsPage() {
   const params = useParams()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const tenantId = params?.tenantId as string
   const { user, logout } = useAuthStore()
   const [page, setPage] = useState(1)
@@ -77,6 +81,7 @@ export default function CRMLeadsPage() {
   const [activeFilters, setActiveFilters] = useState<any>({}) // Current filter criteria
   const [showConvertModal, setShowConvertModal] = useState(false)
   const [leadToConvert, setLeadToConvert] = useState<any>(null)
+  const [leadToDisqualify, setLeadToDisqualify] = useState<{ id: string; name: string } | null>(null)
   const [showMassConvertModal, setShowMassConvertModal] = useState(false)
   const [isMassConverting, setIsMassConverting] = useState(false)
   const [users, setUsers] = useState<any[]>([])
@@ -1497,6 +1502,7 @@ export default function CRMLeadsPage() {
                                     entityId={lead.id}
                                     tenantId={tenantId}
                                     onConvert={() => openConvertModal(lead)}
+                                    onDisqualify={() => setLeadToDisqualify({ id: lead.id, name: lead.name || lead.email || 'Lead' })}
                                     onDelete={async () => {
                                       if (confirm('Are you sure you want to delete this prospect?')) {
                                         try {
@@ -1557,6 +1563,19 @@ export default function CRMLeadsPage() {
         onExport={() => handleExportLeads('csv')}
         onClearSelection={() => setSelectedLeads([])}
       />
+
+      {/* Disqualify Lead Modal */}
+      {leadToDisqualify && (
+        <DisqualifyLeadModal
+          leadId={leadToDisqualify.id}
+          leadName={leadToDisqualify.name}
+          tenantId={tenantId}
+          onClose={() => setLeadToDisqualify(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['contacts'] })
+          }}
+        />
+      )}
 
       {/* Convert Lead Modal */}
       {showConvertModal && leadToConvert && (
@@ -2141,30 +2160,17 @@ export default function CRMLeadsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Import Prospects Modal */}
-      <Dialog open={importProspectsModalOpen} onOpenChange={setImportProspectsModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import Prospects</DialogTitle>
-            <DialogDescription>
-              Import prospects from a CSV or Excel file
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-gray-600">
-              This feature is coming soon. You will be able to upload a CSV or Excel file to import multiple prospects at once.
-            </p>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setImportProspectsModalOpen(false)}
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Import Prospects — uses contact import (creates contacts as leads when type=lead in file) */}
+      {importProspectsModalOpen && (
+        <ContactImportDialog
+          onClose={() => setImportProspectsModalOpen(false)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['contacts'] })
+          }}
+          segmentsApiUrl="/api/crm/segments"
+          organizationId={tenantId}
+        />
+      )}
 
       {/* Facebook Ads Sync Modal */}
       <Dialog open={facebookSyncModalOpen} onOpenChange={setFacebookSyncModalOpen}>

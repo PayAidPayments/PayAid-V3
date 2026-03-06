@@ -4,6 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client'
+import { generateUniqueTenantSlug } from '../../lib/utils/generate-tenant-slug'
 
 const prisma = new PrismaClient()
 
@@ -20,10 +21,14 @@ async function setupDemoEnvironment() {
       console.log(`✅ Demo tenant already exists: ${demoTenant.id}`)
       console.log(`   Skipping tenant creation, updating sample data...`)
     } else {
-      // Create demo tenant
+      const existingSlugs = new Set(
+        (await prisma.tenant.findMany({ where: { slug: { not: null } }, select: { slug: true } }))
+          .map((t) => t.slug as string)
+      )
       demoTenant = await prisma.tenant.create({
         data: {
           name: 'Demo Company',
+          slug: generateUniqueTenantSlug('Demo Company', existingSlugs),
           subdomain: 'demo',
           plan: 'premium',
           status: 'active',

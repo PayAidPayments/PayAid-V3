@@ -1,7 +1,10 @@
 /**
  * Single source of truth for CRM module top bar and "More" (3-dots) menu.
- * Use this in every CRM layout so the menu stays consistent across all pages
- * (Home, Agents, Deals, Contacts, etc.).
+ * Use this in every CRM layout so the menu stays consistent across all pages.
+ *
+ * Restructured to max 10 items: Home, Pipeline, Prospects, Contacts, Activities,
+ * CPQ, Automation, Intelligence, Dialer, Agents.
+ * All People/Customers = tabs inside Contacts. Tasks+Meetings = Activities. Metrics+Churn+Visitors+Reports = Intelligence.
  */
 
 export interface CRMTopBarItem {
@@ -10,10 +13,6 @@ export interface CRMTopBarItem {
   icon?: string
 }
 
-/**
- * CRM nav order: core pipeline first (Prospects → Contacts → Customers → Deals → Tasks),
- * then All People, Meetings, CPQ; then Agents, Churn, Metrics; then rest and Reports last.
- */
 export function getCRMTopBarItems(tenantId: string): CRMTopBarItem[] {
   if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
     return []
@@ -21,22 +20,14 @@ export function getCRMTopBarItems(tenantId: string): CRMTopBarItem[] {
   const base = `/crm/${tenantId}`
   return [
     { name: 'Home', href: `${base}/Home` },
+    { name: 'Pipeline', href: `${base}/Deals` },
     { name: 'Prospects', href: `${base}/Leads` },
     { name: 'Contacts', href: `${base}/Contacts` },
-    { name: 'Customers', href: `${base}/AllPeople?stage=customer` },
-    { name: 'Deals', href: `${base}/Deals` },
-    { name: 'Tasks', href: `${base}/Tasks` },
-    { name: 'All People', href: `${base}/AllPeople` },
-    { name: 'Meetings', href: `${base}/Meetings` },
+    { name: 'Activities', href: `${base}/Activities` },
     { name: 'CPQ', href: `${base}/CPQ` },
-    { name: 'Agents', href: `${base}/Agents` },
-    { name: 'Churn', href: `${base}/Churn` },
-    { name: 'Metrics', href: `${base}/Metrics` },
-    { name: 'Sales Automation', href: `${base}/SalesAutomation` },
-    { name: 'Sales Enablement', href: `${base}/SalesEnablement` },
+    { name: 'Automation', href: `${base}/SalesAutomation` },
+    { name: 'Intelligence', href: `${base}/Metrics` },
     { name: 'Dialer', href: `${base}/Dialer` },
-    { name: 'Customer Success', href: `${base}/CustomerSuccess` },
-    { name: 'Visitors', href: `${base}/Visitors` },
-    { name: 'Reports', href: `${base}/Reports` },
+    { name: 'Agents', href: `${base}/Agents` },
   ]
 }

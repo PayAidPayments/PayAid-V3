@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { ApiResponse, Contact } from '@/types/base-modules'
 import { z } from 'zod'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { logCrmAudit } from '@/lib/audit-log-crm'
 
 // Define schema locally to avoid import issues
 const UpdateContactSchema = z.object({
@@ -187,15 +189,34 @@ export async function DELETE(
   context?: { params?: Promise<Record<string, string>> }
 ) {
   try {
+    const { userId, tenantId } = await requireModuleAccess(request, 'crm')
     const params = await (context?.params || Promise.resolve({}))
     const id = (params as Record<string, string>).id
     if (!id) {
       return NextResponse.json({ success: false, statusCode: 400, error: { code: 'MISSING_ID', message: 'ID is required' } }, { status: 400 })
     }
 
+    const before = await prisma.contact.findFirst({
+      where: { id, tenantId },
+    })
+    if (!before) {
+      return NextResponse.json({ success: false, statusCode: 404, error: { code: 'CONTACT_NOT_FOUND', message: 'Contact not found' } }, { status: 404 })
+    }
+
     const contact = await prisma.contact.update({
       where: { id },
       data: { status: 'archived' },
+    })
+
+    await logCrmAudit({
+      tenantId,
+      userId,
+      entityType: 'contact',
+      entityId: id,
+      action: 'delete',
+      changeSummary: `Archived contact: ${before.name}`,
+      beforeSnapshot: { name: before.name, email: before.email, status: before.status },
+      afterSnapshot: { status: 'archived' },
     })
 
     // Map Prisma Contact to our Contact interface
@@ -229,7 +250,10 @@ export async function DELETE(
     }
 
     return NextResponse.json(response)
-  } catch (error) {
+  } catch (error: any) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Error in DELETE contact route:', error)
     return NextResponse.json(
       { success: false, statusCode: 500, error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },
