@@ -4,7 +4,6 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/licens
 import { createAuditLog } from '@/lib/hr/audit-log'
 import { z } from 'zod'
 import { Decimal } from '@prisma/client/runtime/library'
-import { createAuditLog } from '@/lib/audit/create-log'
 
 const updateContractSchema = z.object({
   title: z.string().min(1).optional(),
