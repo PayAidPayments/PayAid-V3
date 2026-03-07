@@ -3,13 +3,13 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { getEmployeeForUser } from '@/lib/hr/ess-resolver'
 
-/** GET /api/hr/ess/payslips - List last 12 payslips for current employee (mobile ESS) */
+/** GET /api/hr/ess/payslips - List last 12 payslips for current employee (mobile ESS). Authorization: only the linked employee. */
 export async function GET(request: NextRequest) {
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'hr')
     const employee = await getEmployeeForUser(tenantId, userId)
     if (!employee) {
-      return NextResponse.json({ error: 'Employee not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Employee not found. Link your account to an employee to view payslips.' }, { status: 403 })
     }
 
     const runs = await prisma.payrollRun.findMany({

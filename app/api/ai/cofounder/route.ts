@@ -130,17 +130,26 @@ Use these insights to provide more relevant, industry-specific advice.`
       businessContext = 'Business context unavailable. Please try again.'
     }
 
-    // Project context memory: load project instructions if projectId provided
+    // Project context memory: load project instructions and context notes if projectId provided
     let projectInstructions = ''
     if (validated.projectId) {
       const project = await prisma.aIProject.findFirst({
         where: { id: validated.projectId, tenantId, userId },
-        select: { name: true, instructions: true },
+        select: { name: true, instructions: true, contextNotes: true },
       })
-      if (project?.instructions?.trim()) {
-        projectInstructions = `\n\nPROJECT CONTEXT ("${project.name}"):
-The user is working in a project with these persistent instructions. Apply them in every response.
-${project.instructions.trim()}`
+      if (project) {
+        const parts: string[] = []
+        if (project.instructions?.trim()) {
+          parts.push(`Persistent instructions:\n${project.instructions.trim()}`)
+        }
+        if (project.contextNotes?.trim()) {
+          parts.push(`Additional context (data/notes the user attached to this project):\n${project.contextNotes.trim()}`)
+        }
+        if (parts.length > 0) {
+          projectInstructions = `\n\nPROJECT CONTEXT ("${project.name}"):
+The user is working in a project. Apply the following in every response.
+${parts.join('\n\n')}`
+        }
       }
     }
 
@@ -362,7 +371,11 @@ ${STRUCTURED_OUTPUT_INSTRUCTION}`
           service: 'cofounder',
           requestType: 'chat',
           modelUsed: usedService,
-          tokens: undefined, // Optional: add if LLM returns token counts
+          metadata: {
+            agentId: agent.id,
+            hasArtifact: !!artifact,
+            actionCount: structuredActions.length,
+          },
         },
       })
     } catch (auditErr) {

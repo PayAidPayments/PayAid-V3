@@ -20,6 +20,11 @@ interface VerificationResult {
 }
 
 async function verifyDatabaseConnection() {
+  if (process.env.SKIP_DB_VERIFY === '1' || process.env.SKIP_DB_VERIFY === 'true') {
+    console.log('🔍 Database verification skipped (SKIP_DB_VERIFY=1). E2E will run without DB check.\n')
+    process.exit(0)
+  }
+
   console.log('🔍 Verifying Database Connection Setup...\n')
   
   const results: VerificationResult[] = []

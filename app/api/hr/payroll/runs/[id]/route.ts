@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { createAuditLog } from '@/lib/hr/audit-log'
 import { z } from 'zod'
 import { Decimal } from '@prisma/client/runtime/library'
 
@@ -196,6 +197,28 @@ export async function PATCH(
       }
 
       return run
+    })
+
+    await createAuditLog({
+      tenantId,
+      userId,
+      entityType: 'PayrollRun',
+      entityId: resolvedParams.id,
+      changeSummary: `Payroll run updated: manual adjustment (${adjustments.length} component(s))`,
+      beforeSnapshot: {
+        grossEarningsInr: Number(existing.grossEarningsInr),
+        netPayInr: Number(existing.netPayInr),
+        employeeId: existing.employeeId,
+      },
+      afterSnapshot: {
+        grossEarningsInr: Number(updated.grossEarningsInr),
+        netPayInr: Number(updated.netPayInr),
+        employeeId: updated.employeeId,
+      },
+      request: {
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
+        userAgent: request.headers.get('user-agent') || null,
+      },
     })
 
     return NextResponse.json(updated)

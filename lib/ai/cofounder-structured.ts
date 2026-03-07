@@ -38,11 +38,16 @@ export type StructuredActionType =
   | 'open_invoice'
   | 'create_task'
   | 'open_quotes'
+  | 'open_contacts'
+  | 'open_leads'
+  | 'open_contact'
 
 export interface StructuredAction {
   type: StructuredActionType
   /** For open_deal */
   dealId?: string
+  /** For open_contact */
+  contactId?: string
   /** For open_invoice */
   invoiceId?: string
   /** For create_task */
@@ -154,13 +159,13 @@ When your response includes:
 
 You MAY append a structured block so the app can show interactive outputs and action buttons. Use this exact format (no markdown around it):
 ${STRUCTURED_MARKER_START}
-{"summary":"Brief 1-2 sentence summary","artifact_type":"table"|"checklist"|"chart"|null,"artifact_data":{...}|null,"artifact_title":"Optional title","actions":[{"type":"open_crm"|"open_deal"|"open_finance"|"open_hr"|"create_task"|"open_invoice"|"open_quotes","dealId":"...","invoiceId":"...","title":"...","description":"...","due":"YYYY-MM-DD","priority":"low"|"medium"|"high","label":"Button text"}]}
+{"summary":"Brief 1-2 sentence summary","artifact_type":"table"|"checklist"|"chart"|null,"artifact_data":{...}|null,"artifact_title":"Optional title","actions":[{"type":"open_crm"|"open_deal"|"open_finance"|"open_hr"|"create_task"|"open_invoice"|"open_quotes"|"open_contacts"|"open_leads"|"open_contact","dealId":"...","contactId":"...","invoiceId":"...","title":"...","description":"...","due":"YYYY-MM-DD","priority":"low"|"medium"|"high","label":"Button text"}]}
 ${STRUCTURED_MARKER_END}
 
 Rules:
 - For tables: artifact_type "table", artifact_data: {"columns":["Col1","Col2"],"rows":[{"Col1":"a","Col2":1},...]}.
 - For checklists: artifact_type "checklist", artifact_data: {"items":[{"label":"Item 1","done":false},...]}.
-- For actions: use type "open_deal" with "dealId" when you reference a specific deal; "create_task" with "title","description","due","priority"; "open_crm"/"open_finance"/"open_hr" for navigation. Include "label" for button text.
+- For actions: use type "open_deal" with "dealId" when you reference a specific deal; "open_contact" with "contactId" for a specific contact; "open_contacts"/"open_leads" for Contacts/Leads list; "create_task" with "title","description","due","priority"; "open_crm"/"open_finance"/"open_hr" for navigation. Include "label" for button text.
 - If no tabular/checklist data or no concrete in-app actions, omit the block or use null for artifact_type and [] for actions.
 - Currency must be in INR (₹). Do not use $.
 - Spell brand names correctly: LinkedIn (not "Linked in"), WhatsApp, Facebook, Instagram, etc.

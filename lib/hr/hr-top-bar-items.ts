@@ -19,6 +19,7 @@ export function getHRTopBarItems(tenantId: string): HRTopBarItem[] {
   const base = `/hr/${tenantId}`
   return [
     { name: 'Dashboard', href: `${base}/Home` },
+    { name: 'My Portal (ESS)', href: `${base}/ESS` },
     { name: 'Employees', href: `${base}/Employees` },
     { name: 'Contractors', href: `${base}/Contractors` },
     { name: 'Hiring', href: `${base}/Hiring` },
@@ -29,12 +30,16 @@ export function getHRTopBarItems(tenantId: string): HRTopBarItem[] {
     { name: 'Time Off', href: `${base}/Leave` },
     { name: 'Performance', href: `${base}/Performance` },
     { name: 'Documents & Forms', href: `${base}/Payslips` },
+    { name: 'Document Vault', href: `${base}/Document-Vault` },
     { name: 'Reimbursements', href: `${base}/Reimbursements` },
+    { name: 'Expenses', href: `${base}/Expenses` },
     { name: 'Assets', href: `${base}/Assets` },
     { name: 'Compliance', href: `${base}/Statutory-Compliance` },
     { name: 'Insurance & Benefits', href: `${base}/Insurance` },
     { name: 'Org Chart', href: `${base}/OrgChart` },
     { name: 'Reports & Analytics', href: `${base}/Reports` },
+    { name: 'Audit Log', href: `${base}/Audit-Log` },
+    { name: 'Reminders', href: `${base}/Reminders` },
     { name: 'Settings', href: `${base}/Settings` },
   ]
 }

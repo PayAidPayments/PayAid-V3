@@ -2,16 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { generatePayslipPDF } from '@/lib/invoicing/pdf'
+import { getEmployeeForUser } from '@/lib/hr/ess-resolver'
 
 // GET /api/hr/payroll/runs/[id]/payslip - Generate and download payslip PDF
+// Authorization: employee may only download their own payslip; HR (user not linked to employee) may download any.
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
   const resolvedParams = await params
-    // Check HR module license
-    const { tenantId } = await requireModuleAccess(request, 'hr')
+    const { tenantId, userId } = await requireModuleAccess(request, 'hr')
 
     const payrollRun = await prisma.payrollRun.findFirst({
       where: {
@@ -33,6 +34,15 @@ export async function GET(
       return NextResponse.json(
         { error: 'Payroll run not found' },
         { status: 404 }
+      )
+    }
+
+    // Tightened authorization: if current user is linked to an employee, they may only access that employee's payslip
+    const linkedEmployee = await getEmployeeForUser(tenantId, userId)
+    if (linkedEmployee && linkedEmployee.id !== payrollRun.employeeId) {
+      return NextResponse.json(
+        { error: 'You may only download your own payslip' },
+        { status: 403 }
       )
     }
 

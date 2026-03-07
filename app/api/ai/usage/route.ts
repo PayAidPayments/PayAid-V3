@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
           requestType: true,
           modelUsed: true,
           tokens: true,
+          metadata: true,
           createdAt: true,
         },
       })

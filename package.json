@@ -58,6 +58,7 @@
     "start:free-stack": "powershell -ExecutionPolicy Bypass -File scripts/start-free-stack.ps1",
     "test": "jest --passWithNoTests",
     "test:e2e": "npm run verify:db && npm run fix:ui-scanner-spec && playwright test -c playwright.config.ts",
+    "test:e2e:no-verify": "cross-env SKIP_DB_VERIFY=1 npm run fix:ui-scanner-spec && playwright test -c playwright.config.ts",
     "test:e2e:ui": "npm run verify:db && playwright test -c playwright.config.ts --ui",
     "test:e2e:headed": "npm run verify:db && playwright test -c playwright.config.ts --headed",
     "test:e2e:route-health": "npm run verify:db && playwright test -c playwright.config.ts route-health",

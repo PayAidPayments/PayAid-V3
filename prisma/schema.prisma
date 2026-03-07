@@ -881,6 +881,8 @@ model AIUsage {
   duration    Int?
   requestType String?
   modelUsed   String?
+  /** Richer audit: e.g. { agentId, hasArtifact, actionCount } for cofounder */
+  metadata    Json?
   createdAt   DateTime @default(now())
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -956,13 +958,14 @@ model TenantAIImageSettings {
 }
 
 model AIProject {
-  id           String   @id @default(cuid())
-  tenantId     String
-  userId       String
-  name         String
-  instructions String?   // Persistent context: e.g. "Always consider my restaurant margins"
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  tenantId       String
+  userId         String
+  name           String
+  instructions   String?   // Persistent context: e.g. "Always consider my restaurant margins"
+  contextNotes   String?   // Optional: pasted data, notes, or references (injected into prompt)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user         User     @relation("AIProjects", fields: [userId], references: [id], onDelete: Cascade)
   conversations AICofounderConversation[]
@@ -2503,6 +2506,8 @@ model EmployeeDocument {
   generatedAt  DateTime            @default(now())
   generatedBy  String
   tenantId     String
+  status       String?              @default("PENDING") // PENDING | VERIFIED | REJECTED
+  expiryDate   DateTime?
   createdAt    DateTime            @default(now())
   employee     Employee            @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   template     HRDocumentTemplate? @relation(fields: [templateId], references: [id])
