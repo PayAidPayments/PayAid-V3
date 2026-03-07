@@ -881,7 +881,7 @@ model AIUsage {
   duration    Int?
   requestType String?
   modelUsed   String?
-  /** Richer audit: e.g. { agentId, hasArtifact, actionCount } for cofounder */
+  // Richer audit: e.g. { agentId, hasArtifact, actionCount } for cofounder
   metadata    Json?
   createdAt   DateTime @default(now())
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
