@@ -17,6 +17,7 @@ export function getSettingsNavItems(tenantId: string): SettingsNavItem[] {
     { name: 'Workspace', href: `${base}/Tenant` },
     { name: 'Billing', href: `${base}/Billing` },
     { name: 'Users', href: `${base}/Users` },
+    { name: 'Roles', href: `${base}/Roles` },
     { name: 'Modules', href: `${base}/Modules` },
     { name: 'Activity', href: `${base}/Activity` },
     { name: 'AI Usage', href: `${base}/AI-Usage` },

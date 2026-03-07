@@ -35,11 +35,17 @@ export async function POST(
       )
     }
 
-    // Get all active employees
+    const body = await request.json().catch(() => ({}))
+    const excludeEmployeeIds: string[] = Array.isArray(body?.excludeEmployeeIds)
+      ? body.excludeEmployeeIds
+      : []
+
+    // Get all active employees (excluding any explicitly excluded for this run)
     const employees = await prisma.employee.findMany({
       where: {
         tenantId: tenantId,
         status: { in: ['ACTIVE', 'PROBATION'] },
+        ...(excludeEmployeeIds.length > 0 && { id: { notIn: excludeEmployeeIds } }),
       },
     })
 

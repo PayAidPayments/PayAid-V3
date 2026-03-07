@@ -44,6 +44,11 @@ The suite checks **every page, every same-origin link, and every button** on the
    ```
    You should see a **list** of tests as they run (one line per test). When done, failures open the HTML report.
 
+   If `verify:db` fails (e.g. Supabase "Tenant or user not found"), either use local DB (see above) or run E2E without the DB check (app must already be running with a valid DB):
+   ```bash
+   npm run test:e2e:no-verify
+   ```
+
    **Optional:** To let Playwright start the dev server for you (no output for 1–2 minutes while Next.js compiles), run:
    ```bash
    set PLAYWRIGHT_START_DEV=1

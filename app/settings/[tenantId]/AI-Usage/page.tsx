@@ -5,7 +5,17 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useQuery } from '@tanstack/react-query'
-import { Bot, RefreshCcw, MessageSquare } from 'lucide-react'
+import { Bot, RefreshCcw, MessageSquare, Download } from 'lucide-react'
+
+type RecentRow = {
+  id: string
+  service: string
+  requestType: string | null
+  modelUsed: string | null
+  tokens: number | null
+  metadata?: { agentId?: string; hasArtifact?: boolean; actionCount?: number } | null
+  createdAt: string
+}
 
 function getAuthHeaders(token: string | null) {
   return {
@@ -38,16 +48,7 @@ export default function SettingsAIUsagePage() {
     queryFn: async () => {
       const res = await fetch('/api/ai/usage?recent=50', { headers: getAuthHeaders(token) })
       if (!res.ok) throw new Error('Failed to load recent usage')
-      return res.json() as Promise<{
-        recent: Array<{
-          id: string
-          service: string
-          requestType: string | null
-          modelUsed: string | null
-          tokens: number | null
-          createdAt: string
-        }>
-      }>
+      return res.json() as Promise<{ recent: RecentRow[] }>
     },
     enabled: Boolean(tenantId && token),
   })
@@ -137,11 +138,42 @@ export default function SettingsAIUsagePage() {
         <CardHeader>
           <CardTitle className="text-slate-900 dark:text-slate-100">Recent activity</CardTitle>
           <CardDescription>Last 50 AI requests (Co-founder and other services)</CardDescription>
-          <div className="pt-2">
+          <div className="pt-2 flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={refetch} disabled={summaryLoading || recentLoading}>
               <RefreshCcw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
+            {recent.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const headers = ['Time', 'Service', 'Type', 'Model', 'Agent', 'Artifact', 'Actions']
+                  const rows = recent.map((r) => {
+                    const meta = r.metadata as { agentId?: string; hasArtifact?: boolean; actionCount?: number } | null | undefined
+                    return [
+                      new Date(r.createdAt).toISOString(),
+                      r.service,
+                      r.requestType ?? '',
+                      r.modelUsed ?? '',
+                      meta?.agentId ?? '',
+                      meta?.hasArtifact ? 'Yes' : '',
+                      meta?.actionCount ?? '',
+                    ].join(',')
+                  })
+                  const csv = [headers.join(','), ...rows].join('\n')
+                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+                  const a = document.createElement('a')
+                  a.href = URL.createObjectURL(blob)
+                  a.download = `ai-usage-${new Date().toISOString().slice(0, 10)}.csv`
+                  a.click()
+                  URL.revokeObjectURL(a.href)
+                }}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -158,19 +190,28 @@ export default function SettingsAIUsagePage() {
                     <th className="text-left px-4 py-2 font-semibold text-slate-700 dark:text-slate-300">Service</th>
                     <th className="text-left px-4 py-2 font-semibold text-slate-700 dark:text-slate-300">Type</th>
                     <th className="text-left px-4 py-2 font-semibold text-slate-700 dark:text-slate-300">Model</th>
+                    <th className="text-left px-4 py-2 font-semibold text-slate-700 dark:text-slate-300">Agent</th>
+                    <th className="text-left px-4 py-2 font-semibold text-slate-700 dark:text-slate-300">Artifact</th>
+                    <th className="text-left px-4 py-2 font-semibold text-slate-700 dark:text-slate-300">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recent.map((r) => (
-                    <tr key={r.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30">
-                      <td className="px-4 py-2 text-slate-600 dark:text-slate-400">
-                        {new Date(r.createdAt).toLocaleString('en-IN')}
-                      </td>
-                      <td className="px-4 py-2">{r.service}</td>
-                      <td className="px-4 py-2">{r.requestType ?? '—'}</td>
-                      <td className="px-4 py-2">{r.modelUsed ?? '—'}</td>
-                    </tr>
-                  ))}
+                  {recent.map((r) => {
+                    const meta = r.metadata as { agentId?: string; hasArtifact?: boolean; actionCount?: number } | null | undefined
+                    return (
+                      <tr key={r.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                        <td className="px-4 py-2 text-slate-600 dark:text-slate-400">
+                          {new Date(r.createdAt).toLocaleString('en-IN')}
+                        </td>
+                        <td className="px-4 py-2">{r.service}</td>
+                        <td className="px-4 py-2">{r.requestType ?? '—'}</td>
+                        <td className="px-4 py-2">{r.modelUsed ?? '—'}</td>
+                        <td className="px-4 py-2">{meta?.agentId ?? '—'}</td>
+                        <td className="px-4 py-2">{meta?.hasArtifact ? 'Yes' : '—'}</td>
+                        <td className="px-4 py-2">{meta?.actionCount != null ? String(meta.actionCount) : '—'}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

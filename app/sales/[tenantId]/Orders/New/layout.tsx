@@ -1,26 +1,10 @@
 'use client'
 
-import { useParams } from 'next/navigation'
-import { AppShell } from '@/components/modules/AppShell'
-
+/** Shell is provided by app/sales/[tenantId]/Orders/layout.tsx — avoid dual header. */
 export default function NewOrderLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const params = useParams()
-  const tenantId = params.tenantId as string
-
-  const topBarItems = [
-    { name: 'Home', href: `/sales/${tenantId}/Home` },
-    { name: 'Landing Pages', href: `/sales/${tenantId}/Landing-Pages` },
-    { name: 'Checkout Pages', href: `/sales/${tenantId}/Checkout-Pages` },
-    { name: 'Orders', href: `/sales/${tenantId}/Orders` },
-  ]
-
-  return (
-    <AppShell moduleId="sales" moduleName="Sales" topBarItems={topBarItems}>
-      {children}
-    </AppShell>
-  )
+  return <>{children}</>
 }

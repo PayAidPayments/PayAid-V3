@@ -6,6 +6,7 @@ import { z } from 'zod'
 const updateProjectSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   instructions: z.string().max(4000).optional().nullable(),
+  contextNotes: z.string().max(8000).optional().nullable(),
 })
 
 /**
@@ -74,6 +75,11 @@ export async function PATCH(
           instructions: validated.instructions === null || validated.instructions === ''
             ? null
             : validated.instructions.trim(),
+        }),
+        ...(validated.contextNotes !== undefined && {
+          contextNotes: validated.contextNotes === null || validated.contextNotes === ''
+            ? null
+            : validated.contextNotes.trim(),
         }),
       },
     })

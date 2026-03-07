@@ -192,7 +192,7 @@ export default function OnboardingInstancesPage() {
                             : '-'}
                         </TableCell>
                         <TableCell>
-                          <Link href={`/hr/${tenantId}/Onboarding/Instances/${instance.id}`}>
+                          <Link href={`/hr/${tenantId}/Onboarding/${instance.id}`}>
                             <Button variant="outline" size="sm" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
                               View
                             </Button>

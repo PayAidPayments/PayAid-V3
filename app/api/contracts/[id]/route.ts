@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
+import { createAuditLog } from '@/lib/hr/audit-log'
 import { z } from 'zod'
 import { Decimal } from '@prisma/client/runtime/library'
+import { createAuditLog } from '@/lib/audit/create-log'
 
 const updateContractSchema = z.object({
   title: z.string().min(1).optional(),
@@ -79,7 +81,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
     const body = await request.json()
     const validated = updateContractSchema.parse(body)
@@ -128,6 +130,30 @@ export async function PATCH(
         signatures: {
           orderBy: { signedAt: 'desc' },
         },
+      },
+    })
+
+    await createAuditLog({
+      tenantId,
+      userId,
+      entityType: 'Contract',
+      entityId: params.id,
+      changeSummary: `Contract updated: ${contract.contractNumber} (${Object.keys(updateData).join(', ')})`,
+      beforeSnapshot: {
+        contractNumber: contract.contractNumber,
+        status: contract.status,
+        title: contract.title,
+        contractType: contract.contractType,
+      },
+      afterSnapshot: {
+        contractNumber: updated.contractNumber,
+        status: updated.status,
+        title: updated.title,
+        contractType: updated.contractType,
+      },
+      request: {
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
+        userAgent: request.headers.get('user-agent') || null,
       },
     })
 

@@ -8,10 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Receipt, Plus, MessageCircle, CheckCircle, Clock, XCircle, IndianRupee, Filter } from 'lucide-react'
-import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
-import { getModuleConfig } from '@/lib/modules/module-config'
-import { formatINRForDisplay } from '@/lib/utils/formatINR'
+import { Receipt, Plus, MessageCircle, CheckCircle, Clock, XCircle, IndianRupee, ArrowLeft, Inbox } from 'lucide-react'
+import { formatINR } from '@/lib/utils/formatINR'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -25,371 +23,380 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
+type ReimbursementRow = {
+  id: string
+  amount: number
+  category?: string | null
+  status: string
+  employee?: { firstName: string; lastName: string } | null
+  createdAt: string
+  submittedDate?: string
+  approvedBy?: string | null
+  approvedAt?: string | null
+  expenseDate?: string | null
+  whatsappApproval?: boolean
+}
+
+const DEMO_LIST: ReimbursementRow[] = [
+  { id: '1', employee: { firstName: 'Rajesh', lastName: 'Kumar' }, category: 'Travel', amount: 5000, submittedDate: '2026-02-15', status: 'PENDING', createdAt: '2026-02-15T10:00:00Z', whatsappApproval: true },
+  { id: '2', employee: { firstName: 'Priya', lastName: 'Sharma' }, category: 'Meals', amount: 2500, submittedDate: '2026-02-14', status: 'APPROVED', approvedBy: 'Manager', approvedAt: '2026-02-14T15:00:00Z', createdAt: '2026-02-14T09:00:00Z', whatsappApproval: true },
+  { id: '3', employee: { firstName: 'Amit', lastName: 'Patel' }, category: 'Office Supplies', amount: 3000, submittedDate: '2026-02-13', status: 'REJECTED', createdAt: '2026-02-13T11:00:00Z', whatsappApproval: false },
+]
+
+function empName(r: ReimbursementRow): string {
+  if (r.employee) return `${r.employee.firstName} ${r.employee.lastName}`.trim()
+  return '—'
+}
+function amountNum(r: ReimbursementRow): number {
+  return typeof r.amount === 'number' ? r.amount : Number(r.amount) || 0
+}
+
 export default function HRReimbursementsPage() {
   const params = useParams()
   const tenantId = params?.tenantId as string
-  const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
+  const { token } = useAuthStore()
+  const queryClient = useQueryClient()
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [rejectionReason, setRejectionReason] = useState('')
+  const [rejectId, setRejectId] = useState<string | null>(null)
 
-  // Mock data
-  const reimbursements = [
-    {
-      id: '1',
-      employee: 'Rajesh Kumar',
-      category: 'Travel',
-      amount: 5000,
-      submittedDate: '2026-02-15',
-      status: 'PENDING',
-      approvedBy: null,
-      whatsappApproval: true,
+  const { data: apiData, isLoading } = useQuery({
+    queryKey: ['hr-reimbursements', tenantId],
+    queryFn: async () => {
+      const res = await fetch(`/api/hr/reimbursements?limit=100`, { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) return { reimbursements: [], pagination: { total: 0 } }
+      const j = await res.json()
+      const raw = Array.isArray(j.reimbursements) ? j.reimbursements : []
+      return {
+        reimbursements: raw.map((r: any) => ({
+          id: r.id,
+          amount: Number(r.amount ?? 0),
+          category: r.category ?? null,
+          status: r.status ?? 'PENDING',
+          employee: r.employee ?? null,
+          createdAt: r.createdAt,
+          approvedBy: r.approvedBy ?? null,
+          approvedAt: r.approvedAt ?? null,
+          expenseDate: r.expenseDate ?? null,
+        })),
+        pagination: j.pagination ?? { total: raw.length },
+      }
     },
-    {
-      id: '2',
-      employee: 'Priya Sharma',
-      category: 'Meals',
-      amount: 2500,
-      submittedDate: '2026-02-14',
-      status: 'APPROVED',
-      approvedBy: 'Manager',
-      whatsappApproval: true,
-    },
-    {
-      id: '3',
-      employee: 'Amit Patel',
-      category: 'Office Supplies',
-      amount: 3000,
-      submittedDate: '2026-02-13',
-      status: 'REJECTED',
-      approvedBy: null,
-      whatsappApproval: false,
-    },
-  ]
+    enabled: !!tenantId && !!token,
+  })
 
-  const pendingCount = reimbursements.filter(r => r.status === 'PENDING').length
-  const pendingAmount = reimbursements
-    .filter(r => r.status === 'PENDING')
-    .reduce((sum, r) => sum + r.amount, 0)
+  const list: ReimbursementRow[] = (apiData?.reimbursements?.length ? apiData.reimbursements : DEMO_LIST) as ReimbursementRow[]
+  const pending = list.filter((r) => r.status === 'PENDING')
+  const approved = list.filter((r) => r.status === 'APPROVED')
+  const rejected = list.filter((r) => r.status === 'REJECTED')
+  const pendingCount = pending.length
+  const pendingAmount = pending.reduce((s, r) => s + amountNum(r), 0)
+
+  const approveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/hr/reimbursements/${id}/approve`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ notes: '' }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return res.json()
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['hr-reimbursements', tenantId] }),
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const res = await fetch(`/api/hr/reimbursements/${id}/reject`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ reason }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return res.json()
+    },
+    onSuccess: () => {
+      setRejectDialogOpen(false)
+      setRejectionReason('')
+      setRejectId(null)
+      queryClient.invalidateQueries({ queryKey: ['hr-reimbursements', tenantId] })
+    },
+  })
+
+  const handleApprove = (id: string) => approveMutation.mutate(id)
+  const handleRejectClick = (id: string) => { setRejectId(id); setRejectDialogOpen(true) }
+  const handleRejectConfirm = () => {
+    if (rejectId && rejectionReason.trim()) rejectMutation.mutate({ id: rejectId, reason: rejectionReason.trim() })
+  }
 
   return (
-    <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>
-      <UniversalModuleHero
-        moduleName="Reimbursements & Expenses"
-        moduleIcon={<Receipt className="w-8 h-8" />}
-        gradientFrom={moduleConfig.gradientFrom}
-        gradientTo={moduleConfig.gradientTo}
-        description="WhatsApp Approval Workflow"
-      />
-
-      <div className="p-6 space-y-6">
-        {/* WhatsApp Approval Banner */}
-        <Card className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200 dark:border-green-800">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                  <MessageCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">WhatsApp Approval Enabled</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Approve reimbursements directly via WhatsApp</p>
-                </div>
-              </div>
-              <Button variant="outline">
-                Configure WhatsApp
-              </Button>
+    <div className="space-y-5 pb-24">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-10 -mx-4 px-4 py-3 bg-slate-50/95 dark:bg-slate-950/95 border-b border-slate-200 dark:border-slate-800 backdrop-blur">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Link href={tenantId ? `/hr/${tenantId}` : '/'} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 p-1">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">Reimbursement queue</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Pending: {pendingCount} · {formatINR(pendingAmount)} to approve</p>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href={tenantId ? `/approvals/${tenantId}` : '#'}>
+              <Button variant="outline" size="sm" className="dark:border-slate-600 dark:text-slate-300"><Inbox className="h-4 w-4 mr-1" /> Approvals hub</Button>
+            </Link>
+            <Link href={`/hr/${tenantId}/Reimbursements/new`}>
+              <Button size="sm" className="dark:bg-slate-700 dark:hover:bg-slate-600"><Plus className="h-4 w-4 mr-1" /> Submit</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* WhatsApp banner */}
+      <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 dark:bg-slate-900 shadow-sm border-l-4 border-l-green-500">
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <MessageCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 dark:text-slate-50 text-sm">WhatsApp approval enabled</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Approve via WhatsApp</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" className="dark:border-slate-600 dark:text-slate-300">Configure WhatsApp</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 dark:bg-slate-900 shadow-sm h-28">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs uppercase"><Clock className="h-4 w-4" /> Pending</div>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-slate-50 mt-1">{pendingCount}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{formatINR(pendingAmount)}</p>
           </CardContent>
         </Card>
+        <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 dark:bg-slate-900 shadow-sm h-28">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs uppercase"><CheckCircle className="h-4 w-4" /> Approved</div>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-slate-50 mt-1">{approved.length}</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 dark:bg-slate-900 shadow-sm h-28">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs uppercase"><IndianRupee className="h-4 w-4" /> Pending total</div>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-slate-50 mt-1">{formatINR(pendingAmount)}</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 dark:bg-slate-900 shadow-sm h-28">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs uppercase"><Receipt className="h-4 w-4" /> Rejected</div>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-slate-50 mt-1">{rejected.length}</p>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Pending</p>
-                  <p className="text-2xl font-bold">{pendingCount}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{formatINRForDisplay(pendingAmount)}</p>
-                </div>
-                <Clock className="h-8 w-8 text-amber-500" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Approved</p>
-                  <p className="text-2xl font-bold">8</p>
-                  <p className="text-xs text-muted-foreground mt-1">This month</p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Amount</p>
-                  <p className="text-2xl font-bold">{formatINRForDisplay(45000)}</p>
-                  <p className="text-xs text-muted-foreground mt-1">This month</p>
-                </div>
-                <IndianRupee className="h-8 w-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Avg Processing</p>
-                  <p className="text-2xl font-bold">2.5 days</p>
-                  <p className="text-xs text-muted-foreground mt-1">Time to approve</p>
-                </div>
-                <MessageCircle className="h-8 w-8 text-purple-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Queue: Pending table */}
+      <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow">
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-50">Queue · Pending approval</CardTitle>
+          <CardDescription className="text-xs">Approve or reject. Buttons disabled while request is in progress.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400 py-6">Loading…</p>
+          ) : pending.length === 0 ? (
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400">
+              <Inbox className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p className="font-medium">No pending reimbursements</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="border-slate-200 dark:border-slate-800">
+                  <TableHead className="text-slate-600 dark:text-slate-400">Employee</TableHead>
+                  <TableHead className="text-slate-600 dark:text-slate-400">Category</TableHead>
+                  <TableHead className="text-slate-600 dark:text-slate-400">Amount</TableHead>
+                  <TableHead className="text-slate-600 dark:text-slate-400">Submitted</TableHead>
+                  <TableHead className="text-slate-600 dark:text-slate-400">WhatsApp</TableHead>
+                  <TableHead className="text-right text-slate-600 dark:text-slate-400">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pending.map((r) => (
+                  <TableRow key={r.id} className="border-slate-200 dark:border-slate-800">
+                    <TableCell className="font-medium text-slate-900 dark:text-slate-50">{empName(r)}</TableCell>
+                    <TableCell className="text-slate-600 dark:text-slate-400">{r.category ?? '—'}</TableCell>
+                    <TableCell className="font-medium text-slate-900 dark:text-slate-50">{formatINR(amountNum(r))}</TableCell>
+                    <TableCell className="text-slate-600 dark:text-slate-400">{format(new Date(r.createdAt || r.submittedDate || ''), 'MMM d, yyyy')}</TableCell>
+                    <TableCell>
+                      {r.whatsappApproval ? (
+                        <Badge variant="outline" className="text-green-600 dark:text-green-400 border-green-200 dark:border-green-800"><MessageCircle className="h-3 w-3 mr-1" /> Enabled</Badge>
+                      ) : (
+                        <span className="text-xs text-slate-500 dark:text-slate-400">No</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="outline" size="sm" className="dark:border-slate-600" onClick={() => handleApprove(r.id)} disabled={approveMutation.isPending}>
+                          {approveMutation.isPending && approveMutation.variables === r.id ? '…' : <CheckCircle className="h-4 w-4" />}
+                        </Button>
+                        <Button variant="outline" size="sm" className="dark:border-slate-600" onClick={() => handleRejectClick(r.id)} disabled={rejectMutation.isPending}>
+                          <XCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
-        {/* Action Buttons */}
-        <div className="flex gap-4">
-          <Link href={`/hr/${tenantId}/Reimbursements/new`}>
-            <Button className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700">
-              <Plus className="mr-2 h-4 w-4" />
-              Submit Reimbursement
-            </Button>
-          </Link>
-          <Button variant="outline">
-            <Filter className="mr-2 h-4 w-4" />
-            Filter
-          </Button>
-          <Button variant="outline">
-            Bulk Approve
-          </Button>
-        </div>
+      {/* Tabs: Approved / Rejected / All */}
+      <Tabs defaultValue="approved" className="space-y-4">
+        <TabsList className="dark:bg-slate-800 dark:border dark:border-slate-700">
+          <TabsTrigger value="approved" className="dark:data-[state=active]:bg-slate-700">Approved</TabsTrigger>
+          <TabsTrigger value="rejected" className="dark:data-[state=active]:bg-slate-700">Rejected</TabsTrigger>
+          <TabsTrigger value="all" className="dark:data-[state=active]:bg-slate-700">All</TabsTrigger>
+        </TabsList>
 
-        {/* Tabs */}
-        <Tabs defaultValue="pending" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
-            <TabsTrigger value="rejected">Rejected</TabsTrigger>
-            <TabsTrigger value="all">All</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="pending" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Pending Reimbursements</CardTitle>
-                <CardDescription>Awaiting approval</CardDescription>
-              </CardHeader>
-              <CardContent>
+        <TabsContent value="approved" className="space-y-4">
+          <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-50">Approved</CardTitle>
+              <CardDescription className="text-xs">Processed reimbursements</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {approved.length === 0 ? (
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-4">No approved items.</p>
+              ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Employee</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Submitted</TableHead>
-                      <TableHead>WhatsApp</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                    <TableRow className="border-slate-200 dark:border-slate-800">
+                      <TableHead className="text-slate-600 dark:text-slate-400">Employee</TableHead>
+                      <TableHead className="text-slate-600 dark:text-slate-400">Category</TableHead>
+                      <TableHead className="text-slate-600 dark:text-slate-400">Amount</TableHead>
+                      <TableHead className="text-slate-600 dark:text-slate-400">Approved</TableHead>
+                      <TableHead className="text-slate-600 dark:text-slate-400">Date</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {reimbursements
-                      .filter(r => r.status === 'PENDING')
-                      .map((reimbursement) => (
-                        <TableRow key={reimbursement.id}>
-                          <TableCell className="font-medium">
-                            {reimbursement.employee?.firstName} {reimbursement.employee?.lastName}
-                          </TableCell>
-                          <TableCell>{reimbursement.category}</TableCell>
-                          <TableCell>{formatINRForDisplay(parseFloat(reimbursement.amount?.toString() || '0'))}</TableCell>
-                          <TableCell>{format(new Date(reimbursement.createdAt || reimbursement.expenseDate), 'MMM dd, yyyy')}</TableCell>
-                          <TableCell>
-                            {reimbursement.whatsappApproval ? (
-                              <Badge variant="outline" className="text-green-600">
-                                <MessageCircle className="h-3 w-3 mr-1" />
-                                Enabled
-                              </Badge>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">No</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleApprove(reimbursement.id)}
-                                disabled={approveMutation.isPending}
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRejectClick(reimbursement.id)}
-                                disabled={rejectMutation.isPending}
-                              >
-                                Reject
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="approved" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Approved Reimbursements</CardTitle>
-                <CardDescription>Successfully processed</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Employee</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Approved By</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reimbursements
-                      .filter(r => r.status === 'APPROVED')
-                      .map((reimbursement) => (
-                        <TableRow key={reimbursement.id}>
-                          <TableCell className="font-medium">
-                            {reimbursement.employee?.firstName} {reimbursement.employee?.lastName}
-                          </TableCell>
-                          <TableCell>{reimbursement.category}</TableCell>
-                          <TableCell>{formatINRForDisplay(parseFloat(reimbursement.amount?.toString() || '0'))}</TableCell>
-                          <TableCell>{reimbursement.approvedBy || '-'}</TableCell>
-                          <TableCell>{format(new Date(reimbursement.approvedAt || reimbursement.createdAt || reimbursement.expenseDate), 'MMM dd, yyyy')}</TableCell>
-                          <TableCell className="text-right">
-                            <Link href={`/hr/${tenantId}/Reimbursements/${reimbursement.id}`}>
-                              <Button variant="ghost" size="sm">View</Button>
-                            </Link>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="rejected" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Rejected Reimbursements</CardTitle>
-                <CardDescription>Rejected requests</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                  <XCircle className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-                  <p>1 rejected reimbursement</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="all" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>All Reimbursements</CardTitle>
-                <CardDescription>Complete reimbursement history</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Employee</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Submitted</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reimbursements.map((reimbursement) => (
-                      <TableRow key={reimbursement.id}>
-                        <TableCell className="font-medium">{reimbursement.employee}</TableCell>
-                        <TableCell>{reimbursement.category}</TableCell>
-                        <TableCell>{formatINRForDisplay(reimbursement.amount)}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              reimbursement.status === 'APPROVED' ? 'default' :
-                              reimbursement.status === 'REJECTED' ? 'destructive' :
-                              'secondary'
-                            }
-                          >
-                            {reimbursement.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{format(new Date(reimbursement.submittedDate), 'MMM dd, yyyy')}</TableCell>
-                        <TableCell className="text-right">
-                          <Link href={`/hr/${tenantId}/Reimbursements/${reimbursement.id}`}>
-                            <Button variant="ghost" size="sm">View</Button>
-                          </Link>
-                        </TableCell>
+                    {approved.map((r) => (
+                      <TableRow key={r.id} className="border-slate-200 dark:border-slate-800">
+                        <TableCell className="font-medium text-slate-900 dark:text-slate-50">{empName(r)}</TableCell>
+                        <TableCell className="text-slate-600 dark:text-slate-400">{r.category ?? '—'}</TableCell>
+                        <TableCell className="font-medium text-slate-900 dark:text-slate-50">{formatINR(amountNum(r))}</TableCell>
+                        <TableCell className="text-slate-600 dark:text-slate-400">{r.approvedBy ?? '—'}</TableCell>
+                        <TableCell className="text-slate-600 dark:text-slate-400">{format(new Date(r.approvedAt || r.createdAt || ''), 'MMM d, yyyy')}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        {/* Reject Dialog */}
-        <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Reject Reimbursement</DialogTitle>
-              <DialogDescription>
-                Please provide a reason for rejecting this reimbursement request.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <Input
-                placeholder="Enter rejection reason..."
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setRejectDialogOpen(false)
-                  setRejectionReason('')
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleRejectConfirm}
-                disabled={!rejectionReason.trim() || rejectMutation.isPending}
-                variant="destructive"
-              >
-                {rejectMutation.isPending ? 'Rejecting...' : 'Reject'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+        <TabsContent value="rejected" className="space-y-4">
+          <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-50">Rejected</CardTitle>
+              <CardDescription className="text-xs">Rejected requests</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {rejected.length === 0 ? (
+                <div className="text-center py-12 text-slate-500 dark:text-slate-400">
+                  <XCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No rejected reimbursements</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-slate-200 dark:border-slate-800">
+                      <TableHead className="text-slate-600 dark:text-slate-400">Employee</TableHead>
+                      <TableHead className="text-slate-600 dark:text-slate-400">Category</TableHead>
+                      <TableHead className="text-slate-600 dark:text-slate-400">Amount</TableHead>
+                      <TableHead className="text-slate-600 dark:text-slate-400">Submitted</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rejected.map((r) => (
+                      <TableRow key={r.id} className="border-slate-200 dark:border-slate-800">
+                        <TableCell className="font-medium text-slate-900 dark:text-slate-50">{empName(r)}</TableCell>
+                        <TableCell className="text-slate-600 dark:text-slate-400">{r.category ?? '—'}</TableCell>
+                        <TableCell className="font-medium text-slate-900 dark:text-slate-50">{formatINR(amountNum(r))}</TableCell>
+                        <TableCell className="text-slate-600 dark:text-slate-400">{format(new Date(r.createdAt || ''), 'MMM d, yyyy')}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="all" className="space-y-4">
+          <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-50">All reimbursements</CardTitle>
+              <CardDescription className="text-xs">Complete list</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-slate-200 dark:border-slate-800">
+                    <TableHead className="text-slate-600 dark:text-slate-400">Employee</TableHead>
+                    <TableHead className="text-slate-600 dark:text-slate-400">Category</TableHead>
+                    <TableHead className="text-slate-600 dark:text-slate-400">Amount</TableHead>
+                    <TableHead className="text-slate-600 dark:text-slate-400">Status</TableHead>
+                    <TableHead className="text-slate-600 dark:text-slate-400">Submitted</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {list.map((r) => (
+                    <TableRow key={r.id} className="border-slate-200 dark:border-slate-800">
+                      <TableCell className="font-medium text-slate-900 dark:text-slate-50">{empName(r)}</TableCell>
+                      <TableCell className="text-slate-600 dark:text-slate-400">{r.category ?? '—'}</TableCell>
+                      <TableCell className="font-medium text-slate-900 dark:text-slate-50">{formatINR(amountNum(r))}</TableCell>
+                      <TableCell>
+                        <Badge variant={r.status === 'APPROVED' ? 'default' : r.status === 'REJECTED' ? 'destructive' : 'secondary'} className="dark:bg-slate-700 dark:text-slate-200">
+                          {r.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-slate-600 dark:text-slate-400">{format(new Date(r.createdAt || r.submittedDate || ''), 'MMM d, yyyy')}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent className="dark:bg-slate-900 dark:border-slate-800">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 dark:text-slate-50">Reject reimbursement</DialogTitle>
+            <DialogDescription className="text-slate-600 dark:text-slate-400">Provide a reason (required by API).</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input placeholder="Rejection reason…" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} className="dark:bg-slate-800 dark:border-slate-700 dark:text-slate-50" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setRejectDialogOpen(false); setRejectionReason(''); setRejectId(null) }} className="dark:border-slate-600 dark:text-slate-300">Cancel</Button>
+            <Button variant="destructive" onClick={handleRejectConfirm} disabled={!rejectionReason.trim() || rejectMutation.isPending}>
+              {rejectMutation.isPending ? 'Rejecting…' : 'Reject'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

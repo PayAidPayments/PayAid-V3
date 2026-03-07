@@ -6,6 +6,7 @@ import { z } from 'zod'
 const createProjectSchema = z.object({
   name: z.string().min(1).max(200),
   instructions: z.string().max(4000).optional(),
+  contextNotes: z.string().max(8000).optional(),
 })
 
 /**
@@ -23,6 +24,7 @@ export async function GET(request: NextRequest) {
         id: true,
         name: true,
         instructions: true,
+        contextNotes: true,
         createdAt: true,
         updatedAt: true,
         _count: { select: { conversations: true } },
@@ -60,6 +62,7 @@ export async function POST(request: NextRequest) {
         userId,
         name: validated.name.trim(),
         instructions: validated.instructions?.trim() || undefined,
+        contextNotes: validated.contextNotes?.trim() || undefined,
       },
     })
 

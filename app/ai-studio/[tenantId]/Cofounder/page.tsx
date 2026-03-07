@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Send, Bot, User, Loader2, ChevronDown, LayoutGrid, History, AlertCircle, ExternalLink, Paperclip, Download, Table2, Zap, FolderPlus, Pencil } from 'lucide-react'
 import { formatINR } from '@/lib/utils/formatINR'
 import { getSuggestionsForAgent } from '@/lib/ai/co-founder-suggestions'
@@ -80,7 +81,12 @@ function StructuredActionButton({
   getAuthHeaders: () => Record<string, string>
   conversationId: string | null
 }) {
-  const label = action.label || (action.type === 'open_deal' ? 'Open deal' : action.type === 'open_crm' ? 'Open CRM' : action.type === 'open_finance' ? 'Open Finance' : action.type === 'open_hr' ? 'Open HR' : action.type === 'create_task' ? 'Create task' : action.type === 'open_invoice' ? 'Open invoice' : action.type === 'open_quotes' ? 'Open Quotes' : action.type)
+  const defaultLabels: Record<string, string> = {
+    open_deal: 'Open deal', open_crm: 'Open CRM', open_finance: 'Open Finance', open_hr: 'Open HR',
+    create_task: 'Create task', open_invoice: 'Open invoice', open_quotes: 'Open Quotes',
+    open_contacts: 'View contacts', open_leads: 'View leads', open_contact: 'Open contact',
+  }
+  const label = action.label || defaultLabels[action.type] || action.type
   if (action.type === 'open_deal' && action.dealId) {
     return (
       <Link href={`/crm/${tenantId}/Deals/${action.dealId}`}>
@@ -121,6 +127,27 @@ function StructuredActionButton({
   if (action.type === 'open_quotes') {
     return (
       <Link href={`/crm/${tenantId}/Quotes`}>
+        <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: `${PAYAID_PURPLE}60` }}>{label}</Button>
+      </Link>
+    )
+  }
+  if (action.type === 'open_contacts') {
+    return (
+      <Link href={`/crm/${tenantId}/Contacts`}>
+        <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: `${PAYAID_PURPLE}60` }}>{label}</Button>
+      </Link>
+    )
+  }
+  if (action.type === 'open_leads') {
+    return (
+      <Link href={`/crm/${tenantId}/Leads`}>
+        <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: `${PAYAID_PURPLE}60` }}>{label}</Button>
+      </Link>
+    )
+  }
+  if (action.type === 'open_contact' && action.contactId) {
+    return (
+      <Link href={`/crm/${tenantId}/Contacts/${action.contactId}`}>
         <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: `${PAYAID_PURPLE}60` }}>{label}</Button>
       </Link>
     )
@@ -188,6 +215,7 @@ export default function CoFounderPage() {
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null)
   const [projectName, setProjectName] = useState('')
   const [projectInstructions, setProjectInstructions] = useState('')
+  const [projectContextNotes, setProjectContextNotes] = useState('')
 
   const { data: agentsData } = useQuery<{ agents: Agent[] }>({
     queryKey: ['ai-agents'],
@@ -224,7 +252,7 @@ export default function CoFounderPage() {
     enabled: !!token,
   })
 
-  const { data: projectsData, refetch: refetchProjects } = useQuery<{ projects: Array<{ id: string; name: string; instructions: string | null; _count: { conversations: number } }> }>({
+  const { data: projectsData, refetch: refetchProjects } = useQuery<{ projects: Array<{ id: string; name: string; instructions: string | null; contextNotes: string | null; _count: { conversations: number } }> }>({
     queryKey: ['cofounder-projects'],
     queryFn: async () => {
       const res = await fetch('/api/ai/cofounder/projects', { headers: getAuthHeaders() })
@@ -406,7 +434,11 @@ export default function CoFounderPage() {
         const res = await fetch(`/api/ai/cofounder/projects/${editingProjectId}`, {
           method: 'PATCH',
           headers,
-          body: JSON.stringify({ name: projectName.trim(), instructions: projectInstructions.trim() || null }),
+          body: JSON.stringify({
+            name: projectName.trim(),
+            instructions: projectInstructions.trim() || null,
+            contextNotes: projectContextNotes.trim() || null,
+          }),
         })
         if (!res.ok) throw new Error('Failed to update project')
         return res.json()
@@ -414,7 +446,11 @@ export default function CoFounderPage() {
       const res = await fetch('/api/ai/cofounder/projects', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ name: projectName.trim(), instructions: projectInstructions.trim() || undefined }),
+        body: JSON.stringify({
+          name: projectName.trim(),
+          instructions: projectInstructions.trim() || undefined,
+          contextNotes: projectContextNotes.trim() || undefined,
+        }),
       })
       if (!res.ok) throw new Error('Failed to create project')
       return res.json()
@@ -425,6 +461,7 @@ export default function CoFounderPage() {
       setEditingProjectId(null)
       setProjectName('')
       setProjectInstructions('')
+      setProjectContextNotes('')
       if (data?.id && !editingProjectId) setSelectedProjectId(data.id)
     },
   })
@@ -433,13 +470,15 @@ export default function CoFounderPage() {
     setEditingProjectId(null)
     setProjectName('')
     setProjectInstructions('')
+    setProjectContextNotes('')
     setProjectDialogOpen(true)
   }
 
-  const openEditProjectDialog = (p: { id: string; name: string; instructions: string | null }) => {
+  const openEditProjectDialog = (p: { id: string; name: string; instructions: string | null; contextNotes?: string | null }) => {
     setEditingProjectId(p.id)
     setProjectName(p.name)
     setProjectInstructions(p.instructions || '')
+    setProjectContextNotes(p.contextNotes || '')
     setProjectDialogOpen(true)
   }
 
@@ -1004,11 +1043,45 @@ export default function CoFounderPage() {
                     ))}
                   </ul>
                 )}
-                {latestArtifact.type === 'chart' && 'labels' in latestArtifact.data && (
-                  <div className="px-4 pb-4 text-xs text-slate-500">
-                    Chart: {latestArtifact.data.title || latestArtifact.data.labels?.join(', ')} — open in full view soon.
-                  </div>
-                )}
+                {latestArtifact.type === 'chart' && 'labels' in latestArtifact.data && (() => {
+                  const d = latestArtifact.data as { type: 'bar' | 'line'; title?: string; labels: string[]; datasets: { label: string; values: number[] }[] }
+                  const chartData = d.labels.map((name, i) => ({
+                    name,
+                    ...Object.fromEntries(d.datasets.map((ds) => [ds.label, ds.values[i] ?? 0])),
+                  }))
+                  const colors = ['#53328A', '#6366f1', '#22c55e', '#f59e0b']
+                  return (
+                    <div className="px-4 pb-4">
+                      <div className="h-56 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          {d.type === 'line' ? (
+                            <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
+                              <XAxis dataKey="name" tick={{ fontSize: 10 }} className="text-slate-600" />
+                              <YAxis tick={{ fontSize: 10 }} />
+                              <Tooltip contentStyle={{ borderRadius: '0.75rem', border: '1px solid var(--slate-200)' }} />
+                              <Legend />
+                              {d.datasets.map((ds, i) => (
+                                <Line key={ds.label} type="monotone" dataKey={ds.label} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 3 }} />
+                              ))}
+                            </LineChart>
+                          ) : (
+                            <BarChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
+                              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                              <YAxis tick={{ fontSize: 10 }} />
+                              <Tooltip contentStyle={{ borderRadius: '0.75rem', border: '1px solid var(--slate-200)' }} />
+                              <Legend />
+                              {d.datasets.map((ds, i) => (
+                                <Bar key={ds.label} dataKey={ds.label} fill={colors[i % colors.length]} radius={[4, 4, 0, 0]} />
+                              ))}
+                            </BarChart>
+                          )}
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )
+                })()}
               </CardContent>
             </Card>
           )}
@@ -1180,6 +1253,36 @@ export default function CoFounderPage() {
                     ))}
                   </ul>
                 )}
+                {latestArtifact.type === 'chart' && 'labels' in latestArtifact.data && (() => {
+                  const d = latestArtifact!.data as { type: 'bar' | 'line'; labels: string[]; datasets: { label: string; values: number[] }[] }
+                  const chartData = d.labels.map((name, i) => ({ name, ...Object.fromEntries(d.datasets.map((ds) => [ds.label, ds.values[i] ?? 0])) }))
+                  const colors = ['#53328A', '#6366f1']
+                  return (
+                    <div className="px-4 pb-4 h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        {d.type === 'line' ? (
+                          <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+                            <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                            <YAxis tick={{ fontSize: 10 }} />
+                            <Tooltip />
+                            {d.datasets.map((ds, i) => (
+                              <Line key={ds.label} type="monotone" dataKey={ds.label} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 2 }} />
+                            ))}
+                          </LineChart>
+                        ) : (
+                          <BarChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+                            <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                            <YAxis tick={{ fontSize: 10 }} />
+                            <Tooltip />
+                            {d.datasets.map((ds, i) => (
+                              <Bar key={ds.label} dataKey={ds.label} fill={colors[i % colors.length]} radius={[4, 4, 0, 0]} />
+                            ))}
+                          </BarChart>
+                        )}
+                      </ResponsiveContainer>
+                    </div>
+                  )
+                })()}
               </CardContent>
             </Card>
           )}
@@ -1251,7 +1354,7 @@ export default function CoFounderPage() {
           <DialogHeader>
             <DialogTitle>{editingProjectId ? 'Edit project' : 'New project'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+            <div className="space-y-4 py-2">
             <div>
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">Name</label>
               <Input
@@ -1267,10 +1370,21 @@ export default function CoFounderPage() {
                 value={projectInstructions}
                 onChange={(e) => setProjectInstructions(e.target.value)}
                 placeholder="e.g. Always consider my restaurant margins and peak hours."
-                rows={4}
+                rows={3}
                 className="rounded-xl resize-none"
               />
-              <p className="text-xs text-slate-500 mt-1">The AI will remember this context for all chats in this project.</p>
+              <p className="text-xs text-slate-500 mt-1">The AI will remember this for all chats in this project.</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">Context notes (optional)</label>
+              <Textarea
+                value={projectContextNotes}
+                onChange={(e) => setProjectContextNotes(e.target.value)}
+                placeholder="Paste data, notes, or references the AI should use (e.g. key metrics, targets)."
+                rows={3}
+                className="rounded-xl resize-none"
+              />
+              <p className="text-xs text-slate-500 mt-1">Attached to the project and injected into the AI context.</p>
             </div>
           </div>
           <DialogFooter>
