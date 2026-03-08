@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Phone, Settings, Trash2, Play, FileText, MessageSquare } from 'lucide-react'
+import { Phone, Settings, Trash2, Play, FileText, Headphones } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
@@ -80,7 +80,7 @@ export function VoiceAgentList({ agents, loading, onRefresh }: VoiceAgentListPro
             Create your first voice agent to start making automated calls
           </p>
           <div className="space-y-2">
-            <Link href={`/voice-agents/${tenantId}/New`}>
+            <Link href={`/voice-agents/${tenantId}/create`}>
               <Button>Create Agent</Button>
             </Link>
             <p className="text-xs text-muted-foreground mt-4">
@@ -114,7 +114,7 @@ export function VoiceAgentList({ agents, loading, onRefresh }: VoiceAgentListPro
               <div className="flex gap-2">
                 <Link href={`/voice-agents/${tenantId}/Demo?agentId=${agent.id}`}>
                   <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700">
-                    <MessageSquare className="h-4 w-4 mr-1" />
+                    <Headphones className="h-4 w-4 mr-1" />
                     Demo
                   </Button>
                 </Link>

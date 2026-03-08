@@ -23,22 +23,21 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   // Server-side timeout wrapper (Vercel Hobby has 10s timeout, Pro has 60s)
-  // For minimal data/users, login should complete in < 2 seconds
-  // Use 10 seconds for local dev (allows for slower DB connections), 5 seconds for production
-  const SERVER_TIMEOUT = isDevelopment() ? 10000 : 5000 // 10s for dev, 5s for prod
+  // Use longer timeouts so slow DB / cold starts don't win the race and cause 504 → login loops
+  const SERVER_TIMEOUT = isDevelopment() ? 30000 : 25000 // 30s dev (cold DB), 25s prod
   
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
   try {
-    // Ensure we always return JSON, even for unexpected errors
     const result = await Promise.race([
       handleLogin(request),
       new Promise<NextResponse>((_, reject) => {
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           console.error(`[LOGIN] Server-side timeout after ${SERVER_TIMEOUT / 1000} seconds`)
           reject(new Error('Server timeout: Request took too long to process'))
         }, SERVER_TIMEOUT)
       }),
     ])
-    
+    if (timeoutId) clearTimeout(timeoutId)
     return result
   } catch (unexpectedError) {
     

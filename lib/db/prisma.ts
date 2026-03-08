@@ -93,29 +93,25 @@ function createPrismaClient(): PrismaClient {
   }
   
   if (!url.searchParams.has('connect_timeout')) {
-    // Reduced from 10s to 3s for faster connection establishment
-    // Database should respond quickly with minimal load
-    url.searchParams.set('connect_timeout', '3') // 3 seconds - faster connection
+    // Supabase pooler (remote) needs longer timeout for first connection
+    const isSupabasePooler = url.hostname.includes('pooler.supabase.com')
+    url.searchParams.set('connect_timeout', isSupabasePooler ? '15' : '3')
   }
 
   // For Supabase pooler, switch to TRANSACTION mode (port 6543) to avoid connection limits
   // Session mode (port 5432) has strict limits (typically 1-5 connections per user)
   // Transaction mode allows more concurrent connections
   if (url.hostname.includes('pooler.supabase.com')) {
-    // CRITICAL: Use transaction mode instead of session mode
-    // Transaction mode (port 6543) allows more concurrent connections
-    // Session mode (port 5432) has strict limits that cause "MaxClientsInSessionMode" errors
-    // Always switch to transaction mode regardless of what port is in DATABASE_URL
-    url.port = '6543' // Force transaction mode
-    
-    // Ensure pgbouncer is enabled for transaction mode
+    url.port = '6543' // Transaction mode (session 5432 has strict limits)
     if (!url.searchParams.has('pgbouncer')) {
       url.searchParams.set('pgbouncer', 'true')
     }
-    
-    // Log the change for debugging
+    // Supabase requires SSL; missing sslmode can cause "Can't reach database server"
+    if (!url.searchParams.has('sslmode')) {
+      url.searchParams.set('sslmode', 'require')
+    }
     if (isDevelopment()) {
-      console.log(`[PRISMA] Switched Supabase pooler to transaction mode (port 6543)`)
+      console.log(`[PRISMA] Supabase pooler: port 6543, sslmode=require`)
     }
   }
 

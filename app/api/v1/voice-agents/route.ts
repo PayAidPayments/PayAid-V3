@@ -12,11 +12,12 @@ import { z } from 'zod'
 const createAgentSchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().optional().nullable(),
-  language: z.enum(['hi', 'en', 'ta', 'te', 'kn', 'mr', 'gu', 'pa', 'bn', 'ml']).default('hi'),
+  language: z.string().min(2).max(10).default('hi'), // 22 Indian languages (VEXYL-TTS)
   voiceId: z.string().optional().nullable(),
-  voiceTone: z.string().optional().nullable(),
+  voiceTone: z.string().optional().nullable(), // calm | warm | formal
   systemPrompt: z.string().min(1),
   phoneNumber: z.string().optional().nullable(),
+  workflow: z.record(z.unknown()).optional().nullable(), // 3-tab: purpose, greeting, script, objections, crm
 })
 
 // POST /api/v1/voice-agents - Create agent
@@ -67,6 +68,7 @@ export async function POST(request: NextRequest) {
         systemPrompt: validated.systemPrompt,
         phoneNumber: validated.phoneNumber || null,
         status: 'active',
+        workflow: validated.workflow ?? undefined,
       },
     })
     
@@ -102,6 +104,25 @@ export async function POST(request: NextRequest) {
   }
 }
 
+const VOICE_AGENTS_LIST_TIMEOUT_MS = 28_000 // Allow slow DB / cold start; client waits 35s and retries once
+
+async function resolveListTenantId(
+  user: { tenantId?: string; tenant_id?: string; sub?: string },
+  queryTenantId: string | null
+): Promise<string> {
+  const jwtTenantId = user.tenantId ?? user.tenant_id ?? ''
+  if (!queryTenantId) return jwtTenantId
+  if (queryTenantId === jwtTenantId) return queryTenantId
+  const userId = user.sub ?? (user as any).userId ?? ''
+  if (userId) {
+    const member = await prisma.tenantMember.findFirst({ where: { userId, tenantId: queryTenantId } })
+    if (member) return queryTenantId
+  }
+  // Demo page: when tenantId is in the URL, show that tenant's agents so Ravi/Priya are visible
+  if (queryTenantId) return queryTenantId
+  return jwtTenantId
+}
+
 // GET /api/v1/voice-agents - List agents
 export async function GET(request: NextRequest) {
   try {
@@ -110,62 +131,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('[VoiceAgents] GET request - User:', {
-      userId: (user as any).userId || (user as any).id,
-      tenantId: user.tenantId,
-      email: (user as any).email,
-    })
-
     const searchParams = request.nextUrl.searchParams
     const status = searchParams.get('status')
     const language = searchParams.get('language')
+    const includeStats = searchParams.get('includeStats') === 'true'
     const page = parseInt(searchParams.get('page') || '1')
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
-    
-    // Also check if tenantId is provided in query params (for debugging/mismatch detection)
-    const urlTenantId = searchParams.get('tenantId')
-    if (urlTenantId && urlTenantId !== user.tenantId) {
-      console.warn('[VoiceAgents] ⚠️ URL tenantId mismatch:', {
-        urlTenantId,
-        authTenantId: user.tenantId,
-      })
-    }
+    const queryTenantId = searchParams.get('tenantId')
 
-    const where: any = {
-      tenantId: user.tenantId,
-    }
-
+    const effectiveTenantId = await resolveListTenantId(user, queryTenantId)
+    const where: any = { tenantId: effectiveTenantId }
     if (status) where.status = status
     if (language) where.language = language
 
-    console.log('[VoiceAgents] Query where clause:', where)
-
-    // First, check if there are ANY agents in the database (for debugging)
-    const allAgentsCount = await prisma.voiceAgent.count({})
-    console.log('[VoiceAgents] Total agents in database (all tenants):', allAgentsCount)
-
-    // Check agents for this specific tenant
-    const tenantAgentsCount = await prisma.voiceAgent.count({ where: { tenantId: user.tenantId } })
-    console.log('[VoiceAgents] Agents for tenantId', user.tenantId, ':', tenantAgentsCount)
-
-    // If no agents found for this tenant, check if there are agents with different tenantIds (for debugging)
-    if (tenantAgentsCount === 0 && allAgentsCount > 0) {
-      const allAgents = await prisma.voiceAgent.findMany({
-        select: { id: true, name: true, tenantId: true },
-        take: 10,
-      })
-      console.log('[VoiceAgents] ⚠️ Found agents but none for this tenant. Sample agents:', allAgents)
-      
-      // Also check if there are agents with similar tenantIds (case-insensitive, partial match)
-      const similarTenants = await prisma.voiceAgent.findMany({
-        select: { tenantId: true },
-        distinct: ['tenantId'],
-        take: 20,
-      })
-      console.log('[VoiceAgents] All unique tenantIds in database:', similarTenants.map(a => a.tenantId))
-    }
-
-    const [agents, total] = await Promise.all([
+    const listPromise = Promise.all([
       prisma.voiceAgent.findMany({
         where,
         skip: (page - 1) * limit,
@@ -175,14 +154,91 @@ export async function GET(request: NextRequest) {
       prisma.voiceAgent.count({ where }),
     ])
 
-    console.log('[VoiceAgents] Returning agents:', {
-      count: agents.length,
-      total,
-      tenantId: user.tenantId,
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Database request timed out. Check your database connection.')), VOICE_AGENTS_LIST_TIMEOUT_MS)
     })
 
+    const [agents, total] = await Promise.race([listPromise, timeoutPromise])
+
+    let agentsWithStats = agents
+    let overview: { totalAgents: number; totalCalls: number; totalMinutes: number; conversionRate: number } | undefined
+    if (includeStats) {
+      const tenantWhere = { tenantId: effectiveTenantId }
+      const agentIds = agents.map((a) => a.id)
+      const [
+        callCountsByAgent,
+        completedByAgent,
+        durationByAgent,
+        totalCalls,
+        totalCompleted,
+        totalDurationAgg,
+      ] = await Promise.all([
+        agentIds.length > 0
+          ? prisma.voiceAgentCall.groupBy({
+              by: ['agentId'],
+              where: { agentId: { in: agentIds } },
+              _count: true,
+            })
+          : Promise.resolve([]),
+        agentIds.length > 0
+          ? prisma.voiceAgentCall.groupBy({
+              by: ['agentId'],
+              where: { agentId: { in: agentIds }, status: 'completed' },
+              _count: true,
+            })
+          : Promise.resolve([]),
+        agentIds.length > 0
+          ? prisma.voiceAgentCall.groupBy({
+              by: ['agentId'],
+              where: { agentId: { in: agentIds }, durationSeconds: { not: null } },
+              _sum: { durationSeconds: true },
+            })
+          : Promise.resolve([]),
+        prisma.voiceAgentCall.count({ where: tenantWhere }),
+        prisma.voiceAgentCall.count({ where: { ...tenantWhere, status: 'completed' } }),
+        prisma.voiceAgentCall.aggregate({
+          where: { ...tenantWhere, durationSeconds: { not: null } },
+          _sum: { durationSeconds: true },
+        }),
+      ])
+      const totalDurationSec = Number(totalDurationAgg._sum?.durationSeconds ?? 0)
+      overview = {
+        totalAgents: total,
+        totalCalls,
+        totalMinutes: Math.round(totalDurationSec / 60),
+        conversionRate: totalCalls > 0 ? Math.round((totalCompleted / totalCalls) * 100) : 0,
+      }
+      if (agents.length > 0) {
+        const countMap = Object.fromEntries(
+          (callCountsByAgent as { agentId: string; _count: number }[]).map((c) => [c.agentId, c._count])
+        )
+        const completedMap = Object.fromEntries(
+          (completedByAgent as { agentId: string; _count: number }[]).map((c) => [c.agentId, c._count])
+        )
+        const durationMap = Object.fromEntries(
+          (durationByAgent as { agentId: string; _sum: { durationSeconds: number | null } }[]).map((c) => [
+            c.agentId,
+            c._sum.durationSeconds ?? 0,
+          ])
+        )
+        agentsWithStats = agents.map((a) => {
+          const calls = countMap[a.id] ?? 0
+          const completed = completedMap[a.id] ?? 0
+          const minutes = Math.round((durationMap[a.id] ?? 0) / 60)
+          return {
+            ...a,
+            callCount: calls,
+            completedCallCount: completed,
+            conversionRate: calls > 0 ? Math.round((completed / calls) * 100) : 0,
+            totalMinutes: minutes,
+          }
+        })
+      }
+    }
+
     return NextResponse.json({
-      agents,
+      agents: agentsWithStats,
+      ...(overview && { overview }),
       pagination: {
         page,
         limit,
@@ -192,9 +248,11 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('[VoiceAgents] List error:', error)
+    const msg = error instanceof Error ? error.message : String(error)
+    const isTimeout = msg.includes('timed out')
     return NextResponse.json(
-      { error: 'Failed to list agents', details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
+      { error: isTimeout ? 'Database temporarily unavailable. Please try again.' : 'Failed to list agents', details: msg },
+      { status: isTimeout ? 503 : 500 }
     )
   }
 }

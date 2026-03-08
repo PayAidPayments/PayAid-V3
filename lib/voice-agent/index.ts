@@ -32,6 +32,15 @@ export {
   isLanguageSupported as isIndicParlerLanguageSupported
 } from './indicparler-tts'
 
+export {
+  synthesizeWithVexyl,
+  isVexylConfigured,
+  getVexylLanguages,
+  getVexylSpeakers,
+  toVexylLocale,
+} from './vexyl-tts'
+export type { VexylTTSOptions, VexylVoiceStyle } from './vexyl-tts'
+
 export { VoiceAgentOrchestrator } from './orchestrator'
 export type { ConversationTurn, VoiceAgentConfig } from './orchestrator'
 export type { STTResult } from './stt'

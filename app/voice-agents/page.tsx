@@ -1,9 +1,12 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { PageLoading } from '@/components/ui/loading'
+
+const REHYDRATE_WAIT_MS = 200  // Give Zustand persist time to restore auth from localStorage
+const MAX_WAIT_MS = 5000       // Don't show loading forever
 
 /**
  * Voice Agents Module Entry Point (Decoupled Architecture)
@@ -13,22 +16,36 @@ import { PageLoading } from '@/components/ui/loading'
 export default function VoiceAgentsModulePage() {
   const router = useRouter()
   const { tenant, isAuthenticated } = useAuthStore()
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
+    // Wait for auth store rehydration before redirecting (avoids sending logged-in users to /login)
+    const rehydrateTimer = setTimeout(() => setReady(true), REHYDRATE_WAIT_MS)
+    return () => clearTimeout(rehydrateTimer)
+  }, [])
+
+  useEffect(() => {
+    if (!ready) return
+
     if (!isAuthenticated) {
-      // Not logged in - redirect to login
       router.push('/login')
       return
     }
 
     if (tenant?.id) {
-      // Redirect to tenant-specific Voice Agents dashboard
       router.push(`/voice-agents/${tenant.id}/Home/`)
     } else {
-      // No tenant - redirect to login
       router.push('/login')
     }
-  }, [isAuthenticated, tenant?.id, router])
+  }, [ready, isAuthenticated, tenant?.id, router])
+
+  // If still not ready after max wait, redirect to login so user isn't stuck
+  useEffect(() => {
+    const maxTimer = setTimeout(() => {
+      setReady(true)
+    }, MAX_WAIT_MS)
+    return () => clearTimeout(maxTimer)
+  }, [])
 
   return <PageLoading message="Loading Voice Agents..." fullScreen={true} />
 }

@@ -24,9 +24,10 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons', 'framer-motion'],
     // Lower memory use during build (Next.js 15+)
     webpackMemoryOptimizations: true,
-    // Disable worker so single Node process uses one heap (avoids OOM from main+worker)
-    webpackBuildWorker: false,
-    cpus: 1,
+    // On Vercel: single process/CPU to avoid OOM. Locally: use defaults for much faster compiles.
+    ...(process.env.VERCEL === '1'
+      ? { webpackBuildWorker: false, cpus: 1 }
+      : {}),
   },
 
   // Security Headers (Layer 6)

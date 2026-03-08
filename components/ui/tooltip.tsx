@@ -3,48 +3,45 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-// Try to import radix tooltip, fallback to stub if not available
-let TooltipPrimitive: any
+// Stub so we always have valid components (used when Radix is missing or exports differently)
+const stub = {
+  Provider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Root: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Trigger: React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+    ({ className, ...props }, ref) => <div ref={ref} className={cn(className)} {...props} />
+  ),
+  Content: React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & { sideOffset?: number }>(
+    ({ className, sideOffset = 4, ...props }, ref) => (
+      <div
+        ref={ref}
+        className={cn(
+          "z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md",
+          className
+        )}
+        {...props}
+      />
+    )
+  ),
+}
+stub.Trigger.displayName = "TooltipTrigger"
+stub.Content.displayName = "TooltipContent"
+
+let TooltipPrimitive: typeof stub
 try {
-  TooltipPrimitive = require("@radix-ui/react-tooltip")
+  const required = require("@radix-ui/react-tooltip")
+  const prim = required?.Root != null ? required : required?.default
+  TooltipPrimitive = prim?.Root != null ? prim : stub
 } catch {
-  // Fallback stub implementation
-  TooltipPrimitive = {
-    Provider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-    Root: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-    Trigger: React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-      ({ className, ...props }, ref) => <div ref={ref} className={cn(className)} {...props} />
-    ),
-    Content: React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & { sideOffset?: number }>(
-      ({ className, sideOffset = 4, ...props }, ref) => (
-        <div
-          ref={ref}
-          className={cn(
-            "z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md",
-            className
-          )}
-          {...props}
-        />
-      )
-    ),
-  }
-  if (TooltipPrimitive.Trigger) {
-    TooltipPrimitive.Trigger.displayName = "TooltipTrigger"
-  }
-  if (TooltipPrimitive.Content) {
-    TooltipPrimitive.Content.displayName = "TooltipContent"
-  }
+  TooltipPrimitive = stub
 }
 
 const TooltipProvider = TooltipPrimitive.Provider
-
 const Tooltip = TooltipPrimitive.Root
-
 const TooltipTrigger = TooltipPrimitive.Trigger
 
 const TooltipContent = React.forwardRef<
-  React.ElementRef<typeof TooltipPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & { sideOffset?: number }
 >(({ className, sideOffset = 4, ...props }, ref) => (
   <TooltipPrimitive.Content
     ref={ref}
@@ -56,6 +53,6 @@ const TooltipContent = React.forwardRef<
     {...props}
   />
 ))
-TooltipContent.displayName = TooltipPrimitive.Content.displayName
+TooltipContent.displayName = "TooltipContent"
 
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Phone, Plus, History, BarChart3, Settings, FileText } from 'lucide-react'
+import { Phone, Plus, History, BarChart3, Settings, FileText, ShieldCheck, LayoutDashboard, Megaphone, MessageSquare, Headphones } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
 interface VoiceAgentsSidebarProps {
@@ -20,8 +20,18 @@ export function VoiceAgentsSidebar({ tenantId }: VoiceAgentsSidebarProps) {
     },
     {
       name: 'Create Agent',
-      href: `/voice-agents/${tenantId}/New`,
+      href: `/voice-agents/${tenantId}/create`,
       icon: Plus,
+    },
+    {
+      name: 'Studio',
+      href: `/voice-agents/${tenantId}/studio`,
+      icon: LayoutDashboard,
+    },
+    {
+      name: 'Demo',
+      href: `/voice-agents/${tenantId}/Demo`,
+      icon: Headphones,
     },
     {
       name: 'Call History',
@@ -29,9 +39,24 @@ export function VoiceAgentsSidebar({ tenantId }: VoiceAgentsSidebarProps) {
       icon: History,
     },
     {
+      name: 'Campaigns',
+      href: `/voice-agents/${tenantId}/Campaigns`,
+      icon: Megaphone,
+    },
+    {
+      name: 'Transcripts',
+      href: `/voice-agents/${tenantId}/Transcripts`,
+      icon: MessageSquare,
+    },
+    {
       name: 'Analytics',
       href: `/voice-agents/${tenantId}/Analytics`,
       icon: BarChart3,
+    },
+    {
+      name: 'DND Scrub',
+      href: `/voice-agents/${tenantId}/DND-Scrub`,
+      icon: ShieldCheck,
     },
     {
       name: 'Knowledge Base',
