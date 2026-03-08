@@ -285,6 +285,7 @@ model Tenant {
   // Voice Agent Relations
   voiceAgents                  VoiceAgent[]
   voiceAgentCalls              VoiceAgentCall[]
+  voiceAgentCampaigns          VoiceAgentCampaign[]
   voiceAgentSquads             VoiceAgentSquad[]
   voiceAgentExperiments        VoiceAgentExperiment[]
   // Productivity Suite Relations
@@ -2787,10 +2788,12 @@ model VoiceAgent {
   knowledgeBase        Json? // Knowledge base configuration
   functions            Json? // Function calling configuration
   compliance           Json? // Compliance settings (DND, consent, etc.)
+  workflow             Json? // Agent Builder flow: { nodes: [], edges: [] } (Greeting, Intent, CRM Lookup, Response, Actions, End)
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
   tenant               Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   calls                VoiceAgentCall[]
+  campaigns            VoiceAgentCampaign[]
   squadMembers         VoiceAgentSquadMember[]
   experiments          VoiceAgentExperiment[]
 
@@ -2798,6 +2801,47 @@ model VoiceAgent {
   @@index([tenantId, status])
   @@index([tenantId, language])
   @@index([phoneNumber])
+}
+
+model VoiceAgentCampaign {
+  id              String                     @id @default(cuid())
+  tenantId        String
+  agentId         String
+  name            String
+  campaignType    String                     // reminder, lead_nurturing, survey, collections
+  script          String?                    @db.Text // TTS script or prompt
+  status          String                     @default("draft") // draft, scheduled, running, paused, completed
+  autoRemoveDnd   Boolean                   @default(true)
+  paceCallsPerMin Int                       @default(10) // Sequential dialer: max calls per minute
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  tenant          Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  agent           VoiceAgent                @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  contacts        VoiceAgentCampaignContact[]
+
+  @@index([tenantId])
+  @@index([agentId])
+  @@index([tenantId, status])
+}
+
+model VoiceAgentCampaignContact {
+  id         String              @id @default(cuid())
+  campaignId String
+  phone     String              // E.164 or 10-digit
+  name      String?
+  metadata  Json?              // e.g. invoiceId, amount for collections
+  status    String              @default("pending") // pending, calling, completed, failed, dnd_skipped
+  callId    String?             // VoiceAgentCall id when call placed
+  attemptedAt DateTime?
+  completedAt DateTime?
+  createdAt   DateTime          @default(now())
+  campaign   VoiceAgentCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([campaignId, status])
 }
 
 model VoiceAgentCall {

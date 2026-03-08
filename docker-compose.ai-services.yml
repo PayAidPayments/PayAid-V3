@@ -35,6 +35,7 @@ services:
     environment:
       - MODEL_NAME=tts_models/multilingual/multi-dataset/xtts_v2
       - HF_HOME=/models
+      - COQUI_TOS_AGREED=1
     volumes:
       - text-to-speech-models:/models
     deploy:

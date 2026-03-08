@@ -1,19 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Phone, FileText } from 'lucide-react'
+import { Plus, Phone, BarChart3, Mic } from 'lucide-react'
 import Link from 'next/link'
-import { VoiceAgentList } from '@/components/voice-agent/voice-agent-list'
+import { VoiceAgentTable } from '@/components/voice-agent/voice-agent-table'
 
 export default function VoiceAgentsHomePage() {
   const params = useParams()
+  const router = useRouter()
   const tenantId = params.tenantId as string
   const { tenant, token } = useAuthStore()
   const [agents, setAgents] = useState<any[]>([])
+  const [overview, setOverview] = useState<{ totalAgents: number; totalCalls: number; totalMinutes: number; conversionRate: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -35,70 +37,71 @@ export default function VoiceAgentsHomePage() {
       setError(null)
       setLoading(true)
       
-      // Add timeout to prevent hanging
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
-      
-      const response = await fetch('/api/v1/voice-agents', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal,
-      })
-      
-      clearTimeout(timeoutId)
+      const timeoutMs = 35_000
+      const timeoutId = setTimeout(() => controller.abort(new DOMException(`Request timed out after ${timeoutMs / 1000}s`, 'AbortError')), timeoutMs)
+      try {
+        const listUrl = new URL('/api/v1/voice-agents', window.location.origin)
+        listUrl.searchParams.set('includeStats', 'true')
+        listUrl.searchParams.set('tenantId', tenantId)
+        const response = await fetch(listUrl.toString(), {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        })
+        clearTimeout(timeoutId)
       
       if (!response.ok) {
-        // Try to get error message from response
         let errorMessage = 'Failed to fetch agents'
         try {
           const errorData = await response.json()
           errorMessage = errorData.error || errorData.message || errorMessage
         } catch {
-          // If response is not JSON, use status text
           errorMessage = response.statusText || `HTTP ${response.status}`
         }
-        
-        console.error('Failed to fetch agents:', {
-          status: response.status,
-          statusText: response.statusText,
-          message: errorMessage,
-        })
-        
+        console.error('Failed to fetch agents:', { status: response.status, message: errorMessage })
         if (response.status === 401) {
           setError('Authentication failed. Please log in again.')
         } else {
           setError(errorMessage)
         }
-        
-        // Set empty array on error to show empty state
         setAgents([])
         setLoading(false)
         return
       }
-      
       const data = await response.json()
       console.log('[VoiceAgents] Fetched agents:', {
         count: data.agents?.length || 0,
         agents: data.agents,
+        overview: data.overview,
         tenantId: tenant?.id,
         urlTenantId: tenantId,
         pagination: data.pagination,
       })
       setAgents(data.agents || [])
+      setOverview(data.overview ?? null)
       setError(null)
       setLoading(false)
-    } catch (error: any) {
-      // Handle network errors, CORS issues, etc.
-      console.error('Failed to fetch agents:', error)
-      
-      // Provide more specific error messages
-      if (error.name === 'AbortError') {
-        setError('Request timed out. The server may be slow or unresponsive.')
+      return
+      } finally {
+        clearTimeout(timeoutId)
+      }
+    } catch (error: unknown) {
+      const err = error as { name?: string; message?: string }
+      if (err.name === 'AbortError') {
+        if (retryCount < 1) {
+          setTimeout(() => fetchAgents(retryCount + 1), 1500)
+          return
+        }
+        setError('Request timed out. The server or database may be slow. Click Retry below to try again.')
         setAgents([])
         setLoading(false)
-      } else if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        return
+      }
+      console.error('Failed to fetch agents:', error)
+      if (err instanceof TypeError && err.message === 'Failed to fetch') {
         const errorMsg = retryCount < 2 
           ? 'Server is starting up, retrying...' 
           : 'Unable to connect to server. Please ensure the development server is running on http://localhost:3000'
@@ -117,18 +120,16 @@ export default function VoiceAgentsHomePage() {
           setLoading(false)
         }
       } else {
-        setError(error instanceof Error ? error.message : 'An unexpected error occurred')
+        setError(error instanceof Error ? (error as Error).message : 'An unexpected error occurred')
+        setAgents([])
         setLoading(false)
       }
-      
-      // Set empty array on error to show empty state
-      setAgents([])
     }
   }
 
   useEffect(() => {
     let mounted = true
-    
+
     if (token) {
       fetchAgents().finally(() => {
         if (mounted) {
@@ -138,14 +139,22 @@ export default function VoiceAgentsHomePage() {
     } else {
       setLoading(false)
     }
-    
+
     return () => {
       mounted = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
+  }, [token, tenantId])
+
+  // If list is empty and URL tenant differs from auth tenant, redirect to auth tenant so user sees their agents
+  useEffect(() => {
+    if (loading || error || agents.length > 0) return
+    const authTenantId = tenant?.id
+    if (!authTenantId || authTenantId === tenantId) return
+    router.replace(`/voice-agents/${authTenantId}/Home`)
+  }, [loading, error, agents.length, tenant?.id, tenantId, router])
   
-  // Safety timeout - stop loading after 10 seconds
+  // Safety timeout - stop loading after 45s so we don't block UI forever (fetch timeout is 35s + 1 retry)
   useEffect(() => {
     if (!loading) return
     
@@ -153,61 +162,76 @@ export default function VoiceAgentsHomePage() {
       console.warn('[VoiceAgents] Loading timeout - stopping loading state')
       setLoading(false)
       if (!error) {
-        setError('Loading took too long. The server may be slow. Please refresh the page or check your connection.')
+        setError('Loading took too long. The server may be slow. Click Retry below to try again.')
       }
-    }, 10000) // 10 second timeout
+    }, 45_000)
     
     return () => clearTimeout(timeout)
   }, [loading, error])
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Voice Agents</h1>
           <p className="text-muted-foreground mt-2">
             Create and manage AI voice agents for automated calls
           </p>
         </div>
-        <Link href={`/voice-agents/${tenantId}/New`}>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Agent
-          </Button>
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/voice-agents/${tenantId}/create`}>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Agent
+            </Button>
+          </Link>
+          <Link href={`/voice-agents/${tenantId}/Campaigns`}>
+            <Button variant="outline">Campaigns</Button>
+          </Link>
+          <Link href={`/voice-agents/${tenantId}/Analytics`}>
+            <Button variant="outline">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Analytics
+            </Button>
+          </Link>
+          <Link href={`/voice-agents/${tenantId}/Demo`}>
+            <Button variant="outline">
+              <Mic className="mr-2 h-4 w-4" />
+              Demo
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Agents</CardTitle>
+            <CardTitle className="text-sm font-medium">Agents</CardTitle>
             <Phone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{agents.length}</div>
+            <div className="text-2xl font-bold">{overview?.totalAgents ?? agents.length}</div>
             <p className="text-xs text-muted-foreground">Active voice agents</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Calls</CardTitle>
+            <CardTitle className="text-sm font-medium">Minutes</CardTitle>
             <Phone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">All time calls</p>
+            <div className="text-2xl font-bold">{overview?.totalMinutes ?? 0}</div>
+            <p className="text-xs text-muted-foreground">Total call minutes</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Knowledge Bases</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Conversion</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">Uploaded documents</p>
+            <div className="text-2xl font-bold">{overview?.conversionRate ?? 0}%</div>
+            <p className="text-xs text-muted-foreground">Completed / total calls</p>
           </CardContent>
         </Card>
       </div>
@@ -215,28 +239,21 @@ export default function VoiceAgentsHomePage() {
       {error && (
         <Card className="border-red-200 bg-red-50 dark:bg-red-900/20">
           <CardContent className="p-4">
-            <p className="text-sm text-red-600 dark:text-red-400">
-              {error}
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fetchAgents()}
-              className="mt-2"
-            >
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <Button variant="outline" size="sm" onClick={() => fetchAgents()} className="mt-2">
               Retry
             </Button>
           </CardContent>
         </Card>
       )}
 
-      <VoiceAgentList 
-        agents={agents} 
-        loading={loading} 
+      <VoiceAgentTable
+        agents={agents}
+        loading={loading}
         onRefresh={() => {
           setLoading(true)
           fetchAgents()
-        }} 
+        }}
       />
     </div>
   )

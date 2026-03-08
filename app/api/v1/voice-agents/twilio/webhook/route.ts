@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import twilio from 'twilio';
 import { prisma } from '@/lib/db/prisma';
 import { verifyTwilioSignature, parseTwilioWebhook } from '@/lib/twilio-utils';
+import { syncVoiceCallToCrm } from '@/lib/voice-agent/crm-sync';
 
 const VoiceResponse = twilio.twiml.VoiceResponse;
 
@@ -90,29 +91,53 @@ export async function POST(request: NextRequest) {
 
     // ===== GENERATE TWIML RESPONSE =====
     const twiml = new VoiceResponse();
-    
-    // Say greeting (first 200 chars of system prompt or custom greeting)
-    const greeting = agent.description 
-      ? `${agent.description.substring(0, 200)}`
-      : `Hello, you've reached ${agent.name}. How can I help you?`;
-    
-    const sayLanguage = agent.language === 'en' ? 'en-US' : (agent.language as any);
+
+    // Greeting: prefer 3-tab workflow.greeting, then legacy nodes, then description
+    let greeting: string;
+    const workflow = agent.workflow as { greeting?: string; nodes?: Array<{ type: string; data?: { text?: string } }> } | null;
+    if (workflow?.greeting && String(workflow.greeting).trim()) {
+      greeting = String(workflow.greeting).substring(0, 500);
+    } else {
+      const greetingNode = workflow?.nodes?.find((n) => n.type === 'greeting');
+      if (greetingNode?.data?.text && String(greetingNode.data.text).trim()) {
+        greeting = String(greetingNode.data.text).substring(0, 500);
+      } else if (agent.description?.trim()) {
+        greeting = agent.description.substring(0, 200);
+      } else {
+        greeting = `Hello, you've reached ${agent.name}. How can I help you?`;
+      }
+    }
+
+    const sayLanguage = agent.language === 'hi' ? 'hi-IN' : agent.language === 'en' ? 'en-US' : (agent.language as string);
     twiml.say({
       voice: 'alice',
       language: sayLanguage
     }, greeting);
 
-    // Connect to WebSocket stream for real-time audio
-    const wsUrl = process.env.TELEPHONY_WEBSOCKET_URL || 
-      `wss://${request.headers.get('host') || 'localhost:3002'}/voice/stream`;
-    
-    twiml.connect({
-      action: `${request.nextUrl.origin}/api/v1/voice-agents/twilio/connect-status`,
-      method: 'POST'
-    }).stream({
-      url: `${wsUrl}?callSid=${callSid}&agentId=${agent.id}`,
-      track: 'inbound_track'
-    });
+    const speechHandlerUrl = `${request.nextUrl.origin}/api/v1/voice-agents/twilio/speech-handler`;
+    const wsUrl = process.env.TELEPHONY_WEBSOCKET_URL;
+
+    if (wsUrl) {
+      // Real-time: connect to WebSocket stream
+      twiml.connect({
+        action: `${request.nextUrl.origin}/api/v1/voice-agents/twilio/connect-status`,
+        method: 'POST'
+      }).stream({
+        url: `${wsUrl}?callSid=${callSid}&agentId=${agent.id}`,
+        track: 'inbound_track'
+      });
+    } else {
+      // Phase 1 MVP: no WebSocket — use Gather (speech) → speech-handler → LLM + TTS → Play → loop
+      twiml.gather({
+        input: ['speech'],
+        action: speechHandlerUrl,
+        method: 'POST',
+        language: sayLanguage,
+        speechTimeout: 2,
+        timeout: 5,
+      });
+      twiml.redirect(speechHandlerUrl);
+    }
 
     return new NextResponse(twiml.toString(), {
       headers: { 
@@ -135,32 +160,43 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Handle GET requests (for Twilio status callbacks)
+// Handle GET requests (Twilio status callback when call ends).
+// In Twilio console, set the number's "Status callback URL" to this same webhook URL (GET) to receive completed/failed.
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const callSid = searchParams.get('CallSid');
   const callStatus = searchParams.get('CallStatus');
+  const callDuration = searchParams.get('CallDuration');
 
   console.log('[Twilio Status] Call status update:', {
     callSid,
     callStatus,
+    callDuration,
     timestamp: new Date().toISOString()
   });
 
-  // Update call record if exists
   if (callSid) {
     try {
+      const durationSec = callDuration ? parseInt(callDuration, 10) : undefined;
       await prisma.voiceAgentCall.updateMany({
         where: { callSid },
         data: {
-          status: callStatus === 'completed' ? 'completed' : 
+          status: callStatus === 'completed' ? 'completed' :
                   callStatus === 'in-progress' ? 'in-progress' :
                   callStatus === 'failed' ? 'failed' : 'ringing',
-          endTime: callStatus === 'completed' || callStatus === 'failed' 
-            ? new Date() 
-            : undefined
+          endTime: callStatus === 'completed' || callStatus === 'failed'
+            ? new Date()
+            : undefined,
+          ...(durationSec !== undefined && !isNaN(durationSec) && { durationSeconds: durationSec })
         }
       });
+      if (callStatus === 'completed') {
+        try {
+          await syncVoiceCallToCrm(callSid);
+        } catch (crmError) {
+          console.error('[Twilio Status] CRM sync failed:', crmError);
+        }
+      }
     } catch (error) {
       console.error('[Twilio Status] Error updating call:', error);
     }

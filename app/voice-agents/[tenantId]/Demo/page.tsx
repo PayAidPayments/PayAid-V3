@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Send, Bot, User, Loader2, ArrowLeft, Volume2, Mic, MicOff, Phone, PhoneOff, Wifi, WifiOff, Copy, Check } from 'lucide-react'
+import { Send, Bot, User, Loader2, ArrowLeft, Volume2, Mic, MicOff, Phone, PhoneOff, Wifi, WifiOff, Copy, Check, Headphones } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useVoiceWebSocket } from '@/lib/hooks/useVoiceWebSocket'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { RealTimeVoiceDemo } from '@/components/voice-agent/RealTimeVoiceDemo'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -25,16 +26,20 @@ export default function VoiceAgentDemoPage() {
   const router = useRouter()
   const tenantId = params.tenantId as string
   const agentId = searchParams.get('agentId')
-  const { token } = useAuthStore()
+  const { token, tenant } = useAuthStore()
   
   const [agent, setAgent] = useState<any>(null)
+  const [fetchError, setFetchError] = useState<'unauthorized' | 'not_found' | 'error' | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingAgent, setLoadingAgent] = useState(true)
+  const [demoAgentsList, setDemoAgentsList] = useState<{ id: string; name: string }[]>([])
+  const [loadingDemoAgents, setLoadingDemoAgents] = useState(false)
+  const [demoAgentsError, setDemoAgentsError] = useState<string | null>(null)
   const [isRecording, setIsRecording] = useState(false)
   const [isInCall, setIsInCall] = useState(false) // For HTTP fallback mode
-  const [useRealtime, setUseRealtime] = useState(true) // Toggle for real-time vs HTTP
+  const [useRealtime, setUseRealtime] = useState(false) // Off by default; enable if you run npm run dev:websocket
   const [microphoneError, setMicrophoneError] = useState<string | null>(null)
   const [microphonePermission, setMicrophonePermission] = useState<'granted' | 'denied' | 'prompt' | 'unknown'>('unknown')
   const [isRequestingPermission, setIsRequestingPermission] = useState(false)
@@ -49,6 +54,23 @@ export default function VoiceAgentDemoPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const microphoneStreamRef = useRef<MediaStream | null>(null) // Store the microphone stream
+  const speechRecognitionRef = useRef<{ start: () => void; stop: () => void; abort: () => void; lang: string; continuous: boolean; interimResults: boolean } | null>(null)
+  const messagesRef = useRef<Message[]>([])
+
+  const [webSpeechListening, setWebSpeechListening] = useState(false)
+  const [webSpeechLoading, setWebSpeechLoading] = useState(false)
+  const [liveConversationActive, setLiveConversationActive] = useState(false)
+  const liveConversationActiveRef = useRef(false)
+  // Mic state machine: idle → listening → processing → idle (no auto-restart, stops battery drain)
+  const [micSpeechState, setMicSpeechState] = useState<'idle' | 'listening' | 'processing'>('idle')
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  useEffect(() => {
+    liveConversationActiveRef.current = liveConversationActive
+  }, [liveConversationActive])
+
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
 
   // WebSocket hook for real-time communication
   const {
@@ -123,27 +145,57 @@ export default function VoiceAgentDemoPage() {
       }])
     },
     onError: (error) => {
-      console.error('[WebSocket] Error:', error)
-      // Only show alert for persistent errors, not connection attempts
+      // Real-time WebSocket is optional; log as warn so demo without server isn't noisy
+      console.warn('[WebSocket]', error)
       if (wsCallActive) {
         alert(`WebSocket error: ${error}`)
-      } else {
-        // Just log for connection errors - they'll retry automatically
-        console.warn('[WebSocket] Connection issue (will retry):', error)
       }
     },
   })
 
+  const loadDemoAgents = () => {
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('auth-token') : null)
+    if (!authToken) {
+      setDemoAgentsError('Please log in to see your agents.')
+      setDemoAgentsList([])
+      return
+    }
+    setLoadingDemoAgents(true)
+    setDemoAgentsError(null)
+    const listUrl = new URL('/api/v1/voice-agents', window.location.origin)
+    listUrl.searchParams.set('tenantId', tenantId)
+    fetch(listUrl.toString(), { headers: { Authorization: `Bearer ${authToken}` } })
+      .then((r) => {
+        if (!r.ok) {
+          setDemoAgentsError('Could not load agents. Click Retry to try again.')
+          setDemoAgentsList([])
+          return null
+        }
+        return r.json()
+      })
+      .then((data) => {
+        if (data == null) return
+        const list = data?.agents ?? data ?? []
+        setDemoAgentsList(Array.isArray(list) ? list : [])
+        setDemoAgentsError(null)
+      })
+      .catch(() => {
+        setDemoAgentsError('Could not load agents. Click Retry to try again.')
+        setDemoAgentsList([])
+      })
+      .finally(() => setLoadingDemoAgents(false))
+  }
+
   useEffect(() => {
-    if (agentId && token) {
+    if (agentId && tenantId) {
       fetchAgent()
     } else if (!agentId) {
       setLoadingAgent(false)
-    } else if (!token) {
-      // If no token, still stop loading
+      loadDemoAgents()
+    } else {
       setLoadingAgent(false)
     }
-  }, [agentId, token])
+  }, [agentId, token, tenantId])
   
   // Safety timeout - stop loading after 10 seconds even if fetchAgent hasn't completed
   useEffect(() => {
@@ -950,21 +1002,35 @@ If still not working, check the browser console (F12) for detailed error message
   }
 
   const fetchAgent = async () => {
-    if (!agentId || !token) {
+    // Use token from store or localStorage so we have it even before persist rehydration
+    const authToken = token ?? (typeof window !== 'undefined' ? (localStorage.getItem('token') ?? localStorage.getItem('auth-token')) : null) ?? undefined
+    if (!agentId || !tenantId) {
       setLoadingAgent(false)
+      return
+    }
+    if (!authToken) {
+      setLoadingAgent(false)
+      setFetchError(null)
       return
     }
 
     try {
-      console.log('[Demo] Fetching agent:', agentId)
-      
-      // Add timeout to prevent hanging
+      setLoadingAgent(true)
+      setFetchError(null)
+      console.log('[Demo] Fetching agent:', agentId, 'tenantId:', tenantId)
+
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
-      
-      const response = await fetch(`/api/v1/voice-agents/${agentId}`, {
+      const timeoutMs = 15000
+      const timeoutId = setTimeout(
+        () => controller.abort(new DOMException(`Request timed out after ${timeoutMs / 1000}s`, 'AbortError')),
+        timeoutMs
+      )
+
+      const url = new URL(`/api/v1/voice-agents/${agentId}`, window.location.origin)
+      url.searchParams.set('tenantId', tenantId)
+      const response = await fetch(url.toString(), {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authToken}`,
         },
         signal: controller.signal,
       })
@@ -974,6 +1040,7 @@ If still not working, check the browser console (F12) for detailed error message
       if (response.ok) {
         const data = await response.json()
         setAgent(data)
+        setFetchError(null)
         // Add welcome message
         setMessages([{
           role: 'assistant',
@@ -981,14 +1048,23 @@ If still not working, check the browser console (F12) for detailed error message
           timestamp: new Date(),
         }])
       } else {
+        if (response.status === 401) {
+          setFetchError('unauthorized')
+        } else if (response.status === 404) {
+          setFetchError('not_found')
+        } else {
+          setFetchError('error')
+        }
         console.error('[Demo] Failed to fetch agent - response not ok:', response.status, response.statusText)
         const errorData = await response.json().catch(() => ({}))
         console.error('[Demo] Error data:', errorData)
       }
     } catch (error: any) {
-      console.error('[Demo] Failed to fetch agent:', error)
-      if (error.name === 'AbortError') {
-        console.error('[Demo] Request timed out')
+      setFetchError('error')
+      if (error?.name === 'AbortError') {
+        console.warn('[Demo] Request timed out – agent fetch aborted')
+      } else {
+        console.error('[Demo] Failed to fetch agent:', error)
       }
     } finally {
       setLoadingAgent(false)
@@ -1304,6 +1380,168 @@ If still not working, check the browser console (F12) for detailed error message
     }
   }
 
+  // Web Speech API: bulletproof state machine (idle → listening → processing → idle). No auto-restart = no battery drain.
+  const getSpeechRecognition = (): { start: () => void; stop: () => void; abort: () => void; lang: string; continuous: boolean; interimResults: boolean; onresult: (e: unknown) => void; onend: () => void } | null => {
+    if (typeof window === 'undefined') return null
+    const Win = window as Window & { SpeechRecognition?: new () => unknown; webkitSpeechRecognition?: new () => unknown }
+    const Klass = Win.SpeechRecognition || Win.webkitSpeechRecognition
+    return Klass ? (new (Klass as new () => { start: () => void; stop: () => void; abort: () => void; lang: string; continuous: boolean; interimResults: boolean; onresult: (e: unknown) => void; onend: () => void })() as { start: () => void; stop: () => void; abort: () => void; lang: string; continuous: boolean; interimResults: boolean; onresult: (e: unknown) => void; onend: () => void }) : null
+  }
+
+  // Initialise recognition once; handlers use state machine and never auto-restart
+  useEffect(() => {
+    if (typeof window === 'undefined' || !agent) return
+    const rec = getSpeechRecognition()
+    if (!rec) return
+    rec.continuous = false
+    rec.interimResults = false
+    rec.lang = agent.language === 'hi' ? 'hi-IN' : agent.language === 'ta' ? 'ta-IN' : 'en-IN'
+
+    const handleEnd = () => {
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current)
+        silenceTimeoutRef.current = null
+      }
+      setWebSpeechListening(false)
+      setMicSpeechState('idle')
+    }
+
+    const handleError = () => {
+      setWebSpeechListening(false)
+      setMicSpeechState('idle')
+    }
+
+    rec.onstart = () => {
+      setWebSpeechListening(true)
+      setMicSpeechState('listening')
+      if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current)
+      silenceTimeoutRef.current = setTimeout(() => {
+        silenceTimeoutRef.current = null
+        setMicSpeechState('idle')
+        setWebSpeechListening(false)
+      }, 4000)
+    }
+    rec.onend = handleEnd
+    rec.onerror = handleError
+    const prev = speechRecognitionRef.current
+    speechRecognitionRef.current = rec
+    return () => {
+      if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current)
+      if (prev && prev !== rec) try { prev.abort() } catch (_) {}
+    }
+  }, [agent?.id, agent?.language])
+
+  const processSpeechResult = async (transcript: string) => {
+    if (!agentId || !token || !transcript.trim()) return
+    setMicSpeechState('processing')
+    setWebSpeechLoading(true)
+    setMessages((prev) => [...prev, { role: 'user', content: transcript, timestamp: new Date() }])
+    try {
+      const previousMessages = messagesRef.current.slice(-9)
+      const conversationHistory = previousMessages.map((m) => ({ role: m.role, content: m.content }))
+      const res = await fetch('/api/voice/demo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ agentId, transcript: transcript.trim(), conversationHistory }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${(err as { error?: string }).error || res.statusText}`, timestamp: new Date() }])
+        setWebSpeechLoading(false)
+        setMicSpeechState('idle')
+        return
+      }
+      const data = await res.json().catch(() => null)
+      const responseText = data?.text || '🔊'
+      setMessages((prev) => [...prev, { role: 'assistant', content: responseText, timestamp: new Date() }])
+      if (data?.audio) {
+        const binary = Uint8Array.from(atob(data.audio), (c) => c.charCodeAt(0))
+        const blob = new Blob([binary], { type: 'audio/wav' })
+        const url = URL.createObjectURL(blob)
+        const audioEl = new Audio(url)
+        await audioEl.play()
+        audioEl.onended = () => {
+          URL.revokeObjectURL(url)
+          setWebSpeechLoading(false)
+          setMicSpeechState('idle')
+        }
+      } else {
+        setWebSpeechLoading(false)
+        setMicSpeechState('idle')
+      }
+    } catch (err) {
+      setMessages((prev) => [...prev, { role: 'assistant', content: `Failed: ${err instanceof Error ? err.message : 'Unknown error'}`, timestamp: new Date() }])
+      setWebSpeechLoading(false)
+      setMicSpeechState('idle')
+    }
+  }
+
+  const startWebSpeechDemo = () => {
+    if (!agentId || !token || !agent) return
+    if (micSpeechState !== 'idle') return
+    const rec = speechRecognitionRef.current
+    if (!rec) {
+      alert('Web Speech API is not supported in this browser. Try Chrome or Edge.')
+      return
+    }
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current)
+      silenceTimeoutRef.current = null
+    }
+    rec.lang = agent.language === 'hi' ? 'hi-IN' : agent.language === 'ta' ? 'ta-IN' : 'en-IN'
+    rec.onresult = (e: unknown) => {
+      const ev = e as { results: Array<{ 0?: { transcript: string }; length: number }> }
+      const transcript = (ev?.results
+        ? Array.from(ev.results).map((r) => (r?.[0]?.transcript ?? '')).join(' ')
+        : '').trim()
+      if (transcript) processSpeechResult(transcript)
+    }
+    rec.start()
+  }
+
+  const stopWebSpeechDemo = () => {
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current)
+      silenceTimeoutRef.current = null
+    }
+    const rec = speechRecognitionRef.current
+    if (rec) {
+      try {
+        rec.abort()
+      } catch (_) {}
+    }
+    setWebSpeechListening(false)
+    setWebSpeechLoading(false)
+    setMicSpeechState('idle')
+  }
+
+  const startLiveConversation = () => {
+    setLiveConversationActive(true)
+    setTimeout(() => startWebSpeechDemo(), 300)
+  }
+
+  const endLiveConversation = () => {
+    setLiveConversationActive(false)
+    liveConversationActiveRef.current = false
+    stopWebSpeechDemo()
+    setMessages((prev) => [...prev, {
+      role: 'assistant',
+      content: 'Demo ended. Thanks for trying!',
+      timestamp: new Date(),
+    }])
+  }
+
+  const startNewConversation = () => {
+    setMessages([])
+    setLiveConversationActive(false)
+    liveConversationActiveRef.current = false
+    stopWebSpeechDemo()
+  }
+
   const processAudioChunk = async (audioBlob: Blob) => {
     // This is only used for HTTP fallback mode
     if (!agentId || !token) return
@@ -1421,13 +1659,54 @@ If still not working, check the browser console (F12) for detailed error message
 
   if (!agentId) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-6 max-w-2xl space-y-6">
+        <Link href={`/voice-agents/${tenantId}/Home`}>
+          <Button variant="ghost" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        </Link>
         <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground mb-4">No agent selected for demo</p>
-            <Link href={`/voice-agents/${tenantId}/Home`}>
-              <Button>Go to Voice Agents</Button>
-            </Link>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Headphones className="h-5 w-5" />
+              Try a voice agent demo
+            </CardTitle>
+            <CardDescription>
+              Select an agent to start a live conversation or use the single-turn mic. You’ll see the demo call buttons after you pick one.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {loadingDemoAgents ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : demoAgentsError ? (
+              <div className="space-y-3 py-4">
+                <p className="text-sm text-amber-600 dark:text-amber-400 text-center">{demoAgentsError}</p>
+                <Button variant="outline" className="w-full" onClick={loadDemoAgents}>
+                  Retry
+                </Button>
+              </div>
+            ) : demoAgentsList.length === 0 ? (
+              <div className="space-y-3 py-4">
+                <p className="text-sm text-muted-foreground text-center">No agents yet. Create one first.</p>
+                <Link href={`/voice-agents/${tenantId}/create`}>
+                  <Button className="w-full">Create Agent</Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {demoAgentsList.map((a) => (
+                  <Link key={a.id} href={`/voice-agents/${tenantId}/Demo?agentId=${a.id}`}>
+                    <Button variant="outline" className="w-full justify-start gap-2">
+                      <Phone className="h-4 w-4" />
+                      Try demo with {a.name}
+                    </Button>
+                  </Link>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -1435,14 +1714,60 @@ If still not working, check the browser console (F12) for detailed error message
   }
 
   if (!agent) {
+    const isDifferentWorkspace = tenant?.id && tenantId !== tenant.id
+    const hasToken = !!token || (typeof window !== 'undefined' && !!(localStorage.getItem('token') || localStorage.getItem('auth-token')))
+    const needsLogin = agentId && tenantId && !hasToken
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-6 max-w-lg">
         <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground mb-4">Agent not found</p>
-            <Link href={`/voice-agents/${tenantId}/Home`}>
-              <Button>Go to Voice Agents</Button>
-            </Link>
+          <CardContent className="py-12 text-center space-y-4">
+            {needsLogin ? (
+              <>
+                <p className="text-muted-foreground font-medium">Please log in to try the demo</p>
+                <Link href="/login">
+                  <Button>Log in</Button>
+                </Link>
+              </>
+            ) : fetchError === 'unauthorized' ? (
+              <>
+                <p className="text-muted-foreground font-medium">Session expired or unauthorized</p>
+                <p className="text-sm text-muted-foreground">Please log in again to try this demo.</p>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+                  <Link href="/login">
+                    <Button>Log in again</Button>
+                  </Link>
+                  <Button variant="outline" onClick={() => { setFetchError(null); fetchAgent() }} disabled={loadingAgent}>
+                    {loadingAgent ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Retry'}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-muted-foreground font-medium">
+                  {fetchError === 'not_found' ? 'Agent not found' : fetchError === 'error' ? 'Could not load agent' : 'Agent not found'}
+                </p>
+                {isDifferentWorkspace ? (
+                  <p className="text-sm text-muted-foreground">
+                    This demo link is for another workspace. You’re currently in <strong>{tenant?.name ?? 'your workspace'}</strong>. Log in with a user from the workspace that owns this agent (e.g. Demo Business: <code className="text-xs bg-muted px-1 rounded">admin@demo.com</code>) to try it.
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">The agent may be unavailable or the link may be incorrect. You can retry or go back to Voice Agents.</p>
+                )}
+                <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2 flex-wrap">
+                  <Button variant="outline" onClick={() => { setFetchError(null); fetchAgent() }} disabled={loadingAgent}>
+                    {loadingAgent ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Retry'}
+                  </Button>
+                  <Link href={`/voice-agents/${tenantId}/Home`}>
+                    <Button variant="outline">Go to Voice Agents</Button>
+                  </Link>
+                  {isDifferentWorkspace && (
+                    <Link href="/login">
+                      <Button variant="outline">Go to Login</Button>
+                    </Link>
+                  )}
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -1451,9 +1776,9 @@ If still not working, check the browser console (F12) for detailed error message
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
+      {/* Hero */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
-        <div className="container mx-auto flex items-center justify-between">
+        <div className="container mx-auto flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
             <Link href={`/voice-agents/${tenantId}/Home`}>
               <Button variant="ghost" size="sm">
@@ -1462,14 +1787,14 @@ If still not working, check the browser console (F12) for detailed error message
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-bold">{agent.name} - Demo</h1>
+              <h1 className="text-2xl font-bold">Talk to {agent.name}</h1>
               <p className="text-sm text-muted-foreground">
-                Test how the voice agent responds to messages
+                Tap the mic to start — speak naturally, no extra clicks between turns.
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline">{agent.language.toUpperCase()}</Badge>
+            <Badge variant="outline">{agent.language === 'hi' ? 'Hindi' : agent.language === 'ta' ? 'Tamil' : 'English'}</Badge>
             <Badge variant={agent.status === 'active' ? 'default' : 'secondary'}>
               {agent.status}
             </Badge>
@@ -1502,65 +1827,120 @@ If still not working, check the browser console (F12) for detailed error message
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Real-time conversation: single mic, continuous listening, TTS replies */}
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="container mx-auto max-w-3xl space-y-4">
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex gap-3 ${
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              {message.role === 'assistant' && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                  <Bot className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-              )}
-              <div
-                className={`max-w-[80%] rounded-lg p-4 ${
-                  message.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700'
-                }`}
-              >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                {message.role === 'assistant' && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mt-2 h-6 text-xs"
-                    onClick={() => handleSpeak(message.content)}
-                  >
-                    <Volume2 className="h-3 w-3 mr-1" />
-                    Speak
-                  </Button>
-                )}
-              </div>
-              {message.role === 'user' && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                  <User className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                </div>
-              )}
-            </div>
-          ))}
-          {loading && (
-            <div className="flex gap-3 justify-start">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                <Bot className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                <Loader2 className="h-4 w-4 animate-spin" />
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+        <RealTimeVoiceDemo
+          agentId={agent.id}
+          agentName={agent.name}
+          agentLanguage={agent.language}
+          token={token}
+          tenantId={tenantId}
+          onBack={() => router.push(`/voice-agents/${tenantId}/Demo`)}
+        />
       </div>
-
-      {/* Input */}
-      <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+      {/* Input section removed: real-time conversation uses RealTimeVoiceDemo above */}
+      <div className="hidden">
         <div className="container mx-auto max-w-3xl">
+          {/* Single large mic: Start Talking → Listening… → agent reply → repeat */}
+          <div className="flex flex-col items-center gap-3 mb-4 p-6 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+            {!liveConversationActive ? (
+              <Button
+                size="lg"
+                onClick={startLiveConversation}
+                disabled={!agentId || !token || !agent}
+                className="rounded-full h-24 w-24 p-0 shadow-lg hover:shadow-xl transition-shadow"
+                title="Start talking"
+              >
+                <Mic className="h-12 w-12" />
+              </Button>
+            ) : (
+              <div className="flex flex-col items-center gap-3 w-full max-w-sm">
+                <Button
+                  size="lg"
+                  variant={micSpeechState === 'listening' ? 'default' : 'secondary'}
+                  disabled={micSpeechState === 'processing'}
+                  onClick={micSpeechState === 'listening' ? stopWebSpeechDemo : () => startWebSpeechDemo()}
+                  className={`rounded-full h-24 w-24 p-0 transition-all ${
+                    micSpeechState === 'idle' ? 'animate-pulse' : ''
+                  } ${micSpeechState === 'listening' ? 'bg-green-600 hover:bg-green-700' : ''} ${
+                    micSpeechState === 'processing' ? 'bg-blue-600 hover:bg-blue-700' : ''
+                  }`}
+                  title={
+                    micSpeechState === 'processing'
+                      ? 'Agent replying…'
+                      : micSpeechState === 'listening'
+                        ? 'Listening… — click to stop'
+                        : 'Click to talk'
+                  }
+                >
+                  {micSpeechState === 'processing' ? (
+                    <Loader2 className="h-12 w-12 animate-spin" />
+                  ) : (
+                    <Mic className="h-12 w-12" />
+                  )}
+                </Button>
+                <p className="text-sm font-medium">
+                  {micSpeechState === 'processing' && (
+                    <span className="text-blue-600 dark:text-blue-400 flex items-center gap-1.5 justify-center">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Agent replying…
+                    </span>
+                  )}
+                  {micSpeechState === 'listening' && (
+                    <span className="text-green-600 dark:text-green-400 flex items-center gap-1.5 justify-center">
+                      <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                      Listening…
+                    </span>
+                  )}
+                  {micSpeechState === 'idle' && 'Click mic to talk'}
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={startNewConversation}>
+                    New conversation
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={endLiveConversation}>
+                    <PhoneOff className="h-4 w-4 mr-2" />
+                    End Demo
+                  </Button>
+                </div>
+              </div>
+            )}
+            {!liveConversationActive && (
+              <p className="text-xs text-muted-foreground">Start Talking — click the mic</p>
+            )}
+          </div>
+          {/* CTA */}
+          <div className="text-center py-4 border-t border-slate-200 dark:border-slate-700 mt-4">
+            <p className="text-sm text-muted-foreground mb-2">Get this agent for your business</p>
+            <Link href={`/voice-agents/${tenantId}/create`}>
+              <Button variant="default">Start free trial</Button>
+            </Link>
+          </div>
+
+          {/* Quick voice (Web Speech): single turn — state machine: idle → listening → processing → idle */}
+          <div className="flex flex-col items-center gap-2 mb-4 p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50">
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Single turn: click mic, speak, hear response</p>
+            <Button
+              size="lg"
+              variant={micSpeechState === 'listening' ? 'destructive' : 'default'}
+              disabled={micSpeechState === 'processing' || liveConversationActive}
+              onClick={micSpeechState === 'listening' ? stopWebSpeechDemo : startWebSpeechDemo}
+              className={`rounded-full h-16 w-16 p-0 ${micSpeechState === 'listening' ? 'bg-green-600 hover:bg-green-700' : ''} ${micSpeechState === 'processing' ? 'bg-blue-600' : ''}`}
+              title={micSpeechState === 'processing' ? 'Getting response...' : micSpeechState === 'listening' ? 'Stop listening' : 'Click and speak'}
+            >
+              {micSpeechState === 'processing' ? (
+                <Loader2 className="h-8 w-8 animate-spin" />
+              ) : micSpeechState === 'listening' ? (
+                <MicOff className="h-8 w-8" />
+              ) : (
+                <Mic className="h-8 w-8" />
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              {agent?.language === 'hi' ? 'Hindi' : agent?.language === 'ta' ? 'Tamil' : 'English'} · Click mic, speak, then hear TTS response
+            </p>
+          </div>
+
           {/* Real-time Toggle */}
           <div className="flex items-center justify-center gap-2 mb-3">
             <label className="flex items-center gap-2 text-sm cursor-pointer">

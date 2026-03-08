@@ -64,7 +64,7 @@ class GroqClient {
           role: m.role,
           content: m.content,
         })),
-        temperature: 0.7,
+        temperature: 0.3,
         max_tokens: 2048,
       }
       

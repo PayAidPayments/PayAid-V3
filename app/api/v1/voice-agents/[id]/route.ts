@@ -13,13 +13,29 @@ import { z } from 'zod'
 const updateAgentSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   description: z.string().optional(),
-  language: z.enum(['hi', 'en', 'ta', 'te', 'kn', 'mr', 'gu', 'pa', 'bn', 'ml']).optional(),
+  language: z.string().min(2).max(10).optional(),
   voiceId: z.string().optional(),
   voiceTone: z.string().optional(),
   systemPrompt: z.string().min(1).optional(),
   phoneNumber: z.string().optional(),
   status: z.enum(['active', 'paused', 'deleted']).optional(),
+  workflow: z.record(z.unknown()).optional().nullable(), // legacy nodes/edges or 3-tab: purpose, greeting, script, objections, crm
 })
+
+// Resolve effective tenant: JWT may use tenantId or tenant_id; optional query tenantId if user has access
+function getEffectiveTenantId(user: { tenantId?: string; tenant_id?: string; sub?: string }, queryTenantId: string | null): string | null {
+  const jwtTenantId = user.tenantId ?? user.tenant_id ?? ''
+  if (!queryTenantId) return jwtTenantId || null
+  if (queryTenantId === jwtTenantId) return queryTenantId
+  return null
+}
+
+async function userHasAccessToTenant(userId: string, tenantId: string): Promise<boolean> {
+  const member = await prisma.tenantMember.findFirst({
+    where: { userId, tenantId },
+  })
+  return !!member
+}
 
 // GET /api/v1/voice-agents/[id] - Get agent
 export async function GET(
@@ -34,11 +50,40 @@ export async function GET(
 
     // Handle Next.js 15 async params
     const resolvedParams = params instanceof Promise ? await params : params
+    const queryTenantId = request.nextUrl.searchParams.get('tenantId')
+
+    // Demo links: when tenantId is in the URL, allow any authenticated user to load that agent (shared demo)
+    if (queryTenantId && resolvedParams.id) {
+      const demoAgent = await prisma.voiceAgent.findFirst({
+        where: {
+          id: resolvedParams.id,
+          tenantId: queryTenantId,
+          status: { not: 'deleted' },
+        },
+        include: {
+          _count: { select: { calls: true } },
+        },
+      })
+      if (demoAgent) {
+        return NextResponse.json(demoAgent)
+      }
+    }
+
+    let effectiveTenantId: string | null = getEffectiveTenantId(user, queryTenantId)
+    if (queryTenantId && !effectiveTenantId) {
+      const userId = user.sub ?? (user as any).userId ?? ''
+      if (userId && (await userHasAccessToTenant(userId, queryTenantId))) {
+        effectiveTenantId = queryTenantId
+      }
+    }
+    if (!effectiveTenantId) {
+      effectiveTenantId = user.tenantId ?? (user as any).tenant_id ?? null
+    }
 
     const agent = await prisma.voiceAgent.findFirst({
       where: {
         id: resolvedParams.id,
-        tenantId: user.tenantId,
+        tenantId: effectiveTenantId,
       },
       include: {
         _count: {
@@ -92,9 +137,13 @@ export async function PUT(
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
     }
 
+    const updateData: Record<string, unknown> = { ...validated }
+    if ('workflow' in validated && validated.workflow !== undefined) {
+      updateData.workflow = validated.workflow
+    }
     const agent = await prisma.voiceAgent.update({
       where: { id: resolvedParams.id },
-      data: validated,
+      data: updateData as any,
     })
 
     return NextResponse.json(agent)

@@ -21,6 +21,7 @@ export interface VoiceAgentConfig {
   systemPrompt: string
   language: string
   voiceId?: string
+  voiceTone?: string
   knowledgeBaseEnabled: boolean
 }
 
@@ -130,11 +131,13 @@ export class VoiceAgentOrchestrator {
         })
       }
 
-      // Step 7: Text-to-Speech
+      // Step 7: Text-to-Speech (VEXYL when configured, else Coqui/Bhashini/IndicParler)
       const audioResponse = await synthesizeSpeech(
         response,
         detectedLanguage,
-        agent.voiceId
+        agent.voiceId,
+        1.0,
+        { voiceTone: agent.voiceTone ?? undefined }
       )
 
       return {
@@ -160,6 +163,7 @@ export class VoiceAgentOrchestrator {
         systemPrompt: true,
         language: true,
         voiceId: true,
+        voiceTone: true,
         knowledgeBase: true,
       },
     })
@@ -171,6 +175,7 @@ export class VoiceAgentOrchestrator {
       systemPrompt: agent.systemPrompt,
       language: agent.language,
       voiceId: agent.voiceId || undefined,
+      voiceTone: agent.voiceTone ?? undefined,
       knowledgeBaseEnabled: agent.knowledgeBase !== null,
     }
   }

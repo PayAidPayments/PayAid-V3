@@ -1,28 +1,42 @@
 /**
  * Text-to-Speech Service
  * Multi-provider TTS with automatic routing:
- * - Coqui TTS (via AI Gateway) for English/Hindi
- * - Bhashini TTS for Indian regional languages (paid, high quality)
- * - IndicParler-TTS for Indian regional languages (free, self-hosted)
+ * - Coqui TTS Docker (COQUI_TTS_URL) — self-hosted, no auth, Hindi/English first when set
+ * - VEXYL-TTS (self-hosted, 22 Indian languages) — when configured
+ * - Coqui via AI Gateway for English/Hindi
+ * - Bhashini / IndicParler for regional languages
  */
 
 import { aiGateway } from '@/lib/ai/gateway'
-import { 
-  synthesizeWithBhashini, 
-  isBhashiniConfigured, 
+import {
+  synthesizeWithCoquiDocker,
+  isCoquiDockerConfigured,
+} from './coqui-docker-tts'
+import {
+  synthesizeWithVexyl,
+  isVexylConfigured,
+  type VexylVoiceStyle,
+} from './vexyl-tts'
+import {
+  synthesizeWithBhashini,
+  isBhashiniConfigured,
   isLanguageSupported as isBhashiniLanguageSupported,
-  getAvailableVoices as getBhashiniVoices
+  getAvailableVoices as getBhashiniVoices,
 } from './bhashini-tts'
-import { 
-  synthesizeWithIndicParler, 
-  isIndicParlerAvailable, 
-  isLanguageSupported as isIndicParlerLanguageSupported 
+import {
+  synthesizeWithIndicParler,
+  isIndicParlerAvailable,
+  isLanguageSupported as isIndicParlerLanguageSupported,
 } from './indicparler-tts'
 
 export interface TTSOptions {
   language?: string
   voiceId?: string
   speed?: number
+  /** VEXYL voice style: calm | warm | formal (maps from voiceTone) */
+  voiceStyle?: VexylVoiceStyle
+  /** JWT for AI Gateway (same secret as app auth); pass from API route so gateway accepts the request */
+  gatewayToken?: string
 }
 
 // Regional Indian languages (use Bhashini or IndicParler)
@@ -32,33 +46,77 @@ const REGIONAL_LANGUAGES = ['ta', 'te', 'kn', 'mr', 'gu', 'pa', 'bn', 'ml', 'or'
 // Languages that use Coqui XTTS v2 (best quality for these languages)
 const COQUI_LANGUAGES = ['en', 'hi']
 
+/** Map voiceTone (UI) to VEXYL voiceStyle */
+function voiceToneToStyle(voiceTone?: string | null): VexylVoiceStyle | undefined {
+  if (!voiceTone) return undefined
+  const t = voiceTone.toLowerCase()
+  if (t === 'calm' || t === 'casual') return 'calm'
+  if (t === 'warm' || t === 'friendly') return 'warm'
+  if (t === 'formal' || t === 'professional') return 'formal'
+  return undefined
+}
+
 /**
  * Synthesize speech from text with automatic provider selection
- * 
+ *
  * Routing Strategy:
- * - English (en) & Hindi (hi) → Coqui XTTS v2 (via AI Gateway)
- * - Regional languages (ta, te, kn, etc.) → Bhashini TTS (paid) or IndicParler-TTS (free)
+ * - Coqui TTS Docker first when COQUI_TTS_URL is set (no auth, Hindi/English/multilingual)
+ * - VEXYL-TTS when configured (22 Indian languages)
+ * - English/Hindi → Coqui XTTS v2 (Docker or AI Gateway)
+ * - Regional languages → Bhashini or IndicParler
  */
 export async function synthesizeSpeech(
   text: string,
   language: string = 'en',
   voiceId?: string,
-  speed: number = 1.0
+  speed: number = 1.0,
+  options?: TTSOptions
 ): Promise<Buffer> {
-  // Use Coqui XTTS v2 for English and Hindi (best quality)
-  if (COQUI_LANGUAGES.includes(language)) {
-    console.log(`[TTS] Using Coqui XTTS v2 for ${language}`)
-    return await synthesizeWithCoqui(text, language, voiceId, speed)
+  const voiceStyle = options?.voiceStyle ?? voiceToneToStyle((options as { voiceTone?: string })?.voiceTone)
+
+  // Coqui TTS Docker when configured: no API keys, no 401s, try first
+  if (isCoquiDockerConfigured()) {
+    try {
+      console.log(`[TTS] Using Coqui TTS Docker for ${language}`)
+      return await synthesizeWithCoquiDocker(text, language, voiceId, speed)
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error)
+      console.warn(`[TTS] Coqui Docker failed (${msg}), falling back. Ensure Coqui container is running (docker run -d -p 5002:5002 ghcr.io/coqui-ai/tts-cpu:latest).`)
+      // Fall through
+    }
   }
 
-  // Use Bhashini (paid) or IndicParler (free) for regional languages
+  // VEXYL when configured
+  if (isVexylConfigured()) {
+    try {
+      console.log(`[TTS] Using VEXYL-TTS for ${language}`)
+      return await synthesizeWithVexyl(text, {
+        language,
+        speaker: voiceId || 'divya-calm',
+        voiceStyle: voiceStyle || 'calm',
+        format: 'wav',
+      })
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error)
+      console.warn(`[TTS] VEXYL failed (${msg}), falling back.`)
+      // Fall through
+    }
+  }
+
+  // Use Coqui XTTS v2 (AI Gateway) for English and Hindi
+  if (COQUI_LANGUAGES.includes(language)) {
+    console.log(`[TTS] Using Coqui XTTS v2 (gateway) for ${language}`)
+    return await synthesizeWithCoqui(text, language, voiceId, speed, options?.gatewayToken)
+  }
+
+  // Regional languages: Bhashini or IndicParler
   if (REGIONAL_LANGUAGES.includes(language)) {
     return await synthesizeRegionalLanguage(text, language, voiceId, speed)
   }
 
-  // Fallback: Use Coqui for any other language
+  // Fallback: Coqui (gateway)
   console.log(`[TTS] Using Coqui XTTS v2 (fallback) for ${language}`)
-  return await synthesizeWithCoqui(text, language, voiceId, speed)
+  return await synthesizeWithCoqui(text, language, voiceId, speed, options?.gatewayToken)
 }
 
 /**
@@ -127,7 +185,7 @@ async function synthesizeRegionalLanguage(
 
   // Fallback to Coqui TTS
   console.log(`[TTS] Using Coqui (fallback) for ${language}`)
-  return await synthesizeWithCoqui(text, language, voiceId, speed)
+  return await synthesizeWithCoqui(text, language, voiceId, speed, options?.gatewayToken)
 }
 
 /**
@@ -140,16 +198,20 @@ async function synthesizeWithCoqui(
   text: string,
   language: string,
   voiceId?: string,
-  speed: number = 1.0
+  speed: number = 1.0,
+  gatewayToken?: string
 ): Promise<Buffer> {
   try {
-    // Call AI Gateway TTS service
-    const result = await aiGateway.textToSpeech({
-      text: text,
-      language: language,
-      voice: voiceId,
-      speed: speed,
-    })
+    // Call AI Gateway TTS service (pass JWT so gateway can verify)
+    const result = await aiGateway.textToSpeech(
+      {
+        text: text,
+        language: language,
+        voice: voiceId,
+        speed: speed,
+      },
+      gatewayToken
+    )
 
     // Gateway returns audio_url
     if (result.audio_url) {

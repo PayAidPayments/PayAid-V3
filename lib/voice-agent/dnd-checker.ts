@@ -1,6 +1,9 @@
 /**
  * DND (Do Not Disturb) Checking Service
- * Checks if a phone number is registered in India's DND registry
+ * TRAI compliance: check if a phone number is registered in India's DND registry.
+ *
+ * Optional env: DND_API_URL (e.g. https://example.com/dnd/api?number=), DND_API_KEY
+ * Free options: manthanitsolutions.com/dnd/api (1000/day), or self-host dndchecker.
  */
 
 export interface DNDCheckResult {
@@ -10,27 +13,23 @@ export interface DNDCheckResult {
   message?: string
 }
 
+/** Normalize to 10-digit Indian number for API/local list */
+export function normalizeIndianNumber(phoneNumber: string): string | null {
+  const cleaned = phoneNumber.replace(/[^\d]/g, '')
+  if (cleaned.length === 12 && cleaned.startsWith('91')) return cleaned.slice(2)
+  if (cleaned.length === 10) return cleaned
+  return null
+}
+
 /**
- * Check DND status for a phone number
- * 
- * Note: In India, DND checking requires integration with TRAI (Telecom Regulatory Authority of India)
- * This is a placeholder implementation. In production, you would:
- * 1. Integrate with TRAI's DND API (if available)
- * 2. Use a third-party DND checking service
- * 3. Maintain your own DND list
+ * Check DND status for a phone number.
+ * 1. Local DND list (if any)
+ * 2. External DND API when DND_API_URL is set
+ * 3. Default: allowed (fallback when no API)
  */
 export async function checkDNDStatus(phoneNumber: string): Promise<DNDCheckResult> {
   try {
-    // Format phone number (remove +, spaces, etc.)
-    const cleaned = phoneNumber.replace(/[^\d]/g, '')
-    
-    // Indian phone numbers should be 10 digits (without country code)
-    const indianNumber = cleaned.length === 12 && cleaned.startsWith('91')
-      ? cleaned.slice(2)
-      : cleaned.length === 10
-      ? cleaned
-      : null
-
+    const indianNumber = normalizeIndianNumber(phoneNumber)
     if (!indianNumber) {
       return {
         isDND: false,
@@ -39,7 +38,6 @@ export async function checkDNDStatus(phoneNumber: string): Promise<DNDCheckResul
       }
     }
 
-    // Check against local DND list (if maintained)
     const localDNDList = await getLocalDNDList()
     if (localDNDList.includes(indianNumber)) {
       return {
@@ -50,12 +48,12 @@ export async function checkDNDStatus(phoneNumber: string): Promise<DNDCheckResul
       }
     }
 
-    // TODO: Integrate with TRAI DND API or third-party service
-    // For now, return allowed (assuming not DND)
-    // In production, you would call:
-    // - TRAI DND API (if available)
-    // - Third-party DND checking service (e.g., Exotel, Knowlarity)
-    // - Your own DND database
+    const apiUrl = process.env.DND_API_URL
+    const apiKey = process.env.DND_API_KEY
+    if (apiUrl) {
+      const result = await checkDNDViaAPI(indianNumber, apiUrl, apiKey)
+      if (result) return result
+    }
 
     return {
       isDND: false,
@@ -69,6 +67,36 @@ export async function checkDNDStatus(phoneNumber: string): Promise<DNDCheckResul
       status: 'unknown',
       message: 'DND check service unavailable',
     }
+  }
+}
+
+/**
+ * Call external DND API. Expects JSON: { dnd: boolean } or { status: "blocked"|"allowed" } or similar.
+ * GET DND_API_URL + number (if URL has ?) or DND_API_URL with number as query param.
+ */
+async function checkDNDViaAPI(
+  indianNumber: string,
+  baseUrl: string,
+  apiKey?: string
+): Promise<DNDCheckResult | null> {
+  try {
+    const url = baseUrl.includes('?')
+      ? `${baseUrl.replace(/&?$/, '')}${baseUrl.endsWith('=') ? '' : '&'}number=${indianNumber}`
+      : `${baseUrl}?number=${indianNumber}`
+    const headers: Record<string, string> = { Accept: 'application/json' }
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(5000) })
+    if (!res.ok) return null
+    const data = (await res.json()) as Record<string, unknown>
+    const isDND = data.dnd === true || data.status === 'blocked' || data.DND === true
+    return {
+      isDND: !!isDND,
+      status: isDND ? 'blocked' : 'allowed',
+      category: 'api',
+      message: isDND ? 'Number in DND registry' : 'Number not in DND registry',
+    }
+  } catch {
+    return null
   }
 }
 

@@ -1,6 +1,7 @@
 /**
  * AI Gateway Client
- * Communicates with the self-hosted AI services gateway
+ * Communicates with the self-hosted AI services gateway.
+ * For server-side calls (e.g. TTS), set AI_GATEWAY_API_KEY in .env to match the gateway's expected auth.
  */
 
 const GATEWAY_URL = process.env.AI_GATEWAY_URL || process.env.NEXT_PUBLIC_AI_GATEWAY_URL || 'http://localhost:8000'
@@ -55,9 +56,10 @@ export class AIGatewayClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
+    const authToken = this.token || process.env.AI_GATEWAY_API_KEY || ''
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
-      ...(this.token && { Authorization: `Bearer ${this.token}` }),
+      ...(authToken && { Authorization: `Bearer ${authToken}` }),
       ...options.headers,
     }
 
@@ -84,12 +86,13 @@ export class AIGatewayClient {
     )
   }
 
-  async textToSpeech(request: TextToSpeechRequest) {
+  async textToSpeech(request: TextToSpeechRequest, token?: string) {
     return this.request<{ audio_url: string; duration?: number; service: string }>(
       '/api/text-to-speech',
       {
         method: 'POST',
         body: JSON.stringify(request),
+        ...(token && { headers: { Authorization: `Bearer ${token}` } }),
       }
     )
   }

@@ -222,11 +222,10 @@ export function useVoiceWebSocket(options: UseVoiceWebSocketOptions) {
           clearInterval(pingIntervalRef.current)
         }
 
-        // Handle connection errors
+        // Handle connection errors (1006 = abnormal closure, often server not running)
         if (event.code === 1006) {
-          // Abnormal closure - could be auth failure, network issue, or server error
-          const errorMsg = event.reason || `WebSocket connection failed (code ${event.code}). Check server logs and ensure JWT_SECRET matches.`
-          console.warn('[WebSocket] Connection closed abnormally:', errorMsg, 'Code:', event.code)
+          const errorMsg = event.reason || 'Real-time server not available. Use the mic without "Real-time WebSocket" or run: npm run dev:websocket'
+          console.warn('[WebSocket]', errorMsg)
           setError(errorMsg)
           if (enabled) {
             onError?.(errorMsg)
@@ -275,14 +274,13 @@ export function useVoiceWebSocket(options: UseVoiceWebSocketOptions) {
             connect()
           }, 3000)
         } else if (event.code === 1006 || event.code === 1008) {
-          // Stop retrying for auth/abnormal closure errors - user needs to fix configuration
-          retryCountRef.current = maxRetries // Prevent further retries
-          hasFailedPermanentlyRef.current = true // Mark as permanently failed
-          console.error('[WebSocket] Stopping retry attempts. Please check:')
-          console.error('  1. WebSocket server is running: npm run dev:websocket')
-          console.error('  2. JWT_SECRET matches between Next.js and WebSocket server')
-          console.error('  3. Token is valid and not expired')
-          console.error('[WebSocket] Connection permanently failed. Use the Retry button to try again after fixing the issue.')
+          // Stop retrying for auth/abnormal closure - real-time is optional; demo works without it
+          retryCountRef.current = maxRetries
+          hasFailedPermanentlyRef.current = true
+          console.warn(
+            '[WebSocket] Real-time voice is unavailable (server not running or JWT mismatch).',
+            'Use the mic without "Real-time WebSocket" for the demo, or run: npm run dev:websocket'
+          )
         } else if (retryCountRef.current >= maxRetries) {
           hasFailedPermanentlyRef.current = true // Mark as permanently failed
           console.error('[WebSocket] Maximum retry attempts reached. Please check server status.')
