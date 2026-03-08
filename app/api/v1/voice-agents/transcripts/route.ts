@@ -23,13 +23,17 @@ export async function GET(request: NextRequest) {
     const sentiment = searchParams.get('sentiment')
     const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 200)
 
-    const where: {
+    type WhereClause = {
       tenantId: string
-      OR?: Array<{ transcript?: { contains: string; mode: 'insensitive' }; messages?: { some: { content: { contains: string; mode: 'insensitive' } } } }
+      OR?: Array<
+        | { transcript: { contains: string; mode: 'insensitive' } }
+        | { messages: { some: { content: { contains: string; mode: 'insensitive' } } } }
+      >
       createdAt?: { gte?: Date; lte?: Date }
       languageUsed?: string
       metadata?: { is: { sentiment: string } }
-    } = {
+    }
+    const where: WhereClause = {
       tenantId: user.tenantId,
     }
 
