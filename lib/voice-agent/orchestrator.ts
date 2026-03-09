@@ -213,6 +213,42 @@ export class VoiceAgentOrchestrator {
   }
 
   /**
+   * Process a text-only turn (e.g. for VEXYL Custom LLM webhook).
+   * Returns only the assistant reply text; no STT/TTS.
+   */
+  async processTextTurn(
+    agentId: string,
+    userMessage: string,
+    conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+    options?: { language?: string; callerContext?: string }
+  ): Promise<string> {
+    const agent = await this.getAgentConfig(agentId)
+    if (!agent) {
+      throw new Error(`Agent ${agentId} not found`)
+    }
+    const language = options?.language || agent.language
+
+    let context = options?.callerContext || ''
+    if (agent.knowledgeBaseEnabled && !context) {
+      try {
+        const kbResults = await searchKnowledgeBase(agentId, userMessage, 3)
+        if (kbResults?.length) {
+          context = kbResults.map((r) => r.content).join('\n\n')
+        }
+      } catch (e) {
+        console.warn('[VoiceAgent] Knowledge base search failed:', e)
+      }
+    }
+
+    const systemPrompt = this.buildSystemPrompt(agent, language, context)
+    const historyWithUser = [
+      ...conversationHistory.map((h) => ({ role: h.role, content: h.content })),
+      { role: 'user' as const, content: userMessage },
+    ]
+    return generateVoiceResponse(systemPrompt, historyWithUser, language)
+  }
+
+  /**
    * Get conversation history for agent
    */
   private getConversationHistory(agentId: string): ConversationTurn[] {
