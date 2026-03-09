@@ -45,7 +45,7 @@ class GroqClient {
     }
   }
 
-  async chat(messages: ChatMessage[]): Promise<ChatResponse> {
+  async chat(messages: ChatMessage[], options?: { maxTokens?: number; signal?: AbortSignal }): Promise<ChatResponse> {
     if (!this.config.apiKey || this.config.apiKey.trim() === '') {
       const errorMsg = 'Groq API key not configured - set GROQ_API_KEY in .env file (or Vercel environment variables for production)'
       console.error('❌', errorMsg)
@@ -65,7 +65,7 @@ class GroqClient {
           content: m.content,
         })),
         temperature: 0.3,
-        max_tokens: 2048,
+        max_tokens: options?.maxTokens ?? 2048,
       }
       
       console.log('📤 Groq request:', {
@@ -81,6 +81,7 @@ class GroqClient {
           'Authorization': `Bearer ${this.config.apiKey}`,
         },
         body: JSON.stringify(requestBody),
+        signal: options?.signal,
       })
 
       if (!response.ok) {

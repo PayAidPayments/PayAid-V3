@@ -40,11 +40,25 @@ export async function synthesizeWithCoquiDocker(
     ? { text, language: langCode, voice: voiceId || '', speed }
     : { text, language: langCode, speaker_wav: null }
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 10_000) // 10s max per request
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    })
+  } catch (e) {
+    clearTimeout(timeoutId)
+    const msg = e instanceof Error ? e.message : String(e)
+    if (msg.includes('abort') || msg.includes('timeout')) {
+      throw new Error('Coqui TTS timeout. Is the container running? See docs/TTS_TROUBLESHOOTING.md')
+    }
+    throw new Error(`Coqui TTS unreachable (${msg}). Is COQUI_TTS_URL correct and container running? See docs/TTS_TROUBLESHOOTING.md`)
+  }
+  clearTimeout(timeoutId)
 
   if (!res.ok) {
     const errText = await res.text()

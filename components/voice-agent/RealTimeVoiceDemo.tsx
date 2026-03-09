@@ -93,7 +93,7 @@ export function RealTimeVoiceDemo({
       setMessages((prev) => [...prev, userMessage])
 
       const controller = new AbortController()
-      const timeoutMs = 120_000 // 120s – first reply can be slow (LLM cold + TTS); later ones faster
+      const timeoutMs = 12_000 // 12s – backend hard cap 8s (4s LLM + 4s TTS)
       const timeoutId = setTimeout(() => controller.abort(new DOMException('Request timed out', 'AbortError')), timeoutMs)
 
       try {
@@ -114,7 +114,7 @@ export function RealTimeVoiceDemo({
           signal: controller.signal,
         })
         clearTimeout(timeoutId)
-        let data: { text?: string; audio?: string; ttsError?: string; error?: string } = {}
+        let data: { text?: string; audio?: string; ttsError?: string; error?: string; timedOut?: boolean } = {}
         try {
           data = await res.json()
         } catch {
@@ -138,17 +138,17 @@ export function RealTimeVoiceDemo({
         const reply = data.text || ''
         const base64Audio = data.audio
         const ttsError = data.ttsError
+        const timedOut = data.timedOut
         const is401 = ttsError && String(ttsError).includes('401')
         const ttsHint = is401
           ? ' Fix: In .env set VEXYL_API_KEY to your server key and VEXYL_AUTH_HEADER (e.g. X-API-Key or none if no auth), then restart dev server.'
           : ''
-        const displayReply = reply
-          ? ttsError
-            ? `${reply}\n\n🔇 Voice unavailable (${ttsError}).${ttsHint}`
-            : reply
-          : ttsError
-            ? `[Voice unavailable: ${ttsError}]${ttsHint}`
-            : '[No response text]'
+        let displayReply = reply
+        if (timedOut && reply) displayReply = `${reply} [Took too long – try a shorter question.]`
+        else if (reply)
+          displayReply = ttsError ? `${reply}\n\n🔇 Voice unavailable (${ttsError}).${ttsHint}` : reply
+        else if (ttsError) displayReply = `[Voice unavailable: ${ttsError}]${ttsHint}`
+        else if (!reply) displayReply = '[No response text]'
         setMessages((prev) => [
           ...prev,
           { role: 'assistant', content: displayReply, timestamp: new Date().toLocaleTimeString() },
@@ -168,7 +168,10 @@ export function RealTimeVoiceDemo({
             currentAudioRef.current = audio
             audio.onended = () => {
               URL.revokeObjectURL(url)
-              clearProcessingAndRestart()
+              setStatus('listening')
+              setTimeout(restartListening, 300)
+              currentAudioRef.current = null
+              isProcessingRef.current = false
             }
             audio.onerror = () => {
               URL.revokeObjectURL(url)
@@ -194,7 +197,7 @@ export function RealTimeVoiceDemo({
           {
             role: 'assistant',
             content: isAbort
-              ? '[Response took too long (over 2 minutes). First reply can be slow; tap the mic to try again—later responses are usually faster.]'
+              ? '[Taking too long (>15s). Please try again with a shorter question.]'
               : `[Error: ${err instanceof Error ? err.message : 'Network or server error'}. Try again.]`,
             timestamp: new Date().toLocaleTimeString(),
           },
@@ -255,6 +258,34 @@ export function RealTimeVoiceDemo({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, interimText])
+
+  // 10s watchdog: never show "Agent replying…" longer than 10s
+  useEffect(() => {
+    if (status !== 'processing') return
+    const id = setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: '[Response took too long (>10s). Please try again with a shorter question.]',
+          timestamp: new Date().toLocaleTimeString(),
+        },
+      ])
+      isProcessingRef.current = false
+      setStatus('listening')
+      restartListening()
+    }, 10_000)
+    return () => clearTimeout(id)
+  }, [status, restartListening])
+
+  // Pre-warm Groq on mount so first reply is fast
+  useEffect(() => {
+    if (!token) return
+    fetch('/api/voice/ping', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => {})
+  }, [token])
 
   const startDemo = () => {
     shouldBeListeningRef.current = true
@@ -388,11 +419,7 @@ export function RealTimeVoiceDemo({
         <p className="text-xs text-muted-foreground">
           {status === 'idle' && 'Start real conversation'}
           {status === 'listening' && 'Speak — agent will reply with voice'}
-          {status === 'processing' && (
-            <>
-              Replying… <span className="text-slate-400">(first reply may take 1–2 min)</span>
-            </>
-          )}
+          {status === 'processing' && 'Replying…'}
         </p>
         {(status === 'listening' || status === 'processing') && (
           <Button variant="outline" size="sm" onClick={endDemo} className="gap-2">
