@@ -1,28 +1,32 @@
-# Sarvam-Powered Voice Demo (Samvaad-like Latency)
+# Voice Demo: Free (Groq) vs Optional Sarvam
 
-The Voice Agents **Demo** page can use [Sarvam AI](https://www.sarvam.ai/) for **LLM + TTS** when `SARVAM_API_KEY` is set. This gives much faster, more reliable responses (similar to [Experience Samvaad](https://www.sarvam.ai/) demos) compared to the default Groq/Ollama + VEXYL/Coqui pipeline.
+The Voice Agents **Demo** works **without any paid subscription**. For similar fast results at **zero cost**, use the free path below. Sarvam is optional (paid) and only used when you set its API key.
 
-## Why use Sarvam for the demo?
+---
 
-- **Low latency** – Sarvam’s chat and Bulbul TTS are tuned for Indian languages and typically respond in a few seconds instead of 1–2+ minutes.
-- **Same stack as Samvaad** – Same provider as Sarvam’s conversational agents (sub‑500ms class when used end‑to‑end).
-- **No local GPU** – No need for Ollama or Coqui; works with just an API key.
+## Free path (recommended, no cost)
 
-## Setup
-
-1. Get an API key from [Sarvam AI](https://www.sarvam.ai/) (API / Developer section).
-2. In `.env`:
+1. **Get a free Groq API key** at [console.groq.com/keys](https://console.groq.com/keys) (no payment required).
+2. In `.env` add:
    ```bash
-   SARVAM_API_KEY=your_sarvam_api_subscription_key
+   GROQ_API_KEY=gsk_your_key_here
    ```
-3. Restart the Next.js app. The **Voice Agents → Demo** flow will use Sarvam for that request when the key is present.
+3. Restart the app. The demo uses **Groq** for the reply (short, voice-optimized) and your existing TTS (VEXYL, Coqui, or Bhashini if configured).
 
-## Behaviour
+**Why this is fast:** Groq’s free tier is low-latency. The demo also asks for shorter replies (512 tokens) so the first response returns in a few seconds instead of minutes. Without `GROQ_API_KEY`, the app will not use Ollama for the demo (to avoid long waits) and will show a message asking you to set Groq.
 
-- **When `SARVAM_API_KEY` is set:** Demo uses **Sarvam Chat** (e.g. `sarvam-30b-16k`) for the reply and **Sarvam Bulbul TTS** for speech. If either call fails, the app falls back to the default LLM + TTS path.
-- **When `SARVAM_API_KEY` is not set:** Demo uses the existing path (Groq or Ollama for LLM; VEXYL/Coqui/Bhashini for TTS). Ensure `GROQ_API_KEY` is set for faster default responses; without it, Ollama is used and can be very slow.
+**TTS (free options):** Use self-hosted **VEXYL** or **Coqui** for best quality at no per-call cost; or Bhashini/IndicParler if configured.
 
-## APIs used
+---
+
+## Optional: Sarvam (paid, Samvaad-like)
+
+If you have a [Sarvam AI](https://www.sarvam.ai/) subscription, you can set `SARVAM_API_KEY` so the demo uses Sarvam Chat + Bulbul TTS (similar to [Experience Samvaad](https://www.sarvam.ai/) demos). This is **not required**; the free Groq path above is sufficient for good latency.
+
+- **When `SARVAM_API_KEY` is set:** Demo uses Sarvam for LLM + TTS. On failure, it falls back to Groq + your TTS.
+- **When not set:** Demo uses Groq (free) + your TTS. You must set `GROQ_API_KEY` for the demo to run.
+
+## APIs used (Sarvam path)
 
 - **Chat:** `https://api.sarvam.ai/v1/chat/completions` (model: `sarvam-30b-16k`).
 - **TTS:** `https://api.sarvam.ai/text-to-speech` (Bulbul v3, WAV).

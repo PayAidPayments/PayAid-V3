@@ -8,7 +8,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { authenticateRequest } from '@/lib/middleware/auth'
-import { generateVoiceResponse } from '@/lib/voice-agent/llm'
+import { getGroqClient } from '@/lib/ai/groq'
+import { generateVoiceResponse, isGroqConfigured } from '@/lib/voice-agent/llm'
 import { searchKnowledgeBase } from '@/lib/voice-agent/knowledge-base'
 import { synthesizeSpeech } from '@/lib/voice-agent/tts'
 import { isSarvamConfigured, sarvamChat, sarvamTts } from '@/lib/voice-agent/sarvam'
@@ -57,9 +58,15 @@ function buildSystemPrompt(
   prompt += OBJECTION_HANDLING
   if (agent.voiceTone) prompt += `\n\nTone: ${agent.voiceTone}`
   if (context) prompt += `\n\nRelevant context:\n${context}`
-  prompt += `\n\nKeep responses concise and natural, suitable for voice conversation.`
+  prompt += `\n\nKeep responses concise and natural, suitable for voice conversation. Answer in 1-2 short sentences unless asked for detail.`
   return prompt
 }
+
+// Hard caps: LLM 4s + TTS 4s = 8s max total → fallback to text, no hang (Groq ~2s + TTS ~3s typical)
+const LLM_TIMEOUT_MS = 4000
+const TTS_TIMEOUT_MS = 4000
+const VOICE_MAX_TOKENS = 120
+const VOICE_TEMPERATURE = 0.3
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,6 +107,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
     }
 
+    // Free path requires Groq (free tier) for acceptable latency; avoid 2+ min Ollama wait
+    if (!isSarvamConfigured() && !isGroqConfigured()) {
+      return NextResponse.json(
+        {
+          error: 'Voice demo needs a free LLM. Set GROQ_API_KEY in .env (get one at https://console.groq.com/keys). No payment required.',
+        },
+        { status: 503 }
+      )
+    }
+
     let context = ''
     try {
       const kbResults = await searchKnowledgeBase(agentId, transcript, 3)
@@ -118,48 +135,73 @@ export async function POST(request: NextRequest) {
     let responseText: string
     let audio: Buffer | null = null
     let ttsError: string | null = null
+    let timedOut = false
+    const authHeader = request.headers.get('authorization')
+    const gatewayToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader ?? undefined
+    const voiceStyle = agent.voiceTone ? { voiceTone: agent.voiceTone } : undefined
 
-    // Fast path: Sarvam (Samvaad-like low latency) when API key is set
+    async function groqDemoTurn(): Promise<string> {
+      const controller = new AbortController()
+      const t = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS)
+      try {
+        const groq = getGroqClient()
+        const messages = [
+          { role: 'system' as const, content: systemPrompt },
+          ...history.slice(-5).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        ]
+        const res = await groq.chat(messages, {
+          maxTokens: VOICE_MAX_TOKENS,
+          signal: controller.signal,
+        })
+        clearTimeout(t)
+        return res.message?.trim() || 'Please try again.'
+      } catch (e) {
+        clearTimeout(t)
+        if ((e as Error)?.name === 'AbortError') timedOut = true
+        return 'Sorry, connection was slow. Please say that again briefly.'
+      }
+    }
+
+    async function ttsWithTimeout(text: string): Promise<Buffer | null> {
+      try {
+        return await Promise.race([
+          synthesizeSpeech(text, agent.language, agent.voiceId ?? undefined, 1.0, { ...voiceStyle, gatewayToken }),
+          new Promise<never>((_, rej) => setTimeout(() => rej(new Error('TTS timeout')), TTS_TIMEOUT_MS)),
+        ])
+      } catch (e) {
+        ttsError = e instanceof Error ? e.message : String(e)
+        return null
+      }
+    }
+
+    // Path 1: Sarvam (optional paid) with timeouts
     if (isSarvamConfigured()) {
       try {
-        responseText = await sarvamChat(systemPrompt, history, { temperature: 0.3 })
-        audio = await sarvamTts(responseText, agent.language, {
-          speaker: agent.voiceId || 'priya',
-          sampleRate: 24000,
-        })
-      } catch (sarvamErr) {
-        console.error('[Voice Demo] Sarvam path failed, falling back to default:', sarvamErr)
-        responseText = await generateVoiceResponse(systemPrompt, history, agent.language)
-        const voiceStyle = agent.voiceTone ? { voiceTone: agent.voiceTone } : undefined
-        const authHeader = request.headers.get('authorization')
-        const gatewayToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader ?? undefined
         try {
-          audio = await synthesizeSpeech(responseText, agent.language, agent.voiceId ?? undefined, 1.0, {
-            ...voiceStyle,
-            gatewayToken,
-          })
-        } catch (ttsErr) {
-          ttsError = ttsErr instanceof Error ? ttsErr.message : String(ttsErr)
+          responseText = await sarvamChat(systemPrompt, history, { temperature: VOICE_TEMPERATURE })
+        } catch (e) {
+          timedOut = (e as Error)?.name === 'AbortError'
+          responseText = 'Sorry, connection was slow. Please say that again briefly.'
+          if (!timedOut) throw e
         }
+        if (!timedOut) {
+          const ttsBuf = await Promise.race([
+            sarvamTts(responseText, agent.language, { speaker: agent.voiceId || 'priya', sampleRate: 24000 }),
+            new Promise<never>((_, rej) => setTimeout(() => rej(new Error('TTS timeout')), TTS_TIMEOUT_MS)),
+          ]).catch(() => null)
+          if (ttsBuf) audio = ttsBuf as Buffer
+        }
+      } catch (sarvamErr) {
+        console.error('[Voice Demo] Sarvam path failed, falling back to Groq:', sarvamErr)
+        timedOut = false
+        responseText = await groqDemoTurn()
+        audio = await ttsWithTimeout(responseText)
       }
     } else {
-      responseText = await generateVoiceResponse(systemPrompt, history, agent.language)
-      const voiceStyle = agent.voiceTone ? { voiceTone: agent.voiceTone } : undefined
-      const authHeader = request.headers.get('authorization')
-      const gatewayToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader ?? undefined
-      try {
-        audio = await synthesizeSpeech(
-          responseText,
-          agent.language,
-          agent.voiceId ?? undefined,
-          1.0,
-          { ...voiceStyle, gatewayToken }
-        )
-      } catch (ttsErr) {
-        const msg = ttsErr instanceof Error ? ttsErr.message : String(ttsErr)
-        console.error('[Voice Demo] TTS failed:', msg)
-        ttsError = msg
-      }
+      // Path 2: Groq only (free), 8s LLM + 5s TTS
+      responseText = await groqDemoTurn()
+      if (responseText.startsWith('Sorry, connection was slow')) timedOut = true
+      else audio = await ttsWithTimeout(responseText)
     }
 
     // Optional: log demo usage (non-PII)
@@ -188,6 +230,7 @@ export async function POST(request: NextRequest) {
         text: responseText,
         audio: audio ? Buffer.from(audio).toString('base64') : null,
         ...(ttsError && { ttsError }),
+        ...(timedOut && { timedOut: true }),
       })
     }
     if (audio) {

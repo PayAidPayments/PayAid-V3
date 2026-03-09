@@ -1,28 +1,33 @@
 /**
  * LLM Service for Voice Agents
- * Uses Groq (primary, no local RAM) or Ollama (fallback when Groq not configured).
+ * Voice uses Groq only (no Ollama) for low-latency replies.
  */
 
 import { getGroqClient } from '@/lib/ai/groq'
-import { getOllamaClient } from '@/lib/ai/ollama'
 
 export interface ConversationMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
 }
 
-function isGroqConfigured(): boolean {
+export function isGroqConfigured(): boolean {
   return !!process.env.GROQ_API_KEY?.trim()
+}
+
+export interface GenerateVoiceResponseOptions {
+  /** Lower = faster reply (e.g. 512 for voice). Default 2048. */
+  maxTokens?: number
 }
 
 /**
  * Generate voice response using LLM.
- * Prefers Groq (reliable, no memory issues); falls back to Ollama only if Groq is not configured.
+ * Prefers Groq (free tier, fast); falls back to Ollama only if Groq is not configured.
  */
 export async function generateVoiceResponse(
   systemPrompt: string,
   conversationHistory: Array<{ role: string; content: string }>,
-  language: string = 'en'
+  language: string = 'en',
+  options?: GenerateVoiceResponseOptions
 ): Promise<string> {
   const messages: ConversationMessage[] = [
     { role: 'system', content: systemPrompt },
@@ -35,7 +40,9 @@ export async function generateVoiceResponse(
   if (isGroqConfigured()) {
     try {
       const groq = getGroqClient()
-      const response = await groq.chat(messages)
+      const response = await groq.chat(messages, {
+        maxTokens: options?.maxTokens ?? 2048,
+      })
       return response.message || ''
     } catch (error) {
       console.error('[LLM] Groq error:', error)
@@ -43,21 +50,10 @@ export async function generateVoiceResponse(
     }
   }
 
-  try {
-    const ollama = getOllamaClient()
-    const ollamaMessages = messages.map((msg) => ({ role: msg.role, content: msg.content }))
-    const response = await ollama.chat(ollamaMessages)
-    return response.message || ''
-  } catch (error) {
-    console.error('[LLM] Ollama error:', error)
-    const msg = error instanceof Error ? error.message : String(error)
-    if (msg.includes('model requires more system memory') || msg.includes('memory')) {
-      throw new Error(
-        'Ollama ran out of memory. Set GROQ_API_KEY in .env to use Groq instead (recommended), or use a smaller model: OLLAMA_MODEL=tinyllama'
-      )
-    }
-    throw new Error(`LLM generation failed: ${msg}`)
-  }
+  // Voice agents: Groq only (no Ollama) for acceptable latency
+  throw new Error(
+    'Voice requires GROQ_API_KEY. Set it in .env (free at https://console.groq.com/keys). Ollama is not used for voice.'
+  )
 }
 
 /**
