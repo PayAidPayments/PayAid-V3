@@ -170,7 +170,7 @@ export const modules: ModuleConfig[] = [
     description: "AI-powered voice agents for automated calls in Hindi, English, and regional languages",
     icon: "Phone",
     url: "/voice-agents", // Decoupled module route
-    status: "coming-soon", // Coming soon in production, available on localhost
+    status: "active",
     category: "ai",
     color: "#10B981"
   },
@@ -613,6 +613,7 @@ export const getModuleIcon = async (iconName: string): Promise<any> => {
      PackageSearch: 'PackageSearch',
      GitBranch: 'GitBranch',
      Newspaper: 'Newspaper',
+     Phone: 'Phone',
    };
 
   const iconKey = iconMap[iconName] || 'Users';
