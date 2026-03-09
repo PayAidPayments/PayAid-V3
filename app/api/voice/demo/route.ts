@@ -1,7 +1,8 @@
 /**
  * POST /api/voice/demo
- * WebRTC-style demo: transcript + agentId → LLM → VEXYL TTS → return audio.
- * Used by the Demo page "Speak" flow (Web Speech API STT → this → play audio).
+ * WebRTC-style demo: transcript + agentId → LLM → TTS → return audio.
+ * Fast path: when SARVAM_API_KEY is set, uses Sarvam Chat + Bulbul TTS (Samvaad-like latency).
+ * Otherwise: Groq/Ollama LLM + VEXYL/Coqui TTS.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -10,6 +11,7 @@ import { authenticateRequest } from '@/lib/middleware/auth'
 import { generateVoiceResponse } from '@/lib/voice-agent/llm'
 import { searchKnowledgeBase } from '@/lib/voice-agent/knowledge-base'
 import { synthesizeSpeech } from '@/lib/voice-agent/tts'
+import { isSarvamConfigured, sarvamChat, sarvamTts } from '@/lib/voice-agent/sarvam'
 import { z } from 'zod'
 
 const bodySchema = z.object({
@@ -109,38 +111,55 @@ export async function POST(request: NextRequest) {
     }
 
     const systemPrompt = buildSystemPrompt(agent, agent.language, context)
-    // Cap to last 5 exchanges (10 messages) to avoid token overflow and memory issues
     const maxHistory = 10
     const recentHistory = conversationHistory.slice(-maxHistory)
     const history = [...recentHistory, { role: 'user' as const, content: transcript }]
-    const responseText = await generateVoiceResponse(
-      systemPrompt,
-      history,
-      agent.language
-    )
 
-    const voiceStyle = agent.voiceTone
-      ? { voiceTone: agent.voiceTone }
-      : undefined
-    const authHeader = request.headers.get('authorization')
-    const gatewayToken = authHeader?.startsWith('Bearer ')
-      ? authHeader.slice(7)
-      : authHeader ?? undefined
+    let responseText: string
     let audio: Buffer | null = null
     let ttsError: string | null = null
-    try {
-      audio = await synthesizeSpeech(
-        responseText,
-        agent.language,
-        agent.voiceId ?? undefined,
-        1.0,
-        { ...voiceStyle, gatewayToken }
-      )
-    } catch (ttsErr) {
-      const msg = ttsErr instanceof Error ? ttsErr.message : String(ttsErr)
-      console.error('[Voice Demo] TTS failed:', msg)
-      ttsError = msg
-      // Never fail the request: return text only, no audio
+
+    // Fast path: Sarvam (Samvaad-like low latency) when API key is set
+    if (isSarvamConfigured()) {
+      try {
+        responseText = await sarvamChat(systemPrompt, history, { temperature: 0.3 })
+        audio = await sarvamTts(responseText, agent.language, {
+          speaker: agent.voiceId || 'priya',
+          sampleRate: 24000,
+        })
+      } catch (sarvamErr) {
+        console.error('[Voice Demo] Sarvam path failed, falling back to default:', sarvamErr)
+        responseText = await generateVoiceResponse(systemPrompt, history, agent.language)
+        const voiceStyle = agent.voiceTone ? { voiceTone: agent.voiceTone } : undefined
+        const authHeader = request.headers.get('authorization')
+        const gatewayToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader ?? undefined
+        try {
+          audio = await synthesizeSpeech(responseText, agent.language, agent.voiceId ?? undefined, 1.0, {
+            ...voiceStyle,
+            gatewayToken,
+          })
+        } catch (ttsErr) {
+          ttsError = ttsErr instanceof Error ? ttsErr.message : String(ttsErr)
+        }
+      }
+    } else {
+      responseText = await generateVoiceResponse(systemPrompt, history, agent.language)
+      const voiceStyle = agent.voiceTone ? { voiceTone: agent.voiceTone } : undefined
+      const authHeader = request.headers.get('authorization')
+      const gatewayToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader ?? undefined
+      try {
+        audio = await synthesizeSpeech(
+          responseText,
+          agent.language,
+          agent.voiceId ?? undefined,
+          1.0,
+          { ...voiceStyle, gatewayToken }
+        )
+      } catch (ttsErr) {
+        const msg = ttsErr instanceof Error ? ttsErr.message : String(ttsErr)
+        console.error('[Voice Demo] TTS failed:', msg)
+        ttsError = msg
+      }
     }
 
     // Optional: log demo usage (non-PII)
