@@ -11,6 +11,10 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
+// Force dynamic rendering app-wide to avoid Vercel 45m timeout during "Generating static pages"
+// (1085+ routes would otherwise be pre-rendered at build time.)
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "PayAid V3 - Business Operating System",
   description: "All-in-one business operating system for Indian startups and SMBs",

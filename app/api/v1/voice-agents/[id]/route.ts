@@ -54,18 +54,28 @@ export async function GET(
 
     // Demo links: when tenantId is in the URL, allow any authenticated user to load that agent (shared demo)
     if (queryTenantId && resolvedParams.id) {
-      const demoAgent = await prisma.voiceAgent.findFirst({
-        where: {
-          id: resolvedParams.id,
-          tenantId: queryTenantId,
-          status: { not: 'deleted' },
-        },
-        include: {
-          _count: { select: { calls: true } },
-        },
-      })
-      if (demoAgent) {
-        return NextResponse.json(demoAgent)
+      try {
+        const demoAgent = await prisma.voiceAgent.findFirst({
+          where: {
+            id: resolvedParams.id,
+            tenantId: queryTenantId,
+            status: { not: 'deleted' },
+          },
+          include: {
+            _count: { select: { calls: true } },
+          },
+        })
+        if (demoAgent) {
+          return NextResponse.json(demoAgent)
+        }
+        // Agent not found for this demo link – return 404 so client shows "Agent not found" not generic error
+        return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
+      } catch (dbError) {
+        console.error('[VoiceAgents] Get agent (demo) DB error:', dbError)
+        return NextResponse.json(
+          { error: 'Service temporarily unavailable. Please try again.' },
+          { status: 503 }
+        )
       }
     }
 
