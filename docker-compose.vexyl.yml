@@ -1,0 +1,73 @@
+# VEXYL AI Voice Gateway – self-hosted, low-cost pipeline (STT → PayAid LLM → TTS)
+# Docs: https://vexyl.ai/docs/installation.html
+#
+# Run: docker compose -f docker-compose.vexyl.yml up -d
+# Health: curl http://localhost:8081/health
+#
+# PayAid acts as Custom LLM; set VEXYL_LLM_WEBHOOK_URL to your app URL.
+# On Linux, if host.docker.internal is not available, uncomment extra_hosts below.
+
+services:
+  vexyl-voice-gateway:
+    # On Linux: uncomment so CUSTOM_LLM_URL can use http://host.docker.internal:3000
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+    image: vexyl/vexyl-voice-gateway:latest
+    container_name: payaid-vexyl-gateway
+    ports:
+      - "8080:8080"   # AudioSocket (Asterisk)
+      - "8081:8081"   # HTTP API + health
+      - "8082:8082"   # WebSocket (browser SDK)
+    environment:
+      # ---------- Core ----------
+      HTTP_PORT: "8081"
+      AUDIOSOCKET_PORT: "8080"
+      WEBSOCKET_AUDIO_PORT: "8082"
+      GATEWAY_MODE: "false"
+      DEFAULT_LANGUAGE: "en-IN"
+
+      # ---------- STT: Groq Whisper (free tier, no GPU) ----------
+      STT_PROVIDER: "groq"
+      GROQ_API_KEY: "${GROQ_API_KEY}"
+      GROQ_MODEL: "whisper-large-v3-turbo"
+
+      # ---------- LLM: PayAid as custom webhook (0 cost – your Groq/Ollama) ----------
+      LLM_PROVIDER: "custom"
+      CUSTOM_LLM_URL: "${VEXYL_LLM_WEBHOOK_URL:-http://host.docker.internal:3000/api/voice/vexyl-llm}"
+      CUSTOM_LLM_TIMEOUT: "30000"
+
+      # ---------- TTS: Gemini (free tier) or Sarvam; enable cache ----------
+      TTS_PROVIDER: "${VEXYL_TTS_PROVIDER:-gemini}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY}"
+      GEMINI_TTS_MODEL: "gemini-2.5-flash-tts"
+      GEMINI_TTS_VOICE_NAME: "Achernar"
+      # If using Sarvam instead: set VEXYL_TTS_PROVIDER=sarvam and SARVAM_API_KEY
+      # SARVAM_API_KEY: "${SARVAM_API_KEY}"
+
+      TTS_CACHE_ENABLED: "true"
+      TTS_CACHE_MAX_SIZE_MB: "1000"
+      TTS_CACHE_DIR: "/cache/tts"
+
+      # ---------- Optional: WebSocket for browser widget ----------
+      WEBSOCKET_AUDIO_ENABLED: "true"
+      WEBSOCKET_AUDIO_ALLOWED_ORIGINS: "${NEXT_PUBLIC_APP_URL:-http://localhost:3000}"
+
+      # ---------- Tuning (optional) ----------
+      ENABLE_BARGE_IN: "true"
+      VAD_POSITIVE_THRESHOLD: "0.5"
+      VAD_NEGATIVE_THRESHOLD: "0.35"
+      MIN_SPEECH_DURATION: "500"
+      MAX_BUFFER_DURATION: "5000"
+    volumes:
+      - vexyl-tts-cache:/cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8081/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  vexyl-tts-cache:
+    driver: local

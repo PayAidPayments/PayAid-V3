@@ -68,6 +68,8 @@ If you run the **full gateway** (e.g. `docker run -d vexyl/vexyl-voice-gateway`,
 
 **Standalone TTS (8080):** The image **vexyl/vexyl-tts** (standalone TTS only) may be available separately; if you have it, use `VEXYL_TTS_URL=http://localhost:8080` and the same `VEXYL_API_KEY` for a dedicated TTS service.
 
+**Full pipeline (STT → PayAid LLM → TTS):** To run the **VEXYL Voice Gateway** with PayAid as the Custom LLM (Groq STT, your LLM, Gemini/Sarvam TTS), see **[VEXYL Voice Gateway + PayAid](VEXYL_VOICE_GATEWAY_PAYAID.md)**.
+
 ---
 
 ## 4. What Was Implemented
