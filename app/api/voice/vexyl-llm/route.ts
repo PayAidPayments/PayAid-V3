@@ -34,6 +34,18 @@ function appendAndTrim(
   return h
 }
 
+/** GET: allow health checks / browser visits without 405 */
+export async function GET() {
+  return NextResponse.json(
+    {
+      ok: true,
+      service: 'PayAid VEXYL LLM webhook',
+      usage: 'POST with JSON body: { message, sessionId?, context?: { agentId|botId, ... } }',
+    },
+    { status: 200 }
+  )
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

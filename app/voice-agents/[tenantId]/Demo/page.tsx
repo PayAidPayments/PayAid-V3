@@ -30,6 +30,7 @@ export default function VoiceAgentDemoPage() {
   
   const [agent, setAgent] = useState<any>(null)
   const [fetchError, setFetchError] = useState<'unauthorized' | 'not_found' | 'error' | null>(null)
+  const [serverErrorMessage, setServerErrorMessage] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -1017,6 +1018,7 @@ If still not working, check the browser console (F12) for detailed error message
     try {
       setLoadingAgent(true)
       setFetchError(null)
+      setServerErrorMessage(null)
       console.log('[Demo] Fetching agent:', agentId, 'tenantId:', tenantId)
 
       const controller = new AbortController()
@@ -1058,9 +1060,13 @@ If still not working, check the browser console (F12) for detailed error message
         console.error('[Demo] Failed to fetch agent - response not ok:', response.status, response.statusText)
         const errorData = await response.json().catch(() => ({}))
         console.error('[Demo] Error data:', errorData)
+        if (response.status !== 401 && response.status !== 404) {
+          setServerErrorMessage((errorData as { error?: string })?.error || null)
+        }
       }
     } catch (error: any) {
       setFetchError('error')
+      setServerErrorMessage(error?.name === 'AbortError' ? 'Request timed out. Please try again.' : null)
       if (error?.name === 'AbortError') {
         console.warn('[Demo] Request timed out – agent fetch aborted')
       } else {
@@ -1741,7 +1747,7 @@ If still not working, check the browser console (F12) for detailed error message
                   </Button>
                 </div>
               </>
-            ) : (
+                ) : (
               <>
                 <p className="text-muted-foreground font-medium">
                   {fetchError === 'not_found' ? 'Agent not found' : fetchError === 'error' ? 'Could not load agent' : 'Agent not found'}
@@ -1750,6 +1756,8 @@ If still not working, check the browser console (F12) for detailed error message
                   <p className="text-sm text-muted-foreground">
                     This demo link is for another workspace. You’re currently in <strong>{tenant?.name ?? 'your workspace'}</strong>. Log in with a user from the workspace that owns this agent (e.g. Demo Business: <code className="text-xs bg-muted px-1 rounded">admin@demo.com</code>) to try it.
                   </p>
+                ) : serverErrorMessage ? (
+                  <p className="text-sm text-muted-foreground">{serverErrorMessage}</p>
                 ) : (
                   <p className="text-sm text-muted-foreground">The agent may be unavailable or the link may be incorrect. You can retry or go back to Voice Agents.</p>
                 )}

@@ -93,8 +93,8 @@ export function RealTimeVoiceDemo({
       setMessages((prev) => [...prev, userMessage])
 
       const controller = new AbortController()
-      const timeoutMs = 60_000 // 60s max wait so we don't stay stuck on "Replying..."
-      const timeoutId = setTimeout(() => controller.abort(new DOMException('Request timed out after 60s', 'AbortError')), timeoutMs)
+      const timeoutMs = 120_000 // 120s – first reply can be slow (LLM cold + TTS); later ones faster
+      const timeoutId = setTimeout(() => controller.abort(new DOMException('Request timed out', 'AbortError')), timeoutMs)
 
       try {
         const history = messagesRef.current.map((m) => ({ role: m.role, content: m.content }))
@@ -194,7 +194,7 @@ export function RealTimeVoiceDemo({
           {
             role: 'assistant',
             content: isAbort
-              ? '[Response is taking too long. The server may be busy or compiling. Tap the mic to try again.]'
+              ? '[Response took too long (over 2 minutes). First reply can be slow; tap the mic to try again—later responses are usually faster.]'
               : `[Error: ${err instanceof Error ? err.message : 'Network or server error'}. Try again.]`,
             timestamp: new Date().toLocaleTimeString(),
           },
@@ -388,7 +388,11 @@ export function RealTimeVoiceDemo({
         <p className="text-xs text-muted-foreground">
           {status === 'idle' && 'Start real conversation'}
           {status === 'listening' && 'Speak — agent will reply with voice'}
-          {status === 'processing' && 'Replying…'}
+          {status === 'processing' && (
+            <>
+              Replying… <span className="text-slate-400">(first reply may take 1–2 min)</span>
+            </>
+          )}
         </p>
         {(status === 'listening' || status === 'processing') && (
           <Button variant="outline" size="sm" onClick={endDemo} className="gap-2">
