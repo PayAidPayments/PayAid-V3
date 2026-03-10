@@ -106,12 +106,12 @@ RESPONSE LANGUAGE: Speak only in ${langName} unless (1) the user explicitly asks
   return prompt
 }
 
-// Sarvam path: allow enough time so slow turns return audio; frontend watchdog 27s.
-const LLM_TIMEOUT_MS = 5000
-const TTS_TIMEOUT_MS = 5000
-const SARVAM_LLM_MS = 6000
-const SARVAM_TTS_MS = 10000
-const DEMO_OVERALL_MS = 25000 // 25s backend cap; frontend watchdog 27s
+// Aim for fast response; fail fast if slow. True ~1s feel would need streaming (LLM+TTS stream).
+const LLM_TIMEOUT_MS = 4000
+const TTS_TIMEOUT_MS = 4000
+const SARVAM_LLM_MS = 4000
+const SARVAM_TTS_MS = 6000
+const DEMO_OVERALL_MS = 12000 // 12s backend cap; client 15s, watchdog 13s
 const VOICE_MAX_TOKENS = 90
 const VOICE_TEMPERATURE = 0.4
 

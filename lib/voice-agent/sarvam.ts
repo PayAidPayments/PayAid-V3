@@ -32,7 +32,7 @@ export function isSarvamConfigured(): boolean {
   return !!getApiKey()
 }
 
-/** Remove internal reasoning/meta so we never send "Attempt 2:", "The response will be:", etc. to the user */
+/** Remove internal reasoning/meta so we never send checklists, "Attempt 2:", "The response will be:", etc. to the user */
 function stripReasoningFromText(raw: string): string {
   if (!raw || typeof raw !== 'string') return ''
   let t = raw.trim()
@@ -48,9 +48,13 @@ function stripReasoningFromText(raw: string): string {
     /this is direct, follows the flow[^.\n]*/gim,
     /it'?s a good start[^.\n]*/gim,
     /this feels more natural[^.\n]*/gim,
+    /\*\s*Is it[^?]*\?\s*(?:Yes|No)\.?\s*/gim,
+    /\*\s*Does it[^?]*\?\s*(?:Yes|No)\.?\s*/gim,
+    /\*\s*Do(?:es)?\s+(?:it|we)[^?]*\?\s*(?:Yes|No)\.?\s*/gim,
+    /\*\s*[A-Z][^?]*\?\s*(?:Yes|No)\.?\s*/gim,
   ]
   for (const p of metaPatterns) t = t.replace(p, ' ')
-  // Drop lines that are purely meta (bullets, Attempt N, Let's ..., etc.)
+  // Drop lines that are purely meta (bullets with checklist Q&A, Attempt N, etc.)
   t = t
     .split(/\n/)
     .filter((line) => {
@@ -61,6 +65,7 @@ function stripReasoningFromText(raw: string): string {
       if (/^Let'?s\s+/i.test(s)) return false
       if (/^(refining|check the rules)/i.test(s)) return false
       if (/^this (is direct|feels more)/i.test(s)) return false
+      if (/^\*\s*(?:Is it|Does it|Do we|Does we)[^?]*\?\s*(?:Yes|No)/i.test(s)) return false
       return true
     })
     .join('\n')
