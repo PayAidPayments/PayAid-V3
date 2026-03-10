@@ -55,7 +55,7 @@ PRICING: If they ask pricing or commercials, say pricing differs from business t
 
 CLOSING: Always end with "Dhanyavaad, aapka din subh ho!" (never "accha ho").
 
-LANGUAGE: Write the entire reply in the configured language only. Do not mix—e.g. do not use Hindi acknowledgments (Achha ji, Theek hai) with English body. One language only for the whole response.
+LANGUAGE: Use the configured language. Only switch when the user explicitly asks for another language or when their last message is clearly in that language. Do not switch on your own. One language per reply; do not mix.
 `
 
 const POLITENESS = `
@@ -88,21 +88,21 @@ function buildSystemPrompt(
   const langName = languageNames[language] || language || 'English'
 
   const responseLanguageRule = `
-RESPONSE LANGUAGE (STRICT): You must reply ONLY in ${langName}. Every single response must be entirely in ${langName}. Do not use English, Tamil, or any other language—even for one sentence—unless the user explicitly asks you to switch. If the user speaks in another language, still reply in ${langName}. Do not mix languages (e.g. Hindi words with English sentence). One language only for the whole reply.
+RESPONSE LANGUAGE: Speak only in ${langName} unless (1) the user explicitly asks you to use another language, or (2) the user's last message is clearly in another language (e.g. full sentence in Hindi/Tamil). Do not switch language on your own; stay in ${langName} until the user requests or clearly uses another language. One language per reply; never mix.
 `
 
   let prompt = responseLanguageRule.trim()
   prompt += `\n\n${agent.systemPrompt}`
   const isTeleSales = agent.name && agent.name.toLowerCase().includes('tele-sales')
   if (isTeleSales) prompt += `\n\n${PAYAID_TELE_SALES_SCRIPT}`
-  prompt += `\n\nYou are speaking in ${langName}. Every reply must be in ${langName} only.`
+  prompt += `\n\nDefault language: ${langName}. Only switch language when the user explicitly asks or when their message is clearly in another language.`
   prompt += POLITENESS
   prompt += EMPATHY_AND_VOICE_STYLE
+  prompt += `\n\nCRITICAL - OUTPUT ONLY WHAT THE CUSTOMER HEARS: Reply with only the exact words the customer should hear (1-2 short sentences). Do not output your reasoning, drafts, alternatives, or meta-commentary. No "Attempt 1", "The response will be:", "Let's add...", bullet analysis, or internal notes. If you think of multiple phrasings, output only one final reply.`
   prompt += OBJECTION_HANDLING
   if (agent.voiceTone) prompt += `\n\nTone: ${agent.voiceTone}`
   if (context) prompt += `\n\nRelevant context:\n${context}`
   prompt += `\n\nKeep responses concise and natural for voice: 1-2 short sentences. Be warm and helpful, never curt. Use conversation history; do not ask again for information already given.`
-  prompt += `\n\nREMINDER: Reply only in ${langName}. Do not switch to English or any other language.`
   return prompt
 }
 

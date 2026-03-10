@@ -32,6 +32,44 @@ export function isSarvamConfigured(): boolean {
   return !!getApiKey()
 }
 
+/** Remove internal reasoning/meta so we never send "Attempt 2:", "The response will be:", etc. to the user */
+function stripReasoningFromText(raw: string): string {
+  if (!raw || typeof raw !== 'string') return ''
+  let t = raw.trim()
+  // Extract reply when model says "The response will be: ..." or "Response: ..."
+  const responseWillBe = t.match(/(?:the\s+response\s+will\s+be|response)\s*[:"]\s*([^.*\n]+(?:\.[^\n]+)?)/im)
+  if (responseWillBe) t = responseWillBe[1].trim()
+  const metaPatterns = [
+    /^\s*\d+\.\s*\*\*[^*]*\*\*\s*/im,
+    /\*\s*Attempt\s*\d+[^*]*\*/gim,
+    /let'?s\s+(add|check|try|refine)[^.\n]*/gim,
+    /refining\s*:[^.\n]*/gim,
+    /check the rules[^.\n]*/gim,
+    /this is direct, follows the flow[^.\n]*/gim,
+    /it'?s a good start[^.\n]*/gim,
+    /this feels more natural[^.\n]*/gim,
+  ]
+  for (const p of metaPatterns) t = t.replace(p, ' ')
+  // Drop lines that are purely meta (bullets, Attempt N, Let's ..., etc.)
+  t = t
+    .split(/\n/)
+    .filter((line) => {
+      const s = line.trim()
+      if (!s) return false
+      if (/^[\*\-]\s*$/.test(s)) return false
+      if (/^Attempt\s+\d+/i.test(s)) return false
+      if (/^Let'?s\s+/i.test(s)) return false
+      if (/^(refining|check the rules)/i.test(s)) return false
+      if (/^this (is direct|feels more)/i.test(s)) return false
+      return true
+    })
+    .join('\n')
+    .trim()
+  const quoted = t.match(/^["']([^"']+)["']\s*\.?\s*$/m)
+  if (quoted) t = quoted[1].trim()
+  return t.replace(/\s+/g, ' ').trim()
+}
+
 /**
  * Sarvam Chat Completions (LLM) – fast, Indian-language-optimized.
  * Pass options.signal (e.g. from AbortController) to enforce timeout and avoid hanging.
@@ -60,7 +98,7 @@ export async function sarvamChat(
       model,
       messages: fullMessages,
       temperature: options?.temperature ?? 0.3,
-      max_tokens: 512,
+      max_tokens: 768, // enough for reasoning + short reply (512 often hit limit → content null)
     }),
     signal: options?.signal,
   })
@@ -71,14 +109,28 @@ export async function sarvamChat(
   }
 
   const data = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string }; delta?: { content?: string }; text?: string }>
+    choices?: Array<{
+      message?: { content?: string | null; reasoning_content?: string | null }
+      delta?: { content?: string }
+      text?: string
+    }>
   }
   const first = data?.choices?.[0]
-  const text =
+  let text =
     (typeof first?.message?.content === 'string' && first.message.content.trim()) ||
     (typeof first?.delta?.content === 'string' && first.delta.content.trim()) ||
     (typeof first?.text === 'string' && first.text.trim()) ||
     ''
+  // When finish_reason is "length", Sarvam may only fill reasoning_content and leave content null
+  if (!text && typeof first?.message?.reasoning_content === 'string' && first.message.reasoning_content.trim()) {
+    const raw = first.message.reasoning_content.trim()
+    // Prefer last paragraph or last ~300 chars (often the conclusion); strip meta/reasoning
+    const lastPara = raw.split(/\n\s*\n/).filter(Boolean).pop()?.trim()
+    const tail = lastPara && lastPara.length <= 400 ? lastPara : raw.slice(-400).trim()
+    if (tail) text = stripReasoningFromText(tail)
+  }
+  // Never send internal reasoning/meta to the user (e.g. "Attempt 2:", "The response will be:", bullet analysis)
+  text = stripReasoningFromText(text)
   if (!text) {
     const hint = first?.message ? '(message present, content empty)' : first ? '(choice present, no message)' : '(no choices)'
     if (process.env.NODE_ENV === 'development') {
