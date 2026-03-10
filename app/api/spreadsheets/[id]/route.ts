@@ -27,7 +27,8 @@ export async function GET(
       )
     }
 
-    if (!payload.tenantId) {
+    const tenantId = (payload as any).tenantId ?? (payload as any).tenant_id
+    if (!tenantId) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
     }
 
@@ -35,7 +36,7 @@ export async function GET(
     const spreadsheet = await prisma.spreadsheet.findFirst({
       where: {
         id,
-        tenantId: payload.tenantId,
+        tenantId,
       },
       include: {
         createdBy: {
@@ -98,7 +99,9 @@ export async function PATCH(
       )
     }
 
-    if (!payload.tenantId || !payload.userId) {
+    const tenantId = (payload as any).tenantId ?? (payload as any).tenant_id
+    const userId = (payload as any).userId ?? (payload as any).sub
+    if (!tenantId || !userId) {
       return NextResponse.json({ error: 'Tenant or user not found' }, { status: 404 })
     }
 
@@ -111,7 +114,7 @@ export async function PATCH(
     const currentSpreadsheet = await prisma.spreadsheet.findFirst({
       where: {
         id,
-        tenantId: payload.tenantId,
+        tenantId,
       },
     })
 
@@ -125,7 +128,7 @@ export async function PATCH(
         spreadsheetId: id,
         version: currentSpreadsheet.version,
         data: currentSpreadsheet.data as any,
-        createdById: payload.userId,
+        createdById: userId,
       },
     })
 
@@ -138,7 +141,7 @@ export async function PATCH(
         data: data !== undefined ? data : currentSpreadsheet.data,
         settings: settings !== undefined ? settings : currentSpreadsheet.settings,
         version: { increment: 1 },
-        updatedById: payload.userId,
+        updatedById: userId,
       },
     })
 
@@ -177,7 +180,8 @@ export async function DELETE(
       )
     }
 
-    if (!payload.tenantId) {
+    const tenantId = (payload as any).tenantId ?? (payload as any).tenant_id
+    if (!tenantId) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
     }
 
@@ -185,7 +189,7 @@ export async function DELETE(
     await prisma.spreadsheet.delete({
       where: {
         id,
-        tenantId: payload.tenantId,
+        tenantId,
       },
     })
 

@@ -28,7 +28,8 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
     }
 
-    if (!payload.tenantId) {
+    const tenantId = (payload as any).tenantId ?? (payload as any).tenant_id
+    if (!tenantId) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
     }
 
@@ -44,7 +45,7 @@ export async function GET(
     }
 
     const spreadsheet = await prisma.spreadsheet.findFirst({
-      where: { id, tenantId: payload.tenantId },
+      where: { id, tenantId },
       select: { name: true, data: true },
     })
 

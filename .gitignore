@@ -76,6 +76,7 @@ Recent/
 SendTo/
 Start Menu/
 Templates/
+!app/spreadsheet/**/Templates/**
 3D Objects/
 Contacts/
 Desktop/
