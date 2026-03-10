@@ -24,12 +24,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    if (!payload.tenantId) {
+    const tenantId = (payload as any).tenantId ?? (payload as any).tenant_id
+    if (!tenantId) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
     }
 
     const spreadsheets = await prisma.spreadsheet.findMany({
-      where: { tenantId: payload.tenantId },
+      where: { tenantId },
       orderBy: { updatedAt: 'desc' },
       select: {
         id: true,
@@ -80,7 +81,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!payload.tenantId || !payload.userId) {
+    const tenantId = (payload as any).tenantId ?? (payload as any).tenant_id
+    const userId = (payload as any).userId ?? (payload as any).sub
+    if (!tenantId || !userId) {
       return NextResponse.json({ error: 'Tenant or user not found' }, { status: 404 })
     }
 
@@ -110,12 +113,12 @@ export async function POST(request: NextRequest) {
 
     const spreadsheet = await prisma.spreadsheet.create({
       data: {
-        tenantId: payload.tenantId,
+        tenantId,
         name: name || 'Untitled Spreadsheet',
         description: description || null,
         data: data || initialData,
-        createdById: payload.userId,
-        updatedById: payload.userId,
+        createdById: userId,
+        updatedById: userId,
       },
     })
 
