@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "builds": [
+    { "src": "apps/*/package.json", "use": "@vercel/next" }
+  ],
+  "routes": [
+    { "src": "/crm/:path*", "dest": "apps/crm/:path*" },
+    { "src": "/hr/:path*", "dest": "apps/hr/:path*" },
+    { "src": "/voice/:path*", "dest": "apps/voice/:path*" },
+    { "src": "/:path*", "dest": "apps/dashboard/:path*" }
+  ]
+}
