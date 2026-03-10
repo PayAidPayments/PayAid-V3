@@ -33,12 +33,13 @@ export function isSarvamConfigured(): boolean {
 }
 
 /**
- * Sarvam Chat Completions (LLM) – fast, Indian-language-optimized
+ * Sarvam Chat Completions (LLM) – fast, Indian-language-optimized.
+ * Pass options.signal (e.g. from AbortController) to enforce timeout and avoid hanging.
  */
 export async function sarvamChat(
   systemPrompt: string,
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-  options?: { temperature?: number; model?: string }
+  options?: { temperature?: number; model?: string; signal?: AbortSignal }
 ): Promise<string> {
   const apiKey = getApiKey()
   if (!apiKey) throw new Error('SARVAM_API_KEY not set')
@@ -59,8 +60,9 @@ export async function sarvamChat(
       model,
       messages: fullMessages,
       temperature: options?.temperature ?? 0.3,
-      max_tokens: 1024,
+      max_tokens: 512,
     }),
+    signal: options?.signal,
   })
 
   if (!res.ok) {
@@ -68,26 +70,57 @@ export async function sarvamChat(
     throw new Error(`Sarvam chat failed (${res.status}): ${err}`)
   }
 
-  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> }
-  const text = data?.choices?.[0]?.message?.content?.trim()
-  if (text == null) throw new Error('Sarvam chat: no content in response')
+  const data = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string }; delta?: { content?: string }; text?: string }>
+  }
+  const first = data?.choices?.[0]
+  const text =
+    (typeof first?.message?.content === 'string' && first.message.content.trim()) ||
+    (typeof first?.delta?.content === 'string' && first.delta.content.trim()) ||
+    (typeof first?.text === 'string' && first.text.trim()) ||
+    ''
+  if (!text) {
+    const hint = first?.message ? '(message present, content empty)' : first ? '(choice present, no message)' : '(no choices)'
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[Sarvam] No content in response', hint, JSON.stringify(data).slice(0, 300))
+    }
+    throw new Error('Sarvam chat: no content in response')
+  }
   return text
 }
 
+/** Valid Bulbul v3 speaker IDs (Sarvam API). Agent voiceId may be VEXYL-style (e.g. priya-warm); map to one of these. */
+const SARVAM_SPEAKERS = new Set([
+  'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul',
+  'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa',
+  'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani',
+  'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham', 'rupali',
+])
+
+function toSarvamSpeaker(voiceId?: string): string {
+  const raw = (voiceId || 'priya').toLowerCase().trim()
+  if (SARVAM_SPEAKERS.has(raw)) return raw
+  const base = raw.split(/[-_]/)[0]
+  if (base && SARVAM_SPEAKERS.has(base)) return base
+  return 'priya'
+}
+
 /**
- * Sarvam Bulbul TTS – returns WAV audio buffer
+ * Sarvam Bulbul TTS – returns audio buffer (WAV or MP3).
+ * Use outputCodec: 'mp3' for browser playback (better support than WAV in some browsers).
  */
 export async function sarvamTts(
   text: string,
   language: string,
-  options?: { speaker?: string; sampleRate?: number }
+  options?: { speaker?: string; sampleRate?: number; signal?: AbortSignal; outputCodec?: 'wav' | 'mp3' }
 ): Promise<Buffer> {
   const apiKey = getApiKey()
   if (!apiKey) throw new Error('SARVAM_API_KEY not set')
 
   const targetLanguageCode = LANG_TO_BCP47[language] || (language.includes('-') ? language : `${language}-IN`)
-  const speaker = (options?.speaker || 'priya').toLowerCase()
+  const speaker = toSarvamSpeaker(options?.speaker)
   const speechSampleRate = options?.sampleRate ?? 24000
+  const codec = options?.outputCodec ?? 'wav'
 
   const res = await fetch(SARVAM_TTS_URL, {
     method: 'POST',
@@ -101,8 +134,9 @@ export async function sarvamTts(
       model: 'bulbul:v3',
       speaker,
       speech_sample_rate: speechSampleRate,
-      output_audio_codec: 'wav',
+      output_audio_codec: codec,
     }),
+    signal: options?.signal,
   })
 
   if (!res.ok) {
@@ -113,12 +147,17 @@ export async function sarvamTts(
   const contentType = res.headers.get('content-type') || ''
   if (contentType.includes('application/json')) {
     const json = (await res.json()) as {
+      audios?: string[]
       audio_content?: string
       audio?: string
       audio_base64?: string
       data?: string
     }
-    const b64 = json.audio_content ?? json.audio ?? json.audio_base64 ?? json.data
+    // Sarvam API returns { audios: ["<base64>"] }; also support legacy field names
+    const b64 =
+      Array.isArray(json.audios) && json.audios[0]
+        ? json.audios[0]
+        : json.audio_content ?? json.audio ?? json.audio_base64 ?? json.data
     if (b64) return Buffer.from(b64, 'base64')
     throw new Error('Sarvam TTS: no audio in JSON response')
   }

@@ -1,0 +1,18 @@
+# Server TTS for Voice Demo (higher quality than browser fallback)
+# NOTE: The official Coqui image does NOT start an HTTP server by default (it exits after "tts --help").
+# To run the server you must override command. See docs/TTS_TROUBLESHOOTING.md "Coqui container restarting?".
+# Easier: if you run VEXYL Voice Gateway (docker-compose.vexyl.yml), use VEXYL for TTS – set
+#   VEXYL_TTS_URL=http://localhost:8081
+# in .env and restart the app.
+
+services:
+  coqui-tts:
+    image: ghcr.io/coqui-ai/tts-cpu:latest
+    container_name: payaid-coqui-tts
+    ports:
+      - "5002:5002"
+    environment:
+      - COQUI_TOS_AGREED=1
+    # Official image default CMD doesn't start a server; override to run TTS server (XTTS v2 for Hindi/English)
+    command: ["python3", "TTS/server/server.py", "--model_name", "tts_models/multilingual/multi-dataset/xtts_v2", "--port", "5002"]
+    restart: unless-stopped

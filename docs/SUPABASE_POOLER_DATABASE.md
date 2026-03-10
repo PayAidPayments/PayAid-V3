@@ -8,6 +8,19 @@ FATAL: Tenant or user not found
 
 ---
 
+## Which port to use (final recommendation)
+
+Everything (Prisma, health check, APIs) uses a single `DATABASE_URL`. The app **respects the port** in that URL (it does not force 6543).
+
+| Situation | Use | Port |
+|-----------|-----|------|
+| "Can't reach database server" on 6543, or project paused | **Session pooler** | **5432** |
+| 6543 is reachable, want more concurrent connections | Transaction pooler | 6543 |
+
+**Use 5432** if 6543 is unreachable. **Use 6543** when it works.
+
+---
+
 ## Fix: use the correct pooler connection string
 
 The **username** in the URL must include your **project reference**, not just `postgres`.
@@ -58,6 +71,6 @@ The dashboard-generated URI already uses `postgres.[project-ref]` as the user.
 | Issue                         | Cause                    | Fix                                                                 |
 |------------------------------|--------------------------|---------------------------------------------------------------------|
 | “Tenant or user not found”   | Wrong pooler username     | Use `postgres.[PROJECT_REF]` in the URI (or copy URI from dashboard) |
-| Slow / hanging voice-agents   | DB connection/query slow | API now has a 12s timeout; fix `DATABASE_URL` so the pooler connects correctly |
+| "Can't reach database server" at 6543 | Project paused or 6543 blocked | Use **Session pooler (5432)** in `DATABASE_URL`; restore project if paused |
 
 Direct connection is not required; the pooler is supported as long as the connection string uses the correct format.

@@ -41,7 +41,7 @@ export async function synthesizeWithCoquiDocker(
     : { text, language: langCode, speaker_wav: null }
 
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 10_000) // 10s max per request
+  const timeoutId = setTimeout(() => controller.abort(), 5_000) // 5s so pipeline doesn't hang when Coqui is down; demo route races at 3s
   let res: Response
   try {
     res = await fetch(url, {

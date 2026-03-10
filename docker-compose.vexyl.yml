@@ -41,8 +41,8 @@ services:
       GEMINI_API_KEY: "${GEMINI_API_KEY}"
       GEMINI_TTS_MODEL: "gemini-2.5-flash-tts"
       GEMINI_TTS_VOICE_NAME: "Achernar"
-      # If using Sarvam instead: set VEXYL_TTS_PROVIDER=sarvam and SARVAM_API_KEY
-      # SARVAM_API_KEY: "${SARVAM_API_KEY}"
+      # If using Sarvam for TTS: set VEXYL_TTS_PROVIDER=sarvam in .env and add SARVAM_API_KEY
+      SARVAM_API_KEY: "${SARVAM_API_KEY}"
 
       TTS_CACHE_ENABLED: "true"
       TTS_CACHE_MAX_SIZE_MB: "1000"

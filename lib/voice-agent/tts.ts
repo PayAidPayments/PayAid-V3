@@ -238,7 +238,10 @@ async function synthesizeWithCoqui(
     throw new Error('No audio data returned from TTS service')
   } catch (error) {
     console.error('[TTS] Error synthesizing speech with Coqui:', error)
-    throw new Error(`Text-to-speech failed: ${error instanceof Error ? error.message : String(error)}`)
+    const msg = error instanceof Error ? error.message : String(error)
+    const cause = error instanceof Error && (error as Error & { cause?: Error }).cause?.message
+    const detail = cause && cause !== msg ? `${msg} (${cause})` : msg
+    throw new Error(`Text-to-speech failed: ${detail}`)
   }
 }
 

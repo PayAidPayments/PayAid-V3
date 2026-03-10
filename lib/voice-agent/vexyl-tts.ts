@@ -158,16 +158,27 @@ export async function synthesizeWithVexyl(
   }
 
   const path = getTtsPath()
+  const url = `${baseUrl}${path}`
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...getAuthHeaders(apiKey),
   }
 
-  const response = await fetch(`${baseUrl}${path}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  })
+  let response: Response
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    const cause = err instanceof Error && (err as Error & { cause?: Error }).cause?.message
+    const hint = cause?.includes('ECONNREFUSED') || msg.includes('fetch failed')
+      ? ' Is the gateway running? Try: Invoke-WebRequest -Uri "' + baseUrl + '/health" -UseBasicParsing. If the Voice Gateway does not expose POST ' + path + ', set VEXYL_TTS_PATH to the correct path or use Sarvam/Coqui for demo TTS.'
+      : ''
+    throw new Error(`VEXYL TTS unreachable (${cause || msg})${hint}`)
+  }
 
   if (!response.ok) {
     const errText = await response.text()
