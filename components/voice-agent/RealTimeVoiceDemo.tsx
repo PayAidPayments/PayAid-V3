@@ -227,16 +227,25 @@ export function RealTimeVoiceDemo({
         clearTimeout(timeoutId)
         const isAbort = (err instanceof Error && err.name === 'AbortError') || (err && (err as { name?: string }).name === 'AbortError')
         if (!isAbort) console.error('Demo process error:', err)
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: isAbort
-              ? '[Request timed out. Please try again with a shorter question.]'
-              : `[Error: ${err instanceof Error ? err.message : 'Network or server error'}. Try again.]`,
-            timestamp: new Date().toLocaleTimeString(),
-          },
-        ])
+        setMessages((prev) => {
+          const last = prev[prev.length - 1]
+          const watchdogAlreadyShown =
+            last?.role === 'assistant' &&
+            typeof last.content === 'string' &&
+            last.content.startsWith('[Response took too long')
+          // If the watchdog already told the user it took too long, don't spam a second timeout message
+          if (isAbort && watchdogAlreadyShown) return prev
+          return [
+            ...prev,
+            {
+              role: 'assistant',
+              content: isAbort
+                ? '[Request timed out. Please try again with a shorter question.]'
+                : `[Error: ${err instanceof Error ? err.message : 'Network or server error'}. Try again.]`,
+              timestamp: new Date().toLocaleTimeString(),
+            },
+          ]
+        })
         isProcessingRef.current = false
         setStatus('listening')
         restartListening()
