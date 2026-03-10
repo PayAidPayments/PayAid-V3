@@ -1,6 +1,17 @@
 # PayAid V3 - Multi-Industry Business Management Platform
 
-**Status:** ✅ **Phase 3 Complete - Ready for Launch**
+**Status:** ✅ **Phase 10 Complete – Zoho/Odoo-class production platform**
+
+---
+
+## World-class quick reference
+
+| Command | Purpose |
+|--------|---------|
+| `npm run dev:parallel` | All modules (CRM :3001, HR :3002, Voice :3003, Dashboard :3000) |
+| `npm run demo` | Validate env → Playwright demo flows → turbo build (when configured) |
+| `vercel --prod --cwd apps/crm` | Deploy CRM (Hobby: set Root Directory = `apps/crm`) |
+| **Metrics** | Vercel Speed Insights P95 TTFB &lt;500ms; bundle &lt;500KB gzip |
 
 ---
 
@@ -101,6 +112,20 @@ PayAid V3 is a comprehensive multi-tenant business management platform with a mo
    - App Store: http://localhost:3000/app-store
    - Admin Dashboard: http://localhost:3000/dashboard/admin/revenue
    - Login: `admin@demo.com` (from seed data)
+
+---
+
+## Benchmarks & metrics (Phase 10)
+
+| Metric | Before | After (target) |
+|--------|--------|----------------|
+| **P95 TTFB** | — | &lt;500ms (Vercel Speed Insights) |
+| **Largest client bundle (gzip)** | — | &lt;500KB (e.g. CRM ~164KB) |
+| **N+1** | Health-scores per-contact | Batched in:ids + groupBy |
+| **TTS** | Single provider | Vexyl → Sarvam → Coqui → text fallback |
+| **Health** | — | `/api/health` (redis, ai, db) per app |
+
+Add **Vercel Speed Insights** and **Sentry** (frontend) for production observability. Optional: `npm i @opentelemetry/api @vercel/otel` and use `lib/telemetry.ts` for Prisma/Redis/API spans.
 
 ---
 
