@@ -1057,11 +1057,29 @@ If still not working, check the browser console (F12) for detailed error message
         } else {
           setFetchError('error')
         }
-        console.error('[Demo] Failed to fetch agent - response not ok:', response.status, response.statusText)
-        const errorData = await response.json().catch(() => ({}))
-        console.error('[Demo] Error data:', errorData)
-        if (response.status !== 401 && response.status !== 404) {
-          setServerErrorMessage((errorData as { error?: string })?.error || null)
+        console.error('[Demo] Failed to fetch agent - response not ok:', response.status, response.statusText, {
+          agentId,
+          tenantId,
+          url: url.toString(),
+        })
+        const contentType = response.headers.get('content-type') || ''
+        if (contentType.includes('application/json')) {
+          const errorData = await response.json().catch(() => ({}))
+          console.error('[Demo] Error data:', errorData)
+          if (response.status !== 401 && response.status !== 404) {
+            setServerErrorMessage((errorData as { error?: string })?.error || null)
+          }
+          if (response.status === 404) {
+            setServerErrorMessage((errorData as { error?: string })?.error || 'Agent not found for this tenant.')
+          }
+        } else {
+          const errorText = await response.text().catch(() => '')
+          console.error('[Demo] Non-JSON error response:', errorText.slice(0, 300))
+          if (response.status === 404) {
+            setServerErrorMessage('Agent not found (or invalid demo link). Please pick an agent from the list.')
+          } else if (response.status !== 401) {
+            setServerErrorMessage('Server returned an unexpected response. Please try again.')
+          }
         }
       }
     } catch (error: any) {
