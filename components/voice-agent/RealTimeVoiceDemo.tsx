@@ -50,6 +50,7 @@ export function RealTimeVoiceDemo({
   const messagesRef = useRef<RealTimeVoiceDemoMessage[]>([])
   const pendingFinalRef = useRef('')
   const finalDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastInterimRef = useRef('')
   // Don't capture `processSpeech` before it's initialized (TDZ in production builds)
   const processSpeechRef = useRef<((text: string) => void) | null>(null)
   useEffect(() => {
@@ -103,7 +104,7 @@ export function RealTimeVoiceDemo({
       setMessages((prev) => [...prev, userMessage])
 
       const controller = new AbortController()
-      const timeoutMs = 32_000 // 32s – backend cap 25s (Sarvam ~6s LLM + 10s TTS)
+      const timeoutMs = 15_000 // 15s – backend cap 12s; fail fast, no long wait
       const timeoutId = setTimeout(() => controller.abort(new DOMException('Request timed out', 'AbortError')), timeoutMs)
 
       try {
@@ -283,6 +284,7 @@ export function RealTimeVoiceDemo({
       }
       if (final) {
         setInterimText('')
+        lastInterimRef.current = ''
         pendingFinalRef.current = (pendingFinalRef.current + ' ' + final).trim()
         if (finalDebounceRef.current) clearTimeout(finalDebounceRef.current)
         finalDebounceRef.current = setTimeout(() => {
@@ -290,8 +292,9 @@ export function RealTimeVoiceDemo({
           pendingFinalRef.current = ''
           finalDebounceRef.current = null
           if (toSend && processSpeechRef.current) processSpeechRef.current(toSend)
-        }, 500)
+        }, 900)
       } else {
+        lastInterimRef.current = interim
         setInterimText(interim)
       }
     }
@@ -300,6 +303,19 @@ export function RealTimeVoiceDemo({
     }
     rec.onend = () => {
       if (!shouldBeListeningRef.current) return
+      // Some browsers fire onend without a "final" result; flush any pending interim so we don't lose the utterance
+      const interim = lastInterimRef.current.trim()
+      if (interim.length >= 10 && !isProcessingRef.current) {
+        lastInterimRef.current = ''
+        pendingFinalRef.current = (pendingFinalRef.current + ' ' + interim).trim()
+        if (finalDebounceRef.current) clearTimeout(finalDebounceRef.current)
+        finalDebounceRef.current = setTimeout(() => {
+          const toSend = pendingFinalRef.current
+          pendingFinalRef.current = ''
+          finalDebounceRef.current = null
+          if (toSend && processSpeechRef.current) processSpeechRef.current(toSend)
+        }, 400)
+      }
       restartListening()
     }
     recognitionRef.current = rec
@@ -315,7 +331,7 @@ export function RealTimeVoiceDemo({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, interimText])
 
-  // 27s watchdog: backend cap 25s; if still processing, show message and resume listening (late response will replace this)
+  // 13s watchdog: backend cap 12s; if still processing, show message and resume listening (late response will replace this)
   useEffect(() => {
     if (status !== 'processing') return
     const id = setTimeout(() => {
@@ -323,14 +339,14 @@ export function RealTimeVoiceDemo({
         ...prev,
         {
           role: 'assistant',
-          content: '[Response took too long (>27s). Please try again with a shorter question.]',
+          content: '[Response took too long (>13s). Please try again with a shorter question.]',
           timestamp: new Date().toLocaleTimeString(),
         },
       ])
       isProcessingRef.current = false
       setStatus('listening')
       restartListening()
-    }, 27_000)
+    }, 13_000)
     return () => clearTimeout(id)
   }, [status, restartListening])
 
