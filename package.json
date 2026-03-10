@@ -103,7 +103,11 @@
     "dev:hr": "turbo dev --filter=hr",
     "dev:voice": "turbo dev --filter=voice",
     "dev:dashboard": "turbo dev --filter=dashboard",
-    "dev:parallel": "turbo dev --parallel"
+    "dev:parallel": "turbo dev --parallel",
+    "dev:all": "turbo dev --parallel",
+    "demo": "npm run verify-env && npm run test:demo && turbo build --parallel",
+    "deploy:crm": "vercel --prod --cwd apps/crm",
+    "deploy:hr": "vercel --prod --cwd apps/hr"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.958.0",

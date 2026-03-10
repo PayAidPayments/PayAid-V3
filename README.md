@@ -8,10 +8,32 @@
 
 | Command | Purpose |
 |--------|---------|
-| `npm run dev:parallel` | All modules (CRM :3001, HR :3002, Voice :3003, Dashboard :3000) |
-| `npm run demo` | Validate env → Playwright demo flows → turbo build (when configured) |
-| `vercel --prod --cwd apps/crm` | Deploy CRM (Hobby: set Root Directory = `apps/crm`) |
-| **Metrics** | Vercel Speed Insights P95 TTFB &lt;500ms; bundle &lt;500KB gzip |
+| `npm run dev:all` | All modules (Dashboard :3000, CRM :3001, HR :3002, Voice :3003) |
+| `npm run demo` | Validate env → Playwright demo flows → turbo build |
+| `npm run deploy:crm` | Deploy CRM to Vercel (Hobby OK) |
+| `npm run deploy:hr` | Deploy HR to Vercel |
+
+---
+
+## Quickstart
+
+```bash
+npm i && cd packages/db && npx prisma generate
+npm run dev:all   # 3000–3003
+npm run demo      # Health + QA + build
+# Deploy
+npm run deploy:crm   # Hobby OK
+```
+
+---
+
+## Benchmarks
+
+| Metric | Target | Command |
+|--------|--------|---------|
+| Bundle | &lt;500KB gzip | `npm run analyze --filter=crm` |
+| TTFB | P95 &lt;500ms | Vercel Speed Insights |
+| Queries | &lt;100ms | Supabase Query Perf |
 
 ---
 
