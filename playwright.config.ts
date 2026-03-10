@@ -24,7 +24,14 @@ export default defineConfig({
     // Next.js dev cold-compiles tenant routes; 5 min avoids flaky goto timeouts in ui-scanner/route-health.
     navigationTimeout: 300_000,
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // Phase 8: CTO demo flows – run with --project crm (or use baseURL in spec).
+    { name: 'crm', use: { ...devices['Desktop Chrome'], baseURL: 'http://127.0.0.1:3001' } },
+    { name: 'hr', use: { ...devices['Desktop Chrome'], baseURL: 'http://127.0.0.1:3002' } },
+    { name: 'voice', use: { ...devices['Desktop Chrome'], baseURL: 'http://127.0.0.1:3003' } },
+    { name: 'dashboard', use: { ...devices['Desktop Chrome'], baseURL: 'http://127.0.0.1:3000' } },
+  ],
   // Start dev server automatically for local E2E runs.
   // Opt out with PLAYWRIGHT_NO_WEB_SERVER=1 if you prefer starting it manually.
   webServer: process.env.CI

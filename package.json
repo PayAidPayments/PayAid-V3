@@ -2,6 +2,10 @@
   "name": "payaid-v3",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "prepare": "node -e \"if (!process.env.CI) require('child_process').execSync('husky install', {stdio:'inherit'})\"",
     "verify:db": "tsx scripts/verify-database-connection-setup.ts",
@@ -62,6 +66,7 @@
     "setup:free-stack:start": "npx tsx scripts/setup-free-stack.ts --start-docker",
     "start:free-stack": "powershell -ExecutionPolicy Bypass -File scripts/start-free-stack.ps1",
     "test": "jest --passWithNoTests",
+    "test:demo": "cross-env PLAYWRIGHT_NO_WEB_SERVER=1 playwright test tests/e2e.demo.spec.ts -c playwright.config.ts",
     "test:e2e": "npm run verify:db && npm run fix:ui-scanner-spec && playwright test -c playwright.config.ts",
     "test:e2e:no-verify": "cross-env SKIP_DB_VERIFY=1 npm run fix:ui-scanner-spec && playwright test -c playwright.config.ts",
     "test:e2e:ui": "npm run verify:db && playwright test -c playwright.config.ts --ui",
@@ -91,7 +96,14 @@
     "clean:build": "powershell -ExecutionPolicy Bypass -File scripts/clean-build.ps1",
     "pre-push": "powershell -ExecutionPolicy Bypass -File scripts/pre-push-check.ps1",
     "prebuild": "node scripts/prisma-generate-with-retry.js",
-    "build:vercel-check": "powershell -ExecutionPolicy Bypass -File scripts/pre-push-check.ps1"
+    "build:vercel-check": "powershell -ExecutionPolicy Bypass -File scripts/pre-push-check.ps1",
+    "analyze": "cross-env ANALYZE=true node scripts/prisma-generate-with-retry.js && cross-env ANALYZE=true node --max-old-space-size=5120 ./node_modules/next/dist/bin/next build --webpack",
+    "analyze:crm": "npm run analyze -w crm",
+    "dev:crm": "turbo dev --filter=crm",
+    "dev:hr": "turbo dev --filter=hr",
+    "dev:voice": "turbo dev --filter=voice",
+    "dev:dashboard": "turbo dev --filter=dashboard",
+    "dev:parallel": "turbo dev --parallel"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.958.0",
@@ -108,6 +120,7 @@
     "@langchain/ollama": "^1.2.1",
     "@langchain/openai": "^1.2.3",
     "@prisma/client": "^5.22.0",
+    "@prisma/extension-accelerate": "^3.0.1",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-select": "^2.1.4",
     "@radix-ui/react-switch": "^1.2.6",
@@ -186,6 +199,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
     "@jest/globals": "^29.7.0",
+    "@next/bundle-analyzer": "^15.1.0",
     "@playwright/test": "^1.58.1",
     "@types/pdf-parse": "^1.1.5",
     "cross-env": "^10.1.0",
