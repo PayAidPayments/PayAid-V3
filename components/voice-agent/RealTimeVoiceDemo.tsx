@@ -48,6 +48,12 @@ export function RealTimeVoiceDemo({
   const restartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesRef = useRef<RealTimeVoiceDemoMessage[]>([])
+  const pendingFinalRef = useRef('')
+  const finalDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const processSpeechRef = useRef(processSpeech)
+  useEffect(() => {
+    processSpeechRef.current = processSpeech
+  }, [processSpeech])
   useEffect(() => {
     messagesRef.current = messages
   }, [messages])
@@ -79,6 +85,12 @@ export function RealTimeVoiceDemo({
       isProcessingRef.current = true
       setStatus('processing')
       setInterimText('')
+      // Stop mic immediately so we don't hear/transcribe the agent's own voice (no echo response)
+      try {
+        recognitionRef.current?.stop()
+      } catch {
+        // ignore if already stopped
+      }
       if (currentAudioRef.current) {
         currentAudioRef.current.pause()
         currentAudioRef.current.currentTime = 0
@@ -93,7 +105,7 @@ export function RealTimeVoiceDemo({
       setMessages((prev) => [...prev, userMessage])
 
       const controller = new AbortController()
-      const timeoutMs = 12_000 // 12s – backend hard cap 8s (4s LLM + 4s TTS)
+      const timeoutMs = 32_000 // 32s – backend cap 25s (Sarvam ~6s LLM + 10s TTS)
       const timeoutId = setTimeout(() => controller.abort(new DOMException('Request timed out', 'AbortError')), timeoutMs)
 
       try {
@@ -114,7 +126,7 @@ export function RealTimeVoiceDemo({
           signal: controller.signal,
         })
         clearTimeout(timeoutId)
-        let data: { text?: string; audio?: string; ttsError?: string; error?: string; timedOut?: boolean } = {}
+        let data: { text?: string; audio?: string; audioFormat?: 'mp3' | 'wav'; ttsError?: string; error?: string; timedOut?: boolean } = {}
         try {
           data = await res.json()
         } catch {
@@ -137,6 +149,7 @@ export function RealTimeVoiceDemo({
         }
         const reply = data.text || ''
         const base64Audio = data.audio
+        const audioFormat = data.audioFormat || 'wav'
         const ttsError = data.ttsError
         const timedOut = data.timedOut
         const is401 = ttsError && String(ttsError).includes('401')
@@ -145,14 +158,20 @@ export function RealTimeVoiceDemo({
           : ''
         let displayReply = reply
         if (timedOut && reply) displayReply = `${reply} [Took too long – try a shorter question.]`
-        else if (reply)
-          displayReply = ttsError ? `${reply}\n\n🔇 Voice unavailable (${ttsError}).${ttsHint}` : reply
+        else if (reply && !base64Audio)
+          displayReply = ttsError
+            ? `${reply}\n\n🔇 Server voice unavailable (${ttsError}). Reply shown as text.${ttsHint}`
+            : `${reply}\n\n🔇 Server voice unavailable. Reply shown as text.`
+        else if (reply) displayReply = reply
         else if (ttsError) displayReply = `[Voice unavailable: ${ttsError}]${ttsHint}`
         else if (!reply) displayReply = '[No response text]'
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', content: displayReply, timestamp: new Date().toLocaleTimeString() },
-        ])
+        const assistantEntry = { role: 'assistant' as const, content: displayReply, timestamp: new Date().toLocaleTimeString() }
+        setMessages((prev) => {
+          const last = prev[prev.length - 1]
+          const isTimeoutMessage = last?.role === 'assistant' && typeof last.content === 'string' && last.content.startsWith('[Response took too long')
+          if (isTimeoutMessage) return [...prev.slice(0, -1), assistantEntry]
+          return [...prev, assistantEntry]
+        })
         const clearProcessingAndRestart = () => {
           currentAudioRef.current = null
           isProcessingRef.current = false
@@ -161,26 +180,44 @@ export function RealTimeVoiceDemo({
         }
         if (base64Audio) {
           try {
-            const bytes = Uint8Array.from(atob(base64Audio), (c) => c.charCodeAt(0))
-            const blob = new Blob([bytes], { type: 'audio/wav' })
-            const url = URL.createObjectURL(blob)
-            const audio = new Audio(url)
-            currentAudioRef.current = audio
-            audio.onended = () => {
-              URL.revokeObjectURL(url)
-              setStatus('listening')
-              setTimeout(restartListening, 300)
-              currentAudioRef.current = null
-              isProcessingRef.current = false
-            }
-            audio.onerror = () => {
-              URL.revokeObjectURL(url)
+            const b64 = String(base64Audio).replace(/\s/g, '')
+            if (!b64 || b64.length < 100) {
+              console.warn('[Voice Demo] Audio data too short or empty, skipping playback')
               clearProcessingAndRestart()
+            } else {
+              const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
+              // Detect format from magic bytes so we never use wrong MIME (avoids NotSupportedError)
+              const isWav = bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 // RIFF
+              const isMp3 = (bytes.length >= 3 && bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0) || (bytes.length >= 10 && bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) // MP3 sync or ID3
+              const mimeType = isWav ? 'audio/wav' : isMp3 ? 'audio/mpeg' : (audioFormat === 'mp3' ? 'audio/mpeg' : 'audio/wav')
+              const minLength = mimeType === 'audio/mpeg' ? 20 : 44
+              if (bytes.length < minLength) {
+                console.warn('[Voice Demo] Decoded audio too short, skipping playback')
+                clearProcessingAndRestart()
+              } else {
+                const blob = new Blob([bytes], { type: mimeType })
+                const url = URL.createObjectURL(blob)
+                const audio = new Audio(url)
+                currentAudioRef.current = audio
+                audio.onended = () => {
+                  URL.revokeObjectURL(url)
+                  setStatus('listening')
+                  setTimeout(restartListening, 300)
+                  currentAudioRef.current = null
+                  isProcessingRef.current = false
+                }
+                audio.onerror = (e) => {
+                  URL.revokeObjectURL(url)
+                  console.warn('[Voice Demo] Audio element failed to load/play:', e)
+                  clearProcessingAndRestart()
+                }
+                audio.play().catch((e) => {
+                  console.error('Audio play failed:', e)
+                  URL.revokeObjectURL(url)
+                  clearProcessingAndRestart()
+                })
+              }
             }
-            audio.play().catch((e) => {
-              console.error('Audio play failed:', e)
-              clearProcessingAndRestart()
-            })
           } catch (e) {
             console.error('Audio decode/play failed:', e)
             clearProcessingAndRestart()
@@ -197,7 +234,7 @@ export function RealTimeVoiceDemo({
           {
             role: 'assistant',
             content: isAbort
-              ? '[Taking too long (>15s). Please try again with a shorter question.]'
+              ? '[Request timed out. Please try again with a shorter question.]'
               : `[Error: ${err instanceof Error ? err.message : 'Network or server error'}. Try again.]`,
             timestamp: new Date().toLocaleTimeString(),
           },
@@ -207,7 +244,7 @@ export function RealTimeVoiceDemo({
         restartListening()
       }
     },
-    [agentId, token, tenantId, restartListening]
+    [agentId, token, tenantId, agentLanguage, restartListening]
   )
 
   useEffect(() => {
@@ -235,7 +272,14 @@ export function RealTimeVoiceDemo({
       }
       if (final) {
         setInterimText('')
-        processSpeech(final)
+        pendingFinalRef.current = (pendingFinalRef.current + ' ' + final).trim()
+        if (finalDebounceRef.current) clearTimeout(finalDebounceRef.current)
+        finalDebounceRef.current = setTimeout(() => {
+          const toSend = pendingFinalRef.current
+          pendingFinalRef.current = ''
+          finalDebounceRef.current = null
+          if (toSend && processSpeechRef.current) processSpeechRef.current(toSend)
+        }, 500)
       } else {
         setInterimText(interim)
       }
@@ -250,6 +294,7 @@ export function RealTimeVoiceDemo({
     recognitionRef.current = rec
     return () => {
       if (restartTimeoutRef.current) clearTimeout(restartTimeoutRef.current)
+      if (finalDebounceRef.current) clearTimeout(finalDebounceRef.current)
       rec.stop()
       recognitionRef.current = null
     }
@@ -259,7 +304,7 @@ export function RealTimeVoiceDemo({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, interimText])
 
-  // 10s watchdog: never show "Agent replying…" longer than 10s
+  // 27s watchdog: backend cap 25s; if still processing, show message and resume listening (late response will replace this)
   useEffect(() => {
     if (status !== 'processing') return
     const id = setTimeout(() => {
@@ -267,14 +312,14 @@ export function RealTimeVoiceDemo({
         ...prev,
         {
           role: 'assistant',
-          content: '[Response took too long (>10s). Please try again with a shorter question.]',
+          content: '[Response took too long (>27s). Please try again with a shorter question.]',
           timestamp: new Date().toLocaleTimeString(),
         },
       ])
       isProcessingRef.current = false
       setStatus('listening')
       restartListening()
-    }, 10_000)
+    }, 27_000)
     return () => clearTimeout(id)
   }, [status, restartListening])
 
