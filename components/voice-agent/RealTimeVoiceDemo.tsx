@@ -50,10 +50,8 @@ export function RealTimeVoiceDemo({
   const messagesRef = useRef<RealTimeVoiceDemoMessage[]>([])
   const pendingFinalRef = useRef('')
   const finalDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const processSpeechRef = useRef(processSpeech)
-  useEffect(() => {
-    processSpeechRef.current = processSpeech
-  }, [processSpeech])
+  // Don't capture `processSpeech` before it's initialized (TDZ in production builds)
+  const processSpeechRef = useRef<((text: string) => void) | null>(null)
   useEffect(() => {
     messagesRef.current = messages
   }, [messages])
@@ -246,6 +244,10 @@ export function RealTimeVoiceDemo({
     },
     [agentId, token, tenantId, agentLanguage, restartListening]
   )
+
+  useEffect(() => {
+    processSpeechRef.current = processSpeech
+  }, [processSpeech])
 
   useEffect(() => {
     const SpeechRecognition =
