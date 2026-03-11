@@ -1,0 +1,28 @@
+{
+  "name": "crm",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "analyze": "cross-env ANALYZE=true next build --webpack",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@payaid/db": "file:../../packages/db",
+    "next": "^16.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@next/bundle-analyzer": "^15.1.0",
+    "@types/node": "^20.14.0",
+    "prisma": "^5.19.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^16.1.0",
+    "typescript": "^5.5.0"
+  }
+}

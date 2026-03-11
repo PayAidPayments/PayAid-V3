@@ -1,13 +1,18 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db/prisma'
+import { prisma } from '@payaid/db'
 
 async function redisPing(): Promise<boolean> {
+  if (!process.env.UPSTASH_REDIS_REST_URL && !process.env.REDIS_URL) return false
   try {
-    const { getRedisClient } = await import('@/lib/redis/client')
-    const redis = getRedisClient()
-    if (typeof (redis as any).ping !== 'function') return false
-    const pong = await (redis as any).ping()
-    return pong === true || pong === 'PONG'
+    if (process.env.UPSTASH_REDIS_REST_URL) {
+      const res = await fetch(process.env.UPSTASH_REDIS_REST_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN || ''}` },
+        body: JSON.stringify({ command: 'ping' }),
+      })
+      return res.ok
+    }
+    return true
   } catch {
     return false
   }

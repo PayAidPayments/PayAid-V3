@@ -1,0 +1,14 @@
+/* HR module print styles – hide nav and show only content */
+@media print {
+  .module-top-bar,
+  nav,
+  [data-slot="topbar"],
+  button:not(.print-show),
+  a[href*="/Employees/new"],
+  a[href*="/export"] {
+    visibility: hidden !important;
+  }
+  body {
+    print-color-adjust: exact;
+  }
+}
