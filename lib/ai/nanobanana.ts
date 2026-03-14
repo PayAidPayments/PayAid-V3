@@ -45,12 +45,10 @@ class NanoBananaClient {
     this.apiKey = process.env.GEMINI_API_KEY || ''
     
     if (!this.apiKey) {
-      console.warn('⚠️ GEMINI_API_KEY not found in environment variables')
       return
     }
 
     if (!this.apiKey.startsWith('AIza')) {
-      console.warn('⚠️ GEMINI_API_KEY has invalid format (should start with "AIza")')
       return
     }
 
@@ -59,7 +57,6 @@ class NanoBananaClient {
       this.model = this.client.getGenerativeModel({
         model: this.MODEL_NAME,
       })
-      console.log('✅ NanoBananaClient initialized')
     } catch (error) {
       console.error('❌ Failed to initialize NanoBananaClient:', error)
     }
@@ -100,12 +97,6 @@ class NanoBananaClient {
         enhancedPrompt = `${options.prompt}, ${styleMap[options.style] || options.style} style`
       }
 
-      console.log('🎨 Nano Banana image generation request:', {
-        promptLength: enhancedPrompt.length,
-        style: options.style,
-        size: options.size,
-      })
-
       const response = await this.model!.generateContent({
         contents: [
           {
@@ -124,12 +115,6 @@ class NanoBananaClient {
       const base64 = imageBuffer.toString('base64')
       const imageUrl = `data:image/png;base64,${base64}`
       const processingTimeMs = Date.now() - startTime
-
-      console.log('✅ Nano Banana image generated successfully', {
-        size: imageBuffer.length,
-        processingTimeMs,
-        costInINR: this.COST_IN_INR,
-      })
 
       return {
         image_url: imageUrl,
@@ -174,11 +159,6 @@ class NanoBananaClient {
     const startTime = Date.now()
 
     try {
-      console.log('✏️ Nano Banana image edit request:', {
-        editPrompt: options.editPrompt.substring(0, 100),
-        imageSize: options.imageBuffer.length,
-      })
-
       const imageBase64 = options.imageBuffer.toString('base64')
 
       const response = await this.model!.generateContent({
@@ -204,11 +184,6 @@ class NanoBananaClient {
       const base64 = imageBuffer.toString('base64')
       const imageUrl = `data:image/png;base64,${base64}`
       const processingTimeMs = Date.now() - startTime
-
-      console.log('✅ Nano Banana image edited successfully', {
-        processingTimeMs,
-        costInINR: this.COST_IN_INR,
-      })
 
       return {
         image_url: imageUrl,
@@ -242,11 +217,6 @@ class NanoBananaClient {
     const startTime = Date.now()
 
     try {
-      console.log('🔀 Nano Banana image fusion request:', {
-        fusionPrompt: options.fusionPrompt.substring(0, 100),
-        imageCount: options.imageBuffers.length,
-      })
-
       // Build parts array with text + all images
       const parts: any[] = [
         {
@@ -277,11 +247,6 @@ class NanoBananaClient {
       const base64 = imageBuffer.toString('base64')
       const imageUrl = `data:image/png;base64,${base64}`
       const processingTimeMs = Date.now() - startTime
-
-      console.log('✅ Nano Banana images fused successfully', {
-        processingTimeMs,
-        costInINR: this.COST_IN_INR,
-      })
 
       return {
         image_url: imageUrl,
@@ -339,4 +304,4 @@ export function getNanoBananaClient(): NanoBananaClient {
   return instance
 }
 
-export default getNanoBananaClient()
+export default getNanoBananaClient

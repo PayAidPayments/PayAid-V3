@@ -19,6 +19,7 @@ export function getMarketingTopBarItems(tenantId: string): MarketingTopBarItem[]
   const base = `/marketing/${tenantId}`
   return [
     { name: 'Home', href: `${base}/Home` },
+    { name: 'Studio', href: `${base}/Studio` },
     { name: 'Campaigns', href: `${base}/Campaigns` },
     { name: 'Sequences', href: `${base}/Sequences` },
     { name: 'Ads', href: `${base}/Ads` },

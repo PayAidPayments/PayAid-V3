@@ -1,96 +1,53 @@
-# Phase 3 - 100% COMPLETE ✅
-**Date:** January 2025  
-**Status:** ✅ **ALL FEATURES IMPLEMENTED**
+# Phase 3 – Migrate & Rendering – Complete
+
+## Summary
+
+Phase 3 removes app-wide `force-dynamic`, adds ISR and HTTP caching for CRM, and migrates the full CRM app into `apps/crm` with a root path alias so it can run in isolation.
 
 ---
 
-## 🎉 PHASE 3 COMPLETION SUMMARY
+## 1. Root layout and rendering
 
-All Phase 3 features have been successfully implemented:
-
-### **Week 9-10: Custom Fine-Tuned Models** ✅ 100%
-- ✅ Training data collection pipeline
-- ✅ LoRA fine-tuning service (Python)
-- ✅ Model deployment pipeline (Ollama)
-- ✅ Model routing with Ollama integration
-- ✅ Model versioning system
-- ✅ Training and deployment APIs
-
-### **Week 11: What-If Analysis** ✅ 100%
-- ✅ Scenario modeling engine
-- ✅ Pricing, hiring, product, marketing scenarios
-- ✅ Scenario comparison
-- ✅ Interactive dashboard
-- ✅ API integration
-
-### **Week 11: Team Collaboration** ✅ 100%
-- ✅ WebSocket collaboration server
-- ✅ Real-time message broadcasting
-- ✅ Participant list
-- ✅ Typing indicators
-- ✅ Collaborative UI component
-
-### **Week 12: Polish & Launch** ✅ 95%
-- ✅ Performance optimization (Redis caching)
-- ✅ Security audit (best practices implemented)
-- ✅ Onboarding flow
-- ✅ Training materials
-- ⏳ Load testing (pending deployment)
-- ⏳ Security certification (optional)
+- **`app/layout.tsx`** – Removed `export const dynamic = 'force-dynamic'`. Comment added: use per-route `dynamic` or `revalidate` (e.g. `revalidate = 60` on list/dashboard segments).
+- **`app/crm/layout.tsx`** – New **server** layout for the CRM segment with **`export const revalidate = 60`** so list/dashboard data can be ISR-cached.
 
 ---
 
-## 📋 ALL FILES CREATED
+## 2. API cache (unstable_cache + Cache-Control)
 
-### **Fine-Tuning:**
-1. `lib/ai/company-fine-tuning.ts`
-2. `lib/ai/model-router.ts` (enhanced)
-3. `services/fine-tuning/train.py`
-4. `services/fine-tuning/deploy.py`
-5. `services/fine-tuning/requirements.txt`
-6. `services/fine-tuning/README.md`
-7. `app/api/ai/models/[companyId]/route.ts`
-8. `app/api/ai/models/[companyId]/train/route.ts`
-9. `app/api/ai/models/[companyId]/deploy/route.ts`
-
-### **What-If Analysis:**
-10. `lib/ai/what-if-engine.ts`
-11. `app/api/ai/what-if/route.ts`
-12. `components/WhatIfAnalysis.tsx`
-
-### **Team Collaboration:**
-13. `server/websocket-collab-server.ts`
-14. `components/CollaborativeCofounder.tsx`
-
-### **Polish & Launch:**
-15. `lib/performance/cache.ts`
-16. `docs/onboarding-guide.md`
-17. `app/onboarding/welcome/page.tsx`
+- **`app/api/crm/dashboard/summary/route.ts`**:
+  - **`unstable_cache`** – Dashboard summary is cached per tenant with key `['crm-dashboard-summary', tenantId]` and **`revalidate: 30`**.
+  - **Cache-Control** – Response headers: **`s-maxage=300, stale-while-revalidate=600`** for CDN/edge caching.
 
 ---
 
-## 🚀 READY FOR PRODUCTION
+## 3. CRM migration to apps/crm
 
-**All core features are implemented and ready for:**
-- ✅ Beta testing
-- ✅ Customer onboarding
-- ✅ Production deployment
+- **Path alias** – In **`apps/crm/tsconfig.json`**, **`@/*`** points to **`../../*`** (repo root) so existing `@/lib`, `@/components` imports resolve without changes.
+- **Next.js webpack** – In **`apps/crm/next.config.mjs`**, **`resolve.alias['@']`** set to repo root so runtime resolution matches.
+- **Copied into `apps/crm/app/`**:
+  - **`layout.tsx`**, **`ProvidersLoader.tsx`**, **`providers.tsx`**, **`globals.css`** (from root `app/`).
+  - **`app/crm/*`** → **`apps/crm/app/crm/*`** (full CRM route tree).
+  - **`app/api/crm`** → **`apps/crm/app/api/crm`** (all CRM API routes).
 
-**Remaining tasks (operational):**
-- Load testing (requires deployment)
-- Security certification (optional)
-- Demo call scheduling (operations)
-
----
-
-## 📊 FINAL STATUS
-
-- **Phase 1:** ✅ 100% Complete
-- **Phase 2:** ✅ 100% Complete
-- **Phase 3:** ✅ 100% Complete (95% code, 5% operational)
-
-**Overall Project:** ✅ **100% FEATURE COMPLETE**
+Running **`npm run dev:crm`** (or `turbo dev --filter=crm`) from repo root runs the CRM app on port 3001 with routes **`/crm/...`** and **`/api/crm/...`**; all existing `@/` imports resolve to the monorepo root.
 
 ---
 
-**🎉 Congratulations! Phase 3 is complete and ready for launch!**
+## 4. What was not done (follow-up)
+
+- **Dashboard / HR / Voice** – No copy into `apps/dashboard`, `apps/hr`, `apps/voice` yet. Same pattern as CRM: path alias `@/*` → repo root, then copy `app/dashboard/*`, `app/hr/*`, `app/voice-agents/*` and corresponding `app/api/*` into each app.
+- **Shared packages** – `packages/core`, `packages/ui`, `packages/ai` remain stubs. Migrating `lib/auth`, `lib/tenant`, `components/layout`, `lib/ai` into them is follow-up; apps/crm currently relies on root via `@/`.
+- **Remove root app/** – Root `app/` is still the main monolith. Deprecation or removal is after all modules are moved and verified.
+
+---
+
+## 5. Verify
+
+- Root: `npm run dev` – full app; no global force-dynamic; CRM segment uses revalidate 60.
+- CRM app: `npm run dev:crm` – only CRM; `/crm`, `/api/crm` work with shared lib/components via `@/` → root.
+- API: `GET /api/crm/dashboard/summary?tenantId=...` returns **Cache-Control: s-maxage=300, stale-while-revalidate=600** and benefits from **unstable_cache** (30s revalidate).
+
+---
+
+**Commit:** `phase-3-migrate-rendering`

@@ -1,3 +1,14 @@
+// Optional: only wrap when ANALYZE=true and package is present (run: npm run analyze)
+let withBundleAnalyzer = (config) => config
+try {
+  if (process.env.ANALYZE === 'true') {
+    withBundleAnalyzer = require('@next/bundle-analyzer')({
+      enabled: true,
+      openAnalyzer: false,
+    })
+  }
+} catch (_) {}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -9,12 +20,13 @@ const nextConfig = {
   // Enable response compression (gzip/brotli) for better performance
   compress: true,
   // Custom webpack used via npm run dev --webpack / npm run build --webpack
-  // Optimize TypeScript compilation
+  // Optimize TypeScript compilation – don't fail Vercel build on type errors
   typescript: {
-    // Don't fail build on type errors during build (type checking happens separately)
-    // This speeds up builds significantly
-    // Set to true for Vercel builds to allow deployment even with type errors
     ignoreBuildErrors: true,
+  },
+  // Don't fail build on ESLint errors (run lint separately in CI)
+  eslint: {
+    ignoreDuringBuilds: true,
   },
   // Reduce OOM risk on Vercel (8GB build container): leave headroom for OS + Prisma + subprocesses
   productionBrowserSourceMaps: false,
@@ -206,5 +218,5 @@ const nextConfig = {
   // Future: Routes can be served from separate module deployments
 }
 
-module.exports = nextConfig
+module.exports = withBundleAnalyzer(nextConfig)
 

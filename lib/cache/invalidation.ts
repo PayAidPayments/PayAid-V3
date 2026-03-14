@@ -1,9 +1,8 @@
 /**
  * Cache Invalidation Strategy for PayAid V3
  * Implements tag-based cache invalidation for efficient cache management
+ * Phase 1: Uses single Redis singleton (Upstash or no-op).
  */
-
-import { Redis } from 'ioredis'
 
 // Cache tags for different entity types
 export enum CacheTag {
@@ -54,39 +53,10 @@ export const CacheKey = {
     `search:${tenantId}:${type}:${query}`,
 }
 
-/**
- * Get Redis client (singleton)
- */
-let redisClient: Redis | null = null
+import { getRedisSingleton } from '@/lib/redis/singleton'
 
-function getRedisClient(): Redis | null {
-  if (redisClient) {
-    return redisClient
-  }
-
-  const redisUrl = process.env.REDIS_URL
-  if (!redisUrl) {
-    return null
-  }
-
-  // Skip real Redis on Vercel build when only localhost is configured (avoids ECONNREFUSED during build)
-  if (process.env.VERCEL === '1' && (redisUrl.includes('localhost') || redisUrl.includes('127.0.0.1'))) {
-    return null
-  }
-
-  try {
-    redisClient = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
-      retryStrategy: (times) => {
-        const delay = Math.min(times * 50, 2000)
-        return delay
-      },
-    })
-    return redisClient
-  } catch (error) {
-    console.error('Failed to create Redis client:', error)
-    return null
-  }
+function getRedis() {
+  return getRedisSingleton()
 }
 
 /**
@@ -98,42 +68,22 @@ export async function invalidateByTag(
   tenantId?: string,
   entityId?: string
 ): Promise<void> {
-  const client = getRedisClient()
-  if (!client) {
-    return
-  }
+  const redis = getRedis()
+  if (!redis) return
 
   try {
-    // Pattern to match all keys with this tag
     const pattern = tenantId
       ? entityId
         ? `${tag}:${tenantId}:${entityId}*`
         : `${tag}:${tenantId}:*`
       : `${tag}:*`
 
-    // Find all matching keys
-    const keys: string[] = []
-    let cursor = '0'
-
-    do {
-      const result = await client.scan(
-        cursor,
-        'MATCH',
-        pattern,
-        'COUNT',
-        100
-      )
-      cursor = result[0]
-      keys.push(...result[1])
-    } while (cursor !== '0')
-
-    // Delete all matching keys
+    const keys = await redis.keys(pattern)
     if (keys.length > 0) {
-      await client.del(...keys)
+      await redis.del(...keys)
       console.log(`Invalidated ${keys.length} cache keys for tag: ${tag}`)
     }
 
-    // Also invalidate related aggregations
     if (tenantId) {
       await invalidateRelatedCaches(tag, tenantId)
     }
@@ -149,15 +99,11 @@ async function invalidateRelatedCaches(
   tag: CacheTag,
   tenantId: string
 ): Promise<void> {
-  const client = getRedisClient()
-  if (!client) {
-    return
-  }
+  const redis = getRedis()
+  if (!redis) return
 
   try {
     const relatedTags: CacheTag[] = []
-
-    // Map entity tags to related cache tags
     switch (tag) {
       case CacheTag.CONTACT:
       case CacheTag.DEAL:
@@ -176,21 +122,10 @@ async function invalidateRelatedCaches(
         break
     }
 
-    // Invalidate related tags
     for (const relatedTag of relatedTags) {
       const pattern = `${relatedTag}:${tenantId}*`
-      const keys: string[] = []
-      let cursor = '0'
-
-      do {
-        const result = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100)
-        cursor = result[0]
-        keys.push(...result[1])
-      } while (cursor !== '0')
-
-      if (keys.length > 0) {
-        await client.del(...keys)
-      }
+      const keys = await redis.keys(pattern)
+      if (keys.length > 0) await redis.del(...keys)
     }
   } catch (error) {
     console.error('Failed to invalidate related caches:', error)
@@ -212,24 +147,14 @@ export async function invalidateTags(
  * Clear all cache for a tenant
  */
 export async function clearTenantCache(tenantId: string): Promise<void> {
-  const client = getRedisClient()
-  if (!client) {
-    return
-  }
+  const redis = getRedis()
+  if (!redis) return
 
   try {
     const pattern = `*:${tenantId}:*`
-    const keys: string[] = []
-    let cursor = '0'
-
-    do {
-      const result = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100)
-      cursor = result[0]
-      keys.push(...result[1])
-    } while (cursor !== '0')
-
+    const keys = await redis.keys(pattern)
     if (keys.length > 0) {
-      await client.del(...keys)
+      await redis.del(...keys)
       console.log(`Cleared ${keys.length} cache keys for tenant: ${tenantId}`)
     }
   } catch (error) {
@@ -238,39 +163,31 @@ export async function clearTenantCache(tenantId: string): Promise<void> {
 }
 
 /**
- * Set cache with TTL
+ * Set cache with TTL (uses singleton)
  */
 export async function setCache<T>(
   key: string,
   value: T,
   ttlSeconds: number = 3600
 ): Promise<void> {
-  const client = getRedisClient()
-  if (!client) {
-    return
-  }
-
+  const redis = getRedis()
+  if (!redis) return
   try {
-    await client.setex(key, ttlSeconds, JSON.stringify(value))
+    await redis.setex(key, ttlSeconds, JSON.stringify(value))
   } catch (error) {
     console.error(`Failed to set cache for key ${key}:`, error)
   }
 }
 
 /**
- * Get cache value
+ * Get cache value (uses singleton)
  */
 export async function getCache<T>(key: string): Promise<T | null> {
-  const client = getRedisClient()
-  if (!client) {
-    return null
-  }
-
+  const redis = getRedis()
+  if (!redis) return null
   try {
-    const value = await client.get(key)
-    if (!value) {
-      return null
-    }
+    const value = await redis.get(key)
+    if (value == null) return null
     return JSON.parse(value) as T
   } catch (error) {
     console.error(`Failed to get cache for key ${key}:`, error)
@@ -279,16 +196,13 @@ export async function getCache<T>(key: string): Promise<T | null> {
 }
 
 /**
- * Delete cache by key
+ * Delete cache by key (uses singleton)
  */
 export async function deleteCache(key: string): Promise<void> {
-  const client = getRedisClient()
-  if (!client) {
-    return
-  }
-
+  const redis = getRedis()
+  if (!redis) return
   try {
-    await client.del(key)
+    await redis.del(key)
   } catch (error) {
     console.error(`Failed to delete cache for key ${key}:`, error)
   }

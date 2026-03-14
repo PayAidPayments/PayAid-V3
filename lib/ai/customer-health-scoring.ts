@@ -50,15 +50,9 @@ export interface CustomerHealthScore {
 }
 
 /**
- * Calculate customer health score
+ * Compute score from pre-fetched components (pure, no DB). Used by single and batch.
  */
-export async function calculateCustomerHealthScore(
-  contactId: string,
-  tenantId: string
-): Promise<CustomerHealthScore> {
-  // Get all components
-  const components = await getHealthScoreComponents(contactId, tenantId)
-
+function scoreFromComponents(components: HealthScoreComponents): CustomerHealthScore {
   let score = 100 // Start with perfect score
   const factors: Array<{
     type: string
@@ -202,6 +196,177 @@ export async function calculateCustomerHealthScore(
     factors,
     recommendations,
     lastCalculated: new Date(),
+  }
+}
+
+/**
+ * Calculate customer health score (single contact; may cause N+1 when used in a loop).
+ * For multiple contacts use calculateCustomerHealthScoresBatch.
+ */
+export async function calculateCustomerHealthScore(
+  contactId: string,
+  tenantId: string
+): Promise<CustomerHealthScore> {
+  const components = await getHealthScoreComponents(contactId, tenantId)
+  return scoreFromComponents(components)
+}
+
+/**
+ * Batch: fetch components for many contacts in one go (in:ids + groupBy), then score in memory.
+ * Use this from list/analytics routes to avoid N+1.
+ */
+export async function calculateCustomerHealthScoresBatch(
+  contactIds: string[],
+  tenantId: string
+): Promise<Array<{ contactId: string; contactName: string | null; contactEmail: string | null } & CustomerHealthScore>> {
+  if (contactIds.length === 0) return []
+  const now = new Date()
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+  const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+
+  const [contacts, interactions, invoices, tenantMembers] = await Promise.all([
+    prisma.contact.findMany({
+      where: { id: { in: contactIds }, tenantId },
+      select: { id: true, name: true, email: true },
+    }),
+    prisma.interaction.findMany({
+      where: { contactId: { in: contactIds }, createdAt: { gte: ninetyDaysAgo } },
+      select: { contactId: true, type: true, createdAt: true, notes: true },
+    }),
+    prisma.invoice.findMany({
+      where: { customerId: { in: contactIds }, tenantId },
+      select: { customerId: true, status: true, dueDate: true, paidAt: true, createdAt: true },
+    }),
+    prisma.tenantMember.findMany({
+      where: { tenantId },
+      select: { userId: true },
+    }),
+  ])
+
+  const emails = [...new Set(contacts.map((c) => c.email).filter(Boolean))] as string[]
+  const usersByEmail = emails.length === 0
+    ? []
+    : await prisma.user.findMany({
+        where: { email: { in: emails } },
+        select: { id: true, email: true, lastLoginAt: true },
+      })
+
+  const tenantUserIds = new Set(tenantMembers.map((m) => m.userId))
+  const userByEmail = new Map(usersByEmail.filter((u) => tenantUserIds.has(u.id)).map((u) => [u.email!, u]))
+  const contactMap = new Map(contacts.map((c) => [c.id, c]))
+  const interactionsByContact = groupBy(interactions, (i) => i.contactId)
+  const invoicesByContact = groupBy(invoices, (i) => i.customerId)
+
+  const results: Array<{ contactId: string; contactName: string | null; contactEmail: string | null } & CustomerHealthScore> = []
+  for (const contactId of contactIds) {
+    const contact = contactMap.get(contactId)
+    if (!contact) continue
+    try {
+      const components = buildComponentsFromBatchData(
+        contactId,
+        tenantId,
+        contact,
+        interactionsByContact.get(contactId) ?? [],
+        invoicesByContact.get(contactId) ?? [],
+        userByEmail,
+        now,
+        thirtyDaysAgo,
+        ninetyDaysAgo
+      )
+      const scoreResult = scoreFromComponents(components)
+      results.push({
+        contactId,
+        contactName: contact.name,
+        contactEmail: contact.email,
+        ...scoreResult,
+      })
+    } catch (err) {
+      console.error(`Error calculating health score for contact ${contactId}:`, err)
+    }
+  }
+  return results
+}
+
+function groupBy<T, K extends string>(arr: T[], keyFn: (t: T) => K): Map<K, T[]> {
+  const m = new Map<K, T[]>()
+  for (const t of arr) {
+    const k = keyFn(t)
+    if (!m.has(k)) m.set(k, [])
+    m.get(k)!.push(t)
+  }
+  return m
+}
+
+function buildComponentsFromBatchData(
+  contactId: string,
+  tenantId: string,
+  contact: { id: string; name: string | null; email: string | null },
+  contactInteractions: Array<{ contactId: string; type: string; createdAt: Date; notes: string | null }>,
+  contactInvoices: Array<{ customerId: string; status: string; dueDate: Date | null; paidAt: Date | null; createdAt: Date }>,
+  userByEmail: Map<string, { id: string; email: string | null; lastLoginAt: Date | null }>,
+  now: Date,
+  thirtyDaysAgo: Date,
+  ninetyDaysAgo: Date
+): HealthScoreComponents {
+  const activeDays = new Set(
+    contactInteractions.map((i) => i.createdAt.toISOString().split('T')[0])
+  ).size
+  const supportInteractions = contactInteractions.filter((i) => i.type === 'support' && i.createdAt >= thirtyDaysAgo)
+  const emailInteractions = contactInteractions.filter((i) => i.type === 'email' && i.createdAt >= thirtyDaysAgo)
+  const emailOpens = emailInteractions.filter(
+    (e) => e.notes && (e.notes.toLowerCase().includes('opened') || e.notes.toLowerCase().includes('read'))
+  ).length
+  const emailOpenRate = emailInteractions.length > 0 ? (emailOpens / emailInteractions.length) * 100 : 0
+  const totalPayments = contactInvoices.length
+  const onTimePayments = contactInvoices.filter(
+    (inv) => inv.status === 'paid' && inv.paidAt && inv.dueDate && inv.paidAt <= inv.dueDate
+  ).length
+  const latePayments = contactInvoices.filter(
+    (inv) => inv.status === 'paid' && inv.paidAt && inv.dueDate && inv.paidAt > inv.dueDate
+  ).length
+  const daysOverdue = contactInvoices
+    .filter((inv) => inv.status === 'unpaid' && inv.dueDate && inv.dueDate < now)
+    .reduce((sum, inv) => {
+      const d = inv.dueDate!
+      return sum + Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24))
+    }, 0)
+  const user = contact.email ? userByEmail.get(contact.email) : null
+  const lastLoginDays = user?.lastLoginAt
+    ? Math.floor((now.getTime() - user.lastLoginAt.getTime()) / (1000 * 60 * 60 * 24))
+    : 999
+
+  return {
+    usage: {
+      activeDays,
+      totalDays: 90,
+      usagePercentage: (activeDays / 90) * 100,
+      featuresUsed: 5,
+      totalFeatures: 10,
+    },
+    support: {
+      ticketCount: supportInteractions.length,
+      recentTickets: supportInteractions.length,
+      avgResolutionTime: 24,
+      satisfactionScore: 0,
+    },
+    payment: {
+      onTimePayments,
+      totalPayments,
+      latePayments,
+      daysOverdue,
+      paymentReliability: totalPayments > 0 ? (onTimePayments / totalPayments) * 100 : 100,
+    },
+    engagement: {
+      emailOpenRate,
+      featureAdoption: 50,
+      loginFrequency: lastLoginDays < 7 ? 7 : lastLoginDays < 30 ? 3 : 1,
+      lastLoginDays,
+    },
+    sentiment: {
+      npsScore: null,
+      feedbackSentiment: null,
+      recentFeedback: [],
+    },
   }
 }
 

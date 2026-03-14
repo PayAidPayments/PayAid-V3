@@ -232,6 +232,7 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
   const [spreadsheetName, setSpreadsheetName] = useState('Untitled Spreadsheet')
   const [isSaving, setIsSaving] = useState(false)
   const [initialData, setInitialData] = useState<Record<string, unknown>[] | null>(null)
+  const [gridReady, setGridReady] = useState(false)
   const [activeCell, setActiveCell] = useState<{ row: number; col: number }>({ row: 0, col: 0 })
   const [selectionRange, setSelectionRange] = useState<SelectionRange | null>(null)
   const [formulaValue, setFormulaValue] = useState('')
@@ -248,6 +249,12 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
   setHistoryStateRef.current = setHistoryState
   const formulaBarInputRef = useRef<HTMLInputElement | null>(null)
   const clipboardRef = useRef<string[][]>([])
+  const copyHandlerRef = useRef<() => void>(() => {})
+  const cutHandlerRef = useRef<() => void>(() => {})
+  const pasteHandlerRef = useRef<() => void>(() => {})
+  const effectiveRangeRef = useRef({ sri: 0, sci: 0, eri: 0, eci: 0 })
+  const setSelectionStatsRef = useRef(setSelectionStats)
+  setSelectionStatsRef.current = setSelectionStats
 
   const handleGridKeyDown = useCallback((e: React.KeyboardEvent) => {
     const target = e.target as HTMLElement
@@ -366,11 +373,20 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
           historyRef.current = next
           setHistoryStateRef.current({ index: historyIndexRef.current, length: next.length })
         }
+        const updateStatusBarFromData = (data: Record<string, unknown>) => {
+          const arr = Array.isArray(data) ? data : data != null ? [data] : []
+          const { sri, sci, eri, eci } = effectiveRangeRef.current
+          const nums = getRangeNumericValues(arr, sri, sci, eri, eci)
+          const count = nums.length
+          const sum = nums.reduce((a, b) => a + b, 0)
+          setSelectionStatsRef.current({ sum, count, avg: count ? sum / count : 0 })
+        }
         const s = Spreadsheet(containerRef.current, opts)
           .loadData(dataToLoad as any)
           .change((data: Record<string, unknown>) => {
             lastDataRef.current = data
             pushHistory(data)
+            updateStatusBarFromData(data)
           })
         historyRef.current = [JSON.parse(JSON.stringify(dataToLoad))]
         historyIndexRef.current = 0
@@ -388,6 +404,7 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
         }
 
         spreadsheetRef.current = s
+        setGridReady(true)
       })
       .catch((err) => {
         console.error('Failed to load spreadsheet:', err)
@@ -395,6 +412,7 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
 
     return () => {
       mounted = false
+      setGridReady(false)
       const instance = spreadsheetRef.current
       spreadsheetRef.current = null
       lastDataRef.current = null
@@ -418,6 +436,7 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
     eri: activeCell.row,
     eci: activeCell.col,
   }
+  effectiveRangeRef.current = { sri: effectiveRange.sri, sci: effectiveRange.sci, eri: effectiveRange.eri, eci: effectiveRange.eci }
 
   // Sync formula bar from active cell
   useEffect(() => {
@@ -459,7 +478,7 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
     const count = nums.length
     const sum = nums.reduce((a, b) => a + b, 0)
     setSelectionStats({ sum, count, avg: count ? sum / count : 0 })
-  }, [sri, sci, eri, eci])
+  }, [sri, sci, eri, eci, gridReady])
 
   const handleFormulaChange = useCallback((val: string) => {
     setFormulaValue(val)
@@ -592,20 +611,20 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
       const inFormulaBar = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
       if (!inFormulaBar && (e.ctrlKey || e.metaKey) && e.key === 'c') {
         e.preventDefault()
-        handleCopy()
+        copyHandlerRef.current?.()
       }
       if (!inFormulaBar && (e.ctrlKey || e.metaKey) && e.key === 'x') {
         e.preventDefault()
-        handleCut()
+        cutHandlerRef.current?.()
       }
       if (!inFormulaBar && (e.ctrlKey || e.metaKey) && e.key === 'v') {
         e.preventDefault()
-        handlePaste()
+        pasteHandlerRef.current?.()
       }
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [handleCopy, handleCut, handlePaste])
+  }, [])
 
   const getCurrentData2D = useCallback((): string[][] => {
     const data = spreadsheetRef.current?.getData() ?? lastDataRef.current
@@ -972,6 +991,10 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
     lastDataRef.current = s.getData()
     if (typeof s.loadData === 'function') s.loadData(Array.isArray(s.getData()) ? s.getData() : [s.getData()])
   }, [activeCell.row, activeCell.col])
+
+  copyHandlerRef.current = handleCopy
+  cutHandlerRef.current = handleCut
+  pasteHandlerRef.current = handlePaste
 
   const handleNumberFormat = useCallback((format: string) => {
     const s = spreadsheetRef.current

@@ -29,15 +29,7 @@ class OllamaClient {
   constructor() {
     const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
     const model = process.env.OLLAMA_MODEL || 'mistral:7b'
-    const apiKey = process.env.OLLAMA_API_KEY || null
-    
-    console.log('🔧 OllamaClient initialized:', {
-      baseUrl,
-      model,
-      hasApiKey: !!apiKey,
-      apiKeyLength: apiKey?.length || 0,
-    })
-    
+    // Do not log secrets or internal endpoints at startup (especially during builds).
     this.config = {
       baseUrl,
       model,
@@ -65,13 +57,6 @@ class OllamaClient {
         messages,
         stream: false,
       }
-      
-      console.log('📤 Ollama request:', {
-        url: `${this.config.baseUrl}/api/chat`,
-        model: this.config.model,
-        messageCount: messages.length,
-        hasApiKey: !!apiKey,
-      })
 
       const response = await fetch(`${this.config.baseUrl}/api/chat`, {
         method: 'POST',
@@ -90,12 +75,6 @@ class OllamaClient {
       }
 
       const data = await response.json()
-      console.log('📥 Ollama response structure:', {
-        hasMessage: !!data.message,
-        hasResponse: !!data.response,
-        hasContent: !!data.content,
-        keys: Object.keys(data),
-      })
       
       // Handle different Ollama response formats
       let message = ''
@@ -298,5 +277,5 @@ export function getOllamaClient(): OllamaClient {
   return ollamaClientInstance
 }
 
-export default getOllamaClient()
+export default getOllamaClient
 

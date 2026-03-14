@@ -43,14 +43,7 @@ class HuggingFaceClient {
     // - black-forest-labs/FLUX.1-Krea-dev (high quality)
     // - ByteDance/Hyper-SD (high performance)
     const imageModel = (process.env.HUGGINGFACE_IMAGE_MODEL || 'ByteDance/SDXL-Lightning').trim()
-    
-    console.log('🔧 HuggingFaceClient initialized:', {
-      hasApiKey: !!apiKey,
-      apiKeyLength: apiKey.length,
-      model,
-      imageModel,
-    })
-    
+
     this.config = {
       apiKey,
       model,
@@ -85,12 +78,6 @@ class HuggingFaceClient {
 
     try {
       // Use OpenAI-compatible chat completions format with the new router
-      console.log('📤 Hugging Face request:', {
-        model: this.config.model,
-        messageCount: messages.length,
-        baseUrl: this.baseUrl,
-      })
-
       const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
         method: 'POST',
         headers: {
@@ -135,12 +122,6 @@ class HuggingFaceClient {
       
       // New router uses OpenAI-compatible format
       const generatedText = data.choices?.[0]?.message?.content || ''
-      
-      console.log('📥 Hugging Face response:', {
-        hasGeneratedText: !!generatedText,
-        textLength: generatedText.length,
-        hasUsage: !!data.usage,
-      })
       
       return {
         message: generatedText.trim(),
@@ -222,13 +203,6 @@ class HuggingFaceClient {
       }
 
       const model = this.config.imageModel || 'ByteDance/SDXL-Lightning'
-      
-      console.log('🎨 Hugging Face image generation request:', {
-        model,
-        promptLength: enhancedPrompt.length,
-        size: `${width}x${height}`,
-        endpoint: 'router.huggingface.co',
-      })
 
       // Use router endpoint for image generation (api-inference.huggingface.co is deprecated as of 2024)
       // Router endpoint format: /hf-inference/models/{model}
@@ -263,14 +237,6 @@ class HuggingFaceClient {
       if (Object.keys(parameters).length > 0) {
         requestBody.parameters = parameters
       }
-      
-      console.log('📤 Hugging Face API request:', {
-        url: inferenceUrl,
-        model,
-        promptLength: enhancedPrompt.length,
-        hasParameters: Object.keys(parameters).length > 0,
-        endpoint: 'router.huggingface.co',
-      })
       
       const response = await fetch(inferenceUrl, {
         method: 'POST',
@@ -338,12 +304,6 @@ class HuggingFaceClient {
       const imageFormat = contentType.includes('jpeg') || contentType.includes('jpg') ? 'jpeg' : 'png'
       const imageUrl = `data:image/${imageFormat};base64,${base64}`
       
-      console.log('✅ Hugging Face image generated successfully', {
-        size: arrayBuffer.byteLength,
-        format: imageFormat,
-        contentType,
-      })
-      
       return {
         image_url: imageUrl,
         revised_prompt: enhancedPrompt,
@@ -366,4 +326,4 @@ export function getHuggingFaceClient(): HuggingFaceClient {
   return huggingFaceClientInstance
 }
 
-export default getHuggingFaceClient()
+export default getHuggingFaceClient

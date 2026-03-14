@@ -4,6 +4,10 @@
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    // Phase 1: Validate critical env (log missing REDIS/DATABASE/JWT)
+    import('@/lib/config/env').then(({ validateEnv }) => {
+      validateEnv()
+    }).catch(() => {})
     // Auto-initialize AI Influencer (don't block server ready)
     import('@/lib/ai-influencer/auto-init').catch((err) => {
       console.error('Instrumentation: AI Influencer auto-init failed', err)

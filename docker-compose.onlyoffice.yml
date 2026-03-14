@@ -1,0 +1,21 @@
+# Phase 11: ONLYOFFICE Document Server – Docs/Sheets collab (Odoo gap).
+# Run: docker compose -f docker-compose.onlyoffice.yml up -d
+# Then proxy /docs/editor in Next to http://localhost:8080 (or set ONLYOFFICE_URL).
+
+services:
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: payaid-onlyoffice
+    environment:
+      - JWT_ENABLED=false
+      # For production set JWT_ENABLED=true and JWT_SECRET=your-secret; pass in editor config.
+    ports:
+      - "8080:80"
+    volumes:
+      - onlyoffice-data:/var/www/onlyoffice/Data
+      - onlyoffice-logs:/var/log/onlyoffice
+    restart: unless-stopped
+
+volumes:
+  onlyoffice-data:
+  onlyoffice-logs:

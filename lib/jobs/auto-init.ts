@@ -5,6 +5,7 @@
 
 import { initializeJobProcessors } from './processors'
 import { startCacheWarmingScheduler } from './scheduler'
+import { getRedisConfig, validateEnv } from '@/lib/config/env'
 
 let isInitialized = false
 
@@ -18,6 +19,19 @@ export function initializeBackgroundJobs() {
   }
 
   try {
+    // Jobs require Node runtime + TCP Redis (Bull). Skip in dev unless configured.
+    if (process.env.NEXT_RUNTIME !== 'nodejs') return
+    const env = validateEnv()
+    const redis = getRedisConfig()
+    if (!redis.tcpAvailable) {
+      console.log('ℹ️  Bull disabled (no TCP Redis). Skipping job processors.')
+      return
+    }
+    if (!env.ok) {
+      console.log('ℹ️  Missing required env. Skipping job processors.')
+      return
+    }
+
     // Initialize job processors
     initializeJobProcessors()
     

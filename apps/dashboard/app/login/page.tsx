@@ -1,0 +1,219 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { useAuthStore } from '@/lib/stores/auth'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Logo } from '@/components/brand/Logo'
+
+export default function LoginPage() {
+  const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
+  const { login, isLoading } = useAuthStore()
+
+  useEffect(() => {
+    setMounted(true)
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search)
+        const redirect = params.get('redirect')
+        if (redirect) setRedirectUrl(redirect)
+      } catch {
+        // ignore
+      }
+    }
+  }, [])
+
+  const clearAuthStorage = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('auth-storage')
+        localStorage.removeItem('token')
+        localStorage.removeItem('auth-token')
+        localStorage.removeItem('payaid_sso_token')
+        sessionStorage.removeItem('payaid_sso_token')
+        sessionStorage.removeItem('token')
+        sessionStorage.removeItem('auth-token')
+        document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+        document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax'
+        const { logout } = useAuthStore.getState()
+        logout()
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    clearAuthStorage()
+    try {
+      const loginResult = await login(email, password)
+      const tenant = loginResult.tenant
+      if (!tenant?.id) {
+        router.push('/home')
+        return
+      }
+      if (redirectUrl) {
+        let finalUrl = redirectUrl
+        if (redirectUrl === '/crm' || redirectUrl.startsWith('/crm')) {
+          finalUrl = tenant?.id ? `/crm/${tenant.id}/Home/` : '/home'
+        } else if (redirectUrl === '/sales' || redirectUrl.startsWith('/sales')) {
+          finalUrl = tenant?.id ? `/sales/${tenant.id}/Home/` : '/home'
+        } else if (redirectUrl === '/finance' || redirectUrl.startsWith('/finance')) {
+          finalUrl = tenant?.id ? `/finance/${tenant.id}/Home/` : '/home'
+        } else if (redirectUrl === '/projects' || redirectUrl.startsWith('/projects')) {
+          finalUrl = tenant?.id ? `/projects/${tenant.id}/Home/` : '/home'
+        } else if (redirectUrl === '/inventory' || redirectUrl.startsWith('/inventory')) {
+          finalUrl = tenant?.id ? `/inventory/${tenant.id}/Home/` : '/home'
+        } else if (redirectUrl === '/marketing' || redirectUrl.startsWith('/marketing')) {
+          finalUrl = tenant?.id ? `/marketing/${tenant.id}/Home/` : '/home'
+        } else if (redirectUrl === '/hr' || redirectUrl.startsWith('/hr')) {
+          finalUrl = tenant?.id ? `/hr/${tenant.id}/Home/` : '/home'
+        } else if (redirectUrl === '/dashboard' || redirectUrl.startsWith('/dashboard')) {
+          finalUrl = tenant?.id ? `/home/${tenant.id}` : '/home'
+        }
+        router.prefetch(finalUrl)
+        router.push(finalUrl)
+      } else {
+        if (tenant?.id && typeof tenant.id === 'string' && tenant.id.trim().length > 0) {
+          const homeHref = `/home/${tenant.id}`
+          router.prefetch(homeHref)
+          router.push(homeHref)
+        } else {
+          router.prefetch('/home')
+          router.push('/home')
+        }
+      }
+    } catch (err) {
+      const isTimeout = err instanceof Error && (err.message.includes('timeout') || err.message.includes('timed out'))
+      if (isTimeout) {
+        console.warn('[LOGIN PAGE] Login timed out.')
+      } else {
+        console.error('[LOGIN PAGE] Login error:', err)
+      }
+      let errorMessage = 'Login failed'
+      if (err instanceof Error) {
+        errorMessage = err.message
+        if (err.message.includes('timeout') || err.message.includes('timed out')) {
+          errorMessage = 'Login timed out. Click Sign in again.'
+        } else if (err.message.includes('Invalid email or password')) {
+          errorMessage = 'Invalid email or password.'
+        } else if (err.message.includes('Database') || err.message.includes('database')) {
+          errorMessage = 'Database connection error. Please try again later.'
+        } else if (err.message.includes('Network') || err.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection.'
+        }
+      }
+      setError(errorMessage)
+    }
+  }
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+        <div className="w-full max-w-md">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-3/4 mx-auto" />
+            <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto" />
+            <div className="space-y-3 mt-6">
+              <div className="h-10 bg-gray-200 rounded" />
+              <div className="h-10 bg-gray-200 rounded" />
+              <div className="h-10 bg-gray-200 rounded" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen flex bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/20">
+      <div className="hidden lg:flex lg:w-[42%] flex-col justify-between p-8 xl:p-12">
+        <div>
+          <Logo href="/" />
+          <p className="mt-6 text-lg font-medium text-slate-600 dark:text-slate-400">Business OS</p>
+          <ul className="mt-6 space-y-3 text-sm text-slate-600 dark:text-slate-400">
+            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-indigo-500" /> Unified CRM, Finance, HR</li>
+            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-indigo-500" /> AI copilots for every team</li>
+            <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-indigo-500" /> Powered by PayAid Payments</li>
+          </ul>
+        </div>
+        <div className="rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 p-5 shadow-sm">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Platform at a glance</p>
+          <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+            <div><p className="text-xl font-bold text-slate-900 dark:text-gray-100">28+</p><p className="text-xs text-slate-500">Modules</p></div>
+            <div><p className="text-xl font-bold text-slate-900 dark:text-gray-100">500+</p><p className="text-xs text-slate-500">Businesses</p></div>
+            <div><p className="text-xl font-bold text-slate-900 dark:text-gray-100">1</p><p className="text-xs text-slate-500">Login</p></div>
+          </div>
+        </div>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+        <div className="absolute top-4 left-4 lg:hidden">
+          <Logo href="/" />
+        </div>
+        <Card className="w-full max-w-md shadow-lg border-slate-200/80 dark:border-slate-700">
+          <CardHeader className="space-y-1">
+            <div className="flex items-center justify-between mb-2">
+              <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 flex items-center gap-1 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                Back to Home
+              </Link>
+            </div>
+            <CardTitle className="text-2xl font-bold text-center">Sign in to PayAid V3</CardTitle>
+            <CardDescription className="text-center">Enter your email and password to access your account</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
+              {error && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                  <div className="font-medium mb-1">Login Failed</div>
+                  <div>{error}</div>
+                  <div className="mt-3 pt-3 border-t border-red-200">
+                    <Button type="button" variant="outline" size="sm" onClick={() => { clearAuthStorage(); setError(''); window.location.reload(); }} className="w-full text-xs">Clear Cache & Retry</Button>
+                  </div>
+                </div>
+              )}
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium">Email</label>
+                <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} autoComplete="email" />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium">Password</label>
+                <div className="relative">
+                  <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} className="pr-10" autoComplete="current-password" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none" tabIndex={-1}>
+                    {showPassword ? <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.29 3.29m0 0A9.97 9.97 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg> : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>}
+                  </button>
+                </div>
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Signing in...' : 'Sign in'}</Button>
+            </form>
+            <div className="mt-4 space-y-2">
+              <div className="text-center text-sm">
+                <span className="text-gray-600">Don&apos;t have an account? </span>
+                <Link href="/signup" className="text-purple-500 hover:text-purple-600 hover:underline font-semibold">Sign up</Link>
+              </div>
+              <div className="text-center">
+                <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 inline-flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                  Return to Home Page
+                </Link>
+              </div>
+              <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">Trusted by 500+ Indian businesses</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}

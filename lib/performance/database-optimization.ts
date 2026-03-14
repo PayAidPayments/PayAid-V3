@@ -1,27 +1,5 @@
 import { prisma } from '@/lib/db/prisma'
-import { Redis } from 'ioredis'
-
-/** Lazy Redis client; skips connection on Vercel build when only localhost is configured to avoid ECONNREFUSED. */
-let redis: Redis | null = null
-
-function getRedis(): Redis | null {
-  if (redis) return redis
-  const url = process.env.REDIS_URL || 'redis://localhost:6379'
-  const isVercelBuild = process.env.VERCEL === '1'
-  const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1')
-  if (isVercelBuild && (!url || isLocalhost)) return null
-  try {
-    redis = new Redis(url, {
-      maxRetriesPerRequest: 1,
-      lazyConnect: true,
-      connectTimeout: 2000,
-      retryStrategy: (times) => (times > 2 ? null : Math.min(times * 50, 500)),
-    })
-    return redis
-  } catch {
-    return null
-  }
-}
+import { getRedisSingleton } from '@/lib/redis/singleton'
 
 /**
  * Cache key generators
@@ -31,17 +9,14 @@ export function getCacheKey(prefix: string, ...parts: string[]): string {
 }
 
 /**
- * Get cached data
+ * Get cached data (Phase 1: uses singleton)
  */
 export async function getCached<T>(key: string): Promise<T | null> {
-  const client = getRedis()
-  if (!client) return null
+  const redis = getRedisSingleton()
   try {
-    const cached = await client.get(key)
-    if (cached) {
-      return JSON.parse(cached) as T
-    }
-    return null
+    const cached = await redis.get(key)
+    if (cached == null) return null
+    return JSON.parse(cached) as T
   } catch (error) {
     console.error('Cache get error:', error)
     return null
@@ -49,33 +24,29 @@ export async function getCached<T>(key: string): Promise<T | null> {
 }
 
 /**
- * Set cached data with TTL
+ * Set cached data with TTL (Phase 1: uses singleton)
  */
 export async function setCached(
   key: string,
   data: any,
   ttlSeconds: number = 300
 ): Promise<void> {
-  const client = getRedis()
-  if (!client) return
+  const redis = getRedisSingleton()
   try {
-    await client.setex(key, ttlSeconds, JSON.stringify(data))
+    await redis.setex(key, ttlSeconds, JSON.stringify(data))
   } catch (error) {
     console.error('Cache set error:', error)
   }
 }
 
 /**
- * Invalidate cache by pattern
+ * Invalidate cache by pattern (Phase 1: uses singleton)
  */
 export async function invalidateCache(pattern: string): Promise<void> {
-  const client = getRedis()
-  if (!client) return
+  const redis = getRedisSingleton()
   try {
-    const keys = await client.keys(pattern)
-    if (keys.length > 0) {
-      await client.del(...keys)
-    }
+    const keys = await redis.keys(pattern)
+    if (keys.length > 0) await redis.del(...keys)
   } catch (error) {
     console.error('Cache invalidation error:', error)
   }

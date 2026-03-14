@@ -1,39 +1,62 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
 
-async function redisPing(): Promise<boolean> {
-  if (!process.env.UPSTASH_REDIS_REST_URL && !process.env.REDIS_URL) return false
-  try {
-    if (process.env.UPSTASH_REDIS_REST_URL) {
-      const res = await fetch(process.env.UPSTASH_REDIS_REST_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN || ''}` },
-        body: JSON.stringify({ command: 'ping' }),
-      })
-      return res.ok
-    }
-    return true
-  } catch {
-    return false
-  }
-}
-
-async function dbOk(): Promise<boolean> {
-  try {
-    await prisma.$queryRaw`SELECT 1`
-    return true
-  } catch {
-    return false
-  }
-}
-
-/** GET /api/health – redis, ai, db for monitoring. */
+/**
+ * Health check endpoint
+ * Checks database connection and environment variables
+ */
 export async function GET() {
-  const [redis, db] = await Promise.all([redisPing(), dbOk()])
-  return NextResponse.json({
-    redis,
-    ai: true,
-    db,
-    status: db ? 'healthy' : 'degraded',
-  })
+  const checks: {
+    database: {
+      configured: boolean
+      urlLength: number
+      error?: string
+    }
+    jwt: { configured: boolean; secretLength: number }
+    environment: string
+  } = {
+    database: {
+      configured: !!process.env.DATABASE_URL,
+      urlLength: process.env.DATABASE_URL?.length || 0,
+    },
+    jwt: {
+      configured: !!process.env.JWT_SECRET && process.env.JWT_SECRET !== 'change-me-in-production',
+      secretLength: process.env.JWT_SECRET?.length || 0,
+    },
+    environment: process.env.NODE_ENV || 'development',
+  }
+
+  // Try to connect to database
+  let dbConnected = false
+  if (checks.database.configured) {
+    try {
+      const { prisma } = await import('@/lib/db/prisma')
+      await prisma.$queryRaw`SELECT 1`
+      dbConnected = true
+    } catch (error) {
+      dbConnected = false
+      checks.database = {
+        ...checks.database,
+        error: error instanceof Error ? error.message : String(error),
+      }
+    }
+  }
+
+  const isHealthy = checks.database.configured && checks.jwt.configured && dbConnected
+
+  return NextResponse.json(
+    {
+      status: isHealthy ? 'healthy' : 'unhealthy',
+      checks: {
+        ...checks,
+        database: {
+          ...checks.database,
+          connected: dbConnected,
+        },
+      },
+      timestamp: new Date().toISOString(),
+    },
+    {
+      status: isHealthy ? 200 : 503,
+    }
+  )
 }

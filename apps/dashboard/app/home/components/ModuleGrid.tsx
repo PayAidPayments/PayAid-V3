@@ -1,0 +1,324 @@
+'use client';
+
+import { ModuleCard } from './ModuleCard';
+import { Loading } from '@/components/ui/loading';
+import { useState, useEffect, useMemo } from 'react';
+import { useAuthStore } from '@/lib/stores/auth';
+import { Search } from 'lucide-react';
+
+// Lazy import to avoid SSR evaluation
+let modulesConfig: typeof import('@/lib/modules.config') | null = null;
+
+async function getModulesConfig() {
+  if (!modulesConfig) {
+    modulesConfig = await import('@/lib/modules.config');
+  }
+  return modulesConfig;
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  core: 'Core Business',
+  productivity: 'Productivity & Collaboration',
+  ai: 'AI Copilots & Automation',
+}
+
+export function ModuleGrid({ moduleSummaries }: { moduleSummaries?: Record<string, string> }) {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [mounted, setMounted] = useState(false);
+  const [modules, setModules] = useState<any[]>([]);
+  const [categorizedModules, setCategorizedModules] = useState<{ core: any[]; productivity: any[]; ai: any[] }>({ core: [], productivity: [], ai: [] });
+  const [iconMap, setIconMap] = useState<Record<string, any>>({});
+  const [iconsLoading, setIconsLoading] = useState(true);
+  const [userData, setUserData] = useState<any>(null);
+  const { tenant, user, isAuthenticated, token } = useAuthStore();
+  
+  useEffect(() => {
+    setMounted(true);
+    // Load modules config only on client
+    if (typeof window !== 'undefined') {
+      // Fetch user and tenant data if authenticated
+      if (isAuthenticated && tenant?.id && token) {
+        fetch(`/api/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+          .then(res => res.json())
+          .then(data => {
+            setUserData(data);
+          })
+          .catch(err => console.error('Failed to fetch user data:', err));
+      }
+      
+      getModulesConfig().then(async config => {
+        setModules(config.modules);
+        const categorized = config.getModulesByCategory();
+        setCategorizedModules(categorized);
+        
+        // Pre-load all icons at once
+        const icons: Record<string, any> = {};
+        const uniqueIcons = new Set(config.modules.map((m: any) => m.icon));
+        
+        try {
+          const lucideReact = await import('lucide-react');
+          for (const iconName of uniqueIcons) {
+            // Skip custom icons that don't exist in lucide-react
+            if (iconName === 'IndianRupee') {
+              continue; // Handled by custom component in ModuleCard
+            }
+            const iconKey = iconName as keyof typeof lucideReact;
+            if (lucideReact[iconKey]) {
+              icons[iconName] = lucideReact[iconKey];
+            } else {
+              icons[iconName] = lucideReact.Users; // Fallback
+            }
+          }
+          setIconMap(icons);
+        } catch (error) {
+          console.error('Failed to load icons:', error);
+        } finally {
+          setIconsLoading(false);
+        }
+      });
+    }
+  }, [isAuthenticated, tenant?.id, token]);
+  
+  // Extract stable dependencies to prevent unnecessary recalculations
+  const licensedModules = userData?.tenant?.licensedModules || [];
+  const userRole = userData?.role || user?.role;
+  const trialEndsAt = userData?.tenant?.subscription?.trialEndsAt;
+  
+  // Calculate categories based on filtered modules (excluding industries)
+  // Use the same stable dependencies as allAvailableModules
+  const categories = useMemo(() => {
+    if (!mounted || modules.length === 0) return [];
+    
+    // Use the same filtering logic as allAvailableModules to ensure counts match
+    const allNonIndustryModules = modules.filter((m: any) => 
+      m.category !== 'industry' && m.status !== 'deprecated'
+    );
+    
+    // If not authenticated or userData not loaded yet, show all modules (will be filtered once data loads)
+    if (!isAuthenticated || !userData) {
+      return [
+        { id: 'core', name: CATEGORY_LABELS.core, count: allNonIndustryModules.filter((m: any) => m.category === 'core').length },
+        { id: 'productivity', name: CATEGORY_LABELS.productivity, count: allNonIndustryModules.filter((m: any) => m.category === 'productivity').length },
+        { id: 'ai', name: CATEGORY_LABELS.ai, count: allNonIndustryModules.filter((m: any) => m.category === 'ai').length },
+      ];
+    }
+    
+    // If trialEndsAt is null/undefined, assume trial is active (new tenant)
+    const isInTrial = trialEndsAt ? new Date(trialEndsAt) > new Date() : true;
+    
+    // Calculate filtered modules for count (same logic as allAvailableModules)
+    let filteredForCount = allNonIndustryModules;
+    
+    if (!isInTrial && userData) {
+      if (licensedModules.length === 0) {
+        filteredForCount = [];
+      } else {
+        const productivityModuleIds = ['spreadsheet', 'docs', 'drive', 'slides', 'meet', 'pdf'];
+        const hasProductivitySuite = licensedModules.includes('productivity');
+        
+        filteredForCount = allNonIndustryModules.filter((m: any) => {
+          // Always show AI Studio
+          if (m.id === 'ai-studio') return true;
+          // Always show App Store / Marketplace
+          if (m.id === 'marketplace') return true;
+          
+          // If module is directly licensed
+          if (licensedModules.includes(m.id)) return true;
+          
+          // If productivity suite is licensed, include all individual productivity modules
+          if (hasProductivitySuite && productivityModuleIds.includes(m.id)) return true;
+          
+          return false;
+        });
+      }
+    }
+    // If in trial or userData not loaded, show all modules (already set above)
+    
+    return [
+      { id: 'core', name: CATEGORY_LABELS.core, count: filteredForCount.filter((m: any) => m.category === 'core').length },
+      { id: 'productivity', name: CATEGORY_LABELS.productivity, count: filteredForCount.filter((m: any) => m.category === 'productivity').length },
+      { id: 'ai', name: CATEGORY_LABELS.ai, count: filteredForCount.filter((m: any) => m.category === 'ai').length },
+    ];
+  }, [mounted, modules, licensedModules, trialEndsAt, userData, isAuthenticated]);
+
+  // Calculate all available modules (before category filter)
+  // Use stable dependencies to prevent unnecessary recalculations
+  
+  const allAvailableModules = useMemo(() => {
+    if (!mounted || modules.length === 0) return [];
+    
+    // Exclude industries and deprecated modules (keep coming-soon modules visible)
+    let filteredModules = modules.filter((m: any) => 
+      m.category !== 'industry' && m.status !== 'deprecated'
+    );
+    
+    // Check if tenant is in trial period
+    // If trialEndsAt is null/undefined, assume trial is active (new tenant)
+    const isInTrial = trialEndsAt ? new Date(trialEndsAt) > new Date() : true;
+    
+    // If not in trial, filter by licensed modules or assigned modules
+    if (!isInTrial && userData) {
+      // If no licensed modules, show empty
+      if (licensedModules.length === 0) {
+        filteredModules = [];
+      } else {
+        const isAdmin = userRole === 'owner' || userRole === 'admin';
+        
+        // For admin/owner: show all licensed modules
+        // For employees: show only assigned modules (from JWT token or user data)
+        const allowedModules = licensedModules; // For now, same for admin and employees
+        
+        // Handle productivity suite: if 'productivity' is licensed, show all individual productivity modules
+        const productivityModuleIds = ['spreadsheet', 'docs', 'drive', 'slides', 'meet', 'pdf'];
+        const hasProductivitySuite = allowedModules.includes('productivity');
+        
+        filteredModules = filteredModules.filter((m: any) => {
+          // Always show AI Studio
+          if (m.id === 'ai-studio') return true;
+          // Always show App Store / Marketplace
+          if (m.id === 'marketplace') return true;
+          
+          // If module is directly licensed
+          if (allowedModules.includes(m.id)) return true;
+          
+          // If productivity suite is licensed, show all individual productivity modules
+          if (hasProductivitySuite && productivityModuleIds.includes(m.id)) return true;
+          
+          return false;
+        });
+      }
+    }
+    // If in trial or userData not loaded yet, show all modules (already filtered to exclude industries)
+    
+    return filteredModules;
+  }, [mounted, modules, licensedModules, userRole, trialEndsAt, userData]);
+
+  // Filter by category and search
+  const displayModules = useMemo(() => {
+    let list = allAvailableModules;
+    if (selectedCategory && selectedCategory !== 'all') {
+      list = list.filter((m: any) => m.category === selectedCategory);
+    }
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (m: any) =>
+          m.name?.toLowerCase().includes(q) || m.description?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [selectedCategory, allAvailableModules, searchQuery]);
+
+  if (!mounted || modules.length === 0) {
+    return <Loading message="Loading modules..." variant="dots" />;
+  }
+
+  return (
+    <div className="w-full">
+      {/* Search + Segmented control */}
+      <div className="mb-6 space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="search"
+            placeholder="Search apps…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full max-w-sm pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-gray-100 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+        <div className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700">
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              selectedCategory === 'all' || selectedCategory === null
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-gray-100 shadow-sm'
+                : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-gray-100'
+            }`}
+          >
+            All ({allAvailableModules.length || 0})
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedCategory === category.id
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-gray-100 shadow-sm'
+                  : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-gray-100'
+              }`}
+            >
+              {category.name} ({category.count})
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Module Grid: grouped by category when showing All */}
+      {(selectedCategory === 'all' || selectedCategory === null) ? (
+        (() => {
+          const core = displayModules.filter((m: any) => m.category === 'core');
+          const productivity = displayModules.filter((m: any) => m.category === 'productivity');
+          const ai = displayModules.filter((m: any) => m.category === 'ai');
+          const sections = [
+            { id: 'core', title: CATEGORY_LABELS.core, modules: core },
+            { id: 'productivity', title: CATEGORY_LABELS.productivity, modules: productivity },
+            { id: 'ai', title: CATEGORY_LABELS.ai, modules: ai },
+          ];
+          return (
+            <div className="space-y-10">
+              {sections.map(({ id, title, modules: sectionModules }) =>
+                sectionModules.length > 0 ? (
+                  <div key={id}>
+                    <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
+                      {title}
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {sectionModules.map((module: any) => {
+                        const IconComponent = iconMap[module.icon];
+                        return (
+                          <ModuleCard
+                            key={module.id}
+                            module={module}
+                            icon={IconComponent}
+                            metrics={moduleSummaries?.[module.id]}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null
+              )}
+            </div>
+          );
+        })()
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {displayModules.map((module: any) => {
+            const IconComponent = iconMap[module.icon];
+            return (
+              <ModuleCard
+                key={module.id}
+                module={module}
+                icon={IconComponent}
+                metrics={moduleSummaries?.[module.id]}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {displayModules.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-500 dark:text-gray-400">No modules found in this category.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+

@@ -32,7 +32,24 @@ services:
       timeout: 3s
       retries: 10
 
+  # Phase 11: ONLYOFFICE Document Server (optional). Run: docker compose -f docker-compose.local-db.yml up -d onlyoffice
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: payaid-onlyoffice
+    environment:
+      - JWT_ENABLED=false
+    ports:
+      - "8080:80"
+    volumes:
+      - onlyoffice-data:/var/www/onlyoffice/Data
+      - onlyoffice-logs:/var/log/onlyoffice
+    restart: unless-stopped
+    profiles:
+      - onlyoffice
+
 volumes:
   payaid-local-postgres-data:
   payaid-local-redis-data:
+  onlyoffice-data:
+  onlyoffice-logs:
 

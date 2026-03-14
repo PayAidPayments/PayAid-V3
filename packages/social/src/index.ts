@@ -1,0 +1,6 @@
+export * from './types'
+export { useStudioStore } from './store/studioStore'
+export { createMediaLibraryClient } from './mediaLibrary'
+export type { MediaLibraryClient, SaveMediaParams, ListMediaParams } from './mediaLibrary'
+export { MarketingStudioShell } from './MarketingStudioShell'
+export type { MarketingStudioShellProps } from './MarketingStudioShell'

@@ -1,0 +1,16 @@
+
+> @payaid/db@0.1.0 db:generate
+> prisma generate
+
+[2mPrisma schema loaded from prisma\schema.prisma[22m
+[1m[31mError: [39m[22m
+EPERM: operation not permitted, rename 'D:\Cursor Projects\PayAid V3\node_modules\.prisma\client\query_engine-windows.dll.node.tmp23960' -> 'D:\Cursor Projects\PayAid V3\node_modules\.prisma\client\query_engine-windows.dll.node'
+
+
+npm error Lifecycle script `db:generate` failed with error:
+npm error code 1
+npm error path D:\Cursor Projects\PayAid V3\packages\db
+npm error workspace @payaid/db@0.1.0
+npm error location D:\Cursor Projects\PayAid V3\packages\db
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c prisma generate

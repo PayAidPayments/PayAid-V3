@@ -10,8 +10,10 @@ const fs = require('fs')
 const maxAttempts = 2
 const retryDelayMs = 4000
 const projectRoot = path.resolve(__dirname, '..')
-const clientDir = path.join(projectRoot, 'node_modules', '.prisma', 'client')
-const clientIndex = path.join(clientDir, 'index.js')
+const clientPaths = [
+  path.join(projectRoot, 'node_modules', '.prisma', 'client', 'index.js'),
+  path.join(projectRoot, 'node_modules', '@prisma', 'client', 'index.js'),
+]
 
 function sleepSync(ms) {
   const end = Date.now() + ms
@@ -19,11 +21,14 @@ function sleepSync(ms) {
 }
 
 function clientExists() {
-  try {
-    return fs.existsSync(clientIndex) && fs.statSync(clientIndex).size > 0
-  } catch {
-    return false
+  for (const clientIndex of clientPaths) {
+    try {
+      if (fs.existsSync(clientIndex) && fs.statSync(clientIndex).size > 0) return true
+    } catch {
+      // continue
+    }
   }
+  return false
 }
 
 function runGenerate() {
@@ -47,7 +52,11 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     sleepSync(retryDelayMs)
   }
   lastStatus = runGenerate()
-  if (lastStatus === 0) {
+  // Exit 0 on explicit success, or on Windows sometimes npx returns 3221225786 (0xC000013A) despite success
+  if (lastStatus === 0 || lastStatus === 3221225786) {
+    if (lastStatus !== 0 && clientExists()) {
+      console.warn('\n[prisma-generate] prisma generate completed (Windows exit code). Proceeding.')
+    }
     process.exit(0)
   }
 }

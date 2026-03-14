@@ -1,6 +1,10 @@
 /**
  * Sync Module Routes to Host App (decoupled structure)
  *
+ * DEPRECATED Phase 2: With Turborepo (apps/dashboard, apps/crm, apps/hr, apps/voice),
+ * do NOT run this script. Module routes live in each app. Only use when running
+ * the legacy monolith root app and syncing from crm-module/hr-module.
+ *
  * Copies API routes from decoupled module directories into app/api/ so the host
  * Next.js app can serve them. Source of truth remains the module directories.
  *

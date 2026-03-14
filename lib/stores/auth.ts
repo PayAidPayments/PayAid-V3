@@ -127,8 +127,15 @@ export const useAuthStore = create<AuthState>()(
             try {
               if (isJson) {
                 const error = await response.json()
-                errorMessage = error.error || error.message || `Login failed (${response.status})`
-                console.error('[AUTH] Login error response:', error)
+                // Prefer message (user-facing) then error (code), then status
+                errorMessage =
+                  (error && (error.message || error.error)) ||
+                  `Login failed (${response.status})`
+                if (error && typeof error === 'object' && (Object.keys(error).length === 0 || !error.message)) {
+                  console.error('[AUTH] Login error response:', response.status, response.statusText, error)
+                } else {
+                  console.error('[AUTH] Login error:', errorMessage)
+                }
               } else {
                 // Server returned HTML or other non-JSON error page
                 let text = ''
@@ -139,15 +146,12 @@ export const useAuthStore = create<AuthState>()(
                   text = '[Unable to read response body]'
                 }
                 
-                console.error('[AUTH] Server returned non-JSON error:', {
-                  status: response.status,
-                  statusText: response.statusText,
-                  contentType,
-                  bodyLength: text.length,
-                  preview: text.substring(0, 500),
-                  url: response.url,
-                })
-                errorMessage = `Login failed: ${response.statusText || 'Internal Server Error'}`
+                console.error('[AUTH] Server returned non-JSON error:', response.status, response.statusText, contentType, response.url)
+                if (response.status === 404) {
+                  errorMessage = 'Login API not found. Restart the app with npm run dev or npm run dev:all so the dashboard API runs.'
+                } else {
+                  errorMessage = `Login failed: ${response.statusText || 'Internal Server Error'}`
+                }
               }
             } catch (parseError) {
               // If parsing fails, use status text

@@ -1,18 +1,10 @@
 /**
  * Multi-Layer Caching System
- * 
- * L1: In-memory cache (fastest, per-instance)
- * L2: Redis cache (fast, distributed across instances)
- * L3: Database (slowest, but persistent)
- * 
- * Strategy:
- * - Check L1 first (memory)
- * - If miss, check L2 (Redis)
- * - If miss, fetch from L3 (database) and populate both L1 and L2
+ * L1: memory, L2: Redis (singleton), L3: database.
+ * Phase 1: L2 uses getRedisSingleton() (Upstash or no-op).
  */
 
-import { getRedisClient } from '@/lib/redis/client'
-import Redis from 'ioredis'
+import { getRedisSingleton, type RedisLike } from '@/lib/redis/singleton'
 
 interface CacheEntry<T> {
   value: T
@@ -20,23 +12,13 @@ interface CacheEntry<T> {
 }
 
 export class MultiLayerCache {
-  // L1: In-memory cache (fastest, smallest)
   private memoryCache = new Map<string, CacheEntry<any>>()
-  
-  // L2: Redis client (fast, distributed)
-  private redis: Redis | null = null
-  
-  // Memory cache size limit (prevent memory leaks)
+  private redis: RedisLike
   private readonly MAX_MEMORY_ENTRIES = 1000
-  private readonly MEMORY_TTL_MS = 60000 // 1 minute default
+  private readonly MEMORY_TTL_MS = 60000
 
   constructor() {
-    try {
-      this.redis = getRedisClient()
-    } catch (error) {
-      console.warn('Redis not available, using memory cache only')
-      this.redis = null
-    }
+    this.redis = getRedisSingleton()
   }
 
   /**
@@ -56,31 +38,17 @@ export class MultiLayerCache {
       this.memoryCache.delete(key)
     }
 
-    // Check L2 (Redis)
-    if (this.redis) {
-      try {
-        const redisValue = await Promise.race([
-          this.redis.get(key),
-          new Promise<string | null>((resolve) => 
-            setTimeout(() => resolve(null), 100) // 100ms timeout
-          ),
-        ]) as string | null
-
-        if (redisValue) {
-          const value = JSON.parse(redisValue) as T
-          
-          // Populate L1 with value from L2
-          this.setMemoryCache(key, value, this.MEMORY_TTL_MS)
-          
-          return value
-        }
-      } catch (error) {
-        // Redis error - continue without cache
-        console.warn('Redis get error (continuing without cache):', error)
+    // Check L2 (Redis singleton)
+    try {
+      const redisValue = await this.redis.get(key)
+      if (redisValue) {
+        const value = JSON.parse(redisValue) as T
+        this.setMemoryCache(key, value, this.MEMORY_TTL_MS)
+        return value
       }
+    } catch (error) {
+      console.warn('Redis get error (continuing without cache):', error)
     }
-
-    // Cache miss - return null (caller should fetch from database)
     return null
   }
 
@@ -91,20 +59,11 @@ export class MultiLayerCache {
     // Set in L1 (memory)
     this.setMemoryCache(key, value, Math.min(ttlSeconds * 1000, this.MEMORY_TTL_MS))
 
-    // Set in L2 (Redis)
-    if (this.redis) {
-      try {
-        const serialized = JSON.stringify(value)
-        await Promise.race([
-          this.redis.setex(key, ttlSeconds, serialized),
-          new Promise<void>((resolve) => 
-            setTimeout(() => resolve(), 100) // 100ms timeout
-          ),
-        ])
-      } catch (error) {
-        // Redis error - continue without cache
-        console.warn('Redis set error (continuing without cache):', error)
-      }
+    try {
+      const serialized = JSON.stringify(value)
+      await this.redis.setex(key, ttlSeconds, serialized)
+    } catch (error) {
+      console.warn('Redis set error (continuing without cache):', error)
     }
   }
 
@@ -112,21 +71,11 @@ export class MultiLayerCache {
    * Delete value from cache (removes from both L1 and L2)
    */
   async delete(key: string): Promise<void> {
-    // Remove from L1
     this.memoryCache.delete(key)
-
-    // Remove from L2
-    if (this.redis) {
-      try {
-        await Promise.race([
-          this.redis.del(key),
-          new Promise<void>((resolve) => 
-            setTimeout(() => resolve(), 100) // 100ms timeout
-          ),
-        ])
-      } catch (error) {
-        console.warn('Redis delete error (continuing):', error)
-      }
+    try {
+      await this.redis.del(key)
+    } catch (error) {
+      console.warn('Redis delete error (continuing):', error)
     }
   }
 
@@ -134,35 +83,15 @@ export class MultiLayerCache {
    * Delete all keys matching a pattern (L2 only - Redis pattern matching)
    */
   async deletePattern(pattern: string): Promise<void> {
-    // Clear matching keys from L1 (simple prefix match)
     const prefix = pattern.replace('*', '')
     for (const key of this.memoryCache.keys()) {
-      if (key.startsWith(prefix)) {
-        this.memoryCache.delete(key)
-      }
+      if (key.startsWith(prefix)) this.memoryCache.delete(key)
     }
-
-    // Delete from L2 using Redis pattern matching
-    if (this.redis) {
-      try {
-        const keys = await Promise.race([
-          this.redis.keys(pattern),
-          new Promise<string[]>((resolve) => 
-            setTimeout(() => resolve([]), 200) // 200ms timeout
-          ),
-        ]) as string[]
-
-        if (keys.length > 0) {
-          await Promise.race([
-            this.redis.del(...keys),
-            new Promise<void>((resolve) => 
-              setTimeout(() => resolve(), 200) // 200ms timeout
-            ),
-          ])
-        }
-      } catch (error) {
-        console.warn('Redis deletePattern error (continuing):', error)
-      }
+    try {
+      const keys = await this.redis.keys(pattern)
+      if (keys.length > 0) await this.redis.del(...keys)
+    } catch (error) {
+      console.warn('Redis deletePattern error (continuing):', error)
     }
   }
 
@@ -170,29 +99,14 @@ export class MultiLayerCache {
    * Check if key exists in cache
    */
   async exists(key: string): Promise<boolean> {
-    // Check L1
     const memoryEntry = this.memoryCache.get(key)
-    if (memoryEntry && Date.now() < memoryEntry.expiry) {
-      return true
+    if (memoryEntry && Date.now() < memoryEntry.expiry) return true
+    try {
+      const result = await this.redis.exists(key)
+      return result === 1
+    } catch {
+      return false
     }
-
-    // Check L2
-    if (this.redis) {
-      try {
-        const result = await Promise.race([
-          this.redis.exists(key),
-          new Promise<number>((resolve) => 
-            setTimeout(() => resolve(0), 100) // 100ms timeout
-          ),
-        ]) as number
-
-        return result === 1
-      } catch (error) {
-        return false
-      }
-    }
-
-    return false
   }
 
   /**

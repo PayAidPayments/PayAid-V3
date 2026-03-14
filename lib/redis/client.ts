@@ -1,4 +1,5 @@
 import Redis from 'ioredis'
+import { getRedisConfig } from '@/lib/config/env'
 
 let redis: Redis | null = null
 let errorLogged = false
@@ -21,14 +22,19 @@ function createNoopRedisClient(): Redis {
 
 /** True when we should not attempt a real Redis connection (e.g. Vercel build with no Redis). */
 function shouldSkipRedis(): boolean {
-  const url = (process.env.REDIS_URL || 'redis://localhost:6379').trim()
-  const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1')
-  if (process.env.VERCEL === '1' && (!url || isLocalhost)) return true
+  const config = getRedisConfig()
+  const isLocalhost =
+    config.url.includes('localhost') || config.url.includes('127.0.0.1')
+  if (process.env.VERCEL === '1' && !config.tcpAvailable) return true
   if (process.env.CI === 'true' && isLocalhost) return true
-  if (process.env.NODE_ENV === 'production' && isLocalhost) return true
+  if (process.env.NODE_ENV === 'production' && !config.tcpAvailable) return true
   return false
 }
 
+/**
+ * ioredis client for Bull queues and legacy usage (events, monitoring).
+ * Cache should use getRedisSingleton() from @/lib/redis/singleton.
+ */
 export function getRedisClient(): Redis {
   if (!redis) {
     if (shouldSkipRedis()) {
@@ -36,7 +42,7 @@ export function getRedisClient(): Redis {
       return redis
     }
 
-    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379'
+    const redisUrl = getRedisConfig().url
 
     redis = new Redis(redisUrl, {
       maxRetriesPerRequest: 1, // Reduce retries
@@ -94,74 +100,6 @@ export async function closeRedisConnection() {
   }
 }
 
-// Cache helper functions
-export class Cache {
-  private client: Redis
-
-  constructor() {
-    this.client = getRedisClient()
-  }
-
-  async get<T>(key: string): Promise<T | null> {
-    try {
-      // Use promise with timeout to prevent hanging
-      const value = await Promise.race([
-        this.client.get(key),
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 100)), // 100ms timeout
-      ])
-      return value ? JSON.parse(value) : null
-    } catch (error) {
-      // Silently fail - Redis is optional
-      return null
-    }
-  }
-
-  async set(key: string, value: any, ttlSeconds?: number): Promise<void> {
-    try {
-      const serialized = JSON.stringify(value)
-      // Use promise with timeout to prevent hanging
-      await Promise.race([
-        ttlSeconds 
-          ? this.client.setex(key, ttlSeconds, serialized)
-          : this.client.set(key, serialized),
-        new Promise<void>((resolve) => setTimeout(() => resolve(), 100)), // 100ms timeout
-      ])
-    } catch (error) {
-      // Silently fail - Redis is optional
-    }
-  }
-
-  async delete(key: string): Promise<void> {
-    try {
-      await this.client.del(key)
-    } catch (error) {
-      console.warn('Redis delete error (continuing):', error)
-      // Don't throw - caching is optional
-    }
-  }
-
-  async deletePattern(pattern: string): Promise<void> {
-    try {
-      const keys = await this.client.keys(pattern)
-      if (keys.length > 0) {
-        await this.client.del(...keys)
-      }
-    } catch (error) {
-      console.warn('Redis deletePattern error (continuing):', error)
-      // Don't throw - caching is optional
-    }
-  }
-
-  async exists(key: string): Promise<boolean> {
-    try {
-      const result = await this.client.exists(key)
-      return result === 1
-    } catch (error) {
-      console.warn('Redis exists error (returning false):', error)
-      return false
-    }
-  }
-}
-
-export const cache = new Cache()
+/** Phase 1: Cache uses singleton (Upstash or no-op). Re-export for backward compatibility. */
+export { cache } from './singleton'
 

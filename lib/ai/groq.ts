@@ -30,15 +30,7 @@ class GroqClient {
     // Trim whitespace from API key (common issue when copying/pasting)
     const apiKey = (process.env.GROQ_API_KEY || '').trim()
     const model = process.env.GROQ_MODEL || 'llama-3.1-8b-instant'
-    
-    console.log('🔧 GroqClient initialized:', {
-      hasApiKey: !!apiKey,
-      apiKeyLength: apiKey.length,
-      apiKeyPrefix: apiKey.substring(0, 8) + '...' || 'none',
-      model,
-      nodeEnv: process.env.NODE_ENV,
-    })
-    
+
     this.config = {
       apiKey,
       model,
@@ -67,12 +59,6 @@ class GroqClient {
         temperature: 0.3,
         max_tokens: options?.maxTokens ?? 2048,
       }
-      
-      console.log('📤 Groq request:', {
-        model: this.config.model,
-        messageCount: messages.length,
-        apiKeyLength: this.config.apiKey.length,
-      })
 
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -101,11 +87,6 @@ class GroqClient {
       }
 
       const data = await response.json()
-      console.log('📥 Groq response:', {
-        hasChoices: !!data.choices,
-        choicesLength: data.choices?.length || 0,
-        hasUsage: !!data.usage,
-      })
       
       return {
         message: data.choices[0]?.message?.content || '',
@@ -151,4 +132,4 @@ export function getGroqClient(): GroqClient {
   return groqClientInstance
 }
 
-export default getGroqClient()
+export default getGroqClient

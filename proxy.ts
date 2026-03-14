@@ -18,6 +18,11 @@ export async function proxy(request: NextRequest) {
 
     const pathname = request.nextUrl.pathname
 
+    // Ensure root path serves the marketing landing page (rewrite to /landing; _prefix folders are private in Next.js)
+    if (pathname === '/') {
+      return NextResponse.rewrite(new URL('/landing', request.url))
+    }
+
     // Handle case-insensitive module routes (e.g., /HR -> /hr)
     // Known module IDs that should be lowercase
     const moduleIds = ['crm', 'hr', 'sales', 'finance', 'marketing', 'projects', 'analytics',
@@ -37,8 +42,8 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    // Skip proxy for public routes
-    const publicRoutes = ['/login', '/register', '/api/auth', '/_next', '/favicon.ico']
+    // Skip proxy for public routes (including internal landing route used for "/" rewrite)
+    const publicRoutes = ['/login', '/register', '/api/auth', '/_next', '/favicon.ico', '/landing']
     if (publicRoutes.some(route => pathname.startsWith(route))) {
       return NextResponse.next()
     }
@@ -159,6 +164,7 @@ function getTokenFromRequest(request: NextRequest): string | null {
 
 export const config = {
   matcher: [
+    '/',
     '/dashboard/:path*',
     '/home/:path*',
     '/super-admin',

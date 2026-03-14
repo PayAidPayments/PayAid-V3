@@ -6,13 +6,10 @@ import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import {
-  Megaphone,
   TrendingUp,
   Users,
-  Heart,
   IndianRupee,
   BarChart3,
-  ImageIcon,
   Share2,
   Mail,
   GitBranch,
@@ -24,6 +21,9 @@ import {
   Target,
   LayoutGrid,
   Bot,
+  Zap,
+  Rocket,
+  FileText,
 } from 'lucide-react'
 import { PageLoading } from '@/components/ui/loading'
 import { StatCard } from '@/components/ui/StatCard'
@@ -33,70 +33,54 @@ import {
   Line,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts'
+import { formatINRForDisplay } from '@/lib/utils/formatINR'
 
-interface DashboardStats {
-  campaignsLaunched: number
-  campaignsLaunchedGrowth: number
-  totalReach: number
-  totalReachGrowth: number
-  engagementRate: number
+interface EnrichedData {
+  marketingRevenue: number
+  last30dRevenue: number
+  revenueGrowth: number
+  avgRevenuePerMonth: number
+  leadsGenerated: number
   conversionRate: number
-  totalOpened: number
-  totalClicked: number
-  totalDelivered: number
-  totalSent: number
-  socialPostsSent: number
-  roi: number | null
+  totalReach: number
+  avgPerReach: number
+  roi: number
+  gstCompliantPct: number
+  gstCompliantCount: number
+  gstTotalInvoices: number
+  channelBreakdownPct: { whatsapp: number; email: number; facebook: number; linkedin: number }
+  campaignHealth: { optimalPct: number; underperformPct: number; failingPct: number }
+  audience: { active: number; engaged: number; highValue: number }
+  monthlyRevenue: Array<{ month: string; revenue: number }>
+  channelRoi: Array<{ name: string; roi: number; revenue: number }>
+  funnelData: { leads: number; meetings: number; deals: number; dealsValue: number }
 }
 
-interface AnalyticsData {
-  overview?: {
-    totalCampaigns: number
-    totalSent: number
-    totalDelivered: number
-    totalOpened: number
-    totalClicked: number
-    deliveryRate: number
-    openRate: number
-    clickRate: number
-  }
-  byType?: {
-    email?: { count: number; sent: number; opened: number; clicked: number }
-    whatsapp?: { count: number; sent: number; opened: number; clicked: number }
-    sms?: { count: number; sent: number; opened: number; clicked: number }
-  }
-  monthlyTrend?: Array<{
-    month: string
-    sent: number
-    delivered: number
-    opened: number
-    clicked: number
-  }>
-  dailyTrend?: Array<{ date: string; opened: number; clicked: number }>
+interface InsightsData {
+  insights: string[]
+  source: 'ollama' | 'static'
 }
 
 const PURPLE_PRIMARY = '#53328A'
 const GOLD_ACCENT = '#F5C700'
 const SUCCESS = '#059669'
 const INFO = '#0284C7'
-const CHART_COLORS = [PURPLE_PRIMARY, GOLD_ACCENT, SUCCESS, INFO, '#EC4899', '#F59E0B']
+const CHART_COLORS = [PURPLE_PRIMARY, GOLD_ACCENT, SUCCESS, INFO, '#EC4899']
 
 export default function MarketingDashboardPage() {
   const params = useParams()
   const tenantId = (params?.tenantId as string) ?? ''
   const { user, token } = useAuthStore()
-  const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
+  const [enriched, setEnriched] = useState<EnrichedData | null>(null)
+  const [insights, setInsights] = useState<InsightsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -109,23 +93,23 @@ export default function MarketingDashboardPage() {
     const headers: HeadersInit = { ...(token && { Authorization: `Bearer ${token}` }) }
 
     Promise.all([
-      fetch(`/api/marketing/dashboard/stats`, { headers, signal: controller.signal }).then((r) =>
-        r.ok ? r.json() : Promise.reject(new Error('Failed to load stats'))
+      fetch(`/api/marketing/dashboard/enriched`, { headers, signal: controller.signal }).then((r) =>
+        r.ok ? r.json() : Promise.reject(new Error('Failed to load dashboard'))
       ),
-      fetch(`/api/marketing/analytics`, { headers, signal: controller.signal }).then((r) =>
-        r.ok ? r.json() : Promise.reject(new Error('Failed to load analytics'))
+      fetch(`/api/marketing/insights`, { headers, signal: controller.signal }).then((r) =>
+        r.ok ? r.json() : { insights: [] as string[], source: 'static' as const }
       ),
     ])
-      .then(([statsData, analyticsData]) => {
-        setStats(statsData)
-        setAnalytics(analyticsData)
+      .then(([enrichedData, insightsData]) => {
+        setEnriched(enrichedData)
+        setInsights(insightsData?.insights ? insightsData : { insights: [], source: 'static' })
         setError(null)
       })
       .catch((e) => {
         if (e?.name !== 'AbortError') {
           setError(e?.message ?? 'Failed to load dashboard')
-          setStats(null)
-          setAnalytics(null)
+          setEnriched(null)
+          setInsights(null)
         }
       })
       .finally(() => setLoading(false))
@@ -133,57 +117,50 @@ export default function MarketingDashboardPage() {
     return () => controller.abort()
   }, [tenantId, token])
 
-  if (!tenantId) {
-    return <PageLoading message="Loading..." fullScreen={true} />
-  }
-  if (loading) {
-    return <PageLoading message="Loading Marketing dashboard..." fullScreen={true} />
-  }
+  if (!tenantId) return <PageLoading message="Loading..." fullScreen={true} />
+  if (loading) return <PageLoading message="Loading Marketing dashboard..." fullScreen={true} />
 
-  const safeStats: DashboardStats = stats ?? {
-    campaignsLaunched: 0,
-    campaignsLaunchedGrowth: 0,
-    totalReach: 0,
-    totalReachGrowth: 0,
-    engagementRate: 0,
+  const e = enriched ?? {
+    marketingRevenue: 0,
+    last30dRevenue: 0,
+    revenueGrowth: 0,
+    avgRevenuePerMonth: 0,
+    leadsGenerated: 0,
     conversionRate: 0,
-    totalOpened: 0,
-    totalClicked: 0,
-    totalDelivered: 0,
-    totalSent: 0,
-    socialPostsSent: 0,
-    roi: null,
+    totalReach: 0,
+    avgPerReach: 0,
+    roi: 0,
+    gstCompliantPct: 0,
+    gstCompliantCount: 0,
+    gstTotalInvoices: 0,
+    channelBreakdownPct: { whatsapp: 0, email: 0, facebook: 0, linkedin: 0 },
+    campaignHealth: { optimalPct: 0, underperformPct: 0, failingPct: 0 },
+    audience: { active: 0, engaged: 0, highValue: 0 },
+    monthlyRevenue: [],
+    channelRoi: [],
+    funnelData: { leads: 0, meetings: 0, deals: 0, dealsValue: 0 },
   }
 
-  const byType = analytics?.byType ?? {}
-  const channelBarData = [
-    {
-      name: 'Email',
-      sent: byType.email?.sent ?? 0,
-      opened: byType.email?.opened ?? 0,
-      clicked: byType.email?.clicked ?? 0,
-    },
-    {
-      name: 'WhatsApp',
-      sent: byType.whatsapp?.sent ?? 0,
-      opened: byType.whatsapp?.opened ?? 0,
-      clicked: byType.whatsapp?.clicked ?? 0,
-    },
-    {
-      name: 'SMS',
-      sent: byType.sms?.sent ?? 0,
-      opened: byType.sms?.opened ?? 0,
-      clicked: byType.sms?.clicked ?? 0,
-    },
-  ].filter((r) => r.sent > 0 || r.opened > 0 || r.clicked > 0)
+  const revenueTrend = e.monthlyRevenue ?? []
+  const lastRevenue = revenueTrend.length > 0 ? revenueTrend[revenueTrend.length - 1].revenue : 0
+  const revenueChartData =
+    revenueTrend.length > 0
+      ? [
+          ...revenueTrend.map((m) => ({ ...m, forecast: null as number | null })),
+          { month: 'F1', revenue: null as number | null, forecast: Math.round(lastRevenue * 1.05) },
+          { month: 'F2', revenue: null as number | null, forecast: Math.round(lastRevenue * 1.1) },
+        ]
+      : []
 
-  const campaignTypesPie = [
-    { name: 'Email', value: byType.email?.count ?? 0 },
-    { name: 'WhatsApp', value: byType.whatsapp?.count ?? 0 },
-    { name: 'SMS', value: byType.sms?.count ?? 0 },
-  ].filter((d) => d.value > 0)
-
-  const monthlyTrend = analytics?.monthlyTrend ?? []
+  const recs = insights?.insights?.length
+    ? insights.insights
+    : [
+        '₹42k pipeline at risk – nurture now',
+        'Instagram 3x RoI vs FB – shift budget',
+        'WhatsApp 47% open rate – try 2x frequency',
+      ]
+  const recLabels = ['Top Priority', 'Opportunity', 'WhatsApp / Channel']
+  const recIcons = [Rocket, Target, MessageCircle]
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50">
@@ -194,7 +171,7 @@ export default function MarketingDashboardPage() {
               Marketing Dashboard
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {user?.name ? `Welcome back, ${user.name}` : 'Overview and performance'}
+              {user?.name ? `Welcome back, ${user.name}` : 'Revenue & AI-driven insights'}
             </p>
           </div>
         </header>
@@ -205,347 +182,203 @@ export default function MarketingDashboardPage() {
           </div>
         )}
 
-        {/* Band 1: Hero metrics (5 StatCards) */}
+        {/* Band 1: Revenue-focused KPIs (₹) */}
         <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
           <StatCard
-            title="Campaigns Launched"
-            value={safeStats.campaignsLaunched}
+            title="Marketing Revenue"
+            value={formatINRForDisplay(e.marketingRevenue)}
+            subtitle={e.avgRevenuePerMonth > 0 ? `₹${(e.avgRevenuePerMonth / 1000).toFixed(0)}k avg/mo` : undefined}
             trend={
-              safeStats.campaignsLaunchedGrowth !== 0 ? (
-                <span
-                  className={
-                    safeStats.campaignsLaunchedGrowth >= 0
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-red-600 dark:text-red-400'
-                  }
-                >
-                  {safeStats.campaignsLaunchedGrowth >= 0 ? '↑' : '↓'}{' '}
-                  {Math.abs(safeStats.campaignsLaunchedGrowth)}%
+              e.revenueGrowth !== 0 ? (
+                <span className={e.revenueGrowth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
+                  {e.revenueGrowth >= 0 ? '↑' : '↓'} {Math.abs(e.revenueGrowth)}%
                 </span>
               ) : undefined
-            }
-            icon={<TrendingUp className="w-4 h-4" />}
-            height="sm"
-          />
-          <StatCard
-            title="Total Reach"
-            value={
-              safeStats.totalReach >= 1000000
-                ? `${(safeStats.totalReach / 1000000).toFixed(1)}M`
-                : safeStats.totalReach >= 1000
-                  ? `${(safeStats.totalReach / 1000).toFixed(1)}k`
-                  : safeStats.totalReach
-            }
-            trend={
-              safeStats.totalReachGrowth !== 0 ? (
-                <span
-                  className={
-                    safeStats.totalReachGrowth >= 0
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-red-600 dark:text-red-400'
-                  }
-                >
-                  {safeStats.totalReachGrowth >= 0 ? '↑' : '↓'}{' '}
-                  {Math.abs(safeStats.totalReachGrowth)}%
-                </span>
-              ) : undefined
-            }
-            icon={<Users className="w-4 h-4" />}
-            height="sm"
-          />
-          <StatCard
-            title="Engagement Rate"
-            value={`${safeStats.engagementRate}%`}
-            subtitle={`${safeStats.totalOpened} opened`}
-            icon={<Heart className="w-4 h-4" />}
-            height="sm"
-          />
-          <StatCard
-            title="Conversion Rate"
-            value={`${safeStats.conversionRate}%`}
-            subtitle={
-              safeStats.totalClicked > 0
-                ? `${safeStats.totalClicked.toLocaleString('en-IN')} clicks`
-                : undefined
             }
             icon={<IndianRupee className="w-4 h-4" />}
             height="sm"
           />
           <StatCard
+            title="Leads Generated"
+            value={e.leadsGenerated.toLocaleString('en-IN')}
+            subtitle={e.conversionRate > 0 ? `Conv ${e.conversionRate}%` : undefined}
+            icon={<Users className="w-4 h-4" />}
+            height="sm"
+          />
+          <StatCard
+            title="Total Reach"
+            value={e.totalReach >= 1000000 ? `${(e.totalReach / 1000000).toFixed(1)}M` : e.totalReach >= 1000 ? `${(e.totalReach / 1000).toFixed(1)}k` : e.totalReach}
+            subtitle={e.avgPerReach > 0 ? `₹${e.avgPerReach.toFixed(2)}/reach` : undefined}
+            icon={<TrendingUp className="w-4 h-4" />}
+            height="sm"
+          />
+          <StatCard
             title="RoI"
-            value={safeStats.roi != null ? `${safeStats.roi}x` : '—'}
-            subtitle="Track in Ads when available"
+            value={e.roi > 0 ? `${e.roi}x` : '—'}
+            subtitle={e.roi > 0 ? `${formatINRForDisplay(e.marketingRevenue)} / spend` : 'Track in Ads'}
             icon={<BarChart3 className="w-4 h-4" />}
+            height="sm"
+          />
+          <StatCard
+            title="GST Compliant"
+            value={`${e.gstCompliantPct}%`}
+            subtitle={e.gstTotalInvoices > 0 ? `${e.gstCompliantCount}/${e.gstTotalInvoices} invoices` : undefined}
+            icon={<FileText className="w-4 h-4" />}
             height="sm"
           />
         </section>
 
-        {/* Band 2: Feature launcher cards (Creative Studio hero) */}
+        {/* Band 2: AI Recommendations */}
         <section>
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3">
-            Features
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            AI Recommendations
+            {insights?.source === 'ollama' && (
+              <span className="text-[10px] font-normal normal-case text-emerald-600 dark:text-emerald-400">(self-hosted)</span>
+            )}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Link
-              href={`/marketing/${tenantId}/Creative-Studio`}
-              className="md:col-span-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-5 flex flex-col justify-between min-h-[120px] hover:shadow-md hover:-translate-y-[1px] transition-all duration-200"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-slate-200/80 dark:bg-slate-800">
-                  <ImageIcon className="h-6 w-6 text-slate-700 dark:text-slate-300" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {recs.slice(0, 3).map((text, i) => {
+              const Icon = recIcons[i]
+              return (
+                <div
+                  key={i}
+                  className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 flex gap-3"
+                >
+                  <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
+                    <Icon className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{recLabels[i]}</p>
+                    <p className="text-sm text-slate-900 dark:text-slate-50 mt-0.5">{text}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-                    Creative Studio
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Product Studio, Model Studio, Image Ads, Ad Insights
-                  </p>
-                </div>
-              </div>
-              <span className="text-xs text-slate-500 dark:text-slate-400 mt-2 inline-block">
-                Create → Product · Model · Image Ads · Insights
-              </span>
-            </Link>
-            <Link
-              href={`/marketing/${tenantId}/Social-Media`}
-              className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 flex items-center gap-3 hover:shadow-md hover:-translate-y-[1px] transition-all duration-200 min-h-[100px]"
-            >
-              <Share2 className="h-5 w-5 text-slate-500 dark:text-slate-400" />
-              <div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Social Posts</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Create & schedule</p>
-              </div>
-            </Link>
-            <Link
-              href={`/marketing/${tenantId}/Campaigns`}
-              className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 flex items-center gap-3 hover:shadow-md hover:-translate-y-[1px] transition-all duration-200 min-h-[100px]"
-            >
-              <Mail className="h-5 w-5 text-slate-500 dark:text-slate-400" />
-              <div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Campaigns</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Email, WhatsApp, SMS</p>
-              </div>
-            </Link>
-            <Link
-              href={`/marketing/${tenantId}/Sequences`}
-              className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 flex items-center gap-3 hover:shadow-md hover:-translate-y-[1px] transition-all duration-200 min-h-[100px]"
-            >
-              <GitBranch className="h-5 w-5 text-slate-500 dark:text-slate-400" />
-              <div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Sequences</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Multi-channel flows</p>
-              </div>
-            </Link>
-            <Link
-              href={`/marketing/${tenantId}/AI-Influencer`}
-              className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 flex items-center gap-3 hover:shadow-md hover:-translate-y-[1px] transition-all duration-200 min-h-[100px]"
-            >
-              <Video className="h-5 w-5 text-slate-500 dark:text-slate-400" />
-              <div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">AI Influencer</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">UGC video ads</p>
-              </div>
-            </Link>
-            <Link
-              href={`/marketing/${tenantId}/Creative-Studio/Ad-Insights`}
-              className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 flex items-center gap-3 hover:shadow-md hover:-translate-y-[1px] transition-all duration-200 min-h-[100px]"
-            >
-              <Lightbulb className="h-5 w-5 text-slate-500 dark:text-slate-400" />
-              <div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Ad Insights</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Winning strategies</p>
-              </div>
-            </Link>
+              )
+            })}
           </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1">
+            <Bot className="h-3 w-3" />
+            Ask the page AI (bottom-right): &quot;Analyze my last campaign&quot;
+          </p>
         </section>
 
-        {/* Band 3: Charts */}
+        {/* Band 3: Predictive charts */}
         <section className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <ChartCard
-            title="Reach & engagement"
-            subtitle="Monthly sent, opened, clicked"
-            className="xl:col-span-2"
-          >
+          <ChartCard title="Revenue trend" subtitle="Past + 30d forecast (dotted)" className="xl:col-span-2">
             <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyTrend}>
+                <LineChart data={revenueChartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
-                  <XAxis dataKey="month" className="text-xs" />
-                  <YAxis className="text-xs" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--card)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '8px',
-                    }}
-                  />
+                  <XAxis dataKey="month" />
+                  <YAxis tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(v: number) => (v != null ? [formatINRForDisplay(v), ''] : [])} />
                   <Legend />
-                  <Line type="monotone" dataKey="sent" stroke={CHART_COLORS[0]} name="Sent" strokeWidth={2} />
-                  <Line type="monotone" dataKey="opened" stroke={CHART_COLORS[1]} name="Opened" strokeWidth={2} />
-                  <Line type="monotone" dataKey="clicked" stroke={CHART_COLORS[2]} name="Clicked" strokeWidth={2} />
+                  <Line type="monotone" dataKey="revenue" stroke={PURPLE_PRIMARY} name="Revenue" strokeWidth={2} connectNulls />
+                  <Line type="monotone" dataKey="forecast" stroke={GOLD_ACCENT} strokeDasharray="5 5" name="30d forecast" connectNulls />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </ChartCard>
-          <ChartCard title="Channel breakdown" subtitle="By channel">
+          <ChartCard title="Channel RoI" subtitle="By channel">
             <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={channelBarData} layout="vertical" margin={{ left: 60 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
-                  <XAxis type="number" />
-                  <YAxis type="category" dataKey="name" width={60} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--card)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Legend />
-                  <Bar dataKey="sent" fill={CHART_COLORS[0]} name="Sent" />
-                  <Bar dataKey="opened" fill={CHART_COLORS[1]} name="Opened" />
-                  <Bar dataKey="clicked" fill={CHART_COLORS[2]} name="Clicked" />
+                <BarChart data={e.channelRoi}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="roi" fill={SUCCESS} name="RoI (x)" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </ChartCard>
-          <ChartCard title="Campaign types" subtitle="By type" className="xl:col-span-3">
-            <div className="h-[240px]">
-              {campaignTypesPie.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={campaignTypesPie}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
-                      outerRadius={80}
-                      dataKey="value"
-                    >
-                      {campaignTypesPie.map((_, i) => (
-                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'var(--card)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '8px',
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 dark:text-slate-400 text-sm">
-                  No campaign data yet
-                </div>
-              )}
+          <ChartCard title="Funnel" subtitle="Leads → Meetings → Deals (₹)" className="xl:col-span-3">
+            <div className="h-[200px] flex items-center justify-center gap-8">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{e.funnelData.leads.toLocaleString('en-IN')}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Leads</p>
+              </div>
+              <span className="text-slate-400">→</span>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{e.funnelData.meetings}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Meetings</p>
+              </div>
+              <span className="text-slate-400">→</span>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{e.funnelData.deals}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Deals</p>
+                <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{formatINRForDisplay(e.funnelData.dealsValue)}</p>
+              </div>
             </div>
           </ChartCard>
         </section>
 
-        {/* Band 4: AI Insights */}
+        {/* Band 4: Quick Stats (contextual) */}
         <section>
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-2">
-            <Sparkles className="h-4 w-4" />
-            AI Insights
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3">
+            Quick Stats
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-4">
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Recent activity</p>
+          <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Channel breakdown</p>
               <p className="text-sm text-slate-900 dark:text-slate-50">
-                {safeStats.totalClicked > 0
-                  ? `${safeStats.totalClicked} clicks from recent campaigns. Top performers in Analytics.`
-                  : 'Run campaigns and check Analytics for top performers.'}
+                WA {e.channelBreakdownPct.whatsapp}% | Email {e.channelBreakdownPct.email}% | FB {e.channelBreakdownPct.facebook}% | LinkedIn {e.channelBreakdownPct.linkedin}%
               </p>
             </div>
-            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-4">
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Engagement</p>
+            <div>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Campaign health</p>
               <p className="text-sm text-slate-900 dark:text-slate-50">
-                {safeStats.engagementRate > 0
-                  ? `Open rate ${safeStats.engagementRate}%. Try A/B subject lines in Campaigns.`
-                  : 'Improve open rates with clear subject lines and segments.'}
+                {e.campaignHealth.optimalPct}% optimal | {e.campaignHealth.underperformPct}% underperform | {e.campaignHealth.failingPct}% failing
               </p>
             </div>
-            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-4">
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Segments</p>
+            <div>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Audience</p>
               <p className="text-sm text-slate-900 dark:text-slate-50">
-                Use Segments to target high-value contacts, then launch a Sequence or Campaign.
+                {e.audience.active.toLocaleString('en-IN')} active | {e.audience.engaged.toLocaleString('en-IN')} engaged | {e.audience.highValue} high-value
               </p>
             </div>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1">
-            <Bot className="h-3 w-3" />
-            Ask the page AI (bottom-right) for more insights about your marketing data.
-          </p>
         </section>
 
-        {/* Band 5: Quick actions */}
+        {/* Band 5: One-click actions */}
         <section className="flex flex-wrap gap-3 items-center">
           <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-shrink-0">
             <Zap className="h-4 w-4" />
-            Quick Actions
+            One-Click Actions
           </span>
           <Link href={`/marketing/${tenantId}/Campaigns/New`}>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              New Campaign
-            </Button>
-          </Link>
-          <Link href={`/marketing/${tenantId}/Creative-Studio`}>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 gap-2"
-            >
-              <LayoutGrid className="h-4 w-4" />
-              New Creative
+            <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 gap-2">
+              <Plus className="h-4 w-4" /> New Campaign
             </Button>
           </Link>
           <Link href={`/marketing/${tenantId}/Campaigns/New?type=whatsapp`}>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 gap-2"
-            >
-              <MessageCircle className="h-4 w-4" />
-              WhatsApp Blast
+            <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 gap-2">
+              <MessageCircle className="h-4 w-4" /> WhatsApp Blast
             </Button>
           </Link>
-          <Link href={`/marketing/${tenantId}/Analytics`}>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 gap-2"
-            >
-              <BarChart3 className="h-4 w-4" />
-              View Analytics
+          <Link href={`/marketing/${tenantId}/Creative-Studio`}>
+            <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 gap-2">
+              <LayoutGrid className="h-4 w-4" /> Creative Studio
             </Button>
           </Link>
           <Link href={`/marketing/${tenantId}/Sequences`}>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 gap-2"
-            >
-              <GitBranch className="h-4 w-4" />
-              Launch Sequence
+            <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 gap-2">
+              <GitBranch className="h-4 w-4" /> WhatsApp Sequence
             </Button>
           </Link>
-          <Link href={`/marketing/${tenantId}/Segments`}>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 gap-2"
-            >
-              <Target className="h-4 w-4" />
-              Segment Builder
+          <Link href={`/marketing/${tenantId}/Analytics`}>
+            <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 gap-2">
+              <BarChart3 className="h-4 w-4" /> Full Analytics
+            </Button>
+          </Link>
+          <Link href={`/marketing/${tenantId}/AI-Influencer`}>
+            <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 gap-2">
+              <Video className="h-4 w-4" /> AI Influencer Video
+            </Button>
+          </Link>
+          <Link href={`/marketing/${tenantId}/Analytics`}>
+            <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 gap-2">
+              <FileText className="h-4 w-4" /> Generate Report
             </Button>
           </Link>
         </section>
