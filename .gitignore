@@ -18,6 +18,9 @@ test-results/
 # production
 /build
 
+# turbo
+.turbo/
+
 # misc
 .DS_Store
 *.pem
