@@ -19,7 +19,6 @@ try {
 const nextConfig = {
   reactStrictMode: true,
   typescript: { ignoreBuildErrors: false },
-  eslint: { ignoreDuringBuilds: false },
   transpilePackages: ['@payaid/db', '@payaid/social'],
   async redirects() {
     return [
