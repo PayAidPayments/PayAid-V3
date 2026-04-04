@@ -1,34 +1,5 @@
 {
-  "buildCommand": "rm -rf .next node_modules/.prisma node_modules/@prisma/client 2>/dev/null; prisma generate && node --max-old-space-size=5120 ./node_modules/next/dist/bin/next build --webpack",
-  "outputDirectory": ".next",
-  "installCommand": "npm install --legacy-peer-deps",
-  "framework": "nextjs",
-  "env": {
-    "PRISMA_GENERATE_DATAPROXY": "false"
-  },
-  "functions": {
-    "app/api/admin/seed-demo-data/route.ts": {
-      "maxDuration": 60
-    },
-    "app/api/finance/ensure-demo-data/route.ts": {
-      "maxDuration": 120
-    },
-    "app/api/v1/voice-agents/**/stream/route.ts": {
-      "maxDuration": 300
-    }
-  },
-  "crons": [
-    {
-      "path": "/api/cron/process-scheduled-reports",
-      "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/cron/process-subscription-renewals",
-      "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/cron/financial-dashboard",
-      "schedule": "0 2 * * *"
-    }
-  ]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm install --legacy-peer-deps --no-audit --no-fund",
+  "buildCommand": "cd apps/dashboard && NODE_OPTIONS=--max-old-space-size=5120 npm run build"
 }
