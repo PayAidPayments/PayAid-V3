@@ -2,6 +2,31 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 
+/** Asset has no direct employee FK; assignments link employees. Active = not returned. */
+const assetWithAssigneeInclude = {
+  assignments: {
+    where: { returnedDate: null },
+    orderBy: { assignedDate: 'desc' as const },
+    take: 1,
+    include: {
+      employee: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          employeeCode: true,
+        },
+      },
+    },
+  },
+} as const
+
+function toAssetResponse<T extends { assignments: { employee: unknown }[] }>(row: T) {
+  const assignedTo = row.assignments[0]?.employee ?? null
+  const { assignments: _a, ...rest } = row
+  return { ...rest, assignedTo }
+}
+
 /**
  * GET /api/hr/assets/[id]
  * Get asset details
@@ -19,23 +44,14 @@ export async function GET(
         id: id,
         tenantId,
       },
-      include: {
-        assignedTo: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            employeeCode: true,
-          },
-        },
-      },
+      include: assetWithAssigneeInclude,
     })
 
     if (!asset) {
       return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
     }
 
-    return NextResponse.json(asset)
+    return NextResponse.json(toAssetResponse(asset))
   } catch (error: any) {
     return handleLicenseError(error)
   }
@@ -108,19 +124,10 @@ export async function PATCH(
 
     const updated = await prisma.asset.findFirst({
       where: { id: id, tenantId },
-      include: {
-        assignedTo: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            employeeCode: true,
-          },
-        },
-      },
+      include: assetWithAssigneeInclude,
     })
 
-    return NextResponse.json(updated)
+    return NextResponse.json(updated ? toAssetResponse(updated) : null)
   } catch (error: any) {
     return handleLicenseError(error)
   }
