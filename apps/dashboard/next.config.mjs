@@ -19,7 +19,7 @@ try {
 const nextConfig = {
   reactStrictMode: true,
   typescript: { ignoreBuildErrors: false },
-  transpilePackages: ['@payaid/db', '@payaid/social'],
+  transpilePackages: ['@payaid/db', '@payaid/social', '@payaid/ai'],
   async redirects() {
     return [
       { source: '/marketing/:tenantId/Social-Media/Create-Post', destination: '/marketing/:tenantId/Studio', permanent: true },

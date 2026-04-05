@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@payaid/ai": "file:../../packages/ai",
     "@payaid/db": "file:../../packages/db",
     "@payaid/social": "file:../../packages/social",
     "next": "^16.1.0",

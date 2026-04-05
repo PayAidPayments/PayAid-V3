@@ -15,12 +15,13 @@ import { Switch } from '@/components/ui/switch'
 import { ModuleToggle } from '@/components/Admin/ModuleToggle'
 
 interface PageProps {
-  params: {
+  params: Promise<{
     tenantId: string
-  }
+  }>
 }
 
 export default async function TenantModulesPage({ params }: PageProps) {
+  const { tenantId } = await params
   // Check authentication
   const cookieStore = await cookies()
   const token = cookieStore.get('token')?.value
@@ -45,7 +46,7 @@ export default async function TenantModulesPage({ params }: PageProps) {
 
   // Fetch tenant
   const tenant = await prisma.tenant.findUnique({
-    where: { id: params.tenantId },
+    where: { id: tenantId },
     select: {
       id: true,
       name: true,
