@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Ensures every static `from "@/lib/..."` import in apps/dashboard resolves to a path
- * that exists in git (prevents Vercel "Can't resolve '@/lib/...'" when files were never committed).
+ * Pre-deploy checks for apps/dashboard:
+ * 1) Static `from "@/lib/..."` imports resolve to paths tracked under lib/ (Vercel clone).
+ * 2) app/api ... /route.ts files export handlers (empty files break TS "is not a module").
  */
 import { execSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -75,4 +76,32 @@ if (missing.length) {
   process.exit(1)
 }
 
-console.log('OK: all static @/lib/* imports under apps/dashboard point to tracked files.')
+const apiRoot = path.join(dashboard, 'app', 'api')
+const emptyRoutes = []
+function walkApiRoutes(dir) {
+  let entries = []
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return
+  }
+  for (const ent of entries) {
+    const p = path.join(dir, ent.name)
+    if (ent.isDirectory()) walkApiRoutes(p)
+    else if (ent.name === 'route.ts') {
+      const raw = fs.readFileSync(p, 'utf8')
+      if (!/\bexport\b/.test(raw)) {
+        emptyRoutes.push(path.relative(root, p).replace(/\\/g, '/'))
+      }
+    }
+  }
+}
+walkApiRoutes(apiRoot)
+
+if (emptyRoutes.length) {
+  console.error('These API route files must export at least one handler (GET/POST/etc.):\n')
+  for (const p of emptyRoutes) console.error('  - ' + p)
+  process.exit(1)
+}
+
+console.log('OK: @/lib imports tracked; app/api route.ts files export handlers.')
