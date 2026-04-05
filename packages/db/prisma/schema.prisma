@@ -92,6 +92,7 @@ model Tenant {
   chatbotConversations         ChatbotConversation[]
   checkoutPages                CheckoutPage[]
   contacts                     Contact[]
+  contractors                  Contractor[]
   customDashboards             CustomDashboard[]
   customFields                 CustomField[]
   fieldLayouts                 FieldLayout[]
@@ -1371,9 +1372,43 @@ model Department {
   tenant          Tenant           @relation("TenantDepartments", fields: [tenantId], references: [id], onDelete: Cascade)
   employees       Employee[]
   jobRequisitions JobRequisition[]
+  contractors     Contractor[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
+}
+
+/// External / contract workers (HR) — used by /api/hr/contractors
+model Contractor {
+  id             String      @id @default(cuid())
+  tenantId       String
+  contractorCode String
+  firstName      String
+  lastName       String
+  email          String?
+  phone          String?
+  startDate      DateTime
+  endDate        DateTime?
+  monthlyRate    Decimal?    @db.Decimal(12, 2)
+  tdsApplicable  Boolean     @default(true)
+  tdsRate        Decimal?    @db.Decimal(5, 2)
+  panNumber      String?
+  departmentId   String?
+  project        String?
+  address        String?
+  city           String?
+  state          String?
+  pincode        String?
+  status         String      @default("ACTIVE")
+  createdBy      String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  tenant         Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  department     Department? @relation(fields: [departmentId], references: [id])
+
+  @@unique([tenantId, contractorCode])
+  @@index([tenantId])
+  @@index([tenantId, status])
 }
 
 model Designation {
