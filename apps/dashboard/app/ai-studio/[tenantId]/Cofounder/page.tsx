@@ -1212,7 +1212,7 @@ export default function CoFounderPage() {
                 </CardTitle>
                 {latestArtifact.type === 'table' && 'columns' in latestArtifact.data && (
                   <Button variant="ghost" size="sm" onClick={() => {
-                    const d = latestArtifact!.data as { columns: string[]; rows: Record<string, string | number>[] }
+                    const d = latestArtifact.data as TableArtifactData
                     const csv = [d.columns.join(','), ...d.rows.map((r) => d.columns.map((c) => String(r[c] ?? '')).join(','))].join('\n')
                     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
                     const a = document.createElement('a')
@@ -1226,20 +1226,22 @@ export default function CoFounderPage() {
                 )}
               </CardHeader>
               <CardContent className="p-0">
-                {latestArtifact.type === 'table' && 'columns' in latestArtifact.data && (
+                {latestArtifact.type === 'table' && 'columns' in latestArtifact.data && (() => {
+                  const tableData: TableArtifactData = latestArtifact.data
+                  return (
                   <div className="overflow-x-auto max-h-48 overflow-y-auto">
                     <table className="w-full text-xs border-collapse">
                       <thead>
                         <tr className="border-b bg-slate-50 dark:bg-slate-800/50">
-                          {latestArtifact.data.columns.map((c) => (
+                          {tableData.columns.map((c) => (
                             <th key={c} className="text-left px-3 py-2 font-semibold">{c}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {latestArtifact.data.rows.slice(0, 10).map((row, ri) => (
+                        {tableData.rows.slice(0, 10).map((row, ri) => (
                           <tr key={ri} className="border-b border-slate-100">
-                            {latestArtifact!.data.columns.map((col) => (
+                            {tableData.columns.map((col) => (
                               <td key={col} className="px-3 py-1.5">{String(row[col] ?? '')}</td>
                             ))}
                           </tr>
@@ -1247,7 +1249,8 @@ export default function CoFounderPage() {
                       </tbody>
                     </table>
                   </div>
-                )}
+                  )
+                })()}
                 {latestArtifact.type === 'checklist' && 'items' in latestArtifact.data && (
                   <ul className="px-4 pb-4 space-y-1 text-sm">
                     {latestArtifact.data.items.slice(0, 8).map((item, i) => (
