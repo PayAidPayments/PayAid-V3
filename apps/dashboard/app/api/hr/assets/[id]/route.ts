@@ -118,7 +118,8 @@ export async function PATCH(
       currentValue = Math.max(0, pValue * (1 - (depRate / 100) * yearsSincePurchase))
     }
 
-    const updateData: Prisma.AssetUpdateManyMutationInput = {}
+    /** Unchecked includes scalar FKs like `locationId`; `AssetUpdateManyMutationInput` omits them in this schema. */
+    const updateData: Prisma.AssetUncheckedUpdateManyInput = {}
     if (name !== undefined) updateData.assetTag = String(name)
     if (category !== undefined) updateData.assetType = String(category)
     if (serialNumber !== undefined) updateData.serialNumber = serialNumber as string | null
