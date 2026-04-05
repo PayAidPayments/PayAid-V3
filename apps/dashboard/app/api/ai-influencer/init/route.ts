@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    const { getDependencyStatus } = await import('@/lib/ai-influencer/setup')
     const dependencies = await getDependencyStatus()
     const templates = checkTemplatesAvailable()
 
