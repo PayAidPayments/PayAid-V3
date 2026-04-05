@@ -75,9 +75,14 @@ const SUCCESS = '#059669'
 const INFO = '#0284C7'
 const CHART_COLORS = [PURPLE_PRIMARY, GOLD_ACCENT, SUCCESS, INFO, '#EC4899']
 
-export default function MarketingDashboardPage() {
+type MarketingDashboardPageProps = {
+  /** When embedded (e.g. `/demo/marketing`), pass tenant explicitly — route has no `[tenantId]` segment. */
+  tenantId?: string
+}
+
+export default function MarketingDashboardPage({ tenantId: tenantIdProp }: MarketingDashboardPageProps = {}) {
   const params = useParams()
-  const tenantId = (params?.tenantId as string) ?? ''
+  const tenantId = tenantIdProp ?? (params?.tenantId as string) ?? ''
   const { user, token } = useAuthStore()
   const [enriched, setEnriched] = useState<EnrichedData | null>(null)
   const [insights, setInsights] = useState<InsightsData | null>(null)
