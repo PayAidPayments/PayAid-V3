@@ -62,7 +62,12 @@ function DemoMarketingContent() {
     )
   }
 
-  return <MarketingDashboardPage tenantId={tenantId} />
+  return (
+    <MarketingDashboardPage
+      params={Promise.resolve({ tenantId })}
+      searchParams={Promise.resolve({})}
+    />
+  )
 }
 
 export default function DemoMarketingPage() {

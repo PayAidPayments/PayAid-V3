@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
@@ -75,14 +74,8 @@ const SUCCESS = '#059669'
 const INFO = '#0284C7'
 const CHART_COLORS = [PURPLE_PRIMARY, GOLD_ACCENT, SUCCESS, INFO, '#EC4899']
 
-type MarketingDashboardPageProps = {
-  /** When embedded (e.g. `/demo/marketing`), pass tenant explicitly — route has no `[tenantId]` segment. */
-  tenantId?: string
-}
-
-export default function MarketingDashboardPage({ tenantId: tenantIdProp }: MarketingDashboardPageProps = {}) {
-  const params = useParams()
-  const tenantId = tenantIdProp ?? (params?.tenantId as string) ?? ''
+export default function MarketingDashboardPage(props: PageProps<'/marketing/[tenantId]/Home'>) {
+  const { tenantId } = use(props.params)
   const { user, token } = useAuthStore()
   const [enriched, setEnriched] = useState<EnrichedData | null>(null)
   const [insights, setInsights] = useState<InsightsData | null>(null)
