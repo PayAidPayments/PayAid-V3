@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Select } from '@/components/ui/select'
 import {
   Sheet,
   SheetContent,
@@ -715,26 +714,26 @@ export default function CoFounderPage() {
                   {roleInfo.role}
                 </span>
               </div>
-              <Select
+              <select
                 value={contextModules}
                 onChange={(e) => setContextModules(e.target.value)}
-                className="w-[160px] h-8 text-xs border rounded-lg bg-background"
+                className="w-[160px] h-8 text-xs border rounded-lg bg-background px-2"
                 style={{ borderColor: `${PAYAID_PURPLE}40` }}
               >
                 {CONTEXT_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
-              </Select>
-              <Select
+              </select>
+              <select
                 value={timeRange}
                 onChange={(e) => setTimeRange(e.target.value)}
-                className="w-[140px] h-8 text-xs border rounded-lg bg-background"
+                className="w-[140px] h-8 text-xs border rounded-lg bg-background px-2"
                 style={{ borderColor: `${PAYAID_PURPLE}40` }}
               >
                 {TIME_RANGE_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
-              </Select>
+              </select>
             </div>
           </header>
 
@@ -916,29 +915,29 @@ export default function CoFounderPage() {
                       <div className="space-y-3">
                         <div>
                           <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Modules</label>
-                          <Select
+                          <select
                             value={contextModules}
                             onChange={(e) => setContextModules(e.target.value)}
-                            className="h-9 w-full text-xs border rounded-lg bg-background"
+                            className="h-9 w-full text-xs border rounded-lg bg-background px-2"
                             style={{ borderColor: `${PAYAID_PURPLE}40` }}
                           >
                             {CONTEXT_OPTIONS.map((o) => (
                               <option key={o.value} value={o.value}>{o.label}</option>
                             ))}
-                          </Select>
+                          </select>
                         </div>
                         <div>
                           <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Time range</label>
-                          <Select
+                          <select
                             value={timeRange}
                             onChange={(e) => setTimeRange(e.target.value)}
-                            className="h-9 w-full text-xs border rounded-lg bg-background"
+                            className="h-9 w-full text-xs border rounded-lg bg-background px-2"
                             style={{ borderColor: `${PAYAID_PURPLE}40` }}
                           >
                             {TIME_RANGE_OPTIONS.map((o) => (
                               <option key={o.value} value={o.value}>{o.label}</option>
                             ))}
-                          </Select>
+                          </select>
                         </div>
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Applied to the next message you send.</p>
