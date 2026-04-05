@@ -15,11 +15,10 @@ import { formatINR } from '@/lib/currency'
  */
 export async function POST(
   request: NextRequest,
-  context?: { params?: Promise<Record<string, string>> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const params = await (context?.params || Promise.resolve({}))
-    const id = (params as Record<string, string>).id
+    const { id } = await params
     if (!id) {
       return NextResponse.json({ success: false, statusCode: 400, error: { code: 'MISSING_ID', message: 'ID is required' } }, { status: 400 })
     }

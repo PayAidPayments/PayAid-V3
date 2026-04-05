@@ -4,7 +4,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { withErrorHandling } from '@/lib/api/route-wrapper'
 import type { ApiResponse } from '@/types/base-modules'
 import type { DashboardWidget } from '@/modules/shared/analytics/types'
 
@@ -14,11 +13,10 @@ import type { DashboardWidget } from '@/modules/shared/analytics/types'
  */
 export async function GET(
   request: NextRequest,
-  context?: { params?: Promise<Record<string, string>> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const params = await (context?.params || Promise.resolve({}))
-    const id = (params as Record<string, string>).id
+    const { id } = await params
     if (!id) {
       return NextResponse.json({ success: false, statusCode: 400, error: { code: 'MISSING_ID', message: 'ID is required' } }, { status: 400 })
     }
