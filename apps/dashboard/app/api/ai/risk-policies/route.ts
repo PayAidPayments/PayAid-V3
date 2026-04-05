@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
-import {
-  getCompanyRiskPolicy,
-  setCompanyRiskPolicy,
-  getRiskCalibrationMetrics,
-  getDecisionOutcomes,
-} from '@/lib/ai/risk-policy-manager'
+import { getCompanyRiskPolicy, setCompanyRiskPolicy } from '@/lib/ai/risk-policy-manager'
 import { DecisionType } from '@/lib/ai/decision-risk'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
@@ -96,32 +91,6 @@ export async function POST(request: NextRequest) {
     console.error('Set risk policy error:', error)
     return NextResponse.json(
       { error: 'Failed to set risk policy', details: String(error) },
-      { status: 500 }
-    )
-  }
-}
-
-/**
- * GET /api/ai/risk-policies/calibration
- * Get risk calibration metrics
- */
-export async function GET_CALIBRATION(request: NextRequest) {
-  try {
-    const { tenantId } = await requireModuleAccess(request, 'ai-studio')
-    const { searchParams } = new URL(request.url)
-    const decisionType = searchParams.get('decisionType') as DecisionType | null
-
-    const metrics = await getRiskCalibrationMetrics(tenantId, decisionType || undefined)
-
-    return NextResponse.json({ success: true, metrics })
-  } catch (error) {
-    if (error && typeof error === 'object' && 'moduleId' in error) {
-      return handleLicenseError(error)
-    }
-
-    console.error('Get calibration metrics error:', error)
-    return NextResponse.json(
-      { error: 'Failed to get calibration metrics', details: String(error) },
       { status: 500 }
     )
   }
