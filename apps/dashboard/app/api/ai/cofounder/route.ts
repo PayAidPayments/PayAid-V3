@@ -4,6 +4,7 @@ import { routeToAgent, getAgent, getAllAgents, type AgentId } from '@/lib/ai/age
 import { getBusinessContext } from '@/lib/ai/business-context-builder'
 import { parseStructuredBlock, parseMarkdownTable, STRUCTURED_OUTPUT_INSTRUCTION } from '@/lib/ai/cofounder-structured'
 import type { ArtifactPayload, StructuredAction } from '@/lib/ai/cofounder-structured'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { getIndustryConfig } from '@/lib/industries/config'
 import { z } from 'zod'
@@ -328,7 +329,7 @@ ${STRUCTURED_OUTPUT_INSTRUCTION}`
           await prisma.aICofounderConversation.update({
             where: { id: conversationId },
             data: {
-              messages: updatedMessages,
+              messages: updatedMessages as unknown as Prisma.InputJsonValue,
               messageCount: updatedMessages.length,
               lastMessageAt: new Date(),
               suggestedActions: topActions.length > 0 ? (topActions as any) : existing.suggestedActions,
@@ -350,7 +351,7 @@ ${STRUCTURED_OUTPUT_INSTRUCTION}`
             projectId: validated.projectId || undefined,
             title,
             agentId: agent.id,
-            messages: [userMessageData, assistantMessage],
+            messages: [userMessageData, assistantMessage] as unknown as Prisma.InputJsonValue,
             messageCount: 2,
             lastMessageAt: new Date(),
             suggestedActions: topActions.length > 0 ? (topActions as any) : undefined,
