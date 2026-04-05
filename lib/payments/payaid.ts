@@ -4,6 +4,7 @@
  */
 
 import crypto from 'crypto'
+import { verifyResponseHash } from './payaid-hash'
 
 /**
  * NOTE:
@@ -171,6 +172,16 @@ export class PayAidPayments {
     this.ensureConfigured()
     // Placeholder until PayAid refund endpoint is finalized.
     return { refund_id: Math.floor(Math.random() * 1_000_000_000) }
+  }
+
+  /**
+   * Verify PayAid billing/webhook JSON body (SHA512 hash per integration guide).
+   * Delegates to {@link verifyResponseHash}; if `hash` is absent, verification is skipped (legacy payloads).
+   */
+  verifyWebhookSignature(payload: Record<string, unknown>): boolean {
+    const salt = this.config.salt
+    if (!salt) return false
+    return verifyResponseHash(payload as Record<string, any>, salt)
   }
 }
 
