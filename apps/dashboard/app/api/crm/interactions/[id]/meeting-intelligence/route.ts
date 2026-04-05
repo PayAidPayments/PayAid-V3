@@ -9,15 +9,16 @@ import { prisma } from '@/lib/db/prisma'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
     // Get interaction
     const interaction = await prisma.interaction.findFirst({
       where: { 
-        id: params.id,
+        id: id,
         contact: {
           tenantId,
         },
@@ -44,7 +45,7 @@ export async function POST(
 
     // Process meeting intelligence
     const result = await processMeetingIntelligence(
-      params.id,
+      id,
       fullTranscript,
       tenantId
     )
@@ -71,14 +72,15 @@ export async function POST(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const interaction = await prisma.interaction.findFirst({
       where: { 
-        id: params.id,
+        id: id,
         contact: {
           tenantId,
         },

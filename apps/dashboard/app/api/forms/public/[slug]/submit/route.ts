@@ -14,8 +14,9 @@ const submitFormSchema = z.object({
 // POST /api/forms/public/[slug]/submit - Submit form
 export async function POST(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
+  const { slug } = await params
   try {
     const body = await request.json()
     const validated = submitFormSchema.parse(body)
@@ -29,7 +30,7 @@ export async function POST(
     }
 
     const result = await FormSubmissionProcessor.processSubmission(
-      params.slug,
+      slug,
       validated.data,
       metadata
     )

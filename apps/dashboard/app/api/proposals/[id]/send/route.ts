@@ -8,12 +8,13 @@ import { prisma } from '@/lib/db/prisma'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const proposal = await prisma.proposal.findFirst({
-      where: { id: params.id, tenantId },
+      where: { id: id, tenantId },
       include: { contact: true, lineItems: true },
     })
 
@@ -22,7 +23,7 @@ export async function POST(
     }
 
     const updated = await prisma.proposal.update({
-      where: { id: params.id },
+      where: { id: id },
       data: { status: 'sent', sentAt: new Date() },
     })
 

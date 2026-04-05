@@ -14,14 +14,15 @@ const dashboardSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const dashboard = await prisma.customReport.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
         reportType: 'custom_dashboard',
       },
@@ -57,8 +58,9 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
@@ -67,7 +69,7 @@ export async function PUT(
 
     const dashboard = await prisma.customReport.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
         reportType: 'custom_dashboard',
       },
@@ -82,7 +84,7 @@ export async function PUT(
 
     const filters = dashboard.filters as any
     const updated = await prisma.customReport.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         name: validated.name,
         filters: validated.widgets
@@ -123,14 +125,15 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const dashboard = await prisma.customReport.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
         reportType: 'custom_dashboard',
       },
@@ -144,7 +147,7 @@ export async function DELETE(
     }
 
     await prisma.customReport.delete({
-      where: { id: params.id },
+      where: { id: id },
     })
 
     return NextResponse.json({

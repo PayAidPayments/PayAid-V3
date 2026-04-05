@@ -11,12 +11,13 @@ import { QuotaCalculatorService } from '@/lib/territories/quota-calculator'
 // GET /api/quotas/[id] - Get quota
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    const quota = await QuotaCalculatorService.getQuota(tenantId, params.id)
+    const quota = await QuotaCalculatorService.getQuota(tenantId, id)
 
     if (!quota) {
       return NextResponse.json(
@@ -45,12 +46,13 @@ export async function GET(
 // DELETE /api/quotas/[id] - Delete quota
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    await QuotaCalculatorService.deleteQuota(tenantId, params.id)
+    await QuotaCalculatorService.deleteQuota(tenantId, id)
 
     return NextResponse.json({
       success: true,

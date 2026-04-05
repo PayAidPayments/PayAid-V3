@@ -15,14 +15,15 @@ const acceptProposalSchema = z.object({
 // POST /api/proposals/[id]/accept - Accept proposal (public endpoint, no auth required)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const body = await request.json()
     const validated = acceptProposalSchema.parse(body)
 
     const proposal = await prisma.proposal.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         contact: true,
         lineItems: true,
@@ -52,7 +53,7 @@ export async function POST(
 
     // Update proposal status
     const updated = await prisma.proposal.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         status: 'accepted',
         acceptedAt: new Date(),
@@ -99,7 +100,7 @@ export async function POST(
 
         // Link proposal to invoice
         await prisma.proposal.update({
-          where: { id: params.id },
+          where: { id: id },
           data: {
             convertedInvoiceId: invoice.id,
             convertedAt: new Date(),

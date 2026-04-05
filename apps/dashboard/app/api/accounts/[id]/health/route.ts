@@ -11,12 +11,13 @@ import { AccountHealthService } from '@/lib/accounts/account-health'
 // GET /api/accounts/[id]/health - Get account health
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    const health = await AccountHealthService.calculateHealthScore(tenantId, params.id)
+    const health = await AccountHealthService.calculateHealthScore(tenantId, id)
 
     return NextResponse.json({
       success: true,
@@ -38,12 +39,13 @@ export async function GET(
 // POST /api/accounts/[id]/health - Calculate health score
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    const health = await AccountHealthService.calculateHealthScore(tenantId, params.id)
+    const health = await AccountHealthService.calculateHealthScore(tenantId, id)
 
     return NextResponse.json({
       success: true,

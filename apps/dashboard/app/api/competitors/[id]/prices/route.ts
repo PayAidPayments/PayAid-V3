@@ -5,14 +5,15 @@ import { prisma } from '@/lib/db/prisma'
 // GET /api/competitors/[id]/prices - Get competitor prices
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'analytics')
 
     const competitor = await prisma.competitor.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
     })
@@ -25,7 +26,7 @@ export async function GET(
     }
 
     const prices = await prisma.competitorPrice.findMany({
-      where: { competitorId: params.id },
+      where: { competitorId: id },
       orderBy: { lastCheckedAt: 'desc' },
     })
 
@@ -46,14 +47,15 @@ export async function GET(
 // POST /api/competitors/[id]/prices - Add/Update competitor price
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'analytics')
 
     const competitor = await prisma.competitor.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
     })
@@ -78,7 +80,7 @@ export async function POST(
     // Check if price exists for this product
     const existingPrice = await prisma.competitorPrice.findFirst({
       where: {
-        competitorId: params.id,
+        competitorId: id,
         productSku: productSku || null,
         productName,
       },
@@ -109,7 +111,7 @@ export async function POST(
 
         await prisma.competitorAlert.create({
           data: {
-            competitorId: params.id,
+            competitorId: id,
             type: priceChange > 0 ? 'PRICE_INCREASE' : 'PRICE_DROP',
             title: `Price ${priceChange > 0 ? 'Increased' : 'Dropped'} for ${productName}`,
             message: `Price changed from ₹${oldPrice.toFixed(2)} to ₹${newPrice.toFixed(2)} (${percentChange}%)`,
@@ -128,7 +130,7 @@ export async function POST(
       // Create new price record
       priceRecord = await prisma.competitorPrice.create({
         data: {
-          competitorId: params.id,
+          competitorId: id,
           productName,
           productSku,
           price: newPrice,

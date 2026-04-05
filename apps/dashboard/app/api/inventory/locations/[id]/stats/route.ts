@@ -5,14 +5,15 @@ import { prisma } from '@/lib/db/prisma'
 // GET /api/inventory/locations/[id]/stats - Get location statistics
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'inventory')
 
     const location = await prisma.location.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
     })
@@ -32,7 +33,7 @@ export async function GET(
     const employees = await prisma.employee.count({
       where: {
         tenantId,
-        locationId: params.id,
+        locationId: id,
         status: 'ACTIVE',
       },
     })
@@ -41,7 +42,7 @@ export async function GET(
     const products = await prisma.inventoryLocation.count({
       where: {
         tenantId,
-        locationId: params.id,
+        locationId: id,
         quantity: { gt: 0 },
       },
     })

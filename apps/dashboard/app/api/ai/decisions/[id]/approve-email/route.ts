@@ -9,8 +9,9 @@ import { executeDecision } from '@/lib/ai/decision-executor'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { searchParams } = new URL(request.url)
     const token = searchParams.get('token')
@@ -24,14 +25,14 @@ export async function GET(
     }
 
     // Validate token
-    const validation = await validateApprovalToken(token, params.id)
+    const validation = await validateApprovalToken(token, id)
     if (!validation.valid || !validation.userId) {
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
     }
 
     // Get decision
     const decision = await prisma.aIDecision.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: { approvalQueue: true },
     })
 
@@ -48,14 +49,14 @@ export async function GET(
 
     // Mark token as used
     await prisma.approvalToken.updateMany({
-      where: { token, decisionId: params.id },
+      where: { token, decisionId: id },
       data: { used: true, usedAt: new Date() },
     })
 
     if (action === 'approve') {
       // Update decision
       await prisma.aIDecision.update({
-        where: { id: params.id },
+        where: { id: id },
         data: {
           approvedBy: validation.userId,
           approvedAt: new Date(),
@@ -70,7 +71,7 @@ export async function GET(
         ].filter((id, index, arr) => arr.indexOf(id) === index)
 
         await prisma.approvalQueue.update({
-          where: { decisionId: params.id },
+          where: { decisionId: id },
           data: {
             approvedBy: updatedApprovers,
           },
@@ -78,7 +79,7 @@ export async function GET(
 
         // Check if all approvals received
         const updatedQueue = await prisma.approvalQueue.findUnique({
-          where: { decisionId: params.id },
+          where: { decisionId: id },
         })
 
         if (
@@ -97,7 +98,7 @@ export async function GET(
           })
 
           await prisma.aIDecision.update({
-            where: { id: params.id },
+            where: { id: id },
             data: {
               status: 'executed',
               executionResult: executionResult as any,
@@ -108,7 +109,7 @@ export async function GET(
       }
     } else if (action === 'reject') {
       await prisma.aIDecision.update({
-        where: { id: params.id },
+        where: { id: id },
         data: {
           status: 'rejected',
         },
@@ -116,7 +117,7 @@ export async function GET(
 
       if (decision.approvalQueue) {
         await prisma.approvalQueue.update({
-          where: { decisionId: params.id },
+          where: { decisionId: id },
           data: {
             rejectedBy: [...decision.approvalQueue.rejectedBy, validation.userId],
           },
@@ -140,7 +141,7 @@ export async function GET(
           <h1 class="${action === 'approve' ? 'success' : 'error'}">
             Decision ${action === 'approve' ? 'Approved' : 'Rejected'} Successfully
           </h1>
-          <p>Decision ID: ${params.id}</p>
+          <p>Decision ID: ${id}</p>
           <p>Type: ${decision.type.replace(/_/g, ' ')}</p>
           <p>You can close this window.</p>
         </body>

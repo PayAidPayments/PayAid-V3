@@ -8,14 +8,15 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/licens
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'hr')
 
     const contractor = await prisma.contractor.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
       include: {
@@ -39,8 +40,9 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'hr')
 
@@ -67,7 +69,7 @@ export async function PATCH(
 
     const contractor = await prisma.contractor.updateMany({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
       data: {
@@ -96,7 +98,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.contractor.findFirst({
-      where: { id: params.id, tenantId },
+      where: { id: id, tenantId },
       include: { department: true },
     })
 

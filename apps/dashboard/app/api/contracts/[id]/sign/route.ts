@@ -16,14 +16,15 @@ const signContractSchema = z.object({
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     if (!tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const contractId = typeof params?.id === 'string' ? params.id : undefined
+    const contractId = typeof params?.id === 'string' ? id : undefined
     if (!contractId) {
       return NextResponse.json({ error: 'Contract ID is required' }, { status: 400 })
     }

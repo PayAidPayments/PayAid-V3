@@ -25,12 +25,13 @@ const updateDecisionTreeSchema = z.object({
 // GET /api/accounts/[id]/decision-tree - Get decision tree
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    const tree = await DecisionTreeService.getDecisionTree(tenantId, params.id)
+    const tree = await DecisionTreeService.getDecisionTree(tenantId, id)
 
     return NextResponse.json({
       success: true,
@@ -52,9 +53,10 @@ export async function GET(
 // PUT /api/accounts/[id]/decision-tree - Update decision tree
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const body = await request.json()
@@ -62,7 +64,7 @@ export async function PUT(
 
     const account = await DecisionTreeService.updateDecisionTree(
       tenantId,
-      params.id,
+      id,
       validated.decisionMakers
     )
 

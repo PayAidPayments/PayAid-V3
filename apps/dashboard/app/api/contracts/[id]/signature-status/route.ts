@@ -8,11 +8,12 @@ import { InternalSignatureService } from '@/lib/signatures/internal-signature'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
-    const contractId = params.id
+    const contractId = id
 
     const status = await InternalSignatureService.getSignatureStatus(tenantId, contractId, 'CONTRACT')
 

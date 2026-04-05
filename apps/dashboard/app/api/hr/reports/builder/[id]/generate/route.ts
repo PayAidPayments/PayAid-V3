@@ -8,18 +8,19 @@ import { generateReportData } from '@/lib/hr/report-generator'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'hr')
 
-    const result = await generateReportData(params.id, tenantId)
+    const result = await generateReportData(id, tenantId)
     if (!result) {
       return NextResponse.json({ error: 'Report not found or unsupported data source' }, { status: 404 })
     }
 
     return NextResponse.json({
-      reportId: params.id,
+      reportId: id,
       reportName: result.reportName,
       data: result.data,
       summary: result.summary,

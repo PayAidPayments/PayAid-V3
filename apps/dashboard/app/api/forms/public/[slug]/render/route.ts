@@ -10,10 +10,11 @@ import { FormAnalyticsService } from '@/lib/forms/form-analytics'
 // GET /api/forms/public/[slug]/render - Render form
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
+  const { slug } = await params
   try {
-    const form = await FormRendererService.renderForm(params.slug)
+    const form = await FormRendererService.renderForm(slug)
 
     if (!form) {
       return NextResponse.json(

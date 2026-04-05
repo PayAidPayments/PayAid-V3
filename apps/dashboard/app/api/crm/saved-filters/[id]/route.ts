@@ -14,15 +14,16 @@ const updateFilterSchema = z.object({
 // GET /api/crm/saved-filters/[id] - Get a specific saved filter
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const user = await authenticateRequest(request)
 
     const savedFilter = await prisma.savedFilter.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
         OR: [
           { userId: user?.userId || null },
@@ -55,8 +56,9 @@ export async function GET(
 // PUT /api/crm/saved-filters/[id] - Update a saved filter
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const user = await authenticateRequest(request)
@@ -70,7 +72,7 @@ export async function PUT(
 
     const savedFilter = await prisma.savedFilter.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
         userId: user.userId, // Users can only update their own filters
       },
@@ -94,14 +96,14 @@ export async function PUT(
           userId: user.userId,
           entityType: savedFilter.entityType,
           isDefault: true,
-          id: { not: params.id },
+          id: { not: id },
         },
         data: { isDefault: false },
       })
     }
 
     const updated = await prisma.savedFilter.update({
-      where: { id: params.id },
+      where: { id: id },
       data: validated,
     })
 
@@ -129,8 +131,9 @@ export async function PUT(
 // DELETE /api/crm/saved-filters/[id] - Delete a saved filter
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const user = await authenticateRequest(request)
@@ -144,7 +147,7 @@ export async function DELETE(
 
     const savedFilter = await prisma.savedFilter.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
         userId: user.userId, // Users can only delete their own filters
       },
@@ -158,7 +161,7 @@ export async function DELETE(
     }
 
     await prisma.savedFilter.delete({
-      where: { id: params.id },
+      where: { id: id },
     })
 
     return NextResponse.json({ success: true })

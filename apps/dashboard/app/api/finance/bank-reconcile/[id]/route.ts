@@ -8,15 +8,16 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/licens
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'finance')
     const body = await request.json().catch(() => ({}))
     const bankStatementDate = body.bankStatementDate ? new Date(body.bankStatementDate) : new Date()
 
     const updated = await prisma.financialTransaction.updateMany({
-      where: { id: params.id, tenantId },
+      where: { id: id, tenantId },
       data: {
         isReconciled: true,
         reconciledDate: new Date(),
@@ -29,7 +30,7 @@ export async function PATCH(
     }
 
     const t = await prisma.financialTransaction.findFirst({
-      where: { id: params.id, tenantId },
+      where: { id: id, tenantId },
       include: {
         debitAccount: { select: { accountCode: true, accountName: true } },
         creditAccount: { select: { accountCode: true, accountName: true } },

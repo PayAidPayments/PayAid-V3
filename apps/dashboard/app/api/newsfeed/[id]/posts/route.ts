@@ -14,8 +14,9 @@ const createPostSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
     const body = await request.json()
@@ -28,7 +29,7 @@ export async function POST(
 
     const post = await prisma.newsfeedPost.create({
       data: {
-        newsfeedId: params.id,
+        newsfeedId: id,
         tenantId,
         authorId: userId,
         authorName: user?.name || 'Unknown',

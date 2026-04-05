@@ -16,8 +16,9 @@ const approveSchema = z.object({
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
@@ -26,7 +27,7 @@ export async function PATCH(
 
     // Get decision
     const decision = await prisma.aIDecision.findUnique({
-      where: { id: params.id, tenantId },
+      where: { id: id, tenantId },
       include: { approvalQueue: true },
     })
 
@@ -44,7 +45,7 @@ export async function PATCH(
     if (validated.action === 'approve') {
       // Update decision
       await prisma.aIDecision.update({
-        where: { id: params.id },
+        where: { id: id },
         data: {
           approvedBy: userId,
           approvedAt: new Date(),
@@ -59,7 +60,7 @@ export async function PATCH(
         ].filter((id, index, arr) => arr.indexOf(id) === index) // Remove duplicates
 
         await prisma.approvalQueue.update({
-          where: { decisionId: params.id },
+          where: { decisionId: id },
           data: {
             approvedBy: updatedApprovers,
           },
@@ -67,7 +68,7 @@ export async function PATCH(
 
         // Check if all approvals received
         const updatedQueue = await prisma.approvalQueue.findUnique({
-          where: { decisionId: params.id },
+          where: { decisionId: id },
         })
 
         if (
@@ -86,7 +87,7 @@ export async function PATCH(
           })
 
           await prisma.aIDecision.update({
-            where: { id: params.id },
+            where: { id: id },
             data: {
               status: 'executed',
               executionResult: executionResult as any,
@@ -112,7 +113,7 @@ export async function PATCH(
         } else {
           // Partial approval, update status
           await prisma.aIDecision.update({
-            where: { id: params.id },
+            where: { id: id },
             data: {
               status: 'approved', // Partial approval
             },
@@ -132,7 +133,7 @@ export async function PATCH(
         })
 
         await prisma.aIDecision.update({
-          where: { id: params.id },
+          where: { id: id },
           data: {
             status: 'executed',
             executionResult: executionResult as any,
@@ -159,7 +160,7 @@ export async function PATCH(
     } else if (validated.action === 'reject') {
       // Reject decision
       await prisma.aIDecision.update({
-        where: { id: params.id },
+        where: { id: id },
         data: {
           status: 'rejected',
         },
@@ -167,7 +168,7 @@ export async function PATCH(
 
       if (decision.approvalQueue) {
         await prisma.approvalQueue.update({
-          where: { decisionId: params.id },
+          where: { decisionId: id },
           data: {
             rejectedBy: [...decision.approvalQueue.rejectedBy, userId],
           },
@@ -196,7 +197,7 @@ export async function PATCH(
     }
 
     const updatedDecision = await prisma.aIDecision.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: { approvalQueue: true },
     })
 

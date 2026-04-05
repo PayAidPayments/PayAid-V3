@@ -18,12 +18,13 @@ const trainRequestSchema = z.object({
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { companyId: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
+  const { companyId } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'ai-studio')
 
-    if (params.companyId !== tenantId) {
+    if (companyId !== tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 

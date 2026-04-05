@@ -10,8 +10,9 @@ import { AccountEngagementService } from '@/lib/accounts/account-engagement'
 // GET /api/accounts/[id]/engagement - Get engagement timeline
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const { searchParams } = new URL(request.url)
@@ -25,7 +26,7 @@ export async function GET(
 
     const timeline = await AccountEngagementService.getEngagementTimeline(
       tenantId,
-      params.id,
+      id,
       dateRange
     )
 

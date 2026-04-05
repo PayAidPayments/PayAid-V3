@@ -12,11 +12,12 @@ const createReviewSchema = z.object({
 /** GET /api/marketplace/apps/[id]/reviews - Get reviews for an app */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     await requireModuleAccess(request, 'crm')
-    const appId = params.id
+    const appId = id
 
     const reviews = await prisma.marketplaceAppReview.findMany({
       where: { appId },
@@ -62,11 +63,12 @@ export async function GET(
 /** POST /api/marketplace/apps/[id]/reviews - Create a review */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
-    const appId = params.id
+    const appId = id
     const body = await request.json()
     const validated = createReviewSchema.parse(body)
 

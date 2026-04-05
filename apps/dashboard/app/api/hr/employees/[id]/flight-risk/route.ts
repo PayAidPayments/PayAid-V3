@@ -8,12 +8,13 @@ import { getFlightRiskForEmployee } from '@/lib/hr/flight-risk-service'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'hr')
 
-    const result = await getFlightRiskForEmployee(params.id, tenantId)
+    const result = await getFlightRiskForEmployee(id, tenantId)
     if (!result) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 })
     }

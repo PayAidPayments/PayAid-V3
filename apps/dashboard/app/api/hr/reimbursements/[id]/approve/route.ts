@@ -8,8 +8,9 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/licens
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'hr')
 
@@ -18,7 +19,7 @@ export async function PUT(
 
     const reimbursement = await prisma.reimbursement.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
     })
@@ -36,7 +37,7 @@ export async function PUT(
 
     const updated = await prisma.reimbursement.update({
       where: {
-        id: params.id,
+        id: id,
       },
       data: {
         status: 'APPROVED',

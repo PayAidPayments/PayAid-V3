@@ -14,15 +14,16 @@ const sendReminderSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'finance')
 
     const body = await request.json()
     const validated = sendReminderSchema.parse(body)
 
-    const result = await sendOverdueReminder(params.id, validated.channel, tenantId)
+    const result = await sendOverdueReminder(id, validated.channel, tenantId)
 
     if (!result.success) {
       return NextResponse.json(

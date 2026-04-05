@@ -9,13 +9,14 @@ import { getTrainingDataset, exportTrainingDataForFineTuning } from '@/lib/ai/co
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { companyId: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
+  const { companyId } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'ai-studio')
 
     // Verify companyId matches tenantId (security check)
-    if (params.companyId !== tenantId) {
+    if (companyId !== tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -46,12 +47,12 @@ export async function GET(
  */
 export async function GET_TRAINING_DATA(
   request: NextRequest,
-  { params }: { params: { companyId: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'ai-studio')
 
-    if (params.companyId !== tenantId) {
+    if (companyId !== tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 

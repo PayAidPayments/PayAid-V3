@@ -16,15 +16,16 @@ const updateProgressSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const body = await request.json()
     const validated = updateProgressSchema.parse(body)
 
     const goal = await prisma.goal.findFirst({
-      where: { id: params.id, tenantId },
+      where: { id: id, tenantId },
     })
 
     if (!goal) {
@@ -38,7 +39,7 @@ export async function POST(
 
     // Update goal
     const updated = await prisma.goal.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         currentValue: newValue,
         progress,
@@ -50,7 +51,7 @@ export async function POST(
     // Record progress history
     await prisma.goalProgress.create({
       data: {
-        goalId: params.id,
+        goalId: id,
         tenantId,
         value: newValue,
         previousValue,

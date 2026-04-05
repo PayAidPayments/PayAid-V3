@@ -25,14 +25,15 @@ const updateContractSchema = z.object({
 // GET /api/contracts/[id] - Get contract
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const contract = await prisma.contract.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
       include: {
@@ -77,8 +78,9 @@ export async function GET(
 // PATCH /api/contracts/[id] - Update contract
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
@@ -87,7 +89,7 @@ export async function PATCH(
 
     const contract = await prisma.contract.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
     })
@@ -116,7 +118,7 @@ export async function PATCH(
     if (validated.status !== undefined) updateData.status = validated.status
 
     const updated = await prisma.contract.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData,
       include: {
         createdBy: {
@@ -136,7 +138,7 @@ export async function PATCH(
       tenantId,
       userId,
       entityType: 'Contract',
-      entityId: params.id,
+      entityId: id,
       changeSummary: `Contract updated: ${contract.contractNumber} (${Object.keys(updateData).join(', ')})`,
       beforeSnapshot: {
         contractNumber: contract.contractNumber,

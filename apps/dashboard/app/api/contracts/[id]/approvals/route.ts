@@ -20,14 +20,15 @@ const createApprovalWorkflowSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'contract-management')
 
     const contract = await prisma.contract.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
       include: {
@@ -72,8 +73,9 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'contract-management')
 
@@ -82,7 +84,7 @@ export async function POST(
 
     const contract = await prisma.contract.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
     })

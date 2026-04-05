@@ -10,8 +10,9 @@ import { FormSubmissionProcessor } from '@/lib/forms/form-submission-processor'
 // GET /api/forms/[id]/submissions - Get form submissions
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const { searchParams } = new URL(request.url)
@@ -22,7 +23,7 @@ export async function GET(
 
     const submissions = await FormSubmissionProcessor.getSubmissions(
       tenantId,
-      params.id,
+      id,
       {
         status,
         limit,

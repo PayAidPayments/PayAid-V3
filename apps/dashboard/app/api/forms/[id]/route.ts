@@ -27,12 +27,13 @@ const updateFormSchema = z.object({
 // GET /api/forms/[id] - Get form
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    const form = await FormBuilderService.getFormById(tenantId, params.id)
+    const form = await FormBuilderService.getFormById(tenantId, id)
 
     if (!form) {
       return NextResponse.json(
@@ -61,15 +62,16 @@ export async function GET(
 // PUT /api/forms/[id] - Update form
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const body = await request.json()
     const validated = updateFormSchema.parse(body)
 
-    const form = await FormBuilderService.updateForm(tenantId, params.id, validated)
+    const form = await FormBuilderService.updateForm(tenantId, id, validated)
 
     return NextResponse.json({
       success: true,
@@ -98,12 +100,13 @@ export async function PUT(
 // DELETE /api/forms/[id] - Delete form
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    await FormBuilderService.deleteForm(tenantId, params.id)
+    await FormBuilderService.deleteForm(tenantId, id)
 
     return NextResponse.json({
       success: true,

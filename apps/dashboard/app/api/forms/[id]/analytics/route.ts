@@ -10,8 +10,9 @@ import { FormAnalyticsService } from '@/lib/forms/form-analytics'
 // GET /api/forms/[id]/analytics - Get form analytics
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const { searchParams } = new URL(request.url)
@@ -25,7 +26,7 @@ export async function GET(
 
     const analytics = await FormAnalyticsService.getFormAnalytics(
       tenantId,
-      params.id,
+      id,
       dateRange
     )
 

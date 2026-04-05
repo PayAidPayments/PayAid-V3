@@ -5,14 +5,15 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/licens
 // GET /api/locations/[id] - Get a specific location
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'inventory')
 
     const location = await prisma.location.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
     })
@@ -41,8 +42,9 @@ export async function GET(
 // PATCH /api/locations/[id] - Update a location
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'inventory')
 
@@ -51,7 +53,7 @@ export async function PATCH(
 
     const location = await prisma.location.updateMany({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
       data: {
@@ -73,7 +75,7 @@ export async function PATCH(
 
     const updatedLocation = await prisma.location.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
     })
@@ -95,14 +97,15 @@ export async function PATCH(
 // DELETE /api/locations/[id] - Delete a location
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'inventory')
 
     const location = await prisma.location.deleteMany({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
     })

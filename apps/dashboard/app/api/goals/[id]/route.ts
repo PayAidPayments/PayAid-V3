@@ -8,12 +8,13 @@ import { prisma } from '@/lib/db/prisma'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const goal = await prisma.goal.findFirst({
-      where: { id: params.id, tenantId },
+      where: { id: id, tenantId },
       include: {
         progressHistory: {
           orderBy: { recordedAt: 'desc' },
@@ -34,8 +35,9 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const body = await request.json()
@@ -48,7 +50,7 @@ export async function PATCH(
     if (body.currentValue !== undefined) {
       updateData.currentValue = body.currentValue
       // Recalculate progress
-      const goal = await prisma.goal.findFirst({ where: { id: params.id, tenantId } })
+      const goal = await prisma.goal.findFirst({ where: { id: id, tenantId } })
       if (goal) {
         updateData.progress = Math.min(100, (body.currentValue / goal.targetValue) * 100)
         if (updateData.progress >= 100 && body.status !== 'completed') {
@@ -59,7 +61,7 @@ export async function PATCH(
     }
 
     const goal = await prisma.goal.update({
-      where: { id: params.id, tenantId },
+      where: { id: id, tenantId },
       data: updateData,
     })
 
@@ -71,11 +73,12 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
-    await prisma.goal.delete({ where: { id: params.id, tenantId } })
+    await prisma.goal.delete({ where: { id: id, tenantId } })
     return NextResponse.json({ success: true, message: 'Goal deleted' })
   } catch (error: any) {
     return NextResponse.json({ error: 'Failed to delete goal', message: error.message }, { status: 500 })

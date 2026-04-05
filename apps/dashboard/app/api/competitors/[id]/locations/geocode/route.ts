@@ -8,14 +8,15 @@ import { prisma } from '@/lib/db/prisma'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'analytics')
 
     const competitor = await prisma.competitor.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
     })
@@ -85,7 +86,7 @@ export async function POST(
     // Check if location already exists
     const existingLocation = await prisma.competitorLocation.findFirst({
       where: {
-        competitorId: params.id,
+        competitorId: id,
         address,
       },
     })
@@ -108,7 +109,7 @@ export async function POST(
     } else {
       locationRecord = await prisma.competitorLocation.create({
         data: {
-          competitorId: params.id,
+          competitorId: id,
           name: name || address,
           address,
           city,
@@ -125,7 +126,7 @@ export async function POST(
       // Create alert for new location
       await prisma.competitorAlert.create({
         data: {
-          competitorId: params.id,
+          competitorId: id,
           type: 'NEW_LOCATION',
           title: `New Location Discovered: ${locationRecord.name}`,
           message: `${competitor.name} has a location at ${address}`,

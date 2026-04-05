@@ -9,8 +9,9 @@ import { getModule, getAllModules } from '@/lib/modules/moduleRegistry'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { tenantId: string } }
+  { params }: { params: Promise<{ tenantId: string }> }
 ) {
+  const { tenantId } = await params
   try {
     // Check authentication
     const authHeader = request.headers.get('authorization')
@@ -37,7 +38,7 @@ export async function GET(
 
     // Get tenant
     const tenant = await prisma.tenant.findUnique({
-      where: { id: params.tenantId },
+      where: { id: tenantId },
       select: {
         id: true,
         name: true,
@@ -88,8 +89,9 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { tenantId: string } }
+  { params }: { params: Promise<{ tenantId: string }> }
 ) {
+  const { tenantId } = await params
   try {
     // Check authentication
     const authHeader = request.headers.get('authorization')
@@ -136,7 +138,7 @@ export async function PUT(
 
     // Get tenant
     const tenant = await prisma.tenant.findUnique({
-      where: { id: params.tenantId },
+      where: { id: tenantId },
       select: {
         id: true,
         licensedModules: true,
@@ -157,7 +159,7 @@ export async function PUT(
       : currentModules.filter(m => m !== moduleId)
 
     const updated = await prisma.tenant.update({
-      where: { id: params.tenantId },
+      where: { id: tenantId },
       data: {
         licensedModules: updatedModules,
       },

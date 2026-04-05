@@ -5,14 +5,15 @@ import { prisma } from '@/lib/db/prisma'
 // GET /api/competitors/[id] - Get competitor details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'analytics')
 
     const competitor = await prisma.competitor.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
       include: {
@@ -53,8 +54,9 @@ export async function GET(
 // PATCH /api/competitors/[id] - Update competitor
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'analytics')
 
@@ -63,7 +65,7 @@ export async function PATCH(
 
     const competitor = await prisma.competitor.updateMany({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
       data: {
@@ -86,7 +88,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.competitor.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     })
 
     return NextResponse.json({ competitor: updated })
@@ -106,14 +108,15 @@ export async function PATCH(
 // DELETE /api/competitors/[id] - Delete competitor
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'analytics')
 
     await prisma.competitor.deleteMany({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
     })

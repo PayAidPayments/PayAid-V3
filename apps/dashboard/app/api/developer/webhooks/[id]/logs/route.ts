@@ -5,11 +5,12 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 /** GET /api/developer/webhooks/[id]/logs - Get webhook delivery logs */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
-    const webhookId = params.id
+    const webhookId = id
 
     // Verify webhook belongs to tenant
     const webhook = await prisma.webhook.findFirst({

@@ -10,12 +10,13 @@ import { QuotaCalculatorService } from '@/lib/territories/quota-calculator'
 // POST /api/quotas/[id]/update-actuals - Update quota actuals
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    const quota = await QuotaCalculatorService.updateQuotaActuals(tenantId, params.id)
+    const quota = await QuotaCalculatorService.updateQuotaActuals(tenantId, id)
 
     return NextResponse.json({
       success: true,

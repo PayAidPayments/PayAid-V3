@@ -5,14 +5,15 @@ import { prisma } from '@/lib/db/prisma'
 // GET /api/competitors/[id]/alerts - Get competitor alerts
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'analytics')
 
     const competitor = await prisma.competitor.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId,
       },
     })
@@ -28,7 +29,7 @@ export async function GET(
     const isRead = searchParams.get('isRead')
     const type = searchParams.get('type')
 
-    const where: any = { competitorId: params.id }
+    const where: any = { competitorId: id }
     if (isRead !== null) {
       where.isRead = isRead === 'true'
     }
@@ -59,8 +60,9 @@ export async function GET(
 // PATCH /api/competitors/[id]/alerts/[alertId] - Mark alert as read
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'analytics')
 
@@ -77,7 +79,7 @@ export async function PATCH(
     const alert = await prisma.competitorAlert.findFirst({
       where: {
         id: alertId,
-        competitorId: params.id,
+        competitorId: id,
         competitor: {
           tenantId,
         },

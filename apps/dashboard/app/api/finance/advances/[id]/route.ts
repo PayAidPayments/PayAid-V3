@@ -14,15 +14,16 @@ const adjustSchema = z.object({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'finance')
     const body = await request.json().catch(() => ({}))
     const v = adjustSchema.parse(body)
 
     const existing = await prisma.advancePayment.findFirst({
-      where: { id: params.id, tenantId },
+      where: { id: id, tenantId },
     })
     if (!existing) {
       return NextResponse.json({ error: 'Advance not found' }, { status: 404 })
@@ -37,7 +38,7 @@ export async function PATCH(
     if (v.status != null) status = v.status
 
     const updated = await prisma.advancePayment.update({
-      where: { id: params.id, tenantId },
+      where: { id: id, tenantId },
       data: { adjustedAmount, status },
     })
 

@@ -3,11 +3,12 @@ import { requireModuleAccess } from '@/lib/middleware/auth'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
-    const integrationId = params.id
+    const integrationId = id
 
     // Integration connection logic
     // This would typically:

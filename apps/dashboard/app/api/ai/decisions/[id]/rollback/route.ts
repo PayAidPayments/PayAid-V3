@@ -10,13 +10,14 @@ import { trackDecisionOutcome } from '@/lib/ai/risk-policy-manager'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     const decision = await prisma.aIDecision.findUnique({
-      where: { id: params.id, tenantId },
+      where: { id: id, tenantId },
     })
 
     if (!decision) {
@@ -60,7 +61,7 @@ export async function POST(
 
     // Update decision status
     await prisma.aIDecision.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         status: 'rolled_back',
         rolledBackAt: new Date(),
@@ -84,7 +85,7 @@ export async function POST(
     })
 
     const updatedDecision = await prisma.aIDecision.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     })
 
     return NextResponse.json({

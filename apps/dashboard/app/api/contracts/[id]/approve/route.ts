@@ -14,11 +14,12 @@ const approveContractSchema = z.object({
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'contract-management')
-    const contractId = params.id
+    const contractId = id
 
     const body = await request.json()
     const validated = approveContractSchema.parse(body)

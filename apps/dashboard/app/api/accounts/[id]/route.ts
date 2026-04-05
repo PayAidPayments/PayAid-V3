@@ -13,12 +13,13 @@ import { prisma } from '@/lib/db/prisma'
 // GET /api/accounts/[id] - Get account
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    const account = await AccountHierarchyService.getAccountWithHierarchy(tenantId, params.id)
+    const account = await AccountHierarchyService.getAccountWithHierarchy(tenantId, id)
 
     if (!account) {
       return NextResponse.json(
@@ -47,15 +48,16 @@ export async function GET(
 // PUT /api/accounts/[id] - Update account
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const body = await request.json()
 
     const account = await prisma.account.findFirst({
-      where: { id: params.id, tenantId },
+      where: { id: id, tenantId },
     })
 
     if (!account) {
@@ -66,7 +68,7 @@ export async function PUT(
     }
 
     const updated = await prisma.account.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         ...(body.name && { name: body.name }),
         ...(body.type !== undefined && { type: body.type }),
@@ -109,13 +111,14 @@ export async function PUT(
 // DELETE /api/accounts/[id] - Delete account
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const account = await prisma.account.findFirst({
-      where: { id: params.id, tenantId },
+      where: { id: id, tenantId },
     })
 
     if (!account) {
@@ -126,7 +129,7 @@ export async function DELETE(
     }
 
     await prisma.account.delete({
-      where: { id: params.id },
+      where: { id: id },
     })
 
     return NextResponse.json({

@@ -15,8 +15,9 @@ const renewContractSchema = z.object({
 // POST /api/contracts/[id]/renew - Renew contract
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
@@ -25,7 +26,7 @@ export async function POST(
 
     const contract = await ContractManagerService.renewContract(
       tenantId,
-      params.id,
+      id,
       new Date(validated.newEndDate)
     )
 

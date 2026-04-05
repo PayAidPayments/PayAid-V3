@@ -8,8 +8,9 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/licens
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'hr')
 
@@ -25,7 +26,7 @@ export async function GET(
 
     // Get candidate (current schema: fullName, skills[], location, etc.)
     const candidate = await prisma.candidate.findFirst({
-      where: { id: params.id, tenantId },
+      where: { id: id, tenantId },
     })
 
     if (!candidate) {
@@ -94,7 +95,7 @@ export async function GET(
     ).slice(0, 5)
 
     return NextResponse.json({
-      candidateId: params.id,
+      candidateId: id,
       jobRequisitionId,
       matchScore,
       matchLevel,
