@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 
@@ -52,14 +53,14 @@ export async function GET(
     }
 
     return NextResponse.json(toAssetResponse(asset))
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleLicenseError(error)
   }
 }
 
 /**
  * PATCH /api/hr/assets/[id]
- * Update asset
+ * Update asset (body fields aligned with Prisma Asset + optional assignment).
  */
 export async function PATCH(
   request: NextRequest,
@@ -74,52 +75,95 @@ export async function PATCH(
       name,
       category,
       serialNumber,
+      brand,
+      model,
       purchaseDate,
       purchaseValue,
+      purchaseCostInr: purchaseCostInrBody,
       depreciationRate,
       assignedToId,
-      location,
+      locationId,
       notes,
-    } = body
+    } = body as Record<string, unknown>
 
-    // Calculate current value if purchase value or depreciation rate changed
-    let currentValue
-    if (purchaseValue !== undefined || depreciationRate !== undefined) {
-      const asset = await prisma.asset.findFirst({
+    const costIn = purchaseCostInrBody ?? purchaseValue
+
+    let currentValue: number | undefined
+    if (costIn !== undefined || depreciationRate !== undefined) {
+      const existing = await prisma.asset.findFirst({
         where: { id: id, tenantId },
       })
-      const pValue = purchaseValue !== undefined ? purchaseValue : asset?.purchaseValue || 0
-      const depRate = depreciationRate !== undefined ? depreciationRate : asset?.depreciationRate || 20
-      const purchaseDateObj = purchaseDate ? new Date(purchaseDate) : (asset?.purchaseDate ? new Date(asset.purchaseDate) : new Date())
-      const yearsSincePurchase = (new Date().getTime() - purchaseDateObj.getTime()) / (1000 * 60 * 60 * 24 * 365)
+      if (!existing) {
+        return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
+      }
+      const pValue =
+        costIn !== undefined
+          ? Number(costIn)
+          : existing.purchaseCostInr != null
+            ? Number(existing.purchaseCostInr)
+            : 0
+      const depRate =
+        depreciationRate !== undefined
+          ? Number(depreciationRate)
+          : existing.depreciationRate != null
+            ? Number(existing.depreciationRate)
+            : 20
+      const purchaseDateObj = purchaseDate
+        ? new Date(String(purchaseDate))
+        : existing.purchaseDate
+          ? new Date(existing.purchaseDate)
+          : new Date()
+      const yearsSincePurchase =
+        (new Date().getTime() - purchaseDateObj.getTime()) / (1000 * 60 * 60 * 24 * 365)
       currentValue = Math.max(0, pValue * (1 - (depRate / 100) * yearsSincePurchase))
     }
 
-    const updateData: any = {}
-    if (name !== undefined) updateData.name = name
-    if (category !== undefined) updateData.category = category
-    if (serialNumber !== undefined) updateData.serialNumber = serialNumber
-    if (purchaseDate !== undefined) updateData.purchaseDate = new Date(purchaseDate)
-    if (purchaseValue !== undefined) updateData.purchaseValue = purchaseValue
-    if (depreciationRate !== undefined) updateData.depreciationRate = depreciationRate
+    const updateData: Prisma.AssetUpdateManyMutationInput = {}
+    if (name !== undefined) updateData.assetTag = String(name)
+    if (category !== undefined) updateData.assetType = String(category)
+    if (serialNumber !== undefined) updateData.serialNumber = serialNumber as string | null
+    if (brand !== undefined) updateData.brand = brand as string | null
+    if (model !== undefined) updateData.model = model as string | null
+    if (purchaseDate !== undefined) updateData.purchaseDate = new Date(String(purchaseDate))
+    if (costIn !== undefined) updateData.purchaseCostInr = Number(costIn)
+    if (depreciationRate !== undefined) updateData.depreciationRate = Number(depreciationRate)
     if (currentValue !== undefined) updateData.currentValue = currentValue
-    if (assignedToId !== undefined) {
-      updateData.assignedToId = assignedToId || null
-      updateData.status = assignedToId ? 'ASSIGNED' : 'AVAILABLE'
+    if (locationId !== undefined) updateData.locationId = (locationId as string | null) || null
+    if (notes !== undefined) updateData.notes = notes as string | null
+
+    if (Object.keys(updateData).length > 0) {
+      const updated = await prisma.asset.updateMany({
+        where: { id: id, tenantId },
+        data: updateData,
+      })
+      if (updated.count === 0) {
+        return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
+      }
     }
-    if (location !== undefined) updateData.location = location
-    if (notes !== undefined) updateData.notes = notes
 
-    const asset = await prisma.asset.updateMany({
-      where: {
-        id: id,
-        tenantId,
-      },
-      data: updateData,
-    })
-
-    if (asset.count === 0) {
-      return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
+    if (assignedToId !== undefined) {
+      const assignCount = await prisma.asset.count({ where: { id: id, tenantId } })
+      if (assignCount === 0) {
+        return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
+      }
+      const assignee = (assignedToId as string | null) || null
+      await prisma.assetAssignment.updateMany({
+        where: { assetId: id, tenantId, returnedDate: null },
+        data: { returnedDate: new Date() },
+      })
+      if (assignee) {
+        await prisma.assetAssignment.create({
+          data: {
+            assetId: id,
+            employeeId: assignee,
+            tenantId,
+          },
+        })
+      }
+      await prisma.asset.updateMany({
+        where: { id: id, tenantId },
+        data: { status: assignee ? 'ASSIGNED' : 'AVAILABLE' },
+      })
     }
 
     const updated = await prisma.asset.findFirst({
@@ -128,7 +172,7 @@ export async function PATCH(
     })
 
     return NextResponse.json(updated ? toAssetResponse(updated) : null)
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleLicenseError(error)
   }
 }
