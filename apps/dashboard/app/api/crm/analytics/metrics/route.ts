@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    const [contacts, deals, whatsappStats] = await Promise.all([
+    const [contacts, deals] = await Promise.all([
       prisma.contact.findMany({
         where: { tenantId },
         select: {
@@ -28,14 +28,9 @@ export async function GET(request: NextRequest) {
         where: { tenantId, stage: 'won' },
         select: { contactId: true, value: true },
       }),
-      prisma.contact.findMany({
-        where: {
-          tenantId,
-          whatsappStatus: { not: null },
-        },
-        select: { whatsappStatus: true },
-      }),
     ])
+
+    const whatsappStats = contacts.filter((c) => c.whatsappStatus != null)
 
     const totalContacts = contacts.length
     const prospects = contacts.filter((c) => c.stage === 'prospect').length
