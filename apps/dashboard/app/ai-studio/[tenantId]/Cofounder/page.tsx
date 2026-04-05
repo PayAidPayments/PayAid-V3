@@ -36,7 +36,7 @@ import {
 } from '@/lib/ai/co-founder-specialists'
 import { getTemplatesForAgent } from '@/lib/ai/co-founder-templates'
 import type { AgentId } from '@/lib/ai/agents'
-import type { ArtifactPayload, StructuredAction } from '@/lib/ai/cofounder-structured'
+import type { ArtifactPayload, StructuredAction, TableArtifactData } from '@/lib/ai/cofounder-structured'
 
 const PAYAID_PURPLE = '#53328A'
 
@@ -1002,12 +1002,14 @@ export default function CoFounderPage() {
                 )}
               </CardHeader>
               <CardContent className="p-0">
-                {latestArtifact.type === 'table' && 'columns' in latestArtifact.data && (
+                {latestArtifact.type === 'table' && 'columns' in latestArtifact.data && (() => {
+                  const tableData: TableArtifactData = latestArtifact.data
+                  return (
                   <div className="overflow-x-auto max-h-64 overflow-y-auto">
                     <table className="w-full text-xs border-collapse">
                       <thead>
                         <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                          {latestArtifact.data.columns.map((col) => (
+                          {tableData.columns.map((col) => (
                             <th key={col} className="text-left px-3 py-2 font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                               {col}
                             </th>
@@ -1015,9 +1017,9 @@ export default function CoFounderPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {latestArtifact.data.rows.slice(0, 20).map((row, ri) => (
+                        {tableData.rows.slice(0, 20).map((row, ri) => (
                           <tr key={ri} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30">
-                            {latestArtifact!.data.columns.map((col) => (
+                            {tableData.columns.map((col) => (
                               <td key={col} className="px-3 py-1.5 text-slate-600 dark:text-slate-400">
                                 {String(row[col] ?? '')}
                               </td>
@@ -1026,11 +1028,12 @@ export default function CoFounderPage() {
                         ))}
                       </tbody>
                     </table>
-                    {latestArtifact.data.rows.length > 20 && (
-                      <p className="text-[10px] text-slate-500 px-3 py-1">Showing first 20 of {latestArtifact.data.rows.length} rows</p>
+                    {tableData.rows.length > 20 && (
+                      <p className="text-[10px] text-slate-500 px-3 py-1">Showing first 20 of {tableData.rows.length} rows</p>
                     )}
                   </div>
-                )}
+                  )
+                })()}
                 {latestArtifact.type === 'checklist' && 'items' in latestArtifact.data && (
                   <ul className="px-4 pb-4 space-y-2 max-h-64 overflow-y-auto">
                     {latestArtifact.data.items.map((item, i) => (
