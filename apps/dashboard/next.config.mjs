@@ -30,9 +30,15 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['@radix-ui/*', 'lucide-react', 'framer-motion', 'recharts', 'handsontable', '@tiptap/react'],
   },
-  webpack: (config) => {
+  webpack: (config, { webpack }) => {
     config.resolve.alias = config.resolve.alias || {}
     config.resolve.alias['@'] = path.resolve(__dirname, '../..')
+    // Optional dependency: lib/monitoring/statsd uses require() inside try/catch; do not fail the bundle when absent.
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        resourceRegExp: /^node-statsd$/,
+      })
+    )
     return config
   },
 }

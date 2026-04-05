@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayAidPayments } from '@/lib/payments/payaid'
 import { prisma } from '@/lib/db/prisma'

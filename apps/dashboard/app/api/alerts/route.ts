@@ -54,9 +54,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Execute queries sequentially to prevent pool exhaustion
-    let alerts = []
     let unreadCount = 0
-    
+
+    let alerts: Awaited<ReturnType<typeof prisma.alert.findMany>>
     try {
       alerts = await prismaWithRetry(() =>
         prisma.alert.findMany({

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest, JWTPayload } from './auth'
+import type { JWTPayload } from '@/lib/auth/jwt'
+import { authenticateRequest } from './auth'
 import { validateAPIKey } from '@/lib/security/api-keys'
 
 export interface AuthResult {

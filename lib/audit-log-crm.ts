@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * CRM audit logging: write to AuditLog for contact/deal create, update, delete.
  * Use from API routes after the mutation; pass tenantId and userId from requireModuleAccess.

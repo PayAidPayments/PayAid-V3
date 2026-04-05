@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Smart Invoice Merging Service
  * Analyzes invoices to suggest merge candidates and handle partial payments

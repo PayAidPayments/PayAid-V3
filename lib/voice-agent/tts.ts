@@ -111,7 +111,7 @@ export async function synthesizeSpeech(
 
   // Regional languages: Bhashini or IndicParler
   if (REGIONAL_LANGUAGES.includes(language)) {
-    return await synthesizeRegionalLanguage(text, language, voiceId, speed)
+    return await synthesizeRegionalLanguage(text, language, voiceId, speed, options?.gatewayToken)
   }
 
   // Fallback: Coqui (gateway)
@@ -126,7 +126,8 @@ async function synthesizeRegionalLanguage(
   text: string,
   language: string,
   voiceId?: string,
-  speed: number = 1.0
+  speed: number = 1.0,
+  gatewayToken?: string
 ): Promise<Buffer> {
   // Try Bhashini first (if configured)
   if (isBhashiniConfigured() && isBhashiniLanguageSupported(language)) {
@@ -185,7 +186,7 @@ async function synthesizeRegionalLanguage(
 
   // Fallback to Coqui TTS
   console.log(`[TTS] Using Coqui (fallback) for ${language}`)
-  return await synthesizeWithCoqui(text, language, voiceId, speed, options?.gatewayToken)
+  return await synthesizeWithCoqui(text, language, voiceId, speed, gatewayToken)
 }
 
 /**

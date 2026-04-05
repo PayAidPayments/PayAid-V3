@@ -1,6 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
+import { Truck } from 'lucide-react'
 import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 
 export default function InventorySuppliersPage() {
@@ -10,7 +11,10 @@ export default function InventorySuppliersPage() {
   return (
     <div className="space-y-6">
       <UniversalModuleHero
-        title="Suppliers"
+        moduleName="Suppliers"
+        moduleIcon={<Truck className="h-8 w-8" />}
+        gradientFrom="from-emerald-600"
+        gradientTo="to-teal-900"
         subtitle="Manage suppliers and purchase requests. Link to Purchase Orders in Finance."
       />
       <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-8 text-center">

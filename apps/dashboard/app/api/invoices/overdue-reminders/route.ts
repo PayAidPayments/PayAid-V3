@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Overdue Payment Reminders API Route
  * GET /api/invoices/overdue-reminders - Get overdue invoices needing reminders

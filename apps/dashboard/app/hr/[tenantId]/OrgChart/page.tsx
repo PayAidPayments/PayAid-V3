@@ -4,11 +4,12 @@ import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
+import { Network } from 'lucide-react'
 import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ChevronRight, User, Building2, Briefcase, Loader2 } from 'lucide-react'
-import type { OrgChartNode } from '@/app/api/hr/org-chart/route'
+import type { OrgChartNode } from '../../../api/hr/org-chart/route'
 
 function OrgChartCard({ node, depth = 0, tenantId }: { node: OrgChartNode; depth?: number; tenantId: string }) {
   const [open, setOpen] = useState(true)
@@ -63,7 +64,7 @@ function OrgChartCard({ node, depth = 0, tenantId }: { node: OrgChartNode; depth
       </div>
       {open && hasChildren && (
         <div className="flex flex-col gap-1 mt-1">
-          {node.children.map((child) => (
+          {node.children.map((child: OrgChartNode) => (
             <OrgChartCard key={child.id} node={child} depth={depth + 1} tenantId={tenantId} />
           ))}
         </div>
@@ -99,7 +100,10 @@ export default function HROrgChartPage() {
   return (
     <div className="space-y-6">
       <UniversalModuleHero
-        title="Org Chart"
+        moduleName="Org Chart"
+        moduleIcon={<Network className="h-8 w-8" />}
+        gradientFrom="from-slate-700"
+        gradientTo="to-slate-900"
         subtitle="Visual hierarchy of your company — built from employee and manager data."
       />
       {loading && (

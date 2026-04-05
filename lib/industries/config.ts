@@ -254,10 +254,6 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
   },
   'service-business': {
     id: 'service-business',
-    name: 'Service Business',
-    icon: '💼',
-    description: 'Agency, consultancy, or service provider',
-    coreModules: ['crm', 'finance', 'marketing', 'hr', 'communication', 'analytics', 'productivity', 'time-tracking'],
     name: 'Service Businesses',
     icon: '💼',
     description: 'Agency, consultancy, or service provider',

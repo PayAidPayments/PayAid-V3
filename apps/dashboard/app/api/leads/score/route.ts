@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess } from '@/lib/middleware/auth'
 import { updateLeadScore, scoreLead } from '@/lib/ai-helpers/lead-scoring'

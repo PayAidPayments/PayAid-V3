@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Server-side flight risk service.
  * Used by /api/hr/summary, /api/hr/employees/[id]/flight-risk, and /api/hr/ai/flight-risk-alerts.

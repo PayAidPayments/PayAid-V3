@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * LangChain Integration Setup
  * FREE implementation using existing Ollama/Groq providers

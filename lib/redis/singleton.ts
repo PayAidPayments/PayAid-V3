@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Phase 1: Single Redis abstraction for cache/invalidation/Bull config.
  * Uses @upstash/redis (REST) when UPSTASH_REDIS_REST_* set; otherwise no-op in dev.

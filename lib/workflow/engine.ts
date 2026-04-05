@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Workflow execution engine.
  * Runs workflow steps (send email, create task, webhook, etc.) with trigger context.

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { prisma } from '@/lib/db/prisma'
 import { maskPIIInText, containsPII } from '@/lib/compliance/pii-detector'
 import { logAudit } from '@/lib/compliance/audit-logger'

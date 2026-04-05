@@ -1,6 +1,5 @@
 import { prisma } from '../db/prisma'
 import { verifyToken, type JWTPayload } from '../auth/jwt'
-import type { Request } from 'next/server'
 
 /**
  * Phase 1: RBAC Permission System

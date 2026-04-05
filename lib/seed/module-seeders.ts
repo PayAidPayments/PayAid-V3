@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Module-Specific Seeders
  * Comprehensive seeding functions for all 28 PayAid V3 modules

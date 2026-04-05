@@ -1,6 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
+import { Wallet } from 'lucide-react'
 import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 
 export default function FinancePaymentsPage() {
@@ -10,7 +11,10 @@ export default function FinancePaymentsPage() {
   return (
     <div className="space-y-6">
       <UniversalModuleHero
-        title="Payments"
+        moduleName="Payments"
+        moduleIcon={<Wallet className="h-8 w-8" />}
+        gradientFrom="from-violet-600"
+        gradientTo="to-indigo-900"
         subtitle="PayAid Payments Gateway — payment links, UPI QR, settlements, and transaction history."
       />
       <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-8 text-center">

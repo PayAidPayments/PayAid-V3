@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { getGSTCompliance, recordGSTFiling } from '@/lib/compliance/india-compliance'

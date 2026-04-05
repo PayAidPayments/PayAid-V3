@@ -2,7 +2,6 @@
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
 import { ChevronDown, Search, X } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils/cn'
@@ -89,41 +88,47 @@ export function TasksFilters({
         <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-lg border bg-background p-4 shadow-lg">
           <div className="space-y-3">
             <label className="text-xs font-medium text-muted-foreground">Status</label>
-            <Select
+            <select
               value={filters.status}
               onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
-              className="w-full"
+              className={cn(
+                'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+              )}
             >
               {STATUS_OPTIONS.map((o) => (
                 <option key={o.value || 'all'} value={o.value}>
                   {o.label}
                 </option>
               ))}
-            </Select>
+            </select>
             <label className="text-xs font-medium text-muted-foreground">Module</label>
-            <Select
+            <select
               value={filters.module}
               onChange={(e) => onFiltersChange({ ...filters, module: e.target.value })}
-              className="w-full"
+              className={cn(
+                'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+              )}
             >
               {MODULE_OPTIONS.map((o) => (
                 <option key={o.value || 'all'} value={o.value}>
                   {o.label}
                 </option>
               ))}
-            </Select>
+            </select>
             <label className="text-xs font-medium text-muted-foreground">Priority</label>
-            <Select
+            <select
               value={filters.priority}
               onChange={(e) => onFiltersChange({ ...filters, priority: e.target.value })}
-              className="w-full"
+              className={cn(
+                'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+              )}
             >
               {PRIORITY_OPTIONS.map((o) => (
                 <option key={o.value || 'all'} value={o.value}>
                   {o.label}
                 </option>
               ))}
-            </Select>
+            </select>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Due from</label>

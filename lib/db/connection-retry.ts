@@ -19,6 +19,7 @@ const DEFAULT_OPTIONS: Required<RetryOptions> = {
   maxRetries: 2, // Reduced from 3 to 2 for faster failure detection
   retryDelay: 200, // Reduced from 1000ms to 200ms - faster retries
   exponentialBackoff: false, // Disabled exponential backoff for faster retries
+  bypassCircuitBreaker: false,
   retryableErrors: [
     'P1001', // Connection timeout
     'P1002', // Pooler timeout

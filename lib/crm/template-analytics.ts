@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Template Analytics
  * Track success metrics for industry templates

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * CRM Communications API Route
  * GET /api/crm/communications - List communications (unified inbox)

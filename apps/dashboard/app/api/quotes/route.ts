@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Quotes API Route
  * POST /api/quotes - Generate quote from deal

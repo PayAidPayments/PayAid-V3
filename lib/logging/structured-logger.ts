@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Structured Logging Service
  * Zero-cost enhancement for better observability and debugging

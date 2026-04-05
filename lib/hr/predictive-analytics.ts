@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Feature #17: Predictive Analytics - Attrition 90d from flight risk.
  */

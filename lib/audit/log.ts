@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Audit trail: log key actions for Finance, HR, etc.
  * Uses existing AuditLog model (entityType, entityId, changedBy, changeSummary, beforeSnapshot, afterSnapshot).

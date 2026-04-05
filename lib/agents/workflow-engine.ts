@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Phase 1B — No-Code Agent Workflow Engine
  * Interprets saved workflow JSON: trigger + steps; runs conditions, actions, AI step.

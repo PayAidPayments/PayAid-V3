@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select } from '@/components/ui/select'
+import { cn } from '@/lib/utils/cn'
 import { Zap, Plus, Trash2, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import type { WorkflowStep, WorkflowEventValue, ActionTypeValue } from '@/lib/workflow/types'
@@ -196,32 +196,36 @@ export function WorkflowBuilderForm({
             </div>
             <div>
               <Label>Trigger</Label>
-              <Select
+              <select
                 value={triggerType}
                 onChange={(e) => setTriggerType(e.target.value)}
-                className="mt-1"
+                className={cn(
+                  'mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+                )}
               >
                 {TRIGGER_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>
                     {t.label}
                   </option>
                 ))}
-              </Select>
+              </select>
             </div>
             {triggerType === 'EVENT' && (
               <div>
                 <Label>Event</Label>
-                <Select
+                <select
                   value={triggerEvent}
                   onChange={(e) => setTriggerEvent(e.target.value)}
-                  className="mt-1"
+                  className={cn(
+                    'mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+                  )}
                 >
                   {EVENTS.map((ev) => (
                     <option key={ev.value} value={ev.value}>
                       {ev.label}
                     </option>
                   ))}
-                </Select>
+                </select>
               </div>
             )}
             {triggerType === 'SCHEDULE' && (
@@ -336,17 +340,19 @@ function StepEditor({
       </div>
       <div>
         <Label className="text-xs">Action type</Label>
-        <Select
+        <select
           value={step.type}
           onChange={(e) => onTypeChange(e.target.value as ActionTypeValue)}
-          className="mt-1"
+          className={cn(
+            'mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+          )}
         >
           {ACTION_TYPES.map((a) => (
             <option key={a.value} value={a.value}>
               {a.label}
             </option>
           ))}
-        </Select>
+        </select>
       </div>
       {step.type === 'send_email' && (
         <>
@@ -467,15 +473,17 @@ function StepEditor({
           </div>
           <div>
             <Label className="text-xs">Method</Label>
-            <Select
+            <select
               value={(config.method as string) ?? 'POST'}
               onChange={(e) => onConfigChange('method', e.target.value)}
-              className="mt-1"
+              className={cn(
+                'mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+              )}
             >
               <option value="GET">GET</option>
               <option value="POST">POST</option>
               <option value="PUT">PUT</option>
-            </Select>
+            </select>
           </div>
           <div>
             <Label className="text-xs">Body (JSON, optional)</Label>

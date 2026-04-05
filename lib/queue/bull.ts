@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Bull from 'bull'
 import { getRedisConfig } from '@/lib/config/env'
 

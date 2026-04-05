@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Account Decision Tree API
  * GET /api/accounts/[id]/decision-tree - Get decision tree

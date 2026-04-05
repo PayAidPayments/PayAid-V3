@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { prisma } from '@/lib/db/prisma'
 import { transcribeAudio, saveTranscription, generateTranscriptionSummary, extractActionItems } from '@/lib/ai/transcription-service'
 

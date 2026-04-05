@@ -1,3 +1,4 @@
+import type { Role } from '@prisma/client'
 import { prisma } from '../db/prisma'
 
 /**
@@ -171,7 +172,7 @@ export async function initializeDefaultRoles(tenantId: string) {
     },
   ]
 
-  const createdRoles = []
+  const createdRoles: Role[] = []
   for (const roleData of defaultRoles) {
     const existing = await prisma.role.findUnique({
       where: {

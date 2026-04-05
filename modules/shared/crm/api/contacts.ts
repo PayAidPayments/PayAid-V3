@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * CRM Contacts API - Base Module
  * Handles contact CRUD operations

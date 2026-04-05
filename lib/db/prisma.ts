@@ -220,7 +220,7 @@ export const prisma = new Proxy({} as PrismaClient, {
       return []
     }
   }
-})
+}) as PrismaClient
 
 // Connection health check and auto-reconnection
 // Note: In serverless (Vercel), each function invocation is a new instance

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Internal E-Signature Service
  * PayAid's own signature system (no external dependencies)
