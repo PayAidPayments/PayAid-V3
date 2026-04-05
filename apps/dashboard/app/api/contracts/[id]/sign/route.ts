@@ -24,7 +24,7 @@ export async function POST(
     if (!tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const contractId = typeof params?.id === 'string' ? id : undefined
+    const contractId = id
     if (!contractId) {
       return NextResponse.json({ error: 'Contract ID is required' }, { status: 400 })
     }
