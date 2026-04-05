@@ -7,15 +7,28 @@ import { NextRequest, NextResponse } from 'next/server'
 import { handleError, generateRequestId, createSuccessResponse, ErrorCode, AppError } from '@/lib/errors'
 
 /**
+ * Matches Next.js App Router route handlers: second argument is **required**
+ * (`RouteContext` — always includes `params` as a Promise). Optional `context`
+ * breaks `next build` typechecking (see Next 15+ / 16 RouteContext).
+ */
+export type AppRouteHandlerContext = {
+  params: Promise<Record<string, string | string[] | undefined>>
+}
+
+/**
  * Wrapper function for API route handlers
  * Automatically handles errors and returns standard error responses
  */
 export function withErrorHandling<T = unknown>(
-  handler: (request: NextRequest, context?: { params?: Promise<Record<string, string>> }) => Promise<NextResponse<T | { success: boolean; statusCode: number; error: { code: string; message: string } }>>
+  handler: (
+    request: NextRequest,
+    context: AppRouteHandlerContext
+  ) => Promise<NextResponse<T | { success: boolean; statusCode: number; error: { code: string; message: string } }>>
 ) {
-  return async (request: NextRequest, context?: { params?: Promise<Record<string, string>> }): Promise<NextResponse> => {
-    // Ensure context.params exists for route handlers that need it
-    const handlerContext = context || { params: Promise.resolve({}) as Promise<Record<string, string>> }
+  return async function routeHandler(
+    request: NextRequest,
+    context: AppRouteHandlerContext
+  ): Promise<NextResponse> {
     const requestId = generateRequestId()
 
     try {
