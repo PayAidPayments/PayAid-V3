@@ -29,7 +29,10 @@ export interface JWTPayload {
   role?: string
   licensedModules?: string[]
   subscriptionTier?: string
-  
+  trialStartAt?: string
+  trialEndsAt?: string
+  billingStatus?: string
+
   // JWT standard claims
   iat?: number
   exp?: number
@@ -63,6 +66,9 @@ export type SignTokenInput =
       permissions?: string[]
       modules?: string[]
       tenant_slug?: string
+      trialStartAt?: string
+      trialEndsAt?: string
+      billingStatus?: string
     }
 
 /**
