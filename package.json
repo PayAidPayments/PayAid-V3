@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "prepare": "node -e \"if (!process.env.CI) require('child_process').execSync('husky install', {stdio:'inherit'})\"",
+    "verify:lib-imports": "node scripts/verify-dashboard-lib-imports.mjs",
     "verify:db": "tsx scripts/verify-database-connection-setup.ts",
     "verify:db:local": "cross-env DATABASE_URL=postgresql://payaid:payaid@127.0.0.1:5433/payaid_v3?schema=public tsx scripts/verify-database-connection-setup.ts",
     "check:vercel-env": "tsx scripts/check-vercel-env.ts",

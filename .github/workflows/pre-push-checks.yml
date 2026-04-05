@@ -23,6 +23,9 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Verify dashboard @/lib imports are tracked in git
+        run: npm run verify:lib-imports
+
       - name: Generate Prisma Client
         run: npx prisma generate
         env:
