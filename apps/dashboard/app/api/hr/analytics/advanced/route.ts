@@ -74,7 +74,8 @@ export async function GET(request: NextRequest) {
     const deptMap = new Map(departmentNames.map((d) => [d.id, d.name]))
     const departmentMix = byDepartment.map((g) => ({
       departmentId: g.departmentId,
-      departmentName: deptMap.get(g.departmentId) || 'Unassigned',
+      departmentName:
+        g.departmentId != null ? deptMap.get(g.departmentId) ?? 'Unassigned' : 'Unassigned',
       count: g._count.id,
     }))
 
