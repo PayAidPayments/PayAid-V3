@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 
@@ -27,11 +28,7 @@ export async function GET(request: NextRequest) {
     })
     const bankAccountIds = bankAccountsList.map((a) => a.id)
 
-    const where: {
-      tenantId: string
-      OR?: { debitAccountId: { in: string[] }; creditAccountId: { in: string[] } }[]
-      isReconciled?: boolean
-    } = { tenantId }
+    const where: Prisma.FinancialTransactionWhereInput = { tenantId }
     if (bankAccountIds.length > 0) {
       where.OR = [
         { debitAccountId: { in: bankAccountIds } },
