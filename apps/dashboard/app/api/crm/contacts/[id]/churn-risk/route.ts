@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { calculateDealClosureProbability } from '@/lib/ai/deal-closure-probability'
+import { calculateChurnRisk } from '@/lib/ai/churn-predictor'
 
 /**
- * GET /api/crm/deals/[id]/probability
- * Calculates deal closure probability for a specific deal
+ * GET /api/crm/contacts/[id]/churn-risk
+ * Calculates churn risk for a specific contact
  */
 export async function GET(
   request: NextRequest,
@@ -13,10 +13,10 @@ export async function GET(
   const { id } = await params
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
-    const dealId = id
+    const contactId = id
 
-    const result = await calculateDealClosureProbability({
-      dealId,
+    const result = await calculateChurnRisk({
+      contactId,
       tenantId,
     })
 
@@ -28,9 +28,9 @@ export async function GET(
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }
-    console.error(`Error calculating deal probability for ${id}:`, error)
+    console.error(`Error calculating churn risk for ${id}:`, error)
     return NextResponse.json(
-      { error: 'Failed to calculate deal probability' },
+      { error: 'Failed to calculate churn risk' },
       { status: 500 }
     )
   }

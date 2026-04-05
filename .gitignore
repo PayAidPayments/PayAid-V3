@@ -81,7 +81,8 @@ Start Menu/
 Templates/
 !app/spreadsheet/**/Templates/**
 3D Objects/
-Contacts/
+# Root only — bare "Contacts/" matches apps/.../crm/contacts/ on Windows (ignorecase)
+/Contacts/
 Desktop/
 Documents/
 Downloads/
