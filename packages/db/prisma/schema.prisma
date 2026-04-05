@@ -44,6 +44,10 @@ model Tenant {
   supportedCurrencies          String[]                      @default(["INR"]) // Array of supported currency codes
   creativeStudioPrimaryColor   String?                       // Brand kit: hex color for Creative Studio
   creativeStudioTagline        String?                       // Brand kit: tagline for Creative Studio
+  signupModuleMode             String?                       // suite | pick — module selection at signup
+  trialStartAt                 DateTime?
+  trialEndsAt                  DateTime?
+  billingStatus                String?                       // trialing | active | past_due | canceled
   createdAt                    DateTime                      @default(now())
   updatedAt                    DateTime                      @updatedAt
   aiCalls                      AICall[]
