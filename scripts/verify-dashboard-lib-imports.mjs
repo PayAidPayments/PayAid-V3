@@ -104,4 +104,36 @@ if (emptyRoutes.length) {
   process.exit(1)
 }
 
-console.log('OK: @/lib imports tracked; app/api route.ts files export handlers.')
+const appRoot = path.join(dashboard, 'app')
+const badLayoutsPages = []
+function walkLayoutsPages(dir) {
+  let entries = []
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return
+  }
+  for (const ent of entries) {
+    const p = path.join(dir, ent.name)
+    if (ent.isDirectory()) {
+      if (ent.name === 'api') continue
+      walkLayoutsPages(p)
+    } else if (ent.name === 'layout.tsx' || ent.name === 'page.tsx') {
+      const raw = fs.readFileSync(p, 'utf8')
+      const hasDefault =
+        /\bexport\s+default\b/.test(raw) || /\bexport\s*\{\s*default\b/.test(raw)
+      if (!hasDefault) {
+        badLayoutsPages.push(path.relative(root, p).replace(/\\/g, '/'))
+      }
+    }
+  }
+}
+walkLayoutsPages(appRoot)
+
+if (badLayoutsPages.length) {
+  console.error('These app layout.tsx / page.tsx files must default-export a component:\n')
+  for (const p of badLayoutsPages) console.error('  - ' + p)
+  process.exit(1)
+}
+
+console.log('OK: @/lib imports tracked; API routes export handlers; app layout/page default exports OK.')
