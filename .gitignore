@@ -84,7 +84,8 @@ Templates/
 # Root only — bare "Contacts/" matches apps/.../crm/contacts/ on Windows (ignorecase)
 /Contacts/
 Desktop/
-Documents/
+# Root only — "Documents/" matches apps/.../hr/documents/ on Windows (ignorecase)
+/Documents/
 Downloads/
 Favorites/
 IntelGraphicsProfiles/
