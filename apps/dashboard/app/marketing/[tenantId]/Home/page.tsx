@@ -91,9 +91,19 @@ export default function MarketingDashboardPage(props: PageProps<'/marketing/[ten
     const headers: HeadersInit = { ...(token && { Authorization: `Bearer ${token}` }) }
 
     Promise.all([
-      fetch(`/api/marketing/dashboard/enriched`, { headers, signal: controller.signal }).then((r) =>
-        r.ok ? r.json() : Promise.reject(new Error('Failed to load dashboard'))
-      ),
+      fetch(`/api/marketing/dashboard/enriched`, { headers, signal: controller.signal }).then(async (r) => {
+        if (r.ok) return r.json()
+        const body = await r.json().catch(() => ({} as { error?: string; message?: string }))
+        const msg =
+          body?.error ||
+          body?.message ||
+          (r.status === 403
+            ? 'Marketing is not enabled for this workspace. Enable it in Settings → Modules.'
+            : r.status === 401
+              ? 'Session expired. Sign in again.'
+              : 'Failed to load dashboard')
+        return Promise.reject(new Error(msg))
+      }),
       fetch(`/api/marketing/insights`, { headers, signal: controller.signal }).then((r) =>
         r.ok ? r.json() : { insights: [] as string[], source: 'static' as const }
       ),

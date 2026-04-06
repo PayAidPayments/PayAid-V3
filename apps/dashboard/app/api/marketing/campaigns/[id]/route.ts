@@ -45,6 +45,13 @@ export async function GET(
       content: campaign.content,
       recipientCount: campaign.recipientCount,
       contactIds: campaign.contactIds,
+      // Expose metrics at top level — UI and older clients expect these (not only nested in analytics)
+      sent: campaign.sent,
+      delivered: campaign.delivered,
+      opened: campaign.opened,
+      clicked: campaign.clicked,
+      bounced: campaign.bounced,
+      unsubscribed: campaign.unsubscribed,
       createdAt: campaign.createdAt.toISOString(),
       sentAt: campaign.sentAt?.toISOString(),
       scheduledFor: campaign.scheduledFor?.toISOString(),

@@ -19,13 +19,13 @@ interface Campaign {
   status: string
   scheduledFor?: string
   sentAt?: string
-  recipientCount: number
-  sent: number
-  delivered: number
-  opened: number
-  clicked: number
-  bounced: number
-  unsubscribed: number
+  recipientCount?: number
+  sent?: number
+  delivered?: number
+  opened?: number
+  clicked?: number
+  bounced?: number
+  unsubscribed?: number
   analytics?: {
     openRate: number
     clickRate: number
@@ -97,10 +97,20 @@ export default function CampaignDetailPage() {
       draft: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
       scheduled: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
       sent: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
       cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
     }
     return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
   }
+
+  const n = (v: number | undefined) => (typeof v === 'number' && !Number.isNaN(v) ? v : 0)
+  const rc = n(campaign.recipientCount)
+  const sent = n(campaign.sent)
+  const delivered = n(campaign.delivered)
+  const opened = n(campaign.opened)
+  const clicked = n(campaign.clicked)
+  const bounced = n(campaign.bounced)
+  const showAnalytics = sent > 0
 
   return (
     <div className="p-6 space-y-6">
@@ -113,7 +123,7 @@ export default function CampaignDetailPage() {
           {campaign?.status === 'draft' && (
             <Button
               onClick={() => {
-                if (confirm(`Are you sure you want to send this campaign to ${campaign.recipientCount} recipients?`)) {
+                if (confirm(`Are you sure you want to send this campaign to ${rc} recipients?`)) {
                   sendCampaign.mutate()
                 }
               }}
@@ -150,7 +160,7 @@ export default function CampaignDetailPage() {
             <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Recipients</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{campaign.recipientCount.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{rc.toLocaleString('en-IN')}</div>
           </CardContent>
         </Card>
         <Card className="dark:bg-gray-800 dark:border-gray-700">
@@ -158,13 +168,13 @@ export default function CampaignDetailPage() {
             <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Sent</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{campaign.sent.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{sent.toLocaleString('en-IN')}</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Analytics */}
-      {campaign.status === 'sent' && campaign.sent > 0 && (
+      {/* Analytics — any campaign with sends (includes status "completed" from some flows) */}
+      {showAnalytics && (
         <>
           <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
@@ -175,39 +185,39 @@ export default function CampaignDetailPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Delivered</div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{campaign.delivered.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{delivered.toLocaleString('en-IN')}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {campaign.sent > 0
-                      ? `${((campaign.delivered / campaign.sent) * 100).toFixed(1)}%`
+                    {sent > 0
+                      ? `${((delivered / sent) * 100).toFixed(1)}%`
                       : '-'}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Opened</div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{campaign.opened.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{opened.toLocaleString('en-IN')}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {campaign.delivered > 0
-                      ? `${((campaign.opened / campaign.delivered) * 100).toFixed(1)}%`
+                    {delivered > 0
+                      ? `${((opened / delivered) * 100).toFixed(1)}%`
                       : '-'}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Clicked</div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{campaign.clicked.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{clicked.toLocaleString('en-IN')}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {campaign.opened > 0
-                      ? `${((campaign.clicked / campaign.opened) * 100).toFixed(1)}%`
+                    {opened > 0
+                      ? `${((clicked / opened) * 100).toFixed(1)}%`
                       : '-'}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Bounced</div>
                   <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                    {campaign.bounced.toLocaleString()}
+                    {bounced.toLocaleString('en-IN')}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {campaign.sent > 0
-                      ? `${((campaign.bounced / campaign.sent) * 100).toFixed(1)}%`
+                    {sent > 0
+                      ? `${((bounced / sent) * 100).toFixed(1)}%`
                       : '-'}
                   </div>
                 </div>
@@ -222,9 +232,9 @@ export default function CampaignDetailPage() {
                     <PieChart>
                       <Pie
                         data={[
-                          { name: 'Delivered', value: campaign.delivered, fill: '#10b981' },
-                          { name: 'Bounced', value: campaign.bounced, fill: '#ef4444' },
-                          { name: 'Pending', value: campaign.sent - campaign.delivered - campaign.bounced, fill: '#f59e0b' },
+                          { name: 'Delivered', value: delivered, fill: '#10b981' },
+                          { name: 'Bounced', value: bounced, fill: '#ef4444' },
+                          { name: 'Pending', value: Math.max(0, sent - delivered - bounced), fill: '#f59e0b' },
                         ]}
                         cx="50%"
                         cy="50%"
@@ -253,10 +263,10 @@ export default function CampaignDetailPage() {
                   <ResponsiveContainer width="100%" height={250}>
                     <BarChart
                       data={[
-                        { name: 'Sent', value: campaign.sent },
-                        { name: 'Delivered', value: campaign.delivered },
-                        { name: 'Opened', value: campaign.opened },
-                        { name: 'Clicked', value: campaign.clicked },
+                        { name: 'Sent', value: sent },
+                        { name: 'Delivered', value: delivered },
+                        { name: 'Opened', value: opened },
+                        { name: 'Clicked', value: clicked },
                       ]}
                     >
                       <XAxis dataKey="name" />

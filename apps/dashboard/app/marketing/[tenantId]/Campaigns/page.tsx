@@ -20,11 +20,11 @@ interface Campaign {
   status: string
   scheduledFor?: string
   sentAt?: string
-  recipientCount: number
-  sent: number
-  delivered: number
-  opened: number
-  clicked: number
+  recipientCount?: number
+  sent?: number
+  delivered?: number
+  opened?: number
+  clicked?: number
   createdAt: string
 }
 
@@ -34,7 +34,7 @@ export default function MarketingCampaignsPage() {
   const { token } = useAuthStore()
   
   const { data, isLoading, refetch } = useQuery<{ campaigns: Campaign[] }>({
-    queryKey: ['campaigns'],
+    queryKey: ['campaigns', tenantId],
     queryFn: async () => {
       const response = await fetch('/api/marketing/campaigns', {
         headers: {
@@ -52,8 +52,16 @@ export default function MarketingCampaignsPage() {
       scheduled: 'bg-blue-100 text-blue-800',
       sent: 'bg-green-100 text-green-800',
       cancelled: 'bg-red-100 text-red-800',
+      completed: 'bg-green-100 text-green-800',
     }
     return colors[status] || 'bg-gray-100 text-gray-800'
+  }
+
+  const pct = (num: number | undefined, denom: number | undefined) => {
+    const n = typeof num === 'number' && !Number.isNaN(num) ? num : 0
+    const d = typeof denom === 'number' && !Number.isNaN(denom) && denom > 0 ? denom : 0
+    if (d <= 0) return '0.0'
+    return ((n / d) * 100).toFixed(1)
   }
 
   const campaigns = data?.campaigns || []
@@ -99,7 +107,7 @@ export default function MarketingCampaignsPage() {
             ) : campaigns.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <p className="mb-4">No campaigns found</p>
-                <Link href="/dashboard/marketing/campaigns/new">
+                <Link href={`/marketing/${tenantId}/Campaigns/New`}>
                   <Button variant="outline">Create your first campaign</Button>
                 </Link>
               </div>
@@ -122,7 +130,7 @@ export default function MarketingCampaignsPage() {
                     <TableRow key={campaign.id}>
                       <TableCell className="font-medium">
                         <Link
-                          href={`/dashboard/marketing/campaigns/${campaign.id}`}
+                          href={`/marketing/${tenantId}/Campaigns/${campaign.id}`}
                           className="text-blue-600 hover:underline"
                         >
                           {campaign.name}
@@ -141,7 +149,7 @@ export default function MarketingCampaignsPage() {
                         {campaign.createdAt ? format(new Date(campaign.createdAt), 'MMM dd, yyyy') : '-'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Link href={`/dashboard/marketing/campaigns/${campaign.id}`}>
+                        <Link href={`/marketing/${tenantId}/Campaigns/${campaign.id}`}>
                           <Button variant="ghost" size="sm">View</Button>
                         </Link>
                       </TableCell>
