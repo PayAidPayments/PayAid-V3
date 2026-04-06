@@ -6,6 +6,7 @@ import { motion, useInView, useAnimation } from 'framer-motion'
 import { getAllIndustries, getRecommendedModules } from '@/lib/industries/config'
 import { MODULE_PRICING, INDUSTRY_PACKAGE_PRICING, getBestPricing, type IndustryPackagePricing } from '@/lib/pricing/config'
 import { modules } from '@/lib/modules.config'
+import { getModuleMarketingHref } from '@/lib/moduleMarketing'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
@@ -1188,16 +1189,24 @@ export default function LandingPage() {
                 'ai': 'bg-purple-100 text-purple-700',
               }
               const colorClass = colorClasses[module.category] || 'bg-gray-100 text-gray-700'
-              
-              return (
-                <div
-                  key={module.id}
-                  className="group bg-white rounded-lg p-4 border-2 border-gray-200 hover:border-[#53328A] hover:shadow-lg transition-all cursor-pointer text-center"
-                >
+              const modulePageHref = getModuleMarketingHref(module.id)
+              const cardClass =
+                'group bg-white rounded-lg p-4 border-2 border-gray-200 hover:border-[#53328A] hover:shadow-lg transition-all cursor-pointer text-center block no-underline'
+              const inner = (
+                <>
                   <div className={`w-12 h-12 rounded-lg ${colorClass} flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform`}>
                     <IconComponent className="h-6 w-6" />
                   </div>
                   <div className="text-sm font-semibold text-gray-900">{module.name}</div>
+                </>
+              )
+              return modulePageHref ? (
+                <Link key={module.id} href={modulePageHref} className={cardClass}>
+                  {inner}
+                </Link>
+              ) : (
+                <div key={module.id} className={cardClass.replace(' block no-underline', '')}>
+                  {inner}
                 </div>
               )
             })}
@@ -1224,16 +1233,24 @@ export default function LandingPage() {
                     'ai': 'bg-purple-100 text-purple-700',
                   }
                   const colorClass = colorClasses[module.category] || 'bg-gray-100 text-gray-700'
-                  
-                  return (
-                    <div
-                      key={module.id}
-                      className="group bg-white rounded-lg p-4 border-2 border-gray-200 hover:border-[#53328A] hover:shadow-lg transition-all cursor-pointer text-center"
-                    >
+                  const modulePageHref = getModuleMarketingHref(module.id)
+                  const cardClass =
+                    'group bg-white rounded-lg p-4 border-2 border-gray-200 hover:border-[#53328A] hover:shadow-lg transition-all cursor-pointer text-center block no-underline'
+                  const inner = (
+                    <>
                       <div className={`w-12 h-12 rounded-lg ${colorClass} flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform`}>
                         <IconComponent className="h-6 w-6" />
                       </div>
                       <div className="text-sm font-semibold text-gray-900">{module.name}</div>
+                    </>
+                  )
+                  return modulePageHref ? (
+                    <Link key={module.id} href={modulePageHref} className={cardClass}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div key={module.id} className={cardClass.replace(' block no-underline', '')}>
+                      {inner}
                     </div>
                   )
                 })}
