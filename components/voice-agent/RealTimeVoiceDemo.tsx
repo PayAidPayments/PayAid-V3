@@ -105,7 +105,8 @@ export function RealTimeVoiceDemo({
       setMessages((prev) => [...prev, userMessage])
 
       const controller = new AbortController()
-      const timeoutMs = 15_000 // 15s – backend cap 12s; fail fast, no long wait
+      // Backend voice demo races work up to DEMO_OVERALL_MS (~38s); abort slightly after so we do not false-positive on slow LLM+TTS.
+      const timeoutMs = 42_000
       const timeoutId = setTimeout(() => controller.abort(new DOMException('Request timed out', 'AbortError')), timeoutMs)
 
       try {
@@ -126,7 +127,7 @@ export function RealTimeVoiceDemo({
           signal: controller.signal,
         })
         clearTimeout(timeoutId)
-        let data: { text?: string; audio?: string; audioFormat?: 'mp3' | 'wav'; ttsError?: string; error?: string; timedOut?: boolean } = {}
+        let data: { text?: string; audio?: string; audioFormat?: 'mp3' | 'wav'; ttsError?: string; error?: string } = {}
         try {
           data = await res.json()
         } catch {
@@ -151,14 +152,13 @@ export function RealTimeVoiceDemo({
         const base64Audio = data.audio
         const audioFormat = data.audioFormat || 'wav'
         const ttsError = data.ttsError
-        const timedOut = data.timedOut
         const is401 = ttsError && String(ttsError).includes('401')
         const ttsHint = is401
           ? ' Fix: In .env set VEXYL_API_KEY to your server key and VEXYL_AUTH_HEADER (e.g. X-API-Key or none if no auth), then restart dev server.'
           : ''
         let displayReply = reply
-        if (timedOut && reply) displayReply = `${reply} [Took too long – try a shorter question.]`
-        else if (reply && !base64Audio)
+        // timedOut is ignored for display: still show the assistant text without technical suffixes.
+        if (reply && !base64Audio)
           displayReply = ttsError
             ? `${reply}\n\n🔇 Server voice unavailable (${ttsError}). Reply shown as text.${ttsHint}`
             : `${reply}\n\n🔇 Server voice unavailable. Reply shown as text.`
@@ -166,12 +166,7 @@ export function RealTimeVoiceDemo({
         else if (ttsError) displayReply = `[Voice unavailable: ${ttsError}]${ttsHint}`
         else if (!reply) displayReply = '[No response text]'
         const assistantEntry = { role: 'assistant' as const, content: displayReply, timestamp: new Date().toLocaleTimeString() }
-        setMessages((prev) => {
-          const last = prev[prev.length - 1]
-          const isTimeoutMessage = last?.role === 'assistant' && typeof last.content === 'string' && last.content.startsWith('[Response took too long')
-          if (isTimeoutMessage) return [...prev.slice(0, -1), assistantEntry]
-          return [...prev, assistantEntry]
-        })
+        setMessages((prev) => [...prev, assistantEntry])
         const clearProcessingAndRestart = () => {
           currentAudioRef.current = null
           isProcessingRef.current = false
@@ -230,19 +225,12 @@ export function RealTimeVoiceDemo({
         const isAbort = (err instanceof Error && err.name === 'AbortError') || (err && (err as { name?: string }).name === 'AbortError')
         if (!isAbort) console.error('Demo process error:', err)
         setMessages((prev) => {
-          const last = prev[prev.length - 1]
-          const watchdogAlreadyShown =
-            last?.role === 'assistant' &&
-            typeof last.content === 'string' &&
-            last.content.startsWith('[Response took too long')
-          // If the watchdog already told the user it took too long, don't spam a second timeout message
-          if (isAbort && watchdogAlreadyShown) return prev
           return [
             ...prev,
             {
               role: 'assistant',
               content: isAbort
-                ? '[Request timed out. Please try again with a shorter question.]'
+                ? 'Sorry, that took longer than expected. Please say that again, or try a shorter sentence.'
                 : `[Error: ${err instanceof Error ? err.message : 'Network or server error'}. Try again.]`,
               timestamp: new Date().toLocaleTimeString(),
             },
@@ -331,25 +319,6 @@ export function RealTimeVoiceDemo({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, interimText])
-
-  // 13s watchdog: backend cap 12s; if still processing, show message and resume listening (late response will replace this)
-  useEffect(() => {
-    if (status !== 'processing') return
-    const id = setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: '[Response took too long (>13s). Please try again with a shorter question.]',
-          timestamp: new Date().toLocaleTimeString(),
-        },
-      ])
-      isProcessingRef.current = false
-      setStatus('listening')
-      restartListening()
-    }, 13_000)
-    return () => clearTimeout(id)
-  }, [status, restartListening])
 
   // Pre-warm Groq on mount so first reply is fast
   useEffect(() => {
