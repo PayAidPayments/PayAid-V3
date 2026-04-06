@@ -93,6 +93,7 @@
     "test:monitoring": "npx tsx scripts/test-monitoring.ts",
     "setup:load-tests": "npx tsx scripts/load-test-setup.ts",
     "build:vercel": "powershell -ExecutionPolicy Bypass -File scripts/build-vercel-local.ps1",
+    "vercel-build": "npm run build && node scripts/vercel-stage-dashboard-next.cjs",
     "build:local": "node scripts/prisma-generate-with-retry.js && cross-env NODE_OPTIONS=--max-old-space-size=5120 npm run build -w dashboard",
     "clean:build": "powershell -ExecutionPolicy Bypass -File scripts/clean-build.ps1",
     "pre-push": "powershell -ExecutionPolicy Bypass -File scripts/pre-push-check.ps1",
