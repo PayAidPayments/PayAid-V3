@@ -1974,7 +1974,7 @@ export default function CRMDashboardPage() {
                           <CheckCircle className="h-4 w-4 text-green-600" />
                         </div>
                       </div>
-                      <Link href={tenantId ? `/crm/${tenantId}/Tickets` : '#'} className="mt-auto">
+                      <Link href={tenantId ? `/support/${tenantId}/Tickets` : '#'} className="mt-auto">
                         <Button variant="outline" className="w-full mt-2 text-xs py-1">
                           View All Tickets
                         </Button>
