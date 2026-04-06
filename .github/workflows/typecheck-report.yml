@@ -1,0 +1,63 @@
+name: Typecheck Report (Non-Blocking)
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  strict-typecheck-report:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Generate Prisma Client
+        run: node scripts/prisma-generate-with-retry.js
+        env:
+          PRISMA_GENERATE_DATAPROXY: "false"
+
+      - name: Run strict dashboard typecheck
+        id: typecheck
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p artifacts
+          npm run -w apps/dashboard typecheck 2>&1 | tee artifacts/dashboard-typecheck.log
+
+      - name: Upload typecheck artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-typecheck-log
+          path: artifacts/dashboard-typecheck.log
+          if-no-files-found: warn
+
+      - name: Job summary
+        if: always()
+        shell: bash
+        run: |
+          if [ "${{ steps.typecheck.outcome }}" = "success" ]; then
+            echo "## Typecheck Report" >> $GITHUB_STEP_SUMMARY
+            echo "Strict dashboard typecheck passed." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Typecheck Report" >> $GITHUB_STEP_SUMMARY
+            echo "Strict dashboard typecheck found issues." >> $GITHUB_STEP_SUMMARY
+            echo "Download artifact: \`dashboard-typecheck-log\` for full output." >> $GITHUB_STEP_SUMMARY
+          fi
+
