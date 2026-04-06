@@ -18,7 +18,9 @@ try {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  typescript: { ignoreBuildErrors: false },
+  // Prevent Vercel deployment stalls in large monorepo typecheck phase.
+  // Keep strict typecheck in local/CI via `npm run -w apps/dashboard typecheck`.
+  typescript: { ignoreBuildErrors: process.env.VERCEL === '1' },
   // Monorepo: trace serverless deps from repo root (hoisted node_modules), not only apps/dashboard
   outputFileTracingRoot: rootDir,
   transpilePackages: ['@payaid/db', '@payaid/social', '@payaid/ai'],
