@@ -93,8 +93,8 @@ export default function MarketingDashboardPage(props: PageProps<'/marketing/[ten
     Promise.all([
       fetch(`/api/marketing/dashboard/enriched`, { headers, signal: controller.signal }).then(async (r) => {
         if (r.ok) return r.json()
-        const body = await r.json().catch(() => ({} as { error?: string; message?: string }))
-        const msg =
+        const body = await r.json().catch(() => ({} as { error?: string; message?: string; details?: string }))
+        const base =
           body?.error ||
           body?.message ||
           (r.status === 403
@@ -102,6 +102,7 @@ export default function MarketingDashboardPage(props: PageProps<'/marketing/[ten
             : r.status === 401
               ? 'Session expired. Sign in again.'
               : 'Failed to load dashboard')
+        const msg = body?.details && r.status >= 500 ? `${base}: ${body.details}` : base
         return Promise.reject(new Error(msg))
       }),
       fetch(`/api/marketing/insights`, { headers, signal: controller.signal }).then((r) =>

@@ -3,6 +3,23 @@ import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 
+type MarketingPostRow = { channel: string | null; status: string | null }
+
+/** MarketingPost may be absent from generated Prisma client until migrations ship — never throw. */
+async function safeMarketingPosts(tenantId: string): Promise<MarketingPostRow[]> {
+  try {
+    const delegate = (prisma as unknown as { marketingPost?: { findMany: (args: object) => Promise<MarketingPostRow[]> } })
+      .marketingPost
+    if (!delegate?.findMany) return []
+    return await delegate.findMany({
+      where: { tenantId },
+      select: { channel: true, status: true },
+    })
+  } catch {
+    return []
+  }
+}
+
 /**
  * GET /api/marketing/dashboard/enriched
  * Data-rich metrics: ₹ revenue, GST compliance, channel breakdown, funnel, campaign health.
@@ -26,10 +43,7 @@ async function getEnrichedData(tenantId: string) {
       select: { value: true, actualCloseDate: true, createdAt: true },
     }),
     prisma.contact.count({ where: { tenantId, status: 'active' } }),
-    prisma.marketingPost.findMany({
-      where: { tenantId },
-      select: { channel: true, status: true },
-    }).catch(() => []),
+    safeMarketingPosts(tenantId),
   ])
 
   const totalReach = campaigns.reduce((s, c) => s + c.sent, 0)
