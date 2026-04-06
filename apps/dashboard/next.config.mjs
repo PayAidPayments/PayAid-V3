@@ -19,6 +19,8 @@ try {
 const nextConfig = {
   reactStrictMode: true,
   typescript: { ignoreBuildErrors: false },
+  // Monorepo: trace serverless deps from repo root (hoisted node_modules), not only apps/dashboard
+  outputFileTracingRoot: rootDir,
   transpilePackages: ['@payaid/db', '@payaid/social', '@payaid/ai'],
   async redirects() {
     return [
