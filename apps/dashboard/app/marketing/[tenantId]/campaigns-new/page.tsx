@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation'
 
-export default function CampaignsPageNewRedirect({
+export default async function CampaignsPageNewRedirect({
   params,
 }: {
-  params: { tenantId: string }
+  params: Promise<{ tenantId: string }>
 }) {
-  redirect(`/marketing/${params.tenantId}/Campaigns`)
+  const { tenantId } = await params
+  redirect(`/marketing/${tenantId}/Campaigns`)
 }

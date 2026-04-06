@@ -145,8 +145,15 @@ export function MarketingStudioComposer({
     setLoadingContent(true)
     onGenerateContent(step2.prompt.trim())
       .then((res) => {
+        const validChannels = new Set<string>(MARKETING_CHANNELS)
         const variants = res.variants
-          ? Object.entries(res.variants).map(([channel, content]) => ({ channel, content }))
+          ? Object.entries(res.variants)
+              .filter(([channel]) => validChannels.has(channel))
+              .map(([channel, content]) => ({
+                channel: channel as MarketingChannel,
+                content,
+                mediaIds: [],
+              }))
           : []
         setStep2({ generatedContent: res.primary, channelVariants: variants })
       })
