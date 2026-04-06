@@ -15,6 +15,15 @@ const updatePaymentGatewaySchema = z.object({
   testMode: z.boolean().optional(),
 })
 
+function getGatewayDiagnostics() {
+  const key = process.env.ENCRYPTION_KEY?.trim() || ''
+  const encryptionKeyFormatValid = key.length === 64 && /^[0-9a-fA-F]+$/.test(key)
+  return {
+    encryptionKeyConfigured: encryptionKeyFormatValid,
+    encryptionKeyFormatValid,
+  }
+}
+
 /**
  * GET /api/settings/payment-gateway
  * Get tenant's payment gateway settings (sensitive fields are encrypted)
@@ -49,6 +58,7 @@ export async function GET(request: NextRequest) {
         isConfigured: false,
         isActive: false,
         testMode: false,
+        diagnostics: getGatewayDiagnostics(),
       })
     }
 
@@ -62,6 +72,7 @@ export async function GET(request: NextRequest) {
       payaidEncryptionKey: settings.payaidEncryptionKey ? '••••••••' : null,
       payaidDecryptionKey: settings.payaidDecryptionKey ? '••••••••' : null,
       payaidWebhookSecret: settings.payaidWebhookSecret ? '••••••••' : null,
+      diagnostics: getGatewayDiagnostics(),
     })
   } catch (error) {
     console.error('Get payment gateway settings error:', error)

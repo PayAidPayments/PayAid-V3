@@ -28,6 +28,31 @@ export default function BillingPage() {
   const [gatewayError, setGatewayError] = useState('')
   const [gatewaySuccess, setGatewaySuccess] = useState('')
 
+  const diagnostics = useMemo(() => {
+    const apiKeyLooksPresent = Boolean(
+      gatewayForm.payaidApiKey && (gatewayForm.payaidApiKey.includes('...') || gatewayForm.payaidApiKey.trim().length > 0)
+    )
+    const saltLooksPresent = Boolean(
+      gatewayForm.payaidSalt &&
+        (gatewayForm.payaidSalt === '••••••••' || gatewayForm.payaidSalt.trim().length > 0)
+    )
+    const baseUrlValid =
+      !gatewayForm.payaidBaseUrl ||
+      /^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(gatewayForm.payaidBaseUrl.trim())
+    const serverEncryptionConfigured = Boolean(gatewaySettings?.diagnostics?.encryptionKeyConfigured)
+    const readyForActiveGateway = !gatewayForm.isActive || (apiKeyLooksPresent && saltLooksPresent && baseUrlValid)
+    const canSave = serverEncryptionConfigured && baseUrlValid && readyForActiveGateway
+
+    return {
+      apiKeyLooksPresent,
+      saltLooksPresent,
+      baseUrlValid,
+      serverEncryptionConfigured,
+      readyForActiveGateway,
+      canSave,
+    }
+  }, [gatewayForm, gatewaySettings])
+
   useEffect(() => {
     if (typeof window !== 'undefined') setOrigin(window.location.origin)
   }, [])
@@ -162,6 +187,29 @@ export default function BillingPage() {
             </div>
           )}
 
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 p-4 space-y-2">
+            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Gateway diagnostics</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+              <div className={diagnostics.serverEncryptionConfigured ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}>
+                {diagnostics.serverEncryptionConfigured ? 'OK' : 'Missing'}: ENCRYPTION_KEY (server)
+              </div>
+              <div className={diagnostics.baseUrlValid ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}>
+                {diagnostics.baseUrlValid ? 'OK' : 'Invalid'}: Base URL format
+              </div>
+              <div className={diagnostics.apiKeyLooksPresent ? 'text-green-700 dark:text-green-300' : 'text-amber-700 dark:text-amber-300'}>
+                {diagnostics.apiKeyLooksPresent ? 'OK' : 'Missing'}: API key present
+              </div>
+              <div className={diagnostics.saltLooksPresent ? 'text-green-700 dark:text-green-300' : 'text-amber-700 dark:text-amber-300'}>
+                {diagnostics.saltLooksPresent ? 'OK' : 'Missing'}: SALT present
+              </div>
+            </div>
+            {!diagnostics.serverEncryptionConfigured && (
+              <div className="text-xs text-red-700 dark:text-red-300">
+                Set a valid 64-char hex ENCRYPTION_KEY in production env vars, then redeploy.
+              </div>
+            )}
+          </div>
+
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 p-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
@@ -246,7 +294,12 @@ export default function BillingPage() {
               {showSecrets ? 'Hide secrets' : 'Edit secrets'}
             </Button>
             <div className="flex-1" />
-            <Button type="button" onClick={() => saveGateway.mutate()} disabled={saveGateway.isPending || gatewayLoading}>
+            <Button
+              type="button"
+              onClick={() => saveGateway.mutate()}
+              disabled={saveGateway.isPending || gatewayLoading || !diagnostics.canSave}
+              title={!diagnostics.canSave ? 'Resolve Gateway diagnostics first' : undefined}
+            >
               {saveGateway.isPending ? 'Saving…' : 'Save'}
             </Button>
           </div>

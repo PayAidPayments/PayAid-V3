@@ -13,6 +13,7 @@ import { FileText, Bot, Trophy, XCircle } from 'lucide-react'
 import { CloseDealModal } from '@/components/crm/deal/CloseDealModal'
 import { DealTimeline } from '@/components/crm/deal/DealTimeline'
 import { useToast } from '@/components/ui/use-toast'
+import { useAuthStore } from '@/lib/stores/auth'
 
 export default function DealDetailPage() {
   const params = useParams()
@@ -20,6 +21,7 @@ export default function DealDetailPage() {
   const id = params.id as string
   const router = useRouter()
   const queryClient = useQueryClient()
+  const { tenant } = useAuthStore()
   const { data: deal, isLoading } = useDeal(id, tenantId)
   const updateDeal = useUpdateDeal()
   const [closeModal, setCloseModal] = useState<'won' | 'lost' | null>(null)
@@ -34,6 +36,8 @@ export default function DealDetailPage() {
       return (json.quotes || []) as any[]
     },
   })
+
+  const hasFinanceModule = Boolean(tenant?.licensedModules?.includes('finance'))
 
   if (isLoading) {
     return <PageLoading message="Loading deal..." fullScreen={false} />
@@ -84,7 +88,7 @@ export default function DealDetailPage() {
             <FileText className="h-4 w-4 mr-2" />
             Create Quote
           </Button>
-          {deal.contact && (
+          {deal.contact && hasFinanceModule && (
             <Link href={`/finance/${tenantId}/Invoices/new?customerId=${deal.contact.id}`}>
               <Button
                 className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
@@ -92,6 +96,16 @@ export default function DealDetailPage() {
                 🧾 Create Invoice
               </Button>
             </Link>
+          )}
+          {deal.contact && !hasFinanceModule && (
+            <Button
+              variant="outline"
+              disabled
+              title="Finance module is not enabled for this workspace"
+              className="dark:border-gray-600 dark:text-gray-300"
+            >
+              🧾 Create Invoice (Finance module required)
+            </Button>
           )}
           <Link href={`/crm/${tenantId}/Deals`}>
             <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Back</Button>
