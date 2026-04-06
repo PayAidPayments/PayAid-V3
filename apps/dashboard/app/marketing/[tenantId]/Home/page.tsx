@@ -355,12 +355,12 @@ export default function MarketingDashboardPage(props: PageProps<'/marketing/[ten
             <Zap className="h-4 w-4" />
             One-Click Actions
           </span>
-          <Link href={`/marketing/${tenantId}/Campaigns/New`}>
+          <Link href={`/marketing/${tenantId}/Campaigns`}>
             <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 gap-2">
               <Plus className="h-4 w-4" /> New Campaign
             </Button>
           </Link>
-          <Link href={`/marketing/${tenantId}/Campaigns/New?type=whatsapp`}>
+          <Link href={`/marketing/${tenantId}/Campaigns`}>
             <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 gap-2">
               <MessageCircle className="h-4 w-4" /> WhatsApp Blast
             </Button>
