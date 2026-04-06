@@ -186,6 +186,29 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    const message = error instanceof Error ? error.message : String(error)
+
+    // Surface actionable configuration errors instead of generic 500s.
+    if (message.includes('ENCRYPTION_KEY')) {
+      return NextResponse.json(
+        {
+          error:
+            'Server encryption is not configured. Set a valid ENCRYPTION_KEY (64-char hex) in environment variables and redeploy.',
+        },
+        { status: 500 }
+      )
+    }
+
+    if (message.includes('Invalid encrypted data format')) {
+      return NextResponse.json(
+        {
+          error:
+            'Stored payment gateway secret format is invalid. Re-enter gateway secrets and save again.',
+        },
+        { status: 400 }
+      )
+    }
+
     console.error('Update payment gateway settings error:', error)
     return NextResponse.json(
       { error: 'Failed to update payment gateway settings' },
