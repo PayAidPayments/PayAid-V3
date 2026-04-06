@@ -36,7 +36,7 @@ export interface MarketingStudioComposerProps {
   onGenerateImages?: (
     prompt: string,
     options?: { brandColors?: string; brandLogoUrl?: string }
-  ) => Promise<{ id: string; url: string }[]>
+  ) => Promise<{ id: string; url: string; mimeType?: string; fileName?: string }[]>
   onGenerateVideo?: (prompt: string, imageUrls?: string[]) => Promise<{ id: string; url: string } | null>
   onLaunch?: (payload: {
     segmentId: string | null
@@ -170,7 +170,15 @@ export function MarketingStudioComposer({
       brandColors: brandColors.trim() || undefined,
       brandLogoUrl: brandLogoUrl.trim() || undefined,
     })
-      .then((imgs) => setStep2({ generatedImages: imgs, selectedImageIds: imgs.map((i) => i.id) }))
+      .then((imgs) => {
+        const normalized = imgs.map((img) => ({
+          id: img.id,
+          url: img.url,
+          mimeType: img.mimeType || 'image/png',
+          fileName: img.fileName,
+        }))
+        setStep2({ generatedImages: normalized, selectedImageIds: normalized.map((i) => i.id) })
+      })
       .catch(() => {
         setStep2({ generatedImages: [], selectedImageIds: [] })
       })
