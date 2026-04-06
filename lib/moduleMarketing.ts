@@ -377,11 +377,16 @@ const MODULE_CONFIG_ID_TO_MARKETING_SLUG: Record<string, string> = {
   wholesale: 'inventory',
 }
 
-export function getModuleMarketingHref(moduleId: string): string | null {
+/**
+ * Public path for `/modules/[slug]` from a `modules.config` id.
+ * Always returns a string so marketing cards never render as inert blocks if
+ * `getModuleBySlug` diverges in a client bundle (prod-safe).
+ */
+export function getModuleMarketingHref(moduleId: string): string {
   const slug =
     MODULE_CONFIG_ID_TO_MARKETING_SLUG[moduleId] ??
     (MODULE_MARKETING.some((m) => m.slug === moduleId) ? moduleId : 'suite')
-  return getModuleBySlug(slug) ? `/modules/${slug}` : null
+  return `/modules/${slug}`
 }
 
 /**

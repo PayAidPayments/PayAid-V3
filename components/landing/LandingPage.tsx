@@ -1192,22 +1192,18 @@ export default function LandingPage() {
               const modulePageHref = getModuleMarketingHref(module.id)
               const cardClass =
                 'group bg-white rounded-lg p-4 border-2 border-gray-200 hover:border-[#53328A] hover:shadow-lg transition-all cursor-pointer text-center block no-underline'
-              const inner = (
-                <>
+              return (
+                <Link
+                  key={module.id}
+                  href={modulePageHref}
+                  prefetch={false}
+                  className={cardClass}
+                >
                   <div className={`w-12 h-12 rounded-lg ${colorClass} flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform`}>
                     <IconComponent className="h-6 w-6" />
                   </div>
                   <div className="text-sm font-semibold text-gray-900">{module.name}</div>
-                </>
-              )
-              return modulePageHref ? (
-                <Link key={module.id} href={modulePageHref} className={cardClass}>
-                  {inner}
                 </Link>
-              ) : (
-                <div key={module.id} className={cardClass.replace(' block no-underline', '')}>
-                  {inner}
-                </div>
               )
             })}
           </div>
@@ -1236,22 +1232,18 @@ export default function LandingPage() {
                   const modulePageHref = getModuleMarketingHref(module.id)
                   const cardClass =
                     'group bg-white rounded-lg p-4 border-2 border-gray-200 hover:border-[#53328A] hover:shadow-lg transition-all cursor-pointer text-center block no-underline'
-                  const inner = (
-                    <>
+                  return (
+                    <Link
+                      key={module.id}
+                      href={modulePageHref}
+                      prefetch={false}
+                      className={cardClass}
+                    >
                       <div className={`w-12 h-12 rounded-lg ${colorClass} flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform`}>
                         <IconComponent className="h-6 w-6" />
                       </div>
                       <div className="text-sm font-semibold text-gray-900">{module.name}</div>
-                    </>
-                  )
-                  return modulePageHref ? (
-                    <Link key={module.id} href={modulePageHref} className={cardClass}>
-                      {inner}
                     </Link>
-                  ) : (
-                    <div key={module.id} className={cardClass.replace(' block no-underline', '')}>
-                      {inner}
-                    </div>
                   )
                 })}
               </div>
