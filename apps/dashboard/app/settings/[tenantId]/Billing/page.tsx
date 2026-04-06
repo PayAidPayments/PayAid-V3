@@ -28,6 +28,28 @@ export default function BillingPage() {
   const [gatewayError, setGatewayError] = useState('')
   const [gatewaySuccess, setGatewaySuccess] = useState('')
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') setOrigin(window.location.origin)
+  }, [])
+
+  const { data: gatewaySettings, isLoading: gatewayLoading } = useQuery({
+    queryKey: ['settings', 'payment-gateway'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/payment-gateway', { headers: getAuthHeaders() })
+      if (!res.ok) throw new Error('Failed to fetch payment gateway settings')
+      return res.json()
+    },
+  })
+
+  const { data: tenantSettings } = useQuery({
+    queryKey: ['settings', 'tenant'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/tenant', { headers: getAuthHeaders() })
+      if (!res.ok) return null
+      return res.json()
+    },
+  })
+
   const diagnostics = useMemo(() => {
     const apiKeyLooksPresent = Boolean(
       gatewayForm.payaidApiKey && (gatewayForm.payaidApiKey.includes('...') || gatewayForm.payaidApiKey.trim().length > 0)
@@ -52,28 +74,6 @@ export default function BillingPage() {
       canSave,
     }
   }, [gatewayForm, gatewaySettings])
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') setOrigin(window.location.origin)
-  }, [])
-
-  const { data: gatewaySettings, isLoading: gatewayLoading } = useQuery({
-    queryKey: ['settings', 'payment-gateway'],
-    queryFn: async () => {
-      const res = await fetch('/api/settings/payment-gateway', { headers: getAuthHeaders() })
-      if (!res.ok) throw new Error('Failed to fetch payment gateway settings')
-      return res.json()
-    },
-  })
-
-  const { data: tenantSettings } = useQuery({
-    queryKey: ['settings', 'tenant'],
-    queryFn: async () => {
-      const res = await fetch('/api/settings/tenant', { headers: getAuthHeaders() })
-      if (!res.ok) return null
-      return res.json()
-    },
-  })
 
   useEffect(() => {
     if (!gatewaySettings) return
