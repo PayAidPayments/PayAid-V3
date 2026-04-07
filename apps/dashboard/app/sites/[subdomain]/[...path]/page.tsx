@@ -1,6 +1,11 @@
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db/prisma'
 
+// This is a public dynamic site route backed by DB content.
+// Force runtime rendering to avoid Prisma work during Vercel build "Collecting page data".
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 interface PageContent {
   type: string
   sections?: Array<{
