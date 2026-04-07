@@ -14,6 +14,11 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { ModuleToggle } from '@/components/Admin/ModuleToggle'
 
+// Admin page reads auth cookies and database at request time.
+// Force dynamic rendering to prevent Vercel build-time page data collection stalls.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 interface PageProps {
   params: Promise<{
     tenantId: string

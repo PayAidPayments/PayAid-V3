@@ -12,6 +12,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
+// Admin page reads auth cookies and database at request time.
+// Force dynamic rendering to prevent Vercel build-time page data collection stalls.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function AdminTenantsPage() {
   // Check authentication
   const cookieStore = await cookies()

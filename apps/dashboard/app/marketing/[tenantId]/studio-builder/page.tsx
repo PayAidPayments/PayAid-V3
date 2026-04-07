@@ -2,6 +2,11 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { prisma } from '@/lib/db/prisma'
 
+// Builder content is tenant-scoped and database-backed.
+// Force runtime rendering to avoid build-time page data collection stalls on Vercel.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const MarketingStudioForm = dynamic(() =>
   import('@/components/marketing/MarketingStudioForm').then((m) => ({ default: m.MarketingStudioForm }))
 )
