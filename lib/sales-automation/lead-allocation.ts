@@ -33,6 +33,58 @@ const DEFAULT_CONFIG: AllocationConfig = {
   maxLeadsPerRep: 20, // Consider overloaded after 20 leads
 }
 
+const SALES_ELIGIBLE_ROLES = [
+  'owner',
+  'admin',
+  'manager',
+  'sales_rep',
+  'sales head',
+  'sales_head',
+  'sales manager',
+  'sales_manager',
+  'executive',
+]
+
+async function ensureSalesRepsForTenant(tenantId: string) {
+  const existing = await prisma.salesRep.findMany({
+    where: { tenantId },
+    include: {
+      user: { select: { name: true, email: true } },
+      assignedLeads: { select: { id: true } },
+    },
+  })
+  if (existing.length > 0) return existing
+
+  const users = await prisma.user.findMany({
+    where: { tenantId },
+    select: { id: true, role: true },
+  })
+
+  const eligibleUserIds = users
+    .filter((u) => SALES_ELIGIBLE_ROLES.includes((u.role || '').toLowerCase()))
+    .map((u) => u.id)
+
+  if (eligibleUserIds.length === 0) return []
+
+  await Promise.all(
+    eligibleUserIds.map((userId) =>
+      prisma.salesRep.upsert({
+        where: { userId },
+        update: { tenantId, isOnLeave: false },
+        create: { userId, tenantId, isOnLeave: false, conversionRate: 0 },
+      })
+    )
+  )
+
+  return prisma.salesRep.findMany({
+    where: { tenantId, userId: { in: eligibleUserIds } },
+    include: {
+      user: { select: { name: true, email: true } },
+      assignedLeads: { select: { id: true } },
+    },
+  })
+}
+
 /**
  * Calculate allocation score for a sales rep
  */
@@ -114,7 +166,7 @@ export async function autoAllocateLead(
   const allocationConfig = { ...DEFAULT_CONFIG, ...config }
 
   // Get all active sales reps for this tenant
-  const reps = await prisma.salesRep.findMany({
+  let reps = await prisma.salesRep.findMany({
     where: {
       tenantId,
       isOnLeave: false, // Only active reps
@@ -135,7 +187,11 @@ export async function autoAllocateLead(
   })
 
   if (reps.length === 0) {
-    throw new Error('No active sales reps found for this tenant')
+    // Bootstrap from existing tenant users so assignment doesn't break in partially seeded tenants.
+    reps = await ensureSalesRepsForTenant(tenantId)
+    if (reps.length === 0) {
+      throw new Error('No active sales reps found for this tenant')
+    }
   }
 
   // Calculate scores for all reps

@@ -65,7 +65,7 @@ export default function CRMLeadsPage() {
   const tenantId = params?.tenantId as string
   const { user, logout } = useAuthStore()
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(100)
+  const [limit, setLimit] = useState(25)
   const [search, setSearch] = useState('')
   const [selectedLeads, setSelectedLeads] = useState<string[]>([])
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
@@ -1365,13 +1365,16 @@ export default function CRMLeadsPage() {
               <div className="flex items-center gap-4">
                 <select
                   value={limit}
-                  onChange={(e) => setLimit(Number(e.target.value))}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value))
+                    setPage(1)
+                  }}
                   className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
+                  <option value={10}>10 Records Per Page</option>
                   <option value={25}>25 Records Per Page</option>
                   <option value={50}>50 Records Per Page</option>
                   <option value={100}>100 Records Per Page</option>
-                  <option value={200}>200 Records Per Page</option>
                 </select>
                 {pagination && (
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
