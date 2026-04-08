@@ -81,7 +81,7 @@ export default function LandingPage() {
   const [selectedIndustry, setSelectedIndustry] = useState<string>('')
   const [selectedModules, setSelectedModules] = useState<string[]>([])
   const [showModuleSelection, setShowModuleSelection] = useState(false)
-  const [selectedTier, setSelectedTier] = useState<'starter' | 'professional'>('professional')
+  const [selectedTier, setSelectedTier] = useState<'starter' | 'professional'>('starter')
   const [activeTab, setActiveTab] = useState<'crm' | 'invoicing' | 'inventory' | 'analytics'>('crm')
   const [isPaused, setIsPaused] = useState(false)
   const [pricingTableBilling, setPricingTableBilling] = useState<'monthly' | 'annual'>('annual')
@@ -647,6 +647,221 @@ export default function LandingPage() {
             </div>
           </div>
 
+          {/* Try It Now - Right after Hero */}
+          <div className="mt-16 bg-white rounded-2xl p-8 border-2 border-purple-200 shadow-lg">
+            <div className="grid md:grid-cols-2 gap-8 items-start">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">Try It Now</h3>
+                <p className="text-sm text-gray-600 mb-4">Click any question to see how AI specialists respond:</p>
+                <div className="space-y-2 mb-6 max-h-[500px] overflow-y-auto">
+                  {aiResponses.map((item, idx) => {
+                    const isSelected = selectedQuery === item.query
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          setHasUserInteracted(true)
+                          setSelectedQuery(item.query)
+                        }}
+                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-gradient-to-r from-[#53328A] to-[#6B42A3] text-white shadow-md'
+                            : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white' : 'bg-[#53328A]'}`}></div>
+                        <span className="text-sm font-medium flex-1">{item.query}</span>
+                        {isSelected && <Sparkles className="h-4 w-4" />}
+                      </div>
+                    )
+                  })}
+                </div>
+                <Link href="/signup">
+                  <Button className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white w-full md:w-auto">
+                    Start Free Trial
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+              <div id="ai-response-area" className="bg-gradient-to-br from-purple-100 to-yellow-100 rounded-xl p-6 border border-purple-200 min-h-[300px]">
+                {(() => {
+                  if (!selectedQuery) {
+                    return (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center text-gray-500">
+                          <Sparkles className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                          <p className="text-sm">Click any question to see AI response</p>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  const selectedItem = aiResponses.find(item => item.query === selectedQuery)
+                  if (!selectedItem) return null
+
+                  const IconComponent = selectedItem.icon
+
+                  return (
+                    <motion.div
+                      key={selectedQuery}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex items-start gap-3"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-[#53328A] flex items-center justify-center flex-shrink-0">
+                        <IconComponent className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        {isThinking ? (
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <span className="text-sm">AI Specialist is thinking</span>
+                            <div className="flex gap-1">
+                              <motion.span
+                                className="w-2 h-2 bg-[#53328A] rounded-full"
+                                animate={{ opacity: [0.3, 1, 0.3] }}
+                                transition={{ duration: 0.8, repeat: Infinity, delay: 0 }}
+                              />
+                              <motion.span
+                                className="w-2 h-2 bg-[#53328A] rounded-full"
+                                animate={{ opacity: [0.3, 1, 0.3] }}
+                                transition={{ duration: 0.8, repeat: Infinity, delay: 0.2 }}
+                              />
+                              <motion.span
+                                className="w-2 h-2 bg-[#53328A] rounded-full"
+                                animate={{ opacity: [0.3, 1, 0.3] }}
+                                transition={{ duration: 0.8, repeat: Infinity, delay: 0.4 }}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p
+                              className="text-gray-800 leading-relaxed"
+                              dangerouslySetInnerHTML={{ __html: typedResponse || selectedItem.response }}
+                            />
+                            {isTyping && (
+                              <span className="inline-block w-2 h-4 bg-[#53328A] ml-1 animate-pulse"></span>
+                            )}
+                          </>
+                        )}
+                        {!isThinking && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <span className="text-xs font-semibold text-[#53328A]">{selectedItem.specialist}</span>
+                            <span className="text-xs text-gray-500">•</span>
+                            <span className="text-xs text-gray-500">Just now</span>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )
+                })()}
+              </div>
+            </div>
+          </div>
+
+          {/* Visual Module Grid */}
+          <div className="mt-16">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                {allModules.length} Modules, One Platform
+              </h2>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                Choose what you need, scale as you grow. Mix and match modules or choose an industry package.
+              </p>
+            </div>
+
+            {/* Module Grid - Show 18 important modules for Indian businesses */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-12">
+              {importantModules.map((module) => {
+                const IconComponent = moduleIconMap[module.icon] || FileText
+                const colorClasses: Record<string, string> = {
+                  core: 'bg-blue-100 text-blue-700',
+                  productivity: 'bg-yellow-100 text-yellow-700',
+                  ai: 'bg-purple-100 text-purple-700',
+                }
+                const colorClass = colorClasses[module.category] || 'bg-gray-100 text-gray-700'
+                const modulePageHref = getModuleMarketingHref(module.id)
+                const cardClass =
+                  'group bg-white rounded-lg p-4 border-2 border-gray-200 hover:border-[#53328A] hover:shadow-lg transition-all cursor-pointer text-center block no-underline'
+                return (
+                  <Link
+                    key={module.id}
+                    href={modulePageHref}
+                    prefetch={false}
+                    className={cardClass}
+                  >
+                    <div className={`w-12 h-12 rounded-lg ${colorClass} flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform`}>
+                      <IconComponent className="h-6 w-6" />
+                    </div>
+                    <div className="text-sm font-semibold text-gray-900">{module.name}</div>
+                  </Link>
+                )
+              })}
+            </div>
+
+            {/* Expandable Section for Remaining Modules */}
+            {showAllModules && remainingModules.length > 0 && (
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  visible: { opacity: 1, height: 'auto' },
+                  hidden: { opacity: 0, height: 0 }
+                }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden mb-12"
+              >
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {remainingModules.map((module) => {
+                    const IconComponent = moduleIconMap[module.icon] || FileText
+                    const colorClasses: Record<string, string> = {
+                      core: 'bg-blue-100 text-blue-700',
+                      productivity: 'bg-yellow-100 text-yellow-700',
+                      ai: 'bg-purple-100 text-purple-700',
+                    }
+                    const colorClass = colorClasses[module.category] || 'bg-gray-100 text-gray-700'
+                    const modulePageHref = getModuleMarketingHref(module.id)
+                    const cardClass =
+                      'group bg-white rounded-lg p-4 border-2 border-gray-200 hover:border-[#53328A] hover:shadow-lg transition-all cursor-pointer text-center block no-underline'
+                    return (
+                      <Link
+                        key={module.id}
+                        href={modulePageHref}
+                        prefetch={false}
+                        className={cardClass}
+                      >
+                        <div className={`w-12 h-12 rounded-lg ${colorClass} flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform`}>
+                          <IconComponent className="h-6 w-6" />
+                        </div>
+                        <div className="text-sm font-semibold text-gray-900">{module.name}</div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </motion.div>
+            )}
+
+            <div className="text-center">
+              {remainingModules.length > 0 && (
+                <p className="text-gray-600 mb-6">
+                  {showAllModules
+                    ? `Showing all ${allModules.length} modules`
+                    : `And ${remainingModules.length} more modules`}
+                </p>
+              )}
+              {remainingModules.length > 0 && (
+                <Button
+                  onClick={() => setShowAllModules(!showAllModules)}
+                  className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white"
+                >
+                  {showAllModules ? 'Show Less' : 'Explore All Modules'}
+                  <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showAllModules ? 'rotate-180' : ''}`} />
+                </Button>
+              )}
+            </div>
+          </div>
+
           {/* Industry Selection - Right after Hero */}
           <div className="max-w-2xl mx-auto mt-16">
             <h2 className="text-2xl md:text-3xl font-semibold text-center mb-4 text-gray-900">
@@ -775,7 +990,7 @@ export default function LandingPage() {
                     const IconComponent = module.icon // This is now a React component
                         
                     return (
-                      <Card 
+                      <Card
                         key={module.id}
                         className={`cursor-pointer transition-all hover:shadow-lg ${
                           isSelected 
@@ -786,12 +1001,22 @@ export default function LandingPage() {
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3">
-                            <Checkbox
-                              checked={isSelected}
-                              disabled={isAIStudio}
-                              onCheckedChange={() => !isAIStudio && handleModuleToggle(module.id)}
+                            <div
                               className="mt-1"
-                            />
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Checkbox
+                                checked={isSelected}
+                                disabled={isAIStudio}
+                                onCheckedChange={(checked) => {
+                                  if (isAIStudio) return
+                                  const shouldSelect = Boolean(checked)
+                                  if (shouldSelect !== isSelected) {
+                                    handleModuleToggle(module.id)
+                                  }
+                                }}
+                              />
+                            </div>
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
@@ -974,116 +1199,10 @@ export default function LandingPage() {
           </div>
 
           <div className="bg-white rounded-2xl p-8 border-2 border-purple-200 shadow-lg">
-            <div className="grid md:grid-cols-2 gap-8 items-start">
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">Try It Now</h3>
-                <p className="text-sm text-gray-600 mb-4">Click any question to see how AI specialists respond:</p>
-                <div className="space-y-2 mb-6 max-h-[500px] overflow-y-auto">
-                  {aiResponses.map((item, idx) => {
-                    const isSelected = selectedQuery === item.query
-                    return (
-                      <div
-                        key={idx}
-                        onClick={() => {
-                          setHasUserInteracted(true)
-                          setSelectedQuery(item.query)
-                        }}
-                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
-                          isSelected
-                            ? 'bg-gradient-to-r from-[#53328A] to-[#6B42A3] text-white shadow-md'
-                            : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                        }`}
-                      >
-                        <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white' : 'bg-[#53328A]'}`}></div>
-                        <span className="text-sm font-medium flex-1">{item.query}</span>
-                        {isSelected && <Sparkles className="h-4 w-4" />}
-                      </div>
-                    )
-                  })}
-                </div>
-                <Link href="/signup">
-                  <Button className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white w-full md:w-auto">
-                    Start Free Trial
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-              <div id="ai-response-area" className="bg-gradient-to-br from-purple-100 to-yellow-100 rounded-xl p-6 border border-purple-200 min-h-[300px]">
-                {(() => {
-                  // Show placeholder message if no query selected
-                  if (!selectedQuery) {
-                    return (
-                      <div className="flex items-center justify-center h-full">
-                        <div className="text-center text-gray-500">
-                          <Sparkles className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                          <p className="text-sm">Click any question to see AI response</p>
-                        </div>
-                      </div>
-                    )
-                  }
-
-                  const selectedItem = aiResponses.find(item => item.query === selectedQuery)
-                  if (!selectedItem) return null
-                  
-                  const IconComponent = selectedItem.icon
-                  
-                  return (
-                    <motion.div
-                      key={selectedQuery}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="flex items-start gap-3"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-[#53328A] flex items-center justify-center flex-shrink-0">
-                        <IconComponent className="h-5 w-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        {isThinking ? (
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <span className="text-sm">AI Specialist is thinking</span>
-                            <div className="flex gap-1">
-                              <motion.span
-                                className="w-2 h-2 bg-[#53328A] rounded-full"
-                                animate={{ opacity: [0.3, 1, 0.3] }}
-                                transition={{ duration: 0.8, repeat: Infinity, delay: 0 }}
-                              />
-                              <motion.span
-                                className="w-2 h-2 bg-[#53328A] rounded-full"
-                                animate={{ opacity: [0.3, 1, 0.3] }}
-                                transition={{ duration: 0.8, repeat: Infinity, delay: 0.2 }}
-                              />
-                              <motion.span
-                                className="w-2 h-2 bg-[#53328A] rounded-full"
-                                animate={{ opacity: [0.3, 1, 0.3] }}
-                                transition={{ duration: 0.8, repeat: Infinity, delay: 0.4 }}
-                              />
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <p 
-                              className="text-gray-800 leading-relaxed"
-                              dangerouslySetInnerHTML={{ __html: typedResponse || selectedItem.response }}
-                            />
-                            {isTyping && (
-                              <span className="inline-block w-2 h-4 bg-[#53328A] ml-1 animate-pulse"></span>
-                            )}
-                          </>
-                        )}
-                        {!isThinking && (
-                          <div className="mt-3 flex items-center gap-2">
-                            <span className="text-xs font-semibold text-[#53328A]">{selectedItem.specialist}</span>
-                            <span className="text-xs text-gray-500">•</span>
-                            <span className="text-xs text-gray-500">Just now</span>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )
-                })()}
-              </div>
-            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">AI Co-founder in Action</h3>
+            <p className="text-gray-600">
+              Ask finance, sales, marketing, and HR questions with context from your own business data.
+            </p>
           </div>
         </div>
       </section>
@@ -1163,110 +1282,6 @@ export default function LandingPage() {
                 priority={activeTab === 'analytics'}
               />
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Visual Module Grid */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              {allModules.length} Modules, One Platform
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Choose what you need, scale as you grow. Mix and match modules or choose an industry package.
-              </p>
-            </div>
-
-          {/* Module Grid - Show 18 important modules for Indian businesses */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-12">
-            {importantModules.map((module) => {
-              const IconComponent = moduleIconMap[module.icon] || FileText
-              const colorClasses: Record<string, string> = {
-                'core': 'bg-blue-100 text-blue-700',
-                'productivity': 'bg-yellow-100 text-yellow-700',
-                'ai': 'bg-purple-100 text-purple-700',
-              }
-              const colorClass = colorClasses[module.category] || 'bg-gray-100 text-gray-700'
-              const modulePageHref = getModuleMarketingHref(module.id)
-              const cardClass =
-                'group bg-white rounded-lg p-4 border-2 border-gray-200 hover:border-[#53328A] hover:shadow-lg transition-all cursor-pointer text-center block no-underline'
-              return (
-                <Link
-                  key={module.id}
-                  href={modulePageHref}
-                  prefetch={false}
-                  className={cardClass}
-                >
-                  <div className={`w-12 h-12 rounded-lg ${colorClass} flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform`}>
-                    <IconComponent className="h-6 w-6" />
-                  </div>
-                  <div className="text-sm font-semibold text-gray-900">{module.name}</div>
-                </Link>
-              )
-            })}
-          </div>
-
-          {/* Expandable Section for Remaining Modules */}
-          {showAllModules && remainingModules.length > 0 && (
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={{
-                visible: { opacity: 1, height: 'auto' },
-                hidden: { opacity: 0, height: 0 }
-              }}
-              transition={{ duration: 0.3 }}
-              className="overflow-hidden mb-12"
-            >
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {remainingModules.map((module) => {
-                  const IconComponent = moduleIconMap[module.icon] || FileText
-                  const colorClasses: Record<string, string> = {
-                    'core': 'bg-blue-100 text-blue-700',
-                    'productivity': 'bg-yellow-100 text-yellow-700',
-                    'ai': 'bg-purple-100 text-purple-700',
-                  }
-                  const colorClass = colorClasses[module.category] || 'bg-gray-100 text-gray-700'
-                  const modulePageHref = getModuleMarketingHref(module.id)
-                  const cardClass =
-                    'group bg-white rounded-lg p-4 border-2 border-gray-200 hover:border-[#53328A] hover:shadow-lg transition-all cursor-pointer text-center block no-underline'
-                  return (
-                    <Link
-                      key={module.id}
-                      href={modulePageHref}
-                      prefetch={false}
-                      className={cardClass}
-                    >
-                      <div className={`w-12 h-12 rounded-lg ${colorClass} flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform`}>
-                        <IconComponent className="h-6 w-6" />
-                      </div>
-                      <div className="text-sm font-semibold text-gray-900">{module.name}</div>
-                    </Link>
-                  )
-                })}
-              </div>
-            </motion.div>
-          )}
-
-          <div className="text-center">
-            {remainingModules.length > 0 && (
-              <p className="text-gray-600 mb-6">
-                {showAllModules 
-                  ? `Showing all ${allModules.length} modules` 
-                  : `And ${remainingModules.length} more modules`}
-              </p>
-            )}
-            {remainingModules.length > 0 && (
-              <Button 
-                onClick={() => setShowAllModules(!showAllModules)}
-                className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white"
-              >
-                {showAllModules ? 'Show Less' : 'Explore All Modules'}
-                <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showAllModules ? 'rotate-180' : ''}`} />
-              </Button>
-            )}
           </div>
         </div>
       </section>

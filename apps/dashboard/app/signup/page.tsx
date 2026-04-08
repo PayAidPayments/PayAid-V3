@@ -150,7 +150,7 @@ function SignupForm() {
                 body: JSON.stringify({
                   industries: [industryId],
                   selectedModules: selectedModules,
-                  tier: selectedTierParam || 'professional',
+                  tier: selectedTierParam || 'starter',
                   industrySubType: industrySubTypeParam || null,
                 }),
               })
@@ -164,7 +164,7 @@ function SignupForm() {
                 },
                 body: JSON.stringify({
                   industries: [industryId],
-                  tier: selectedTierParam || 'professional',
+                  tier: selectedTierParam || 'starter',
                   industrySubType: industrySubTypeParam || null,
                 }),
               })
