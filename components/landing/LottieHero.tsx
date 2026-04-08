@@ -67,10 +67,10 @@ export default function LottieHero() {
 
       {/* Bottom banner — always on top, covers the Spline watermark area */}
       <div
-        className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center px-6 py-4"
+        className="absolute bottom-0 left-0 right-0 z-20 flex items-end justify-center px-6 pt-16 pb-6"
         style={{
           background:
-            'linear-gradient(to top, rgba(83,50,138,0.92) 0%, rgba(83,50,138,0.80) 60%, transparent 100%)',
+            'linear-gradient(to top, rgba(83,50,138,0.95) 0%, rgba(83,50,138,0.80) 50%, transparent 100%)',
           backdropFilter: 'blur(2px)',
         }}
       >
