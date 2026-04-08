@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Script from 'next/script'
-import Image from 'next/image'
 
 declare global {
   namespace JSX {
@@ -54,15 +53,12 @@ export default function LottieHero() {
           style={{ width: '100%', height: '100%', display: 'block' }}
         />
       ) : (
-        <Image
-          src="/hero-robot-pro.png"
-          alt="PayAid AI Robot Assistant"
-          fill
-          sizes="(max-width: 768px) 100vw, 50vw"
-          className="object-contain"
-          priority
-          style={{ filter: 'drop-shadow(0 20px 60px rgba(83,50,138,0.35))' }}
-        />
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-indigo-100">
+          <div className="rounded-2xl border border-purple-200 bg-white/90 px-6 py-5 shadow-sm">
+            <p className="text-sm font-semibold text-purple-900">PayAid AI Assistant</p>
+            <p className="mt-1 text-xs text-purple-700">3D preview is unavailable on this device.</p>
+          </div>
+        </div>
       )}
 
       {/* Bottom banner — always on top, covers the Spline watermark area */}
@@ -70,7 +66,7 @@ export default function LottieHero() {
         className="absolute bottom-0 left-0 right-0 z-20 flex items-end justify-center px-6 pt-16 pb-6"
         style={{
           background:
-            'linear-gradient(to top, rgba(30,10,60,0.98) 0%, rgba(83,50,138,0.90) 55%, transparent 100%)',
+            'linear-gradient(to top, rgba(10,0,30,1.0) 0%, rgba(30,10,60,0.97) 35%, rgba(83,50,138,0.85) 65%, transparent 100%)',
           backdropFilter: 'blur(2px)',
         }}
       >

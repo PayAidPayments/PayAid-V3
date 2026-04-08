@@ -430,7 +430,7 @@ export default function LandingPage() {
       {/* Header with Mega Menu */}
       <header className="fixed top-0 w-full z-50 bg-white/98 backdrop-blur-lg border-b border-gray-200">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-11">
             <Logo href="/" />
             <div className="hidden md:flex items-center gap-8">
               {/* Products Dropdown */}
@@ -549,62 +549,8 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      {/* Stats Section - Top of Page */}
-      <section className="mt-16 py-12 bg-gray-50 border-y border-gray-200">
-        <div className="max-w-7xl mx-auto px-4">
-          <motion.div 
-            className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={{
-              visible: { opacity: 1 },
-              hidden: { opacity: 0 }
-            }}
-            transition={{ staggerChildren: 0.2 }}
-          >
-            <motion.div
-              variants={{
-                visible: { opacity: 1, y: 0 },
-                hidden: { opacity: 0, y: 20 }
-              }}
-            >
-              <StatCounter value={10} suffix="x" />
-              <div className="text-sm md:text-base text-gray-600 font-medium mt-2">Faster Execution</div>
-            </motion.div>
-            <motion.div
-              variants={{
-                visible: { opacity: 1, y: 0 },
-                hidden: { opacity: 0, y: 20 }
-              }}
-            >
-              <StatCounter value={50} suffix="%" />
-              <div className="text-sm md:text-base text-gray-600 font-medium mt-2">Cost Savings</div>
-            </motion.div>
-            <motion.div
-              variants={{
-                visible: { opacity: 1, y: 0 },
-                hidden: { opacity: 0, y: 20 }
-              }}
-            >
-              <StatCounter value={100} suffix="%" />
-              <div className="text-sm md:text-base text-gray-600 font-medium mt-2">Business Visibility</div>
-            </motion.div>
-            <motion.div
-              variants={{
-                visible: { opacity: 1, y: 0 },
-                hidden: { opacity: 0, y: 20 }
-              }}
-            >
-              <StatCounter value={0} />
-              <div className="text-sm md:text-base text-gray-600 font-medium mt-2">Tools to Switch</div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
       {/* Hero Section */}
-      <section className="mt-16 min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-purple-50 px-4 py-20">
+      <section className="mt-11 min-h-[calc(100vh-2.75rem)] flex items-center justify-center bg-gradient-to-b from-white to-purple-50 px-4 py-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left Column - Text and CTA */}
@@ -891,6 +837,37 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Stats Band — sits immediately below the hero */}
+      <section className="py-10 bg-gray-50 border-y border-gray-200">
+        <div className="max-w-7xl mx-auto px-4">
+          <motion.div
+            className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-100px' }}
+            variants={{ visible: { opacity: 1 }, hidden: { opacity: 0 } }}
+            transition={{ staggerChildren: 0.2 }}
+          >
+            <motion.div variants={{ visible: { opacity: 1, y: 0 }, hidden: { opacity: 0, y: 20 } }}>
+              <StatCounter value={10} suffix="x" />
+              <div className="text-sm md:text-base text-gray-600 font-medium mt-2">Faster Execution</div>
+            </motion.div>
+            <motion.div variants={{ visible: { opacity: 1, y: 0 }, hidden: { opacity: 0, y: 20 } }}>
+              <StatCounter value={50} suffix="%" />
+              <div className="text-sm md:text-base text-gray-600 font-medium mt-2">Cost Savings</div>
+            </motion.div>
+            <motion.div variants={{ visible: { opacity: 1, y: 0 }, hidden: { opacity: 0, y: 20 } }}>
+              <StatCounter value={100} suffix="%" />
+              <div className="text-sm md:text-base text-gray-600 font-medium mt-2">Business Visibility</div>
+            </motion.div>
+            <motion.div variants={{ visible: { opacity: 1, y: 0 }, hidden: { opacity: 0, y: 20 } }}>
+              <StatCounter value={0} />
+              <div className="text-sm md:text-base text-gray-600 font-medium mt-2">Tools to Switch</div>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
