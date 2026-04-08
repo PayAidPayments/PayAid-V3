@@ -142,16 +142,11 @@ function getPrismaClient(): PrismaClient {
     // This reduces initialization overhead on each request
     globalForPrisma.prisma = client
     
-    // Pre-connect to database to reduce first-query latency
-    // This is especially important for serverless cold starts
-    // Don't await - let it connect in background
-    client.$connect().catch((error) => {
-      // Silently handle connection errors - Prisma will retry on first query
-      // This is non-blocking and won't affect performance
-      if (isDevelopment()) {
-        console.warn('[PRISMA] Pre-connection failed (will retry on first query):', error?.message)
-      }
-    })
+    // NOTE: Do NOT call client.$connect() here.
+    // An unawaited $connect() during Vercel's "Collecting page data" build phase
+    // creates a TCP connection that never resolves, causing the build worker to
+    // hang for 45 minutes until Vercel times out.
+    // Prisma will connect lazily on the first query at request time.
     
     return client
   } catch (error) {
