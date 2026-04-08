@@ -70,7 +70,7 @@ export default function LottieHero() {
         className="absolute bottom-0 left-0 right-0 z-20 flex items-end justify-center px-6 pt-16 pb-6"
         style={{
           background:
-            'linear-gradient(to top, rgba(83,50,138,0.95) 0%, rgba(83,50,138,0.80) 50%, transparent 100%)',
+            'linear-gradient(to top, rgba(30,10,60,0.98) 0%, rgba(83,50,138,0.90) 55%, transparent 100%)',
           backdropFilter: 'blur(2px)',
         }}
       >
@@ -78,7 +78,7 @@ export default function LottieHero() {
           className="text-white text-center font-semibold text-sm md:text-base leading-snug tracking-wide"
           style={{ textShadow: '0 1px 6px rgba(0,0,0,0.4)' }}
         >
-          The AI System that Tracks your every move and suggests Better outcomes
+          AI that tracks activity and suggests the right outcome.
         </p>
       </div>
     </div>
