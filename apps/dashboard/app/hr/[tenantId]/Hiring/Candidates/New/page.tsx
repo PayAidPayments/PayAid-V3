@@ -1,17 +1,26 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useMutation } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuthStore } from '@/lib/stores/auth'
 
 export default function NewCandidatePage() {
   const router = useRouter()
   const params = useParams()
   const tenantId = params.tenantId as string
+  const { token } = useAuthStore()
+  const createCandidateIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:candidate:create:${crypto.randomUUID()}`
+        : `hr:candidate:create:${Date.now()}`,
+    []
+  )
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -33,7 +42,11 @@ export default function NewCandidatePage() {
     mutationFn: async (data: typeof formData) => {
       const response = await fetch('/api/hr/candidates', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-idempotency-key': createCandidateIdempotencyKey,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           ...data,
           currentCtcInr: data.currentCtcInr ? parseFloat(data.currentCtcInr) : undefined,
@@ -95,7 +108,14 @@ export default function NewCandidatePage() {
           <p className="mt-2 text-gray-600 dark:text-gray-400">Add a new candidate to the pool</p>
         </div>
         <Link href={`/hr/${tenantId}/Hiring/Candidates`}>
-          <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Cancel</Button>
+          <Button
+            variant="outline"
+            className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            disabled={createMutation.isPending}
+            title={createMutation.isPending ? 'Please wait' : 'Cancel'}
+          >
+            Cancel
+          </Button>
         </Link>
       </div>
 
@@ -335,12 +355,23 @@ export default function NewCandidatePage() {
 
             <div className="flex justify-end gap-4 pt-4">
               <Link href={`/hr/${tenantId}/Hiring/Candidates`}>
-                <Button type="button" variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                  disabled={createMutation.isPending}
+                  title={createMutation.isPending ? 'Please wait' : 'Cancel and return'}
+                >
                   Cancel
                 </Button>
               </Link>
-              <Button type="submit" disabled={createMutation.isPending} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
-                {createMutation.isPending ? 'Creating...' : 'Create Candidate'}
+              <Button
+                type="submit"
+                disabled={createMutation.isPending}
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+                title={createMutation.isPending ? 'Please wait' : 'Create candidate'}
+              >
+                {createMutation.isPending ? 'Creating…' : 'Create Candidate'}
               </Button>
             </div>
           </form>

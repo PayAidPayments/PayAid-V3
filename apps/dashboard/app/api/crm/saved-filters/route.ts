@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { z } from 'zod'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const createFilterSchema = z.object({
   name: z.string().min(1, 'Filter name is required'),
@@ -113,12 +114,27 @@ export async function POST(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const user = await authenticateRequest(request)
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
 
     if (!user?.userId) {
       return NextResponse.json(
         { error: 'User authentication required' },
         { status: 401 }
       )
+    }
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:saved_filter:create:${idempotencyKey}`)
+      const existingFilterId = (existing?.afterSnapshot as { saved_filter_id?: string } | null)?.saved_filter_id
+      if (existing && existingFilterId) {
+        return NextResponse.json(
+          {
+            id: existingFilterId,
+            deduplicated: true,
+          },
+          { status: 200 }
+        )
+      }
     }
 
     const body = await request.json()
@@ -165,6 +181,12 @@ export async function POST(request: NextRequest) {
         isDefault: validated.isDefault || false,
       },
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, user.userId, `crm:saved_filter:create:${idempotencyKey}`, {
+        saved_filter_id: savedFilter.id,
+      })
+    }
 
     return NextResponse.json(savedFilter, { status: 201 })
   } catch (error: any) {

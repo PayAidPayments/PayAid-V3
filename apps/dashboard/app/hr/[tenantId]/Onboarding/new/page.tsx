@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,6 +19,13 @@ export default function HROnboardingNewPage() {
   const tenantId = params?.tenantId as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
+  const createOnboardingIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:onboarding:create:${crypto.randomUUID()}`
+        : `hr:onboarding:create:${Date.now()}`,
+    []
+  )
 
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -58,6 +65,7 @@ export default function HROnboardingNewPage() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'x-idempotency-key': createOnboardingIdempotencyKey,
         },
         body: JSON.stringify(data),
       })
@@ -160,12 +168,18 @@ export default function HROnboardingNewPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  disabled={createOnboarding.isPending}
+                  title={createOnboarding.isPending ? 'Please wait' : 'Cancel and go back'}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createOnboarding.isPending}>
+                <Button
+                  type="submit"
+                  disabled={createOnboarding.isPending}
+                  title={createOnboarding.isPending ? 'Please wait' : 'Start onboarding'}
+                >
                   <Save className="mr-2 h-4 w-4" />
-                  {createOnboarding.isPending ? 'Starting...' : 'Start Onboarding'}
+                  {createOnboarding.isPending ? 'Starting…' : 'Start Onboarding'}
                 </Button>
               </div>
             </form>

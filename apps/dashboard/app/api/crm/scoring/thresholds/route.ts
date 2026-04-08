@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireModuleAccess } from '@/lib/middleware/auth'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { prisma } from '@/lib/db/prisma'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const thresholdSchema = z.object({
   minValue: z.number().int().min(0).max(100),
@@ -19,6 +20,9 @@ export async function GET(request: NextRequest) {
     })
     return NextResponse.json({ success: true, thresholds })
   } catch (error: any) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Get score thresholds error:', error)
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   }
@@ -26,7 +30,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:score_threshold:create:${idempotencyKey}`)
+      const existingThresholdId = (existing?.afterSnapshot as { threshold_id?: string } | null)?.threshold_id
+      if (existing && existingThresholdId) {
+        return NextResponse.json(
+          { success: true, deduplicated: true, threshold: { id: existingThresholdId } },
+          { status: 200 }
+        )
+      }
+    }
     const body = await request.json()
     const parsed = thresholdSchema.parse(body)
 
@@ -40,8 +55,16 @@ export async function POST(request: NextRequest) {
     const threshold = await prisma.leadScoreThreshold.create({
       data: { tenantId, ...parsed },
     })
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:score_threshold:create:${idempotencyKey}`, {
+        threshold_id: threshold.id,
+      })
+    }
     return NextResponse.json({ success: true, threshold }, { status: 201 })
   } catch (error: any) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Create score threshold error:', error)
     const status = error instanceof z.ZodError ? 400 : 500
     return NextResponse.json({ success: false, error: error.message }, { status })

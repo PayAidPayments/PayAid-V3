@@ -9,6 +9,8 @@ import { prisma } from '@/lib/db/prisma'
 import { ApiResponse, Segment } from '@/types/base-modules'
 import { CreateSegmentRequest } from '@/modules/shared/crm/types'
 import { z } from 'zod'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const CreateSegmentSchema = z.object({
   organizationId: z.string().uuid(),
@@ -28,20 +30,20 @@ const CreateSegmentSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
+    const { tenantId } = await requireModuleAccess(request, 'crm')
     const searchParams = request.nextUrl.searchParams
-    const organizationId = searchParams.get('organizationId')
-
-    if (!organizationId) {
+    const organizationId = searchParams.get('organizationId') || tenantId
+    if (organizationId !== tenantId) {
       return NextResponse.json(
         {
           success: false,
-          statusCode: 400,
+          statusCode: 403,
           error: {
-            code: 'MISSING_ORGANIZATION_ID',
-            message: 'organizationId is required',
+            code: 'TENANT_MISMATCH',
+            message: 'organizationId does not match authenticated tenant',
           },
         },
-        { status: 400 }
+        { status: 403 }
       )
     }
 
@@ -94,6 +96,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response)
   } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Error in GET segments route:', error)
     return NextResponse.json(
       { success: false, statusCode: 500, error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },
@@ -108,8 +113,38 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:segments:create:${idempotencyKey}`)
+      const existingSegmentId = (existing?.afterSnapshot as { segment_id?: string } | null)?.segment_id
+      if (existing && existingSegmentId) {
+        return NextResponse.json(
+          {
+            success: true,
+            statusCode: 200,
+            deduplicated: true,
+            data: { id: existingSegmentId },
+          },
+          { status: 200 }
+        )
+      }
+    }
     const body = await request.json()
     const validatedData = CreateSegmentSchema.parse(body)
+    if (validatedData.organizationId !== tenantId) {
+      return NextResponse.json(
+        {
+          success: false,
+          statusCode: 403,
+          error: {
+            code: 'TENANT_MISMATCH',
+            message: 'organizationId does not match authenticated tenant',
+          },
+        },
+        { status: 403 }
+      )
+    }
 
     const segment = await prisma.segment.create({
       data: {
@@ -150,8 +185,17 @@ export async function POST(request: NextRequest) {
       },
     }
 
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:segments:create:${idempotencyKey}`, {
+        segment_id: segment.id,
+      })
+    }
+
     return NextResponse.json(response, { status: 201 })
   } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Error in POST segments route:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(

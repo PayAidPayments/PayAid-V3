@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { z } from 'zod'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const updateFilterSchema = z.object({
   name: z.string().min(1).optional(),
@@ -62,6 +63,7 @@ export async function PUT(
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const user = await authenticateRequest(request)
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
 
     if (!user?.userId) {
       return NextResponse.json(
@@ -85,6 +87,20 @@ export async function PUT(
       )
     }
 
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:saved_filter:update:${id}:${idempotencyKey}`)
+      const existingFilterId = (existing?.afterSnapshot as { saved_filter_id?: string } | null)?.saved_filter_id
+      if (existing && existingFilterId) {
+        return NextResponse.json(
+          {
+            id: existingFilterId,
+            deduplicated: true,
+          },
+          { status: 200 }
+        )
+      }
+    }
+
     const body = await request.json()
     const validated = updateFilterSchema.parse(body)
 
@@ -106,6 +122,12 @@ export async function PUT(
       where: { id: id },
       data: validated,
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, user.userId, `crm:saved_filter:update:${id}:${idempotencyKey}`, {
+        saved_filter_id: updated.id,
+      })
+    }
 
     return NextResponse.json(updated)
   } catch (error: any) {
@@ -137,6 +159,7 @@ export async function DELETE(
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const user = await authenticateRequest(request)
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
 
     if (!user?.userId) {
       return NextResponse.json(
@@ -160,9 +183,24 @@ export async function DELETE(
       )
     }
 
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:saved_filter:delete:${id}:${idempotencyKey}`)
+      const existingDeleted = (existing?.afterSnapshot as { deleted?: boolean } | null)?.deleted
+      if (existing && existingDeleted) {
+        return NextResponse.json({ success: true, deduplicated: true }, { status: 200 })
+      }
+    }
+
     await prisma.savedFilter.delete({
       where: { id: id },
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, user.userId, `crm:saved_filter:delete:${id}:${idempotencyKey}`, {
+        saved_filter_id: id,
+        deleted: true,
+      })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

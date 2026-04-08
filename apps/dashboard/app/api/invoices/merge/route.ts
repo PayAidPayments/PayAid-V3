@@ -4,8 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { requireModuleAccess } from '@/lib/middleware/auth'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { prisma } from '@/lib/db/prisma'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 import { z } from 'zod'
 
 const mergeInvoicesSchema = z.object({
@@ -17,7 +18,23 @@ const mergeInvoicesSchema = z.object({
 // POST /api/invoices/merge - Merge invoices
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `invoice:merge:${idempotencyKey}`)
+      const mergedId = (existing?.afterSnapshot as { merged_invoice_id?: string } | null)?.merged_invoice_id
+      if (existing && mergedId) {
+        return NextResponse.json(
+          {
+            success: true,
+            deduplicated: true,
+            message: 'Duplicate merge request ignored',
+            data: { mergedInvoiceId: mergedId },
+          },
+          { status: 200 }
+        )
+      }
+    }
 
     const body = await request.json()
     const validated = mergeInvoicesSchema.parse(body)
@@ -148,6 +165,12 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `invoice:merge:${idempotencyKey}`, {
+        merged_invoice_id: mergedInvoice.id,
+      })
+    }
+
     return NextResponse.json({
       success: true,
       message: `Successfully merged ${invoices.length} invoices`,
@@ -162,6 +185,9 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error: any) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation error', details: error.errors },

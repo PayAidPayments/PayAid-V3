@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useMutation } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuthStore } from '@/lib/stores/auth'
 
 interface Component {
   name: string
@@ -21,6 +22,14 @@ export default function NewSalaryStructurePage() {
   const router = useRouter()
   const params = useParams()
   const tenantId = params.tenantId as string
+  const { token } = useAuthStore()
+  const createSalaryStructureIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:salary-structure:create:${crypto.randomUUID()}`
+        : `hr:salary-structure:create:${Date.now()}`,
+    []
+  )
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -48,7 +57,11 @@ export default function NewSalaryStructurePage() {
 
       const response = await fetch('/api/hr/payroll/salary-structures', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-idempotency-key': createSalaryStructureIdempotencyKey,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           ...data,
           structureJson,
@@ -99,7 +112,14 @@ export default function NewSalaryStructurePage() {
           <p className="mt-2 text-gray-600 dark:text-gray-400">Create a new salary component structure</p>
         </div>
         <Link href={`/hr/${tenantId}/Payroll/Salary-Structures`}>
-          <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Cancel</Button>
+          <Button
+            variant="outline"
+            className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            disabled={createMutation.isPending}
+            title={createMutation.isPending ? 'Please wait' : 'Cancel'}
+          >
+            Cancel
+          </Button>
         </Link>
       </div>
 
@@ -249,12 +269,23 @@ export default function NewSalaryStructurePage() {
 
             <div className="flex justify-end gap-4 pt-4">
               <Link href={`/hr/${tenantId}/Payroll/Salary-Structures`}>
-                <Button type="button" variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                  disabled={createMutation.isPending}
+                  title={createMutation.isPending ? 'Please wait' : 'Cancel and return'}
+                >
                   Cancel
                 </Button>
               </Link>
-              <Button type="submit" disabled={createMutation.isPending} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
-                {createMutation.isPending ? 'Creating...' : 'Create Structure'}
+              <Button
+                type="submit"
+                disabled={createMutation.isPending}
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+                title={createMutation.isPending ? 'Please wait' : 'Create salary structure'}
+              >
+                {createMutation.isPending ? 'Creating…' : 'Create Structure'}
               </Button>
             </div>
           </form>

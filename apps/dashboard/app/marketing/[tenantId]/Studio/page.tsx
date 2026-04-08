@@ -28,7 +28,21 @@ export default function MarketingStudioPage() {
     [token]
   )
 
+  /** POST/PATCH helpers — fresh idempotency key per mutation to align with API dedupe patterns */
+  const postHeaders = useCallback(() => {
+    const idem =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `marketing:studio:${Date.now()}`
+    return {
+      'Content-Type': 'application/json',
+      'x-idempotency-key': `marketing:studio:post:${idem}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    } as Record<string, string>
+  }, [token])
+
   const fetchSegments = useCallback(async (): Promise<SegmentSummary[]> => {
+    if (!token) return []
     const res = await fetch('/api/marketing/segments', { headers: getHeaders() })
     if (!res.ok) return []
     const data = await res.json()
@@ -40,7 +54,7 @@ export default function MarketingStudioPage() {
         description: s.description,
       })
     )
-  }, [getHeaders])
+  }, [getHeaders, token])
 
   useEffect(() => {
     if (!tenantId || !token) return
@@ -51,7 +65,7 @@ export default function MarketingStudioPage() {
     async (prompt: string) => {
       const res = await fetch('/api/social/ai/content', {
         method: 'POST',
-        headers: getHeaders(),
+        headers: postHeaders(),
         body: JSON.stringify({ prompt }),
       })
       if (!res.ok) {
@@ -61,14 +75,14 @@ export default function MarketingStudioPage() {
       const data = await res.json()
       return { primary: data.primary, variants: data.variants }
     },
-    [getHeaders]
+    [postHeaders]
   )
 
   const onGenerateImages = useCallback(
     async (prompt: string, _options?: { brandColors?: string; brandLogoUrl?: string }) => {
       const res = await fetch('/api/social/ai/image', {
         method: 'POST',
-        headers: getHeaders(),
+        headers: postHeaders(),
         body: JSON.stringify({ prompt }),
       })
       if (!res.ok) {
@@ -98,7 +112,7 @@ export default function MarketingStudioPage() {
       }
       return { id: data.id, url: data.url }
     },
-    [getHeaders]
+    [postHeaders]
   )
 
   const onLaunch = useCallback(
@@ -113,7 +127,7 @@ export default function MarketingStudioPage() {
     }) => {
       const res = await fetch('/api/social/posts', {
         method: 'POST',
-        headers: getHeaders(),
+        headers: postHeaders(),
         body: JSON.stringify({
           tenantId,
           segmentId: payload.segmentId,
@@ -130,7 +144,7 @@ export default function MarketingStudioPage() {
         throw new Error(err.error || 'Failed to launch')
       }
     },
-    [tenantId, getHeaders]
+    [tenantId, postHeaders]
   )
 
   return (

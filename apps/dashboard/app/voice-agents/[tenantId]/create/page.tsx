@@ -365,7 +365,7 @@ export default function CreateVoiceAgentWizardPage() {
               <div className="space-y-3">
                 <Label className="text-sm font-semibold">Objection Handling</Label>
                 <div className="space-y-2">
-                  <Label className="text-xs text-slate-500">"No money right now"</Label>
+                  <Label className="text-xs text-slate-500">&quot;No money right now&quot;</Label>
                   <Textarea
                     value={objections.noMoney}
                     onChange={(e) => setObjections({ ...objections, noMoney: e.target.value })}
@@ -374,7 +374,7 @@ export default function CreateVoiceAgentWizardPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-slate-500">"Wrong number"</Label>
+                  <Label className="text-xs text-slate-500">&quot;Wrong number&quot;</Label>
                   <Textarea
                     value={objections.wrongNumber}
                     onChange={(e) => setObjections({ ...objections, wrongNumber: e.target.value })}
@@ -383,7 +383,7 @@ export default function CreateVoiceAgentWizardPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-slate-500">"Talk to boss"</Label>
+                  <Label className="text-xs text-slate-500">&quot;Talk to boss&quot;</Label>
                   <Textarea
                     value={objections.talkToBoss}
                     onChange={(e) => setObjections({ ...objections, talkToBoss: e.target.value })}

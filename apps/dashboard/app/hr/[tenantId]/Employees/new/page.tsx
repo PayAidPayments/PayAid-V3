@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,6 +22,13 @@ export default function HREmployeeNewPage() {
   const tenantId = params?.tenantId as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
+  const createEmployeeIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:employee:create:${crypto.randomUUID()}`
+        : `hr:employee:create:${Date.now()}`,
+    []
+  )
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -90,6 +97,7 @@ export default function HREmployeeNewPage() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'x-idempotency-key': createEmployeeIdempotencyKey,
         },
         body: JSON.stringify(data),
       })
@@ -349,11 +357,17 @@ export default function HREmployeeNewPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  disabled={createEmployee.isPending}
+                  title={createEmployee.isPending ? 'Please wait' : 'Cancel and go back'}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createEmployee.isPending}>
-                  {createEmployee.isPending ? 'Creating...' : 'Create Employee'}
+                <Button
+                  type="submit"
+                  disabled={createEmployee.isPending}
+                  title={createEmployee.isPending ? 'Please wait' : 'Create employee'}
+                >
+                  {createEmployee.isPending ? 'Creating…' : 'Create Employee'}
                 </Button>
               </div>
             </form>

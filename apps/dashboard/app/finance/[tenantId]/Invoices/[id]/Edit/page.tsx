@@ -120,7 +120,14 @@ export default function EditInvoicePage() {
           <p className="mt-2 text-gray-600 dark:text-gray-400">Update invoice information</p>
         </div>
         <Link href={`/finance/${tenantId}/Invoices/${id}`}>
-          <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Cancel</Button>
+          <Button
+            variant="outline"
+            disabled={updateInvoice.isPending}
+            title={updateInvoice.isPending ? 'Please wait' : 'Cancel and return'}
+            className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            Cancel
+          </Button>
         </Link>
       </div>
 
@@ -252,6 +259,7 @@ export default function EditInvoicePage() {
                           <Input
                             value={row.description}
                             onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
+                            disabled={updateInvoice.isPending}
                             className="h-9 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                           />
                         </td>
@@ -262,6 +270,7 @@ export default function EditInvoicePage() {
                             step={1}
                             value={row.quantity}
                             onChange={(e) => handleItemChange(idx, 'quantity', parseFloat(e.target.value) || 0)}
+                            disabled={updateInvoice.isPending}
                             className="h-9 text-right dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                           />
                         </td>
@@ -272,6 +281,7 @@ export default function EditInvoicePage() {
                             step={0.01}
                             value={row.rate}
                             onChange={(e) => handleItemChange(idx, 'rate', parseFloat(e.target.value) || 0)}
+                            disabled={updateInvoice.isPending}
                             className="h-9 text-right dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                           />
                         </td>
@@ -287,12 +297,23 @@ export default function EditInvoicePage() {
 
             <div className="flex justify-end gap-4">
               <Link href={`/finance/${tenantId}/Invoices/${id}`}>
-                <Button type="button" variant="outline" disabled={updateInvoice.isPending} className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={updateInvoice.isPending}
+                  title={updateInvoice.isPending ? 'Please wait' : 'Cancel and return'}
+                  className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
                   Cancel
                 </Button>
               </Link>
-              <Button type="submit" disabled={updateInvoice.isPending} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
-                {updateInvoice.isPending ? 'Saving...' : 'Save Changes'}
+              <Button
+                type="submit"
+                disabled={updateInvoice.isPending}
+                title={updateInvoice.isPending ? 'Please wait' : 'Save invoice changes'}
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+              >
+                {updateInvoice.isPending ? 'Saving…' : 'Save Changes'}
               </Button>
             </div>
           </form>
@@ -303,7 +324,13 @@ export default function EditInvoicePage() {
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 shadow-lg z-50">
         <div className="max-w-7xl mx-auto flex justify-end gap-4">
           <Link href={`/finance/${tenantId}/Invoices/${id}`}>
-            <Button type="button" variant="outline" disabled={updateInvoice.isPending} className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={updateInvoice.isPending}
+              title={updateInvoice.isPending ? 'Please wait' : 'Cancel and return'}
+              className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
               Cancel
             </Button>
           </Link>
@@ -317,9 +344,10 @@ export default function EditInvoicePage() {
               }
             }}
             disabled={updateInvoice.isPending}
+            title={updateInvoice.isPending ? 'Please wait' : 'Save invoice'}
             className="min-w-[150px] dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
           >
-            {updateInvoice.isPending ? 'Saving...' : 'Save Invoice'}
+            {updateInvoice.isPending ? 'Saving…' : 'Save Invoice'}
           </Button>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { createPayAidPayments } from '@/lib/payments/payaid'
 import { getTenantPayAidConfig } from '@/lib/payments/get-tenant-payment-config'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 /**
  * POST /api/invoices/[id]/generate-payment-link
@@ -15,7 +16,24 @@ export async function POST(
   try {
   const resolvedParams = await params
     // Check invoicing module license
-    const { tenantId } = await requireModuleAccess(request, 'finance')
+    const { tenantId, userId } = await requireModuleAccess(request, 'finance')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(
+        tenantId,
+        `invoice:generate-payment-link:${resolvedParams.id}:${idempotencyKey}`
+      )
+      const existingInvoiceId = (existing?.afterSnapshot as { invoice_id?: string } | null)?.invoice_id
+      const existingPaymentLink = (existing?.afterSnapshot as { payment_link_url?: string } | null)?.payment_link_url
+      if (existing && existingInvoiceId) {
+        return NextResponse.json({
+          deduplicated: true,
+          paymentLinkUrl: existingPaymentLink ?? null,
+          invoice: { id: existingInvoiceId },
+        })
+      }
+    }
 
     // Get invoice with customer and tenant details
     const invoice = await prisma.invoice.findFirst({
@@ -109,6 +127,19 @@ export async function POST(
         status: invoice.status === 'draft' ? 'sent' : invoice.status,
       },
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(
+        tenantId,
+        userId,
+        `invoice:generate-payment-link:${resolvedParams.id}:${idempotencyKey}`,
+        {
+          invoice_id: updatedInvoice.id,
+          payment_link_url: paymentUrlResponse.url,
+          payment_link_uuid: paymentUrlResponse.uuid,
+        }
+      )
+    }
 
     return NextResponse.json({
       paymentLinkUrl: paymentUrlResponse.url,

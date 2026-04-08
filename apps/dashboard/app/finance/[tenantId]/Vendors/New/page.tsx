@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,6 +15,13 @@ export default function FinanceVendorsNewPage() {
   const params = useParams()
   const tenantId = params.tenantId as string
   const router = useRouter()
+  const createVendorIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `finance:vendor:create:${crypto.randomUUID()}`
+        : `finance:vendor:create:${Date.now()}`,
+    []
+  )
   const [formData, setFormData] = useState({
     name: '',
     companyName: '',
@@ -40,6 +47,7 @@ export default function FinanceVendorsNewPage() {
         headers: {
           ...getAuthHeaders(),
           'Content-Type': 'application/json',
+          'x-idempotency-key': createVendorIdempotencyKey,
         },
         body: JSON.stringify(data),
       })
@@ -283,14 +291,17 @@ export default function FinanceVendorsNewPage() {
               <Button
                 type="submit"
                 disabled={createVendor.isPending}
+                title={createVendor.isPending ? 'Please wait' : 'Create vendor'}
                 className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
               >
-                {createVendor.isPending ? 'Creating...' : 'Create Vendor'}
+                {createVendor.isPending ? 'Creating…' : 'Create Vendor'}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => router.back()}
+                disabled={createVendor.isPending}
+                title={createVendor.isPending ? 'Please wait' : 'Cancel and go back'}
                 className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 Cancel

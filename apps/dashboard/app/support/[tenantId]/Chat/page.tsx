@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -188,6 +189,13 @@ export default function SupportChatPage() {
                     ) : (
                       'Ready to help'
                     )}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                    Omnichannel threads and first-response SLA are tracked in{' '}
+                    <Link href={`/support/${tenantId}/Unibox`} className="underline font-medium text-violet-600 dark:text-violet-400">
+                      Unibox
+                    </Link>
+                    .
                   </p>
                 </div>
               </div>

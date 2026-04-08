@@ -1,0 +1,12 @@
+﻿node.exe : ΓÜá Invalid next.config.mjs options detected: 
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ΓÜá Invalid nex...ions detected: :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ΓÜá     Unrecognized key(s) in object: 'turbopack' at "experimental"
+ΓÜá See more info here: https://nextjs.org/docs/messages/invalid-next-config
+[Error: `experimental.ppr` has been merged into `cacheComponents`. The Partial Prerendering feature is still 
+available, but is now enabled via `cacheComponents`. Please update your next.config.mjs accordingly.]
+[?25h

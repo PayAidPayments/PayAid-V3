@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
@@ -24,6 +24,13 @@ export default function NewCampaignPage() {
   const tenantId = params.tenantId as string
   const router = useRouter()
   const { token } = useAuthStore()
+  const createCampaignIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `marketing:campaign:create:${crypto.randomUUID()}`
+        : `marketing:campaign:create:${Date.now()}`,
+    []
+  )
   const typeFromUrl = parseType(searchParams?.get('type') ?? null)
   const [formData, setFormData] = useState({
     name: '',
@@ -43,6 +50,7 @@ export default function NewCampaignPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': createCampaignIdempotencyKey,
           ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify(data),
@@ -71,7 +79,14 @@ export default function NewCampaignPage() {
           <p className="mt-2 text-gray-600 dark:text-gray-400">Create a new marketing campaign</p>
         </div>
         <Link href={`/marketing/${tenantId}/Campaigns`}>
-          <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Cancel</Button>
+          <Button
+            variant="outline"
+            className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            disabled={createCampaign.isPending}
+            title={createCampaign.isPending ? 'Please wait' : 'Cancel'}
+          >
+            Cancel
+          </Button>
         </Link>
       </div>
 
@@ -153,11 +168,22 @@ export default function NewCampaignPage() {
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button type="submit" disabled={createCampaign.isPending} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
-                {createCampaign.isPending ? 'Creating...' : 'Create Campaign'}
+              <Button
+                type="submit"
+                disabled={createCampaign.isPending}
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+                title={createCampaign.isPending ? 'Please wait' : 'Create campaign'}
+              >
+                {createCampaign.isPending ? 'Creating…' : 'Create Campaign'}
               </Button>
               <Link href={`/marketing/${tenantId}/Campaigns`}>
-                <Button type="button" variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                  disabled={createCampaign.isPending}
+                  title={createCampaign.isPending ? 'Please wait' : 'Cancel and return'}
+                >
                   Cancel
                 </Button>
               </Link>

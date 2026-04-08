@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,6 +20,13 @@ export default function HRSalaryStructureNewPage() {
   const tenantId = params?.tenantId as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
+  const createSalaryStructureIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:salary-structure:create:${crypto.randomUUID()}`
+        : `hr:salary-structure:create:${Date.now()}`,
+    []
+  )
 
   const [formData, setFormData] = useState({
     name: '',
@@ -64,6 +71,7 @@ export default function HRSalaryStructureNewPage() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'x-idempotency-key': createSalaryStructureIdempotencyKey,
         },
         body: JSON.stringify(data),
       })
@@ -302,12 +310,18 @@ export default function HRSalaryStructureNewPage() {
                     type="button"
                     variant="outline"
                     onClick={() => router.back()}
+                    disabled={createSalaryStructure.isPending}
+                    title={createSalaryStructure.isPending ? 'Please wait' : 'Cancel and go back'}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={createSalaryStructure.isPending}>
+                  <Button
+                    type="submit"
+                    disabled={createSalaryStructure.isPending}
+                    title={createSalaryStructure.isPending ? 'Please wait' : 'Create salary structure'}
+                  >
                     <Save className="mr-2 h-4 w-4" />
-                    {createSalaryStructure.isPending ? 'Creating...' : 'Create Salary Structure'}
+                    {createSalaryStructure.isPending ? 'Creating…' : 'Create Salary Structure'}
                   </Button>
                 </div>
               </form>

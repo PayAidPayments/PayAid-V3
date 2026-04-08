@@ -10,6 +10,7 @@ import { z } from 'zod'
 const acceptProposalSchema = z.object({
   acceptedBy: z.string().optional(), // Customer name/email
   comments: z.string().optional(),
+  publicToken: z.string().min(1).optional(),
 })
 
 // POST /api/proposals/[id]/accept - Accept proposal (public endpoint, no auth required)
@@ -21,6 +22,9 @@ export async function POST(
   try {
     const body = await request.json()
     const validated = acceptProposalSchema.parse(body)
+    const tokenFromQuery = request.nextUrl.searchParams.get('token')?.trim()
+    const tokenFromBody = validated.publicToken?.trim()
+    const providedToken = tokenFromQuery || tokenFromBody
 
     const proposal = await prisma.proposal.findUnique({
       where: { id: id },
@@ -34,6 +38,14 @@ export async function POST(
       return NextResponse.json(
         { error: 'Proposal not found' },
         { status: 404 }
+      )
+    }
+
+    // Public acceptance must prove possession of proposal public token.
+    if (!providedToken || providedToken !== proposal.publicToken) {
+      return NextResponse.json(
+        { error: 'Invalid or missing proposal acceptance token' },
+        { status: 401 }
       )
     }
 

@@ -18,6 +18,7 @@ import { NextBestActionCard } from '@/components/crm/contact/NextBestActionCard'
 import { AIFitScoreCard } from '@/components/crm/contact/AIFitScoreCard'
 import { LeadNurtureFlow } from '@/components/crm/LeadNurtureFlow'
 import { AIAssistCard } from '@/components/crm/contact/AIAssistCard'
+import { AuditActionTimelineCard } from '@/components/crm/AuditActionTimelineCard'
 import { 
   RefreshCw, 
   Mail, 
@@ -63,6 +64,7 @@ export default function ContactDetailPage() {
   // Get normalized stage (handle both stage and legacy type field)
   const contactStage = contact?.stage || (contact?.type === 'lead' ? 'prospect' : contact?.type === 'customer' ? 'customer' : 'contact')
   const isProspect = contactStage === 'prospect' || contact?.type === 'lead'
+  const isCustomerPortalEligible = contactStage === 'customer' || contact?.type === 'customer'
 
   useEffect(() => {
     if (!isProspect) return
@@ -164,14 +166,16 @@ export default function ContactDetailPage() {
               size="sm"
               variant="outline"
               className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              disabled={!isCustomerPortalEligible}
+              title={!isCustomerPortalEligible ? 'Portal link is available only for customers' : undefined}
               onClick={async () => {
-                if (!token || !tenantId) return
+                if (!token || !tenantId || !isCustomerPortalEligible) return
                 try {
                   const r = await fetch(`/api/portal/token?tenantId=${encodeURIComponent(tenantId)}&contactId=${encodeURIComponent(id)}`, {
                     headers: { Authorization: `Bearer ${token}` },
                   })
                   const data = await r.json()
-                  if (data.portalUrl) {
+                  if (r.ok && data.portalUrl) {
                     await navigator.clipboard.writeText(data.portalUrl)
                     setPortalLinkCopied(true)
                     setTimeout(() => setPortalLinkCopied(false), 2000)
@@ -182,7 +186,7 @@ export default function ContactDetailPage() {
               }}
             >
               <Link2 className="w-3 h-3 mr-1" />
-              {portalLinkCopied ? 'Copied!' : 'Copy portal link'}
+              {portalLinkCopied ? 'Copied!' : isCustomerPortalEligible ? 'Copy portal link' : 'Portal (customers only)'}
             </Button>
             <Link href={`/crm/${tenantId}/Contacts/${id}/Edit`}>
               <Button size="sm" variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
@@ -223,6 +227,11 @@ export default function ContactDetailPage() {
           <section className="space-y-4">
             <NextBestActionCard contactId={id} tenantId={tenantId} contact={contact} />
             <QuickActionsCard tenantId={tenantId} contactId={id} contact={contact} />
+            <AuditActionTimelineCard
+              entityType="contact"
+              entityId={id}
+              title="Contact Automation Timeline"
+            />
             {isProspect && (
               <AIFitScoreCard contact={contact} tenantId={tenantId} />
             )}

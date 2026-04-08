@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { hashPassword } from '@/lib/auth/password'
 
+function assertAdminUtilityAccess(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 403 })
+  }
+  const configuredSecret = process.env.ADMIN_UTILITY_SECRET?.trim()
+  if (configuredSecret) {
+    const provided = request.headers.get('x-admin-utility-secret')?.trim()
+    if (!provided || provided !== configuredSecret) {
+      return NextResponse.json({ error: 'Unauthorized utility access' }, { status: 401 })
+    }
+  }
+  return null
+}
+
 /**
  * POST /api/admin/reset-password
  * Resets the password for admin@demo.com
@@ -10,6 +24,8 @@ import { hashPassword } from '@/lib/auth/password'
  * In production, this should be removed or protected
  */
 export async function POST(request: NextRequest) {
+  const gate = assertAdminUtilityAccess(request)
+  if (gate) return gate
   try {
     // For security, you might want to add a secret key check here
     // const secret = request.headers.get('x-reset-secret')
@@ -90,7 +106,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: `User ${email} created successfully`,
         email,
-        password,
+        note: 'Password was set successfully. API response does not include plaintext password.',
       })
     }
 
@@ -106,7 +122,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: `Password reset successfully for ${email}`,
       email,
-      password,
+      note: 'Password was updated successfully. API response does not include plaintext password.',
     })
   } catch (error) {
     console.error('Password reset error:', error)

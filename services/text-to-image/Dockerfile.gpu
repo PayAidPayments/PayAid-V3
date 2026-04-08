@@ -1,0 +1,38 @@
+# SLIMMER GPU build: NVIDIA CUDA runtime + pip PyTorch (cu118) — no conda.
+# Smaller layers than pytorch/pytorch; faster pulls on slow networks.
+# Build: docker build -f Dockerfile.gpu -t payaid-text-to-image:gpu .
+# Run:  docker run --gpus all -p 7860:7860 -e MODEL_NAME=runwayml/stable-diffusion-v1-5 payaid-text-to-image:gpu
+
+FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    curl \
+    git \
+    && ln -sf /usr/bin/python3 /usr/local/bin/python \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Torch + torchvision (CUDA 11.8 wheels); must match versions compatible with diffusers in requirements-docker.txt
+RUN pip3 install --no-cache-dir \
+    torch==2.1.0 torchvision==0.16.0 \
+    --index-url https://download.pytorch.org/whl/cu118
+
+COPY requirements-docker.txt .
+RUN pip3 install --no-cache-dir -r requirements-docker.txt
+
+COPY . .
+
+EXPOSE 7860
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \
+    CMD curl -f http://localhost:7860/health || exit 1
+
+CMD ["python3", "server.py"]

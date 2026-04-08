@@ -4,6 +4,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { createPayAidPayments } from '@/lib/payments/payaid'
 import { getTenantPayAidConfig } from '@/lib/payments/get-tenant-payment-config'
 import { mediumPriorityQueue } from '@/lib/queue/bull'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 /**
  * POST /api/invoices/[id]/send-with-payment
@@ -16,7 +17,23 @@ export async function POST(
   try {
   const resolvedParams = await params
     // Check invoicing module license
-    const { tenantId } = await requireModuleAccess(request, 'finance')
+    const { tenantId, userId } = await requireModuleAccess(request, 'finance')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(
+        tenantId,
+        `invoice:send-with-payment:${resolvedParams.id}:${idempotencyKey}`
+      )
+      const existingInvoiceId = (existing?.afterSnapshot as { invoice_id?: string } | null)?.invoice_id
+      if (existing && existingInvoiceId) {
+        return NextResponse.json({
+          success: true,
+          deduplicated: true,
+          invoice: { id: existingInvoiceId },
+        })
+      }
+    }
 
     const body = await request.json()
     const email = body.email || body.customerEmail
@@ -113,6 +130,18 @@ export async function POST(
       dueDate: invoice.dueDate,
       tenantName: invoice.tenant.name,
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(
+        tenantId,
+        userId,
+        `invoice:send-with-payment:${resolvedParams.id}:${idempotencyKey}`,
+        {
+          invoice_id: updatedInvoice.id,
+          payment_link_uuid: paymentUrlResponse.uuid,
+        }
+      )
+    }
 
     return NextResponse.json({
       success: true,

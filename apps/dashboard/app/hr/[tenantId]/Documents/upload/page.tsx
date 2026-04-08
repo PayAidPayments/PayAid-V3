@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useMemo, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -32,6 +32,13 @@ export default function HRDocumentsUploadPage() {
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const uploadDocumentIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:document:upload:${crypto.randomUUID()}`
+        : `hr:document:upload:${Date.now()}`,
+    []
+  )
 
   const [formData, setFormData] = useState({
     documentName: '',
@@ -64,7 +71,10 @@ export default function HRDocumentsUploadPage() {
 
       const res = await fetch('/api/hr/documents', {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'x-idempotency-key': uploadDocumentIdempotencyKey,
+        },
         body: form,
       })
       if (!res.ok) {
@@ -192,11 +202,22 @@ export default function HRDocumentsUploadPage() {
 
               <div className="flex justify-end gap-4 pt-4 border-t">
                 <Link href={`/hr/${tenantId}/Documents`}>
-                  <Button type="button" variant="outline">Cancel</Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={uploadDoc.isPending}
+                    title={uploadDoc.isPending ? 'Please wait' : 'Cancel and return'}
+                  >
+                    Cancel
+                  </Button>
                 </Link>
-                <Button type="submit" disabled={!file || uploadDoc.isPending}>
+                <Button
+                  type="submit"
+                  disabled={!file || uploadDoc.isPending}
+                  title={uploadDoc.isPending ? 'Please wait' : 'Upload document'}
+                >
                   <Save className="mr-2 h-4 w-4" />
-                  {uploadDoc.isPending ? 'Uploading...' : 'Upload'}
+                  {uploadDoc.isPending ? 'Uploading…' : 'Upload'}
                 </Button>
               </div>
             </form>

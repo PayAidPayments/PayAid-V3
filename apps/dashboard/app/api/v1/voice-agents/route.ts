@@ -139,14 +139,17 @@ export async function GET(request: NextRequest) {
       prisma.voiceAgent.count({ where }),
     ])
 
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(
+      timeoutId = setTimeout(
         () => reject(new Error('Database request timed out. Check your database connection.')),
         VOICE_AGENTS_LIST_TIMEOUT_MS
       )
     })
 
-    const [agents, total] = await Promise.race([listPromise, timeoutPromise])
+    const [agents, total] = await Promise.race([listPromise, timeoutPromise]).finally(() => {
+      if (timeoutId) clearTimeout(timeoutId)
+    })
 
     let agentsWithStats = agents
     let overview:

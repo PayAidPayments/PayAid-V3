@@ -1,0 +1,179 @@
+# PayAid V3 – Full self-hosted stack (Phase 0)
+# Zero-cost: Postgres, Redis, MinIO, N8N, ONLYOFFICE, Ollama, OpenWebUI, Chroma.
+# Usage: docker compose -f docker-compose.selfhosted.yml up -d
+# Core only: docker compose -f docker-compose.selfhosted.yml up -d postgres redis minio n8n onlyoffice
+# + AI:    docker compose -f docker-compose.selfhosted.yml up -d postgres redis minio n8n onlyoffice ollama openwebui chroma
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: payaid-postgres
+    environment:
+      POSTGRES_USER: payaid
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-payaid}
+      POSTGRES_DB: payaid_v3
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - payaid-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payaid -d payaid_v3"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: payaid-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - payaid-redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: payaid-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-payaid}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-payaidminio}
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - payaid-minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: payaid-n8n
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: ${N8N_USER:-admin}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_PASSWORD:-payaid}
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      NODE_ENV: production
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678/}
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: payaid_v3
+      DB_POSTGRESDB_USER: payaid
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:-payaid}
+    volumes:
+      - payaid-n8n-data:/home/node/.n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: payaid-onlyoffice
+    environment:
+      JWT_ENABLED: "false"
+    ports:
+      - "${ONLYOFFICE_PORT:-8080}:80"
+    volumes:
+      - payaid-onlyoffice-data:/var/www/onlyoffice/Data
+      - payaid-onlyoffice-logs:/var/log/onlyoffice
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: payaid-ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - payaid-ollama-data:/root/.ollama
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_NUM_GPU: ${OLLAMA_NUM_GPU:-0}
+      OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:-1}
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "2"
+    restart: unless-stopped
+    profiles:
+      - ai
+
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: payaid-openwebui
+    ports:
+      - "${OPENWEBUI_PORT:-3005}:8080"
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      ENABLE_RAG_WEB_SEARCH: "false"
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    profiles:
+      - ai
+
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: payaid-chroma
+    ports:
+      - "${CHROMA_PORT:-8000}:8000"
+    volumes:
+      - payaid-chroma-data:/chroma/chroma
+    environment:
+      IS_PERSISTENT: "TRUE"
+      PERSIST_DIRECTORY: /chroma/chroma
+      ANONYMIZED_TELEMETRY: "FALSE"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    profiles:
+      - ai
+
+  comfyui:
+    image: jamesbrink/comfyui:latest
+    container_name: payaid-comfyui
+    user: "0:0"
+    ports:
+      - "${COMFYUI_PORT:-8188}:8188"
+    volumes:
+      - payaid-comfyui-data:/comfyui
+    # Bypass image wrapper (which hangs on custom-node install) and run ComfyUI directly.
+    entrypoint: ["sh", "-lc"]
+    command:
+      - mkdir -p /comfyui/user /comfyui/output && python3 /opt/comfyui/main.py --listen 0.0.0.0 --port 8188 --cpu --user-directory /comfyui/user --output-directory /comfyui/output
+    restart: unless-stopped
+    profiles:
+      - ai
+
+volumes:
+  payaid-postgres-data:
+  payaid-redis-data:
+  payaid-minio-data:
+  payaid-n8n-data:
+  payaid-onlyoffice-data:
+  payaid-onlyoffice-logs:
+  payaid-ollama-data:
+  payaid-chroma-data:
+  payaid-comfyui-data:

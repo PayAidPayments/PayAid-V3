@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,13 @@ interface Message {
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
+}
+
+function getSpeechRecognition(): { start: () => void; stop: () => void; abort: () => void; lang: string; continuous: boolean; interimResults: boolean; onresult: (e: unknown) => void; onend: () => void } | null {
+  if (typeof window === 'undefined') return null
+  const Win = window as Window & { SpeechRecognition?: new () => unknown; webkitSpeechRecognition?: new () => unknown }
+  const Klass = Win.SpeechRecognition || Win.webkitSpeechRecognition
+  return Klass ? (new (Klass as new () => { start: () => void; stop: () => void; abort: () => void; lang: string; continuous: boolean; interimResults: boolean; onresult: (e: unknown) => void; onend: () => void })() as { start: () => void; stop: () => void; abort: () => void; lang: string; continuous: boolean; interimResults: boolean; onresult: (e: unknown) => void; onend: () => void }) : null
 }
 
 export default function VoiceAgentDemoPage() {
@@ -66,6 +73,7 @@ export default function VoiceAgentDemoPage() {
   // Mic state machine: idle → listening → processing → idle (no auto-restart, stops battery drain)
   const [micSpeechState, setMicSpeechState] = useState<'idle' | 'listening' | 'processing'>('idle')
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const enableMicrophoneAfterPermissionRef = useRef<(autoStartCall?: boolean) => Promise<void>>(async () => {})
   useEffect(() => {
     liveConversationActiveRef.current = liveConversationActive
   }, [liveConversationActive])
@@ -155,7 +163,7 @@ export default function VoiceAgentDemoPage() {
     },
   })
 
-  const loadDemoAgents = () => {
+  const loadDemoAgents = useCallback(() => {
     const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('auth-token') : null)
     if (!authToken) {
       setDemoAgentsError('Please log in to see your agents.')
@@ -186,19 +194,8 @@ export default function VoiceAgentDemoPage() {
         setDemoAgentsList([])
       })
       .finally(() => setLoadingDemoAgents(false))
-  }
+  }, [token, tenantId])
 
-  useEffect(() => {
-    if (agentId && tenantId) {
-      fetchAgent()
-    } else if (!agentId) {
-      setLoadingAgent(false)
-      loadDemoAgents()
-    } else {
-      setLoadingAgent(false)
-    }
-  }, [agentId, token, tenantId])
-  
   // Safety timeout - stop loading after 10 seconds even if fetchAgent hasn't completed
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -312,7 +309,7 @@ export default function VoiceAgentDemoPage() {
                       // Automatically enable microphone after permission is granted
                       setTimeout(() => {
                         if (mounted) {
-                          enableMicrophoneAfterPermission(false).catch(err => {
+                          enableMicrophoneAfterPermissionRef.current(false).catch(err => {
                             console.error('[Microphone] Failed to auto-enable after permission change:', err)
                           })
                         }
@@ -330,7 +327,7 @@ export default function VoiceAgentDemoPage() {
                     
                     setTimeout(() => {
                       if (mounted) {
-                        enableMicrophoneAfterPermission(false).catch(err => {
+                        enableMicrophoneAfterPermissionRef.current(false).catch(err => {
                           console.error('[Microphone] Failed to auto-enable after permission change:', err)
                         })
                       }
@@ -853,6 +850,7 @@ If still not working, check the browser console (F12) for detailed error message
       console.error('[Microphone] Failed to auto-enable microphone:', error)
     }
   }
+  enableMicrophoneAfterPermissionRef.current = enableMicrophoneAfterPermission
 
   // Function to explicitly request microphone permission (must be user-initiated)
   const requestMicrophonePermission = async () => {
@@ -1003,7 +1001,7 @@ If still not working, check the browser console (F12) for detailed error message
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const fetchAgent = async () => {
+  const fetchAgent = useCallback(async () => {
     // Use token from store or localStorage so we have it even before persist rehydration
     const authToken = token ?? (typeof window !== 'undefined' ? (localStorage.getItem('token') ?? localStorage.getItem('auth-token')) : null) ?? undefined
     if (!agentId || !tenantId) {
@@ -1095,7 +1093,18 @@ If still not working, check the browser console (F12) for detailed error message
       setLoadingAgent(false)
       console.log('[Demo] Loading agent set to false')
     }
-  }
+  }, [agentId, tenantId, token])
+
+  useEffect(() => {
+    if (agentId && tenantId) {
+      void fetchAgent()
+    } else if (!agentId) {
+      setLoadingAgent(false)
+      loadDemoAgents()
+    } else {
+      setLoadingAgent(false)
+    }
+  }, [agentId, tenantId, fetchAgent, loadDemoAgents])
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1406,13 +1415,6 @@ If still not working, check the browser console (F12) for detailed error message
   }
 
   // Web Speech API: bulletproof state machine (idle → listening → processing → idle). No auto-restart = no battery drain.
-  const getSpeechRecognition = (): { start: () => void; stop: () => void; abort: () => void; lang: string; continuous: boolean; interimResults: boolean; onresult: (e: unknown) => void; onend: () => void } | null => {
-    if (typeof window === 'undefined') return null
-    const Win = window as Window & { SpeechRecognition?: new () => unknown; webkitSpeechRecognition?: new () => unknown }
-    const Klass = Win.SpeechRecognition || Win.webkitSpeechRecognition
-    return Klass ? (new (Klass as new () => { start: () => void; stop: () => void; abort: () => void; lang: string; continuous: boolean; interimResults: boolean; onresult: (e: unknown) => void; onend: () => void })() as { start: () => void; stop: () => void; abort: () => void; lang: string; continuous: boolean; interimResults: boolean; onresult: (e: unknown) => void; onend: () => void }) : null
-  }
-
   // Initialise recognition once; handlers use state machine and never auto-restart
   useEffect(() => {
     if (typeof window === 'undefined' || !agent) return
@@ -1454,7 +1456,7 @@ If still not working, check the browser console (F12) for detailed error message
       if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current)
       if (prev && prev !== rec) try { prev.abort() } catch (_) {}
     }
-  }, [agent?.id, agent?.language])
+  }, [agent])
 
   const processSpeechResult = async (transcript: string) => {
     if (!agentId || !token || !transcript.trim()) return
@@ -2229,7 +2231,7 @@ If still not working, check the browser console (F12) for detailed error message
                       <strong>Browser Settings:</strong> Click the lock icon in address bar → Microphone → Allow
                     </li>
                     <li>
-                      <strong>Windows Privacy (REQUIRED):</strong> Press Win+I → Privacy & Security → Microphone → Turn ON all toggles → Find your browser and ensure it's allowed → <strong>RESTART browser completely</strong>
+                      <strong>Windows Privacy (REQUIRED):</strong> Press Win+I → Privacy &amp; Security → Microphone → Turn ON all toggles → Find your browser and ensure it&apos;s allowed → <strong>RESTART browser completely</strong>
                     </li>
                     <li>
                       <strong>Clear Site Data:</strong> Press F12 → Application tab → Clear site data → Refresh page (Ctrl+Shift+R)
@@ -2370,7 +2372,7 @@ If still not working, check the browser console (F12) for detailed error message
                               ID: {device.deviceId.substring(0, 20)}...
                             </div>
                           )}
-                          {device.label === "No label (permission required)" && (
+                          {device.label === 'No label (permission required)' && (
                             <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
                               ⚠️ Permission required to see device name
                             </div>
@@ -2394,7 +2396,7 @@ If still not working, check the browser console (F12) for detailed error message
                           <ol className="list-decimal list-inside space-y-1 ml-2">
                             <li>
                               <strong>Chrome/Edge:</strong> Click the lock icon (🔒) in the address bar → 
-                              Find "Microphone" → Change to "Allow" → Refresh page
+                              Find &quot;Microphone&quot; → Change to &quot;Allow&quot; → Refresh page
                             </li>
                             <li>
                               <strong>Windows Settings:</strong> Press Windows + I → Privacy → Microphone → 
@@ -2402,7 +2404,7 @@ If still not working, check the browser console (F12) for detailed error message
                             </li>
                             <li>
                               <strong>Clear Site Data:</strong> Press F12 → Application tab → 
-                              "Clear site data" button → Refresh page
+                              &quot;Clear site data&quot; button → Refresh page
                             </li>
                             <li>
                               <strong>Try Incognito Mode:</strong> Open a new incognito/private window and try again

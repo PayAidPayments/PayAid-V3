@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useMutation } from '@tanstack/react-query'
@@ -16,6 +16,13 @@ export default function NewAdvancePage() {
   const router = useRouter()
   const tenantId = params?.tenantId as string
   const { token } = useAuthStore()
+  const createAdvanceIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `finance:advance:create:${crypto.randomUUID()}`
+        : `finance:advance:create:${Date.now()}`,
+    []
+  )
   const [type, setType] = useState<'TO_VENDOR' | 'FROM_CUSTOMER'>('TO_VENDOR')
   const [amount, setAmount] = useState('')
   const [vendorId, setVendorId] = useState('')
@@ -34,6 +41,7 @@ export default function NewAdvancePage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': createAdvanceIdempotencyKey,
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(body),
@@ -52,8 +60,8 @@ export default function NewAdvancePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href={`/finance/${tenantId}/Advances`}>
-          <Button variant="outline" size="icon" className="dark:border-gray-600 dark:text-gray-300">
+        <Link href={`/finance/${tenantId}/Advances`} className={createMutation.isPending ? 'pointer-events-none opacity-50' : ''}>
+          <Button variant="outline" size="icon" className="dark:border-gray-600 dark:text-gray-300" disabled={createMutation.isPending} title={createMutation.isPending ? 'Please wait' : 'Back to list'}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
@@ -137,11 +145,19 @@ export default function NewAdvancePage() {
               onClick={() => createMutation.mutate()}
               disabled={createMutation.isPending || !amount}
               className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+              title={createMutation.isPending ? 'Please wait' : 'Create advance'}
             >
-              {createMutation.isPending ? 'Creating...' : 'Create advance'}
+              {createMutation.isPending ? 'Creating…' : 'Create advance'}
             </Button>
             <Link href={`/finance/${tenantId}/Advances`}>
-              <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300">Cancel</Button>
+              <Button
+                variant="outline"
+                className="dark:border-gray-600 dark:text-gray-300"
+                disabled={createMutation.isPending}
+                title={createMutation.isPending ? 'Please wait' : 'Cancel and return'}
+              >
+                Cancel
+              </Button>
             </Link>
           </div>
         </CardContent>

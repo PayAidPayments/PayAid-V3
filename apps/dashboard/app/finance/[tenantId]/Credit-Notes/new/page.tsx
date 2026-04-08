@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery, useMutation } from '@tanstack/react-query'
@@ -38,6 +38,13 @@ export default function NewCreditNotePage() {
   const tenantId = params.tenantId as string
   const router = useRouter()
   const { token } = useAuthStore()
+  const createCreditNoteIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `finance:credit-note:create:${crypto.randomUUID()}`
+        : `finance:credit-note:create:${Date.now()}`,
+    []
+  )
   const { data: contactsData } = useContacts({ limit: 1000 })
   const contacts = contactsData?.contacts || []
 
@@ -116,6 +123,7 @@ export default function NewCreditNotePage() {
         headers: {
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` }),
+          'x-idempotency-key': createCreditNoteIdempotencyKey,
         },
         body: JSON.stringify({
           tenantId,
@@ -511,15 +519,23 @@ export default function NewCreditNotePage() {
 
           <div className="flex justify-end gap-4">
             <Link href={`/finance/${tenantId}/Credit-Notes`}>
-              <Button type="button" variant="outline">Cancel</Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isSubmitting}
+                title={isSubmitting ? 'Please wait' : 'Cancel and return'}
+              >
+                Cancel
+              </Button>
             </Link>
             <Button
               type="submit"
               disabled={isSubmitting}
+              title={isSubmitting ? 'Please wait' : 'Create credit note'}
               className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#3F1F62] hover:to-[#E0B200] text-white"
             >
               <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? 'Creating...' : 'Create Credit Note'}
+              {isSubmitting ? 'Creating…' : 'Create Credit Note'}
             </Button>
           </div>
         </form>

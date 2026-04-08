@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,6 +21,13 @@ export default function HRAssetEditPage() {
   const assetId = params?.id as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
+  const updateAssetIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:asset:update:${assetId}:${crypto.randomUUID()}`
+        : `hr:asset:update:${assetId}:${Date.now()}`,
+    [assetId]
+  )
 
   const [formData, setFormData] = useState({
     name: '',
@@ -81,6 +88,7 @@ export default function HRAssetEditPage() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'x-idempotency-key': updateAssetIdempotencyKey,
         },
         body: JSON.stringify(data),
       })
@@ -256,12 +264,18 @@ export default function HRAssetEditPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  disabled={updateAsset.isPending}
+                  title={updateAsset.isPending ? 'Please wait' : 'Cancel and go back'}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={updateAsset.isPending}>
+                <Button
+                  type="submit"
+                  disabled={updateAsset.isPending}
+                  title={updateAsset.isPending ? 'Please wait' : 'Save asset changes'}
+                >
                   <Save className="mr-2 h-4 w-4" />
-                  {updateAsset.isPending ? 'Saving...' : 'Save Changes'}
+                  {updateAsset.isPending ? 'Saving…' : 'Save Changes'}
                 </Button>
               </div>
             </form>

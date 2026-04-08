@@ -1,0 +1,50 @@
+# Phase 17: Self-hosted PayAid stack (pattern – Zoho One style)
+# Usage: docker compose -f docker-compose.phase17.yml up -d
+# Services: platform (suite), marketing (PayAid Social), postgres, redis, waha (optional), ai (optional)
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: payaid
+      POSTGRES_PASSWORD: payaid
+      POSTGRES_DB: payaid_v3
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  platform:
+    build:
+      context: .
+      dockerfile: apps/platform/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://payaid:payaid@postgres:5432/payaid_v3
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  marketing:
+    build:
+      context: .
+      dockerfile: apps/marketing/Dockerfile
+    ports:
+      - "3005:3005"
+    environment:
+      DATABASE_URL: postgresql://payaid:payaid@postgres:5432/payaid_v3
+      NEXT_PUBLIC_SOCIAL_API_URL: http://platform:3000
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data: {}

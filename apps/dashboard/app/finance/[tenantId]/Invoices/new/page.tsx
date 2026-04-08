@@ -1492,19 +1492,27 @@ export default function NewInvoicePage() {
                 }}
                 disabled={createInvoice.isPending} 
                 variant="outline"
+                title={createInvoice.isPending ? 'Please wait' : 'Save invoice as draft'}
                 className="w-full dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
-                {createInvoice.isPending ? 'Saving...' : 'Save as Draft'}
+                {createInvoice.isPending ? 'Saving…' : 'Save as Draft'}
               </Button>
               <Button 
                 type="submit" 
                 disabled={createInvoice.isPending} 
+                title={createInvoice.isPending ? 'Please wait' : 'Save and send invoice'}
                 className="w-full dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
               >
-                {createInvoice.isPending ? 'Sending...' : 'Save and Send'}
+                {createInvoice.isPending ? 'Sending…' : 'Save and Send'}
               </Button>
               <Link href={`/finance/${tenantId}/Invoices`}>
-                <Button type="button" variant="outline" className="w-full dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700" disabled={createInvoice.isPending}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                  disabled={createInvoice.isPending}
+                  title={createInvoice.isPending ? 'Please wait' : 'Cancel and return'}
+                >
                   Cancel
                 </Button>
               </Link>
@@ -1554,6 +1562,7 @@ export default function NewInvoicePage() {
               }}
               disabled={createInvoice.isPending}
               variant="outline"
+              title={createInvoice.isPending ? 'Please wait' : 'Save invoice as draft'}
               className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               Save as Draft
@@ -1568,9 +1577,10 @@ export default function NewInvoicePage() {
                 }
               }}
               disabled={createInvoice.isPending}
+              title={createInvoice.isPending ? 'Please wait' : 'Save and send invoice'}
               className="min-w-[150px] dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
             >
-              {createInvoice.isPending ? 'Sending...' : 'Save and Send'}
+              {createInvoice.isPending ? 'Sending…' : 'Save and Send'}
             </Button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,6 +22,13 @@ export default function HRContractorEditPage() {
   const contractorId = params?.id as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
+  const updateContractorIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:contractor:update:${contractorId}:${crypto.randomUUID()}`
+        : `hr:contractor:update:${contractorId}:${Date.now()}`,
+    [contractorId]
+  )
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -96,6 +103,7 @@ export default function HRContractorEditPage() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'x-idempotency-key': updateContractorIdempotencyKey,
         },
         body: JSON.stringify(data),
       })
@@ -336,12 +344,18 @@ export default function HRContractorEditPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  disabled={updateContractor.isPending}
+                  title={updateContractor.isPending ? 'Please wait' : 'Cancel and go back'}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={updateContractor.isPending}>
+                <Button
+                  type="submit"
+                  disabled={updateContractor.isPending}
+                  title={updateContractor.isPending ? 'Please wait' : 'Save contractor changes'}
+                >
                   <Save className="mr-2 h-4 w-4" />
-                  {updateContractor.isPending ? 'Saving...' : 'Save Changes'}
+                  {updateContractor.isPending ? 'Saving…' : 'Save Changes'}
                 </Button>
               </div>
             </form>

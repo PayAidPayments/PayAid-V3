@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,6 +33,13 @@ export default function FinancePurchaseOrdersNewPage() {
   const params = useParams()
   const tenantId = params.tenantId as string
   const router = useRouter()
+  const createPurchaseOrderIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `finance:po:create:${crypto.randomUUID()}`
+        : `finance:po:create:${Date.now()}`,
+    []
+  )
   const [formData, setFormData] = useState({
     vendorId: '',
     poNumber: '',
@@ -64,6 +71,7 @@ export default function FinancePurchaseOrdersNewPage() {
         headers: {
           ...getAuthHeaders(),
           'Content-Type': 'application/json',
+          'x-idempotency-key': createPurchaseOrderIdempotencyKey,
         },
         body: JSON.stringify(data),
       })
@@ -400,14 +408,17 @@ export default function FinancePurchaseOrdersNewPage() {
           <Button
             type="submit"
             disabled={createPO.isPending}
+            title={createPO.isPending ? 'Please wait' : 'Create purchase order'}
             className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
           >
-            {createPO.isPending ? 'Creating...' : 'Create Purchase Order'}
+            {createPO.isPending ? 'Creating…' : 'Create Purchase Order'}
           </Button>
           <Button
             type="button"
             variant="outline"
             onClick={() => router.back()}
+            disabled={createPO.isPending}
+            title={createPO.isPending ? 'Please wait' : 'Cancel and go back'}
             className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             Cancel

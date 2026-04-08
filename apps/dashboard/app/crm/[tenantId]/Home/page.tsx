@@ -161,7 +161,9 @@ export default function CRMDashboardPage() {
   const params = useParams()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { user, tenant, token } = useAuthStore()
+  const { user, tenant, token, fetchUser } = useAuthStore()
+  const [authHydrated, setAuthHydrated] = useState<boolean>(() => useAuthStore.persist.hasHydrated())
+  const enableBackgroundAutoSeed = process.env.NEXT_PUBLIC_CRM_AUTO_SEED === '1'
   
   // Get tenantId from URL params first, fallback to auth store
   // Handle both string and array cases (Next.js can return either)
@@ -192,8 +194,51 @@ export default function CRMDashboardPage() {
   const hasCheckedDataRef = useRef(false) // Track if we've checked for demo data
   const hasTriggeredEnsureDemoRef = useRef(false)
 
+  // Ensure we only make auth decisions after persisted auth storage has hydrated.
+  useEffect(() => {
+    if (useAuthStore.persist.hasHydrated()) {
+      setAuthHydrated(true)
+      return
+    }
+    const unsub = useAuthStore.persist.onFinishHydration(() => {
+      setAuthHydrated(true)
+    })
+    // Fail-safe: on some hard-refresh paths hydration callback can be missed.
+    const hydrationWatchdog = setTimeout(() => {
+      setAuthHydrated(true)
+    }, 2000)
+    return () => {
+      clearTimeout(hydrationWatchdog)
+      unsub()
+    }
+  }, [])
+
+  // Hard refresh recovery: when cookie token exists but zustand token is not ready, restore via /api/auth/me.
+  useEffect(() => {
+    if (!tenantId || !authHydrated || token) return
+    if (typeof document === 'undefined') return
+    const hasTokenCookie = document.cookie.split(';').some((c) => c.trim().startsWith('token='))
+    if (!hasTokenCookie) return
+    fetchUser().catch(() => {
+      // keep graceful fallback in main loader effect
+    })
+  }, [tenantId, authHydrated, token, fetchUser])
+
+  // Loading watchdog: never keep skeleton forever on hard refresh.
+  useEffect(() => {
+    if (!loading) return
+    const id = setTimeout(() => {
+      setLoading(false)
+      if (!stats && !error) {
+        setError('Dashboard took too long to load. Please refresh once or sign in again.')
+      }
+    }, 30000)
+    return () => clearTimeout(id)
+  }, [loading, stats, error])
+
   // When dashboard loads with no deals, ensure demo data once so demos are never empty
   useEffect(() => {
+    if (!enableBackgroundAutoSeed) return
     if (!tenantId || !token || !stats || hasTriggeredEnsureDemoRef.current) return
     const pipelineTotal = (stats.pipelineByStage || []).reduce((s: number, p: any) => s + (Number(p?.count) || 0), 0)
     const hasDeals = (stats.dealsCreatedThisMonth || 0) + (stats.dealsClosingThisMonth || 0) + pipelineTotal > 0
@@ -215,7 +260,7 @@ export default function CRMDashboardPage() {
         }
       } catch (_) {}
     })()
-  }, [tenantId, token, stats])
+  }, [tenantId, token, stats, enableBackgroundAutoSeed])
 
   // NO REDIRECT LOGIC - If tenantId is in URL params, we're good
   // The entry point (/crm) handles redirecting to the correct URL
@@ -240,6 +285,7 @@ export default function CRMDashboardPage() {
 
   // Check if demo data exists and seed if needed (only once) - Run in background, don't block UI
   useEffect(() => {
+    if (!enableBackgroundAutoSeed) return
     if (!tenantId || !token || hasCheckedDataRef.current) return
     
     hasCheckedDataRef.current = true // Mark as checked to prevent multiple checks
@@ -429,9 +475,10 @@ export default function CRMDashboardPage() {
     }
     
     // Run after initial render - don't block
-    const timeoutId = setTimeout(checkAndSeedData, 0)
+    // Defer demo-seed checks so initial dashboard stats render first.
+    const timeoutId = setTimeout(checkAndSeedData, 5000)
     return () => clearTimeout(timeoutId)
-  }, [tenantId, token]) // Only run when tenantId or token changes
+  }, [tenantId, token, enableBackgroundAutoSeed]) // Only run when tenantId or token changes
 
   // Determine current view based on URL query params
   const viewParam = searchParams?.get('view')
@@ -469,8 +516,13 @@ export default function CRMDashboardPage() {
 
   // Main data loading effect - only for stats and view-specific data
   useEffect(() => {
-    // Don't fetch if tenantId is not available
-    if (!tenantId) {
+    // Don't fetch until tenant + auth hydration are ready.
+    if (!tenantId || !authHydrated) {
+      return
+    }
+    if (!token) {
+      setLoading(false)
+      setError('Session not found. Please sign in again.')
       return
     }
 
@@ -535,7 +587,7 @@ export default function CRMDashboardPage() {
       }
       fetchingStatsRef.current = false
     }
-  }, [tenantId, currentView, timePeriod]) // Removed activityFilter - it has its own effect
+  }, [tenantId, authHydrated, token, currentView, timePeriod]) // Removed activityFilter - it has its own effect
 
   // Separate effect for activity filter changes (only affects activity feed)
   useEffect(() => {
@@ -677,22 +729,30 @@ export default function CRMDashboardPage() {
     try {
       setLoading(true)
       setError(null)
-      const token = useAuthStore.getState().token
-      
       if (!token) {
-        console.error('No authentication token found')
+        // Token can be briefly unavailable during client hydration; avoid noisy false-negative errors.
         setLoading(false)
         return
       }
 
       console.log('[CRM_DASHBOARD] Fetching stats from API...')
       const statsUrl = `/api/crm/dashboard/stats?period=${timePeriod}${tenantId ? `&tenantId=${encodeURIComponent(tenantId)}` : ''}`
-      const response = await fetch(statsUrl, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        signal, // Add abort signal
-      })
+      const statsController = new AbortController()
+      const onParentAbort = () => statsController.abort()
+      if (signal) signal.addEventListener('abort', onParentAbort, { once: true })
+      const statsTimeout = setTimeout(() => statsController.abort(), 20_000)
+      let response: Response
+      try {
+        response = await fetch(statsUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          signal: statsController.signal,
+        })
+      } finally {
+        clearTimeout(statsTimeout)
+        if (signal) signal.removeEventListener('abort', onParentAbort)
+      }
 
       console.log('[CRM_DASHBOARD] Stats API response:', {
         status: response.status,
@@ -957,7 +1017,7 @@ export default function CRMDashboardPage() {
     return <CRMDashboardSkeleton />
   }
 
-  if (loading) {
+  if (!authHydrated || loading) {
     return <CRMDashboardSkeleton />
   }
 

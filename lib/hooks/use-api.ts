@@ -453,9 +453,16 @@ export function useUpdateInvoice() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const idem =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : String(Date.now())
       const response = await fetch(`/api/invoices/${id}`, {
         method: 'PATCH',
-        headers: getAuthHeaders(),
+        headers: {
+          ...getAuthHeaders(),
+          'x-idempotency-key': `finance:invoice:patch:${id}:${idem}`,
+        },
         body: JSON.stringify(data),
       })
       if (!response.ok) {

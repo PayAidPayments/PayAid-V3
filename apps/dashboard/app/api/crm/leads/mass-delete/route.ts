@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const massDeleteSchema = z.object({
   leadIds: z.array(z.string()).min(1, 'At least one lead must be selected'),
@@ -11,6 +12,14 @@ const massDeleteSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:leads:mass_delete:${idempotencyKey}`)
+      const deleted = (existing?.afterSnapshot as { deleted?: number } | null)?.deleted
+      if (existing && typeof deleted === 'number') {
+        return NextResponse.json({ success: true, deduplicated: true, deleted }, { status: 200 })
+      }
+    }
 
     const body = await request.json()
     const validated = massDeleteSchema.parse(body)
@@ -37,6 +46,12 @@ export async function POST(request: NextRequest) {
         tenantId,
       },
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:leads:mass_delete:${idempotencyKey}`, {
+        deleted: result.count,
+      })
+    }
 
     return NextResponse.json({
       success: true,

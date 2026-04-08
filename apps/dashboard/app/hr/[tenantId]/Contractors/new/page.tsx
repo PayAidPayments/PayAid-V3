@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,6 +20,13 @@ export default function HRContractorNewPage() {
   const tenantId = params?.tenantId as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
+  const createContractorIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:contractor:create:${crypto.randomUUID()}`
+        : `hr:contractor:create:${Date.now()}`,
+    []
+  )
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -58,6 +65,7 @@ export default function HRContractorNewPage() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'x-idempotency-key': createContractorIdempotencyKey,
         },
         body: JSON.stringify(data),
       })
@@ -294,12 +302,18 @@ export default function HRContractorNewPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  disabled={createContractor.isPending}
+                  title={createContractor.isPending ? 'Please wait' : 'Cancel and go back'}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createContractor.isPending}>
+                <Button
+                  type="submit"
+                  disabled={createContractor.isPending}
+                  title={createContractor.isPending ? 'Please wait' : 'Create contractor'}
+                >
                   <Save className="mr-2 h-4 w-4" />
-                  {createContractor.isPending ? 'Creating...' : 'Create Contractor'}
+                  {createContractor.isPending ? 'Creating…' : 'Create Contractor'}
                 </Button>
               </div>
             </form>

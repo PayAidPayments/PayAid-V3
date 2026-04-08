@@ -1,0 +1,78 @@
+# PayAid V3 — minimal self-hosted AI stack + optional n8n
+#
+# Purpose: one compose file documenting services that back @payaid/ai and /api/ai/*.
+# Does not replace docker-compose.selfhosted.yml (Postgres/MinIO/ONLYOFFICE) or
+# docker-compose.ai-services.yml (Python TTS/STT/image-to-text gateway).
+#
+# Usage:
+#   docker compose -f docker-compose.ai-stack.yml up -d
+#   docker compose -f docker-compose.ai-stack.yml --profile n8n up -d
+#
+# Dashboard / Next.js (.env on host — point to localhost or Docker host IP):
+#   OLLAMA_BASE_URL=http://localhost:11434
+#   OLLAMA_MODEL=llama3.1:8b
+#   REDIS_URL=redis://localhost:6389
+#   EMBEDDING_URL=http://localhost:8088        # run BGE-M3 / TEI separately; see below
+#   COMFYUI_URL=http://localhost:8188          # SDXL / ComfyUI on GPU host (optional)
+#   COMFYUI_TXT2IMG_WORKFLOW_PATH=...          # path to exported workflow JSON
+#   AI_GATEWAY_URL=http://localhost:8000       # optional: compose -f docker-compose.ai-services.yml
+#   WHISPER_URL / SPEECH_TO_TEXT_URL           # optional: STT (ai-services or external)
+#   TTS_URL                                    # optional: TTS service URL
+#   AI_VIDEO_QUEUE_URL=                        # your worker HTTP endpoint (BullMQ/RQ/etc.)
+#
+# Embeddings: expose a service compatible with @payaid/ai (POST /embeddings, body { input: string }).
+# Options: Hugging Face TEI, or a small FastAPI wrapper around BAAI/bge-m3.
+#
+# n8n: optional workflow glue — HTTP nodes call PayAid /api/ai/*; keep heavy AI in PayAid services.
+
+name: payaid-ai-stack
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: payaid-ai-ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - payaid-ai-ollama-data:/root/.ollama
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_NUM_GPU: ${OLLAMA_NUM_GPU:-0}
+      OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:-2}
+      OLLAMA_MAX_LOADED_MODELS: ${OLLAMA_MAX_LOADED_MODELS:-2}
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: payaid-ai-redis
+    ports:
+      - "${AI_STACK_REDIS_PORT:-6389}:6379"
+    volumes:
+      - payaid-ai-redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  n8n:
+    profiles: ["n8n"]
+    image: n8nio/n8n:latest
+    container_name: payaid-ai-n8n
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      N8N_HOST: ${N8N_HOST:-localhost}
+      NODE_ENV: production
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678/}
+      GENERIC_TIMEZONE: ${N8N_TZ:-UTC}
+    volumes:
+      - payaid-ai-n8n-data:/home/node/.n8n
+    restart: unless-stopped
+
+volumes:
+  payaid-ai-ollama-data:
+  payaid-ai-redis-data:
+  payaid-ai-n8n-data:

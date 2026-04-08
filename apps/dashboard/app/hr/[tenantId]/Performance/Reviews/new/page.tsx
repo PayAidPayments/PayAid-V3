@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,6 +19,13 @@ export default function HRPerformanceReviewNewPage() {
   const tenantId = params?.tenantId as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
+  const createReviewIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:performance-review:create:${crypto.randomUUID()}`
+        : `hr:performance-review:create:${Date.now()}`,
+    []
+  )
 
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -47,6 +54,7 @@ export default function HRPerformanceReviewNewPage() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'x-idempotency-key': createReviewIdempotencyKey,
         },
         body: JSON.stringify(data),
       })
@@ -179,12 +187,18 @@ export default function HRPerformanceReviewNewPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  disabled={createReview.isPending}
+                  title={createReview.isPending ? 'Please wait' : 'Cancel and go back'}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createReview.isPending}>
+                <Button
+                  type="submit"
+                  disabled={createReview.isPending}
+                  title={createReview.isPending ? 'Please wait' : 'Start review'}
+                >
                   <Save className="mr-2 h-4 w-4" />
-                  {createReview.isPending ? 'Creating...' : 'Start Review'}
+                  {createReview.isPending ? 'Creating…' : 'Start Review'}
                 </Button>
               </div>
             </form>

@@ -32,7 +32,11 @@ export default function ContractsDashboardPage() {
         <GlassCard>
           <CardHeader>
             <CardTitle className="text-lg font-semibold">Contracts</CardTitle>
-            <CardDescription>Create, manage, and track business contracts</CardDescription>
+            <CardDescription>
+              Create, manage, and track business contracts. When contract create/edit routes are added under this module,
+              apply the same mutation guardrails as Finance/Marketing (disabled actions while pending, `Please wait` tooltips,
+              `x-idempotency-key` on POST/PATCH).
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-center py-12 text-gray-500">

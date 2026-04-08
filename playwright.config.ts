@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000'
+
 export default defineConfig({
   testDir: './tests',
   testMatch: /.*\.spec\.(ts|js)/,
@@ -17,7 +19,7 @@ export default defineConfig({
       : [['list'], ['html', { open: 'on-failure' }], ['json', { outputFile: 'e2e-results.json' }]],
   use: {
     // Prefer 127.0.0.1 over localhost to avoid IPv6/hosts flakiness on Windows.
-    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:3000',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -27,10 +29,10 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     // Phase 8: CTO demo flows – run with --project crm (or use baseURL in spec).
-    { name: 'crm', use: { ...devices['Desktop Chrome'], baseURL: 'http://127.0.0.1:3001' } },
+    { name: 'crm', use: { ...devices['Desktop Chrome'], baseURL } },
     { name: 'hr', use: { ...devices['Desktop Chrome'], baseURL: 'http://127.0.0.1:3002' } },
     { name: 'voice', use: { ...devices['Desktop Chrome'], baseURL: 'http://127.0.0.1:3003' } },
-    { name: 'dashboard', use: { ...devices['Desktop Chrome'], baseURL: 'http://127.0.0.1:3000' } },
+    { name: 'dashboard', use: { ...devices['Desktop Chrome'], baseURL } },
   ],
   // Start dev server automatically for local E2E runs.
   // Opt out with PLAYWRIGHT_NO_WEB_SERVER=1 if you prefer starting it manually.
@@ -40,9 +42,10 @@ export default defineConfig({
       ? undefined
       : {
           command: 'npm run dev',
-          url: process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:3000',
+          // Lightweight health endpoint avoids heavy first-route compile during readiness checks.
+          url: `${baseURL}/api/payaid-internal/ping`,
           reuseExistingServer: true,
-          timeout: 300_000,
+          timeout: 900_000,
           stdout: 'pipe',
           stderr: 'pipe',
         },

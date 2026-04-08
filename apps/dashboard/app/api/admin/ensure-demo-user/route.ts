@@ -3,12 +3,28 @@ import { prisma } from '@/lib/db/prisma'
 import * as bcrypt from 'bcryptjs'
 import { generateUniqueTenantSlug } from '@/lib/utils/generate-tenant-slug'
 
+function assertAdminUtilityAccess(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 403 })
+  }
+  const configuredSecret = process.env.ADMIN_UTILITY_SECRET?.trim()
+  if (configuredSecret) {
+    const provided = request.headers.get('x-admin-utility-secret')?.trim()
+    if (!provided || provided !== configuredSecret) {
+      return NextResponse.json({ error: 'Unauthorized utility access' }, { status: 401 })
+    }
+  }
+  return null
+}
+
 /**
  * GET /api/admin/ensure-demo-user
  * Checks if demo user exists and creates it if missing
  * This is a diagnostic/utility endpoint
  */
 export async function GET(request: NextRequest) {
+  const gate = assertAdminUtilityAccess(request)
+  if (gate) return gate
   try {
     console.log('[ENSURE_DEMO_USER] Checking for demo user...')
     
@@ -104,10 +120,7 @@ export async function GET(request: NextRequest) {
         tenantId: newUser.tenantId,
         tenantName: tenant.name,
       },
-      credentials: {
-        email: 'admin@demo.com',
-        password: 'Test@1234',
-      },
+      note: 'Utility completed. Credentials are not returned by API.',
     })
   } catch (error) {
     console.error('[ENSURE_DEMO_USER] Error:', error)
@@ -127,6 +140,8 @@ export async function GET(request: NextRequest) {
  * Forces password reset for demo user
  */
 export async function POST(request: NextRequest) {
+  const gate = assertAdminUtilityAccess(request)
+  if (gate) return gate
   try {
     console.log('[ENSURE_DEMO_USER] Resetting demo user password...')
     
@@ -179,10 +194,7 @@ export async function POST(request: NextRequest) {
         name: user.name,
         role: user.role,
       },
-      credentials: {
-        email: 'admin@demo.com',
-        password: 'Test@1234',
-      },
+      note: 'Password was reset. API response does not include plaintext password.',
     })
   } catch (error) {
     console.error('[ENSURE_DEMO_USER] Error:', error)

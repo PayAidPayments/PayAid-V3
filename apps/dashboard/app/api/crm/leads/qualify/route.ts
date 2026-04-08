@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { qualifyLead, batchQualifyLeads, QualificationConfig } from '@/lib/crm/lead-qualification'
 import { z } from 'zod'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const qualifyRequestSchema = z.object({
   contactId: z.string().optional(),
@@ -26,7 +27,21 @@ const qualifyRequestSchema = z.object({
 // POST /api/crm/leads/qualify - Qualify lead(s)
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:lead:qualify:${idempotencyKey}`)
+      const existingProcessed = (existing?.afterSnapshot as { processed?: boolean } | null)?.processed
+      if (existing && existingProcessed) {
+        return NextResponse.json(
+          {
+            success: true,
+            deduplicated: true,
+          },
+          { status: 200 }
+        )
+      }
+    }
 
     const body = await request.json()
     const validated = qualifyRequestSchema.parse(body)
@@ -40,7 +55,7 @@ export async function POST(request: NextRequest) {
         validated.autoAssign || false
       )
 
-      return NextResponse.json({
+      const response = {
         success: true,
         count: results.length,
         results,
@@ -53,7 +68,14 @@ export async function POST(request: NextRequest) {
           nurtured: results.filter((r) => r.action === 'nurture').length,
           manualReview: results.filter((r) => r.action === 'manual-review').length,
         },
-      })
+      }
+      if (idempotencyKey) {
+        await markIdempotentRequest(tenantId, userId, `crm:lead:qualify:${idempotencyKey}`, {
+          processed: true,
+          count: results.length,
+        })
+      }
+      return NextResponse.json(response)
     } else if (validated.contactId) {
       // Single qualification
       const result = await qualifyLead(
@@ -63,6 +85,12 @@ export async function POST(request: NextRequest) {
         validated.autoAssign || false
       )
 
+      if (idempotencyKey) {
+        await markIdempotentRequest(tenantId, userId, `crm:lead:qualify:${idempotencyKey}`, {
+          processed: true,
+          contact_id: validated.contactId,
+        })
+      }
       return NextResponse.json({
         success: true,
         result,

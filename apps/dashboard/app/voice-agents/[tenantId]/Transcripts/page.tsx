@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -50,7 +50,7 @@ export default function VoiceAgentTranscriptsPage() {
   const [searchTrigger, setSearchTrigger] = useState(0)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  const search = async () => {
+  const search = useCallback(async () => {
     const token = getToken()
     if (!token) return
     setLoading(true)
@@ -76,11 +76,11 @@ export default function VoiceAgentTranscriptsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [q, startDate, endDate, language, sentiment])
 
   useEffect(() => {
     search()
-  }, [searchTrigger])
+  }, [searchTrigger, search])
 
   const exportCsv = () => {
     const headers = ['Date', 'Agent', 'Phone', 'Direction', 'Status', 'Language', 'Sentiment', 'Duration (s)', 'Transcript']

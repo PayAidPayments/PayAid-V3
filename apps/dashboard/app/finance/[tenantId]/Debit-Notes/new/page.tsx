@@ -509,15 +509,23 @@ export default function NewDebitNotePage() {
 
           <div className="flex justify-end gap-4">
             <Link href={`/finance/${tenantId}/Debit-Notes`}>
-              <Button type="button" variant="outline">Cancel</Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isSubmitting}
+                title={isSubmitting ? 'Please wait' : 'Cancel and return'}
+              >
+                Cancel
+              </Button>
             </Link>
             <Button
               type="submit"
               disabled={isSubmitting}
+              title={isSubmitting ? 'Please wait' : 'Create debit note'}
               className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#3F1F62] hover:to-[#E0B200] text-white"
             >
               <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? 'Creating...' : 'Create Debit Note'}
+              {isSubmitting ? 'Creating…' : 'Create Debit Note'}
             </Button>
           </div>
         </form>

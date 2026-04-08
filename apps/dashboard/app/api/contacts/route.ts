@@ -8,6 +8,7 @@ import { multiLayerCache } from '@/lib/cache/multi-layer'
 import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
 import { logCrmAudit } from '@/lib/audit-log-crm'
 import { resolveTenantFromParam } from '@/lib/tenant/resolve-tenant'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 // Optional email/phone: allow empty string from forms and coerce to undefined for DB
 const optionalEmail = z.union([z.string().email(), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v))
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
     const requestTenantId = searchParams.get('tenantId') || undefined
     let tenantId = jwtTenantId
     if (requestTenantId) {
-      const user = await prisma.user.findUnique({
+      const user = await prismaRead.user.findUnique({
         where: { id: userId },
         select: { tenantId: true, email: true },
       }).catch(() => null)
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
       const hasAccess = jwtTenantId === requestTenantId || userTenantId === requestTenantId
       const isDemoTenantRequest =
         user?.email === 'admin@demo.com' &&
-        (await prisma.tenant.findUnique({
+        (await prismaRead.tenant.findUnique({
           where: { id: requestTenantId },
           select: { name: true },
         }).then((t) => t?.name?.toLowerCase().includes('demo') ?? false).catch(() => false))
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
     let contacts
     try {
       // First, try with all fields
-      contacts = await prisma.contact.findMany({
+      contacts = await prismaRead.contact.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
@@ -164,7 +165,7 @@ export async function GET(request: NextRequest) {
         
         // Try without gstin (might not exist in some schemas)
         try {
-          contacts = await prisma.contact.findMany({
+          contacts = await prismaRead.contact.findMany({
             where,
             skip: (page - 1) * limit,
             take: limit,
@@ -183,7 +184,7 @@ export async function GET(request: NextRequest) {
         } catch (error1: any) {
           // Try without postalCode
           try {
-            contacts = await prisma.contact.findMany({
+            contacts = await prismaRead.contact.findMany({
               where,
               skip: (page - 1) * limit,
               take: limit,
@@ -201,7 +202,7 @@ export async function GET(request: NextRequest) {
           } catch (error2: any) {
             // Last resort: absolute minimum
             try {
-              contacts = await prisma.contact.findMany({
+              contacts = await prismaRead.contact.findMany({
                 where,
                 skip: (page - 1) * limit,
                 take: limit,
@@ -226,7 +227,7 @@ export async function GET(request: NextRequest) {
     // Count total contacts with error handling
     let total
     try {
-      total = await prisma.contact.count({ where })
+      total = await prismaRead.contact.count({ where })
     } catch (countError: any) {
       console.error('Count query failed:', {
         message: countError?.message,
@@ -416,6 +417,21 @@ export async function POST(request: NextRequest) {
 
     // Check CRM module license
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `contact:create:${idempotencyKey}`)
+      const existingContactId = (existing?.afterSnapshot as { contact_id?: string } | null)?.contact_id
+      if (existing && existingContactId) {
+        return NextResponse.json(
+          {
+            id: existingContactId,
+            deduplicated: true,
+          },
+          { status: 200 }
+        )
+      }
+    }
 
     // Check tenant limits
     const canCreate = await checkTenantLimits(tenantId, 'contacts')
@@ -504,6 +520,12 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `contact:create:${idempotencyKey}`, {
+        contact_id: contact.id,
+      })
+    }
 
     return NextResponse.json(contact, { status: 201 })
   } catch (error) {

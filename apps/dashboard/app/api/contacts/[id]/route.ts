@@ -63,46 +63,57 @@ export async function GET(
     const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
     const tenantId = await resolveContactTenantId(request, jwtTenantId, userId)
 
+    const contactInclude = {
+      assignedTo: {
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
+        },
+      },
+      // 360 page only needs recent activity hint; timeline has its own dedicated API calls.
+      interactions: {
+        orderBy: { createdAt: 'desc' as const },
+        take: 1,
+        select: { id: true, type: true, createdAt: true },
+      },
+      deals: {
+        orderBy: { createdAt: 'desc' as const },
+        take: 25,
+        select: { id: true, name: true, value: true, stage: true, createdAt: true },
+      },
+      tasks: {
+        where: { status: { not: 'completed' } },
+        orderBy: { dueDate: 'asc' as const },
+        take: 50,
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          status: true,
+          dueDate: true,
+          createdAt: true,
+          priority: true,
+        },
+      },
+    }
+
     let contact = await prisma.contact.findFirst({
       where: {
         id: resolvedParams.id,
         tenantId,
       },
-      include: {
-        assignedTo: {
-          include: {
-            user: {
-              select: {
-                name: true,
-                email: true,
-              },
-            },
-          },
-        },
-        interactions: {
-          orderBy: { createdAt: 'desc' },
-          take: 50,
-        },
-        deals: {
-          orderBy: { createdAt: 'desc' },
-        },
-        tasks: {
-          where: { status: { not: 'completed' } },
-          orderBy: { dueDate: 'asc' },
-        },
-      },
+      include: contactInclude,
     })
 
     // Fallback: find by id only when tenant filter missed (e.g. URL tenant vs JWT tenant)
     if (!contact) {
       const byId = await prisma.contact.findUnique({
         where: { id: resolvedParams.id },
-        include: {
-          assignedTo: { include: { user: { select: { name: true, email: true } } } },
-          interactions: { orderBy: { createdAt: 'desc' }, take: 50 },
-          deals: { orderBy: { createdAt: 'desc' } },
-          tasks: { where: { status: { not: 'completed' } }, orderBy: { dueDate: 'asc' } },
-        },
+        include: contactInclude,
       })
       if (byId) {
         const allowed =

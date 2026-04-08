@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireModuleAccess } from '@/lib/middleware/auth'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { prisma } from '@/lib/db/prisma'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const updateRuleSchema = z.object({
   key: z.string().min(1).optional(),
@@ -16,8 +17,16 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
     const { id } = await params
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:scoring_rule:update:${id}:${idempotencyKey}`)
+      const existingRuleId = (existing?.afterSnapshot as { rule_id?: string } | null)?.rule_id
+      if (existing && existingRuleId) {
+        return NextResponse.json({ success: true, deduplicated: true, rule: { id: existingRuleId } }, { status: 200 })
+      }
+    }
     const body = await request.json()
     const parsed = updateRuleSchema.parse(body)
 
@@ -31,8 +40,16 @@ export async function PATCH(
     }
 
     const updated = await prisma.leadScoreRule.findFirst({ where: { id, tenantId } })
+    if (idempotencyKey && updated) {
+      await markIdempotentRequest(tenantId, userId, `crm:scoring_rule:update:${id}:${idempotencyKey}`, {
+        rule_id: updated.id,
+      })
+    }
     return NextResponse.json({ success: true, rule: updated })
   } catch (error: any) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Update scoring rule error:', error)
     const status = error instanceof z.ZodError ? 400 : 500
     return NextResponse.json({ success: false, error: error.message }, { status })

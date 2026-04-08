@@ -1,0 +1,9 @@
+# Torch comes from the PyTorch CUDA base image — do not install CPU-only wheels here.
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+diffusers==0.31.0
+transformers==4.46.0
+accelerate==1.1.0
+pillow==10.0.0
+huggingface-hub>=0.20.0,<0.26.0
+numpy==1.24.3

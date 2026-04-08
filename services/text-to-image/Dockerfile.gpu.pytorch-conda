@@ -1,0 +1,23 @@
+# HEAVY (~4GB+): official PyTorch conda image — only use if Dockerfile.gpu (slim) fails.
+# Build: docker build -f Dockerfile.gpu.pytorch-conda -t payaid-text-to-image:gpu .
+
+FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements-docker.txt .
+RUN pip install --no-cache-dir -r requirements-docker.txt
+
+COPY . .
+
+EXPOSE 7860
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \
+    CMD curl -f http://localhost:7860/health || exit 1
+
+CMD ["python", "server.py"]

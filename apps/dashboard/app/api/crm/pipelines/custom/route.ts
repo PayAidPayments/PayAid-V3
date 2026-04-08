@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 /**
  * GET /api/crm/pipelines/custom
@@ -49,6 +50,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:pipelines:custom:save:${idempotencyKey}`)
+      const existingSaved = (existing?.afterSnapshot as { saved?: boolean } | null)?.saved
+      if (existing && existingSaved) {
+        return NextResponse.json({ success: true, deduplicated: true }, { status: 200 })
+      }
+    }
+
     const body = await request.json()
     const { stages } = body
 
@@ -70,6 +80,12 @@ export async function POST(request: NextRequest) {
         columns: [],
       },
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:pipelines:custom:save:${idempotencyKey}`, {
+        saved: true,
+      })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

@@ -34,19 +34,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ArrowLeft, Download, Pencil, Copy } from 'lucide-react'
+import { formatINRCompact } from '@/lib/currency'
 
 function formatDuration(seconds: number): string {
   if (!seconds || seconds < 0) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${s.toString().padStart(2, '0')}`
-}
-
-function formatINR(value: number): string {
-  if (value >= 10000000) return `₹${(value / 10000000).toFixed(2)}Cr`
-  if (value >= 100000) return `₹${(value / 100000).toFixed(2)}L`
-  if (value >= 1000) return `₹${(value / 1000).toFixed(0)}k`
-  return `₹${Math.round(value).toLocaleString('en-IN')}`
 }
 
 function toDateOnly(d: Date): string {
@@ -127,13 +121,13 @@ export default function VoiceAgentAnalyticsPage() {
       ['Total Calls', String(ov.totalCalls ?? 0)],
       ['Conversion %', `${(ov.conversionRate ?? 0).toFixed(1)}%`],
       ['Avg Duration', formatDuration(ov.averageDuration ?? 0)],
-      ['Revenue', formatINR(ov.revenueGenerated ?? 0)],
+      ['Revenue', formatINRCompact(ov.revenueGenerated ?? 0)],
     ]
     if (analytics.topPerformers?.length) {
       rows.push([])
       rows.push(['Agent', 'Calls', 'Conv%', 'Revenue'])
       analytics.topPerformers.forEach((a: any) => {
-        rows.push([a.agentName, String(a.calls), `${a.conversionRate}%`, formatINR(a.revenueRupees ?? 0)])
+        rows.push([a.agentName, String(a.calls), `${a.conversionRate}%`, formatINRCompact(a.revenueRupees ?? 0)])
       })
     }
     const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
@@ -288,7 +282,7 @@ export default function VoiceAgentAnalyticsPage() {
         />
         <StatCard
           title="Revenue generated"
-          value={formatINR(ov.revenueGenerated ?? 0)}
+          value={formatINRCompact(ov.revenueGenerated ?? 0)}
           subtitle="Voice pipeline"
           height="sm"
         />
@@ -368,7 +362,7 @@ export default function VoiceAgentAnalyticsPage() {
                     <TableCell className="font-medium">{a.agentName}</TableCell>
                     <TableCell className="text-right">{a.calls.toLocaleString()}</TableCell>
                     <TableCell className="text-right">{a.conversionRate}%</TableCell>
-                    <TableCell className="text-right">{formatINR(a.revenueRupees ?? 0)}</TableCell>
+                    <TableCell className="text-right">{formatINRCompact(a.revenueRupees ?? 0)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Link href={`/voice-agents/${tenantId}/studio?agent=${a.agentId}`}>

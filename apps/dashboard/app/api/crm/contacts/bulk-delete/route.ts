@@ -8,6 +8,7 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { logCrmAudit } from '@/lib/audit-log-crm'
 import { z } from 'zod'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const bodySchema = z.object({
   contactIds: z.array(z.string().min(1)).min(1, 'At least one contact ID is required'),
@@ -16,6 +17,15 @@ const bodySchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:contacts:bulk_delete:${idempotencyKey}`)
+      const archived = (existing?.afterSnapshot as { archived?: number } | null)?.archived
+      if (existing && typeof archived === 'number') {
+        return NextResponse.json({ success: true, deduplicated: true, archived }, { status: 200 })
+      }
+    }
+
     const body = await request.json()
     const { contactIds } = bodySchema.parse(body)
 
@@ -36,6 +46,12 @@ export async function POST(request: NextRequest) {
       changeSummary: `Bulk archived ${result.count} contact(s)`,
       afterSnapshot: { contactIds, archivedCount: result.count },
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:contacts:bulk_delete:${idempotencyKey}`, {
+        archived: result.count,
+      })
+    }
 
     return NextResponse.json({
       success: true,

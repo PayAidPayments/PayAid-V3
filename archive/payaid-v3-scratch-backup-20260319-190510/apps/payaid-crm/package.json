@@ -1,0 +1,12 @@
+{
+  "name": "payaid-crm",
+  "version": "0.0.1",
+  "private": true,
+  "description": "PayAid CRM – EspoCRM fork. Run via Docker.",
+  "scripts": {
+    "dev": "docker compose up",
+    "dev:detach": "docker compose up -d",
+    "build": "echo PayAid CRM is PHP; run via docker compose",
+    "down": "docker compose down"
+  }
+}

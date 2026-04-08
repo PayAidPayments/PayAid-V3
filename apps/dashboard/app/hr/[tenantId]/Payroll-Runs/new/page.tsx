@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery, useMutation } from '@tanstack/react-query'
@@ -46,6 +46,27 @@ export default function PayrollRunNewPage() {
   const router = useRouter()
   const tenantId = params?.tenantId as string
   const token = useAuthStore((s) => s.token)
+  const payrollCycleCreateIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:payroll:cycle:create:${crypto.randomUUID()}`
+        : `hr:payroll:cycle:create:${Date.now()}`,
+    []
+  )
+  const payrollGenerateIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:payroll:generate:${crypto.randomUUID()}`
+        : `hr:payroll:generate:${Date.now()}`,
+    []
+  )
+  const payrollDisburseIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:payroll:bulk-payout:${crypto.randomUUID()}`
+        : `hr:payroll:bulk-payout:${Date.now()}`,
+    []
+  )
   const [step, setStep] = useState(1)
   const [month, setMonth] = useState(new Date().getMonth() + 1)
   const [year, setYear] = useState(new Date().getFullYear())
@@ -127,6 +148,7 @@ export default function PayrollRunNewPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': payrollCycleCreateIdempotencyKey,
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ month, year, runType }),
@@ -148,6 +170,7 @@ export default function PayrollRunNewPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': payrollGenerateIdempotencyKey,
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -206,7 +229,11 @@ export default function PayrollRunNewPage() {
       if (!cid) throw new Error('No cycle')
       const res = await fetch('/api/hr/payroll/bulk-payout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-idempotency-key': payrollDisburseIdempotencyKey,
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ cycleId: cid }),
       })
       if (!res.ok) throw new Error('Disburse failed')
@@ -356,12 +383,13 @@ export default function PayrollRunNewPage() {
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => router.back()}>
+              <Button variant="outline" onClick={() => router.back()} disabled={createCycle.isPending} title={createCycle.isPending ? 'Please wait' : 'Cancel'}>
                 Cancel
               </Button>
               <Button
                 onClick={ensureCycleAndProceed}
                 disabled={createCycle.isPending}
+                title={createCycle.isPending ? 'Please wait' : 'Continue to exclusions'}
               >
                 Next: Exclude & adjustments <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -522,6 +550,7 @@ export default function PayrollRunNewPage() {
                 onClick={handleProcessNow}
                 disabled={generateRuns.isPending || createCycle.isPending}
                 className="gap-2"
+                title={createCycle.isPending || generateRuns.isPending ? 'Please wait' : 'Process payroll now'}
               >
                 {createCycle.isPending || generateRuns.isPending ? (
                   'Processing…'
@@ -538,6 +567,7 @@ export default function PayrollRunNewPage() {
                   onClick={() => disburseMutation.mutate()}
                   disabled={disburseMutation.isPending}
                   className="gap-2"
+                  title={disburseMutation.isPending ? 'Please wait' : 'Prepare PayAid bulk transfer payload'}
                 >
                   {disburseMutation.isPending ? 'Preparing…' : 'Disburse via PayAid'}
                 </Button>

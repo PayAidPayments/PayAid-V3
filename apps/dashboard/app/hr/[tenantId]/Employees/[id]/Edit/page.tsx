@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,6 +22,13 @@ export default function HREmployeeEditPage() {
   const employeeId = params?.id as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
+  const updateEmployeeIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:employee:update:${employeeId}:${crypto.randomUUID()}`
+        : `hr:employee:update:${employeeId}:${Date.now()}`,
+    [employeeId]
+  )
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -126,6 +133,7 @@ export default function HREmployeeEditPage() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'x-idempotency-key': updateEmployeeIdempotencyKey,
         },
         body: JSON.stringify(data),
       })
@@ -389,12 +397,18 @@ export default function HREmployeeEditPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  disabled={updateEmployee.isPending}
+                  title={updateEmployee.isPending ? 'Please wait' : 'Cancel and go back'}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={updateEmployee.isPending}>
+                <Button
+                  type="submit"
+                  disabled={updateEmployee.isPending}
+                  title={updateEmployee.isPending ? 'Please wait' : 'Save employee changes'}
+                >
                   <Save className="mr-2 h-4 w-4" />
-                  {updateEmployee.isPending ? 'Saving...' : 'Save Changes'}
+                  {updateEmployee.isPending ? 'Saving…' : 'Save Changes'}
                 </Button>
               </div>
             </form>

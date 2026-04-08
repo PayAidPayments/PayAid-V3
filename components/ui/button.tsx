@@ -9,7 +9,7 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'default', size = 'default', asChild = false, ...props }, ref) => {
+  ({ className, variant = 'default', size = 'default', asChild = false, children, ...props }, ref) => {
     const buttonClasses = cn(
       // Base styles - Design System compliant
       'inline-flex items-center justify-center rounded-lg text-sm font-semibold',
@@ -45,9 +45,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       className
     )
 
-    if (asChild && React.isValidElement(props.children)) {
-      return React.cloneElement(props.children as React.ReactElement<any>, {
-        className: cn(buttonClasses, (props.children as React.ReactElement<any>).props.className),
+    if (asChild && React.isValidElement(children)) {
+      return React.cloneElement(children as React.ReactElement<any>, {
+        className: cn(buttonClasses, (children as React.ReactElement<any>).props.className),
         ref,
         ...props,
       })
@@ -59,7 +59,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         suppressHydrationWarning
         {...props}
-      />
+      >
+        {children}
+      </button>
     )
   }
 )

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery, useMutation } from '@tanstack/react-query'
@@ -26,6 +26,13 @@ export default function NewInterviewPage() {
   const router = useRouter()
   const params = useParams()
   const tenantId = params.tenantId as string
+  const createInterviewIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:interview:create:${crypto.randomUUID()}`
+        : `hr:interview:create:${Date.now()}`,
+    []
+  )
   const [formData, setFormData] = useState({
     candidateId: '',
     roundName: '',
@@ -68,6 +75,7 @@ export default function NewInterviewPage() {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'x-idempotency-key': createInterviewIdempotencyKey,
         },
         body: JSON.stringify({
           ...data,
@@ -109,7 +117,14 @@ export default function NewInterviewPage() {
           <p className="mt-2 text-gray-600 dark:text-gray-400">Schedule a new interview round</p>
         </div>
         <Link href={`/hr/${tenantId}/Hiring/Interviews`}>
-          <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Cancel</Button>
+          <Button
+            variant="outline"
+            disabled={createMutation.isPending}
+            title={createMutation.isPending ? 'Please wait' : 'Cancel and return'}
+            className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            Cancel
+          </Button>
         </Link>
       </div>
 
@@ -220,12 +235,23 @@ export default function NewInterviewPage() {
 
             <div className="flex justify-end gap-4 pt-4">
               <Link href={`/hr/${tenantId}/Hiring/Interviews`}>
-                <Button type="button" variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={createMutation.isPending}
+                  title={createMutation.isPending ? 'Please wait' : 'Cancel and return'}
+                  className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
                   Cancel
                 </Button>
               </Link>
-              <Button type="submit" disabled={createMutation.isPending} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
-                {createMutation.isPending ? 'Scheduling...' : 'Schedule Interview'}
+              <Button
+                type="submit"
+                disabled={createMutation.isPending}
+                title={createMutation.isPending ? 'Please wait' : 'Schedule interview'}
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+              >
+                {createMutation.isPending ? 'Scheduling…' : 'Schedule Interview'}
               </Button>
             </div>
           </form>

@@ -52,10 +52,15 @@ export default function AdvancesPage() {
 
   const adjustMutation = useMutation({
     mutationFn: async ({ id, amount }: { id: string; amount: number }) => {
+      const idemKey =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? `finance:advance:adjust:${id}:${crypto.randomUUID()}`
+          : `finance:advance:adjust:${id}:${Date.now()}`
       const res = await fetch(`/api/finance/advances/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': idemKey,
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ adjustAmount: amount }),
@@ -234,12 +239,19 @@ export default function AdvancesPage() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300" onClick={() => setAdjustOpen(false)}>
+                  <Button
+                    variant="outline"
+                    className="dark:border-gray-600 dark:text-gray-300"
+                    disabled={adjustMutation.isPending}
+                    title={adjustMutation.isPending ? 'Please wait' : 'Cancel'}
+                    onClick={() => setAdjustOpen(false)}
+                  >
                     Cancel
                   </Button>
                   <Button
                     className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
                     disabled={adjustMutation.isPending || !adjustAdvance || parseFloat(adjustAmount) <= 0 || parseFloat(adjustAmount) > (adjustAdvance?.balance ?? 0)}
+                    title={adjustMutation.isPending ? 'Please wait' : 'Apply adjustment'}
                     onClick={submitAdjust}
                   >
                     {adjustMutation.isPending ? 'Saving...' : 'Adjust'}

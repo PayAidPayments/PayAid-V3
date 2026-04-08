@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,6 +20,13 @@ export default function HRInsuranceNewPage() {
   const tenantId = params?.tenantId as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
+  const createInsurancePlanIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:insurance:plan:create:${crypto.randomUUID()}`
+        : `hr:insurance:plan:create:${Date.now()}`,
+    []
+  )
 
   const [formData, setFormData] = useState({
     planName: '',
@@ -38,6 +45,7 @@ export default function HRInsuranceNewPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': createInsurancePlanIdempotencyKey,
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
@@ -179,12 +187,14 @@ export default function HRInsuranceNewPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  disabled={createPlan.isPending}
+                  title={createPlan.isPending ? 'Please wait' : 'Cancel'}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createPlan.isPending}>
+                <Button type="submit" disabled={createPlan.isPending} title={createPlan.isPending ? 'Please wait' : 'Create insurance plan'}>
                   <Save className="mr-2 h-4 w-4" />
-                  {createPlan.isPending ? 'Creating...' : 'Create Plan'}
+                  {createPlan.isPending ? 'Creating…' : 'Create Plan'}
                 </Button>
               </div>
             </form>

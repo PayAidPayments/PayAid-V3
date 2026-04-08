@@ -8,6 +8,7 @@ import { generateInvoicePDF } from '@/lib/invoicing/pdf'
 import { multiLayerCache } from '@/lib/cache/multi-layer'
 import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
 import { logAudit } from '@/lib/audit/log'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 import { z } from 'zod'
 import { mediumPriorityQueue } from '@/lib/queue/bull'
 
@@ -139,6 +140,7 @@ export async function POST(request: NextRequest) {
   try {
     // Check Finance module license
     const { tenantId, userId } = await requireModuleAccess(request, 'finance')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
 
     // Check tenant limits
     const canCreate = await checkTenantLimits(tenantId, 'invoices')
@@ -147,6 +149,20 @@ export async function POST(request: NextRequest) {
         { error: 'Invoice limit reached. Please upgrade your plan.' },
         { status: 403 }
       )
+    }
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `invoice:create:${idempotencyKey}`)
+      const existingInvoiceId = (existing?.afterSnapshot as { invoice_id?: string } | null)?.invoice_id
+      if (existing && existingInvoiceId) {
+        return NextResponse.json(
+          {
+            id: existingInvoiceId,
+            deduplicated: true,
+          },
+          { status: 200 }
+        )
+      }
     }
 
     const body = await request.json()
@@ -405,6 +421,12 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `invoice:create:${idempotencyKey}`, {
+        invoice_id: invoice.id,
+      })
+    }
 
     return NextResponse.json(invoice, { status: 201 })
   } catch (error: any) {

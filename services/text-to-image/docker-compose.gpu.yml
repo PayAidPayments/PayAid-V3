@@ -1,0 +1,23 @@
+# Local GPU-accelerated image worker for PayAid.
+# Prerequisites: NVIDIA drivers, Docker Desktop (WSL2), GPU enabled in Docker settings.
+#
+#   cd services/text-to-image
+#   docker compose -f docker-compose.gpu.yml up -d --build
+#
+# Verify: curl http://127.0.0.1:7860/health  → "device":"cuda", "cuda_device":"..."
+#
+# PayAid .env: IMAGE_WORKER_URL=http://127.0.0.1:7860
+
+services:
+  text-to-image:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    image: payaid-text-to-image:gpu
+    container_name: payaid-text-to-image
+    ports:
+      - '7860:7860'
+    environment:
+      MODEL_NAME: ${MODEL_NAME:-runwayml/stable-diffusion-v1-5}
+    gpus: all
+    restart: unless-stopped

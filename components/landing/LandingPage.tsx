@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, useInView, useAnimation } from 'framer-motion'
-import Script from 'next/script'
 import { getAllIndustries, getRecommendedModules } from '@/lib/industries/config'
 import { MODULE_PRICING, INDUSTRY_PACKAGE_PRICING, getBestPricing, type IndustryPackagePricing } from '@/lib/pricing/config'
 import { modules } from '@/lib/modules.config'
@@ -21,6 +20,7 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 import { Logo } from '@/components/brand/Logo'
+import LottieHero from '@/components/landing/LottieHero'
 import { 
   ChevronDown, 
   Users, 
@@ -47,16 +47,6 @@ import {
   Package
 } from 'lucide-react'
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'spline-viewer': React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement> & { url?: string },
-        HTMLElement
-      >
-    }
-  }
-}
 
 // Count-up animation component
 function StatCounter({ value, suffix = '' }: { value: number; suffix?: string }) {
@@ -90,7 +80,6 @@ function StatCounter({ value, suffix = '' }: { value: number; suffix?: string })
 
 export default function LandingPage() {
   const router = useRouter()
-  const [canRenderSpline, setCanRenderSpline] = useState(false)
   const [selectedIndustry, setSelectedIndustry] = useState<string>('')
   const [selectedModules, setSelectedModules] = useState<string[]>([])
   const [showModuleSelection, setShowModuleSelection] = useState(false)
@@ -107,18 +96,6 @@ export default function LandingPage() {
   const [hasUserInteracted, setHasUserInteracted] = useState(false)
   const industries = getAllIndustries()
 
-  useEffect(() => {
-    // Avoid crashing in sandboxed/disabled WebGL environments (common in some browsers, RDP, or CI).
-    try {
-      const canvas = document.createElement('canvas')
-      const gl =
-        canvas.getContext('webgl', { failIfMajorPerformanceCaveat: true }) ||
-        canvas.getContext('experimental-webgl', { failIfMajorPerformanceCaveat: true })
-      setCanRenderSpline(Boolean(gl))
-    } catch {
-      setCanRenderSpline(false)
-    }
-  }, [])
 
   // AI response data with corrected terminology
   const aiResponses = [
@@ -450,13 +427,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {canRenderSpline && (
-        <Script
-          type="module"
-          src="https://unpkg.com/@splinetool/viewer@1.12.77/build/spline-viewer.js"
-          strategy="afterInteractive"
-        />
-      )}
       {/* Header with Mega Menu */}
       <header className="fixed top-0 w-full z-50 bg-white/98 backdrop-blur-lg border-b border-gray-200">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -668,31 +638,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right Column - Hero Visual */}
-            <div className="relative w-full h-full min-h-[500px] lg:min-h-[600px] rounded-2xl overflow-hidden border border-purple-200 bg-white shadow-sm">
-              {canRenderSpline ? (
-                <spline-viewer
-                  url="https://prod.spline.design/p5FMEypZOvJ11JJ2/scene.splinecode"
-                  style={{ width: '100%', height: '100%' }}
-                />
-              ) : (
-                <div className="absolute inset-0 grid place-items-center bg-gradient-to-b from-white to-purple-50">
-                  <div className="text-center px-6">
-                    <div className="text-sm font-semibold text-gray-900 mb-2">3D preview unavailable</div>
-                    <div className="text-sm text-gray-600 mb-6">
-                      Your browser/device has WebGL disabled. You can still explore PayAid below.
-                    </div>
-                    <Image
-                      src="/hero-digital-specialists.png"
-                      alt="PayAid platform preview"
-                      width={720}
-                      height={540}
-                      className="mx-auto h-auto w-full max-w-[520px] object-contain"
-                      priority
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
+            <LottieHero />
           </div>
 
           {/* Try It Now - Right after Hero */}

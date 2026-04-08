@@ -1,0 +1,46 @@
+# PayAid CRM (EspoCRM fork) – shell expects this on port 3003 (PAYAID_CRM_URL).
+# Volume mount (.:/var/www/html) serves the local fork so PayAid logo, footer, and favicon are shown.
+# If you get a blank/500 page, see docs/RUN-TROUBLESHOOTING.md (run without mount once to complete install, then re-enable mount).
+services:
+  payaid-crm-db:
+    image: mariadb:latest
+    container_name: payaid-crm-db
+    environment:
+      MARIADB_ROOT_PASSWORD: root_password
+      MARIADB_DATABASE: espocrm
+      MARIADB_USER: espocrm
+      MARIADB_PASSWORD: database_password
+    volumes:
+      - payaid-crm-db-data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 15s
+      start_period: 30s
+      timeout: 10s
+      retries: 3
+
+  payaid-crm:
+    image: espocrm/espocrm
+    container_name: payaid-crm-app
+    environment:
+      ESPOCRM_DATABASE_PLATFORM: Mysql
+      ESPOCRM_DATABASE_HOST: payaid-crm-db
+      ESPOCRM_DATABASE_USER: espocrm
+      ESPOCRM_DATABASE_PASSWORD: database_password
+      ESPOCRM_ADMIN_USERNAME: admin
+      ESPOCRM_ADMIN_PASSWORD: password
+      ESPOCRM_SITE_URL: "http://localhost:3003"
+    # Volume mount disabled: mounting .:/var/www/html causes ERR_EMPTY_RESPONSE (image expects different layout).
+    # To get PayAid rebrand: use scripts/copy-crm-rebrand-into-container.ps1 after container is running, or build a custom image from the fork.
+    # volumes:
+    #   - .:/var/www/html
+    depends_on:
+      payaid-crm-db:
+        condition: service_healthy
+    ports:
+      - "3003:80"
+    restart: unless-stopped
+
+volumes:
+  payaid-crm-db-data:

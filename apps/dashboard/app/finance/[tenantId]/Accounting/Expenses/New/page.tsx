@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
@@ -22,6 +22,13 @@ export default function FinanceExpensesNewPage() {
   const tenantId = params.tenantId as string
   const router = useRouter()
   const { token } = useAuthStore()
+  const createExpenseIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `finance:expense:create:${crypto.randomUUID()}`
+        : `finance:expense:create:${Date.now()}`,
+    []
+  )
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
@@ -68,7 +75,10 @@ export default function FinanceExpensesNewPage() {
     try {
       const response = await fetch('/api/accounting/expenses', {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: {
+          ...getAuthHeaders(),
+          'x-idempotency-key': createExpenseIdempotencyKey,
+        },
         body: JSON.stringify({
           ...formData,
           amount: parseFloat(formData.amount),
@@ -107,7 +117,14 @@ export default function FinanceExpensesNewPage() {
           <p className="mt-2 text-gray-600 dark:text-gray-400">Record a new business expense</p>
         </div>
         <Link href={`/finance/${tenantId}/Accounting/Expenses`}>
-          <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Cancel</Button>
+                <Button
+                  variant="outline"
+                  disabled={isSubmitting}
+                  title={isSubmitting ? 'Please wait' : 'Cancel and return'}
+                  className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  Cancel
+                </Button>
         </Link>
       </div>
 
@@ -313,8 +330,13 @@ export default function FinanceExpensesNewPage() {
                   Cancel
                 </Button>
               </Link>
-              <Button type="submit" disabled={isSubmitting} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
-                {isSubmitting ? 'Creating...' : 'Create Expense'}
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                title={isSubmitting ? 'Please wait' : 'Create expense'}
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+              >
+                {isSubmitting ? 'Creating…' : 'Create Expense'}
               </Button>
             </div>
           </form>

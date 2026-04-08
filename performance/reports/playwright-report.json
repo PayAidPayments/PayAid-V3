@@ -1,0 +1,148 @@
+{
+  "config": {
+    "configFile": "D:\\Cursor Projects\\PayAid V3\\performance\\playwright\\playwright.config.ts",
+    "rootDir": "D:/Cursor Projects/PayAid V3/performance/playwright",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": "D:\\Cursor Projects\\PayAid V3\\performance\\playwright\\global-setup.ts",
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/Cursor Projects/PayAid V3/performance/reports/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/Cursor Projects/PayAid V3/performance/playwright",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.test.ts"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "../reports/playwright-html",
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "../reports/playwright-report.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://127.0.0.1:3000",
+      "reuseExistingServer": true,
+      "timeout": 300000,
+      "stdout": "pipe",
+      "stderr": "pipe"
+    }
+  },
+  "suites": [
+    {
+      "title": "smoke.test.ts",
+      "file": "smoke.test.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Perf smoke: public entry routes are reachable quickly",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 121146,
+                  "error": {
+                    "message": "TimeoutError: apiRequestContext.get: Timeout 120000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n",
+                    "stack": "TimeoutError: apiRequestContext.get: Timeout 120000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n    at D:\\Cursor Projects\\PayAid V3\\performance\\playwright\\smoke.test.ts:7:34",
+                    "location": {
+                      "file": "D:\\Cursor Projects\\PayAid V3\\performance\\playwright\\smoke.test.ts",
+                      "column": 34,
+                      "line": 7
+                    },
+                    "snippet": "   5 |\n   6 |   const loginStart = Date.now();\n>  7 |   const loginRes = await request.get('/login', { timeout: 120_000 });\n     |                                  ^\n   8 |   const loginMs = Date.now() - loginStart;\n   9 |   expect(loginRes.status()).toBeLessThan(500);\n  10 |   expect(loginMs).toBeLessThan(180_000);"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Cursor Projects\\PayAid V3\\performance\\playwright\\smoke.test.ts",
+                        "column": 34,
+                        "line": 7
+                      },
+                      "message": "TimeoutError: apiRequestContext.get: Timeout 120000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n\n   5 |\n   6 |   const loginStart = Date.now();\n>  7 |   const loginRes = await request.get('/login', { timeout: 120_000 });\n     |                                  ^\n   8 |   const loginMs = Date.now() - loginStart;\n   9 |   expect(loginRes.status()).toBeLessThan(500);\n  10 |   expect(loginMs).toBeLessThan(180_000);\n    at D:\\Cursor Projects\\PayAid V3\\performance\\playwright\\smoke.test.ts:7:34"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-01T14:07:04.518Z",
+                  "annotations": [],
+                  "attachments": [],
+                  "errorLocation": {
+                    "file": "D:\\Cursor Projects\\PayAid V3\\performance\\playwright\\smoke.test.ts",
+                    "column": 34,
+                    "line": 7
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "4a239ced0e52b6754d8b-5878af36c70fc628b245",
+          "file": "smoke.test.ts",
+          "line": 3,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-04-01T14:02:50.137Z",
+    "duration": 377266.353,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

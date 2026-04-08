@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess } from '@/lib/middleware/auth'
 import { prisma } from '@/lib/db/prisma'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 export async function POST(
   request: NextRequest,
@@ -8,10 +9,26 @@ export async function POST(
 ) {
   const { id } = await params
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
     const quoteId = id
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
     const body = await request.json()
     const { workflow } = body
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `quote:approval-workflow:${quoteId}:${idempotencyKey}`)
+      const existingSnapshot = existing?.afterSnapshot as { quoteId?: string; approvalCount?: number } | null
+      if (existing && existingSnapshot?.quoteId) {
+        return NextResponse.json({
+          success: true,
+          deduplicated: true,
+          data: {
+            quoteId: existingSnapshot.quoteId,
+            approvalCount: existingSnapshot.approvalCount ?? 0,
+          },
+        })
+      }
+    }
 
     // Verify quote exists and belongs to tenant
     const quote = await prisma.quote.findFirst({
@@ -50,6 +67,13 @@ export async function POST(
         })
       )
     )
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `quote:approval-workflow:${quoteId}:${idempotencyKey}`, {
+        quoteId,
+        approvalCount: approvals.length,
+      })
+    }
 
     return NextResponse.json({
       success: true,

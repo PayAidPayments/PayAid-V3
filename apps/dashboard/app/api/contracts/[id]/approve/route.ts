@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 import { z } from 'zod'
 
 const approveContractSchema = z.object({
@@ -20,6 +21,19 @@ export async function POST(
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'contract-management')
     const contractId = id
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(
+        tenantId,
+        `contract:approve:${contractId}:${idempotencyKey}`
+      )
+      const snap = existing?.afterSnapshot as
+        | { approval_id?: string; payload?: Record<string, unknown> }
+        | null
+      if (existing && snap?.approval_id && snap?.payload) {
+        return NextResponse.json({ deduplicated: true, ...snap.payload }, { status: 200 })
+      }
+    }
 
     const body = await request.json()
     const validated = approveContractSchema.parse(body)
@@ -92,11 +106,18 @@ export async function POST(
         data: { status: 'REJECTED' },
       })
 
-      return NextResponse.json({
+      const rejectPayload = {
         approval: updatedApproval,
         message: 'Contract rejected',
         contractStatus: 'REJECTED',
-      })
+      }
+      if (idempotencyKey) {
+        await markIdempotentRequest(tenantId, userId, `contract:approve:${contractId}:${idempotencyKey}`, {
+          approval_id: updatedApproval.id,
+          payload: rejectPayload,
+        })
+      }
+      return NextResponse.json(rejectPayload)
     }
 
     // If approved, check if all approvals are complete
@@ -127,12 +148,19 @@ export async function POST(
       })
     }
 
-    return NextResponse.json({
+    const approvePayload = {
       approval: updatedApproval,
       message: 'Contract approved',
       contractStatus: allApproved ? 'PENDING_SIGNATURE' : 'PENDING_APPROVAL',
       allApproved,
-    })
+    }
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `contract:approve:${contractId}:${idempotencyKey}`, {
+        approval_id: updatedApproval.id,
+        payload: approvePayload,
+      })
+    }
+    return NextResponse.json(approvePayload)
   } catch (error) {
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)

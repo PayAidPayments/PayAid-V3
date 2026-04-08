@@ -34,6 +34,9 @@ export default function BankReconciliationPage() {
   const [matchAmountMismatch, setMatchAmountMismatch] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const idem = (scope: string, stable?: string) =>
+    `finance:bank-reconcile:${scope}:${stable ?? (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()))}`
+
   const { data, isLoading } = useQuery({
     queryKey: ['finance-bank-reconcile', tenantId],
     queryFn: async () => {
@@ -51,6 +54,7 @@ export default function BankReconciliationPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': idem('mark-reconciled', transactionId),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({}),
@@ -90,7 +94,10 @@ export default function BankReconciliationPage() {
       if (selectedBankId && selectedBankId !== 'all') form.append('bankAccountId', selectedBankId)
       const res = await fetch('/api/finance/bank-reconcile/import', {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: {
+          'x-idempotency-key': idem('import-statement'),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: form,
       })
       const data = await res.json().catch(() => ({}))
@@ -158,6 +165,10 @@ export default function BankReconciliationPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': idem(
+            'match',
+            `${lineId}:${transactionId}:${confirmAmountMismatch ? 'confirm' : '0'}`
+          ),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ transactionId, confirmAmountMismatch }),
@@ -187,6 +198,7 @@ export default function BankReconciliationPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': idem('unmatch', lineId),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ unmatch: true }),
@@ -299,7 +311,7 @@ export default function BankReconciliationPage() {
                 className="dark:border-gray-600 dark:text-gray-300"
                 disabled={importMutation.isPending}
                 onClick={() => fileInputRef.current?.click()}
-                title="Upload CSV with columns: Date, Description/Narration, Debit, Credit (optional: Reference, Balance)"
+                title={importMutation.isPending ? 'Please wait' : 'Upload CSV with columns: Date, Description/Narration, Debit, Credit (optional: Reference, Balance)'}
               >
                 {importMutation.isPending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -360,6 +372,7 @@ export default function BankReconciliationPage() {
                               size="sm"
                               className="dark:text-gray-300"
                               disabled={markReconciled.isPending}
+                              title={markReconciled.isPending ? 'Please wait' : 'Mark reconciled'}
                               onClick={() => markReconciled.mutate(t.id)}
                             >
                               {markReconciled.isPending && markReconciled.variables === t.id ? (
@@ -428,7 +441,7 @@ export default function BankReconciliationPage() {
                               className="text-green-600 dark:text-green-400"
                               disabled={unmatchMutation.isPending}
                               onClick={() => unmatchMutation.mutate(l.id)}
-                              title="Unmatch from ledger"
+                              title={unmatchMutation.isPending ? 'Please wait' : 'Unmatch from ledger'}
                             >
                               <CheckCircle className="h-4 w-4 mr-1" />
                               Matched
@@ -482,6 +495,7 @@ export default function BankReconciliationPage() {
                   className="ml-2"
                   onClick={handleMatchConfirm}
                   disabled={matchMutation.isPending}
+                  title={matchMutation.isPending ? 'Please wait' : 'Confirm match despite amount difference'}
                 >
                   Yes, match
                 </Button>
@@ -525,6 +539,7 @@ export default function BankReconciliationPage() {
                             variant="ghost"
                             size="sm"
                             disabled={matchMutation.isPending}
+                            title={matchMutation.isPending ? 'Please wait' : 'Match to this transaction'}
                             onClick={(e) => {
                               e.stopPropagation()
                               if (matchModalLine) matchMutation.mutate({ lineId: matchModalLine.id, transactionId: t.id })
@@ -540,7 +555,13 @@ export default function BankReconciliationPage() {
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300" onClick={closeMatchModal}>
+              <Button
+                variant="outline"
+                className="dark:border-gray-600 dark:text-gray-300"
+                disabled={matchMutation.isPending}
+                title={matchMutation.isPending ? 'Please wait' : 'Close'}
+                onClick={closeMatchModal}
+              >
                 Cancel
               </Button>
             </DialogFooter>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -210,6 +211,35 @@ export default function SalesAutomationPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>M0 Automation Surfaces</CardTitle>
+          <CardDescription>Use these pages for signals, workflows, and sequence execution.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Link href={`/crm/${tenantId}/Signals`} className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 hover:bg-slate-50 dark:hover:bg-slate-800">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Signals</p>
+            <p className="text-xs text-slate-500 mt-1">Ingest, filter, and monitor intent signals.</p>
+          </Link>
+          <Link href={`/crm/${tenantId}/Workflows`} className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 hover:bg-slate-50 dark:hover:bg-slate-800">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Workflows</p>
+            <p className="text-xs text-slate-500 mt-1">Create draft workflows, test-run, and publish.</p>
+          </Link>
+          <Link href={`/crm/${tenantId}/sequences`} className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 hover:bg-slate-50 dark:hover:bg-slate-800">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Sequences</p>
+            <p className="text-xs text-slate-500 mt-1">Create, enroll, and pause outreach sequences.</p>
+          </Link>
+          <Link href={`/crm/${tenantId}/OutboxOps`} className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 hover:bg-slate-50 dark:hover:bg-slate-800">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Outbox Ops</p>
+            <p className="text-xs text-slate-500 mt-1">Monitor dispatch health, alerts, and replay DLQ items.</p>
+          </Link>
+          <Link href={`/crm/${tenantId}/Revenue-Intelligence`} className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 hover:bg-slate-50 dark:hover:bg-slate-800">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Revenue Intelligence</p>
+            <p className="text-xs text-slate-500 mt-1">Funnel, velocity, next actions, and feedback (M1).</p>
+          </Link>
+        </CardContent>
+      </Card>
 
       {/* Campaigns */}
       <Card>

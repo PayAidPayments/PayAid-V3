@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { processMeetingIntelligence } from '@/lib/ai/meeting-intelligence'
 import { prisma } from '@/lib/db/prisma'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 /**
  * POST /api/crm/interactions/[id]/meeting-intelligence
@@ -13,7 +14,15 @@ export async function POST(
 ) {
   const { id } = await params
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:interaction:meeting_intelligence:${id}:${idempotencyKey}`)
+      const existingProcessed = (existing?.afterSnapshot as { processed?: boolean } | null)?.processed
+      if (existing && existingProcessed) {
+        return NextResponse.json({ success: true, deduplicated: true }, { status: 200 })
+      }
+    }
 
     // Get interaction
     const interaction = await prisma.interaction.findFirst({
@@ -49,6 +58,13 @@ export async function POST(
       fullTranscript,
       tenantId
     )
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:interaction:meeting_intelligence:${id}:${idempotencyKey}`, {
+        interaction_id: id,
+        processed: true,
+      })
+    }
 
     return NextResponse.json({
       success: true,

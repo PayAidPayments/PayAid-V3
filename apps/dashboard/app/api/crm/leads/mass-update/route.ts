@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const massUpdateSchema = z.object({
   leadIds: z.array(z.string()).min(1, 'At least one lead must be selected'),
@@ -21,6 +22,14 @@ const massUpdateSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:leads:mass_update:${idempotencyKey}`)
+      const updated = (existing?.afterSnapshot as { updated?: number } | null)?.updated
+      if (existing && typeof updated === 'number') {
+        return NextResponse.json({ success: true, deduplicated: true, updated }, { status: 200 })
+      }
+    }
 
     const body = await request.json()
     const validated = massUpdateSchema.parse(body)
@@ -57,6 +66,12 @@ export async function POST(request: NextRequest) {
       },
       data: updateData,
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:leads:mass_update:${idempotencyKey}`, {
+        updated: result.count,
+      })
+    }
 
     return NextResponse.json({
       success: true,

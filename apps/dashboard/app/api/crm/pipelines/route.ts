@@ -10,6 +10,8 @@ import { ApiResponse, LeadPipeline } from '@/types/base-modules'
 import { CreatePipelineRequest } from '@/modules/shared/crm/types'
 import { z } from 'zod'
 import { formatINR } from '@/lib/currency'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const CreatePipelineSchema = z.object({
   organizationId: z.string().uuid(),
@@ -29,20 +31,20 @@ const CreatePipelineSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
+    const { tenantId } = await requireModuleAccess(request, 'crm')
     const searchParams = request.nextUrl.searchParams
-    const organizationId = searchParams.get('organizationId')
-
-    if (!organizationId) {
+    const organizationId = searchParams.get('organizationId') || tenantId
+    if (organizationId !== tenantId) {
       return NextResponse.json(
         {
           success: false,
-          statusCode: 400,
+          statusCode: 403,
           error: {
-            code: 'MISSING_ORGANIZATION_ID',
-            message: 'organizationId is required',
+            code: 'TENANT_MISMATCH',
+            message: 'organizationId does not match authenticated tenant',
           },
         },
-        { status: 400 }
+        { status: 403 }
       )
     }
 
@@ -101,6 +103,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response)
   } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Error in GET pipelines route:', error)
     return NextResponse.json(
       { success: false, statusCode: 500, error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },
@@ -115,8 +120,38 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:pipelines:create:${idempotencyKey}`)
+      const existingPipelineId = (existing?.afterSnapshot as { pipeline_id?: string } | null)?.pipeline_id
+      if (existing && existingPipelineId) {
+        return NextResponse.json(
+          {
+            success: true,
+            statusCode: 200,
+            deduplicated: true,
+            data: { id: existingPipelineId },
+          },
+          { status: 200 }
+        )
+      }
+    }
     const body = await request.json()
     const validatedData = CreatePipelineSchema.parse(body)
+    if (validatedData.organizationId !== tenantId) {
+      return NextResponse.json(
+        {
+          success: false,
+          statusCode: 403,
+          error: {
+            code: 'TENANT_MISMATCH',
+            message: 'organizationId does not match authenticated tenant',
+          },
+        },
+        { status: 403 }
+      )
+    }
 
     // For now, we'll store pipeline configuration in a custom way
     // In production, you might want a dedicated Pipeline table
@@ -143,8 +178,17 @@ export async function POST(request: NextRequest) {
       },
     }
 
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:pipelines:create:${idempotencyKey}`, {
+        pipeline_id: pipeline.id,
+      })
+    }
+
     return NextResponse.json(response, { status: 201 })
   } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Error in POST pipelines route:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(

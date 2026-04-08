@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,6 +19,13 @@ export default function HRAssetNewPage() {
   const tenantId = params?.tenantId as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
+  const createAssetIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:asset:create:${crypto.randomUUID()}`
+        : `hr:asset:create:${Date.now()}`,
+    []
+  )
 
   const [formData, setFormData] = useState({
     name: '',
@@ -50,6 +57,7 @@ export default function HRAssetNewPage() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'x-idempotency-key': createAssetIdempotencyKey,
         },
         body: JSON.stringify(data),
       })
@@ -227,12 +235,18 @@ export default function HRAssetNewPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  disabled={createAsset.isPending}
+                  title={createAsset.isPending ? 'Please wait' : 'Cancel and go back'}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createAsset.isPending}>
+                <Button
+                  type="submit"
+                  disabled={createAsset.isPending}
+                  title={createAsset.isPending ? 'Please wait' : 'Create asset'}
+                >
                   <Save className="mr-2 h-4 w-4" />
-                  {createAsset.isPending ? 'Creating...' : 'Create Asset'}
+                  {createAsset.isPending ? 'Creating…' : 'Create Asset'}
                 </Button>
               </div>
             </form>

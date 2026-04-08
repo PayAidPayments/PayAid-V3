@@ -11,6 +11,8 @@ import { CreateInvoiceSchema } from '@/modules/shared/finance/types'
 import { calculateGST } from '@/lib/invoicing/gst'
 import { formatINR } from '@/lib/currency'
 import { z } from 'zod'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 // Local Invoice type matching the base-modules interface
 interface Invoice {
@@ -53,8 +55,34 @@ interface Invoice {
  */
 export async function POST(request: NextRequest) {
   try {
+  const { tenantId, userId } = await requireModuleAccess(request, 'finance')
+  const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+  if (idempotencyKey) {
+    const existing = await findIdempotentRequest(tenantId, `finance:invoice:create:${idempotencyKey}`)
+    const existingInvoiceId = (existing?.afterSnapshot as { invoice_id?: string } | null)?.invoice_id
+    if (existing && existingInvoiceId) {
+      return NextResponse.json(
+        { success: true, deduplicated: true, data: { id: existingInvoiceId } },
+        { status: 200 }
+      )
+    }
+  }
+
   const body = await request.json()
   const validatedData = CreateInvoiceSchema.parse(body)
+  if (validatedData.organizationId && validatedData.organizationId !== tenantId) {
+    return NextResponse.json(
+      {
+        success: false,
+        statusCode: 403,
+        error: {
+          code: 'TENANT_MISMATCH',
+          message: 'organizationId does not match authenticated tenant',
+        },
+      },
+      { status: 403 }
+    )
+  }
 
   // Calculate line items with GST
   const calculatedLineItems = validatedData.lineItems.map((item) => {
@@ -107,7 +135,7 @@ export async function POST(request: NextRequest) {
   // Create invoice in database
   const invoice = await prisma.invoice.create({
     data: {
-      tenantId: validatedData.organizationId,
+      tenantId,
       invoiceNumber,
       invoiceDate,
       dueDate: dueDate || undefined,
@@ -168,8 +196,17 @@ export async function POST(request: NextRequest) {
     },
   }
 
+  if (idempotencyKey) {
+    await markIdempotentRequest(tenantId, userId, `finance:invoice:create:${idempotencyKey}`, {
+      invoice_id: invoice.id,
+    })
+  }
+
     return NextResponse.json(response, { status: 201 })
   } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Error in POST invoices route:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -190,6 +227,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+  const { tenantId } = await requireModuleAccess(request, 'finance')
   const searchParams = request.nextUrl.searchParams
   const organizationId = searchParams.get('organizationId')
   const status = searchParams.get('status')
@@ -197,22 +235,22 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get('page') || '1', 10)
   const pageSize = parseInt(searchParams.get('pageSize') || '20', 10)
 
-  if (!organizationId) {
+  if (organizationId && organizationId !== tenantId) {
     return NextResponse.json(
       {
         success: false,
-        statusCode: 400,
+        statusCode: 403,
         error: {
-          code: 'MISSING_ORGANIZATION_ID',
-          message: 'organizationId is required',
+          code: 'TENANT_MISMATCH',
+          message: 'organizationId does not match authenticated tenant',
         },
       },
-      { status: 400 }
+      { status: 403 }
     )
   }
 
   const where: Record<string, unknown> = {
-    tenantId: organizationId,
+    tenantId,
   }
 
   if (status) {
@@ -299,6 +337,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response)
   } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Error in GET invoices route:', error)
     return NextResponse.json(
       { success: false, statusCode: 500, error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },

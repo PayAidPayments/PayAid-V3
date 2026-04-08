@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { QuoteGeneratorService } from '@/lib/quotes/quote-generator'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 import { z } from 'zod'
 
 const generateQuoteSchema = z.object({
@@ -30,10 +31,25 @@ const generateQuoteSchema = z.object({
 // POST /api/quotes - Generate quote
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
 
     const body = await request.json()
     const validated = generateQuoteSchema.parse(body)
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `quote:create:${idempotencyKey}`)
+      const existingQuoteId = (existing?.afterSnapshot as { quote_id?: string } | null)?.quote_id
+      if (existing && existingQuoteId) {
+        return NextResponse.json({
+          success: true,
+          deduplicated: true,
+          data: {
+            id: existingQuoteId,
+          },
+        })
+      }
+    }
 
     const quote = await QuoteGeneratorService.generateQuoteFromDeal(
       tenantId,
@@ -45,6 +61,12 @@ export async function POST(request: NextRequest) {
         validUntil: validated.validUntil ? new Date(validated.validUntil) : undefined,
       }
     )
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `quote:create:${idempotencyKey}`, {
+        quote_id: quote?.id ?? null,
+      })
+    }
 
     return NextResponse.json({
       success: true,

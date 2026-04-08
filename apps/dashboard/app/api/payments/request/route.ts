@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayAidPayments } from '@/lib/payments/payaid'
 import { authenticateRequest } from '@/lib/middleware/auth'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 import { z } from 'zod'
 
 const paymentRequestSchema = z.object({
@@ -34,6 +35,24 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const tenantId = user.tenantId || 'tenant_unknown'
+    const userId = user.userId || 'user_unknown'
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `payment:request:${idempotencyKey}`)
+      const existingSnapshot = existing?.afterSnapshot as { order_id?: string } | null
+      if (existing && existingSnapshot) {
+        return NextResponse.json(
+          {
+            success: true,
+            deduplicated: true,
+            order_id: existingSnapshot.order_id ?? null,
+          },
+          { status: 200 }
+        )
+      }
+    }
 
     const body = await request.json()
     const validated = paymentRequestSchema.parse(body)
@@ -54,6 +73,12 @@ export async function POST(request: NextRequest) {
     } else {
       // Regular Payment Request
       paymentResponse = await payaid.createPaymentRequest(validated)
+    }
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `payment:request:${idempotencyKey}`, {
+        order_id: validated.order_id,
+      })
     }
 
     return NextResponse.json(paymentResponse, { status: 200 })

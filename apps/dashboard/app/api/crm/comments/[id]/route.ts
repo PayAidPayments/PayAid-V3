@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { updateComment, deleteComment } from '@/lib/collaboration/comments'
 import { z } from 'zod'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const UpdateCommentSchema = z.object({
   content: z.string().min(1),
@@ -17,11 +18,33 @@ export async function PUT(
 ) {
   const { id } = await params
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:comment:update:${id}:${idempotencyKey}`)
+      const existingCommentId = (existing?.afterSnapshot as { comment_id?: string } | null)?.comment_id
+      if (existing && existingCommentId) {
+        return NextResponse.json(
+          {
+            success: true,
+            deduplicated: true,
+            data: { id: existingCommentId },
+          },
+          { status: 200 }
+        )
+      }
+    }
     const body = await request.json()
     const { content } = UpdateCommentSchema.parse(body)
 
     const comment = await updateComment(id, content, tenantId)
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:comment:update:${id}:${idempotencyKey}`, {
+        comment_id: comment.id,
+      })
+    }
 
     return NextResponse.json({
       success: true,
@@ -55,9 +78,32 @@ export async function DELETE(
 ) {
   const { id } = await params
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:comment:delete:${id}:${idempotencyKey}`)
+      const existingDeleted = (existing?.afterSnapshot as { deleted?: boolean } | null)?.deleted
+      if (existing && existingDeleted) {
+        return NextResponse.json(
+          {
+            success: true,
+            deduplicated: true,
+            message: 'Comment deleted',
+          },
+          { status: 200 }
+        )
+      }
+    }
 
     await deleteComment(id, tenantId)
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:comment:delete:${id}:${idempotencyKey}`, {
+        comment_id: id,
+        deleted: true,
+      })
+    }
 
     return NextResponse.json({
       success: true,

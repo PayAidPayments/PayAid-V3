@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useInvoice } from '@/lib/hooks/use-api'
@@ -93,6 +93,14 @@ export default function FinanceInvoiceDetailPage() {
   })
   const canSendPaymentLink = Boolean(gatewaySettings?.isConfigured && gatewaySettings?.isActive)
 
+  const sendWithPaymentIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `finance:invoice:send-payment:${id}:${crypto.randomUUID()}`
+        : `finance:invoice:send-payment:${id}:${Date.now()}`,
+    [id]
+  )
+
   const sendInvoiceMutation = useMutation({
     mutationFn: async () => {
       const { token } = useAuthStore.getState()
@@ -100,6 +108,7 @@ export default function FinanceInvoiceDetailPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': sendWithPaymentIdempotencyKey,
           ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify({
@@ -197,6 +206,7 @@ export default function FinanceInvoiceDetailPage() {
             <Button
               onClick={() => sendInvoiceMutation.mutate()}
               disabled={sendInvoiceMutation.isPending || !canSendPaymentLink}
+              title={sendInvoiceMutation.isPending ? 'Please wait' : 'Send invoice with payment link'}
               className="bg-green-600 hover:bg-green-700"
             >
               {sendInvoiceMutation.isPending ? 'Sending...' : '📧 Send with Payment Link'}
@@ -600,6 +610,7 @@ export default function FinanceInvoiceDetailPage() {
                   className="w-full bg-green-600 hover:bg-green-700"
                   onClick={() => sendInvoiceMutation.mutate()}
                   disabled={sendInvoiceMutation.isPending || !canSendPaymentLink}
+                  title={sendInvoiceMutation.isPending ? 'Please wait' : 'Send invoice with payment link'}
                 >
                   {sendInvoiceMutation.isPending ? 'Sending...' : '📧 Send Invoice with Payment Link'}
                 </Button>

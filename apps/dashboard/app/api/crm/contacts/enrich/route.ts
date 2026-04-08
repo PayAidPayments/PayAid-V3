@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const enrichSchema = z.object({
   contactId: z.string().min(1, 'contactId is required'),
@@ -29,7 +30,15 @@ async function enrichLeadData(email: string, domain: string) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:contacts:enrich:${idempotencyKey}`)
+      const existingEnriched = (existing?.afterSnapshot as { enriched?: boolean } | null)?.enriched
+      if (existing && existingEnriched) {
+        return NextResponse.json({ success: true, deduplicated: true }, { status: 200 })
+      }
+    }
     const body = await request.json()
     const validated = enrichSchema.parse(body)
     const contactId = validated.contactId
@@ -55,6 +64,13 @@ export async function POST(request: NextRequest) {
       await prisma.contact.update({
         where: { id: contact.id },
         data: updateData,
+      })
+    }
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:contacts:enrich:${idempotencyKey}`, {
+        contact_id: contact.id,
+        enriched: true,
       })
     }
 

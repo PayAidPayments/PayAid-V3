@@ -1,0 +1,673 @@
+﻿
+> dashboard@0.1.0 typecheck
+> tsc --noEmit --pretty false
+
+app/api/crm/scoring/rules/[id]/route.ts(24,31): error TS2339: Property 'leadScoreRule' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/crm/scoring/rules/[id]/route.ts(33,34): error TS2339: Property 'leadScoreRule' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/crm/scoring/rules/route.ts(17,32): error TS2339: Property 'leadScoreRule' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/crm/scoring/rules/route.ts(34,31): error TS2339: Property 'leadScoreRule' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/crm/scoring/thresholds/route.ts(16,37): error TS2339: Property 'leadScoreThreshold' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/crm/scoring/thresholds/route.ts(40,36): error TS2339: Property 'leadScoreThreshold' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/crm/templates/render/route.ts(33,7): error TS2322: Type '{ name: string; phone: string | null; email: string | null; company: string | null; } | null' is not assignable to type '{ name?: string | undefined; company?: string | undefined; email?: string | undefined; phone?: string | undefined; } | null'.
+  Type '{ name: string; phone: string | null; email: string | null; company: string | null; }' is not assignable to type '{ name?: string | undefined; company?: string | undefined; email?: string | undefined; phone?: string | undefined; }'.
+    Types of property 'company' are incompatible.
+      Type 'string | null' is not assignable to type 'string | undefined'.
+        Type 'null' is not assignable to type 'string | undefined'.
+app/api/cron/finance-compliance/route.ts(18,34): error TS2339: Property 'exportInvoice' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/cron/finance-compliance/route.ts(34,20): error TS2339: Property 'exportInvoice' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/cron/finance-compliance/route.ts(47,45): error TS2339: Property 'exportInvoice' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/cron/finance-compliance/route.ts(63,11): error TS2353: Object literal may only specify known properties, and 'source' does not exist in type '(Without<AlertCreateInput, AlertUncheckedCreateInput> & AlertUncheckedCreateInput) | (Without<...> & AlertCreateInput)'.
+app/api/finance/compliance/report/route.ts(13,11): error TS2353: Object literal may only specify known properties, and 'gstValidation' does not exist in type 'InvoiceWhereInput'.
+app/api/finance/compliance/report/route.ts(18,28): error TS2561: Object literal may only specify known properties, but 'itcStatus' does not exist in type 'InvoiceWhereInput'. Did you mean to write 'status'?
+app/api/finance/compliance/report/route.ts(21,14): error TS2339: Property 'gstrValidation' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/finance/compliance/report/route.ts(24,14): error TS2339: Property 'exportInvoice' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/finance/export-invoices/route.ts(31,34): error TS2339: Property 'exportInvoice' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/finance/gstr3b/[period]/route.ts(10,11): error TS7022: 'period' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+app/api/finance/gstr3b/[period]/route.ts(10,20): error TS2448: Block-scoped variable 'period' used before its declaration.
+app/api/finance/gstr3b/[period]/route.ts(14,16): error TS2561: Object literal may only specify known properties, but 'itcStatus' does not exist in type 'InvoiceWhereInput'. Did you mean to write 'status'?
+app/api/finance/gstr3b/[period]/route.ts(16,48): error TS2561: Object literal may only specify known properties, but 'itcStatus' does not exist in type 'InvoiceSelect<DefaultArgs>'. Did you mean to write 'status'?
+app/api/finance/gstr3b/[period]/route.ts(19,62): error TS2551: Property 'itcStatus' does not exist on type '{ status: string; id: string; createdAt: Date; updatedAt: Date; tenantId: string; currency: string; gstAmount: number | null; hsnCode: string | null; metadata: JsonValue; ... 49 more ...; customerId: string | null; }'. Did you mean 'status'?
+app/api/finance/gstr3b/[period]/route.ts(26,18): error TS2339: Property 'gstrValidation' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/finance/itc/claim/route.ts(31,9): error TS2561: Object literal may only specify known properties, but 'itcStatus' does not exist in type '(Without<InvoiceUpdateInput, InvoiceUncheckedUpdateInput> & InvoiceUncheckedUpdateInput) | (Without<...> & InvoiceUpdateInput)'. Did you mean to write 'status'?
+app/api/hr/documents/[id]/route.ts(18,9): error TS2353: Object literal may only specify known properties, and 'employee' does not exist in type 'DocumentInclude<DefaultArgs>'.
+app/api/hr/documents/[id]/sign/route.ts(31,19): error TS2339: Property 'requiresSignature' does not exist on type '{ id: string; name: string; createdAt: Date; updatedAt: Date; tenantId: string; description: string | null; createdById: string | null; templateId: string | null; content: JsonValue; version: number; updatedById: string | null; htmlContent: string | null; }'.
+app/api/hr/documents/[id]/sign/route.ts(40,9): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type '(Without<DocumentUpdateInput, DocumentUncheckedUpdateInput> & DocumentUncheckedUpdateInput) | (Without<...> & DocumentUpdateInput)'.
+app/api/hr/documents/[id]/sign/route.ts(46,9): error TS2353: Object literal may only specify known properties, and 'employee' does not exist in type 'DocumentInclude<DefaultArgs>'.
+app/api/hr/insurance/plans/[id]/route.ts(16,31): error TS2339: Property 'insurancePlan' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/insurance/plans/[id]/route.ts(37,35): error TS2339: Property 'insurancePlan' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/insurance/plans/[id]/route.ts(45,31): error TS2339: Property 'insurancePlan' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/insurance/plans/route.ts(22,14): error TS2339: Property 'insurancePlan' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/insurance/plans/route.ts(28,14): error TS2339: Property 'insurancePlan' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/insurance/plans/route.ts(56,31): error TS2339: Property 'insurancePlan' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/offboarding/instances/route.ts(17,38): error TS2551: Property 'offboardingInstance' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'. Did you mean 'onboardingInstance'?
+app/api/hr/onboarding/instances/route.ts(24,9): error TS2353: Object literal may only specify known properties, and 'notes' does not exist in type 'Without<OnboardingInstanceCreateInput, OnboardingInstanceUncheckedCreateInput> & OnboardingInstanceUncheckedCreateInput'.
+app/api/hr/payroll-runs/route.ts(70,9): error TS2353: Object literal may only specify known properties, and 'payrollMonth' does not exist in type 'Without<PayrollRunCreateInput, PayrollRunUncheckedCreateInput> & PayrollRunUncheckedCreateInput'.
+app/api/hr/payroll-runs/validate/route.ts(43,9): error TS2561: Object literal may only specify known properties, but 'salaryStructure' does not exist in type 'EmployeeInclude<DefaultArgs>'. Did you mean to write 'salaryStructures'?
+app/api/hr/payroll-runs/validate/route.ts(52,21): error TS2339: Property 'salaryStructure' does not exist on type '{ status: string; id: string; createdAt: Date; updatedAt: Date; tenantId: string; employeeCode: string; firstName: string; lastName: string; officialEmail: string; personalEmail: string | null; ... 28 more ...; userId: string | null; }'.
+app/api/hr/payroll-runs/validate/route.ts(61,31): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+app/api/hr/payroll-runs/validate/route.ts(77,36): error TS2365: Operator '>' cannot be applied to types 'Decimal' and 'number'.
+app/api/hr/payroll-runs/validate/route.ts(79,59): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+app/api/hr/payroll-runs/validate/route.ts(97,11): error TS2365: Operator '+=' cannot be applied to types 'number' and 'Decimal'.
+app/api/hr/payroll-runs/validate/route.ts(114,9): error TS2353: Object literal may only specify known properties, and 'payrollMonth' does not exist in type 'PayrollRunWhereInput'.
+app/api/hr/payroll-runs/validate/route.ts(121,86): error TS2339: Property 'status' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; tenantId: string; employeeId: string; approvedAt: Date | null; paidAt: Date | null; grossEarningsInr: Decimal; ... 15 more ...; cycleId: string; }'.
+app/api/hr/performance/okrs/route.ts(26,14): error TS2339: Property 'okr' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/performance/okrs/route.ts(43,14): error TS2339: Property 'okr' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/performance/okrs/route.ts(72,30): error TS2339: Property 'okr' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/performance/reviews/route.ts(24,14): error TS2339: Property 'performanceReview' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/performance/reviews/route.ts(48,14): error TS2339: Property 'performanceReview' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/performance/reviews/route.ts(76,33): error TS2339: Property 'performanceReview' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/reimbursements/[id]/approve/route.ts(20,40): error TS2339: Property 'reimbursement' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/reimbursements/[id]/approve/route.ts(38,34): error TS2339: Property 'reimbursement' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/reimbursements/[id]/reject/route.ts(24,40): error TS2339: Property 'reimbursement' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/reimbursements/[id]/reject/route.ts(42,34): error TS2339: Property 'reimbursement' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/reimbursements/route.ts(35,14): error TS2339: Property 'reimbursement' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/reimbursements/route.ts(51,14): error TS2339: Property 'reimbursement' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/reimbursements/route.ts(97,40): error TS2339: Property 'reimbursement' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/hr/reports/builder/route.ts(46,9): error TS2322: Type 'string[] | null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+app/api/hr/reports/builder/route.ts(47,9): error TS2322: Type '{ direction: "ASC" | "DESC"; field: string; }[] | null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+app/api/hr/salary-structures/route.ts(30,11): error TS2353: Object literal may only specify known properties, and 'department' does not exist in type 'SalaryStructureInclude<DefaultArgs>'.
+app/api/hr/salary-structures/route.ts(79,9): error TS2353: Object literal may only specify known properties, and 'departmentId' does not exist in type 'Without<SalaryStructureCreateInput, SalaryStructureUncheckedCreateInput> & SalaryStructureUncheckedCreateInput'.
+app/api/hr/salary-structures/route.ts(95,9): error TS2353: Object literal may only specify known properties, and 'department' does not exist in type 'SalaryStructureInclude<DefaultArgs>'.
+app/api/hr/skillgap/route.ts(13,84): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+app/api/hr/whatsapp/leave/apply/route.ts(89,21): error TS2365: Operator '<' cannot be applied to types 'Decimal' and 'number'.
+app/api/invoices/[id]/generate-payment-link/route.ts(95,13): error TS18048: 'paymentConfig.baseUrl' is possibly 'undefined'.
+app/api/invoices/[id]/send-with-payment/route.ts(87,13): error TS18048: 'paymentConfig.baseUrl' is possibly 'undefined'.
+app/api/leads/score/route.ts(78,34): error TS2339: Property 'leadScore' does not exist on type '{ id: string; name: string; nurtureStage: string | null; predictedRevenue: Decimal | null; }'.
+app/api/marketing/ad-insights/analyze/route.ts(198,13): error TS7006: Parameter 's' implicitly has an 'any' type.
+app/api/marketing/ad-insights/analyze/route.ts(199,16): error TS7006: Parameter 's' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(29,12): error TS2339: Property 'marketingPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/marketing/dashboard/enriched/route.ts(35,40): error TS7006: Parameter 's' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(35,43): error TS7006: Parameter 'c' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(36,44): error TS7006: Parameter 's' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(36,47): error TS7006: Parameter 'c' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(37,41): error TS7006: Parameter 's' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(37,44): error TS7006: Parameter 'c' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(38,42): error TS7006: Parameter 's' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(38,45): error TS7006: Parameter 'c' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(39,44): error TS7006: Parameter 's' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(39,47): error TS7006: Parameter 'c' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(43,45): error TS7006: Parameter 's' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(43,48): error TS7006: Parameter 'd' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(45,14): error TS7006: Parameter 'd' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(46,14): error TS7006: Parameter 's' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(46,17): error TS7006: Parameter 'd' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(47,41): error TS7006: Parameter 'i' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(48,52): error TS7006: Parameter 's' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(48,55): error TS7006: Parameter 'i' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(50,14): error TS7006: Parameter 'i' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(51,14): error TS7006: Parameter 's' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(51,17): error TS7006: Parameter 'i' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(61,22): error TS7006: Parameter 'c' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(81,6): error TS7006: Parameter 'i' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(87,27): error TS7006: Parameter 'p' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(111,22): error TS7006: Parameter 'c' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(144,10): error TS7006: Parameter 'deal' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(148,16): error TS7006: Parameter 's' implicitly has an 'any' type.
+app/api/marketing/dashboard/enriched/route.ts(148,19): error TS7006: Parameter 'd' implicitly has an 'any' type.
+app/api/marketing/dashboard/stats/route.ts(63,40): error TS2339: Property 'marketingPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/marketing/email/preferences/route.ts(64,29): error TS2339: Property 'emailPreference' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/marketing/email/preferences/route.ts(126,16): error TS2339: Property 'emailPreference' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/marketing/email/preferences/route.ts(145,18): error TS2339: Property 'emailOptOut' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/marketing/email/unsubscribe/route.ts(124,16): error TS2339: Property 'emailOptOut' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/marketing/playbooks/route.ts(24,36): error TS2339: Property 'marketingPlaybook' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/marketing/settings/route.ts(21,30): error TS2339: Property 'marketingSettings' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/marketing/settings/route.ts(39,35): error TS2339: Property 'marketingSettings' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/marketing/social/overview/route.ts(113,46): error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+app/api/marketing/social/overview/route.ts(155,35): error TS7006: Parameter 'e' implicitly has an 'any' type.
+app/api/payaid-internal/me/route.ts(124,7): error TS2741: Property 'moduleLicenses' is missing in type '{ licensedModules: string[]; subscriptionTier: string; status: string; id: string; name: string; subdomain: string | null; plan: string; industry: string | null; industrySubType: string | null; ... 9 more ...; subscription: { ...; } | null; }' but required in type '{ status: string; id: string; name: string; subdomain: string | null; plan: string; industry: string | null; industrySubType: string | null; industrySettings: JsonValue; onboardingCompleted: boolean; ... 10 more ...; moduleLicenses: { ...; }[]; }'.
+app/api/payments/callback/route.ts(97,9): error TS2353: Object literal may only specify known properties, and 'transaction_id' does not exist in type '{ order_id: string; }'.
+app/api/payments/callback/route.ts(110,92): error TS2339: Property 'response_message' does not exist on type 'PayAidPaymentStatusItem'.
+app/api/payments/refund/status/route.ts(25,39): error TS2339: Property 'getRefundStatus' does not exist on type 'PayAidPayments'.
+app/api/payments/request/route.ts(46,59): error TS2345: Argument of type '{ expiry_in_minutes: number; amount: number; currency: string; order_id: string; name: string; email: string; phone: string; city: string; country: string; description: string; zip_code: string; return_url: string; ... 7 more ...; return_url_cancel?: string | undefined; }' is not assignable to parameter of type 'PayAidPaymentRequestInput'.
+  Types of property 'currency' are incompatible.
+    Type 'string' is not assignable to type '"INR"'.
+app/api/payments/request/route.ts(52,38): error TS2339: Property 'createEncryptedPaymentRequest' does not exist on type 'PayAidPayments'.
+app/api/payments/request/route.ts(55,38): error TS2551: Property 'createPaymentRequest' does not exist on type 'PayAidPayments'. Did you mean 'getPaymentRequestUrl'?
+app/api/payments/status/route.ts(41,50): error TS2345: Argument of type '{ order_id?: string | undefined; transaction_id?: string | undefined; response_code?: number | undefined; bank_code?: string | undefined; customer_phone?: string | undefined; customer_email?: string | undefined; ... 4 more ...; per_page?: number | undefined; }' is not assignable to parameter of type '{ order_id: string; }'.
+  Types of property 'order_id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+app/api/portal/invoices/[id]/payment-link/route.ts(66,13): error TS18048: 'paymentConfig.baseUrl' is possibly 'undefined'.
+app/api/social/posts/route.ts(43,33): error TS2339: Property 'marketingPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/spreadsheets/[id]/export/route.ts(85,29): error TS2345: Argument of type 'Buffer<ArrayBufferLike>' is not assignable to parameter of type 'BodyInit | null | undefined'.
+  Type 'Buffer<ArrayBufferLike>' is missing the following properties from type 'URLSearchParams': size, append, delete, get, and 2 more.
+app/api/v1/voice-agents/[id]/route.ts(92,9): error TS2322: Type 'string | null' is not assignable to type 'string | StringFilter<"VoiceAgent"> | undefined'.
+  Type 'null' is not assignable to type 'string | StringFilter<"VoiceAgent"> | undefined'.
+app/api/v1/voice-agents/route.ts(62,9): error TS2322: Type 'Record<string, unknown> | undefined' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+app/api/voice/demo/route.ts(277,34): error TS18047: 'agent' is possibly 'null'.
+app/api/voice/demo/route.ts(277,50): error TS18047: 'agent' is possibly 'null'.
+app/api/voice/demo/route.ts(406,9): error TS2698: Spread types may only be created from object types.
+app/api/voice/demo/route.ts(411,31): error TS2345: Argument of type 'Buffer<ArrayBufferLike>' is not assignable to parameter of type 'BodyInit | null | undefined'.
+  Type 'Buffer<ArrayBufferLike>' is missing the following properties from type 'URLSearchParams': size, append, delete, get, and 2 more.
+app/approvals/[tenantId]/page.tsx(52,39): error TS2339: Property 'reimbursements' does not exist on type '{}'.
+app/approvals/[tenantId]/page.tsx(52,59): error TS2339: Property 'reimbursements' does not exist on type '{}'.
+app/approvals/[tenantId]/page.tsx(259,111): error TS2345: Argument of type '(i: ApprovalItem | ReimbursementItem) => string | undefined' is not assignable to parameter of type '(i: ApprovalItem | ReimbursementItem) => string'.
+  Type 'string | undefined' is not assignable to type 'string'.
+    Type 'undefined' is not assignable to type 'string'.
+app/approvals/[tenantId]/page.tsx(260,95): error TS2345: Argument of type '(i: ApprovalItem | ReimbursementItem) => string | undefined' is not assignable to parameter of type '(i: ApprovalItem | ReimbursementItem) => string'.
+  Type 'string | undefined' is not assignable to type 'string'.
+    Type 'undefined' is not assignable to type 'string'.
+app/approvals/[tenantId]/page.tsx(261,118): error TS2345: Argument of type '(i: ApprovalItem | ReimbursementItem) => string | undefined' is not assignable to parameter of type '(i: ApprovalItem | ReimbursementItem) => string'.
+  Type 'string | undefined' is not assignable to type 'string'.
+    Type 'undefined' is not assignable to type 'string'.
+app/crm/[tenantId]/Agents/page.tsx(170,21): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+app/crm/[tenantId]/Home/CRMHomeDashboard.tsx(1230,15): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+app/crm/[tenantId]/Home/page.tsx(1272,15): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+app/crm/[tenantId]/Tasks/page.tsx(200,50): error TS7006: Parameter 'r' implicitly has an 'any' type.
+app/dashboard/contacts/page.tsx(52,41): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ id: string; tenantId?: string | undefined; }'.
+app/finance/[tenantId]/Accounting/Reports/page.tsx(274,81): error TS2345: Argument of type '([cat, amt]: [string, number]) => JSX.Element' is not assignable to parameter of type '(value: [string, unknown], index: number, array: [string, unknown][]) => Element'.
+  Types of parameters '__0' and 'value' are incompatible.
+    Type '[string, unknown]' is not assignable to type '[string, number]'.
+      Type at position 1 in source is not compatible with type at position 1 in target.
+        Type 'unknown' is not assignable to type 'number'.
+app/finance/[tenantId]/Bank-Reconciliation/page.tsx(285,36): error TS7006: Parameter 'b' implicitly has an 'any' type.
+app/finance/[tenantId]/Credit-Notes/new/page.tsx(105,19): error TS2554: Expected 4-5 arguments, but got 2.
+app/finance/[tenantId]/Credit-Notes/new/page.tsx(297,35): error TS2322: Type '{ code: string; name: string; }' is not assignable to type 'Key | null | undefined'.
+app/finance/[tenantId]/Credit-Notes/new/page.tsx(297,47): error TS2322: Type '{ code: string; name: string; }' is not assignable to type 'string | number | readonly string[] | undefined'.
+app/finance/[tenantId]/Credit-Notes/new/page.tsx(298,29): error TS2322: Type '{ code: string; name: string; }' is not assignable to type 'ReactNode'.
+app/finance/[tenantId]/Debit-Notes/new/page.tsx(103,19): error TS2554: Expected 4-5 arguments, but got 2.
+app/finance/[tenantId]/Debit-Notes/new/page.tsx(295,35): error TS2322: Type '{ code: string; name: string; }' is not assignable to type 'Key | null | undefined'.
+app/finance/[tenantId]/Debit-Notes/new/page.tsx(295,47): error TS2322: Type '{ code: string; name: string; }' is not assignable to type 'string | number | readonly string[] | undefined'.
+app/finance/[tenantId]/Debit-Notes/new/page.tsx(296,29): error TS2322: Type '{ code: string; name: string; }' is not assignable to type 'ReactNode'.
+app/finance/[tenantId]/Home/page.tsx(223,71): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+app/finance/[tenantId]/Home/page.tsx(320,30): error TS2322: Type '(value: number) => [string, "Revenue"]' is not assignable to type 'Formatter<number, "Revenue">'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'number | undefined' is not assignable to type 'number'.
+      Type 'undefined' is not assignable to type 'number'.
+app/finance/[tenantId]/Home/page.tsx(338,182): error TS18048: 'percent' is possibly 'undefined'.
+app/finance/[tenantId]/Home/page.tsx(341,30): error TS2322: Type '(value: number) => [number, "Invoices"]' is not assignable to type 'Formatter<number, "Invoices">'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'number | undefined' is not assignable to type 'number'.
+      Type 'undefined' is not assignable to type 'number'.
+app/hr/[tenantId]/Assets/[id]/page.tsx(283,45): error TS7006: Parameter 'assignment' implicitly has an 'any' type.
+app/hr/[tenantId]/Assets/[id]/page.tsx(326,49): error TS7006: Parameter 'item' implicitly has an 'any' type.
+app/hr/[tenantId]/Assets/[id]/page.tsx(326,55): error TS7006: Parameter 'index' implicitly has an 'any' type.
+app/hr/[tenantId]/Employees/[id]/page.tsx(545,61): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+app/hr/[tenantId]/Home/page.tsx(305,12): error TS2532: Object is possibly 'undefined'.
+app/hr/[tenantId]/Home/page.tsx(322,22): error TS18048: 'safeStats.flightRisks' is possibly 'undefined'.
+app/hr/[tenantId]/Home/page.tsx(570,68): error TS18048: 'percent' is possibly 'undefined'.
+app/hr/[tenantId]/Home/page.tsx(638,25): error TS2322: Type '(value: number) => [string, "Turnover Rate"]' is not assignable to type 'Formatter<number, "Turnover Rate">'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'number | undefined' is not assignable to type 'number'.
+      Type 'undefined' is not assignable to type 'number'.
+app/hr/[tenantId]/Home/page.tsx(698,25): error TS2322: Type '(value: number) => [string, "Hiring Time"]' is not assignable to type 'Formatter<number, "Hiring Time">'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'number | undefined' is not assignable to type 'number'.
+      Type 'undefined' is not assignable to type 'number'.
+app/hr/[tenantId]/Home/page.tsx(745,31): error TS2322: Type '(value: number) => [number, "Headcount"]' is not assignable to type 'Formatter<number, "Headcount">'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'number | undefined' is not assignable to type 'number'.
+      Type 'undefined' is not assignable to type 'number'.
+app/hr/[tenantId]/Home/page.tsx(766,31): error TS2322: Type '(value: number) => [string, "Net pay"]' is not assignable to type 'Formatter<number, "Net pay">'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'number | undefined' is not assignable to type 'number'.
+      Type 'undefined' is not assignable to type 'number'.
+app/hr/[tenantId]/Home/page.tsx(794,74): error TS18048: 'percent' is possibly 'undefined'.
+app/hr/[tenantId]/Home/page.tsx(798,31): error TS2322: Type '(value: number) => [number, "Employees"]' is not assignable to type 'Formatter<number, "Employees">'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'number | undefined' is not assignable to type 'number'.
+      Type 'undefined' is not assignable to type 'number'.
+app/hr/[tenantId]/Offboarding/[id]/page.tsx(282,29): error TS2339: Property 'overdue' does not exist on type '{ id: string; title: string; done: boolean; overdue?: undefined; } | { id: string; title: string; done: boolean; overdue: boolean; } | { id: string; title: string; done: boolean; }'.
+  Property 'overdue' does not exist on type '{ id: string; title: string; done: boolean; }'.
+app/hr/[tenantId]/Onboarding/[id]/page.tsx(122,43): error TS7006: Parameter 't' implicitly has an 'any' type.
+app/hr/[tenantId]/Onboarding/[id]/page.tsx(123,44): error TS7006: Parameter 't' implicitly has an 'any' type.
+app/hr/[tenantId]/Onboarding/[id]/page.tsx(124,48): error TS7006: Parameter 't' implicitly has an 'any' type.
+app/hr/[tenantId]/Onboarding/[id]/page.tsx(130,94): error TS7006: Parameter 't' implicitly has an 'any' type.
+app/hr/[tenantId]/Onboarding/[id]/page.tsx(132,97): error TS7006: Parameter 't' implicitly has an 'any' type.
+app/hr/[tenantId]/Onboarding/[id]/page.tsx(134,111): error TS7006: Parameter 't' implicitly has an 'any' type.
+app/hr/[tenantId]/Onboarding/[id]/page.tsx(236,30): error TS7006: Parameter 't' implicitly has an 'any' type.
+app/hr/[tenantId]/Onboarding/[id]/page.tsx(286,31): error TS7006: Parameter 't' implicitly has an 'any' type.
+app/hr/[tenantId]/Onboarding/[id]/page.tsx(336,35): error TS7006: Parameter 't' implicitly has an 'any' type.
+app/hr/[tenantId]/Onboarding/new/page.tsx(128,39): error TS7006: Parameter 'template' implicitly has an 'any' type.
+app/hr/[tenantId]/Payroll-Runs/new/page.tsx(97,45): error TS7006: Parameter 'e' implicitly has an 'any' type.
+app/hr/[tenantId]/Payroll-Runs/new/page.tsx(100,76): error TS7006: Parameter 'e' implicitly has an 'any' type.
+app/hr/[tenantId]/Payroll-Runs/new/page.tsx(103,30): error TS7006: Parameter 'emp' implicitly has an 'any' type.
+app/hr/[tenantId]/Payroll-Runs/new/page.tsx(225,15): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void'.
+app/hr/[tenantId]/Payroll-Runs/new/page.tsx(235,25): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void'.
+app/hr/[tenantId]/Payroll-Runs/page.tsx(214,61): error TS2339: Property 'estimatedAmount' does not exist on type '{ id: any; cycleName: string; runDate: string; status: any; employees: any; totalAmount: number; processedDate: any; }'.
+app/hr/[tenantId]/Payroll/Cycles/[id]/page.tsx(264,24): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+app/hr/[tenantId]/Payroll/Cycles/[id]/page.tsx(265,15): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+app/hr/[tenantId]/Payroll/Cycles/[id]/page.tsx(266,15): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+app/hr/[tenantId]/Reports/builder/page.tsx(225,47): error TS2345: Argument of type '(f: Record<string, string>) => { status: string | undefined; }' is not assignable to parameter of type 'SetStateAction<Record<string, string>>'.
+  Type '(f: Record<string, string>) => { status: string | undefined; }' is not assignable to type '(prevState: Record<string, string>) => Record<string, string>'.
+    Type '{ status: string | undefined; }' is not assignable to type 'Record<string, string>'.
+      Property 'status' is incompatible with index signature.
+        Type 'string | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.
+app/hr/[tenantId]/Reports/builder/page.tsx(237,47): error TS2345: Argument of type '(f: Record<string, string>) => { departmentId: string | undefined; }' is not assignable to parameter of type 'SetStateAction<Record<string, string>>'.
+  Type '(f: Record<string, string>) => { departmentId: string | undefined; }' is not assignable to type '(prevState: Record<string, string>) => Record<string, string>'.
+    Type '{ departmentId: string | undefined; }' is not assignable to type 'Record<string, string>'.
+      Property 'departmentId' is incompatible with index signature.
+        Type 'string | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.
+app/hr/[tenantId]/Reports/builder/page.tsx(251,47): error TS2345: Argument of type '(f: Record<string, string>) => { dateFrom: string | undefined; }' is not assignable to parameter of type 'SetStateAction<Record<string, string>>'.
+  Type '(f: Record<string, string>) => { dateFrom: string | undefined; }' is not assignable to type '(prevState: Record<string, string>) => Record<string, string>'.
+    Type '{ dateFrom: string | undefined; }' is not assignable to type 'Record<string, string>'.
+      Property 'dateFrom' is incompatible with index signature.
+        Type 'string | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.
+app/hr/[tenantId]/Reports/builder/page.tsx(260,47): error TS2345: Argument of type '(f: Record<string, string>) => { dateTo: string | undefined; }' is not assignable to parameter of type 'SetStateAction<Record<string, string>>'.
+  Type '(f: Record<string, string>) => { dateTo: string | undefined; }' is not assignable to type '(prevState: Record<string, string>) => Record<string, string>'.
+    Type '{ dateTo: string | undefined; }' is not assignable to type 'Record<string, string>'.
+      Property 'dateTo' is incompatible with index signature.
+        Type 'string | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.
+app/hr/[tenantId]/Reports/builder/page.tsx(271,45): error TS2345: Argument of type '(f: Record<string, string>) => { status: string | undefined; }' is not assignable to parameter of type 'SetStateAction<Record<string, string>>'.
+  Type '(f: Record<string, string>) => { status: string | undefined; }' is not assignable to type '(prevState: Record<string, string>) => Record<string, string>'.
+    Type '{ status: string | undefined; }' is not assignable to type 'Record<string, string>'.
+      Property 'status' is incompatible with index signature.
+        Type 'string | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.
+app/hr/[tenantId]/Reports/builder/page.tsx(290,47): error TS2345: Argument of type '(f: Record<string, string>) => { month: string | undefined; }' is not assignable to parameter of type 'SetStateAction<Record<string, string>>'.
+  Type '(f: Record<string, string>) => { month: string | undefined; }' is not assignable to type '(prevState: Record<string, string>) => Record<string, string>'.
+    Type '{ month: string | undefined; }' is not assignable to type 'Record<string, string>'.
+      Property 'month' is incompatible with index signature.
+        Type 'string | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.
+app/hr/[tenantId]/Reports/builder/page.tsx(300,47): error TS2345: Argument of type '(f: Record<string, string>) => { year: string | undefined; }' is not assignable to parameter of type 'SetStateAction<Record<string, string>>'.
+  Type '(f: Record<string, string>) => { year: string | undefined; }' is not assignable to type '(prevState: Record<string, string>) => Record<string, string>'.
+    Type '{ year: string | undefined; }' is not assignable to type 'Record<string, string>'.
+      Property 'year' is incompatible with index signature.
+        Type 'string | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.
+app/marketing/[tenantId]/Campaigns/New/page.tsx(103,61): error TS2322: Type 'string' is not assignable to type '"whatsapp" | "email" | "sms"'.
+app/marketing/[tenantId]/channels/page.tsx(12,30): error TS7006: Parameter 'a' implicitly has an 'any' type.
+app/marketing/[tenantId]/Home/page.tsx(272,28): error TS2322: Type '(v: number) => [] | [string, ""]' is not assignable to type 'Formatter<number, "">'.
+  Types of parameters 'v' and 'value' are incompatible.
+    Type 'number | undefined' is not assignable to type 'number'.
+      Type 'undefined' is not assignable to type 'number'.
+app/marketing/[tenantId]/library/page.tsx(15,41): error TS7006: Parameter 'c' implicitly has an 'any' type.
+app/marketing/[tenantId]/library/page.tsx(24,38): error TS7006: Parameter 'm' implicitly has an 'any' type.
+app/productivity/[tenantId]/[tool]/page.tsx(53,40): error TS2304: Cannot find name 'ProductivityStatus'.
+app/voice-agents/[tenantId]/Analytics/page.tsx(253,29): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+app/voice-agents/[tenantId]/Analytics/page.tsx(253,40): error TS2322: Type 'unknown' is not assignable to type 'string'.
+app/voice-agents/[tenantId]/Analytics/page.tsx(253,53): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+app/voice-agents/[tenantId]/Analytics/page.tsx(315,63): error TS2322: Type '(v: number) => [string, "Conversion"]' is not assignable to type 'Formatter<number, "Conversion">'.
+  Types of parameters 'v' and 'value' are incompatible.
+    Type 'number | undefined' is not assignable to type 'number'.
+      Type 'undefined' is not assignable to type 'number'.
+app/voice-agents/[tenantId]/Analytics/page.tsx(330,27): error TS2339: Property 'language' does not exist on type 'PieLabelRenderProps'.
+app/voice-agents/[tenantId]/Analytics/page.tsx(330,67): error TS18048: 'percent' is possibly 'undefined'.
+app/voice-agents/[tenantId]/Analytics/page.tsx(336,63): error TS2322: Type '(v: number) => [number, "Calls"]' is not assignable to type 'Formatter<number, "Calls">'.
+  Types of parameters 'v' and 'value' are incompatible.
+    Type 'number | undefined' is not assignable to type 'number'.
+      Type 'undefined' is not assignable to type 'number'.
+app/voice-agents/[tenantId]/Demo/page.tsx(1438,9): error TS2551: Property 'onstart' does not exist on type '{ start: () => void; stop: () => void; abort: () => void; lang: string; continuous: boolean; interimResults: boolean; onresult: (e: unknown) => void; onend: () => void; }'. Did you mean 'start'?
+app/voice-agents/[tenantId]/Demo/page.tsx(1449,9): error TS2339: Property 'onerror' does not exist on type '{ start: () => void; stop: () => void; abort: () => void; lang: string; continuous: boolean; interimResults: boolean; onresult: (e: unknown) => void; onend: () => void; }'.
+app/voice-agents/[tenantId]/Demo/page.tsx(1520,9): error TS2339: Property 'onresult' does not exist on type '{ start: () => void; stop: () => void; abort: () => void; lang: string; continuous: boolean; interimResults: boolean; }'.
+app/voice-agents/[tenantId]/studio/page.tsx(405,31): error TS2339: Property 'phoneNumber' does not exist on type '{ id: string; name: string; language: string; voiceId: string | null; voiceTone: string | null; systemPrompt: string; workflow: unknown; }'.
+app/voice-agents/[tenantId]/studio/page.tsx(406,88): error TS2339: Property 'phoneNumber' does not exist on type '{ id: string; name: string; language: string; voiceId: string | null; voiceTone: string | null; systemPrompt: string; workflow: unknown; }'.
+../../components/hr/FlightRiskCard.tsx(26,80): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(input: string | Request | URL, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; } | { Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; } | { Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+../../components/hr/FlightRiskCard.tsx(36,9): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(input: string | Request | URL, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; } | { Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; } | { Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+../../components/marketing/MarketingStudioForm.tsx(2033,81): error TS2339: Property 'subject' does not exist on type 'never'.
+../../components/productivity/PayAidPDFEmbed.tsx(66,30): error TS2322: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'BlobPart'.
+  Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'ArrayBufferView<ArrayBuffer>'.
+    Types of property 'buffer' are incompatible.
+      Type 'ArrayBufferLike' is not assignable to type 'ArrayBuffer'.
+        Type 'SharedArrayBuffer' is missing the following properties from type 'ArrayBuffer': resizable, resize, detached, transfer, transferToFixedLength
+../../components/productivity/PayAidPDFEmbed.tsx(98,30): error TS2322: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'BlobPart'.
+  Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'ArrayBufferView<ArrayBuffer>'.
+    Types of property 'buffer' are incompatible.
+      Type 'ArrayBufferLike' is not assignable to type 'ArrayBuffer'.
+        Type 'SharedArrayBuffer' is missing the following properties from type 'ArrayBuffer': resizable, resize, detached, transfer, transferToFixedLength
+../../components/productivity/PayAidPDFEmbed.tsx(155,32): error TS2322: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'BlobPart'.
+  Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'ArrayBufferView<ArrayBuffer>'.
+    Types of property 'buffer' are incompatible.
+      Type 'ArrayBufferLike' is not assignable to type 'ArrayBuffer'.
+        Type 'SharedArrayBuffer' is missing the following properties from type 'ArrayBuffer': resizable, resize, detached, transfer, transferToFixedLength
+../../components/voice-agent/RealTimeVoiceDemo.tsx(44,33): error TS2304: Cannot find name 'SpeechRecognition'.
+../../components/voice-agent/RealTimeVoiceDemo.tsx(265,74): error TS2339: Property 'SpeechRecognition' does not exist on type 'Window & typeof globalThis'.
+../../components/voice-agent/RealTimeVoiceDemo.tsx(266,69): error TS2339: Property 'SpeechRecognition' does not exist on type 'Window & typeof globalThis'.
+../../components/voice-agent/RealTimeVoiceDemo.tsx(277,24): error TS2304: Cannot find name 'SpeechRecognitionEvent'.
+../../components/voice-agent/RealTimeVoiceDemo.tsx(301,23): error TS2304: Cannot find name 'SpeechRecognitionErrorEvent'.
+../../components/workflow/WorkflowBuilderForm.tsx(216,18): error TS2552: Cannot find name 'Select'. Did you mean 'onselect'?
+../../components/workflow/WorkflowBuilderForm.tsx(218,30): error TS7006: Parameter 'e' implicitly has an 'any' type.
+../../components/workflow/WorkflowBuilderForm.tsx(226,19): error TS2552: Cannot find name 'Select'. Did you mean 'onselect'?
+../../lib/agents/workflow-engine.ts(65,20): error TS2352: Conversion of type 'string | number | boolean | JsonObject | JsonArray | null' to type 'WorkflowStep[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'JsonArray' is not comparable to type 'WorkflowStep[]'.
+    Type 'JsonValue' is not comparable to type 'WorkflowStep'.
+      Type 'JsonValue[]' is missing the following properties from type 'WorkflowStep': id, type, config
+../../lib/ai/customer-health-scoring.ts(258,54): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+../../lib/ai/customer-health-scoring.ts(270,9): error TS2345: Argument of type '{ status: string; createdAt: Date; dueDate: Date | null; paidAt: Date | null; customerId: string | null; }[]' is not assignable to parameter of type '{ customerId: string; status: string; dueDate: Date | null; paidAt: Date | null; createdAt: Date; }[]'.
+  Type '{ status: string; createdAt: Date; dueDate: Date | null; paidAt: Date | null; customerId: string | null; }' is not assignable to type '{ customerId: string; status: string; dueDate: Date | null; paidAt: Date | null; createdAt: Date; }'.
+    Types of property 'customerId' are incompatible.
+      Type 'string | null' is not assignable to type 'string'.
+        Type 'null' is not assignable to type 'string'.
+../../lib/ai/image-studio.ts(157,9): error TS2322: Type 'Record<string, unknown> | undefined' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+../../lib/ai/langchain-setup.ts(308,32): error TS2339: Property 'invoke' does not exist on type 'void'.
+../../lib/audit-log-crm.ts(30,9): error TS2322: Type 'Record<string, unknown> | undefined' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+../../lib/audit-log-crm.ts(31,9): error TS2322: Type 'Record<string, unknown> | undefined' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+../../lib/audit/log.ts(44,9): error TS2322: Type 'Record<string, unknown> | undefined' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+../../lib/audit/log.ts(45,9): error TS2322: Type 'Record<string, unknown> | undefined' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+../../lib/cache/multi-layer.ts(123,26): error TS2339: Property 'flushdb' does not exist on type 'RedisLike'.
+../../lib/crm/template-analytics.ts(121,15): error TS2353: Object literal may only specify known properties, and 'settings' does not exist in type 'TenantSelect<DefaultArgs>'.
+../../lib/crm/template-analytics.ts(124,29): error TS2339: Property 'settings' does not exist on type '{ status: string; id: string; name: string; slug: string | null; subdomain: string | null; domain: string | null; plan: string; industry: string | null; industrySubType: string | null; ... 32 more ...; updatedAt: Date; }'.
+../../lib/finance/compliance/export-guard.ts(7,37): error TS2339: Property 'exportInvoice' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../lib/forms/form-builder.ts(90,11): error TS2322: Type '{ label: string; type: "number" | "select" | "phone" | "email" | "date" | "text" | "checkbox" | "radio" | "textarea"; placeholder: string | undefined; required: boolean; options: string[] | null; conditionalLogic: { ...; } | null; order: number; validation: { ...; } | null; }[]' is not assignable to type '(Without<FormFieldCreateWithoutFormInput, FormFieldUncheckedCreateWithoutFormInput> & FormFieldUncheckedCreateWithoutFormInput) | (Without<...> & FormFieldCreateWithoutFormInput) | FormFieldCreateWithoutFormInput[] | FormFieldUncheckedCreateWithoutFormInput[] | undefined'.
+  Type '{ label: string; type: "number" | "select" | "phone" | "email" | "date" | "text" | "checkbox" | "radio" | "textarea"; placeholder: string | undefined; required: boolean; options: string[] | null; conditionalLogic: { ...; } | null; order: number; validation: { ...; } | null; }[]' is not assignable to type 'FormFieldCreateWithoutFormInput[]'.
+    Type '{ label: string; type: "number" | "select" | "phone" | "email" | "date" | "text" | "checkbox" | "radio" | "textarea"; placeholder: string | undefined; required: boolean; options: string[] | null; conditionalLogic: { ...; } | null; order: number; validation: { ...; } | null; }' is not assignable to type 'FormFieldCreateWithoutFormInput'.
+      Types of property 'options' are incompatible.
+        Type 'string[] | null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+          Type 'null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+../../lib/forms/form-builder.ts(179,7): error TS2322: Type '{ formId: string; label: string; type: "number" | "select" | "phone" | "email" | "date" | "text" | "checkbox" | "radio" | "textarea"; placeholder: string | undefined; required: boolean; options: string[] | null; conditionalLogic: { ...; } | null; order: number; validation: { ...; } | null; }[]' is not assignable to type 'FormFieldCreateManyInput | FormFieldCreateManyInput[]'.
+  Type '{ formId: string; label: string; type: "number" | "select" | "phone" | "email" | "date" | "text" | "checkbox" | "radio" | "textarea"; placeholder: string | undefined; required: boolean; options: string[] | null; conditionalLogic: { ...; } | null; order: number; validation: { ...; } | null; }[]' is not assignable to type 'FormFieldCreateManyInput[]'.
+    Type '{ formId: string; label: string; type: "number" | "select" | "phone" | "email" | "date" | "text" | "checkbox" | "radio" | "textarea"; placeholder: string | undefined; required: boolean; options: string[] | null; conditionalLogic: { ...; } | null; order: number; validation: { ...; } | null; }' is not assignable to type 'FormFieldCreateManyInput'.
+      Types of property 'options' are incompatible.
+        Type 'string[] | null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+          Type 'null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+../../lib/hr/anomaly-detection.ts(63,74): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+../../lib/hr/audit-log.ts(28,9): error TS2322: Type 'Record<string, unknown> | undefined' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+../../lib/hr/audit-log.ts(29,9): error TS2322: Type 'Record<string, unknown> | undefined' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+../../lib/hr/flight-risk-service.ts(87,67): error TS2339: Property 'isLate' does not exist on type '{ status: string; id: string; createdAt: Date; updatedAt: Date; tenantId: string; date: Date; employeeId: string; source: string; checkInTime: Date | null; checkOutTime: Date | null; ... 5 more ...; remarks: string | null; }'.
+../../lib/hr/flight-risk-service.ts(129,72): error TS2345: Argument of type '{ firstName: string; lastName: string; joiningDate: Date; designationId: string | null; ctcAnnualInr: Decimal | null; }' is not assignable to parameter of type '{ ctcAnnualInr?: number | null | undefined; joiningDate?: Date | null | undefined; designationId?: string | null | undefined; }'.
+  Types of property 'ctcAnnualInr' are incompatible.
+    Type 'Decimal | null' is not assignable to type 'number | null | undefined'.
+      Type 'Decimal' is not assignable to type 'number'.
+../../lib/hr/flight-risk-service.ts(165,70): error TS2345: Argument of type '{ id: string; firstName: string; lastName: string; joiningDate: Date; designationId: string | null; ctcAnnualInr: Decimal | null; }' is not assignable to parameter of type '{ ctcAnnualInr?: number | null | undefined; joiningDate?: Date | null | undefined; designationId?: string | null | undefined; }'.
+  Types of property 'ctcAnnualInr' are incompatible.
+    Type 'Decimal | null' is not assignable to type 'number | null | undefined'.
+      Type 'Decimal' is not assignable to type 'number'.
+../../lib/hr/predictive-analytics.ts(21,22): error TS2339: Property 'reason' does not exist on type '{ employeeId: string; employeeName: string; } & FlightRiskResult'.
+../../lib/hr/smart-leave-balance.ts(33,9): error TS2322: Type '{ id: string; name: string; createdAt: Date; updatedAt: Date; isActive: boolean; tenantId: string; code: string | null; isPaid: boolean; }' is not assignable to type '{ name: string; code: string; }'.
+  Types of property 'code' are incompatible.
+    Type 'string | null' is not assignable to type 'string'.
+      Type 'null' is not assignable to type 'string'.
+../../lib/hr/tally-export.ts(23,5): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+../../lib/integrations/social-media.ts(90,5): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+../../lib/invoices/smart-merge.ts(63,34): error TS2339: Property 'paidAmount' does not exist on type '{ status: string; id: string; createdAt: Date; updatedAt: Date; tenantId: string; currency: string; gstAmount: number | null; hsnCode: string | null; metadata: JsonValue; ... 49 more ...; customerId: string | null; }'.
+../../lib/invoices/smart-merge.ts(82,34): error TS2339: Property 'paidAmount' does not exist on type '{ status: string; id: string; createdAt: Date; updatedAt: Date; tenantId: string; currency: string; gstAmount: number | null; hsnCode: string | null; metadata: JsonValue; ... 49 more ...; customerId: string | null; }'.
+../../lib/logging/structured-logger.ts(120,7): error TS2353: Object literal may only specify known properties, and 'statusCode' does not exist in type 'LogContext'.
+../../lib/logging/structured-logger.ts(134,9): error TS2353: Object literal may only specify known properties, and 'query' does not exist in type 'LogContext'.
+../../lib/logging/structured-logger.ts(140,9): error TS2353: Object literal may only specify known properties, and 'query' does not exist in type 'LogContext'.
+../../lib/marketing/ensure-playbooks.ts(65,18): error TS2339: Property 'marketingPlaybook' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../lib/marketing/ensure-playbooks.ts(93,17): error TS2339: Property 'marketingPlaybook' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../lib/marketing/ensure-playbooks.ts(105,17): error TS2339: Property 'marketingPlaybook' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../lib/marketing/marketing-data.ts(7,42): error TS2339: Property 'channelAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../lib/marketing/marketing-data.ts(17,31): error TS2339: Property 'channelAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../lib/marketing/marketing-data.ts(34,17): error TS2339: Property 'contentItem' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../lib/marketing/marketing-data.ts(42,17): error TS2339: Property 'mediaAsset' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../lib/marketing/studio-actions.ts(78,12): error TS2339: Property 'contentItem' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../lib/marketing/studio-actions.ts(88,12): error TS2339: Property 'mediaAsset' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../lib/middleware/license.ts(94,7): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+../../lib/payments/razorpay.ts(36,11): error TS2345: Argument of type '(order: { id: string; amount: number; currency: string; }) => { orderId: string; amount: number; currency: string; }' is not assignable to parameter of type '(value: RazorpayOrder) => { orderId: string; amount: number; currency: string; } | PromiseLike<{ orderId: string; amount: number; currency: string; }>'.
+  Types of parameters 'order' and 'value' are incompatible.
+    Type 'RazorpayOrder' is not assignable to type '{ id: string; amount: number; currency: string; }'.
+      Types of property 'amount' are incompatible.
+        Type 'string | number' is not assignable to type 'number'.
+          Type 'string' is not assignable to type 'number'.
+../../lib/portal/token.ts(18,14): error TS2769: No overload matches this call.
+  Overload 1 of 5, '(payload: string | object | Buffer<ArrayBufferLike>, secretOrPrivateKey: null, options?: (SignOptions & { algorithm: "none"; }) | undefined): string', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'null'.
+  Overload 2 of 5, '(payload: string | object | Buffer<ArrayBufferLike>, secretOrPrivateKey: Buffer<ArrayBufferLike> | Secret | PrivateKeyInput | JsonWebKeyInput, options?: SignOptions | undefined): string', gave the following error.
+    Type 'string' is not assignable to type 'number | StringValue | undefined'.
+  Overload 3 of 5, '(payload: string | object | Buffer<ArrayBufferLike>, secretOrPrivateKey: Buffer<ArrayBufferLike> | Secret | PrivateKeyInput | JsonWebKeyInput, callback: SignCallback): void', gave the following error.
+    Object literal may only specify known properties, and 'expiresIn' does not exist in type 'SignCallback'.
+../../lib/queue/bull.ts(45,5): error TS2322: Type '(_jobName: any, _handler: any) => any' is not assignable to type '{ (callback: ProcessCallbackFunction<any>): Promise<void>; (callback: ProcessPromiseFunction<any>): Promise<void>; (callback: string): Promise<...>; (concurrency: number, callback: ProcessCallbackFunction<...>): Promise<...>; (concurrency: number, callback: ProcessPromiseFunction<...>): Promise<...>; (concurrency: n...'.
+  Target signature provides too few arguments. Expected 2 or more, but got 1.
+../../lib/redis/singleton.ts(29,32): error TS2345: Argument of type '{ ex?: number | undefined; } | undefined' is not assignable to parameter of type 'SetCommandOptions | undefined'.
+  Type '{ ex?: number | undefined; }' is not assignable to type 'SetCommandOptions | undefined'.
+    Type '{ ex?: number | undefined; }' is not assignable to type '({ get?: boolean | undefined; } & { ex: number; px?: undefined; exat?: undefined; pxat?: undefined; keepTtl?: undefined; } & { nx: true; xx?: undefined; }) | ({ get?: boolean | undefined; } & { ex: number; px?: undefined; exat?: undefined; pxat?: undefined; keepTtl?: undefined; } & { ...; }) | ... 15 more ... | ({ ....'.
+      Type '{ ex?: number | undefined; }' is not assignable to type '{ get?: boolean | undefined; } & { ex?: undefined; px?: undefined; exat?: undefined; pxat?: undefined; keepTtl?: undefined; } & { xx?: undefined; nx?: undefined; }'.
+        Type '{ ex?: number | undefined; }' is not assignable to type '{ ex?: undefined; px?: undefined; exat?: undefined; pxat?: undefined; keepTtl?: undefined; }'.
+          Types of property 'ex' are incompatible.
+            Type 'number | undefined' is not assignable to type 'undefined'.
+              Type 'number' is not assignable to type 'undefined'.
+../../lib/security/gdpr-compliance-checker.ts(122,7): error TS2353: Object literal may only specify known properties, and 'metadata' does not exist in type 'ContactWhereInput'.
+../../lib/security/gdpr-compliance-checker.ts(176,5): error TS2353: Object literal may only specify known properties, and 'entityType' does not exist in type 'AuditLogEntry'.
+../../lib/security/security-audit.ts(59,18): error TS2353: Object literal may only specify known properties, and 'createdAt' does not exist in type 'AuditLogOrderByWithRelationInput | AuditLogOrderByWithRelationInput[]'.
+../../lib/security/security-audit.ts(154,17): error TS2353: Object literal may only specify known properties, and 'metadata' does not exist in type 'ContactSelect<DefaultArgs>'.
+../../lib/security/security-audit.ts(158,22): error TS2339: Property 'metadata' does not exist on type '{ status: string; id: string; name: string; gstin: string | null; address: string | null; city: string | null; state: string | null; postalCode: string | null; country: string | null; ... 24 more ...; accountId: string | null; }'.
+../../lib/security/security-audit.ts(213,5): error TS2353: Object literal may only specify known properties, and 'entityType' does not exist in type 'AuditLogEntry'.
+../../lib/seed/module-seeders.ts(110,9): error TS7034: Variable 'tasks' implicitly has type 'any[]' in some locations where its type cannot be determined.
+../../lib/seed/module-seeders.ts(145,29): error TS7005: Variable 'tasks' implicitly has an 'any[]' type.
+../../lib/seed/module-seeders.ts(157,9): error TS7034: Variable 'invoices' implicitly has type 'any[]' in some locations where its type cannot be determined.
+../../lib/seed/module-seeders.ts(232,24): error TS2304: Cannot find name 'adminUserId'.
+../../lib/seed/module-seeders.ts(245,12): error TS7005: Variable 'invoices' implicitly has an 'any[]' type.
+../../lib/seed/module-seeders.ts(424,9): error TS2353: Object literal may only specify known properties, and 'maxDays' does not exist in type 'Without<LeaveTypeCreateInput, LeaveTypeUncheckedCreateInput> & LeaveTypeUncheckedCreateInput'.
+../../lib/seed/module-seeders.ts(435,9): error TS2353: Object literal may only specify known properties, and 'maxDays' does not exist in type 'Without<LeaveTypeCreateInput, LeaveTypeUncheckedCreateInput> & LeaveTypeUncheckedCreateInput'.
+../../lib/seed/module-seeders.ts(446,9): error TS2353: Object literal may only specify known properties, and 'maxDays' does not exist in type 'Without<LeaveTypeCreateInput, LeaveTypeUncheckedCreateInput> & LeaveTypeUncheckedCreateInput'.
+../../lib/seed/module-seeders.ts(464,30): error TS2339: Property 'maxDays' does not exist on type '{ id: string; name: string; createdAt: Date; updatedAt: Date; isActive: boolean; tenantId: string; code: string | null; isPaid: boolean; }'.
+../../lib/seed/module-seeders.ts(555,9): error TS2353: Object literal may only specify known properties, and 'payrollCycleId' does not exist in type 'Without<PayrollRunCreateInput, PayrollRunUncheckedCreateInput> & PayrollRunUncheckedCreateInput'.
+../../lib/seed/module-seeders.ts(636,9): error TS7034: Variable 'orders' implicitly has type 'any[]' in some locations where its type cannot be determined.
+../../lib/seed/module-seeders.ts(675,12): error TS7005: Variable 'orders' implicitly has an 'any[]' type.
+../../lib/seed/module-seeders.ts(707,7): error TS2322: Type '{ tenantId: string; name: string; type: string; status: string; startDate: Date; endDate: Date; budget: number; spent: number; createdAt: Date; }[]' is not assignable to type 'CampaignCreateManyInput | CampaignCreateManyInput[]'.
+  Type '{ tenantId: string; name: string; type: string; status: string; startDate: Date; endDate: Date; budget: number; spent: number; createdAt: Date; }[]' is not assignable to type 'CampaignCreateManyInput[]'.
+    Property 'content' is missing in type '{ tenantId: string; name: string; type: string; status: string; startDate: Date; endDate: Date; budget: number; spent: number; createdAt: Date; }' but required in type 'CampaignCreateManyInput'.
+../../lib/signatures/internal-signature.ts(87,7): error TS2353: Object literal may only specify known properties, and 'contractId' does not exist in type 'LogContext'.
+../../lib/signatures/internal-signature.ts(128,7): error TS2353: Object literal may only specify known properties, and 'quoteId' does not exist in type 'LogContext'.
+../../lib/signatures/internal-signature.ts(190,7): error TS2353: Object literal may only specify known properties, and 'contractId' does not exist in type 'LogContext'.
+../../lib/signatures/internal-signature.ts(226,7): error TS2353: Object literal may only specify known properties, and 'quoteId' does not exist in type 'LogContext'.
+../../lib/signatures/internal-signature.ts(284,35): error TS2551: Property 'contact' does not exist on type '{ status: string; id: string; createdAt: Date; updatedAt: Date; tenantId: string; rejectedAt: Date | null; rejectionReason: string | null; notes: string | null; requiresApproval: boolean; ... 13 more ...; signatureStatus: string | null; }'. Did you mean 'contactId'?
+../../lib/signatures/internal-signature.ts(285,36): error TS2551: Property 'contact' does not exist on type '{ status: string; id: string; createdAt: Date; updatedAt: Date; tenantId: string; rejectedAt: Date | null; rejectionReason: string | null; notes: string | null; requiresApproval: boolean; ... 13 more ...; signatureStatus: string | null; }'. Did you mean 'contactId'?
+../../lib/spreadsheet/templates.ts(272,47): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(272,50): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(272,53): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(273,46): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(273,49): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(273,52): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(274,49): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(274,52): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(274,55): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(275,45): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(275,48): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(275,51): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(276,51): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(276,54): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(276,57): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(277,48): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(277,51): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(277,54): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(278,48): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(278,51): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(278,54): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(279,46): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(279,49): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(279,52): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(280,44): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(280,47): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(280,50): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(281,48): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(281,51): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(281,54): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(294,29): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(294,37): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(294,45): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(295,29): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(295,37): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(295,45): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(296,29): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(296,37): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(296,45): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(297,29): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(297,37): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(297,45): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(298,32): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(298,40): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(298,48): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(299,28): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(299,35): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(299,43): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(425,35): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(425,39): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(425,43): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(425,48): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(426,37): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(426,41): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(426,45): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(426,49): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(427,37): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(427,41): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(427,45): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(427,50): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(428,44): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(428,48): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(428,52): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(428,56): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(429,36): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(429,40): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(429,44): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(429,49): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(430,35): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(430,38): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(430,42): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(430,46): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(431,34): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(431,38): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(431,42): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(431,46): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(432,36): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(432,40): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(432,44): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(432,48): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(433,39): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(433,44): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(433,48): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(433,53): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(434,37): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(434,42): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(434,47): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/spreadsheet/templates.ts(434,52): error TS2322: Type 'number' is not assignable to type 'string'.
+../../lib/sso/token-manager.ts(27,5): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+../../lib/sso/token-manager.ts(28,5): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+../../lib/telephony/call-recording.ts(25,9): error TS2353: Object literal may only specify known properties, and 'tenantId' does not exist in type 'InteractionWhereInput'.
+../../lib/telephony/call-recording.ts(61,9): error TS2353: Object literal may only specify known properties, and 'metadata' does not exist in type '(Without<InteractionUpdateInput, InteractionUncheckedUpdateInput> & InteractionUncheckedUpdateInput) | (Without<...> & InteractionUpdateInput)'.
+../../lib/telephony/call-recording.ts(62,28): error TS2339: Property 'metadata' does not exist on type '{ id: string; createdAt: Date; type: string; duration: number | null; notes: string | null; contactId: string; subject: string | null; outcome: string | null; createdByRepId: string | null; }'.
+../../lib/telephony/call-recording.ts(96,9): error TS2353: Object literal may only specify known properties, and 'tenantId' does not exist in type 'InteractionWhereInput'.
+../../lib/telephony/call-recording.ts(132,9): error TS2353: Object literal may only specify known properties, and 'metadata' does not exist in type '(Without<InteractionUpdateInput, InteractionUncheckedUpdateInput> & InteractionUncheckedUpdateInput) | (Without<...> & InteractionUpdateInput)'.
+../../lib/telephony/call-recording.ts(133,28): error TS2339: Property 'metadata' does not exist on type '{ id: string; createdAt: Date; type: string; duration: number | null; notes: string | null; contactId: string; subject: string | null; outcome: string | null; createdByRepId: string | null; }'.
+../../lib/telephony/call-recording.ts(175,15): error TS2353: Object literal may only specify known properties, and 'metadata' does not exist in type 'ContactSelect<DefaultArgs>'.
+../../lib/telephony/call-recording.ts(182,29): error TS2339: Property 'metadata' does not exist on type '{ status: string; id: string; name: string; gstin: string | null; address: string | null; city: string | null; state: string | null; postalCode: string | null; country: string | null; ... 24 more ...; accountId: string | null; }'.
+../../lib/telephony/call-recording.ts(252,33): error TS2353: Object literal may only specify known properties, and 'deal' does not exist in type 'InteractionInclude<DefaultArgs>'.
+../../lib/telephony/call-recording.ts(265,13): error TS2353: Object literal may only specify known properties, and 'dealId' does not exist in type 'Without<TaskCreateInput, TaskUncheckedCreateInput> & TaskUncheckedCreateInput'.
+../../lib/telephony/call-recording.ts(265,33): error TS2339: Property 'dealId' does not exist on type '{ id: string; createdAt: Date; type: string; duration: number | null; notes: string | null; contactId: string; subject: string | null; outcome: string | null; createdByRepId: string | null; }'.
+../../lib/telephony/call-recording.ts(289,7): error TS2353: Object literal may only specify known properties, and 'metadata' does not exist in type '(Without<ContactUpdateInput, ContactUncheckedUpdateInput> & ContactUncheckedUpdateInput) | (Without<...> & ContactUpdateInput)'.
+../../lib/telephony/call-recording.ts(290,78): error TS2339: Property 'metadata' does not exist on type '{ status: string; id: string; name: string; gstin: string | null; address: string | null; city: string | null; state: string | null; postalCode: string | null; country: string | null; ... 24 more ...; accountId: string | null; }'.
+../../lib/voice-agent/tts.ts(188,68): error TS2304: Cannot find name 'options'.
+../../lib/voice-agent/vexyl-tts.ts(177,25): error TS2339: Property 'includes' does not exist on type 'string | false'.
+  Property 'includes' does not exist on type 'false'.
+../../lib/workflow/engine.ts(30,61): error TS2339: Property 'email' does not exist on type '{}'.
+../../lib/workflow/engine.ts(30,98): error TS2339: Property 'email' does not exist on type '{}'.
+../../lib/workflow/engine.ts(40,61): error TS2339: Property 'phone' does not exist on type '{}'.
+../../lib/workflow/engine.ts(40,98): error TS2339: Property 'phone' does not exist on type '{}'.
+../../lib/workflow/engine.ts(49,61): error TS2339: Property 'phone' does not exist on type '{}'.
+../../lib/workflow/engine.ts(49,98): error TS2339: Property 'phone' does not exist on type '{}'.
+../../lib/workflow/engine.ts(63,43): error TS2339: Property 'id' does not exist on type '{}'.
+../../lib/workflow/engine.ts(79,43): error TS2339: Property 'id' does not exist on type '{}'.
+../../lib/workflow/engine.ts(94,43): error TS2339: Property 'id' does not exist on type '{}'.
+../../lib/workflow/engine.ts(95,37): error TS2339: Property 'id' does not exist on type '{}'.
+../../lib/workflow/engine.ts(160,18): error TS2352: Conversion of type 'string | number | boolean | JsonObject | JsonArray | null' to type 'WorkflowStep[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'JsonArray' is not comparable to type 'WorkflowStep[]'.
+    Type 'JsonValue' is not comparable to type 'WorkflowStep'.
+      Type 'JsonValue[]' is missing the following properties from type 'WorkflowStep': id, type, config, order
+../../lib/workflow/engine.ts(173,7): error TS2322: Type '{ event: string; entity: string | undefined; entityId: string | undefined; data: Record<string, unknown> | undefined; }' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type '{ event: string; entity: string | undefined; entityId: string | undefined; data: Record<string, unknown> | undefined; }' is not assignable to type 'InputJsonObject'.
+    Property 'data' is incompatible with index signature.
+      Type 'Record<string, unknown> | undefined' is not assignable to type 'InputJsonValue | null | undefined'.
+        Type 'Record<string, unknown>' is not assignable to type 'InputJsonValue | null | undefined'.
+          Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+../../modules/shared/crm/api/contacts.ts(49,7): error TS2353: Object literal may only specify known properties, and 'organizationId' does not exist in type '(Without<ContactCreateInput, ContactUncheckedCreateInput> & ContactUncheckedCreateInput) | (Without<...> & ContactCreateInput)'.
+../../modules/shared/crm/api/contacts.ts(69,11): error TS2352: Conversion of type '{ status: string; id: string; name: string; gstin: string | null; address: string | null; city: string | null; state: string | null; postalCode: string | null; country: string | null; ... 24 more ...; accountId: string | null; }' to type 'Contact' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ status: string; id: string; name: string; gstin: string | null; address: string | null; city: string | null; state: string | null; postalCode: string | null; country: string | null; ... 24 more ...; accountId: string | null; }' is missing the following properties from type 'Contact': organizationId, industryModule, firstName, lastName, and 6 more.
+../../modules/shared/crm/api/contacts.ts(151,17): error TS2352: Conversion of type '{ status: string; id: string; name: string; gstin: string | null; address: string | null; city: string | null; state: string | null; postalCode: string | null; country: string | null; ... 24 more ...; accountId: string | null; }[]' to type 'Contact[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ status: string; id: string; name: string; gstin: string | null; address: string | null; city: string | null; state: string | null; postalCode: string | null; country: string | null; ... 24 more ...; accountId: string | null; }' is missing the following properties from type 'Contact': organizationId, industryModule, firstName, lastName, and 6 more.
+../../packages/social/src/MarketingStudioShell.tsx(118,96): error TS2322: Type '{ channel: string; content: string; }[]' is not assignable to type 'ChannelVariant[]'.
+  Property 'mediaIds' is missing in type '{ channel: string; content: string; }' but required in type 'ChannelVariant'.
+../../packages/social/src/MarketingStudioShell.tsx(119,55): error TS2322: Type '{ id: string; url: string; }[]' is not assignable to type 'MediaItem[]'.
+  Property 'mimeType' is missing in type '{ id: string; url: string; }' but required in type 'MediaItem'.
+../../packages/social/src/MarketingStudioShell.tsx(460,22): error TS7006: Parameter 'ch' implicitly has an 'any' type.
+../../prisma/seeds/demo/demo-business-master-seed.ts(297,31): error TS2552: Cannot find name 'prisma'. Did you mean '_prisma'?
+../../prisma/seeds/demo/demo-business-master-seed.ts(332,90): error TS2552: Cannot find name 'prisma'. Did you mean '_prisma'?
+../../prisma/seeds/demo/demo-business-master-seed.ts(445,109): error TS2552: Cannot find name 'prisma'. Did you mean '_prisma'?
+../../prisma/seeds/demo/demo-business-master-seed.ts(450,90): error TS2552: Cannot find name 'prisma'. Did you mean '_prisma'?
+../../prisma/seeds/demo/demo-business-master-seed.ts(455,94): error TS2552: Cannot find name 'prisma'. Did you mean '_prisma'?
+../../prisma/seeds/demo/demo-business-master-seed.ts(460,90): error TS2552: Cannot find name 'prisma'. Did you mean '_prisma'?
+../../prisma/seeds/demo/demo-business-master-seed.ts(465,5): error TS2552: Cannot find name 'crmResult'. Did you mean 'result'?
+../../prisma/seeds/demo/demo-business-master-seed.ts(465,26): error TS2552: Cannot find name 'crmResult'. Did you mean 'result'?
+../../prisma/seeds/demo/demo-business-master-seed.ts(465,44): error TS2552: Cannot find name 'crmResult'. Did you mean 'result'?
+../../prisma/seeds/demo/demo-business-master-seed.ts(465,62): error TS2304: Cannot find name 'crmResult'.
+../../prisma/seeds/demo/demo-business-master-seed.ts(472,10): error TS2304: Cannot find name 'crmResult'.
+../../prisma/seeds/demo/demo-business-master-seed.ts(485,25): error TS2304: Cannot find name 'crmResult'.
+../../prisma/seeds/demo/demo-business-master-seed.ts(485,57): error TS2304: Cannot find name 'crmResult'.
+../../prisma/seeds/demo/demo-business-master-seed.ts(485,83): error TS2304: Cannot find name 'crmResult'.
+../../prisma/seeds/demo/reset-demo-business.ts(32,18): error TS2339: Property 'supportTicket' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../prisma/seeds/demo/reset-demo-business.ts(35,18): error TS2339: Property 'supportReply' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../prisma/seeds/demo/reset-demo-business.ts(42,18): error TS2339: Property 'invoiceItem' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../prisma/seeds/demo/reset-demo-business.ts(46,18): error TS2339: Property 'payment' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../prisma/seeds/demo/reset-demo-business.ts(52,18): error TS2339: Property 'campaignEvent' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../prisma/seeds/demo/reset-demo-business.ts(56,18): error TS2339: Property 'emailEvent' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../prisma/seeds/demo/reset-demo-business.ts(70,18): error TS2339: Property 'company' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../prisma/seeds/demo/reset-demo-business.ts(198,18): error TS2339: Property 'notification' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../prisma/seeds/demo/reset-demo-business.ts(203,18): error TS2339: Property 'automationRun' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../prisma/seeds/demo/seed-crm.ts(851,42): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+../../prisma/seeds/demo/seed-marketing.ts(222,16): error TS2339: Property 'emailEvent' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../prisma/seeds/demo/seed-marketing.ts(227,20): error TS2339: Property 'emailEvent' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+../../prisma/seeds/demo/seed-sales-billing.ts(244,9): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+node.exe : npm error Lifecycle script `typecheck` failed with error:
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm error Lifec...led with error::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm error code 2
+npm error path D:\Cursor Projects\PayAid V3\apps\dashboard
+npm error workspace dashboard@0.1.0
+npm error location D:\Cursor Projects\PayAid V3\apps\dashboard
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c tsc --noEmit --pretty false

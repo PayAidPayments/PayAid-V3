@@ -1,0 +1,47 @@
+{
+  "name": "payaid-v3-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.14.2",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "db:generate": "turbo db:generate",
+    "db:push": "pnpm --filter @payaid/db run db:push",
+    "seed": "tsx scripts/seed.ts",
+    "seed:crm": "tsx scripts/seed-crm.ts",
+    "seed:marketplace": "tsx scripts/seed-marketplace.ts",
+    "analyze": "pnpm --filter payaid-crm run build",
+    "worker:crm": "tsx scripts/crm-worker.ts",
+    "deploy:crm": "vercel --prod",
+    "preview:crm": "vercel",
+    "dev:crm": "turbo dev --filter=payaid-crm",
+    "dev:marketplace": "turbo dev --filter=marketplace",
+    "dev:web": "turbo dev --filter=web",
+    "build:web": "turbo build --filter=web",
+    "start:web": "pnpm --filter web start",
+    "dev:suite": "turbo dev --filter=suite",
+    "loadtest": "npx -y autocannon -c 10 -d 15 -t 10 http://localhost:3001/api/health",
+    "loadtest:check": "node scripts/health-check.js",
+    "loadtest:prod": "echo From repo root: pnpm build:web then pnpm start:web. In another terminal: pnpm loadtest.",
+    "loadtest:dashboard": "echo Hit /crm/dashboard with session cookie for auth; use: npx -y autocannon -c 50 -d 20 -H 'Cookie: payaid_session=YOUR_JWT' http://localhost:3001/crm/dashboard",
+    "test:ttfb": "echo Start dev:web then run: pnpm loadtest",
+    "up-core": "docker compose up -d db redis n8n",
+    "up-ai": "docker compose --profile ai up -d",
+    "docker:down": "docker compose --profile ai down",
+    "up:sales-studio": "docker compose -f frappe-sales/docker-compose.yml up --detach",
+    "down:sales-studio": "docker compose -f frappe-sales/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "bullmq": "^5.34.0",
+    "eslint": "^9.15.0",
+    "prettier": "^3.4.0",
+    "tsx": "^4.19.2",
+    "turbo": "^2.8.17",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

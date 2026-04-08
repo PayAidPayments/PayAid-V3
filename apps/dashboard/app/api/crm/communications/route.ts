@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { ApiResponse, Communication } from '@/types/base-modules'
 import { z } from 'zod'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const CreateCommunicationSchema = z.object({
   organizationId: z.string().uuid(),
@@ -34,6 +36,7 @@ const CreateCommunicationSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
+    const { tenantId } = await requireModuleAccess(request, 'crm')
     const searchParams = request.nextUrl.searchParams
     const organizationId = searchParams.get('organizationId')
     const contactId = searchParams.get('contactId')
@@ -41,17 +44,17 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10)
     const pageSize = parseInt(searchParams.get('pageSize') || '20', 10)
 
-    if (!organizationId) {
+    if (organizationId && organizationId !== tenantId) {
       return NextResponse.json(
         {
           success: false,
-          statusCode: 400,
+          statusCode: 403,
           error: {
-            code: 'MISSING_ORGANIZATION_ID',
-            message: 'organizationId is required',
+            code: 'TENANT_MISMATCH',
+            message: 'organizationId does not match authenticated tenant',
           },
         },
-        { status: 400 }
+        { status: 403 }
       )
     }
 
@@ -91,12 +94,12 @@ export async function GET(request: NextRequest) {
 
     // Filter by organizationId using contact's tenantId
     const filteredCommunications = communications.filter(
-      (interaction) => interaction.contact?.tenantId === organizationId
+      (interaction) => interaction.contact?.tenantId === tenantId
     )
 
     const formattedCommunications: Communication[] = filteredCommunications.map((interaction) => ({
       id: interaction.id,
-      organizationId: interaction.contact?.tenantId || organizationId,
+      organizationId: interaction.contact?.tenantId || tenantId,
       channel: (interaction.type === 'email'
         ? 'email'
         : interaction.type === 'whatsapp'
@@ -142,6 +145,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response)
   } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Error in CRM communications GET route:', error)
     return NextResponse.json(
       { success: false, statusCode: 500, error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },
@@ -156,8 +162,62 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:communication:create:${idempotencyKey}`)
+      const existingCommunicationId = (existing?.afterSnapshot as { communication_id?: string } | null)?.communication_id
+      if (existing && existingCommunicationId) {
+        return NextResponse.json(
+          {
+            success: true,
+            statusCode: 200,
+            deduplicated: true,
+            data: { id: existingCommunicationId },
+          },
+          { status: 200 }
+        )
+      }
+    }
+
     const body = await request.json()
     const validatedData = CreateCommunicationSchema.parse(body)
+
+    if (validatedData.organizationId !== tenantId) {
+      return NextResponse.json(
+        {
+          success: false,
+          statusCode: 403,
+          error: {
+            code: 'TENANT_MISMATCH',
+            message: 'organizationId does not match authenticated tenant',
+          },
+        },
+        { status: 403 }
+      )
+    }
+
+    const contact = await prisma.contact.findFirst({
+      where: {
+        id: validatedData.senderContactId,
+        tenantId,
+      },
+      select: { tenantId: true },
+    })
+
+    if (!contact) {
+      return NextResponse.json(
+        {
+          success: false,
+          statusCode: 404,
+          error: {
+            code: 'CONTACT_NOT_FOUND',
+            message: 'Sender contact not found for this tenant',
+          },
+        },
+        { status: 404 }
+      )
+    }
 
     // Create interaction record
     const interaction = await prisma.interaction.create({
@@ -169,15 +229,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Get contact to get tenantId
-    const contact = await prisma.contact.findUnique({
-      where: { id: validatedData.senderContactId },
-      select: { tenantId: true },
-    })
-
     const communication: Communication = {
       id: interaction.id,
-      organizationId: contact?.tenantId || validatedData.organizationId,
+      organizationId: contact.tenantId || validatedData.organizationId,
       channel: validatedData.channel,
       direction: validatedData.direction,
       senderContactId: validatedData.senderContactId,
@@ -201,8 +255,17 @@ export async function POST(request: NextRequest) {
       },
     }
 
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:communication:create:${idempotencyKey}`, {
+        communication_id: interaction.id,
+      })
+    }
+
     return NextResponse.json(response, { status: 201 })
   } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Error in CRM communications POST route:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(

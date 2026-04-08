@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma'
 import { prismaWithRetry } from '@/lib/db/connection-retry'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const massTransferSchema = z.object({
   leadIds: z.array(z.string()).min(1, 'At least one lead must be selected'),
@@ -13,6 +14,14 @@ const massTransferSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:leads:mass_transfer:${idempotencyKey}`)
+      const transferred = (existing?.afterSnapshot as { transferred?: number } | null)?.transferred
+      if (existing && typeof transferred === 'number') {
+        return NextResponse.json({ success: true, deduplicated: true, transferred }, { status: 200 })
+      }
+    }
 
     const body = await request.json()
     const validated = massTransferSchema.parse(body)
@@ -80,6 +89,12 @@ export async function POST(request: NextRequest) {
         },
       })
     )
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:leads:mass_transfer:${idempotencyKey}`, {
+        transferred: result.count,
+      })
+    }
 
     return NextResponse.json({
       success: true,

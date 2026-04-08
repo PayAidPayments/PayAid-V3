@@ -12,6 +12,8 @@ import { PageLoading } from '@/components/ui/loading'
 import { FileText, Bot, Trophy, XCircle } from 'lucide-react'
 import { CloseDealModal } from '@/components/crm/deal/CloseDealModal'
 import { DealTimeline } from '@/components/crm/deal/DealTimeline'
+import { AuditActionTimelineCard } from '@/components/crm/AuditActionTimelineCard'
+import { DealRevenueInsightCard } from '@/components/crm/DealRevenueInsightCard'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuthStore } from '@/lib/stores/auth'
 
@@ -245,6 +247,8 @@ export default function DealDetailPage() {
             </CardContent>
           </Card>
 
+          <DealRevenueInsightCard dealId={id} tenantId={tenantId} stage={deal.stage} />
+
           <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
               <CardTitle className="dark:text-gray-100">Related Quotes</CardTitle>
@@ -276,6 +280,12 @@ export default function DealDetailPage() {
               )}
             </CardContent>
           </Card>
+
+          <AuditActionTimelineCard
+            entityType="deal"
+            entityId={id}
+            title="Deal Automation Timeline"
+          />
         </div>
       </div>
 

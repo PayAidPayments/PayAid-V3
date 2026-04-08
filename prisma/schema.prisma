@@ -365,6 +365,8 @@ model Tenant {
   MarketplaceAppReview         MarketplaceAppReview[]
   // Phase 1B No-Code Agent Builder
   agentWorkflows               AgentWorkflow[]
+  /// M1 Unibox — omnichannel conversation threads
+  uniboxConversations          UniboxConversation[]
 
   @@index([subdomain])
   @@index([status])
@@ -399,6 +401,45 @@ model AgentWorkflowRun {
   workflow   AgentWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
   @@index([workflowId])
+}
+
+/// Omnichannel Unibox thread (M1): one row per external `conversation_id` per tenant.
+model UniboxConversation {
+  id            String   @id @default(cuid())
+  tenantId      String
+  threadKey     String
+  channel       String
+  status        String   @default("open")
+  ownerUserId   String?
+  tags          String[] @default([])
+  sentiment     String?
+  slaDueAt      DateTime?
+  lastMessageAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages      UniboxMessage[]
+
+  @@unique([tenantId, threadKey])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, channel])
+  @@index([ownerUserId])
+}
+
+model UniboxMessage {
+  id              String             @id @default(cuid())
+  conversationId  String
+  direction       String
+  body            String
+  occurredAt      DateTime
+  metadata        Json?
+  sourceIngestKey String?
+  createdAt       DateTime           @default(now())
+  conversation    UniboxConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([occurredAt])
 }
 
 model TenantPaymentSettings {

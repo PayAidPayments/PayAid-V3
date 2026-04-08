@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const massTransferSchema = z.object({
   contactIds: z.array(z.string()).min(1, 'At least one contact must be selected'),
@@ -12,6 +13,14 @@ const massTransferSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:contacts:mass_transfer:${idempotencyKey}`)
+      const transferred = (existing?.afterSnapshot as { transferred?: number } | null)?.transferred
+      if (existing && typeof transferred === 'number') {
+        return NextResponse.json({ success: true, deduplicated: true, transferred }, { status: 200 })
+      }
+    }
 
     const body = await request.json()
     const validated = massTransferSchema.parse(body)
@@ -59,6 +68,12 @@ export async function POST(request: NextRequest) {
 
     // Note: Activity logging can be added here if Activity model exists
     // For now, we'll skip it to avoid errors
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:contacts:mass_transfer:${idempotencyKey}`, {
+        transferred: result.count,
+      })
+    }
 
     return NextResponse.json({
       success: true,

@@ -11,6 +11,7 @@ import { ApiResponse, Contact } from '@/types/base-modules'
 import { z } from 'zod'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { logCrmAudit } from '@/lib/audit-log-crm'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 // Define schema locally to avoid import issues
 const UpdateContactSchema = z.object({
@@ -106,9 +107,25 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
     const { id } = await params
     if (!id) {
       return NextResponse.json({ success: false, statusCode: 400, error: { code: 'MISSING_ID', message: 'ID is required' } }, { status: 400 })
+    }
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:contact:update:${id}:${idempotencyKey}`)
+      const existingContactId = (existing?.afterSnapshot as { contact_id?: string } | null)?.contact_id
+      if (existing && existingContactId) {
+        return NextResponse.json(
+          {
+            success: true,
+            deduplicated: true,
+            data: { id: existingContactId },
+          },
+          { status: 200 }
+        )
+      }
     }
     const body = await request.json()
     const validatedData = UpdateContactSchema.parse(body)
@@ -116,7 +133,7 @@ export async function PATCH(
     // Map validated data to Prisma Contact fields
     const updateData: Record<string, unknown> = {}
     if (validatedData.firstName !== undefined || validatedData.lastName !== undefined) {
-      const currentContact = await prisma.contact.findUnique({ where: { id }, select: { name: true } })
+      const currentContact = await prisma.contact.findFirst({ where: { id, tenantId }, select: { name: true } })
       const firstName = validatedData.firstName || currentContact?.name.split(' ')[0] || ''
       const lastName = validatedData.lastName || currentContact?.name.split(' ').slice(1).join(' ') || ''
       updateData.name = `${firstName} ${lastName}`.trim()
@@ -128,9 +145,15 @@ export async function PATCH(
     if (validatedData.notes !== undefined) updateData.notes = validatedData.notes
 
     const contact = await prisma.contact.update({
-      where: { id },
+      where: { id, tenantId },
       data: updateData,
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:contact:update:${id}:${idempotencyKey}`, {
+        contact_id: contact.id,
+      })
+    }
 
     // Map Prisma Contact to our Contact interface
     const mappedContact: Contact = {
@@ -164,6 +187,9 @@ export async function PATCH(
 
     return NextResponse.json(response)
   } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Error in PATCH contact route:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -193,6 +219,15 @@ export async function DELETE(
       return NextResponse.json({ success: false, statusCode: 400, error: { code: 'MISSING_ID', message: 'ID is required' } }, { status: 400 })
     }
 
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:contact:archive:${id}:${idempotencyKey}`)
+      const existingArchived = (existing?.afterSnapshot as { archived?: boolean } | null)?.archived
+      if (existing && existingArchived) {
+        return NextResponse.json({ success: true, deduplicated: true, data: { id } }, { status: 200 })
+      }
+    }
+
     const before = await prisma.contact.findFirst({
       where: { id, tenantId },
     })
@@ -215,6 +250,13 @@ export async function DELETE(
       beforeSnapshot: { name: before.name, email: before.email, status: before.status },
       afterSnapshot: { status: 'archived' },
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:contact:archive:${id}:${idempotencyKey}`, {
+        contact_id: id,
+        archived: true,
+      })
+    }
 
     // Map Prisma Contact to our Contact interface
     const mappedContact: Contact = {

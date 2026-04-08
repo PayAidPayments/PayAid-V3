@@ -1,0 +1,37 @@
+# Phase 13B: Marketing Studio – self-hosted social stack.
+# Run: docker compose -f docker-compose.social.yml up -d
+# WAHA = WhatsApp HTTP API; FFmpeg for video gen; ONLYOFFICE for edit previews.
+
+services:
+  waha:
+    image: devlikeapro/waha:latest
+    container_name: payaid-waha
+    ports:
+      - "3000:3000"
+    environment:
+      - WAHA_HEADLESS=true
+    restart: unless-stopped
+
+  ffmpeg:
+    image: ffmpeg:latest
+    container_name: payaid-ffmpeg
+    entrypoint: ["ffmpeg"]
+    # Used by video worker (VIDEO_WORKER_URL) for UGC video from images + TTS.
+    profiles:
+      - social-video
+
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: payaid-onlyoffice-social
+    environment:
+      - JWT_ENABLED=false
+    ports:
+      - "8080:80"
+    volumes:
+      - onlyoffice-data:/var/www/onlyoffice/Data
+      - onlyoffice-logs:/var/log/onlyoffice
+    restart: unless-stopped
+
+volumes:
+  onlyoffice-data:
+  onlyoffice-logs:

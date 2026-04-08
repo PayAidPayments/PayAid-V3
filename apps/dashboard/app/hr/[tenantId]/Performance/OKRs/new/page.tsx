@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,6 +26,13 @@ export default function HRPerformanceOKRNewPage() {
   const tenantId = params?.tenantId as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
+  const createOKRIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:okr:create:${crypto.randomUUID()}`
+        : `hr:okr:create:${Date.now()}`,
+    []
+  )
 
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -72,6 +79,7 @@ export default function HRPerformanceOKRNewPage() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'x-idempotency-key': createOKRIdempotencyKey,
         },
         body: JSON.stringify(data),
       })
@@ -254,12 +262,18 @@ export default function HRPerformanceOKRNewPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  disabled={createOKR.isPending}
+                  title={createOKR.isPending ? 'Please wait' : 'Cancel and go back'}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createOKR.isPending}>
+                <Button
+                  type="submit"
+                  disabled={createOKR.isPending}
+                  title={createOKR.isPending ? 'Please wait' : 'Create OKR'}
+                >
                   <Save className="mr-2 h-4 w-4" />
-                  {createOKR.isPending ? 'Creating...' : 'Create OKR'}
+                  {createOKR.isPending ? 'Creating…' : 'Create OKR'}
                 </Button>
               </div>
             </form>

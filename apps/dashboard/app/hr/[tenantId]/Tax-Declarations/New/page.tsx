@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuthStore } from '@/lib/stores/auth'
 
 interface TaxCategory {
   id: string
@@ -26,6 +27,14 @@ export default function NewTaxDeclarationPage() {
   const router = useRouter()
   const params = useParams()
   const tenantId = params.tenantId as string
+  const { token } = useAuthStore()
+  const createTaxDeclarationIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:tax-decl:create:${crypto.randomUUID()}`
+        : `hr:tax-decl:create:${Date.now()}`,
+    []
+  )
   const [formData, setFormData] = useState({
     employeeId: '',
     categoryId: '',
@@ -56,7 +65,11 @@ export default function NewTaxDeclarationPage() {
     mutationFn: async (data: typeof formData) => {
       const response = await fetch('/api/hr/tax-declarations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-idempotency-key': createTaxDeclarationIdempotencyKey,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           ...data,
           declaredAmountInr: parseFloat(data.declaredAmountInr),
@@ -99,7 +112,14 @@ export default function NewTaxDeclarationPage() {
           <p className="mt-2 text-gray-600 dark:text-gray-400">Create a new tax declaration</p>
         </div>
         <Link href={`/hr/${tenantId}/Tax-Declarations`}>
-          <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Cancel</Button>
+          <Button
+            variant="outline"
+            className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            disabled={createMutation.isPending}
+            title={createMutation.isPending ? 'Please wait' : 'Cancel'}
+          >
+            Cancel
+          </Button>
         </Link>
       </div>
 
@@ -202,12 +222,23 @@ export default function NewTaxDeclarationPage() {
 
             <div className="flex justify-end gap-4 pt-4">
               <Link href={`/hr/${tenantId}/Tax-Declarations`}>
-                <Button type="button" variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                  disabled={createMutation.isPending}
+                  title={createMutation.isPending ? 'Please wait' : 'Cancel and return'}
+                >
                   Cancel
                 </Button>
               </Link>
-              <Button type="submit" disabled={createMutation.isPending} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
-                {createMutation.isPending ? 'Creating...' : 'Create Declaration'}
+              <Button
+                type="submit"
+                disabled={createMutation.isPending}
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+                title={createMutation.isPending ? 'Please wait' : 'Create declaration'}
+              >
+                {createMutation.isPending ? 'Creating…' : 'Create Declaration'}
               </Button>
             </div>
           </form>

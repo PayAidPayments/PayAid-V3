@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const createCampaignSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -90,7 +91,22 @@ export async function GET(request: NextRequest) {
 // POST /api/crm/sales-automation/campaigns - Create a new campaign
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:campaign:create:${idempotencyKey}`)
+      const existingCampaignId = (existing?.afterSnapshot as { campaign_id?: string } | null)?.campaign_id
+      if (existing && existingCampaignId) {
+        return NextResponse.json(
+          {
+            success: true,
+            deduplicated: true,
+            campaign: { id: existingCampaignId },
+          },
+          { status: 200 }
+        )
+      }
+    }
 
     const body = await request.json()
     const validated = createCampaignSchema.parse(body)
@@ -98,10 +114,17 @@ export async function POST(request: NextRequest) {
     // For now, return success - in production, create campaign record
     // TODO: Create SalesAutomationCampaign model in Prisma schema
     
+    const campaignId = `campaign_${Date.now()}`
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:campaign:create:${idempotencyKey}`, {
+        campaign_id: campaignId,
+      })
+    }
+
     return NextResponse.json({
       success: true,
       campaign: {
-        id: `campaign_${Date.now()}`,
+        id: campaignId,
         name: validated.name,
         type: validated.type,
         status: 'draft',

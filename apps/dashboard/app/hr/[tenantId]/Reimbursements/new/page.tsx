@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,6 +20,13 @@ export default function HRReimbursementNewPage() {
   const tenantId = params?.tenantId as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
+  const createReimbursementIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:reimbursement:create:${crypto.randomUUID()}`
+        : `hr:reimbursement:create:${Date.now()}`,
+    []
+  )
 
   const [formData, setFormData] = useState({
     expenseDate: '',
@@ -47,6 +54,7 @@ export default function HRReimbursementNewPage() {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
+          'x-idempotency-key': createReimbursementIdempotencyKey,
         },
         body: formDataToSend,
       })
@@ -226,12 +234,18 @@ export default function HRReimbursementNewPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  disabled={createReimbursement.isPending}
+                  title={createReimbursement.isPending ? 'Please wait' : 'Cancel and go back'}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createReimbursement.isPending}>
+                <Button
+                  type="submit"
+                  disabled={createReimbursement.isPending}
+                  title={createReimbursement.isPending ? 'Please wait' : 'Submit reimbursement'}
+                >
                   <Save className="mr-2 h-4 w-4" />
-                  {createReimbursement.isPending ? 'Submitting...' : 'Submit Reimbursement'}
+                  {createReimbursement.isPending ? 'Submitting…' : 'Submit Reimbursement'}
                 </Button>
               </div>
             </form>

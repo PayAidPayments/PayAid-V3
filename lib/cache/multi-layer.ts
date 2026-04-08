@@ -174,15 +174,20 @@ export class MultiLayerCache {
 
 // Singleton instance
 let multiLayerCacheInstance: MultiLayerCache | null = null
+let cleanupTimer: ReturnType<typeof setInterval> | null = null
 
 export function getMultiLayerCache(): MultiLayerCache {
   if (!multiLayerCacheInstance) {
     multiLayerCacheInstance = new MultiLayerCache()
     
     // Clean up expired entries every 5 minutes
-    setInterval(() => {
+    cleanupTimer = setInterval(() => {
       multiLayerCacheInstance?.cleanupMemoryCache()
     }, 5 * 60 * 1000)
+    // Do not keep Node process alive for this maintenance timer.
+    if (cleanupTimer && typeof (cleanupTimer as any).unref === 'function') {
+      ;(cleanupTimer as any).unref()
+    }
   }
   
   return multiLayerCacheInstance

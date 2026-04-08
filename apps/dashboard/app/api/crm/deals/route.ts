@@ -37,12 +37,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim();
 
     const response = await fetch(`${API_BASE_URL}/api/deals`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
+        ...(idempotencyKey ? { 'x-idempotency-key': idempotencyKey } : {}),
       },
       body: JSON.stringify(body),
     });

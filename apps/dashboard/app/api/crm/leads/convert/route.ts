@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { z } from 'zod'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const convertLeadSchema = z.object({
   leadId: z.string().min(1, 'Lead ID is required'),
@@ -25,12 +26,28 @@ export async function POST(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const user = await authenticateRequest(request)
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
 
     if (!user?.userId) {
       return NextResponse.json(
         { error: 'User authentication required' },
         { status: 401 }
       )
+    }
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:lead:convert:${idempotencyKey}`)
+      const existingLeadId = (existing?.afterSnapshot as { lead_id?: string } | null)?.lead_id
+      if (existing && existingLeadId) {
+        return NextResponse.json(
+          {
+            success: true,
+            deduplicated: true,
+            leadId: existingLeadId,
+          },
+          { status: 200 }
+        )
+      }
     }
 
     const body = await request.json()
@@ -212,6 +229,13 @@ export async function POST(request: NextRequest) {
 
       return createdRecords
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, user.userId, `crm:lead:convert:${idempotencyKey}`, {
+        lead_id: validated.leadId,
+        converted: true,
+      })
+    }
 
     return NextResponse.json({
       success: true,

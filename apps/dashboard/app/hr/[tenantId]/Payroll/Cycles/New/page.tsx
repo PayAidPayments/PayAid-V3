@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useMutation } from '@tanstack/react-query'
@@ -8,11 +8,20 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { useAuthStore } from '@/lib/stores/auth'
 
 export default function HRPayrollCyclesNewPage() {
   const params = useParams()
   const tenantId = params.tenantId as string
   const router = useRouter()
+  const { token } = useAuthStore()
+  const createPayrollCycleIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:payroll:cycle:create:${crypto.randomUUID()}`
+        : `hr:payroll:cycle:create:${Date.now()}`,
+    []
+  )
   const [formData, setFormData] = useState({
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
@@ -24,7 +33,11 @@ export default function HRPayrollCyclesNewPage() {
     mutationFn: async (data: typeof formData) => {
       const response = await fetch('/api/hr/payroll/cycles', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-idempotency-key': createPayrollCycleIdempotencyKey,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(data),
       })
       if (!response.ok) {
@@ -67,7 +80,14 @@ export default function HRPayrollCyclesNewPage() {
           <p className="mt-2 text-gray-600 dark:text-gray-400">Create a new payroll cycle</p>
         </div>
         <Link href={`/hr/${tenantId}/Payroll/Cycles`}>
-          <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Cancel</Button>
+          <Button
+            variant="outline"
+            className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            disabled={createMutation.isPending}
+            title={createMutation.isPending ? 'Please wait' : 'Cancel'}
+          >
+            Cancel
+          </Button>
         </Link>
       </div>
 
@@ -143,12 +163,23 @@ export default function HRPayrollCyclesNewPage() {
 
             <div className="flex justify-end gap-4">
               <Link href={`/hr/${tenantId}/Payroll/Cycles`}>
-                <Button type="button" variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                  disabled={createMutation.isPending}
+                  title={createMutation.isPending ? 'Please wait' : 'Cancel and return'}
+                >
                   Cancel
                 </Button>
               </Link>
-              <Button type="submit" disabled={createMutation.isPending} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
-                {createMutation.isPending ? 'Creating...' : 'Create Cycle'}
+              <Button
+                type="submit"
+                disabled={createMutation.isPending}
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+                title={createMutation.isPending ? 'Please wait' : 'Create payroll cycle'}
+              >
+                {createMutation.isPending ? 'Creating…' : 'Create Cycle'}
               </Button>
             </div>
           </form>

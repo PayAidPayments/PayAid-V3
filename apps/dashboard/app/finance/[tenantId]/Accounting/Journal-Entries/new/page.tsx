@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -16,6 +16,13 @@ export default function NewJournalEntryPage() {
   const router = useRouter()
   const tenantId = params?.tenantId as string
   const { token } = useAuthStore()
+  const createJournalEntryIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `finance:je:create:${crypto.randomUUID()}`
+        : `finance:je:create:${Date.now()}`,
+    []
+  )
   const [transactionDate, setTransactionDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [debitAccountId, setDebitAccountId] = useState('')
   const [creditAccountId, setCreditAccountId] = useState('')
@@ -43,6 +50,7 @@ export default function NewJournalEntryPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': createJournalEntryIdempotencyKey,
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
@@ -68,8 +76,8 @@ export default function NewJournalEntryPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href={`/finance/${tenantId}/Accounting/Journal-Entries`}>
-          <Button variant="outline" size="icon" className="dark:border-gray-600 dark:text-gray-300">
+        <Link href={`/finance/${tenantId}/Accounting/Journal-Entries`} className={createMutation.isPending ? 'pointer-events-none opacity-50' : ''}>
+          <Button variant="outline" size="icon" className="dark:border-gray-600 dark:text-gray-300" disabled={createMutation.isPending} title={createMutation.isPending ? 'Please wait' : 'Back to list'}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
@@ -157,11 +165,19 @@ export default function NewJournalEntryPage() {
               onClick={() => createMutation.mutate()}
               disabled={createMutation.isPending || !debitAccountId || !creditAccountId || !amount}
               className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+              title={createMutation.isPending ? 'Please wait' : 'Create journal entry'}
             >
-              {createMutation.isPending ? 'Creating...' : 'Create entry'}
+              {createMutation.isPending ? 'Creating…' : 'Create entry'}
             </Button>
             <Link href={`/finance/${tenantId}/Accounting/Journal-Entries`}>
-              <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300">Cancel</Button>
+              <Button
+                variant="outline"
+                className="dark:border-gray-600 dark:text-gray-300"
+                disabled={createMutation.isPending}
+                title={createMutation.isPending ? 'Please wait' : 'Cancel and return'}
+              >
+                Cancel
+              </Button>
             </Link>
           </div>
         </CardContent>

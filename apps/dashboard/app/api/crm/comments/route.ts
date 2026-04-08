@@ -4,6 +4,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { createComment, getComments } from '@/lib/collaboration/comments'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const CreateCommentSchema = z.object({
   content: z.string().min(1),
@@ -30,6 +31,22 @@ const CreateCommentSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:comment:create:${idempotencyKey}`)
+      const existingCommentId = (existing?.afterSnapshot as { comment_id?: string } | null)?.comment_id
+      if (existing && existingCommentId) {
+        return NextResponse.json(
+          {
+            success: true,
+            deduplicated: true,
+            data: { id: existingCommentId },
+          },
+          { status: 200 }
+        )
+      }
+    }
     
     // Get SalesRep ID from userId
     const salesRep = await prisma.salesRep.findUnique({
@@ -52,6 +69,12 @@ export async function POST(request: NextRequest) {
       createdByRepId: salesRep.id,
       tenantId,
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:comment:create:${idempotencyKey}`, {
+        comment_id: comment.id,
+      })
+    }
 
     return NextResponse.json({
       success: true,

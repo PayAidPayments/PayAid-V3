@@ -27,10 +27,17 @@ export async function GET(request: NextRequest) {
 
     const contact = await prisma.contact.findFirst({
       where: { id: contactId, tenantId },
-      select: { id: true },
+      select: { id: true, type: true, stage: true },
     })
     if (!contact) {
       return NextResponse.json({ error: 'Contact not found' }, { status: 404 })
+    }
+    const isCustomer = contact.stage === 'customer' || contact.type === 'customer'
+    if (!isCustomer) {
+      return NextResponse.json(
+        { error: 'Portal link is only available for customer contacts' },
+        { status: 400 }
+      )
     }
 
     const token = signPortalToken(tenantId, contactId)

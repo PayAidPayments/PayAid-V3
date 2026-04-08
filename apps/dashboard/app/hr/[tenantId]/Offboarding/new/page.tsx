@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,6 +19,13 @@ export default function HROffboardingNewPage() {
   const tenantId = params?.tenantId as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
+  const createOffboardingIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:offboarding:create:${crypto.randomUUID()}`
+        : `hr:offboarding:create:${Date.now()}`,
+    []
+  )
 
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -47,6 +54,7 @@ export default function HROffboardingNewPage() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'x-idempotency-key': createOffboardingIdempotencyKey,
         },
         body: JSON.stringify(data),
       })
@@ -170,12 +178,18 @@ export default function HROffboardingNewPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  disabled={createOffboarding.isPending}
+                  title={createOffboarding.isPending ? 'Please wait' : 'Cancel and go back'}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createOffboarding.isPending}>
+                <Button
+                  type="submit"
+                  disabled={createOffboarding.isPending}
+                  title={createOffboarding.isPending ? 'Please wait' : 'Initiate offboarding'}
+                >
                   <Save className="mr-2 h-4 w-4" />
-                  {createOffboarding.isPending ? 'Initiating...' : 'Initiate Offboarding'}
+                  {createOffboarding.isPending ? 'Initiating…' : 'Initiate Offboarding'}
                 </Button>
               </div>
             </form>

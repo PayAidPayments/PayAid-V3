@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
@@ -16,6 +16,13 @@ export default function HRLeaveApplyPage() {
   const params = useParams()
   const tenantId = params.tenantId as string
   const router = useRouter()
+  const createLeaveRequestIdempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `hr:leave-request:create:${crypto.randomUUID()}`
+        : `hr:leave-request:create:${Date.now()}`,
+    []
+  )
   const [formData, setFormData] = useState({
     employeeId: '',
     leaveTypeId: '',
@@ -59,7 +66,10 @@ export default function HRLeaveApplyPage() {
     mutationFn: async (data: any) => {
       const response = await fetch('/api/hr/leave/requests', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-idempotency-key': createLeaveRequestIdempotencyKey,
+        },
         body: JSON.stringify({
           ...data,
           startDate: new Date(data.startDate).toISOString(),
@@ -94,7 +104,14 @@ export default function HRLeaveApplyPage() {
           <p className="mt-2 text-gray-600 dark:text-gray-400">Submit a new leave request</p>
         </div>
         <Link href={`/hr/${tenantId}/Leave/Requests`}>
-          <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Back</Button>
+          <Button
+            variant="outline"
+            disabled={createLeaveRequest.isPending}
+            title={createLeaveRequest.isPending ? 'Please wait' : 'Back to leave requests'}
+            className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            Back
+          </Button>
         </Link>
       </div>
 
@@ -241,12 +258,19 @@ export default function HRLeaveApplyPage() {
               <Button
                 type="submit"
                 disabled={createLeaveRequest.isPending}
+                title={createLeaveRequest.isPending ? 'Please wait' : 'Submit leave request'}
                 className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
               >
-                {createLeaveRequest.isPending ? 'Submitting...' : 'Submit Request'}
+                {createLeaveRequest.isPending ? 'Submitting…' : 'Submit Request'}
               </Button>
               <Link href={`/hr/${tenantId}/Leave/Requests`}>
-                <Button type="button" variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={createLeaveRequest.isPending}
+                  title={createLeaveRequest.isPending ? 'Please wait' : 'Cancel and return'}
+                  className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
                   Cancel
                 </Button>
               </Link>

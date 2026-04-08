@@ -235,37 +235,6 @@ export async function GET(request: NextRequest) {
     const periodStart = periodBounds.start
     const periodEnd = periodBounds.end
     
-    // Quick data check - verify if any data exists for this tenant (for debugging)
-    try {
-      const [contactCount, dealCount, taskCount] = await Promise.all([
-        prisma.contact.count({ where: { tenantId } }).catch(() => 0),
-        prisma.deal.count({ where: { tenantId } }).catch(() => 0),
-        prisma.task.count({ where: { tenantId } }).catch(() => 0),
-      ])
-      console.log('[CRM_DASHBOARD] Data check - Total counts:', {
-        contacts: contactCount,
-        deals: dealCount,
-        tasks: taskCount,
-        tenantId,
-      })
-      
-      // Check deals created this month
-      const dealsThisMonth = await prisma.deal.count({
-        where: {
-          tenantId,
-          createdAt: { gte: periodStart, lte: periodEnd },
-        },
-      }).catch(() => 0)
-      console.log('[CRM_DASHBOARD] Data check - Deals in period:', {
-        count: dealsThisMonth,
-        periodStart: periodStart.toISOString(),
-        periodEnd: periodEnd.toISOString(),
-        period: timePeriod,
-      })
-    } catch (dataCheckError) {
-      console.warn('[CRM_DASHBOARD] Data check failed (non-critical):', dataCheckError)
-    }
-
     // Calculate quarters - Q1 to Q4 of current fiscal year (April to March)
     const getQuarter = (date: Date) => {
       const month = date.getMonth()
@@ -295,42 +264,26 @@ export async function GET(request: NextRequest) {
       { quarter: 4, year: currentYear, label: 'Q4', start: new Date(currentYear + 1, 0, 1), end: new Date(currentYear + 1, 2, 31) }, // Jan-Mar
     ]
 
-    // Build filter for deals (deals have assignedToId referencing SalesRep.id)
-    // CRITICAL: If userFilter has assignedToId (userId), convert to SalesRep.id
+    // Build filter for deals/contacts (assignedToId references SalesRep.id)
+    let salesRepId: string | undefined
+    if (userFilter.assignedToId && user?.userId) {
+      const salesRep = await prismaWithRetry(() =>
+        prisma.salesRep.findUnique({
+          where: { userId: user.userId },
+          select: { id: true },
+        })
+      )
+      salesRepId = salesRep?.id || undefined
+    }
+
     let dealFilter: any = { tenantId }
     if (userFilter.assignedToId && user?.userId) {
-      // Convert userId to SalesRep.id for deals
-      const salesRep = await prismaWithRetry(() =>
-        prisma.salesRep.findUnique({
-          where: { userId: user.userId },
-          select: { id: true },
-        })
-      )
-      if (salesRep) {
-        dealFilter.assignedToId = salesRep.id
-      } else {
-        // If no SalesRep exists, user won't see any deals (set to non-existent ID)
-        dealFilter.assignedToId = 'nonexistent-id'
-      }
+      dealFilter.assignedToId = salesRepId || 'nonexistent-id'
     }
     
-    // Build filter for contacts (contacts have assignedToId referencing SalesRep.id)
-    // CRITICAL: If userFilter has assignedToId (userId), convert to SalesRep.id
     let contactFilter: any = { tenantId }
     if (userFilter.assignedToId && user?.userId) {
-      // Convert userId to SalesRep.id for contacts
-      const salesRep = await prismaWithRetry(() =>
-        prisma.salesRep.findUnique({
-          where: { userId: user.userId },
-          select: { id: true },
-        })
-      )
-      if (salesRep) {
-        contactFilter.assignedToId = salesRep.id
-      } else {
-        // If no SalesRep exists, user won't see any contacts (set to non-existent ID)
-        contactFilter.assignedToId = 'nonexistent-id'
-      }
+      contactFilter.assignedToId = salesRepId || 'nonexistent-id'
     }
 
     // DEBUG: Log filters being used
@@ -394,9 +347,6 @@ export async function GET(request: NextRequest) {
       console.error('[CRM_DASHBOARD] Query 3 failed:', error?.message, error?.code)
     }
     
-    // Small delay between batches
-    await new Promise(resolve => setTimeout(resolve, 100))
-    
     // Batch 1b: Remaining core stats (run sequentially)
     let totalTasks = 0
     let completedTasks = 0
@@ -428,8 +378,6 @@ export async function GET(request: NextRequest) {
       console.error('[CRM_DASHBOARD] Query 6 failed:', error?.message)
     }
     
-    await new Promise(resolve => setTimeout(resolve, 100))
-
     // Batch 2: Leads and contacts (run sequentially)
     let totalLeads = 0
     let convertedLeads = 0
@@ -473,97 +421,26 @@ export async function GET(request: NextRequest) {
       console.error('[CRM_DASHBOARD] Query 8b failed:', error?.message)
     }
     
-    await new Promise(resolve => setTimeout(resolve, 100))
-    
-    // CRITICAL: Fetch lead sources EARLY before connection pool gets exhausted
-    // Move this query earlier in the sequence to ensure it runs successfully
+    // Fetch top lead sources once (avoid repeated fallback scans)
     let topLeadSourcesRaw: any[] = []
     try {
-      console.log('[CRM_DASHBOARD] Query 9.5 - Fetching lead sources EARLY for tenant:', tenantId)
-      
-      // First, verify tenant exists
-      const tenantExists = await prisma.tenant.findUnique({
-        where: { id: tenantId },
-        select: { id: true, name: true },
+      topLeadSourcesRaw = await prisma.leadSource.findMany({
+        where: { tenantId },
+        orderBy: { leadsCount: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          name: true,
+          leadsCount: true,
+          conversionsCount: true,
+          totalValue: true,
+          conversionRate: true,
+        },
       })
-      
-      if (!tenantExists) {
-        console.warn('[CRM_DASHBOARD] Tenant not found:', tenantId)
-        console.warn('[CRM_DASHBOARD] This might be a stale session. Trying to find demo tenant...')
-        
-        // Try to find demo tenant and use its lead sources as fallback
-        const demoTenant = await prisma.tenant.findFirst({
-          where: {
-            OR: [
-              { name: { contains: 'Demo Business', mode: 'insensitive' } },
-              { subdomain: 'demo' },
-            ],
-          },
-        })
-        
-        if (demoTenant) {
-          console.log('[CRM_DASHBOARD] Found demo tenant:', demoTenant.name, '(', demoTenant.id, ')')
-          console.log('[CRM_DASHBOARD] Using demo tenant lead sources as fallback')
-          topLeadSourcesRaw = await prisma.leadSource.findMany({
-            where: { tenantId: demoTenant.id },
-            orderBy: { leadsCount: 'desc' },
-            take: 10,
-            select: {
-              id: true,
-              name: true,
-              leadsCount: true,
-              conversionsCount: true,
-              totalValue: true,
-              conversionRate: true,
-            },
-          })
-        }
-      } else {
-        // Tenant exists, fetch lead sources normally
-        topLeadSourcesRaw = await prisma.leadSource.findMany({
-          where: { tenantId },
-          orderBy: { leadsCount: 'desc' },
-          take: 10,
-          select: {
-            id: true,
-            name: true,
-            leadsCount: true,
-            conversionsCount: true,
-            totalValue: true,
-            conversionRate: true,
-          },
-        })
-      }
-      
-      console.log('[CRM_DASHBOARD] Query 9.5 result:', topLeadSourcesRaw.length, 'lead sources')
-      if (topLeadSourcesRaw.length > 0) {
-        console.log('[CRM_DASHBOARD] Query 9.5 sample sources:', topLeadSourcesRaw.slice(0, 3).map((s: any) => ({
-          name: s.name,
-          leadsCount: s.leadsCount,
-        })))
-      } else {
-        console.warn('[CRM_DASHBOARD] Query 9.5 returned 0 lead sources for tenant:', tenantId)
-        // Try to find lead sources for ANY tenant to debug
-        const anySources = await prisma.leadSource.findMany({
-          take: 5,
-          select: { id: true, name: true, tenantId: true, leadsCount: true },
-        })
-        console.log('[CRM_DASHBOARD] Total lead sources in DB (any tenant):', anySources.length)
-        if (anySources.length > 0) {
-          console.log('[CRM_DASHBOARD] Sample lead sources (any tenant):', anySources.map((s: any) => ({
-            name: s.name,
-            tenantId: s.tenantId,
-            leadsCount: s.leadsCount,
-            matches: s.tenantId === tenantId,
-          })))
-        }
-      }
     } catch (error: any) {
-      console.error('[CRM_DASHBOARD] Query 9.5 failed:', error?.message, error?.code)
+      console.error('[CRM_DASHBOARD] Lead source query failed:', error?.message, error?.code)
       topLeadSourcesRaw = []
     }
-    
-    await new Promise(resolve => setTimeout(resolve, 100))
     
     // Batch 2b: Remaining queries (run sequentially)
     let pipelineByStageData: any[] = []
@@ -580,53 +457,6 @@ export async function GET(request: NextRequest) {
       console.log('[CRM_DASHBOARD] Query 9 result:', pipelineByStageData.length, 'stages')
     } catch (error: any) {
       console.error('[CRM_DASHBOARD] Query 9 failed:', error?.message)
-    }
-    
-    // Query 10: Fallback lead sources query (only if Query 9.5 failed)
-    try {
-      // This query is now redundant - lead sources already fetched above
-      // But keep this as a fallback if the early query failed
-      if (topLeadSourcesRaw.length === 0) {
-        console.log('[CRM_DASHBOARD] Query 10 - Retry fetching lead sources for tenant:', tenantId)
-        topLeadSourcesRaw = await prisma.leadSource.findMany({
-          where: { tenantId },
-          orderBy: { leadsCount: 'desc' },
-          take: 10,
-          select: {
-            id: true,
-            name: true,
-            leadsCount: true,
-            conversionsCount: true,
-            totalValue: true,
-            conversionRate: true,
-          },
-        })
-        console.log('[CRM_DASHBOARD] Query 10 result:', topLeadSourcesRaw.length, 'lead sources')
-        if (topLeadSourcesRaw.length > 0) {
-          console.log('[CRM_DASHBOARD] Query 10 sample sources:', topLeadSourcesRaw.slice(0, 3).map((s: any) => ({
-            name: s.name,
-            leadsCount: s.leadsCount,
-          })))
-        } else {
-          console.warn('[CRM_DASHBOARD] Query 10 returned 0 lead sources for tenant:', tenantId)
-          // Try without tenantId filter to see if there are any lead sources at all
-          const allSources = await prisma.leadSource.findMany({
-            take: 5,
-            select: { id: true, name: true, tenantId: true, leadsCount: true },
-          })
-          console.log('[CRM_DASHBOARD] Total lead sources in DB:', allSources.length)
-          if (allSources.length > 0) {
-            console.log('[CRM_DASHBOARD] Sample lead sources (any tenant):', allSources.map((s: any) => ({
-              name: s.name,
-              tenantId: s.tenantId,
-              leadsCount: s.leadsCount,
-            })))
-          }
-        }
-      }
-    } catch (error: any) {
-      console.error('[CRM_DASHBOARD] Query 10 failed:', error?.message, error?.code)
-      topLeadSourcesRaw = []
     }
     
     try {
@@ -648,8 +478,6 @@ export async function GET(request: NextRequest) {
       wonDealsForQuarters = []
     }
     
-    await new Promise(resolve => setTimeout(resolve, 100))
-
     // Ensure topLeadSources is always an array
     let topLeadSources: any[] = []
     try {
@@ -667,53 +495,6 @@ export async function GET(request: NextRequest) {
       topLeadSources = []
     }
     
-    // If no lead sources found, try to fetch them directly (fallback)
-    if (topLeadSources.length === 0) {
-      console.log('[CRM_STATS] No lead sources from query, trying direct fetch...')
-      console.log('[CRM_STATS] Direct fetch tenantId:', tenantId)
-      try {
-        const directSources = await prisma.leadSource.findMany({
-          where: { tenantId },
-          orderBy: { leadsCount: 'desc' },
-          take: 10,
-          select: {
-            id: true,
-            name: true,
-            leadsCount: true,
-            conversionsCount: true,
-            totalValue: true,
-            conversionRate: true,
-          },
-        })
-        if (directSources.length > 0) {
-          console.log('[CRM_STATS] Found lead sources via direct fetch:', directSources.length)
-          console.log('[CRM_STATS] Direct fetch sample:', directSources.slice(0, 3).map((s: any) => ({
-            name: s.name,
-            leadsCount: s.leadsCount,
-          })))
-          topLeadSources = directSources
-        } else {
-          console.warn('[CRM_STATS] Direct fetch returned 0 lead sources for tenant:', tenantId)
-          // Check if there are lead sources for ANY tenant
-          const anySources = await prisma.leadSource.findMany({
-            take: 5,
-            select: { id: true, name: true, tenantId: true, leadsCount: true },
-          })
-          console.log('[CRM_STATS] Total lead sources in DB (any tenant):', anySources.length)
-          if (anySources.length > 0) {
-            console.log('[CRM_STATS] Sample lead sources (any tenant):', anySources.map((s: any) => ({
-              name: s.name,
-              tenantId: s.tenantId,
-              leadsCount: s.leadsCount,
-              matches: s.tenantId === tenantId,
-            })))
-          }
-        }
-      } catch (directError: any) {
-        console.error('[CRM_STATS] Direct lead source fetch failed:', directError?.message, directError?.code)
-      }
-    }
-
     // Batch 2: Quarterly data (run sequentially to avoid connection exhaustion)
     let q1DealsCreated = 0
     let q1LeadsCreated = 0
@@ -747,8 +528,6 @@ export async function GET(request: NextRequest) {
       console.error('[CRM_DASHBOARD] Q1 leads failed:', error?.message)
     }
     
-    await new Promise(resolve => setTimeout(resolve, 50))
-    
     // Q2
     try {
       q2DealsCreated = await prisma.deal.count({
@@ -772,8 +551,6 @@ export async function GET(request: NextRequest) {
       console.error('[CRM_DASHBOARD] Q2 leads failed:', error?.message)
     }
     
-    await new Promise(resolve => setTimeout(resolve, 50))
-    
     // Q3
     try {
       q3DealsCreated = await prisma.deal.count({
@@ -796,8 +573,6 @@ export async function GET(request: NextRequest) {
     } catch (error: any) {
       console.error('[CRM_DASHBOARD] Q3 leads failed:', error?.message)
     }
-    
-    await new Promise(resolve => setTimeout(resolve, 50))
     
     // Q4
     try {
@@ -843,10 +618,7 @@ export async function GET(request: NextRequest) {
         monthlyCounts.push(0) // Push 0 on error to maintain array length
       }
       
-      // Small delay between queries
-      if (i < 11) {
-        await new Promise(resolve => setTimeout(resolve, 50))
-      }
+      // No artificial delay: keep endpoint responsive under normal load
     }
 
     // Calculate revenue from won deals in the period

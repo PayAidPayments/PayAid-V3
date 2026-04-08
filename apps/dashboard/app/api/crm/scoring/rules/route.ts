@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireModuleAccess } from '@/lib/middleware/auth'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { prisma } from '@/lib/db/prisma'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const createRuleSchema = z.object({
   key: z.string().min(1),
@@ -20,6 +21,9 @@ export async function GET(request: NextRequest) {
     })
     return NextResponse.json({ success: true, rules })
   } catch (error: any) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Get scoring rules error:', error)
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   }
@@ -27,7 +31,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:scoring_rule:create:${idempotencyKey}`)
+      const existingRuleId = (existing?.afterSnapshot as { rule_id?: string } | null)?.rule_id
+      if (existing && existingRuleId) {
+        return NextResponse.json({ success: true, deduplicated: true, rule: { id: existingRuleId } }, { status: 200 })
+      }
+    }
     const body = await request.json()
     const parsed = createRuleSchema.parse(body)
 
@@ -42,8 +54,17 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:scoring_rule:create:${idempotencyKey}`, {
+        rule_id: rule.id,
+      })
+    }
+
     return NextResponse.json({ success: true, rule }, { status: 201 })
   } catch (error: any) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Create scoring rule error:', error)
     const status = error instanceof z.ZodError ? 400 : 500
     return NextResponse.json({ success: false, error: error.message }, { status })

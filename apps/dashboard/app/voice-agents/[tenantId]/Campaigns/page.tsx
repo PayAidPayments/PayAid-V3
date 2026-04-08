@@ -586,6 +586,7 @@ export default function VoiceAgentCampaignsPage() {
 
       {editCampaignId && (
         <EditCampaignModal
+          key={editCampaignId}
           campaignId={editCampaignId}
           campaign={campaigns.find((c) => c.id === editCampaignId) ?? null}
           agents={agents}
@@ -896,12 +897,6 @@ function EditCampaignModal({
   const [name, setName] = useState(campaign?.name ?? '')
   const [script, setScript] = useState(campaign?.script ?? '')
   const [paceCallsPerMin, setPaceCallsPerMin] = useState(campaign?.paceCallsPerMin ?? 10)
-
-  useEffect(() => {
-    setName(campaign?.name ?? '')
-    setScript(campaign?.script ?? '')
-    setPaceCallsPerMin(campaign?.paceCallsPerMin ?? 10)
-  }, [campaign])
 
   if (!campaign) return null
   return (

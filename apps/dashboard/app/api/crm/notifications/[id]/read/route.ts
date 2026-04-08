@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 /**
  * POST /api/crm/notifications/[id]/read
@@ -13,6 +14,14 @@ export async function POST(
   const { id } = await params
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:notification:read:${id}:${idempotencyKey}`)
+      if (existing) {
+        return NextResponse.json({ success: true, deduplicated: true }, { status: 200 })
+      }
+    }
 
     // Find SalesRep by userId
     const salesRep = await prisma.salesRep.findFirst({
@@ -33,6 +42,14 @@ export async function POST(
           isRead: true,
           readAt: new Date(),
         },
+      })
+    }
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:notification:read:${id}:${idempotencyKey}`, {
+        notification_id: id,
+        rep_id: salesRep?.id || null,
+        marked_read: true,
       })
     }
 

@@ -9,6 +9,7 @@ import { requireModuleAccess } from '@/lib/middleware/auth'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const createProposalSchema = z.object({
   title: z.string().min(1),
@@ -73,7 +74,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `proposal:create:${idempotencyKey}`)
+      const existingProposalId = (existing?.afterSnapshot as { proposal_id?: string } | null)?.proposal_id
+      if (existing && existingProposalId) {
+        return NextResponse.json(
+          { success: true, deduplicated: true, data: { id: existingProposalId } },
+          { status: 200 }
+        )
+      }
+    }
     const body = await request.json()
     const validated = createProposalSchema.parse(body)
 
@@ -139,6 +151,12 @@ export async function POST(request: NextRequest) {
         lineItems: true,
       },
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `proposal:create:${idempotencyKey}`, {
+        proposal_id: proposal.id,
+      })
+    }
 
     return NextResponse.json({ success: true, data: proposal })
   } catch (error: unknown) {

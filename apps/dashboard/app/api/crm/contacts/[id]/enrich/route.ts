@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 /**
  * POST /api/crm/contacts/[id]/enrich
@@ -12,7 +13,15 @@ export async function POST(
 ) {
   const { id } = await params
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `crm:contact:enrich:${id}:${idempotencyKey}`)
+      const existingEnriched = (existing?.afterSnapshot as { enriched?: boolean } | null)?.enriched
+      if (existing && existingEnriched) {
+        return NextResponse.json({ success: true, deduplicated: true }, { status: 200 })
+      }
+    }
 
     const contact = await prisma.contact.findFirst({
       where: {
@@ -44,6 +53,13 @@ export async function POST(
         phone: contact.phone ? contact.phone.length > 10 : false,
         company: !!contact.company,
       },
+    }
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:contact:enrich:${id}:${idempotencyKey}`, {
+        contact_id: id,
+        enriched: true,
+      })
     }
 
     return NextResponse.json(enrichmentData)

@@ -27,12 +27,14 @@ export async function POST(
       data: { status: 'sent', sentAt: new Date() },
     })
 
-    const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/proposals/public/${proposal.publicToken}`
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const publicUrl = `${baseUrl}/proposals/public/${proposal.publicToken}`
+    const acceptApiUrl = `${baseUrl}/api/proposals/${proposal.id}/accept?token=${encodeURIComponent(proposal.publicToken)}`
 
     return NextResponse.json({
       success: true,
       message: 'Proposal sent',
-      data: { proposal: updated, publicUrl },
+      data: { proposal: updated, publicUrl, acceptApiUrl },
     })
   } catch (error: any) {
     return NextResponse.json({ error: 'Failed to send proposal', message: error.message }, { status: 500 })

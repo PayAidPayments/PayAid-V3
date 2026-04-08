@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -46,6 +46,24 @@ export default function NewAICampaignPage() {
 
   const [campaignId, setCampaignId] = useState<string | null>(null)
 
+  const idemRef = useRef({
+    campaignCreate: '',
+    characterGen: '',
+    scriptEnhance: '',
+    scriptSelect: '',
+    videoGen: '',
+  })
+  const nextIdemKey = (kind: keyof typeof idemRef.current) => {
+    if (!idemRef.current[kind]) {
+      idemRef.current[kind] =
+        typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `idem-${Date.now()}`
+    }
+    return `marketing:ai-influencer:${kind}:${idemRef.current[kind]}`
+  }
+
+  const wizardBusy =
+    loading || generatingCharacter || generatingScript || generatingVideo
+
   const handleStep1Next = async () => {
     if (!token) return
 
@@ -55,6 +73,7 @@ export default function NewAICampaignPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': nextIdemKey('campaignCreate'),
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -72,6 +91,7 @@ export default function NewAICampaignPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': nextIdemKey('characterGen'),
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -117,6 +137,7 @@ export default function NewAICampaignPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': nextIdemKey('scriptSelect'),
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ selectedVariation: selectedScriptIndex }),
@@ -145,6 +166,7 @@ export default function NewAICampaignPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': nextIdemKey('scriptEnhance'),
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -162,6 +184,7 @@ export default function NewAICampaignPage() {
 
       setScriptId(scriptData.script.id)
       setScriptVariations(scriptData.script.variations || [])
+      idemRef.current.scriptEnhance = ''
     } catch (error: any) {
       alert(`Error: ${error.message}`)
     } finally {
@@ -182,6 +205,7 @@ export default function NewAICampaignPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-idempotency-key': nextIdemKey('videoGen'),
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -208,7 +232,13 @@ export default function NewAICampaignPage() {
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
       <div>
-        <Button variant="ghost" onClick={() => router.back()} className="mb-4 dark:text-gray-300 dark:hover:bg-gray-700">
+        <Button
+          variant="ghost"
+          onClick={() => router.back()}
+          disabled={wizardBusy}
+          title={wizardBusy ? 'Please wait' : 'Back'}
+          className="mb-4 dark:text-gray-300 dark:hover:bg-gray-700"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
@@ -295,7 +325,12 @@ export default function NewAICampaignPage() {
               </div>
             )}
             <div className="flex justify-end">
-              <Button onClick={handleStep1Next} disabled={loading || generatingCharacter} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
+              <Button
+                onClick={handleStep1Next}
+                disabled={wizardBusy}
+                title={wizardBusy ? 'Please wait' : 'Continue'}
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+              >
                 {generatingCharacter ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -369,11 +404,22 @@ export default function NewAICampaignPage() {
               </div>
             </div>
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(1)} className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+              <Button
+                variant="outline"
+                onClick={() => setStep(1)}
+                disabled={wizardBusy}
+                title={wizardBusy ? 'Please wait' : 'Back'}
+                className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
-              <Button onClick={handleStep2Next} disabled={!productName} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
+              <Button
+                onClick={handleStep2Next}
+                disabled={!productName || wizardBusy}
+                title={wizardBusy ? 'Please wait' : 'Next'}
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+              >
                 Next <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -391,7 +437,12 @@ export default function NewAICampaignPage() {
           <CardContent className="space-y-4">
             {scriptVariations.length === 0 ? (
               <div className="text-center py-8">
-                <Button onClick={handleGenerateScript} disabled={generatingScript} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
+                <Button
+                  onClick={handleGenerateScript}
+                  disabled={generatingScript || loading}
+                  title={generatingScript || loading ? 'Please wait' : 'Generate scripts'}
+                  className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+                >
                   {generatingScript ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -430,12 +481,24 @@ export default function NewAICampaignPage() {
               </div>
             )}
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(2)} className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+              <Button
+                variant="outline"
+                onClick={() => setStep(2)}
+                disabled={wizardBusy}
+                title={wizardBusy ? 'Please wait' : 'Back'}
+                className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
-              <Button onClick={handleStep3Next} disabled={selectedScriptIndex === null} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
-                Next <ArrowRight className="ml-2 h-4 w-4" />
+              <Button
+                onClick={handleStep3Next}
+                disabled={selectedScriptIndex === null || loading}
+                title={loading ? 'Please wait' : 'Next'}
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+              >
+                {loading ? 'Saving…' : 'Next'}{' '}
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </CardContent>
@@ -476,11 +539,22 @@ export default function NewAICampaignPage() {
               />
             </div>
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(3)} className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+              <Button
+                variant="outline"
+                onClick={() => setStep(3)}
+                disabled={wizardBusy}
+                title={wizardBusy ? 'Please wait' : 'Back'}
+                className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
-              <Button onClick={handleStep4Next} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
+              <Button
+                onClick={handleStep4Next}
+                disabled={wizardBusy}
+                title={wizardBusy ? 'Please wait' : 'Next'}
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+              >
                 Next <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -509,7 +583,13 @@ export default function NewAICampaignPage() {
                 Note: Full video generation pipeline (face detection, lip-sync, FFmpeg) will be implemented in Phase 2.
                 This is a placeholder implementation.
               </p>
-              <Button onClick={handleGenerateVideo} disabled={generatingVideo} size="lg" className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
+              <Button
+                onClick={handleGenerateVideo}
+                disabled={generatingVideo || wizardBusy}
+                title={generatingVideo || wizardBusy ? 'Please wait' : 'Generate video'}
+                size="lg"
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+              >
                 {generatingVideo ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -526,11 +606,22 @@ export default function NewAICampaignPage() {
               </div>
             )}
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(4)} className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+              <Button
+                variant="outline"
+                onClick={() => setStep(4)}
+                disabled={generatingVideo}
+                title={generatingVideo ? 'Please wait' : 'Back'}
+                className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
-              <Button onClick={() => router.push(`/marketing/${tenantId}/AI-Influencer`)} className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
+              <Button
+                onClick={() => router.push(`/marketing/${tenantId}/AI-Influencer`)}
+                disabled={generatingVideo}
+                title={generatingVideo ? 'Please wait' : 'Finish'}
+                className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+              >
                 Finish
               </Button>
             </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 /**
  * GET /api/finance/payment-reminders
@@ -79,6 +80,15 @@ export async function POST(request: NextRequest) {
     const { tenantId, userId } = await requireModuleAccess(request, 'finance')
     const body = await request.json()
     const { invoiceId, channel } = body
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(tenantId, `finance:payment_reminder:${invoiceId}:${channel || 'default'}:${idempotencyKey}`)
+      const existingReminder = (existing?.afterSnapshot as { reminder_sent?: boolean } | null)?.reminder_sent
+      if (existing && existingReminder) {
+        return NextResponse.json({ success: true, deduplicated: true }, { status: 200 })
+      }
+    }
 
     const invoice = await prisma.invoice.findFirst({
       where: {
@@ -118,6 +128,18 @@ export async function POST(request: NextRequest) {
     }).catch(() => {
       // Activity creation is optional
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(
+        tenantId,
+        userId,
+        `finance:payment_reminder:${invoiceId}:${channel || 'default'}:${idempotencyKey}`,
+        {
+          invoice_id: invoice.id,
+          reminder_sent: true,
+        }
+      )
+    }
 
     return NextResponse.json({
       success: true,

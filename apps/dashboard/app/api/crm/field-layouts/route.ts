@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
+import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 
 const fieldLayoutSchema = z.object({
   module: z.string(),
@@ -64,6 +65,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
 
     // Check if user is admin
     const user = await prisma.user.findUnique({
@@ -80,6 +82,16 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const validated = fieldLayoutSchema.parse(body)
+    if (idempotencyKey) {
+      const existing = await findIdempotentRequest(
+        tenantId,
+        `crm:field_layout:upsert:${validated.module}:${validated.entityType}:${validated.viewType}:${idempotencyKey}`
+      )
+      const existingUpserted = (existing?.afterSnapshot as { upserted?: boolean } | null)?.upserted
+      if (existing && existingUpserted) {
+        return NextResponse.json({ success: true, deduplicated: true }, { status: 200 })
+      }
+    }
 
     // Upsert field layout
     const layout = await prisma.fieldLayout.upsert({
@@ -104,6 +116,18 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date(),
       },
     })
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(
+        tenantId,
+        userId,
+        `crm:field_layout:upsert:${validated.module}:${validated.entityType}:${validated.viewType}:${idempotencyKey}`,
+        {
+          field_layout_id: layout.id,
+          upserted: true,
+        }
+      )
+    }
 
     return NextResponse.json({
       success: true,

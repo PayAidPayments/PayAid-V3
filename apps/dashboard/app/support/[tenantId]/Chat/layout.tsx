@@ -13,6 +13,7 @@ export default function SupportChatLayout({
 
   const topBarItems = [
     { name: 'Chat', href: `/support/${tenantId}/Chat` },
+    { name: 'Unibox', href: `/support/${tenantId}/Unibox` },
     { name: 'Tickets', href: `/support/${tenantId}/Tickets` },
     { name: 'Knowledge Base', href: `/support/${tenantId}/KnowledgeBase` },
     { name: 'Settings', href: `/support/${tenantId}/Settings` },

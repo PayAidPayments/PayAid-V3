@@ -18,6 +18,20 @@ const BUSINESS_ADMIN_EMAIL = 'businessadmin@demobusiness.com'
 const BUSINESS_ADMIN_NAME = 'Business Admin'
 const BUSINESS_ADMIN_PASSWORD = 'BusinessAdmin_2025!'
 
+function assertAdminUtilityAccess(request?: Request) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 403 })
+  }
+  const configuredSecret = process.env.ADMIN_UTILITY_SECRET?.trim()
+  if (configuredSecret) {
+    const provided = request?.headers.get('x-admin-utility-secret')?.trim()
+    if (!provided || provided !== configuredSecret) {
+      return NextResponse.json({ error: 'Unauthorized utility access' }, { status: 401 })
+    }
+  }
+  return null
+}
+
 async function createUsers() {
   const superAdminHash = await hashPassword(SUPER_ADMIN_PASSWORD)
   const businessAdminHash = await hashPassword(BUSINESS_ADMIN_PASSWORD)
@@ -133,23 +147,16 @@ async function createUsers() {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const gate = assertAdminUtilityAccess(request)
+  if (gate) return gate
   try {
     const users = await createUsers()
     return NextResponse.json({
       success: true,
       message: 'Admin users created successfully',
       users,
-      credentials: {
-        superAdmin: {
-          email: SUPER_ADMIN_EMAIL,
-          password: SUPER_ADMIN_PASSWORD,
-        },
-        businessAdmin: {
-          email: BUSINESS_ADMIN_EMAIL,
-          password: BUSINESS_ADMIN_PASSWORD,
-        },
-      },
+      note: 'Utility completed. Credentials are never returned from API responses.',
     })
   } catch (error) {
     console.error('Failed to create admin users:', error)
@@ -163,23 +170,16 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(request: Request) {
+  const gate = assertAdminUtilityAccess(request)
+  if (gate) return gate
   try {
     const users = await createUsers()
     return NextResponse.json({
       success: true,
       message: 'Admin users created successfully',
       users,
-      credentials: {
-        superAdmin: {
-          email: SUPER_ADMIN_EMAIL,
-          password: SUPER_ADMIN_PASSWORD,
-        },
-        businessAdmin: {
-          email: BUSINESS_ADMIN_EMAIL,
-          password: BUSINESS_ADMIN_PASSWORD,
-        },
-      },
+      note: 'Utility completed. Credentials are never returned from API responses.',
     })
   } catch (error) {
     console.error('Failed to create admin users:', error)
