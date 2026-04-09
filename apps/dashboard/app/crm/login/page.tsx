@@ -40,13 +40,22 @@ export default function CRMLoginPage() {
     setError('')
 
     try {
-      await login(email, password)
+      const loginResult = await login(email, password)
       
       // Get tenant ID from auth store after login completes
       const { tenant } = useAuthStore.getState()
       
       // Always redirect to CRM dashboard after login
       if (tenant?.id) {
+        const crmHomeHref = `/crm/${tenant.id}/Home/`
+        router.prefetch(crmHomeHref)
+        // Best-effort warm request so CRM Home renders faster after navigation.
+        fetch(
+          `/api/crm/dashboard/stats?period=month&tenantId=${encodeURIComponent(tenant.id)}`,
+          { headers: { Authorization: `Bearer ${loginResult.token}` } }
+        ).catch(() => {
+          // No-op
+        })
         router.push(`/crm/${tenant.id}/Home/`)
       } else {
         // No tenant - redirect to home

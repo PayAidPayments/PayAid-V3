@@ -87,14 +87,17 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false, // Start as false - will be set during hydration if needed
 
       login: async (email: string, password: string) => {
-        set({ isLoading: true })
+        if (!get().isLoading) {
+          set({ isLoading: true })
+        }
         let timeoutId: NodeJS.Timeout | null = null
         try {
-          // Add timeout to prevent hanging
-          // Production: 45s to allow for serverless cold start (Vercel etc.)
-          // Local dev: 30s (server may be slow to wake)
+          // Add timeout to prevent hanging.
+          // IMPORTANT: keep client timeout longer than server timeout so
+          // the browser does not abort right as the server finishes.
+          // Local dev login route can take up to ~30s on cold starts.
           const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-          const timeoutMs = isDev ? 30000 : 45000
+          const timeoutMs = isDev ? 45000 : 50000
           const controller = new AbortController()
           
           // Set up timeout
@@ -354,14 +357,17 @@ export const useAuthStore = create<AuthState>()(
         }
 
         set({ isLoading: true })
+        const authMeTimeoutMs = 15000
         try {
-          // Add timeout to prevent hanging - use 5 seconds (increased from 3s for database retries)
+          // Add timeout to prevent hanging.
+          // Keep this comfortably above normal cold-start/database retry windows
+          // to avoid aborting healthy-but-slow responses.
           const controller = new AbortController()
           const timeoutId = setTimeout(() => {
             if (!controller.signal.aborted) {
-              controller.abort()
+              controller.abort(`Auth me request timeout after ${authMeTimeoutMs}ms`)
             }
-          }, 5000) // 5 second timeout to allow for database retries
+          }, authMeTimeoutMs)
 
           const response = await fetch('/api/auth/me', {
             headers: {
@@ -468,12 +474,26 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           })
         } catch (error) {
-          console.error('Failed to fetch user:', error)
-          
-          // Handle abort/timeout errors
-          if (error instanceof Error && error.name === 'AbortError') {
-            console.warn('User fetch timed out after 3 seconds')
+          // Handle abort/timeout errors gracefully without noisy console errors.
+          const isAbortTimeout =
+            (error instanceof Error && error.name === 'AbortError') ||
+            (typeof error === 'string' && error.includes('timeout')) ||
+            (typeof error === 'string' && error.includes('aborted')) ||
+            (typeof error === 'object' &&
+              error !== null &&
+              (error as any).name === 'AbortError')
+
+          if (isAbortTimeout) {
+            console.warn(`[AUTH] User fetch timed out after ${authMeTimeoutMs / 1000} seconds`)
+            set({
+              isLoading: false,
+              // Keep existing auth state if token exists
+              isAuthenticated: !!token,
+            })
+            return
           }
+
+          console.error('Failed to fetch user:', error)
           
           // Don't clear token on network errors, only on auth errors
           // The token might still be valid, just a network issue

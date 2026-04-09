@@ -183,6 +183,8 @@ export default function CRMDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
+  const [showSecondaryBands, setShowSecondaryBands] = useState(false)
+  const [isHydratingFullStats, setIsHydratingFullStats] = useState(false)
   // Profile menu and news handled by ModuleTopBar in layout
   const [isDark, setIsDark] = useState(false)
   
@@ -193,6 +195,41 @@ export default function CRMDashboardPage() {
   const abortControllerRef = useRef<AbortController | null>(null)
   const hasCheckedDataRef = useRef(false) // Track if we've checked for demo data
   const hasTriggeredEnsureDemoRef = useRef(false)
+  const perfMarksSetRef = useRef({
+    mounted: false,
+    kpiVisible: false,
+    secondaryVisible: false,
+  })
+
+  const trackPerfEvent = (metric: 'mount_to_kpi_visible' | 'mount_to_secondary_visible', durationMs: number) => {
+    const payload = {
+      event: 'crm_home_perf',
+      entity_id: tenantId,
+      properties: {
+        metric,
+        durationMs: Math.round(durationMs),
+        timePeriod,
+        currentView,
+        page: 'crm_home',
+      },
+    }
+    // Fire-and-forget to avoid blocking render/navigation.
+    fetch('/api/v1/analytics/event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {
+      // Ignore telemetry errors.
+    })
+  }
+
+  useEffect(() => {
+    if (typeof performance === 'undefined') return
+    if (perfMarksSetRef.current.mounted) return
+    perfMarksSetRef.current.mounted = true
+    performance.mark('crm_home_mount')
+  }, [])
 
   // Ensure we only make auth decisions after persisted auth storage has hydrated.
   useEffect(() => {
@@ -230,11 +267,59 @@ export default function CRMDashboardPage() {
     const id = setTimeout(() => {
       setLoading(false)
       if (!stats && !error) {
-        setError('Dashboard took too long to load. Please refresh once or sign in again.')
+        setError('Dashboard is taking longer than expected. Please refresh once or sign in again.')
       }
-    }, 30000)
+    }, 60000)
     return () => clearTimeout(id)
   }, [loading, stats, error])
+
+  // Progressive rendering: paint KPI band first, then reveal heavier sections.
+  useEffect(() => {
+    if (!stats || loading || isHydratingFullStats) {
+      setShowSecondaryBands(false)
+      return
+    }
+    const reveal = () => setShowSecondaryBands(true)
+    const timeoutId = setTimeout(reveal, 220)
+    return () => clearTimeout(timeoutId)
+  }, [stats, loading, isHydratingFullStats])
+
+  // Perf instrumentation: track first KPI paint and secondary band reveal.
+  useEffect(() => {
+    if (typeof performance === 'undefined') return
+    if (!stats || loading || perfMarksSetRef.current.kpiVisible) return
+    perfMarksSetRef.current.kpiVisible = true
+    performance.mark('crm_home_kpi_visible')
+    try {
+      performance.measure('crm_home_mount_to_kpi_visible', 'crm_home_mount', 'crm_home_kpi_visible')
+      const entries = performance.getEntriesByName('crm_home_mount_to_kpi_visible')
+      const last = entries[entries.length - 1]
+      if (last) {
+        console.info(`[PERF][CRM_HOME] mount->kpi visible: ${Math.round(last.duration)}ms`)
+        trackPerfEvent('mount_to_kpi_visible', last.duration)
+      }
+    } catch {
+      // measure can fail if marks are missing; ignore
+    }
+  }, [stats, loading])
+
+  useEffect(() => {
+    if (typeof performance === 'undefined') return
+    if (!showSecondaryBands || perfMarksSetRef.current.secondaryVisible) return
+    perfMarksSetRef.current.secondaryVisible = true
+    performance.mark('crm_home_secondary_visible')
+    try {
+      performance.measure('crm_home_mount_to_secondary_visible', 'crm_home_mount', 'crm_home_secondary_visible')
+      const entries = performance.getEntriesByName('crm_home_mount_to_secondary_visible')
+      const last = entries[entries.length - 1]
+      if (last) {
+        console.info(`[PERF][CRM_HOME] mount->secondary bands visible: ${Math.round(last.duration)}ms`)
+        trackPerfEvent('mount_to_secondary_visible', last.duration)
+      }
+    } catch {
+      // measure can fail if marks are missing; ignore
+    }
+  }, [showSecondaryBands])
 
   // When dashboard loads with no deals, ensure demo data once so demos are never empty
   useEffect(() => {
@@ -254,7 +339,7 @@ export default function CRMDashboardPage() {
           const json = await res.json()
           if (json.created?.deals > 0 || json.created?.tasks > 0) {
             if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-              fetchDashboardStats(abortControllerRef.current.signal)
+              fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
             }
           }
         }
@@ -283,10 +368,11 @@ export default function CRMDashboardPage() {
     return () => observer.disconnect()
   }, [])
 
-  // Check if demo data exists and seed if needed (only once) - Run in background, don't block UI
+  // Check if demo data exists and seed if needed (only once) - run only after first stats paint.
   useEffect(() => {
     if (!enableBackgroundAutoSeed) return
     if (!tenantId || !token || hasCheckedDataRef.current) return
+    if (loading || !stats) return
     
     hasCheckedDataRef.current = true // Mark as checked to prevent multiple checks
     
@@ -307,7 +393,7 @@ export default function CRMDashboardPage() {
               setTimeout(() => {
                 if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
                   console.log('[CRM_DASHBOARD] Refreshing stats after seed completes...')
-                  fetchDashboardStats(abortControllerRef.current.signal)
+                  fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
                 }
               }, 30000) // Wait 30 seconds for seed to complete (optimized from 2 minutes)
               return // Don't trigger another seed
@@ -347,7 +433,7 @@ export default function CRMDashboardPage() {
                       if (attempts >= maxAttempts) {
                         console.log('[CRM_DASHBOARD] Max polling attempts reached, refreshing stats anyway...')
                         if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                          fetchDashboardStats(abortControllerRef.current.signal)
+                          fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
                         }
                         return
                       }
@@ -364,7 +450,7 @@ export default function CRMDashboardPage() {
                             // Seed completed, refresh stats
                             console.log('[CRM_DASHBOARD] Seed completed, refreshing stats...')
                             if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                              fetchDashboardStats(abortControllerRef.current.signal)
+                              fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
                               
                               // After fetching stats, check if we still have zeros and ensure current month data
                               setTimeout(async () => {
@@ -388,7 +474,7 @@ export default function CRMDashboardPage() {
                                             // Wait a moment then refresh again
                                             setTimeout(() => {
                                               if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                                                fetchDashboardStats(abortControllerRef.current.signal)
+                                                fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
                                               }
                                             }, 2000)
                                           } else {
@@ -401,7 +487,7 @@ export default function CRMDashboardPage() {
                                           // Retry after 10 seconds
                                           setTimeout(() => {
                                             if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                                              fetchDashboardStats(abortControllerRef.current.signal)
+                                              fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
                                             }
                                           }, 10000)
                                         } else {
@@ -427,7 +513,7 @@ export default function CRMDashboardPage() {
                           // If status check fails, wait and try refreshing anyway
                           setTimeout(() => {
                             if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                              fetchDashboardStats(abortControllerRef.current.signal)
+                              fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
                             }
                           }, 10000)
                         }
@@ -436,7 +522,7 @@ export default function CRMDashboardPage() {
                         // On error, wait a bit and refresh anyway
                         setTimeout(() => {
                           if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                            fetchDashboardStats(abortControllerRef.current.signal)
+                            fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
                           }
                         }, 10000)
                       }
@@ -453,7 +539,7 @@ export default function CRMDashboardPage() {
                       console.log('[CRM_DASHBOARD] Seed already running, will wait for completion')
                       setTimeout(() => {
                         if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                          fetchDashboardStats(abortControllerRef.current.signal)
+                          fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
                         }
                       }, 30000) // Wait 30 seconds (optimized from 2 minutes)
                     }
@@ -474,11 +560,10 @@ export default function CRMDashboardPage() {
       }
     }
     
-    // Run after initial render - don't block
-    // Defer demo-seed checks so initial dashboard stats render first.
-    const timeoutId = setTimeout(checkAndSeedData, 5000)
+    // Run well after initial render so this never competes with first meaningful paint.
+    const timeoutId = setTimeout(checkAndSeedData, 1200)
     return () => clearTimeout(timeoutId)
-  }, [tenantId, token, enableBackgroundAutoSeed]) // Only run when tenantId or token changes
+  }, [tenantId, token, enableBackgroundAutoSeed, loading, stats]) // Only run after stats are visible
 
   // Determine current view based on URL query params
   const viewParam = searchParams?.get('view')
@@ -544,26 +629,47 @@ export default function CRMDashboardPage() {
       
       try {
         fetchingStatsRef.current = true
+        setShowSecondaryBands(false)
         
-        // Load stats first (most important) - this will show the main dashboard immediately
-        await fetchDashboardStats(signal)
-        
-        // Load view-specific data in parallel (non-blocking) after stats are loaded
+        // Fast-path response for first paint.
+        await fetchDashboardStats(signal, 0, 'lite', false)
+
+        // Hydrate full chart-heavy stats in background without blocking.
         if (!signal.aborted) {
-          // No delay - load immediately in parallel
-          if (currentView === 'tasks') {
-            fetchTasksViewData().catch(err => {
-              if (err?.name !== 'AbortError') {
-                console.error('Error loading tasks view:', err)
-              }
+          setIsHydratingFullStats(true)
+          setTimeout(() => {
+            if (signal.aborted) {
+              setIsHydratingFullStats(false)
+              return
+            }
+            // Use independent background fetch so transient controller aborts
+            // (view/filter changes) don't cancel detailed hydration.
+            fetchDashboardStats(undefined, 0, 'full', true).catch(() => {
+              // Non-blocking background refresh
+            }).finally(() => {
+              setIsHydratingFullStats(false)
             })
-          } else if (currentView === 'activity') {
-            fetchActivityFeed(signal).catch(err => {
-              if (err?.name !== 'AbortError') {
-                console.error('Error loading activity feed:', err)
-              }
-            })
-          }
+          }, 300)
+        }
+        
+        // Load view-specific data after initial paint so top KPIs appear first.
+        if (!signal.aborted) {
+          setTimeout(() => {
+            if (signal.aborted) return
+            if (currentView === 'tasks') {
+              fetchTasksViewData().catch(err => {
+                if (err?.name !== 'AbortError') {
+                  console.error('Error loading tasks view:', err)
+                }
+              })
+            } else if (currentView === 'activity') {
+              fetchActivityFeed(signal).catch(err => {
+                if (err?.name !== 'AbortError') {
+                  console.error('Error loading activity feed:', err)
+                }
+              })
+            }
+          }, 250)
         }
       } catch (error: any) {
         // Ignore abort errors
@@ -722,25 +828,34 @@ export default function CRMDashboardPage() {
   }
 
 
-  const fetchDashboardStats = async (signal?: AbortSignal, retryCount = 0): Promise<void> => {
+  const fetchDashboardStats = async (
+    signal?: AbortSignal,
+    retryCount = 0,
+    mode: 'lite' | 'full' = 'lite',
+    background = false
+  ): Promise<void> => {
     const MAX_RETRIES = 2
     const RETRY_DELAY = 1000 // 1 second (optimized for faster retries)
     
     try {
-      setLoading(true)
-      setError(null)
+      if (!background) {
+        setLoading(true)
+        setError(null)
+      }
       if (!token) {
         // Token can be briefly unavailable during client hydration; avoid noisy false-negative errors.
-        setLoading(false)
+        if (!background) {
+          setLoading(false)
+        }
         return
       }
 
       console.log('[CRM_DASHBOARD] Fetching stats from API...')
-      const statsUrl = `/api/crm/dashboard/stats?period=${timePeriod}${tenantId ? `&tenantId=${encodeURIComponent(tenantId)}` : ''}`
+      const statsUrl = `/api/crm/dashboard/stats?period=${timePeriod}${tenantId ? `&tenantId=${encodeURIComponent(tenantId)}` : ''}&lite=${mode === 'lite' ? '1' : '0'}`
       const statsController = new AbortController()
       const onParentAbort = () => statsController.abort()
       if (signal) signal.addEventListener('abort', onParentAbort, { once: true })
-      const statsTimeout = setTimeout(() => statsController.abort(), 20_000)
+      const statsTimeout = setTimeout(() => statsController.abort(), mode === 'lite' ? 12_000 : 45_000)
       let response: Response
       try {
         response = await fetch(statsUrl, {
@@ -814,23 +929,36 @@ export default function CRMDashboardPage() {
             }
           }
           
-          setStats({
-            dealsCreatedThisMonth: Number(data.dealsCreatedThisMonth || 0),
-            revenueThisMonth: Number(data.revenueThisMonth || 0),
-            dealsClosingThisMonth: Number(data.dealsClosingThisMonth || 0),
-            overdueTasks: Number(data.overdueTasks || 0),
-            completedTasks: Number(data.completedTasks || 0),
-            totalTasks: Number(data.totalTasks || 0),
-            totalLeads: Number(data.totalLeads || 0),
-            convertedLeads: Number(data.convertedLeads || 0),
-            contactsCreatedThisMonth: Number(data.contactsCreatedThisMonth || 0),
-            activeCustomers: Number(data.activeCustomers || data.convertedLeads || 0),
-            quarterlyPerformance: normalizeArray(data.quarterlyPerformance, []),
-            pipelineByStage: normalizeArray(data.pipelineByStage, []),
-            monthlyLeadCreation: normalizeArray(data.monthlyLeadCreation, []),
-            topLeadSources: normalizeArray(data.topLeadSources, []),
+          setStats((prev) => {
+            const nextQuarterly = normalizeArray(data.quarterlyPerformance, [])
+            const nextMonthly = normalizeArray(data.monthlyLeadCreation, [])
+            const nextLeadSources = normalizeArray(data.topLeadSources, [])
+            const nextPipeline = normalizeArray(data.pipelineByStage, [])
+            const isLiteMode = mode === 'lite'
+
+            return {
+              dealsCreatedThisMonth: Number(data.dealsCreatedThisMonth || 0),
+              revenueThisMonth: Number(data.revenueThisMonth || 0),
+              dealsClosingThisMonth: Number(data.dealsClosingThisMonth || 0),
+              overdueTasks: Number(data.overdueTasks || 0),
+              completedTasks: Number(data.completedTasks || 0),
+              totalTasks: Number(data.totalTasks || 0),
+              totalLeads: Number(data.totalLeads || 0),
+              convertedLeads: Number(data.convertedLeads || 0),
+              contactsCreatedThisMonth: Number(data.contactsCreatedThisMonth || 0),
+              activeCustomers: Number(data.activeCustomers || data.convertedLeads || 0),
+              quarterlyPerformance: isLiteMode && (nextQuarterly.length === 0) ? (prev?.quarterlyPerformance || []) : nextQuarterly,
+              pipelineByStage: nextPipeline,
+              monthlyLeadCreation: isLiteMode && (nextMonthly.length === 0) ? (prev?.monthlyLeadCreation || []) : nextMonthly,
+              topLeadSources: isLiteMode && (nextLeadSources.length === 0) ? (prev?.topLeadSources || []) : nextLeadSources,
+            }
           })
-          setLoading(false)
+          if (mode === 'full') {
+            setIsHydratingFullStats(false)
+          }
+          if (!background) {
+            setLoading(false)
+          }
         } catch (parseError) {
           console.error('[CRM_DASHBOARD] Failed to parse JSON response:', parseError, { text: text.substring(0, 200) })
           throw new Error('Invalid response format from server')
@@ -870,7 +998,9 @@ export default function CRMDashboardPage() {
           return fetchDashboardStats(signal, retryCount + 1)
         } else {
           setError(errorMessage || 'Too many concurrent requests. Please wait a moment and refresh the page.')
-          setLoading(false)
+          if (!background) {
+            setLoading(false)
+          }
           // Set default stats to prevent blocking
           setStats({
             dealsCreatedThisMonth: 0,
@@ -924,7 +1054,9 @@ export default function CRMDashboardPage() {
         } else {
           const errorMessage = (errorData as any).message || (errorData as any).error || 'Database temporarily unavailable'
           setError(errorMessage + '. Please refresh the page in a moment.')
-          setLoading(false)
+          if (!background) {
+            setLoading(false)
+          }
           // Set default stats to prevent blocking
           setStats({
             dealsCreatedThisMonth: 0,
@@ -967,8 +1099,30 @@ export default function CRMDashboardPage() {
         throw new Error(errorMessage)
       }
     } catch (error: any) {
-      // Ignore abort errors
-      if (error?.name === 'AbortError' || signal?.aborted) {
+      // Parent-effect aborts are expected during navigation/view switches.
+      if (signal?.aborted) {
+        return
+      }
+      // Timeout aborts from our local controller should resolve loading state.
+      if (error?.name === 'AbortError') {
+        if (mode === 'full') {
+          setIsHydratingFullStats(false)
+        }
+        if (background) {
+          return
+        }
+        setError('Dashboard request timed out. Please refresh once or try again in a moment.')
+        setLoading(false)
+        setStats({
+          dealsCreatedThisMonth: 0,
+          revenueThisMonth: 0,
+          dealsClosingThisMonth: 0,
+          overdueTasks: 0,
+          quarterlyPerformance: [],
+          pipelineByStage: [],
+          monthlyLeadCreation: [],
+          topLeadSources: [],
+        })
         return
       }
       
@@ -991,6 +1145,12 @@ export default function CRMDashboardPage() {
         return fetchDashboardStats(signal, retryCount + 1)
       }
       
+      if (background) {
+        if (mode === 'full') {
+          setIsHydratingFullStats(false)
+        }
+        return
+      }
       setError(error.message || 'An unexpected error occurred while fetching data.')
       setLoading(false)
       // Set default stats to prevent blocking
@@ -1762,7 +1922,7 @@ export default function CRMDashboardPage() {
           </div>
 
           {/* Main dashboard grid under AI + KPI row: 60/40 split */}
-          {safeStats && (
+          {safeStats && showSecondaryBands && (
             <div
               className="grid grid-cols-1 lg:grid-cols-[3fr,2fr] gap-4"
               style={{ gridColumn: '1 / -1' }}
@@ -2139,9 +2299,23 @@ export default function CRMDashboardPage() {
               </div>
             </div>
           )}
+          {safeStats && !showSecondaryBands && (
+            <div className="grid grid-cols-1 lg:grid-cols-[3fr,2fr] gap-4" style={{ gridColumn: '1 / -1' }}>
+              <div className="space-y-4">
+                <div className="h-72 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-sm animate-pulse" />
+                <div className="h-72 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-sm animate-pulse" />
+                <div className="h-72 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-sm animate-pulse" />
+              </div>
+              <div className="space-y-4">
+                <div className="h-56 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-sm animate-pulse" />
+                <div className="h-56 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-sm animate-pulse" />
+                <div className="h-56 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-sm animate-pulse" />
+              </div>
+            </div>
+          )}
 
           {/* Band 3: Row 5 - Quarterly Table (full width) */}
-          {safeStats && (
+          {safeStats && showSecondaryBands && (
             <motion.div 
               className="quarterly-table"
               initial={{ opacity: 0, scale: 0.98 }}

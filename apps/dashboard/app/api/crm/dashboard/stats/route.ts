@@ -110,6 +110,7 @@ export async function GET(request: NextRequest) {
     // Get time period from query params (needed for sample data and rate limiting check)
     const searchParams = request.nextUrl.searchParams
     const timePeriod = (searchParams.get('period') || 'month') as TimePeriod
+    const liteMode = searchParams.get('lite') === '1'
     
     // Check if seed is running (may cause connection pool exhaustion)
     // Only block if seed is VERY recent (less than 5 seconds) to avoid blocking during normal operation
@@ -423,23 +424,25 @@ export async function GET(request: NextRequest) {
     
     // Fetch top lead sources once (avoid repeated fallback scans)
     let topLeadSourcesRaw: any[] = []
-    try {
-      topLeadSourcesRaw = await prisma.leadSource.findMany({
-        where: { tenantId },
-        orderBy: { leadsCount: 'desc' },
-        take: 10,
-        select: {
-          id: true,
-          name: true,
-          leadsCount: true,
-          conversionsCount: true,
-          totalValue: true,
-          conversionRate: true,
-        },
-      })
-    } catch (error: any) {
-      console.error('[CRM_DASHBOARD] Lead source query failed:', error?.message, error?.code)
-      topLeadSourcesRaw = []
+    if (!liteMode) {
+      try {
+        topLeadSourcesRaw = await prisma.leadSource.findMany({
+          where: { tenantId },
+          orderBy: { leadsCount: 'desc' },
+          take: 10,
+          select: {
+            id: true,
+            name: true,
+            leadsCount: true,
+            conversionsCount: true,
+            totalValue: true,
+            conversionRate: true,
+          },
+        })
+      } catch (error: any) {
+        console.error('[CRM_DASHBOARD] Lead source query failed:', error?.message, error?.code)
+        topLeadSourcesRaw = []
+      }
     }
     
     // Batch 2b: Remaining queries (run sequentially)
@@ -459,23 +462,25 @@ export async function GET(request: NextRequest) {
       console.error('[CRM_DASHBOARD] Query 9 failed:', error?.message)
     }
     
-    try {
-      wonDealsForQuarters = await prisma.deal.findMany({
-          where: {
-            ...dealFilter,
-            stage: 'won',
-          },
-          select: {
-            value: true,
-            actualCloseDate: true,
-            updatedAt: true,
-            createdAt: true,
-          },
-        })
-      console.log('[CRM_DASHBOARD] Query 11 result:', wonDealsForQuarters.length, 'won deals')
-    } catch (error: any) {
-      console.error('[CRM_DASHBOARD] Query 11 failed:', error?.message)
-      wonDealsForQuarters = []
+    if (!liteMode) {
+      try {
+        wonDealsForQuarters = await prisma.deal.findMany({
+            where: {
+              ...dealFilter,
+              stage: 'won',
+            },
+            select: {
+              value: true,
+              actualCloseDate: true,
+              updatedAt: true,
+              createdAt: true,
+            },
+          })
+        console.log('[CRM_DASHBOARD] Query 11 result:', wonDealsForQuarters.length, 'won deals')
+      } catch (error: any) {
+        console.error('[CRM_DASHBOARD] Query 11 failed:', error?.message)
+        wonDealsForQuarters = []
+      }
     }
     
     // Ensure topLeadSources is always an array
@@ -495,6 +500,54 @@ export async function GET(request: NextRequest) {
       topLeadSources = []
     }
     
+    if (liteMode) {
+      const revenueAgg = await prisma.deal.aggregate({
+        where: {
+          ...dealFilter,
+          stage: 'won',
+          actualCloseDate: { gte: periodStart, lte: periodEnd },
+        },
+        _sum: { value: true },
+      }).catch(() => ({ _sum: { value: 0 } }))
+
+      const liteStats = {
+        dealsCreatedThisMonth: dealsCreatedInPeriod,
+        revenueThisMonth: Number(revenueAgg?._sum?.value || 0),
+        dealsClosingThisMonth: dealsClosingInPeriod,
+        overdueTasks: overdueTasks || 0,
+        totalTasks: totalTasks || 0,
+        completedTasks: completedTasks || 0,
+        totalMeetings: totalMeetings || 0,
+        totalLeads: totalLeads || 0,
+        convertedLeads: convertedLeads || 0,
+        contactsCreatedThisMonth: contactsCreatedInPeriod || 0,
+        activeCustomers: convertedLeads || 0,
+        conversionRate: totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0,
+        quarterlyPerformance: [],
+        pipelineByStage: (Array.isArray(pipelineByStageData) ? pipelineByStageData : [])
+          .filter(item => item && item.stage && ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost'].includes(item.stage))
+          .map(item => ({
+            stage: item.stage.charAt(0).toUpperCase() + item.stage.slice(1),
+            count: item._count?.id || 0,
+            value: Number(item._sum?.value || 0),
+          }))
+          .filter(item => item.count > 0),
+        monthlyLeadCreation: [],
+        topLeadSources: [],
+        periodLabel: periodBounds.label,
+      }
+
+      const durationMs = Date.now() - startTime
+      console.log(`[CRM_STATS] tenant=${tenantId} period=${timePeriod} mode=lite duration=${durationMs}ms`)
+      return NextResponse.json(liteStats, {
+        headers: {
+          'Cache-Control': 'private, max-age=15, stale-while-revalidate=30',
+          Vary: 'Authorization',
+          'Server-Timing': `app;dur=${durationMs}`,
+        },
+      })
+    }
+
     // Batch 2: Quarterly data (run sequentially to avoid connection exhaustion)
     let q1DealsCreated = 0
     let q1LeadsCreated = 0

@@ -59,6 +59,17 @@ export default function LoginPage() {
     try {
       const loginResult = await login(email, password)
       const tenant = loginResult.tenant
+      if (tenant?.id) {
+        const crmHomeHref = `/crm/${tenant.id}/Home/`
+        router.prefetch(crmHomeHref)
+        // Warm CRM dashboard stats request for immediate post-login load.
+        fetch(
+          `/api/crm/dashboard/stats?period=month&tenantId=${encodeURIComponent(tenant.id)}`,
+          { headers: { Authorization: `Bearer ${loginResult.token}` } }
+        ).catch(() => {
+          // Best-effort warmup only.
+        })
+      }
       if (!tenant?.id) {
         router.push('/home')
         return
@@ -82,15 +93,12 @@ export default function LoginPage() {
         } else if (redirectUrl === '/dashboard' || redirectUrl.startsWith('/dashboard')) {
           finalUrl = tenant?.id ? `/home/${tenant.id}` : '/home'
         }
-        router.prefetch(finalUrl)
         router.push(finalUrl)
       } else {
         if (tenant?.id && typeof tenant.id === 'string' && tenant.id.trim().length > 0) {
           const homeHref = `/home/${tenant.id}`
-          router.prefetch(homeHref)
           router.push(homeHref)
         } else {
-          router.prefetch('/home')
           router.push('/home')
         }
       }
