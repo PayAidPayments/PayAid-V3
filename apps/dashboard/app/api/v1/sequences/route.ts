@@ -11,6 +11,7 @@ import {
 } from '@/lib/ai-native/m0-service'
 import { assertTenantFeatureEnabled, TenantFeatureDisabledError } from '@/lib/feature-flags/tenant-feature'
 import { assertAnyPermission, PermissionDeniedError } from '@/lib/middleware/permissions'
+import { trackEvent } from '@/lib/analytics/track'
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,6 +40,14 @@ export async function POST(request: NextRequest) {
     await markWorkflowAudit(tenantId, userId, sequence.id, `Sequence created: ${sequence.name}`, {
       status: mapWorkflowStatus(sequence.isActive),
     })
+
+    trackEvent('sequence_created', {
+      tenantId,
+      userId,
+      entityId: sequence.id,
+      properties: { name: sequence.name, step_count: definition.steps?.length ?? 0 },
+    })
+
     if (idempotencyKey) {
       await markIdempotentRequest(tenantId, userId, `sequence:create:${idempotencyKey}`, {
         sequence_id: sequence.id,

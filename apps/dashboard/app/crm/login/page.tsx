@@ -51,7 +51,7 @@ export default function CRMLoginPage() {
         router.prefetch(crmHomeHref)
         // Best-effort warm request so CRM Home renders faster after navigation.
         fetch(
-          `/api/crm/dashboard/stats?period=month&tenantId=${encodeURIComponent(tenant.id)}`,
+          `/api/crm/dashboard/stats?period=month&lite=1&tenantId=${encodeURIComponent(tenant.id)}`,
           { headers: { Authorization: `Bearer ${loginResult.token}` } }
         ).catch(() => {
           // No-op

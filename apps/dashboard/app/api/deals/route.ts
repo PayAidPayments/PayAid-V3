@@ -4,7 +4,12 @@ import { prismaRead } from '@/lib/db/prisma-read'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { multiLayerCache } from '@/lib/cache/multi-layer'
 import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
+import { getTimePeriodBounds, type TimePeriod } from '@/lib/utils/crm-filters'
 import { z } from 'zod'
+
+function isValidTimePeriod(t: string | null): t is TimePeriod {
+  return t === 'month' || t === 'quarter' || t === 'financial-year' || t === 'year'
+}
 
 const createDealSchema = z.object({
   name: z.string().min(1, 'Deal name is required'),
@@ -89,9 +94,20 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const stage = searchParams.get('stage')
     const contactId = searchParams.get('contactId')
+    const timePeriodParam = searchParams.get('timePeriod') as TimePeriod | null
+    const periodCategoryParam = searchParams.get('periodCategory')
+    const periodBounds =
+      timePeriodParam && isValidTimePeriod(timePeriodParam) ? getTimePeriodBounds(timePeriodParam) : null
+    const periodCategoryActive =
+      periodCategoryParam &&
+      ['created', 'closing', 'won', 'lost'].includes(periodCategoryParam)
+        ? periodCategoryParam
+        : null
+    const periodCatKey = periodCategoryActive || 'all'
+    const timeKey = timePeriodParam && isValidTimePeriod(timePeriodParam) ? timePeriodParam : 'none'
 
-    // Build cache key
-    const cacheKey = `deals:${tenantId}:${page}:${limit}:${stage || 'all'}:${contactId || 'all'}`
+    // Build cache key (include period context so list + KPIs stay consistent when cached)
+    const cacheKey = `deals:${tenantId}:${page}:${limit}:${stage || 'all'}:${contactId || 'all'}:${timeKey}:${periodCatKey}`
     const bypassCache = searchParams.get('bypassCache') === 'true'
     console.log('[DEALS_API] Query parameters:', { page, limit, stage, contactId, bypassCache, cacheKey })
 
@@ -121,8 +137,36 @@ export async function GET(request: NextRequest) {
       tenantId: tenantId,
     }
 
-    if (stage) where.stage = stage
     if (contactId) where.contactId = contactId
+
+    if (periodCategoryActive && periodBounds) {
+      const { start, end } = periodBounds
+      switch (periodCategoryActive) {
+        case 'created':
+          where.createdAt = { gte: start, lte: end }
+          break
+        case 'closing':
+          where.expectedCloseDate = { gte: start, lte: end }
+          where.stage = { notIn: ['won', 'lost'] }
+          break
+        case 'won':
+          where.stage = 'won'
+          where.OR = [
+            { actualCloseDate: { gte: start, lte: end } },
+            { AND: [{ actualCloseDate: null }, { updatedAt: { gte: start, lte: end } }] },
+          ]
+          break
+        case 'lost':
+          where.stage = 'lost'
+          where.OR = [
+            { actualCloseDate: { gte: start, lte: end } },
+            { AND: [{ actualCloseDate: null }, { updatedAt: { gte: start, lte: end } }] },
+          ]
+          break
+      }
+    } else if (stage) {
+      where.stage = stage
+    }
 
     // Use main Prisma client to ensure we get the latest data (read replica may lag)
     // This is especially important after seeding
@@ -130,20 +174,110 @@ export async function GET(request: NextRequest) {
     let total = 0
     let pipelineSummary: any[] = []
     
-    // CRITICAL: Verify tenantId matches what's in database
-    // Check if deals exist for this tenant before querying
+    // Count for diagnostics / retry paths only — do NOT clear the whole tenant cache on every GET
+    // (that prevented caching, hammered Redis, and slowed CRM Deals/Leads audit navigations).
     const quickCheck = await prisma.deal.count({ where: { tenantId } }).catch(() => 0)
-    if (quickCheck > 0 && !bypassCache) {
-      console.log(`[DEALS_API] ⚠️ Found ${quickCheck} deals in DB but cache might be stale. Forcing cache clear.`)
-      // Force clear all cache keys for this tenant
-      try {
-        await multiLayerCache.deletePattern(`deals:${tenantId}:*`)
-        console.log(`[DEALS_API] Cleared all cache for tenant ${tenantId}`)
-      } catch (e) {
-        console.warn(`[DEALS_API] Failed to clear cache pattern:`, e)
+
+    const runPeriodStats = async (): Promise<{
+      periodStats: {
+        created: { count: number; value: number }
+        closing: { count: number; value: number }
+        won: { count: number; value: number }
+        lost: { count: number; value: number }
+      } | null
+      topClosingDeals: any[]
+    }> => {
+      if (!periodBounds) {
+        return { periodStats: null, topClosingDeals: [] }
+      }
+      const { start, end } = periodBounds
+      const base = { tenantId }
+      const [createdAgg, closingAgg, wonAgg, lostAgg, topClosing] = await Promise.all([
+        prisma.deal.aggregate({
+          where: { ...base, createdAt: { gte: start, lte: end } },
+          _count: { _all: true },
+          _sum: { value: true },
+        }),
+        prisma.deal.aggregate({
+          where: {
+            ...base,
+            expectedCloseDate: { gte: start, lte: end },
+            stage: { notIn: ['won', 'lost'] },
+          },
+          _count: { _all: true },
+          _sum: { value: true },
+        }),
+        prisma.deal.aggregate({
+          where: {
+            ...base,
+            stage: 'won',
+            OR: [
+              { actualCloseDate: { gte: start, lte: end } },
+              { AND: [{ actualCloseDate: null }, { updatedAt: { gte: start, lte: end } }] },
+            ],
+          },
+          _count: { _all: true },
+          _sum: { value: true },
+        }),
+        prisma.deal.aggregate({
+          where: {
+            ...base,
+            stage: 'lost',
+            OR: [
+              { actualCloseDate: { gte: start, lte: end } },
+              { AND: [{ actualCloseDate: null }, { updatedAt: { gte: start, lte: end } }] },
+            ],
+          },
+          _count: { _all: true },
+          _sum: { value: true },
+        }),
+        prisma.deal.findMany({
+          where: {
+            ...base,
+            expectedCloseDate: { gte: start, lte: end },
+            stage: { notIn: ['won', 'lost'] },
+          },
+          orderBy: [{ expectedCloseDate: 'asc' }, { value: 'desc' }],
+          take: 10,
+          select: {
+            id: true,
+            name: true,
+            value: true,
+            stage: true,
+            probability: true,
+            expectedCloseDate: true,
+            actualCloseDate: true,
+            createdAt: true,
+            updatedAt: true,
+            contact: {
+              select: { id: true, name: true, email: true, phone: true, company: true },
+            },
+          },
+        }),
+      ])
+      return {
+        periodStats: {
+          created: {
+            count: createdAgg._count._all,
+            value: Number(createdAgg._sum.value ?? 0),
+          },
+          closing: {
+            count: closingAgg._count._all,
+            value: Number(closingAgg._sum.value ?? 0),
+          },
+          won: {
+            count: wonAgg._count._all,
+            value: Number(wonAgg._sum.value ?? 0),
+          },
+          lost: {
+            count: lostAgg._count._all,
+            value: Number(lostAgg._sum.value ?? 0),
+          },
+        },
+        topClosingDeals: topClosing,
       }
     }
-    
+
     const runDealsQuery = async () => {
       const [found, count, summary] = await Promise.all([
         prisma.deal.findMany({
@@ -191,31 +325,60 @@ export async function GET(request: NextRequest) {
       ] as const
     }
 
+    let periodStats: {
+      created: { count: number; value: number }
+      closing: { count: number; value: number }
+      won: { count: number; value: number }
+      lost: { count: number; value: number }
+    } | null = null
+    let topClosingDeals: any[] = []
+
     try {
       console.log('[DEALS_API] Querying deals with where clause:', JSON.stringify(where, null, 2))
       console.log(`[DEALS_API] Quick check: ${quickCheck} deals exist for tenant ${tenantId}`)
-      const result = await runDealsQuery()
-      deals = result[0]
-      total = result[1]
-      pipelineSummary = result[2]
+      const [dealResult, periodResult] = await Promise.all([
+        runDealsQuery(),
+        runPeriodStats().catch((e) => {
+          console.warn('[DEALS_API] Period stats query failed:', e)
+          return { periodStats: null, topClosingDeals: [] as any[] }
+        }),
+      ])
+      deals = dealResult[0]
+      total = dealResult[1]
+      pipelineSummary = dealResult[2]
+      periodStats = periodResult.periodStats
+      topClosingDeals = periodResult.topClosingDeals
     } catch (readError) {
       console.warn('[DEALS_API] Read replica failed, falling back to primary database:', readError)
       try {
-        const result = await runDealsQuery()
-        deals = result[0]
-        total = result[1]
-        pipelineSummary = result[2]
+        const [dealResult, periodResult] = await Promise.all([
+          runDealsQuery(),
+          runPeriodStats().catch((e) => {
+            console.warn('[DEALS_API] Period stats query failed (fallback):', e)
+            return { periodStats: null, topClosingDeals: [] as any[] }
+          }),
+        ])
+        deals = dealResult[0]
+        total = dealResult[1]
+        pipelineSummary = dealResult[2]
+        periodStats = periodResult.periodStats
+        topClosingDeals = periodResult.topClosingDeals
       } catch (fallbackError) {
         console.error('[DEALS_API] Fallback query also failed:', fallbackError)
         deals = []
         total = 0
         pipelineSummary = []
+        periodStats = null
+        topClosingDeals = []
       }
     }
 
-    // Get diagnostic info if no deals found (simplified to avoid blocking)
+    // Get diagnostic info only for unfiltered tenant-wide queries that return 0.
+    // When a contactId (or stage) filter is applied, 0 results is a valid outcome —
+    // skip the expensive extra queries and do not log false-positive CRITICAL errors.
     let diagnostics: any = null
-    if (deals.length === 0 || total === 0) {
+    const isFilterScoped = !!(contactId || stage || periodCategoryActive)
+    if ((deals.length === 0 || total === 0) && !isFilterScoped) {
       // Check actual count in database for this tenant (quick check)
       try {
         const actualCount = await prisma.deal.count({ 
@@ -394,9 +557,10 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
       pipelineSummary,
+      ...(periodStats ? { periodStats, topClosingDeals } : { topClosingDeals }),
       ...(diagnostics && { _debug: diagnostics }), // Include diagnostics in response for debugging
-      // Always include quickCheck in debug info when there's a mismatch
-      ...(quickCheck > 0 && total === 0 && { 
+      // Only include mismatch debug info for unfiltered tenant-wide queries
+      ...(quickCheck > 0 && total === 0 && !isFilterScoped && { 
         _debug: {
           ...diagnostics,
           quickCheck,
@@ -421,11 +585,11 @@ export async function GET(request: NextRequest) {
     if (total > 0) {
       // Cache for 3 minutes (multi-layer: L1 + L2)
       await multiLayerCache.set(cacheKey, result, 180)
-    } else if (quickCheck > 0) {
-      // Don't cache empty results if we know deals exist - this prevents caching stale empty data
-      console.warn(`[DEALS_API] ⚠️ Not caching empty result - ${quickCheck} deals exist in DB but query returned 0`)
+    } else if (quickCheck > 0 && !isFilterScoped) {
+      // Don't cache empty results for tenant-wide queries when deals exist in DB
+      console.warn(`[DEALS_API] ⚠️ Not caching empty result - ${quickCheck} deals exist in DB but unfiltered query returned 0`)
     } else {
-      // Cache empty results only if we're sure there are no deals
+      // Cache empty results: either no deals exist, or this is a valid filtered empty result
       await multiLayerCache.set(cacheKey, result, 180)
     }
 

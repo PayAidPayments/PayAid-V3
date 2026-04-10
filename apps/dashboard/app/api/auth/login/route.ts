@@ -1,11 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db/prisma'
-import { prismaWithRetry } from '@/lib/db/connection-retry'
-import { verifyPassword } from '@/lib/auth/password'
-import { signToken, signRefreshToken } from '@/lib/auth/jwt'
-import { isDevelopment } from '@/lib/utils/env'
-import { warmTenantCache } from '@/lib/cache/warmer'
-import { getUserRoles, getUserPermissions } from '@/lib/rbac/permissions'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -22,9 +15,10 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const isDev = process.env.NODE_ENV !== 'production'
   // Server-side timeout wrapper (Vercel Hobby has 10s timeout, Pro has 60s)
   // Use longer timeouts so slow DB / cold starts don't win the race and cause 504 → login loops
-  const SERVER_TIMEOUT = isDevelopment() ? 30000 : 25000 // 30s dev (cold DB), 25s prod
+  const SERVER_TIMEOUT = isDev ? 30000 : 25000 // 30s dev (cold DB), 25s prod
   
   let timeoutId: ReturnType<typeof setTimeout> | undefined
   try {
@@ -66,7 +60,7 @@ export async function POST(request: NextRequest) {
       { 
         error: 'Login failed',
         message: errorMessage,
-        ...(isDevelopment() && { stack: errorStack }),
+        ...(isDev && { stack: errorStack }),
       },
       { 
         status: 500,
@@ -79,6 +73,14 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleLogin(request: NextRequest) {
+  // Lazy-load heavy modules to reduce first compile/load pressure for this route.
+  const [{ prisma }, { prismaWithRetry }, { verifyPassword }, { signToken, signRefreshToken }] = await Promise.all([
+    import('@/lib/db/prisma'),
+    import('@/lib/db/connection-retry'),
+    import('@/lib/auth/password'),
+    import('@/lib/auth/jwt'),
+  ])
+  const isDev = process.env.NODE_ENV !== 'production'
   const startTime = Date.now()
   let step = 'initialization'
   
@@ -301,9 +303,15 @@ async function handleLogin(request: NextRequest) {
     step = 'get_roles_permissions'
     console.log('[LOGIN] Step 8: Skipping RBAC fetch during login (will fetch later if needed)')
     
-    // Use legacy role from user record - RBAC is optional and can be fetched later
+    // Use legacy role from user record - RBAC is optional and can be fetched later.
+    // Provide a minimal role-based permission baseline so admin tokens can access
+    // protected operational APIs (for example audit evidence collection routes).
     let roles: string[] = user.role ? [user.role] : []
     let permissions: string[] = []
+    const primaryRole = (roles[0] || '').toLowerCase()
+    if (primaryRole === 'admin' || primaryRole === 'super_admin' || primaryRole === 'superadmin') {
+      permissions = ['crm:admin', 'crm:audit:read', 'crm:sdr:read', 'crm:sdr:write']
+    }
     
     // Skip RBAC entirely to speed up login and prevent database pool exhaustion
     console.log('[LOGIN] Using legacy role for login, RBAC will be fetched on-demand via /api/auth/me')
@@ -429,7 +437,7 @@ async function handleLogin(request: NextRequest) {
       stack: errorStack,
       duration: `${duration}ms`,
       // Environment info
-      nodeEnv: isDevelopment() ? 'development' : 'production',
+      nodeEnv: isDev ? 'development' : 'production',
       hasDatabaseUrl: !!process.env.DATABASE_URL,
       hasJwtSecret: !!process.env.JWT_SECRET,
     }
@@ -441,7 +449,7 @@ async function handleLogin(request: NextRequest) {
     if (error && typeof error === 'object' && 'meta' in error) {
       errorLog.meta = (error as any).meta
     }
-    if (isDevelopment()) {
+    if (isDev) {
       errorLog.fullError = error
     }
     
@@ -463,7 +471,7 @@ async function handleLogin(request: NextRequest) {
       responseMessage = 'Request timed out. The server may be experiencing high load or a cold start. Please wait 30 seconds and try again.'
     } else if (errorMessage.includes('Invalid email or password')) {
       responseMessage = 'Invalid email or password. Please check your credentials and try again.'
-    } else if (!isDevelopment()) {
+    } else if (!isDev) {
       // In production, don't expose internal error details
       responseMessage = 'An error occurred during login. Please wait a moment and try again. If the problem persists, contact support.'
     }
@@ -472,7 +480,7 @@ async function handleLogin(request: NextRequest) {
       { 
         error: 'Login failed',
         message: responseMessage,
-        ...(isDevelopment() && {
+        ...(isDev && {
           step,
           errorName,
           stack: errorStack,

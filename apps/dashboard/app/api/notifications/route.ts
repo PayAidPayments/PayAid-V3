@@ -23,6 +23,7 @@ interface Notification {
  */
 export async function GET(request: NextRequest) {
   try {
+    const startTime = Date.now()
     const user = await authenticateRequest(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -33,6 +34,9 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const moduleFilter = searchParams.get('module') // Optional: filter by module
     const smartFilter = searchParams.get('smartFilter') === 'true' // Enable smart filtering
+    // Fast mode by default to protect core page responsiveness under DB pressure.
+    // Pass lightweight=false only where full cross-module fanout is explicitly needed.
+    const lightweight = searchParams.get('lightweight') !== 'false'
 
     // Get tenant with licensed modules - use minimal retries and handle circuit breaker
     let tenant
@@ -229,7 +233,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. Finance Module Notifications
-    if (licensedModules.includes('finance') && (!moduleFilter || moduleFilter === 'finance')) {
+    if (!lightweight && licensedModules.includes('finance') && (!moduleFilter || moduleFilter === 'finance')) {
       // Overdue invoices - use minimal retries
       let overdueInvoices: Awaited<ReturnType<typeof prisma.invoice.findMany>> = []
       try {
@@ -321,7 +325,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. HR Module Notifications
-    if (licensedModules.includes('hr') && (!moduleFilter || moduleFilter === 'hr')) {
+    if (!lightweight && licensedModules.includes('hr') && (!moduleFilter || moduleFilter === 'hr')) {
       // Leave requests pending approval
       let pendingLeaves: Awaited<ReturnType<typeof prisma.leaveRequest.findMany<{ include: { employee: { select: { firstName: true; lastName: true } } } }>>> = []
       try {
@@ -416,7 +420,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 4. Projects Module Notifications
-    if (licensedModules.includes('projects') && (!moduleFilter || moduleFilter === 'projects')) {
+    if (!lightweight && licensedModules.includes('projects') && (!moduleFilter || moduleFilter === 'projects')) {
       // Tasks due soon
       let projectTasksDue: Awaited<ReturnType<typeof prisma.projectTask.findMany<{ include: { project: { select: { name: true } } } }>>> = []
       try {
@@ -467,7 +471,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 5. Inventory Module Notifications
-    if (licensedModules.includes('inventory') && (!moduleFilter || moduleFilter === 'inventory')) {
+    if (!lightweight && licensedModules.includes('inventory') && (!moduleFilter || moduleFilter === 'inventory')) {
       // Low stock alerts - fetch products and filter in memory (Prisma doesn't support field comparison in where clause)
       let lowStockProducts: Array<{ id: string; name: string; quantity: number; reorderLevel: number | null }> = []
       try {
@@ -517,7 +521,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 6. Appointments Module Notifications
-    if (licensedModules.includes('appointments') && (!moduleFilter || moduleFilter === 'appointments')) {
+    if (!lightweight && licensedModules.includes('appointments') && (!moduleFilter || moduleFilter === 'appointments')) {
       // Upcoming appointments today
       let todayAppointments: Awaited<ReturnType<typeof prisma.appointment.findMany>> = []
       try {
@@ -617,6 +621,8 @@ export async function GET(request: NextRequest) {
       unreadCount,
       total: notifications.length,
       smartFilter: smartFilter,
+      mode: lightweight ? 'lightweight' : 'full',
+      durationMs: Date.now() - startTime,
       summary: smartFilter ? {
         critical: grouped.critical.length,
         important: grouped.important.length,

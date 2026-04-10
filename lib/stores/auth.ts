@@ -95,9 +95,11 @@ export const useAuthStore = create<AuthState>()(
           // Add timeout to prevent hanging.
           // IMPORTANT: keep client timeout longer than server timeout so
           // the browser does not abort right as the server finishes.
-          // Local dev login route can take up to ~30s on cold starts.
+          // Local dev can spend a long time compiling on first auth request.
+          // Keep dev timeout extremely high so compile delay doesn't fail sign-in.
+          // Prod timeout remains bounded to avoid hanging indefinitely.
           const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-          const timeoutMs = isDev ? 45000 : 50000
+          const timeoutMs = isDev ? 300000 : 120000
           const controller = new AbortController()
           
           // Set up timeout
@@ -249,7 +251,7 @@ export const useAuthStore = create<AuthState>()(
           
           // Handle timeout error - don't log, just throw user-friendly message
           if (isTimeoutError) {
-            throw new Error('Login timed out. The server may be starting up (cold start). Please click Sign in again—the next attempt is often faster.')
+            throw new Error('Login is taking longer than usual due to server warm-up/compile. Please wait and try again.')
           }
           
           // Log non-timeout errors for debugging

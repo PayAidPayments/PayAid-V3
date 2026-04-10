@@ -221,9 +221,16 @@ export async function GET(request: NextRequest) {
       nodeEnv: process.env.NODE_ENV,
     })
 
-    // Generate AI insights - try Ollama, then Groq, then HuggingFace, then rule-based
+    // Generate AI insights.
+    // External LLM calls are disabled by default to avoid blocking CRM load paths.
+    // Enable only when explicitly requested.
     let parsedInsights
-    try {
+    const enableExternalAi =
+      process.env.AI_INSIGHTS_EXTERNAL_ENABLED === '1' &&
+      request.nextUrl.searchParams.get('externalAi') === '1'
+
+    if (enableExternalAi) {
+      try {
       const insightsPrompt = `
 Analyze this business data and provide 5 key insights and recommendations:
 
@@ -315,19 +322,43 @@ Be specific, actionable, and data-driven.`
         console.warn('[AI Insights] AI response parsing failed or empty, using rule-based insights:', parseError)
         throw new Error('AI insights parsing failed') // This will trigger rule-based fallback
       }
-    } catch (error) {
-      console.error('[AI Insights] AI insights generation failed, using rule-based insights:', error)
-      console.log('[AI Insights] Data available for rule-based insights:', {
-        deals: deals.length,
-        contacts: contacts.length,
-        invoices: pendingInvoices.length,
-        tasks: tasks.length,
-        orders: orders.length,
-        totalRevenue,
-        forecastedRevenue,
-        activeDeals: activeDeals.length,
-      })
-      // Fallback to rule-based insights with detailed data
+      } catch (error) {
+        console.error('[AI Insights] AI insights generation failed, using rule-based insights:', error)
+        console.log('[AI Insights] Data available for rule-based insights:', {
+          deals: deals.length,
+          contacts: contacts.length,
+          invoices: pendingInvoices.length,
+          tasks: tasks.length,
+          orders: orders.length,
+          totalRevenue,
+          forecastedRevenue,
+          activeDeals: activeDeals.length,
+        })
+        // Fallback to rule-based insights with detailed data
+        parsedInsights = generateRuleBasedInsights({
+          totalRevenue,
+          pendingInvoices: pendingInvoices.length,
+          totalPendingAmount,
+          forecastedRevenue,
+          activeDeals: activeDeals.length,
+          atRiskContacts,
+          highValueLeads,
+          pendingTasks: tasks.length,
+          deals: deals,
+          contacts: contacts,
+          invoices: pendingInvoices,
+          tasks: tasks,
+          orders: orders,
+        })
+        console.log('[AI Insights] Rule-based insights generated:', {
+          urgentActions: parsedInsights.urgentActions?.length || 0,
+          opportunities: parsedInsights.opportunities?.length || 0,
+          risks: parsedInsights.risks?.length || 0,
+          recommendations: parsedInsights.recommendations?.length || 0,
+          improvements: parsedInsights.improvements?.length || 0,
+        })
+      }
+    } else {
       parsedInsights = generateRuleBasedInsights({
         totalRevenue,
         pendingInvoices: pendingInvoices.length,
@@ -342,13 +373,6 @@ Be specific, actionable, and data-driven.`
         invoices: pendingInvoices,
         tasks: tasks,
         orders: orders,
-      })
-      console.log('[AI Insights] Rule-based insights generated:', {
-        urgentActions: parsedInsights.urgentActions?.length || 0,
-        opportunities: parsedInsights.opportunities?.length || 0,
-        risks: parsedInsights.risks?.length || 0,
-        recommendations: parsedInsights.recommendations?.length || 0,
-        improvements: parsedInsights.improvements?.length || 0,
       })
     }
 

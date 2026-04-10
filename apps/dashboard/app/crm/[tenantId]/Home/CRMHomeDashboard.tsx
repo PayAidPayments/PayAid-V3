@@ -865,8 +865,24 @@ export default function CRMHomeDashboard() {
         throw new Error(errorMessage)
       }
     } catch (error: any) {
-      // Ignore abort errors
-      if (error?.name === 'AbortError' || signal?.aborted) {
+      // Parent-effect aborts are expected during navigation/view switches.
+      if (signal?.aborted) {
+        return
+      }
+      // Timeout aborts from our local controller should resolve loading state.
+      if (error?.name === 'AbortError') {
+        setError('Dashboard request timed out. Please refresh once or try again in a moment.')
+        setLoading(false)
+        setStats({
+          dealsCreatedThisMonth: 0,
+          revenueThisMonth: 0,
+          dealsClosingThisMonth: 0,
+          overdueTasks: 0,
+          quarterlyPerformance: [],
+          pipelineByStage: [],
+          monthlyLeadCreation: [],
+          topLeadSources: [],
+        })
         return
       }
       

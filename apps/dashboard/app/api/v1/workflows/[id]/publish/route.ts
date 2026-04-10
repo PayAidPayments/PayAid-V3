@@ -3,6 +3,7 @@ import { handleLicenseError, requireModuleAccess } from '@/lib/middleware/auth'
 import { markWorkflowAudit, publishWorkflow } from '@/lib/ai-native/m0-service'
 import { assertTenantFeatureEnabled, TenantFeatureDisabledError } from '@/lib/feature-flags/tenant-feature'
 import { assertAnyPermission, PermissionDeniedError } from '@/lib/middleware/permissions'
+import { trackEvent } from '@/lib/analytics/track'
 
 type Params = { params: { id: string } }
 
@@ -18,6 +19,13 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     await markWorkflowAudit(tenantId, userId, workflow.id, `Workflow published: ${workflow.name}`, {
       isActive: true,
+    })
+
+    trackEvent('workflow_published', {
+      tenantId,
+      userId,
+      entityId: workflow.id,
+      properties: { workflow_name: workflow.name },
     })
 
     return NextResponse.json({
