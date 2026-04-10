@@ -11,6 +11,8 @@ import { Settings, LogOut, User, ChevronDown, Newspaper, MoreVertical } from 'lu
 import { NotificationBell } from '@/components/NotificationBell'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { GlobalSearch } from '@/components/layout/GlobalSearch'
+import { useQueryClient } from '@tanstack/react-query'
+import { getAuthHeaders } from '@/lib/hooks/use-api'
 
 interface TopBarItem {
   name: string
@@ -29,6 +31,7 @@ interface ModuleTopBarProps {
 export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItems = 5 }: ModuleTopBarProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { logout, tenant, user, token } = useAuthStore()
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
@@ -37,6 +40,7 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
   const profileMenuRef = useRef<HTMLDivElement>(null)
   const moreMenuRef = useRef<HTMLDivElement>(null)
   const moreMenuButtonRef = useRef<HTMLButtonElement>(null)
+  const warmedRouteDataRef = useRef<Record<string, boolean>>({})
 
   const isActive = (href: string) => {
     if (href === '/home' || href === `/${moduleId}`) {
@@ -119,6 +123,80 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
     }
   }
 
+  const warmCrmRouteData = (href: string) => {
+    if (!token) return
+    const m = href.match(/^\/crm\/([^/]+)\/(Leads|Contacts|Deals)\/?$/)
+    const tenantIdFromHref = m?.[1]
+    const entity = m?.[2]
+    if (!tenantIdFromHref) return
+    const warmKey = `${tenantIdFromHref}:${entity}`
+    if (warmedRouteDataRef.current[warmKey]) return
+    warmedRouteDataRef.current[warmKey] = true
+
+    if (entity === 'Leads') {
+      const params = { page: 1, limit: 25, search: '', stage: 'prospect', tenantId: tenantIdFromHref }
+      const qs = new URLSearchParams()
+      qs.set('page', '1')
+      qs.set('limit', '25')
+      qs.set('stage', 'prospect')
+      qs.set('tenantId', tenantIdFromHref)
+      const url = `/api/contacts?${qs.toString()}`
+      queryClient
+        .prefetchQuery({
+          queryKey: ['contacts', params],
+          queryFn: async () => {
+            const res = await fetch(url, { headers: getAuthHeaders() })
+            if (!res.ok) throw new Error('Failed to warm leads')
+            return res.json()
+          },
+          staleTime: 15_000,
+        })
+        .catch(() => {})
+      return
+    }
+
+    if (entity === 'Contacts') {
+      const params = { page: 1, limit: 25, search: '', tenantId: tenantIdFromHref }
+      const qs = new URLSearchParams()
+      qs.set('page', '1')
+      qs.set('limit', '25')
+      qs.set('tenantId', tenantIdFromHref)
+      const url = `/api/contacts?${qs.toString()}`
+      queryClient
+        .prefetchQuery({
+          queryKey: ['contacts', params],
+          queryFn: async () => {
+            const res = await fetch(url, { headers: getAuthHeaders() })
+            if (!res.ok) throw new Error('Failed to warm contacts')
+            return res.json()
+          },
+          staleTime: 15_000,
+        })
+        .catch(() => {})
+      return
+    }
+
+    if (entity === 'Deals') {
+      const params = { page: 1, limit: 50, tenantId: tenantIdFromHref }
+      const qs = new URLSearchParams()
+      qs.set('page', '1')
+      qs.set('limit', '50')
+      qs.set('tenantId', tenantIdFromHref)
+      const url = `/api/deals?${qs.toString()}`
+      queryClient
+        .prefetchQuery({
+          queryKey: ['deals', params],
+          queryFn: async () => {
+            const res = await fetch(url, { headers: getAuthHeaders() })
+            if (!res.ok) throw new Error('Failed to warm deals')
+            return res.json()
+          },
+          staleTime: 15_000,
+        })
+        .catch(() => {})
+    }
+  }
+
   return (
     <header className="w-screen h-14 border-b border-slate-200/80 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-950/90 dark:to-slate-900/90 backdrop-blur-sm sticky top-0 z-30">
       <div className="w-full h-full flex items-center px-4 sm:px-6 lg:px-12 xl:px-20 gap-4">
@@ -136,6 +214,9 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
             <Link
               key={item.href}
               href={item.href}
+              onMouseEnter={() => warmCrmRouteData(item.href)}
+              onFocus={() => warmCrmRouteData(item.href)}
+              onPointerDown={() => warmCrmRouteData(item.href)}
               className={cn(
                 'px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0',
                 isActive(item.href)
@@ -211,6 +292,9 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
                                 // Close menu - Next.js Link will handle navigation automatically
                                 setMoreMenuOpen(false)
                               }}
+                              onMouseEnter={() => warmCrmRouteData(item.href)}
+                              onFocus={() => warmCrmRouteData(item.href)}
+                              onPointerDown={() => warmCrmRouteData(item.href)}
                               className={cn(
                                 'flex items-center px-4 py-2 text-sm transition-colors',
                                 isActive(item.href)

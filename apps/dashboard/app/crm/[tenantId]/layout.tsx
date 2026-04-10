@@ -24,6 +24,15 @@ export default function CRMTenantLayout({
     }
   }, [tenantId, router])
 
+  useEffect(() => {
+    if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) return
+    router.prefetch(`/crm/${tenantId}/Leads/`)
+    router.prefetch(`/crm/${tenantId}/Contacts/`)
+    router.prefetch(`/crm/${tenantId}/Deals/`)
+    router.prefetch(`/crm/${tenantId}/Activities/`)
+    router.prefetch(`/crm/${tenantId}/Tasks/`)
+  }, [tenantId, router])
+
   const topBarItems = tenantId && tenantId.trim() ? getCRMTopBarItems(tenantId) : []
 
   return (
