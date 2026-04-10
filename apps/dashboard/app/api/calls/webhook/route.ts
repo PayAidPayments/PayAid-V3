@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
-import { captureIntegrationError, enforceIntegrationRateLimit } from '@/apps/dashboard/lib/integrations/security'
+import { captureIntegrationError, enforceIntegrationRateLimit } from '@/lib/integrations/security'
 import twilio from 'twilio'
 import { decrypt } from '@/lib/encryption'
 

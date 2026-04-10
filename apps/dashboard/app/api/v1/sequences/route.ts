@@ -11,7 +11,7 @@ import {
 } from '@/lib/ai-native/m0-service'
 import { assertTenantFeatureEnabled, TenantFeatureDisabledError } from '@/lib/feature-flags/tenant-feature'
 import { assertAnyPermission, PermissionDeniedError } from '@/lib/middleware/permissions'
-import { trackEvent } from '@/apps/dashboard/lib/analytics/track'
+import { trackEvent } from '@/lib/analytics/track'
 
 export async function POST(request: NextRequest) {
   try {
