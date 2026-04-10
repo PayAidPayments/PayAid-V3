@@ -3,7 +3,7 @@ import { handleLicenseError, requireModuleAccess } from '@/lib/middleware/auth'
 import { markWorkflowAudit, publishWorkflow } from '@/lib/ai-native/m0-service'
 import { assertTenantFeatureEnabled, TenantFeatureDisabledError } from '@/lib/feature-flags/tenant-feature'
 import { assertAnyPermission, PermissionDeniedError } from '@/lib/middleware/permissions'
-import { trackEvent } from '@/lib/analytics/track'
+import { trackEvent } from '@/apps/dashboard/lib/analytics/track'
 
 type Params = { params: { id: string } }
 
