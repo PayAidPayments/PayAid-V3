@@ -192,6 +192,7 @@ export default function CRMDashboardPage() {
   const fetchingStatsRef = useRef(false)
   const fetchingActivityRef = useRef(false)
   const fetchingTasksViewRef = useRef(false)
+  const fullHydrationStartedRef = useRef(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const hasCheckedDataRef = useRef(false) // Track if we've checked for demo data
   const hasTriggeredEnsureDemoRef = useRef(false)
@@ -202,6 +203,9 @@ export default function CRMDashboardPage() {
   })
 
   const trackPerfEvent = (metric: 'mount_to_kpi_visible' | 'mount_to_secondary_visible', durationMs: number) => {
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      return
+    }
     const payload = {
       event: 'crm_home_perf',
       entity_id: tenantId,
@@ -274,15 +278,26 @@ export default function CRMDashboardPage() {
   }, [loading, stats, error])
 
   // Progressive rendering: paint KPI band first, then reveal heavier sections.
+  // Do not block secondary bands on full hydration; that caused long blank sections.
   useEffect(() => {
-    if (!stats || loading || isHydratingFullStats) {
+    if (!stats || loading) {
       setShowSecondaryBands(false)
       return
     }
     const reveal = () => setShowSecondaryBands(true)
-    const timeoutId = setTimeout(reveal, 220)
+    const timeoutId = setTimeout(reveal, 0)
     return () => clearTimeout(timeoutId)
-  }, [stats, loading, isHydratingFullStats])
+  }, [stats, loading])
+
+  // Never keep detailed sections in "loading..." for too long.
+  // If full hydration is slow, fall back to stable empty-state UI and let data fill in later.
+  useEffect(() => {
+    if (!isHydratingFullStats) return
+    const watchdogId = setTimeout(() => {
+      setIsHydratingFullStats(false)
+    }, 60000)
+    return () => clearTimeout(watchdogId)
+  }, [isHydratingFullStats])
 
   // Perf instrumentation: track first KPI paint and secondary band reveal.
   useEffect(() => {
@@ -455,7 +470,7 @@ export default function CRMDashboardPage() {
                               // After fetching stats, check if we still have zeros and ensure current month data
                               setTimeout(async () => {
                                 try {
-                                  const statsResponse = await fetch(`/api/crm/dashboard/stats?period=month${tenantId ? `&tenantId=${encodeURIComponent(tenantId)}` : ''}`, {
+                                  const statsResponse = await fetch(`/api/crm/dashboard/stats?period=month&lite=1${tenantId ? `&tenantId=${encodeURIComponent(tenantId)}` : ''}`, {
                                     headers: { 'Authorization': `Bearer ${token}` },
                                   })
                                   if (statsResponse.ok) {
@@ -635,21 +650,25 @@ export default function CRMDashboardPage() {
         await fetchDashboardStats(signal, 0, 'lite', false)
 
         // Hydrate full chart-heavy stats in background without blocking.
+        // Guard against duplicate starts (StrictMode/effect reruns).
         if (!signal.aborted) {
-          setIsHydratingFullStats(true)
-          setTimeout(() => {
-            if (signal.aborted) {
-              setIsHydratingFullStats(false)
-              return
-            }
-            // Use independent background fetch so transient controller aborts
-            // (view/filter changes) don't cancel detailed hydration.
-            fetchDashboardStats(undefined, 0, 'full', true).catch(() => {
-              // Non-blocking background refresh
-            }).finally(() => {
-              setIsHydratingFullStats(false)
+          if (!fullHydrationStartedRef.current) {
+            fullHydrationStartedRef.current = true
+            setIsHydratingFullStats(true)
+            queueMicrotask(() => {
+              if (signal.aborted) {
+                setIsHydratingFullStats(false)
+                fullHydrationStartedRef.current = false
+                return
+              }
+              fetchDashboardStats(undefined, 0, 'charts', true).catch(() => {
+                // Non-blocking background refresh
+              }).finally(() => {
+                setIsHydratingFullStats(false)
+                fullHydrationStartedRef.current = false
+              })
             })
-          }, 300)
+          }
         }
         
         // Load view-specific data after initial paint so top KPIs appear first.
@@ -691,6 +710,7 @@ export default function CRMDashboardPage() {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
+      fullHydrationStartedRef.current = false
       fetchingStatsRef.current = false
     }
   }, [tenantId, authHydrated, token, currentView, timePeriod]) // Removed activityFilter - it has its own effect
@@ -831,7 +851,7 @@ export default function CRMDashboardPage() {
   const fetchDashboardStats = async (
     signal?: AbortSignal,
     retryCount = 0,
-    mode: 'lite' | 'full' = 'lite',
+    mode: 'lite' | 'full' | 'charts' = 'lite',
     background = false
   ): Promise<void> => {
     const MAX_RETRIES = 2
@@ -851,11 +871,16 @@ export default function CRMDashboardPage() {
       }
 
       console.log('[CRM_DASHBOARD] Fetching stats from API...')
-      const statsUrl = `/api/crm/dashboard/stats?period=${timePeriod}${tenantId ? `&tenantId=${encodeURIComponent(tenantId)}` : ''}&lite=${mode === 'lite' ? '1' : '0'}`
+      const liteParam = mode === 'lite' ? '1' : '0'
+      const chartsParam = mode === 'charts' ? '&chartsOnly=1' : ''
+      const statsUrl = `/api/crm/dashboard/stats?period=${timePeriod}${tenantId ? `&tenantId=${encodeURIComponent(tenantId)}` : ''}&lite=${liteParam}${chartsParam}`
       const statsController = new AbortController()
       const onParentAbort = () => statsController.abort()
       if (signal) signal.addEventListener('abort', onParentAbort, { once: true })
-      const statsTimeout = setTimeout(() => statsController.abort(), mode === 'lite' ? 12_000 : 45_000)
+      const statsTimeout = setTimeout(
+        () => statsController.abort(),
+        mode === 'lite' ? 25_000 : 90_000 // full + charts (heavy)
+      )
       let response: Response
       try {
         response = await fetch(statsUrl, {
@@ -894,6 +919,8 @@ export default function CRMDashboardPage() {
         
         try {
           const data = JSON.parse(text)
+          // Clear stale messages (e.g. lite timeout → background fetch succeeded)
+          setError(null)
           console.log('[CRM_DASHBOARD] Stats data received:', {
             dealsCreatedThisMonth: data.dealsCreatedThisMonth,
             revenueThisMonth: data.revenueThisMonth,
@@ -929,31 +956,64 @@ export default function CRMDashboardPage() {
             }
           }
           
-          setStats((prev) => {
-            const nextQuarterly = normalizeArray(data.quarterlyPerformance, [])
-            const nextMonthly = normalizeArray(data.monthlyLeadCreation, [])
-            const nextLeadSources = normalizeArray(data.topLeadSources, [])
-            const nextPipeline = normalizeArray(data.pipelineByStage, [])
-            const isLiteMode = mode === 'lite'
+          if (data.chartsOnly) {
+            setStats((prev) => {
+              const base =
+                prev ??
+                ({
+                  dealsCreatedThisMonth: 0,
+                  revenueThisMonth: 0,
+                  dealsClosingThisMonth: 0,
+                  overdueTasks: 0,
+                  completedTasks: 0,
+                  totalTasks: 0,
+                  totalLeads: 0,
+                  convertedLeads: 0,
+                  contactsCreatedThisMonth: 0,
+                  activeCustomers: 0,
+                  quarterlyPerformance: [],
+                  pipelineByStage: [],
+                  monthlyLeadCreation: [],
+                  topLeadSources: [],
+                } satisfies DashboardStats)
+              return {
+                ...base,
+                quarterlyPerformance: normalizeArray(data.quarterlyPerformance, []),
+                pipelineByStage: normalizeArray(data.pipelineByStage, []),
+                monthlyLeadCreation: normalizeArray(data.monthlyLeadCreation, []),
+                topLeadSources: normalizeArray(data.topLeadSources, []),
+              }
+            })
+          } else {
+            setStats((prev) => {
+              const nextQuarterly = normalizeArray(data.quarterlyPerformance, [])
+              const nextMonthly = normalizeArray(data.monthlyLeadCreation, [])
+              const nextLeadSources = normalizeArray(data.topLeadSources, [])
+              const nextPipeline = normalizeArray(data.pipelineByStage, [])
+              const isLiteMode = mode === 'lite'
 
-            return {
-              dealsCreatedThisMonth: Number(data.dealsCreatedThisMonth || 0),
-              revenueThisMonth: Number(data.revenueThisMonth || 0),
-              dealsClosingThisMonth: Number(data.dealsClosingThisMonth || 0),
-              overdueTasks: Number(data.overdueTasks || 0),
-              completedTasks: Number(data.completedTasks || 0),
-              totalTasks: Number(data.totalTasks || 0),
-              totalLeads: Number(data.totalLeads || 0),
-              convertedLeads: Number(data.convertedLeads || 0),
-              contactsCreatedThisMonth: Number(data.contactsCreatedThisMonth || 0),
-              activeCustomers: Number(data.activeCustomers || data.convertedLeads || 0),
-              quarterlyPerformance: isLiteMode && (nextQuarterly.length === 0) ? (prev?.quarterlyPerformance || []) : nextQuarterly,
-              pipelineByStage: nextPipeline,
-              monthlyLeadCreation: isLiteMode && (nextMonthly.length === 0) ? (prev?.monthlyLeadCreation || []) : nextMonthly,
-              topLeadSources: isLiteMode && (nextLeadSources.length === 0) ? (prev?.topLeadSources || []) : nextLeadSources,
-            }
-          })
-          if (mode === 'full') {
+              return {
+                dealsCreatedThisMonth: Number(data.dealsCreatedThisMonth || 0),
+                revenueThisMonth: Number(data.revenueThisMonth || 0),
+                dealsClosingThisMonth: Number(data.dealsClosingThisMonth || 0),
+                overdueTasks: Number(data.overdueTasks || 0),
+                completedTasks: Number(data.completedTasks || 0),
+                totalTasks: Number(data.totalTasks || 0),
+                totalLeads: Number(data.totalLeads || 0),
+                convertedLeads: Number(data.convertedLeads || 0),
+                contactsCreatedThisMonth: Number(data.contactsCreatedThisMonth || 0),
+                activeCustomers: Number(data.activeCustomers || data.convertedLeads || 0),
+                quarterlyPerformance:
+                  isLiteMode && nextQuarterly.length === 0 ? prev?.quarterlyPerformance || [] : nextQuarterly,
+                pipelineByStage: nextPipeline,
+                monthlyLeadCreation:
+                  isLiteMode && nextMonthly.length === 0 ? prev?.monthlyLeadCreation || [] : nextMonthly,
+                topLeadSources:
+                  isLiteMode && nextLeadSources.length === 0 ? prev?.topLeadSources || [] : nextLeadSources,
+              }
+            })
+          }
+          if (mode === 'full' || mode === 'charts') {
             setIsHydratingFullStats(false)
           }
           if (!background) {
@@ -995,7 +1055,7 @@ export default function CRMDashboardPage() {
             return
           }
           
-          return fetchDashboardStats(signal, retryCount + 1)
+          return fetchDashboardStats(signal, retryCount + 1, mode, background)
         } else {
           setError(errorMessage || 'Too many concurrent requests. Please wait a moment and refresh the page.')
           if (!background) {
@@ -1050,7 +1110,7 @@ export default function CRMDashboardPage() {
             return
           }
           
-          return fetchDashboardStats(signal, retryCount + 1)
+          return fetchDashboardStats(signal, retryCount + 1, mode, background)
         } else {
           const errorMessage = (errorData as any).message || (errorData as any).error || 'Database temporarily unavailable'
           setError(errorMessage + '. Please refresh the page in a moment.')
@@ -1105,15 +1165,17 @@ export default function CRMDashboardPage() {
       }
       // Timeout aborts from our local controller should resolve loading state.
       if (error?.name === 'AbortError') {
-        if (mode === 'full') {
+        if (mode === 'full' || mode === 'charts') {
           setIsHydratingFullStats(false)
         }
         if (background) {
           return
         }
-        setError('Dashboard request timed out. Please refresh once or try again in a moment.')
+        // Avoid hard-error dead-end on slow tenants. Keep UI usable with safe defaults
+        // and trigger a non-blocking full refresh in the background.
+        setError('Dashboard is taking longer than usual. Loading available data...')
         setLoading(false)
-        setStats({
+        setStats((prev) => prev || {
           dealsCreatedThisMonth: 0,
           revenueThisMonth: 0,
           dealsClosingThisMonth: 0,
@@ -1123,6 +1185,12 @@ export default function CRMDashboardPage() {
           monthlyLeadCreation: [],
           topLeadSources: [],
         })
+        setIsHydratingFullStats(true)
+        setTimeout(() => {
+          fetchDashboardStats(undefined, 0, 'full', true)
+            .catch(() => {})
+            .finally(() => setIsHydratingFullStats(false))
+        }, 300)
         return
       }
       
@@ -1142,11 +1210,11 @@ export default function CRMDashboardPage() {
           return
         }
         
-        return fetchDashboardStats(signal, retryCount + 1)
+        return fetchDashboardStats(signal, retryCount + 1, mode, background)
       }
       
       if (background) {
-        if (mode === 'full') {
+        if (mode === 'full' || mode === 'charts') {
           setIsHydratingFullStats(false)
         }
         return
@@ -1393,6 +1461,16 @@ export default function CRMDashboardPage() {
     }
   })()
 
+  // Plain object (not useMemo): must not use hooks after early returns above — Rules of Hooks.
+  const aiCommandCenterStats = {
+    ...safeStats,
+    activeDeals: (safeStats.pipelineByStage || []).reduce((s: number, p: any) => s + (Number(p?.count) || 0), 0),
+    forecastedRevenue: (safeStats.pipelineByStage || []).reduce((s: number, p: any) => s + (Number(p?.value) || 0), 0),
+    atRiskContacts: (safeStats as any).atRiskContacts ?? 0,
+  }
+
+  const errorIsSlowLoadNotice = Boolean(error && error.toLowerCase().includes('taking longer'))
+
   return (
     <div className="w-full bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-50 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 relative transition-colors min-h-screen">
       {/* Welcome Banner - Enhanced - PayAid Brand Colors */}
@@ -1465,9 +1543,31 @@ export default function CRMDashboardPage() {
       </div>
 
       {error && (
-        <div className="mx-6 mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-red-700 dark:text-red-400 font-medium">Error:</p>
-          <p className="text-red-600 dark:text-red-300 text-sm">{error}</p>
+        <div
+          className={
+            errorIsSlowLoadNotice
+              ? 'mx-6 mt-4 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg'
+              : 'mx-6 mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg'
+          }
+        >
+          <p
+            className={
+              errorIsSlowLoadNotice
+                ? 'text-amber-800 dark:text-amber-200 font-medium'
+                : 'text-red-700 dark:text-red-400 font-medium'
+            }
+          >
+            {errorIsSlowLoadNotice ? 'Notice:' : 'Error:'}
+          </p>
+          <p
+            className={
+              errorIsSlowLoadNotice
+                ? 'text-amber-900 dark:text-amber-100 text-sm'
+                : 'text-red-600 dark:text-red-300 text-sm'
+            }
+          >
+            {error}
+          </p>
         </div>
       )}
 
@@ -1482,12 +1582,7 @@ export default function CRMDashboardPage() {
           >
             <AICommandCenter
               tenantId={tenantId}
-              stats={{
-                ...safeStats,
-                activeDeals: (safeStats.pipelineByStage || []).reduce((s: number, p: any) => s + (Number(p?.count) || 0), 0),
-                forecastedRevenue: (safeStats.pipelineByStage || []).reduce((s: number, p: any) => s + (Number(p?.value) || 0), 0),
-                atRiskContacts: (safeStats as any).atRiskContacts ?? 0,
-              }}
+              stats={aiCommandCenterStats}
               timePeriod={timePeriod}
               userName={user?.name}
             />
@@ -1992,6 +2087,10 @@ export default function CRMDashboardPage() {
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
+                      ) : isHydratingFullStats ? (
+                        <div className="flex items-center justify-center text-gray-500 dark:text-gray-400" style={{ height: '100%' }}>
+                          <p>Loading detailed pipeline data...</p>
+                        </div>
                       ) : (
                         <div className="flex items-center justify-center text-gray-500 dark:text-gray-400" style={{ height: '100%' }}>
                           <p>No pipeline data available</p>
@@ -2039,6 +2138,10 @@ export default function CRMDashboardPage() {
                               <Area type="monotone" dataKey="leads" stroke={PURPLE_PRIMARY} fillOpacity={1} fill="url(#colorLeads)" />
                             </AreaChart>
                           </ResponsiveContainer>
+                        </div>
+                      ) : isHydratingFullStats ? (
+                        <div className="flex items-center justify-center text-gray-500 dark:text-gray-400" style={{ height: '100%' }}>
+                          <p>Loading detailed lead trends...</p>
                         </div>
                       ) : (
                         <div className="flex items-center justify-center text-gray-500 dark:text-gray-400" style={{ height: '100%' }}>
@@ -2143,6 +2246,10 @@ export default function CRMDashboardPage() {
                               <Bar dataKey="conversionsCount" fill={GOLD_ACCENT} name="Conversions" radius={[0, 8, 8, 0]} />
                             </BarChart>
                           </ResponsiveContainer>
+                        </div>
+                      ) : isHydratingFullStats ? (
+                        <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 space-y-3" style={{ height: '100%' }}>
+                          <p className="text-base font-medium">Loading detailed lead sources...</p>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 space-y-3" style={{ height: '100%' }}>

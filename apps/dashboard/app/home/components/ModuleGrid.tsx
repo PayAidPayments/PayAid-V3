@@ -5,16 +5,7 @@ import { Loading } from '@/components/ui/loading';
 import { useState, useEffect, useMemo } from 'react';
 import { useAuthStore } from '@/lib/stores/auth';
 import { Search } from 'lucide-react';
-
-// Lazy import to avoid SSR evaluation
-let modulesConfig: typeof import('@/lib/modules.config') | null = null;
-
-async function getModulesConfig() {
-  if (!modulesConfig) {
-    modulesConfig = await import('@/lib/modules.config');
-  }
-  return modulesConfig;
-}
+import { modules as modulesFromConfig, getModulesByCategory } from '@/lib/modules.config';
 
 const CATEGORY_LABELS: Record<string, string> = {
   core: 'Core Business',
@@ -51,27 +42,24 @@ export function ModuleGrid({ moduleSummaries }: { moduleSummaries?: Record<strin
           .catch(err => console.error('Failed to fetch user data:', err));
       }
       
-      getModulesConfig().then(async config => {
-        setModules(config.modules);
-        const categorized = config.getModulesByCategory();
-        setCategorizedModules(categorized);
-        
-        // Pre-load all icons at once
+      void (async () => {
+        setModules(modulesFromConfig);
+        setCategorizedModules(getModulesByCategory());
+
         const icons: Record<string, any> = {};
-        const uniqueIcons = new Set(config.modules.map((m: any) => m.icon));
-        
+        const uniqueIcons = new Set(modulesFromConfig.map((m) => m.icon));
+
         try {
           const lucideReact = await import('lucide-react');
           for (const iconName of uniqueIcons) {
-            // Skip custom icons that don't exist in lucide-react
             if (iconName === 'IndianRupee') {
-              continue; // Handled by custom component in ModuleCard
+              continue;
             }
             const iconKey = iconName as keyof typeof lucideReact;
             if (lucideReact[iconKey]) {
               icons[iconName] = lucideReact[iconKey];
             } else {
-              icons[iconName] = lucideReact.Users; // Fallback
+              icons[iconName] = lucideReact.Users;
             }
           }
           setIconMap(icons);
@@ -80,7 +68,7 @@ export function ModuleGrid({ moduleSummaries }: { moduleSummaries?: Record<strin
         } finally {
           setIconsLoading(false);
         }
-      });
+      })();
     }
   }, [isAuthenticated, tenant?.id, token]);
   

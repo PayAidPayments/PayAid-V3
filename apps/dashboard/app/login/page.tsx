@@ -64,7 +64,7 @@ export default function LoginPage() {
         router.prefetch(crmHomeHref)
         // Warm CRM dashboard stats request for immediate post-login load.
         fetch(
-          `/api/crm/dashboard/stats?period=month&tenantId=${encodeURIComponent(tenant.id)}`,
+          `/api/crm/dashboard/stats?period=month&lite=1&tenantId=${encodeURIComponent(tenant.id)}`,
           { headers: { Authorization: `Bearer ${loginResult.token}` } }
         ).catch(() => {
           // Best-effort warmup only.
@@ -103,7 +103,12 @@ export default function LoginPage() {
         }
       }
     } catch (err) {
-      const isTimeout = err instanceof Error && (err.message.includes('timeout') || err.message.includes('timed out'))
+      const isTimeout =
+        err instanceof Error &&
+        (err.message.includes('timeout') ||
+          err.message.includes('timed out') ||
+          err.message.includes('longer than usual') ||
+          err.message.includes('warm-up/compile'))
       if (isTimeout) {
         console.warn('[LOGIN PAGE] Login timed out.')
       } else {
@@ -112,8 +117,8 @@ export default function LoginPage() {
       let errorMessage = 'Login failed'
       if (err instanceof Error) {
         errorMessage = err.message
-        if (err.message.includes('timeout') || err.message.includes('timed out')) {
-          errorMessage = 'Login timed out. Click Sign in again.'
+        if (err.message.includes('timeout') || err.message.includes('timed out') || err.message.includes('longer than usual')) {
+          errorMessage = 'Login is taking longer than usual. Please try again in a moment.'
         } else if (err.message.includes('Invalid email or password')) {
           errorMessage = 'Invalid email or password.'
         } else if (err.message.includes('Database') || err.message.includes('database')) {

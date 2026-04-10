@@ -1,9 +1,31 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import Script from 'next/script'
 
-declare global {
+const SPLINE_VIEWER_VERSION = '1.12.77'
+const SPLINE_VIEWER_MODULE = `https://unpkg.com/@splinetool/viewer@${SPLINE_VIEWER_VERSION}/build/spline-viewer.js`
+const SPLINE_SCENE_URL = 'https://prod.spline.design/p5FMEypZOvJ11JJ2/scene.splinecode'
+
+function ensureHeadLink(rel: string, href: string, extra?: Record<string, string>) {
+  const safe = href.replace(/[^a-zA-Z0-9]/g, '').slice(0, 64)
+  const id = `payaid-spline-${rel}-${safe}`
+  if (document.getElementById(id)) return
+  const link = document.createElement('link')
+  link.id = id
+  link.rel = rel
+  link.href = href
+  if (extra) {
+    for (const [k, v] of Object.entries(extra)) {
+      link.setAttribute(k, v)
+    }
+  }
+  document.head.appendChild(link)
+}
+
+// Custom element declaration for the Spline viewer web component.
+// Uses React.JSX namespace (React 18+) with a fallback to the global JSX namespace.
+declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
       'spline-viewer': React.DetailedHTMLProps<
@@ -20,14 +42,27 @@ declare global {
  */
 export default function LottieHero() {
   const [canRenderSpline, setCanRenderSpline] = useState(false)
+  const warmDnsRef = useRef(false)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (!warmDnsRef.current) {
+      warmDnsRef.current = true
+      // layout.tsx already dns-prefetches; open TLS early for viewer + scene
+      ensureHeadLink('preconnect', 'https://unpkg.com')
+      ensureHeadLink('preconnect', 'https://prod.spline.design', { crossorigin: 'anonymous' })
+    }
+
     try {
       const canvas = document.createElement('canvas')
       const gl =
         canvas.getContext('webgl', { failIfMajorPerformanceCaveat: true }) ||
         canvas.getContext('experimental-webgl', { failIfMajorPerformanceCaveat: true })
-      setCanRenderSpline(Boolean(gl))
+      const ok = Boolean(gl)
+      setCanRenderSpline(ok)
+      if (ok) {
+        ensureHeadLink('modulepreload', SPLINE_VIEWER_MODULE, { crossorigin: 'anonymous' })
+        ensureHeadLink('preload', SPLINE_SCENE_URL, { as: 'fetch', crossorigin: 'anonymous' })
+      }
     } catch {
       setCanRenderSpline(false)
     }
@@ -41,7 +76,7 @@ export default function LottieHero() {
       {canRenderSpline && (
         <Script
           type="module"
-          src="https://unpkg.com/@splinetool/viewer@1.12.77/build/spline-viewer.js"
+          src={SPLINE_VIEWER_MODULE}
           strategy="afterInteractive"
         />
       )}
@@ -49,7 +84,7 @@ export default function LottieHero() {
       {/* 3D Content */}
       {canRenderSpline ? (
         <spline-viewer
-          url="https://prod.spline.design/p5FMEypZOvJ11JJ2/scene.splinecode"
+          url={SPLINE_SCENE_URL}
           style={{ width: '100%', height: '100%', display: 'block' }}
         />
       ) : (

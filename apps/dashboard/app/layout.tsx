@@ -30,6 +30,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="light" suppressHydrationWarning>
       <head>
+        <link rel="dns-prefetch" href="https://unpkg.com" />
+        <link rel="dns-prefetch" href="https://prod.spline.design" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
