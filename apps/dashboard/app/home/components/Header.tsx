@@ -24,33 +24,52 @@ export function Header() {
     setMounted(true);
   }, []);
 
-  // Fetch news unread count
+  // Fetch news unread count (deferred: /api/news is heavy on first dev compile; do not block shell paint)
   useEffect(() => {
+    if (!token) return;
+
+    let cancelled = false;
     const fetchNewsCount = async () => {
       try {
-        if (!token) return;
-
         const response = await fetch('/api/news?limit=1', {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
         });
+        if (cancelled) return;
         if (response.ok) {
           const data = await response.json();
           setNewsUnreadCount(data.unreadCount || 0);
         }
-      } catch (error) {
+      } catch {
         // Silently fail - news might not be available
       }
     };
 
-    if (token) {
-      fetchNewsCount();
-      // Refresh every 5 minutes
-      const interval = setInterval(fetchNewsCount, 5 * 60 * 1000);
-      return () => clearInterval(interval);
+    let idleId: number | undefined;
+    let deferTimeoutId: ReturnType<typeof setTimeout> | undefined;
+    const kick = () => {
+      if (!cancelled) void fetchNewsCount();
+    };
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      idleId = window.requestIdleCallback(kick, { timeout: 5000 });
+    } else {
+      deferTimeoutId = setTimeout(kick, 800);
     }
+
+    const interval = setInterval(() => {
+      if (!cancelled) void fetchNewsCount();
+    }, 5 * 60 * 1000);
+
+    return () => {
+      cancelled = true;
+      if (idleId !== undefined && 'cancelIdleCallback' in window) {
+        window.cancelIdleCallback(idleId);
+      }
+      if (deferTimeoutId) clearTimeout(deferTimeoutId);
+      clearInterval(interval);
+    };
   }, [token]);
 
   const handleNewsClick = () => {

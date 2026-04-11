@@ -30,6 +30,29 @@ interface ActionItem {
   calculation?: string
 }
 
+/** Defer heavy /api/ai/insights so CRM dashboard stats & paint win the network/main thread first. */
+function scheduleIdleTask(run: () => void, timeoutMs = 2500): () => void {
+  if (typeof window === 'undefined') {
+    run()
+    return () => {}
+  }
+  let idleId: number | undefined
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+  if ('requestIdleCallback' in window) {
+    idleId = window.requestIdleCallback(() => run(), { timeout: timeoutMs })
+  } else {
+    timeoutId = window.setTimeout(run, 400)
+  }
+  return () => {
+    if (idleId != null && 'cancelIdleCallback' in window) {
+      window.cancelIdleCallback(idleId)
+    }
+    if (timeoutId != null) {
+      clearTimeout(timeoutId)
+    }
+  }
+}
+
 export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userName }: AICommandCenterProps) {
   const [summary, setSummary] = useState<{
     greeting: string
@@ -68,6 +91,7 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
 
     let cancelled = false
     const run = async () => {
+      if (cancelled) return
       try {
         await fetchAIInsights()
       } catch (err) {
@@ -81,8 +105,16 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
         }
       }
     }
-    void run()
-    return () => { cancelled = true }
+
+    const cancelIdle = scheduleIdleTask(() => {
+      if (!cancelled) void run()
+    })
+
+    return () => {
+      cancelled = true
+      cancelIdle()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, token, stats, timePeriod])
 
   // Parse action text and create ActionItem with metadata.

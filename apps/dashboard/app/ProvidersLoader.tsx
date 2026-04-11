@@ -55,17 +55,44 @@ class ChunkErrorBoundary extends React.Component<
 > {
   state = { chunkError: null as Error | null }
 
+  private reloadWithCacheBust = () => {
+    if (typeof window === 'undefined') return
+    const url = new URL(window.location.href)
+    url.searchParams.set('__chunk_retry', Date.now().toString())
+    window.location.replace(url.toString())
+  }
+
   static getDerivedStateFromError(error: Error) {
     return isChunkLoadError(error) ? { chunkError: error } : { chunkError: null }
   }
 
   componentDidCatch(error: Error) {
     if (!isChunkLoadError(error)) throw error
+    if (typeof window === 'undefined') return
+
+    // Auto-recover once to handle stale webpack chunk references after rebuilds.
+    const retryKey = '__payaid_chunk_retry_once__'
+    const hasRetried = sessionStorage.getItem(retryKey) === '1'
+    if (!hasRetried) {
+      sessionStorage.setItem(retryKey, '1')
+      this.reloadWithCacheBust()
+      return
+    }
   }
 
   render() {
     if (this.state.chunkError) {
-      return <ChunkErrorFallback onRetry={() => window.location.reload()} />
+      return (
+        <ChunkErrorFallback
+          onRetry={() => {
+            sessionStorage.removeItem('__payaid_chunk_retry_once__')
+            this.reloadWithCacheBust()
+          }}
+        />
+      )
+    }
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('__payaid_chunk_retry_once__')
     }
     return this.props.children
   }

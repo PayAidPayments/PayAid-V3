@@ -136,8 +136,17 @@ export const useAuthStore = create<AuthState>()(
                 errorMessage =
                   (error && (error.message || error.error)) ||
                   `Login failed (${response.status})`
+                const isTimeoutLikeMessage =
+                  typeof errorMessage === 'string' &&
+                  (errorMessage.includes('timeout') ||
+                    errorMessage.includes('timed out') ||
+                    errorMessage.includes('longer than usual') ||
+                    errorMessage.includes('warm-up/compile'))
                 if (error && typeof error === 'object' && (Object.keys(error).length === 0 || !error.message)) {
                   console.error('[AUTH] Login error response:', response.status, response.statusText, error)
+                } else if (isTimeoutLikeMessage) {
+                  // Expected during cold starts / compile delays; keep console quieter.
+                  console.warn('[AUTH] Login timeout-like response:', errorMessage)
                 } else {
                   console.error('[AUTH] Login error:', errorMessage)
                 }

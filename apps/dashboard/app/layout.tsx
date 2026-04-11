@@ -32,6 +32,9 @@ export default function RootLayout({
       <head>
         <link rel="dns-prefetch" href="https://unpkg.com" />
         <link rel="dns-prefetch" href="https://prod.spline.design" />
+        {/* Early TLS + socket for Spline hero (viewer on unpkg, scene on spline.design) */}
+        <link rel="preconnect" href="https://unpkg.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://prod.spline.design" crossOrigin="anonymous" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

@@ -270,9 +270,7 @@ export default function CRMDashboardPage() {
     if (!loading) return
     const id = setTimeout(() => {
       setLoading(false)
-      if (!stats && !error) {
-        setError('Dashboard is taking longer than expected. Please refresh once or sign in again.')
-      }
+      // Keep UI usable without showing a transient slow-load warning banner.
     }, 60000)
     return () => clearTimeout(id)
   }, [loading, stats, error])
@@ -1173,7 +1171,6 @@ export default function CRMDashboardPage() {
         }
         // Avoid hard-error dead-end on slow tenants. Keep UI usable with safe defaults
         // and trigger a non-blocking full refresh in the background.
-        setError('Dashboard is taking longer than usual. Loading available data...')
         setLoading(false)
         setStats((prev) => prev || {
           dealsCreatedThisMonth: 0,
