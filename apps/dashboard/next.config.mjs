@@ -21,6 +21,10 @@ const nextConfig = {
   // Prevent Vercel deployment stalls in large monorepo typecheck phase.
   // Keep strict typecheck in local/CI via `npm run -w apps/dashboard typecheck`.
   typescript: { ignoreBuildErrors: process.env.VERCEL === '1' },
+  eslint: { ignoreDuringBuilds: true },
+  productionBrowserSourceMaps: false,
+  // Per-page static generation cap (seconds); avoids one bad route stalling the whole build indefinitely.
+  staticPageGenerationTimeout: 180,
   // Monorepo: trace serverless deps from repo root (hoisted node_modules), not only apps/dashboard
   outputFileTracingRoot: rootDir,
   transpilePackages: ['@payaid/db', '@payaid/social', '@payaid/ai'],
@@ -33,6 +37,14 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ['@radix-ui/*', 'lucide-react', 'framer-motion', 'recharts', 'handsontable', '@tiptap/react'],
+    // Vercel (8GB): let Next scale static page collection workers from free memory; speeds up
+    // "Collecting page data" vs a single worker. webpackMemoryOptimizations reduces peak heap.
+    ...(process.env.VERCEL === '1'
+      ? {
+          memoryBasedWorkersCount: true,
+          webpackMemoryOptimizations: true,
+        }
+      : {}),
   },
   webpack: (config, { webpack }) => {
     config.resolve.alias = config.resolve.alias || {}

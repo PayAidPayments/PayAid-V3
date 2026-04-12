@@ -2,5 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "cd ../.. && npm install --legacy-peer-deps --no-audit --no-fund",
-  "buildCommand": "NODE_OPTIONS=--max-old-space-size=5120 npm run build"
+  "buildCommand": "NODE_OPTIONS=--max-old-space-size=6144 npm run build"
 }
