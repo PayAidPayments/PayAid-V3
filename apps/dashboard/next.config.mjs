@@ -21,7 +21,6 @@ const nextConfig = {
   // Prevent Vercel deployment stalls in large monorepo typecheck phase.
   // Keep strict typecheck in local/CI via `npm run -w apps/dashboard typecheck`.
   typescript: { ignoreBuildErrors: process.env.VERCEL === '1' },
-  eslint: { ignoreDuringBuilds: true },
   productionBrowserSourceMaps: false,
   // Per-page static generation cap (seconds); avoids one bad route stalling the whole build indefinitely.
   staticPageGenerationTimeout: 180,
