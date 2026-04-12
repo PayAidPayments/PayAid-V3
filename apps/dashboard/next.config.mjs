@@ -42,6 +42,12 @@ const nextConfig = {
       ? {
           memoryBasedWorkersCount: true,
           webpackMemoryOptimizations: true,
+          // Custom `webpack()` disables the compile worker by default, which also
+          // blocks parallel trace collection. Re-enable so "Collecting build
+          // traces" overlaps server compile and finishes before the hard Vercel
+          // ~45m cap on large monorepos with outputFileTracingRoot.
+          webpackBuildWorker: true,
+          parallelServerBuildTraces: true,
         }
       : {}),
   },
