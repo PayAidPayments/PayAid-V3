@@ -38,6 +38,8 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 // ModuleTopBar is now in layout.tsx
 import { AIScoreBadge, calculateDealScore, calculateContactScore } from '@/components/ai/AIScoreBadge'
+import { ActivitiesCommandCenter } from './activities/ActivitiesCommandCenter'
+import type { ActivityItem } from './activities/types'
 
 // Single Page AI is provided by AppShell (PageAIAssistant). Band 1 uses full AI Command Center (insights, regenerate, expandable actions).
 import { AICommandCenter } from '@/components/ai/AICommandCenter'
@@ -93,6 +95,7 @@ interface DashboardStats {
     totalValue: number
     conversionRate: number
   }[]
+  atRiskContacts?: number
 }
 
 interface TasksViewData {
@@ -178,7 +181,7 @@ export default function CRMDashboardPage() {
   
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [tasksViewData, setTasksViewData] = useState<TasksViewData | null>(null)
-  const [activityFeedData, setActivityFeedData] = useState<any[]>([])
+  const [activityFeedData, setActivityFeedData] = useState<ActivityItem[]>([])
   const [activityFilter, setActivityFilter] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -196,6 +199,11 @@ export default function CRMDashboardPage() {
   const abortControllerRef = useRef<AbortController | null>(null)
   const hasCheckedDataRef = useRef(false) // Track if we've checked for demo data
   const hasTriggeredEnsureDemoRef = useRef(false)
+  const crmDemoPolishTenantRef = useRef<string | null>(null)
+  const fetchDashboardStatsRef = useRef<
+    ((signal?: AbortSignal, retryCount?: number, mode?: 'lite' | 'full' | 'charts', background?: boolean) => Promise<void>) | null
+  >(null)
+  const [supportOpenTickets, setSupportOpenTickets] = useState(0)
   const perfMarksSetRef = useRef({
     mounted: false,
     kpiVisible: false,
@@ -756,6 +764,56 @@ export default function CRMDashboardPage() {
     }
   }, [activityFilter, currentView])
 
+  // Demo tenant: idempotent CRM KPI polish. Uses ref so this can live with other effects (before fetchDashboardStats is defined).
+  useEffect(() => {
+    if (!tenantId || !token) return
+    if (crmDemoPolishTenantRef.current === tenantId) return
+    crmDemoPolishTenantRef.current = tenantId
+    void (async () => {
+      try {
+        const r = await fetch(
+          `/api/admin/polish-crm-demo?tenantId=${encodeURIComponent(tenantId)}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        if (!r.ok) return
+        const data = await r.json()
+        if (data?.modified) {
+          const run = fetchDashboardStatsRef.current
+          if (run) {
+            await run(undefined, 0, 'lite', false)
+            queueMicrotask(() => {
+              run(undefined, 0, 'charts', true).catch(() => {})
+            })
+          }
+        }
+      } catch {
+        // ignore
+      }
+    })()
+  }, [tenantId, token])
+
+  useEffect(() => {
+    if (!tenantId || !token) return
+    let cancelled = false
+    void (async () => {
+      try {
+        const r = await fetch('/api/support/tickets', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!r.ok || cancelled) return
+        const data = await r.json()
+        const tickets = Array.isArray(data?.tickets) ? data.tickets : []
+        const open = tickets.filter((t: { status?: string }) => t.status === 'open' || t.status === 'new').length
+        if (!cancelled) setSupportOpenTickets(open)
+      } catch {
+        if (!cancelled) setSupportOpenTickets(0)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [tenantId, token])
+
   const fetchTasksViewData = async () => {
     // Prevent duplicate calls
     if (fetchingTasksViewRef.current) {
@@ -973,6 +1031,7 @@ export default function CRMDashboardPage() {
                   pipelineByStage: [],
                   monthlyLeadCreation: [],
                   topLeadSources: [],
+                  atRiskContacts: 0,
                 } satisfies DashboardStats)
               return {
                 ...base,
@@ -980,6 +1039,8 @@ export default function CRMDashboardPage() {
                 pipelineByStage: normalizeArray(data.pipelineByStage, []),
                 monthlyLeadCreation: normalizeArray(data.monthlyLeadCreation, []),
                 topLeadSources: normalizeArray(data.topLeadSources, []),
+                atRiskContacts:
+                  typeof data.atRiskContacts === 'number' ? data.atRiskContacts : (base.atRiskContacts ?? 0),
               }
             })
           } else {
@@ -1001,6 +1062,9 @@ export default function CRMDashboardPage() {
                 convertedLeads: Number(data.convertedLeads || 0),
                 contactsCreatedThisMonth: Number(data.contactsCreatedThisMonth || 0),
                 activeCustomers: Number(data.activeCustomers || data.convertedLeads || 0),
+                atRiskContacts: Number(
+                  data.atRiskContacts !== undefined ? data.atRiskContacts : prev?.atRiskContacts ?? 0
+                ),
                 quarterlyPerformance:
                   isLiteMode && nextQuarterly.length === 0 ? prev?.quarterlyPerformance || [] : nextQuarterly,
                 pipelineByStage: nextPipeline,
@@ -1074,6 +1138,7 @@ export default function CRMDashboardPage() {
             pipelineByStage: [],
             monthlyLeadCreation: [],
             topLeadSources: [],
+            atRiskContacts: 0,
           })
         }
       } else if (response.status === 503) {
@@ -1130,6 +1195,7 @@ export default function CRMDashboardPage() {
             pipelineByStage: [],
             monthlyLeadCreation: [],
             topLeadSources: [],
+            atRiskContacts: 0,
           })
         }
       } else {
@@ -1181,6 +1247,7 @@ export default function CRMDashboardPage() {
           pipelineByStage: [],
           monthlyLeadCreation: [],
           topLeadSources: [],
+          atRiskContacts: 0,
         })
         setIsHydratingFullStats(true)
         setTimeout(() => {
@@ -1233,9 +1300,12 @@ export default function CRMDashboardPage() {
         pipelineByStage: [],
         monthlyLeadCreation: [],
         topLeadSources: [],
+        atRiskContacts: 0,
       })
     }
   }
+
+  fetchDashboardStatsRef.current = fetchDashboardStats
 
   // Show loading if tenantId is not available yet or not a valid string
   if (!tenantId || typeof tenantId !== 'string' || !tenantId.trim()) {
@@ -1281,6 +1351,7 @@ export default function CRMDashboardPage() {
         pipelineByStage: [],
         monthlyLeadCreation: [],
         topLeadSources: [],
+        atRiskContacts: 0,
       }
     }
     
@@ -1296,6 +1367,7 @@ export default function CRMDashboardPage() {
       convertedLeads: Number(stats.convertedLeads || 0),
       contactsCreatedThisMonth: Number(stats.contactsCreatedThisMonth || stats.totalLeads || 0),
       activeCustomers: Number(stats.activeCustomers || stats.convertedLeads || 0),
+      atRiskContacts: Number(stats.atRiskContacts || 0),
       quarterlyPerformance: Array.isArray(stats.quarterlyPerformance) ? stats.quarterlyPerformance : [],
       pipelineByStage: Array.isArray(stats.pipelineByStage) ? stats.pipelineByStage : [],
       monthlyLeadCreation: Array.isArray(stats.monthlyLeadCreation) ? stats.monthlyLeadCreation : [],
@@ -1463,7 +1535,7 @@ export default function CRMDashboardPage() {
     ...safeStats,
     activeDeals: (safeStats.pipelineByStage || []).reduce((s: number, p: any) => s + (Number(p?.count) || 0), 0),
     forecastedRevenue: (safeStats.pipelineByStage || []).reduce((s: number, p: any) => s + (Number(p?.value) || 0), 0),
-    atRiskContacts: (safeStats as any).atRiskContacts ?? 0,
+    atRiskContacts: safeStats.atRiskContacts ?? 0,
   }
 
   const errorIsSlowLoadNotice = Boolean(error && error.toLowerCase().includes('taking longer'))
@@ -1803,130 +1875,11 @@ export default function CRMDashboardPage() {
             </Card>
           </div>
         ) : currentView === 'activity' ? (
-          // Activity Feed View - Chronological timeline of all activities
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Activity Feed</h2>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
-                  Chronological timeline of all activities across your team
-                </p>
-              </div>
-              <select
-                value={activityFilter}
-                onChange={(e) => {
-                  setActivityFilter(e.target.value)
-                }}
-                className="text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-gray-700 dark:text-gray-300"
-              >
-                <option value="">All Activities</option>
-                <option value="task">Tasks</option>
-                <option value="call">Calls</option>
-                <option value="email">Emails</option>
-                <option value="meeting">Meetings</option>
-                <option value="deal">Deals</option>
-              </select>
-            </div>
-
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 rounded-xl">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-semibold">Recent Activities</CardTitle>
-                <CardDescription className="text-sm">All activities sorted by most recent</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {Array.isArray(activityFeedData) && activityFeedData.length > 0 ? (
-                  <div className="space-y-4">
-                    {(Array.isArray(activityFeedData) ? activityFeedData : []).map((activity, index) => (
-                      <div
-                        key={activity.id}
-                        className="flex gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                      >
-                        {/* Timeline indicator */}
-                        <div className="flex flex-col items-center">
-                          <div className={`w-3 h-3 rounded-full ${
-                            activity.type === 'task' ? 'bg-blue-500' :
-                            activity.type === 'call' ? 'bg-green-500' :
-                            activity.type === 'email' ? 'bg-purple-500' :
-                            activity.type === 'meeting' ? 'bg-orange-500' :
-                            activity.type === 'deal' ? 'bg-yellow-500' :
-                            'bg-gray-500'
-                          }`} />
-                          {index < activityFeedData.length - 1 && (
-                            <div className="w-0.5 h-full bg-gray-200 dark:bg-gray-700 mt-2" />
-                          )}
-                        </div>
-
-                        {/* Activity content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge className={
-                                  activity.type === 'task' ? 'bg-info-light text-info border border-info/30' :
-                                  activity.type === 'call' ? 'bg-emerald-success/10 text-emerald-success border border-emerald-success/20' :
-                                  activity.type === 'email' ? 'bg-purple-100 text-purple-700 border border-purple-300' :
-                                  activity.type === 'meeting' ? 'bg-amber-alert/10 text-amber-alert border border-amber-alert/20' :
-                                  activity.type === 'deal' ? 'bg-gold-100 text-gold-700 border border-gold-300' :
-                                  'bg-gray-100 text-gray-700 border border-gray-300'
-                                }>
-                                  {activity.type}
-                                </Badge>
-                                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                                  {activity.title}
-                                </h3>
-                              </div>
-                              {activity.description && (
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                  {activity.description}
-                                </p>
-                              )}
-                              {activity.contact && (
-                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                  <Users className="h-4 w-4" />
-                                  <span>{activity.contact.name || activity.contact.email || 'Contact'}</span>
-                                  {activity.contact.company && (
-                                    <span className="text-gray-500">• {typeof activity.contact.company === 'string' ? activity.contact.company : activity.contact.company.name}</span>
-                                  )}
-                                </div>
-                              )}
-                              {activity.metadata && (
-                                <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-500">
-                                  {activity.metadata.duration && (
-                                    <span>Duration: {activity.metadata.duration}m</span>
-                                  )}
-                                  {activity.metadata.value && (
-                                    <span>Value: {formatINRForDisplay(activity.metadata.value)}</span>
-                                  )}
-                                  {activity.metadata.stage && (
-                                    <span>Stage: {activity.metadata.stage}</span>
-                                  )}
-                                  {activity.status && (
-                                    <span>Status: {activity.status}</span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                            <div className="text-right text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                              {format(new Date(activity.timestamp), 'MMM dd, yyyy')}
-                              <br />
-                              {format(new Date(activity.timestamp), 'HH:mm')}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 dark:text-gray-400">
-                      No activities found. Activities will appear here as your team creates tasks, makes calls, sends emails, and updates deals.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          <ActivitiesCommandCenter
+            activities={activityFeedData}
+            activityFilter={activityFilter}
+            onActivityFilterChange={setActivityFilter}
+          />
         ) : (
           // Manager View (default for admin/manager)
           <>
@@ -2287,7 +2240,7 @@ export default function CRMDashboardPage() {
                             <p className="text-xs text-gray-600 dark:text-gray-400">Requires attention</p>
                           </div>
                           <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300">
-                            0
+                            {supportOpenTickets}
                           </Badge>
                         </div>
                         <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
@@ -2346,7 +2299,7 @@ export default function CRMDashboardPage() {
                           </div>
                         </div>
                       </div>
-                      <Link href={tenantId ? `/crm/${tenantId}/Campaigns` : '#'} className="mt-auto">
+                      <Link href={tenantId ? `/marketing/${tenantId}/Campaigns` : '#'} className="mt-auto">
                         <Button variant="outline" className="w-full mt-2 text-xs py-1">
                           View All Campaigns
                         </Button>

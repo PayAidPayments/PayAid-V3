@@ -1,22 +1,63 @@
 'use client'
 
-import { useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useCreateTask } from '@/lib/hooks/use-api'
 import { useContacts } from '@/lib/hooks/use-api'
+import { useQuery } from '@tanstack/react-query'
+import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Calendar, ListTodo } from 'lucide-react'
+import { Calendar, ListTodo, User } from 'lucide-react'
 
 export default function NewCRMTaskPage() {
   const params = useParams()
   const tenantId = (params?.tenantId as string) ?? ''
+  const searchParams = useSearchParams()
   const router = useRouter()
   const createTask = useCreateTask()
   const { data: contactsData } = useContacts()
   const contacts = contactsData?.contacts ?? []
+  const { token } = useAuthStore()
+
+  // Fetch employees from HR to populate the assignee dropdown
+  const { data: employeesData } = useQuery({
+    queryKey: ['employees-for-task-assign'],
+    queryFn: async () => {
+      const res = await fetch('/api/hr/employees?limit=500', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) return { employees: [] }
+      return res.json().catch(() => ({ employees: [] }))
+    },
+    enabled: !!token,
+  })
+  // Only show employees who have a linked user account (userId is set)
+  const assignableEmployees = (employeesData?.employees || []).filter((e: any) => e.userId)
+
+  const prefillTitle = (searchParams?.get('title') || '').trim()
+  const prefillContactId = (searchParams?.get('contactId') || '').trim()
+  const prefillType = (searchParams?.get('type') || '').trim().toLowerCase()
+  const prefillPriorityParam = (searchParams?.get('priority') || '').trim().toLowerCase()
+  const prefillDueDateParam = (searchParams?.get('dueDate') || '').trim()
+  const isMeetingPrefill = prefillType === 'meeting'
+  const prefillPriority: 'low' | 'medium' | 'high' | null =
+    prefillPriorityParam === 'low' || prefillPriorityParam === 'medium' || prefillPriorityParam === 'high'
+      ? prefillPriorityParam
+      : null
+
+  const toDateTimeLocal = (value: string) => {
+    if (!value) return ''
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) return ''
+    const offsetMs = parsed.getTimezoneOffset() * 60_000
+    const local = new Date(parsed.getTime() - offsetMs)
+    return local.toISOString().slice(0, 16)
+  }
+
+  const prefillDueDate = toDateTimeLocal(prefillDueDateParam)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -25,10 +66,29 @@ export default function NewCRMTaskPage() {
     status: 'pending' as 'pending' | 'in_progress' | 'completed' | 'cancelled',
     dueDate: '',
     contactId: '',
+    assignedToId: '',
     recurrenceRule: 'none' as 'none' | 'daily' | 'weekly' | 'monthly',
     recurrenceEndDate: '',
   })
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!prefillTitle && !prefillContactId && !isMeetingPrefill && !prefillPriority && !prefillDueDate) return
+    setFormData((prev) => ({
+      ...prev,
+      title: prefillTitle || (isMeetingPrefill && !prev.title ? 'Schedule meeting' : prev.title),
+      contactId: prefillContactId || prev.contactId,
+      priority: prefillPriority || prev.priority,
+      dueDate: prefillDueDate || prev.dueDate,
+      description:
+        prev.description ||
+        (isMeetingPrefill ? 'Meeting requested from activity quick action.' : prev.description),
+    }))
+  }, [prefillTitle, prefillContactId, isMeetingPrefill, prefillPriority, prefillDueDate])
+
+  const selectedContactMissingFromList =
+    !!formData.contactId &&
+    !contacts.some((c: { id: string }) => c.id === formData.contactId)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,6 +111,7 @@ export default function NewCRMTaskPage() {
         if (!isNaN(d.getTime())) payload.dueDate = d.toISOString()
       }
       if (formData.contactId) payload.contactId = formData.contactId
+      if (formData.assignedToId) payload.assignedToId = formData.assignedToId
       if (formData.recurrenceRule && formData.recurrenceRule !== 'none') {
         payload.recurrenceRule = formData.recurrenceRule
         if (formData.recurrenceEndDate) {
@@ -82,9 +143,13 @@ export default function NewCRMTaskPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <ListTodo className="w-8 h-8" />
-            New Task
+            {isMeetingPrefill ? 'Schedule Meeting' : 'New Task'}
           </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Create a task and link it to a contact (optional)</p>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            {isMeetingPrefill
+              ? 'Create a meeting task with prefilled contact context.'
+              : 'Create a task and link it to a contact (optional)'}
+          </p>
         </div>
         <Link href={`/crm/${tenantId}/Tasks`}>
           <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
@@ -205,12 +270,44 @@ export default function NewCRMTaskPage() {
                 className="flex h-9 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
               >
                 <option value="">— None —</option>
+                {selectedContactMissingFromList && (
+                  <option value={formData.contactId}>
+                    Prefilled contact ({formData.contactId})
+                  </option>
+                )}
                 {contacts.map((c: { id: string; name?: string; email?: string }) => (
                   <option key={c.id} value={c.id}>
                     {c.name || c.email || c.id}
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="assignedToId" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                <User className="w-4 h-4" />
+                Assign To (optional)
+              </label>
+              <select
+                id="assignedToId"
+                name="assignedToId"
+                value={formData.assignedToId}
+                onChange={handleChange}
+                disabled={createTask.isPending}
+                className="flex h-9 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              >
+                <option value="">— Unassigned (assign to me) —</option>
+                {assignableEmployees.map((emp: any) => (
+                  <option key={emp.userId} value={emp.userId}>
+                    {emp.firstName} {emp.lastName} {emp.designation?.name ? `· ${emp.designation.name}` : ''} {emp.department?.name ? `(${emp.department.name})` : ''}
+                  </option>
+                ))}
+              </select>
+              {assignableEmployees.length === 0 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  No employees with linked accounts found. Employees need a PayAid user account to be assigned tasks.
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -252,7 +349,7 @@ export default function NewCRMTaskPage() {
 
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={createTask.isPending}>
-                {createTask.isPending ? 'Creating…' : 'Create task'}
+                {createTask.isPending ? 'Creating…' : isMeetingPrefill ? 'Create meeting task' : 'Create task'}
               </Button>
               <Link href={`/crm/${tenantId}/Tasks`}>
                 <Button type="button" variant="outline" className="dark:border-gray-600 dark:text-gray-300">
