@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
-import { authenticateRequest } from '@/lib/middleware/auth'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { resolveCrmRequestTenantId } from '@/lib/crm/resolve-crm-request-tenant'
 import { z } from 'zod'
 
 const createInteractionSchema = z.object({
@@ -15,10 +16,8 @@ const createInteractionSchema = z.object({
 // GET /api/interactions - List all interactions
 export async function GET(request: NextRequest) {
   try {
-    const user = await authenticateRequest(request)
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
+    const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
 
     const searchParams = request.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')
@@ -28,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     const where: any = {
       contact: {
-        tenantId: user.tenantId,
+        tenantId,
       },
     }
 
@@ -64,6 +63,9 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Get interactions error:', error)
     return NextResponse.json(
       { error: 'Failed to get interactions' },
@@ -131,6 +133,10 @@ export async function POST(request: NextRequest) {
         { error: 'Validation error', details: error.errors },
         { status: 400 }
       )
+    }
+
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
     }
 
     console.error('Create interaction error:', error)

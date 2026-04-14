@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow, isToday, isYesterday } from 'date-fns'
 import {
   Mail,
   Phone,
@@ -26,75 +26,99 @@ interface Activity {
   metadata?: any
 }
 
+export type ActivityFilter = 'all' | 'email' | 'call' | 'whatsapp' | 'meeting' | 'note' | 'task' | 'deal'
+
 interface ContactTimelineProps {
   contactId: string
   tenantId: string
   tasks?: any[]
   notes?: string
+  activeFilter?: ActivityFilter
+  showControls?: boolean
 }
 
-type ActivityFilter = 'all' | 'email' | 'call' | 'whatsapp' | 'meeting' | 'note' | 'task' | 'deal'
+const INTERACTIONS_PAGE_LIMIT = 20
+const INITIAL_VISIBLE_ITEMS = 12
+const VISIBLE_STEP = 12
 
-export const ContactTimeline: React.FC<ContactTimelineProps> = ({ contactId, tenantId, tasks = [], notes }) => {
-  const [activities, setActivities] = useState<Activity[]>([])
+function activityDayBucket(createdAt: string): 'Today' | 'Yesterday' | 'Earlier' {
+  const d = new Date(createdAt)
+  if (isToday(d)) return 'Today'
+  if (isYesterday(d)) return 'Yesterday'
+  return 'Earlier'
+}
+
+export const ContactTimeline: React.FC<ContactTimelineProps> = ({
+  contactId,
+  tenantId,
+  tasks = [],
+  notes,
+  activeFilter,
+  showControls = true,
+}) => {
+  const [interactions, setInteractions] = useState<any[]>([])
+  const [deals, setDeals] = useState<any[]>([])
   const [filter, setFilter] = useState<ActivityFilter>('all')
   const [isLoading, setIsLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [interactionsPage, setInteractionsPage] = useState(1)
+  const [hasMoreInteractions, setHasMoreInteractions] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_ITEMS)
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [showAddNote, setShowAddNote] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [noteSubmitting, setNoteSubmitting] = useState(false)
   const { token } = useAuthStore()
+  const interactionsPageRef = useRef(1)
 
-  const fetchActivities = async () => {
+  useEffect(() => {
+    interactionsPageRef.current = interactionsPage
+  }, [interactionsPage])
+
+  const fetchActivities = async (page = 1, append = false) => {
     if (!token || !contactId) return
-    setIsLoading(true)
+    if (append) {
+      setLoadingMore(true)
+    } else {
+      setIsLoading(true)
+      setInteractionsPage(1)
+    }
     try {
       const [interactionsRes, dealsRes] = await Promise.all([
-        fetch(`/api/interactions?contactId=${contactId}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`/api/deals?contactId=${contactId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(
+          `/api/interactions?contactId=${encodeURIComponent(contactId)}&tenantId=${encodeURIComponent(tenantId)}&page=${page}&limit=${INTERACTIONS_PAGE_LIMIT}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        ),
+        append
+          ? Promise.resolve(null)
+          : fetch(
+              `/api/deals?contactId=${encodeURIComponent(contactId)}&tenantId=${encodeURIComponent(tenantId)}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            ),
       ])
-      const interactionsData = interactionsRes.ok ? await interactionsRes.json() : { interactions: [] }
-      const dealsData = dealsRes.ok ? await dealsRes.json() : { deals: [] }
-      const allActivities: Activity[] = [
-        ...(interactionsData.interactions || []).map((i: any) => ({
-          id: i.id,
-          type: (i.type === 'email' ? 'email' : i.type === 'whatsapp' ? 'whatsapp' : i.type === 'meeting' ? 'meeting' : 'call') as Activity['type'],
-          title: i.subject || `${i.type} with ${i.contact?.name || 'contact'}`,
-          description: i.notes || i.outcome || undefined,
-          createdAt: i.createdAt,
-          metadata: i,
-        })),
-        ...(tasks || []).map((t: any) => ({
-          id: t.id,
-          type: 'task' as const,
-          title: t.title || 'Task',
-          description: t.description || undefined,
-          createdAt: t.createdAt || t.dueDate || new Date().toISOString(),
-          metadata: t,
-        })),
-        ...(notes ? [{
-          id: 'note-1',
-          type: 'note' as const,
-          title: 'Note',
-          description: notes,
-          createdAt: new Date().toISOString(),
-          metadata: { content: notes },
-        }] : []),
-        ...(dealsData.deals || []).map((d: any) => ({
-          id: d.id,
-          type: 'deal' as const,
-          title: `Deal: ${d.name}`,
-          description: `₹${d.value?.toLocaleString() || '0'} • ${d.stage}`,
-          createdAt: d.createdAt,
-          metadata: d,
-        })),
-      ]
-      allActivities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      setActivities(allActivities)
+      const interactionsData = interactionsRes.ok
+        ? await interactionsRes.json()
+        : { interactions: [], pagination: { page: 1, totalPages: 1 } }
+      const incomingInteractions = interactionsData.interactions || []
+      setInteractions((prev) => (append ? [...prev, ...incomingInteractions] : incomingInteractions))
+      setInteractionsPage(page)
+      const totalPages = interactionsData?.pagination?.totalPages || 1
+      setHasMoreInteractions(page < totalPages)
+
+      if (!append && dealsRes && dealsRes.ok) {
+        const dealsData = await dealsRes.json()
+        setDeals(dealsData.deals || [])
+      } else if (!append) {
+        setDeals([])
+      }
     } catch (err) {
       console.error('Error fetching activities:', err)
     } finally {
-      setIsLoading(false)
+      if (append) {
+        setLoadingMore(false)
+      } else {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -102,7 +126,7 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({ contactId, ten
     if (!noteText.trim() || !token) return
     setNoteSubmitting(true)
     try {
-      const res = await fetch('/api/interactions', {
+      const res = await fetch(`/api/interactions?tenantId=${encodeURIComponent(tenantId)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -115,7 +139,7 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({ contactId, ten
       if (res.ok) {
         setNoteText('')
         setShowAddNote(false)
-        fetchActivities()
+        await fetchActivities(1, false)
       } else {
         const err = await res.json()
         alert(err.error || 'Failed to add note')
@@ -129,12 +153,92 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({ contactId, ten
   }
 
   useEffect(() => {
-    fetchActivities()
-  }, [contactId, token, tasks, notes])
+    fetchActivities(1, false)
+  }, [contactId, tenantId, token, tasks, notes])
 
-  const filteredActivities = filter === 'all' 
-    ? activities 
-    : activities.filter(a => a.type === filter)
+  useEffect(() => {
+    if (activeFilter) setFilter(activeFilter)
+  }, [activeFilter])
+
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE_ITEMS)
+  }, [filter, contactId])
+
+  const allActivities = useMemo(() => {
+    const interactionActivities: Activity[] = interactions.map((i: any) => ({
+      id: i.id,
+      type: (i.type === 'email' ? 'email' : i.type === 'whatsapp' ? 'whatsapp' : i.type === 'meeting' ? 'meeting' : 'call') as Activity['type'],
+      title: i.subject || `${i.type} with ${i.contact?.name || 'contact'}`,
+      description: i.notes || i.outcome || undefined,
+      createdAt: i.createdAt,
+      metadata: i,
+    }))
+    const taskActivities: Activity[] = (tasks || []).map((t: any) => ({
+      id: t.id,
+      type: 'task',
+      title: t.title || 'Task',
+      description: t.description || undefined,
+      createdAt: t.createdAt || t.dueDate || new Date().toISOString(),
+      metadata: t,
+    }))
+    const noteActivities: Activity[] = notes
+      ? [{
+          id: 'note-1',
+          type: 'note',
+          title: 'Note',
+          description: notes,
+          createdAt: new Date().toISOString(),
+          metadata: { content: notes },
+        }]
+      : []
+    const dealActivities: Activity[] = deals.map((d: any) => ({
+      id: d.id,
+      type: 'deal',
+      title: `Deal: ${d.name}`,
+      description: `₹${d.value?.toLocaleString('en-IN') || '0'} • ${d.stage}`,
+      createdAt: d.createdAt,
+      metadata: d,
+    }))
+    const merged = [...interactionActivities, ...taskActivities, ...noteActivities, ...dealActivities]
+    merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    return merged
+  }, [interactions, tasks, notes, deals])
+
+  const filteredActivities = useMemo(
+    () => (filter === 'all' ? allActivities : allActivities.filter((a) => a.type === filter)),
+    [allActivities, filter]
+  )
+
+  const visibleActivities = filteredActivities.slice(0, visibleCount)
+  const canLoadOlder = visibleCount < filteredActivities.length || hasMoreInteractions
+
+  const timelineRows = useMemo(() => {
+    type Row = { kind: 'header'; label: string; id: string } | { kind: 'item'; activity: Activity; id: string }
+    const rows: Row[] = []
+    let lastBucket: string | null = null
+    let idx = 0
+    for (const activity of visibleActivities) {
+      const bucket = activityDayBucket(activity.createdAt)
+      if (bucket !== lastBucket) {
+        rows.push({ kind: 'header', label: bucket, id: `hdr-${bucket}-${idx}` })
+        lastBucket = bucket
+      }
+      rows.push({ kind: 'item', activity, id: activity.id })
+      idx += 1
+    }
+    return rows
+  }, [visibleActivities])
+
+  const loadOlder = async () => {
+    if (visibleCount < filteredActivities.length) {
+      setVisibleCount((c) => c + VISIBLE_STEP)
+      return
+    }
+    if (!hasMoreInteractions || loadingMore) return
+    const nextPage = interactionsPageRef.current + 1
+    await fetchActivities(nextPage, true)
+    setVisibleCount((c) => c + VISIBLE_STEP)
+  }
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -178,7 +282,7 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({ contactId, ten
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">Activity Timeline</h2>
-        <div className="flex items-center gap-2">
+        {showControls && <div className="flex items-center gap-2">
           {/* Filter Pills */}
           <div className="flex items-center gap-1 flex-wrap">
             {filters.map((f) => (
@@ -245,7 +349,7 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({ contactId, ten
               </>
             )}
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Timeline Content */}
@@ -271,39 +375,63 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({ contactId, ten
           </div>
         ) : (
           <ul className="space-y-4">
-            {filteredActivities.map((activity, index) => (
-              <li key={activity.id} className="flex items-start gap-3 relative">
-                {/* Timeline line */}
-                {index < filteredActivities.length - 1 && (
-                  <div className="absolute left-[11px] top-6 bottom-0 w-px bg-slate-200 dark:bg-gray-700" />
-                )}
-                
-                {/* Icon */}
-                <div className={`relative z-10 mt-1 flex-shrink-0 w-6 h-6 rounded-full ${getActivityColor(activity.type)} flex items-center justify-center text-white`}>
-                  {getActivityIcon(activity.type)}
-                </div>
-                
-                {/* Content */}
-                <div className="flex-1 min-w-0 pb-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-semibold text-slate-700 dark:text-gray-300 block">
-                        {activity.title}
-                      </span>
-                      {activity.description && (
-                        <p className="mt-1 text-xs text-slate-500 dark:text-gray-400 line-clamp-2">
-                          {activity.description}
-                        </p>
-                      )}
+            {timelineRows.map((row, index) => {
+              if (row.kind === 'header') {
+                return (
+                  <li key={row.id} className="pt-1 pb-0">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-gray-400 border-b border-slate-100 dark:border-gray-700 pb-1">
+                      {row.label}
                     </div>
-                    <span className="text-xs text-slate-400 dark:text-gray-500 whitespace-nowrap flex-shrink-0">
-                      {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
-                    </span>
+                  </li>
+                )
+              }
+              const activity = row.activity
+              const nextIsItem = timelineRows[index + 1]?.kind === 'item'
+              return (
+                <li key={row.id} className="flex items-start gap-3 relative">
+                  {nextIsItem && (
+                    <div className="absolute left-[11px] top-6 bottom-0 w-px bg-slate-200 dark:bg-gray-700" />
+                  )}
+
+                  <div className={`relative z-10 mt-1 flex-shrink-0 w-6 h-6 rounded-full ${getActivityColor(activity.type)} flex items-center justify-center text-white`}>
+                    {getActivityIcon(activity.type)}
                   </div>
-                </div>
-              </li>
-            ))}
+
+                  <div className="flex-1 min-w-0 pb-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-semibold text-slate-700 dark:text-gray-300 block">
+                          {activity.title}
+                        </span>
+                        {activity.description && (
+                          <p className="mt-1 text-xs text-slate-500 dark:text-gray-400 line-clamp-2">
+                            {activity.description}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-xs text-slate-400 dark:text-gray-500 whitespace-nowrap flex-shrink-0">
+                        {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                      </span>
+                    </div>
+                  </div>
+                </li>
+              )
+            })}
           </ul>
+        )}
+        {!isLoading && canLoadOlder && (
+          <div className="mt-3 flex justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={loadOlder}
+              disabled={loadingMore}
+              title={loadingMore ? 'Loading older items…' : undefined}
+            >
+              {loadingMore ? 'Loading…' : 'Load older'}
+            </Button>
+          </div>
         )}
       </div>
 

@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { handleLicenseError, requireModuleAccess } from '@/lib/middleware/auth'
 import { listSignals } from '@/lib/ai-native/m0-service'
 import { assertTenantFeatureEnabled, TenantFeatureDisabledError } from '@/lib/feature-flags/tenant-feature'
+import { resolveCrmRequestTenantId } from '@/lib/crm/resolve-crm-request-tenant'
 
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
+    const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
     await assertTenantFeatureEnabled(tenantId, 'm0_ai_native_core')
     const searchParams = request.nextUrl.searchParams
     const entityType = searchParams.get('entityType') || undefined

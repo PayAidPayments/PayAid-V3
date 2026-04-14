@@ -30,6 +30,7 @@ const createContactSchema = z.object({
   country: z.string().default('India'),
   tags: z.array(z.string()).default([]),
   notes: z.string().optional().transform((v) => (v === '' ? undefined : v)),
+  internalNotes: z.string().optional().transform((v) => (v === '' ? undefined : v)),
 })
 
 // GET /api/contacts - List all contacts
@@ -147,6 +148,17 @@ export async function GET(request: NextRequest) {
           state: true,
           postalCode: true,
           gstin: true,
+          assignedTo: {
+            select: {
+              id: true,
+              user: {
+                select: {
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          },
         },
       })
     } catch (queryError: any) {
@@ -237,8 +249,19 @@ export async function GET(request: NextRequest) {
       total = contacts.length
     }
 
+    const contactsWithOwnerName = contacts.map((contact: any) => ({
+      ...contact,
+      assignedTo: contact.assignedTo
+        ? {
+            ...contact.assignedTo,
+            // SalesRep has no direct `name` column; expose a compatible shape for existing UI consumers.
+            name: contact.assignedTo.user?.name || null,
+          }
+        : null,
+    }))
+
     const result = {
-      contacts,
+      contacts: contactsWithOwnerName,
       pagination: {
         page,
         limit,

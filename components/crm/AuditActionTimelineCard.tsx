@@ -20,10 +20,21 @@ type AuditAction = {
 type Props = {
   entityType: 'deal' | 'contact'
   entityId: string
+  /** CRM URL tenant — keeps audit/signals aligned with `/crm/[tenantId]/…` when JWT tenant differs */
+  tenantId?: string
   title?: string
 }
 
-export function AuditActionTimelineCard({ entityType, entityId, title = 'Automation & Audit Timeline' }: Props) {
+function tenantQuery(tenantId: string | undefined) {
+  return tenantId ? `&tenantId=${encodeURIComponent(tenantId)}` : ''
+}
+
+export function AuditActionTimelineCard({
+  entityType,
+  entityId,
+  tenantId,
+  title = 'Automation & Audit Timeline',
+}: Props) {
   const { token } = useAuthStore()
   const [actions, setActions] = useState<AuditAction[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,16 +48,22 @@ export function AuditActionTimelineCard({ entityType, entityId, title = 'Automat
         setLoading(true)
         setError(null)
         const headers = token ? { Authorization: `Bearer ${token}` } : undefined
+        const tq = tenantQuery(tenantId)
         const [auditResponse, signalResponse] = await Promise.all([
           fetch(
-            `/api/v1/audit/actions?entityType=${encodeURIComponent(entityType)}&entityId=${encodeURIComponent(entityId)}&limit=50`,
+            `/api/v1/audit/actions?entityType=${encodeURIComponent(entityType)}&entityId=${encodeURIComponent(entityId)}&limit=50${tq}`,
             { headers }
           ),
-          fetch(`/api/v1/signals?entityType=${encodeURIComponent(entityType)}&limit=100`, { headers }),
+          fetch(`/api/v1/signals?entityType=${encodeURIComponent(entityType)}&limit=100${tq}`, { headers }),
         ])
 
         if (!auditResponse.ok) {
-          throw new Error('Failed to fetch audit timeline')
+          const errBody = await auditResponse.json().catch(() => ({} as { error?: string; message?: string }))
+          const msg =
+            (typeof errBody.error === 'string' && errBody.error) ||
+            (typeof errBody.message === 'string' && errBody.message) ||
+            `Could not load audit timeline (${auditResponse.status})`
+          throw new Error(msg)
         }
         const auditJson = await auditResponse.json()
         const signalJson = signalResponse.ok ? await signalResponse.json().catch(() => ({})) : {}
@@ -86,7 +103,7 @@ export function AuditActionTimelineCard({ entityType, entityId, title = 'Automat
     return () => {
       active = false
     }
-  }, [entityType, entityId, token])
+  }, [entityType, entityId, tenantId, token])
 
   return (
     <Card className="border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900">

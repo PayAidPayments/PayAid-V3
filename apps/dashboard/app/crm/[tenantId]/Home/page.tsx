@@ -116,6 +116,30 @@ const ERROR = '#DC2626' // Error (Red)
 const INFO = '#0284C7' // Info (Blue)
 const CHART_COLORS = [PURPLE_PRIMARY, GOLD_ACCENT, SUCCESS, INFO, WARNING, '#8B5CF6']
 
+function runWhenIdle(task: () => void, timeoutMs = 1200) {
+  if (typeof window === 'undefined') {
+    const id = setTimeout(task, 0)
+    return () => clearTimeout(id)
+  }
+  const ric = (window as Window & {
+    requestIdleCallback?: (cb: IdleRequestCallback, opts?: IdleRequestOptions) => number
+    cancelIdleCallback?: (id: number) => void
+  }).requestIdleCallback
+  const cic = (window as Window & {
+    cancelIdleCallback?: (id: number) => void
+  }).cancelIdleCallback
+
+  if (typeof ric === 'function') {
+    const handle = ric(() => task(), { timeout: timeoutMs })
+    return () => {
+      if (typeof cic === 'function') cic(handle)
+    }
+  }
+
+  const id = setTimeout(task, 0)
+  return () => clearTimeout(id)
+}
+
 function CRMDashboardSkeleton() {
   return (
     <div className="w-full bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-50 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 relative transition-colors min-h-screen">
@@ -394,6 +418,7 @@ export default function CRMDashboardPage() {
     if (!enableBackgroundAutoSeed) return
     if (!tenantId || !token || hasCheckedDataRef.current) return
     if (loading || !stats) return
+    if (!showSecondaryBands) return
     
     hasCheckedDataRef.current = true // Mark as checked to prevent multiple checks
     
@@ -581,10 +606,9 @@ export default function CRMDashboardPage() {
       }
     }
     
-    // Run well after initial render so this never competes with first meaningful paint.
-    const timeoutId = setTimeout(checkAndSeedData, 1200)
-    return () => clearTimeout(timeoutId)
-  }, [tenantId, token, enableBackgroundAutoSeed, loading, stats]) // Only run after stats are visible
+    // Run only after secondary bands are visible and browser is idle.
+    return runWhenIdle(checkAndSeedData, 1500)
+  }, [tenantId, token, enableBackgroundAutoSeed, loading, stats, showSecondaryBands]) // Only run after stats are visible
 
   // Determine current view based on URL query params
   const viewParam = searchParams?.get('view')
@@ -661,7 +685,7 @@ export default function CRMDashboardPage() {
           if (!fullHydrationStartedRef.current) {
             fullHydrationStartedRef.current = true
             setIsHydratingFullStats(true)
-            queueMicrotask(() => {
+            const cancelIdle = runWhenIdle(() => {
               if (signal.aborted) {
                 setIsHydratingFullStats(false)
                 fullHydrationStartedRef.current = false
@@ -673,7 +697,10 @@ export default function CRMDashboardPage() {
                 setIsHydratingFullStats(false)
                 fullHydrationStartedRef.current = false
               })
-            })
+            }, 1200)
+            if (signal) {
+              signal.addEventListener('abort', cancelIdle, { once: true })
+            }
           }
         }
         
@@ -767,9 +794,11 @@ export default function CRMDashboardPage() {
   // Demo tenant: idempotent CRM KPI polish. Uses ref so this can live with other effects (before fetchDashboardStats is defined).
   useEffect(() => {
     if (!tenantId || !token) return
+    if (!showSecondaryBands) return
     if (crmDemoPolishTenantRef.current === tenantId) return
     crmDemoPolishTenantRef.current = tenantId
-    void (async () => {
+    const cancelIdle = runWhenIdle(() => {
+      void (async () => {
       try {
         const r = await fetch(
           `/api/admin/polish-crm-demo?tenantId=${encodeURIComponent(tenantId)}`,
@@ -789,13 +818,17 @@ export default function CRMDashboardPage() {
       } catch {
         // ignore
       }
-    })()
-  }, [tenantId, token])
+      })()
+    }, 1500)
+    return cancelIdle
+  }, [tenantId, token, showSecondaryBands])
 
   useEffect(() => {
     if (!tenantId || !token) return
+    if (!showSecondaryBands) return
     let cancelled = false
-    void (async () => {
+    const cancelIdle = runWhenIdle(() => {
+      void (async () => {
       try {
         const r = await fetch('/api/support/tickets', {
           headers: { Authorization: `Bearer ${token}` },
@@ -808,11 +841,13 @@ export default function CRMDashboardPage() {
       } catch {
         if (!cancelled) setSupportOpenTickets(0)
       }
-    })()
+      })()
+    }, 1200)
     return () => {
       cancelled = true
+      cancelIdle()
     }
-  }, [tenantId, token])
+  }, [tenantId, token, showSecondaryBands])
 
   const fetchTasksViewData = async () => {
     // Prevent duplicate calls

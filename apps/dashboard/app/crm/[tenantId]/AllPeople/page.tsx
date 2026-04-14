@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useContacts } from '@/lib/hooks/use-api'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,17 +29,32 @@ import {
 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { PageLoading } from '@/components/ui/loading'
+import { LeadAllocationDialog } from '@/components/LeadAllocationDialog'
+import { RowActionsMenu } from '@/components/crm/RowActionsMenu'
+import { useToast } from '@/components/ui/toast'
 
 type StageFilter = 'all' | 'prospect' | 'contact' | 'customer'
 
 export default function CRMAllPeoplePage() {
   const params = useParams()
   const tenantId = params?.tenantId as string
+  const queryClient = useQueryClient()
+  const { toast, ToastContainer: PageToastContainer } = useToast()
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(100)
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [stageFilter, setStageFilter] = useState<StageFilter>('all')
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search)
+      setPage(1)
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [search])
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
+  const [contactToAssign, setContactToAssign] = useState<{ id: string; name: string; currentRep?: { id: string; name: string } | null } | null>(null)
   const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
   const [selectedStatCard, setSelectedStatCard] = useState<string | null>(null)
 
@@ -46,8 +62,8 @@ export default function CRMAllPeoplePage() {
   const { data: allContactsData, isLoading: isLoadingAll } = useContacts({ page: 1, limit: 10000, tenantId: tenantId || undefined })
   const allContacts = allContactsData?.contacts || []
 
-  // Fetch contacts based on stage filter for table
-  const contactParams: any = { page, limit, search, tenantId: tenantId || undefined }
+  // Fetch contacts based on stage filter for table (uses debounced search to avoid per-keystroke requests)
+  const contactParams: any = { page, limit, search: debouncedSearch, tenantId: tenantId || undefined }
   if (stageFilter !== 'all') {
     contactParams.stage = stageFilter
   }
@@ -502,14 +518,15 @@ export default function CRMAllPeoplePage() {
                       <TableHead className="min-w-[180px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Email</TableHead>
                       <TableHead className="min-w-[120px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Phone</TableHead>
                       <TableHead className="min-w-[200px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Company</TableHead>
+                      <TableHead className="min-w-[140px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Owner</TableHead>
                       <TableHead className="w-[100px] py-3 px-3 text-left text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Created</TableHead>
                       <TableHead className="w-[100px] py-3 pl-3 pr-4 text-right text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody className="divide-y divide-slate-100 dark:divide-gray-700">
                     {contacts.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                        <TableRow>
+                          <TableCell colSpan={9} className="text-center py-8 text-gray-500 dark:text-gray-400">
                           {search ? 'No contacts found matching your search.' : `No ${stageFilter === 'all' ? 'contacts' : stageFilter + 's'} found.`}
                         </TableCell>
                       </TableRow>
@@ -556,6 +573,11 @@ export default function CRMAllPeoplePage() {
                             <TableCell className="py-3 px-3 min-w-0 text-gray-600 dark:text-gray-400 text-sm">
                               <span className="block truncate" title={contact.company || undefined}>{contact.company || '-'}</span>
                             </TableCell>
+                            <TableCell className="py-3 px-3 min-w-0 text-gray-600 dark:text-gray-400 text-sm">
+                              <span className="block truncate" title={contact.assignedTo?.name || contact.assignedTo?.user?.name || undefined}>
+                                {contact.assignedTo?.name || contact.assignedTo?.user?.name || '-'}
+                              </span>
+                            </TableCell>
                             <TableCell className="py-3 px-3 text-gray-600 dark:text-gray-400 whitespace-nowrap text-sm">
                               {contact.createdAt ? format(new Date(contact.createdAt), 'MMM d, yyyy') : '-'}
                             </TableCell>
@@ -574,6 +596,25 @@ export default function CRMAllPeoplePage() {
                                     <Edit className="w-4 h-4" />
                                   </Button>
                                 </Link>
+                                {(contactStage === 'prospect' || contact.type === 'lead') && (
+                                  <RowActionsMenu
+                                    entityType="prospect"
+                                    entityId={contact.id}
+                                    tenantId={tenantId}
+                                    onAssign={() => {
+                                      setContactToAssign({
+                                        id: contact.id,
+                                        name: contact.name,
+                                        currentRep: contact.assignedTo
+                                          ? {
+                                              id: contact.assignedTo.id,
+                                              name: contact.assignedTo.name || contact.assignedTo.user?.name || 'Unknown',
+                                            }
+                                          : null,
+                                      })
+                                    }}
+                                  />
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -617,6 +658,42 @@ export default function CRMAllPeoplePage() {
           </Card>
         </div>
       </div>
+      {contactToAssign && (
+        <LeadAllocationDialog
+          contactId={contactToAssign.id}
+          contactName={contactToAssign.name}
+          tenantId={tenantId}
+          currentRep={contactToAssign.currentRep || null}
+          onAssign={({ repId, repName, repEmail }) => {
+            queryClient.setQueriesData(
+              { queryKey: ['contacts'] },
+              (previous: any) => {
+                if (!previous || !Array.isArray(previous.contacts)) return previous
+                return {
+                  ...previous,
+                  contacts: previous.contacts.map((row: any) =>
+                    row.id === contactToAssign.id
+                      ? {
+                          ...row,
+                          assignedTo: {
+                            id: repId,
+                            name: repName,
+                            user: { name: repName, email: repEmail || '' },
+                          },
+                        }
+                      : row
+                  ),
+                }
+              }
+            )
+            queryClient.invalidateQueries({ queryKey: ['contacts'] })
+            toast.success('Owner updated', `${contactToAssign.name} is now assigned to ${repName}.`)
+            setContactToAssign(null)
+          }}
+          onClose={() => setContactToAssign(null)}
+        />
+      )}
+      {PageToastContainer}
     </div>
   )
 }

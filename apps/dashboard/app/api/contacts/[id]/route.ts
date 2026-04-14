@@ -3,29 +3,35 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { cache } from '@/lib/redis/client'
+import { buildContact360 } from '@/lib/crm/build-contact-360'
+import { resolveCrmRequestTenantId } from '@/lib/crm/resolve-crm-request-tenant'
 
-// Resolve effective tenantId from request (matches deals list/detail behavior)
-async function resolveContactTenantId(
+/** Whether this user may read a contact that lives in contactTenantId (aligns with list endpoint rules). */
+async function userMayReadContactInTenant(
   request: NextRequest,
+  userId: string,
   jwtTenantId: string,
-  userId: string
-): Promise<string> {
-  const requestTenantId = request.nextUrl.searchParams.get('tenantId') || undefined
-  if (!requestTenantId) return jwtTenantId
+  contactTenantId: string
+): Promise<boolean> {
+  if (contactTenantId === jwtTenantId) return true
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { tenantId: true, email: true },
   }).catch(() => null)
-  const userTenantId = user?.tenantId ?? null
-  const hasAccess = jwtTenantId === requestTenantId || userTenantId === requestTenantId
-  const isDemoTenantRequest =
-    user?.email === 'admin@demo.com' &&
-    (await prisma.tenant.findUnique({
-      where: { id: requestTenantId },
-      select: { name: true },
-    }).then((t) => t?.name?.toLowerCase().includes('demo') ?? false).catch(() => false))
-  if (hasAccess || isDemoTenantRequest) return requestTenantId
-  return jwtTenantId
+  if (user?.tenantId === contactTenantId) return true
+  const requestTenantId = request.nextUrl.searchParams.get('tenantId') || undefined
+  if (requestTenantId && requestTenantId === contactTenantId) {
+    const hasAccess =
+      jwtTenantId === requestTenantId ||
+      user?.tenantId === requestTenantId ||
+      (user?.email === 'admin@demo.com' &&
+        (await prisma.tenant
+          .findUnique({ where: { id: requestTenantId }, select: { name: true } })
+          .then((t) => t?.name?.toLowerCase().includes('demo') ?? false)
+          .catch(() => false)))
+    return hasAccess
+  }
+  return false
 }
 
 // Allow empty string for optional fields from forms
@@ -48,6 +54,7 @@ const updateContactSchema = z.object({
   country: optionalString,
   tags: z.array(z.string()).optional(),
   notes: z.string().optional().transform((v) => (v === '' ? undefined : v)),
+  internalNotes: z.string().optional().transform((v) => (v === '' ? undefined : v)),
   likelyToBuy: z.boolean().optional(),
   churnRisk: z.boolean().optional(),
 })
@@ -61,9 +68,25 @@ export async function GET(
     // Handle Next.js 16+ async params
     const resolvedParams = await params
     const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
-    const tenantId = await resolveContactTenantId(request, jwtTenantId, userId)
+    const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
+
+    const include360 =
+      request.nextUrl.searchParams.get('include360') === '1' ||
+      request.nextUrl.searchParams.get('include360') === 'true'
 
     const contactInclude = {
+      account: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          industry: true,
+          website: true,
+          city: true,
+          parentAccountId: true,
+          parentAccount: { select: { id: true, name: true } },
+        },
+      },
       assignedTo: {
         include: {
           user: {
@@ -109,16 +132,14 @@ export async function GET(
       include: contactInclude,
     })
 
-    // Fallback: find by id only when tenant filter missed (e.g. URL tenant vs JWT tenant)
+    // Fallback: find by id only when tenant filter missed (e.g. URL tenant vs JWT tenant, or list/cache drift)
     if (!contact) {
       const byId = await prisma.contact.findUnique({
         where: { id: resolvedParams.id },
         include: contactInclude,
       })
       if (byId) {
-        const allowed =
-          byId.tenantId === jwtTenantId ||
-          (await prisma.user.findUnique({ where: { id: userId }, select: { tenantId: true } }).then((u) => u?.tenantId === byId.tenantId))
+        const allowed = await userMayReadContactInTenant(request, userId, jwtTenantId, byId.tenantId)
         if (allowed) contact = byId
       }
     }
@@ -128,6 +149,26 @@ export async function GET(
         { error: 'Contact not found' },
         { status: 404 }
       )
+    }
+
+    if (include360) {
+      try {
+        // Always scope 360 data to the contact's true tenant (resolved tenant can differ on fallback reads)
+        const contact360 = await buildContact360(contact.tenantId, {
+          id: contact.id,
+          email: contact.email,
+          phone: contact.phone,
+          gstin: contact.gstin,
+          accountId: contact.accountId,
+          company: contact.company,
+          account: contact.account,
+        })
+        return NextResponse.json({ ...contact, contact360 })
+      } catch (contact360Error) {
+        // Keep contact detail page usable even if a non-critical 360 widget query fails.
+        console.error('Build contact 360 error:', contact360Error)
+        return NextResponse.json(contact)
+      }
     }
 
     return NextResponse.json(contact)
@@ -151,7 +192,7 @@ export async function PATCH(
   try {
     const resolvedParams = await params
     const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
-    const tenantId = await resolveContactTenantId(request, jwtTenantId, userId)
+    const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
 
     const body = await request.json()
     const validated = updateContactSchema.parse(body)
@@ -225,7 +266,7 @@ export async function DELETE(
   try {
     const resolvedParams = await params
     const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
-    const tenantId = await resolveContactTenantId(request, jwtTenantId, userId)
+    const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
 
     const existing = await prisma.contact.findFirst({
       where: {

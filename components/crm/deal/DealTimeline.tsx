@@ -150,7 +150,10 @@ export function DealTimeline({ dealId, tenantId, deal }: DealTimelineProps) {
         // Contact interactions (when deal has a contact)
         if (deal.contactId) {
           promises.push(
-            fetch(`/api/interactions?contactId=${deal.contactId}&limit=30`, { headers })
+            fetch(
+              `/api/interactions?contactId=${encodeURIComponent(deal.contactId)}&limit=30&tenantId=${encodeURIComponent(tenantId)}`,
+              { headers }
+            )
               .then(async (r) => {
                 if (!r.ok) return
                 const json = await r.json()

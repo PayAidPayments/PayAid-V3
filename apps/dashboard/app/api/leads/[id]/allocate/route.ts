@@ -3,12 +3,30 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { autoAllocateLead, assignLeadToRep } from '@/lib/sales-automation/lead-allocation'
 import { sendLeadAlert } from '@/lib/notifications/send-lead-alert'
 import { prisma } from '@/lib/db/prisma'
+import { resolveCrmRequestTenantId } from '@/lib/crm/resolve-crm-request-tenant'
 import { z } from 'zod'
 
 const allocateRequestSchema = z.object({
   repId: z.string().optional(), // Optional: specify rep, otherwise auto-allocate
   autoAssign: z.boolean().optional().default(false), // Auto-assign without confirmation
 })
+
+function getDisplayFromHrProfile(
+  profile:
+    | {
+        firstName: string
+        lastName: string
+        officialEmail: string
+      }
+    | undefined,
+  fallback: { name: string | null; email: string }
+) {
+  const fullName = profile ? `${profile.firstName} ${profile.lastName}`.trim() : ''
+  return {
+    name: fullName || fallback.name || fallback.email,
+    email: profile?.officialEmail || fallback.email,
+  }
+}
 
 /**
  * POST /api/leads/[id]/allocate
@@ -19,9 +37,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-  const resolvedParams = await params
-    // Check crm module license
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const resolvedParams = await params
+    const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
+    const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
 
     const contactId = resolvedParams.id
     const body = await request.json().catch(() => ({}))
@@ -75,6 +93,25 @@ export async function POST(
       return NextResponse.json({ error: 'Sales rep not found' }, { status: 404 })
     }
 
+    const suggestedRepUserIds = suggestions.map((s) => s.rep.userId)
+    const hrProfiles = await prisma.employee.findMany({
+      where: {
+        tenantId,
+        userId: { in: Array.from(new Set([assignedRep.userId, ...suggestedRepUserIds])) },
+        status: { in: ['ACTIVE', 'PROBATION'] },
+      },
+      select: { userId: true, firstName: true, lastName: true, officialEmail: true },
+    })
+    const hrProfileByUserId = new Map(
+      hrProfiles
+        .filter((p) => typeof p.userId === 'string' && p.userId.length > 0)
+        .map((p) => [p.userId as string, p])
+    )
+    const assignedDisplay = getDisplayFromHrProfile(
+      hrProfileByUserId.get(assignedRep.userId),
+      { name: assignedRep.user.name, email: assignedRep.user.email }
+    )
+
     // Send notification if auto-assigned
     if (autoAssign || repId) {
       try {
@@ -94,25 +131,34 @@ export async function POST(
       assigned: autoAssign || !!repId,
       rep: {
         id: assignedRep.id,
-        name: assignedRep.user.name,
-        email: assignedRep.user.email,
+        name: assignedDisplay.name,
+        email: assignedDisplay.email,
         specialization: assignedRep.specialization,
         conversionRate: assignedRep.conversionRate,
       },
-      suggestions: suggestions.map((s) => ({
-        rep: {
-          id: s.rep.id,
+      suggestions: suggestions.map((s) => {
+        const repDisplay = getDisplayFromHrProfile(hrProfileByUserId.get(s.rep.userId), {
           name: s.rep.user.name,
           email: s.rep.user.email,
-          specialization: s.rep.specialization,
-          conversionRate: s.rep.conversionRate,
-          assignedLeadsCount: s.rep.assignedLeads?.length || 0,
-        },
-        score: s.score,
-        reasons: s.reasons,
-      })),
+        })
+        return {
+          rep: {
+            id: s.rep.id,
+            name: repDisplay.name,
+            email: repDisplay.email,
+            specialization: s.rep.specialization,
+            conversionRate: s.rep.conversionRate,
+            assignedLeadsCount: s.rep.assignedLeadsCount || 0,
+          },
+          score: s.score,
+          reasons: s.reasons,
+        }
+      }),
     })
   } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Lead allocation error:', error)
     return NextResponse.json(
       {

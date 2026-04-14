@@ -13,7 +13,7 @@ import type { Contact, SalesRep } from '@prisma/client'
 interface AllocationScore {
   rep: SalesRep & { 
     user: { name: string; email: string }
-    assignedLeads?: { id: string }[]
+    assignedLeadsCount?: number
   }
   score: number
   reasons: string[]
@@ -33,36 +33,90 @@ const DEFAULT_CONFIG: AllocationConfig = {
   maxLeadsPerRep: 20, // Consider overloaded after 20 leads
 }
 
+/** Active reps + lead counts in two queries (avoids per-rep COUNT via Prisma relation). */
+async function loadActiveRepsWithAssignedCounts(tenantId: string) {
+  const repsRaw = await prisma.salesRep.findMany({
+    where: { tenantId, isOnLeave: false },
+    select: {
+      id: true,
+      userId: true,
+      tenantId: true,
+      specialization: true,
+      conversionRate: true,
+      isOnLeave: true,
+      leaveEndDate: true,
+      user: { select: { name: true, email: true } },
+    },
+  })
+
+  if (repsRaw.length === 0) return []
+
+  const repIds = repsRaw.map((r) => r.id)
+  const grouped = await prisma.contact.groupBy({
+    by: ['assignedToId'],
+    where: {
+      tenantId,
+      assignedToId: { in: repIds },
+    },
+    _count: { _all: true },
+  })
+
+  const countByRep = new Map<string, number>()
+  for (const row of grouped) {
+    if (row.assignedToId) countByRep.set(row.assignedToId, row._count._all)
+  }
+
+  return repsRaw.map((rep) => ({
+    ...rep,
+    assignedLeadsCount: countByRep.get(rep.id) ?? 0,
+  })) as (SalesRep & {
+    user: { name: string; email: string }
+    assignedLeadsCount?: number
+  })[]
+}
+
 const SALES_ELIGIBLE_ROLES = [
   'owner',
   'admin',
   'manager',
   'sales_rep',
+  'sales rep',
+  'sales',
   'sales head',
   'sales_head',
   'sales manager',
   'sales_manager',
+  'sales executive',
+  'account executive',
+  'business development',
   'executive',
 ]
 
 async function ensureSalesRepsForTenant(tenantId: string) {
-  const existing = await prisma.salesRep.findMany({
-    where: { tenantId },
-    include: {
-      user: { select: { name: true, email: true } },
-      assignedLeads: { select: { id: true } },
-    },
-  })
-  if (existing.length > 0) return existing
-
   const users = await prisma.user.findMany({
     where: { tenantId },
     select: { id: true, role: true },
   })
 
-  const eligibleUserIds = users
+  const roleMatchedUserIds = users
     .filter((u) => SALES_ELIGIBLE_ROLES.includes((u.role || '').toLowerCase()))
     .map((u) => u.id)
+
+  // HR-driven employees with linked user accounts should also be assignable.
+  const hrEmployeeLinkedUsers = await prisma.employee.findMany({
+    where: {
+      tenantId,
+      userId: { not: null },
+      status: { in: ['ACTIVE', 'PROBATION'] },
+    },
+    select: { userId: true },
+  })
+
+  const hrUserIds = hrEmployeeLinkedUsers
+    .map((e) => e.userId)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0)
+
+  const eligibleUserIds = Array.from(new Set([...roleMatchedUserIds, ...hrUserIds]))
 
   if (eligibleUserIds.length === 0) return []
 
@@ -91,7 +145,7 @@ async function ensureSalesRepsForTenant(tenantId: string) {
 function calculateRepScore(
   rep: SalesRep & { 
     user: { name: string; email: string }
-    assignedLeads?: { id: string }[]
+    assignedLeadsCount?: number
   },
   contact: Contact,
   config: AllocationConfig = DEFAULT_CONFIG
@@ -100,7 +154,7 @@ function calculateRepScore(
   let score = 100 // Start with base score
 
   // 1. Workload balance (fewer leads = higher score)
-  const assignedLeadsCount = rep.assignedLeads?.length || 0
+  const assignedLeadsCount = rep.assignedLeadsCount || 0
   const workloadPenalty = assignedLeadsCount * Math.abs(config.workloadWeight)
   score -= workloadPenalty
   reasons.push(`${assignedLeadsCount} leads assigned`)
@@ -158,40 +212,24 @@ function calculateRepScore(
 export async function autoAllocateLead(
   contact: Contact,
   tenantId: string,
-  config: Partial<AllocationConfig> = {}
+  config: Partial<AllocationConfig> = {},
+  options: { syncDirectory?: boolean } = {}
 ): Promise<{
   bestRep: AllocationScore
   suggestions: AllocationScore[]
 }> {
   const allocationConfig = { ...DEFAULT_CONFIG, ...config }
+  const shouldSyncDirectory = options.syncDirectory ?? true
 
-  // Get all active sales reps for this tenant
-  let reps = await prisma.salesRep.findMany({
-    where: {
-      tenantId,
-      isOnLeave: false, // Only active reps
-    },
-    include: {
-      user: {
-        select: {
-          name: true,
-          email: true,
-        },
-      },
-      assignedLeads: {
-        select: {
-          id: true,
-        },
-      },
-    },
-  })
+  // Keep SalesRep rows in sync with tenant users/HR-linked employees (optional on read path for latency).
+  if (shouldSyncDirectory) {
+    await ensureSalesRepsForTenant(tenantId)
+  }
+
+  const reps = await loadActiveRepsWithAssignedCounts(tenantId)
 
   if (reps.length === 0) {
-    // Bootstrap from existing tenant users so assignment doesn't break in partially seeded tenants.
-    reps = await ensureSalesRepsForTenant(tenantId)
-    if (reps.length === 0) {
-      throw new Error('No active sales reps found for this tenant')
-    }
+    throw new Error('No active sales reps found for this tenant')
   }
 
   // Calculate scores for all reps
@@ -270,7 +308,8 @@ export async function getAllocationSuggestions(
     throw new Error('Contact not found')
   }
 
-  const { suggestions } = await autoAllocateLead(contact, tenantId)
+  // Skip directory sync on suggestions endpoint to keep this read path fast.
+  const { suggestions } = await autoAllocateLead(contact, tenantId, {}, { syncDirectory: false })
   return suggestions
 }
 

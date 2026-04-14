@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { getAuthHeaders } from '@/lib/hooks/use-api'
 
 interface RepSuggestion {
   rep: {
@@ -20,17 +21,24 @@ interface RepSuggestion {
 interface LeadAllocationDialogProps {
   contactId: string
   contactName: string
+  /** Matches `/crm/[tenantId]/…` so allocation APIs resolve the same tenant as the page. */
+  tenantId?: string
   currentRep?: {
     id: string
     name: string
   } | null
-  onAssign: (repId: string) => void
+  onAssign: (assignment: { repId: string; repName: string; repEmail?: string | null }) => void
   onClose: () => void
+}
+
+function tenantQuery(tenantId: string | undefined) {
+  return tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''
 }
 
 export function LeadAllocationDialog({
   contactId,
   contactName,
+  tenantId,
   currentRep,
   onAssign,
   onClose,
@@ -38,21 +46,33 @@ export function LeadAllocationDialog({
   const [suggestions, setSuggestions] = useState<RepSuggestion[]>([])
   const [loading, setLoading] = useState(true)
   const [assigning, setAssigning] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     loadSuggestions()
-  }, [contactId])
+  }, [contactId, tenantId])
 
   const loadSuggestions = async () => {
+    const tq = tenantQuery(tenantId)
     try {
       setLoading(true)
-      const response = await fetch(`/api/leads/${contactId}/allocation-suggestions`)
+      setLoadError(null)
+      const response = await fetch(`/api/leads/${contactId}/allocation-suggestions${tq}`, {
+        headers: getAuthHeaders(),
+      })
+
       if (response.ok) {
         const data = await response.json()
         setSuggestions(data.suggestions || [])
+      } else {
+        const data = await response.json().catch(() => ({}))
+        setSuggestions([])
+        setLoadError(data?.error || data?.details || `Failed to load suggestions (${response.status})`)
       }
     } catch (error) {
       console.error('Failed to load suggestions:', error)
+      setSuggestions([])
+      setLoadError(error instanceof Error ? error.message : 'Failed to load suggestions.')
     } finally {
       setLoading(false)
     }
@@ -61,18 +81,23 @@ export function LeadAllocationDialog({
   const handleAssign = async (repId: string) => {
     try {
       setAssigning(repId)
-      const response = await fetch(`/api/leads/${contactId}/allocate`, {
+      const response = await fetch(`/api/leads/${contactId}/allocate${tenantQuery(tenantId)}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ repId, autoAssign: true }),
       })
 
       if (response.ok) {
         const data = await response.json()
-        onAssign(repId)
+        onAssign({
+          repId: data?.rep?.id || repId,
+          repName: data?.rep?.name || 'Assigned rep',
+          repEmail: data?.rep?.email || null,
+        })
         onClose()
       } else {
-        throw new Error('Failed to assign lead')
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data?.error || data?.details || 'Failed to assign lead')
       }
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to assign lead')
@@ -84,18 +109,23 @@ export function LeadAllocationDialog({
   const handleAutoAssign = async () => {
     try {
       setAssigning('auto')
-      const response = await fetch(`/api/leads/${contactId}/allocate`, {
+      const response = await fetch(`/api/leads/${contactId}/allocate${tenantQuery(tenantId)}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ autoAssign: true }),
       })
 
       if (response.ok) {
         const data = await response.json()
-        onAssign(data.rep.id)
+        onAssign({
+          repId: data?.rep?.id || '',
+          repName: data?.rep?.name || 'Assigned rep',
+          repEmail: data?.rep?.email || null,
+        })
         onClose()
       } else {
-        throw new Error('Failed to auto-assign lead')
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data?.error || data?.details || 'Failed to auto-assign lead')
       }
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to auto-assign lead')
@@ -130,6 +160,13 @@ export function LeadAllocationDialog({
           {/* Suggestions */}
           {loading ? (
             <div className="text-center py-8">Loading suggestions...</div>
+          ) : loadError ? (
+            <div className="text-center py-8 text-amber-700">
+              <p>{loadError}</p>
+              <Button variant="outline" className="mt-3" onClick={loadSuggestions}>
+                Retry
+              </Button>
+            </div>
           ) : suggestions.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No sales reps available
