@@ -36,18 +36,14 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ['@radix-ui/*', 'lucide-react', 'framer-motion', 'recharts', 'handsontable', '@tiptap/react'],
-    // Vercel (8GB): let Next scale static page collection workers from free memory; speeds up
-    // "Collecting page data" vs a single worker. webpackMemoryOptimizations reduces peak heap.
+    // Vercel (8GB): prefer lower peak memory over faster parallel build throughput.
+    // This avoids worker SIGKILL/OOM in large monorepo compiles.
     ...(process.env.VERCEL === '1'
       ? {
-          memoryBasedWorkersCount: true,
+          memoryBasedWorkersCount: false,
           webpackMemoryOptimizations: true,
-          // Custom `webpack()` disables the compile worker by default, which also
-          // blocks parallel trace collection. Re-enable so "Collecting build
-          // traces" overlaps server compile and finishes before the hard Vercel
-          // ~45m cap on large monorepos with outputFileTracingRoot.
-          webpackBuildWorker: true,
-          parallelServerBuildTraces: true,
+          webpackBuildWorker: false,
+          parallelServerBuildTraces: false,
         }
       : {}),
   },

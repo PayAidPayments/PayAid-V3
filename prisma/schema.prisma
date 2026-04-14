@@ -276,6 +276,9 @@ model Tenant {
   taxDeclarationCategories     TaxDeclarationCategory[]
   tenantMembers                TenantMember[]
   paymentSettings              TenantPaymentSettings?
+  smtpSettings                 TenantSmtpSettings?
+  wahaSettings                 TenantWahaSettings?
+  telephonySettings            TenantTelephonySettings?
   users                        User[]                        @relation("PrimaryTenant")
   vendors                      Vendor[]
   vendorRatings                VendorRating[]
