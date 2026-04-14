@@ -14,7 +14,7 @@ export default function EditContactPage() {
   const tenantId = params.tenantId as string
   const id = params.id as string
   const router = useRouter()
-  const { data: contact, isLoading, isError, error, refetch } = useContact(id, tenantId)
+  const { data: contact, isLoading, isError, error: loadError, refetch } = useContact(id, tenantId)
   const updateContact = useUpdateContact()
   const [formData, setFormData] = useState({
     name: '',
@@ -32,7 +32,7 @@ export default function EditContactPage() {
     notes: '',
     internalNotes: '',
   })
-  const [error, setError] = useState('')
+  const [formError, setFormError] = useState('')
 
   useEffect(() => {
     if (contact) {
@@ -57,13 +57,13 @@ export default function EditContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
+    setFormError('')
 
     try {
       await updateContact.mutateAsync({ id, data: formData, tenantId })
       router.push(`/crm/${tenantId}/Contacts/${id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update contact')
+      setFormError(err instanceof Error ? err.message : 'Failed to update contact')
     }
   }
 
@@ -82,7 +82,7 @@ export default function EditContactPage() {
     return (
       <div className="p-6 text-center space-y-4">
         <p className="text-gray-600 dark:text-gray-400">
-          {error instanceof Error ? error.message : 'Could not load this contact.'}
+          {loadError instanceof Error ? loadError.message : 'Could not load this contact.'}
         </p>
         <Button type="button" variant="outline" onClick={() => refetch()}>
           Try again
@@ -127,9 +127,9 @@ export default function EditContactPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
+            {formError && (
               <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-md">
-                {error}
+                {formError}
               </div>
             )}
 
