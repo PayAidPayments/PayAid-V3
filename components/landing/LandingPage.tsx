@@ -551,10 +551,10 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="mt-11 min-h-[calc(100vh-2.75rem)] flex items-center justify-center bg-gradient-to-b from-white to-purple-50 px-4 py-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center lg:items-stretch">
             {/* Left Column - Text and CTA */}
-            <div className="text-center lg:text-left">
+            <div className="text-center lg:text-left lg:flex lg:flex-col lg:justify-center">
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6">
                 The All-in-One{' '}
                 <span className="bg-gradient-to-r from-[#53328A] to-[#F5C700] bg-clip-text text-transparent">
@@ -583,8 +583,10 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right Column - Hero Visual */}
-            <LottieHero />
+            {/* Right Column - Hero Visual (stretch so Spline can fill full row height) */}
+            <div className="min-h-0 w-full lg:min-h-[min(85vh,880px)]">
+              <LottieHero />
+            </div>
           </div>
 
           {/* Try It Now - Right after Hero */}

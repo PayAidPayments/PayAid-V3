@@ -104,8 +104,8 @@ function SplineInteractiveHero() {
       <Script type="module" src={SPLINE_VIEWER_MODULE} strategy="afterInteractive" />
       <spline-viewer
         url={SPLINE_SCENE_URL}
-        className="block h-full min-h-[500px] w-full lg:min-h-[600px]"
-        style={{ width: '100%', height: '100%', display: 'block' }}
+        className="block h-full min-h-0 w-full"
+        style={{ width: '100%', height: '100%', minHeight: '100%', display: 'block' }}
       />
     </>
   )
@@ -124,15 +124,15 @@ export default function LottieHero() {
   }, [])
 
   const fallback = (
-    <div className="relative min-h-[500px] w-full min-w-0 lg:min-h-[600px]">
+    <div className="relative h-full min-h-[500px] w-full min-w-0 lg:min-h-[min(85vh,880px)]">
       <StaticHeroFallback />
     </div>
   )
 
   return (
-    <div className="relative w-full h-full min-h-[500px] lg:min-h-[600px] rounded-2xl overflow-hidden border border-purple-200 bg-white shadow-sm">
+    <div className="relative flex h-full min-h-[500px] w-full flex-col overflow-hidden rounded-2xl border border-purple-200 bg-white shadow-sm lg:min-h-[min(85vh,880px)]">
       {ready === null && (
-        <div className="flex min-h-[500px] items-center justify-center bg-slate-950 lg:min-h-[600px]">
+        <div className="flex min-h-[500px] flex-1 items-center justify-center bg-slate-950 lg:min-h-[min(85vh,880px)]">
           <div className="h-9 w-9 animate-pulse rounded-full bg-purple-900/50" aria-hidden />
         </div>
       )}
@@ -141,15 +141,13 @@ export default function LottieHero() {
 
       {ready === true && (
         <SplineRuntimeBoundary fallback={fallback}>
-          <div className="relative min-h-[500px] w-full bg-slate-950 lg:min-h-[600px]">
-            <SplineInteractiveHero />
+          <div className="relative h-full min-h-[500px] w-full flex-1 bg-slate-950 lg:min-h-[min(85vh,880px)]">
+            {/* Fill the card: Spline was only ~50% tall because the viewer sat in flow; inset-0 + h-full fixes it */}
+            <div className="absolute inset-0 min-h-[500px] lg:min-h-0">
+              <SplineInteractiveHero />
+            </div>
             <div
-              className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 flex items-end justify-center px-6 pt-16 pb-6"
-              style={{
-                background:
-                  'linear-gradient(to top, rgba(10,0,30,1.0) 0%, rgba(30,10,60,0.97) 35%, rgba(83,50,138,0.85) 65%, transparent 100%)',
-                backdropFilter: 'blur(2px)',
-              }}
+              className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 flex max-h-[42%] items-end justify-center bg-gradient-to-t from-[#0a001e]/95 via-[#1e0a3c]/55 to-transparent px-6 pb-5 pt-10"
             >
               <p
                 className="text-white text-center font-semibold text-sm md:text-base leading-snug tracking-wide"
