@@ -147,7 +147,7 @@ export default function LottieHero() {
               <SplineInteractiveHero />
             </div>
             <div
-              className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 flex max-h-[42%] items-end justify-center bg-gradient-to-t from-[#0a001e]/95 via-[#1e0a3c]/55 to-transparent px-6 pb-5 pt-10"
+              className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 flex max-h-[75%] items-end justify-center bg-gradient-to-t from-[#060210]/100 via-[#1c0c38]/100 to-[#3a2266]/95 px-6 pb-5 pt-10"
             >
               <p
                 className="text-white text-center font-semibold text-sm md:text-base leading-snug tracking-wide"
