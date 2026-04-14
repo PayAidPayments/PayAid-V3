@@ -28,27 +28,25 @@ export function EmailCampaignList({ organizationId }: EmailCampaignListProps) {
   const pageSize = 20
 
   useEffect(() => {
-    fetchCampaigns()
-  }, [organizationId, page])
-
-  async function fetchCampaigns() {
-    try {
-      setLoading(true)
-      const response = await fetch(
-        `/api/marketing/email-campaigns?organizationId=${organizationId}&page=${page}&pageSize=${pageSize}`
-      )
-      const data = await response.json()
-      
-      if (data.success) {
-        setCampaigns(data.data.campaigns)
-        setTotal(data.data.total)
+    const fetchCampaigns = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch(
+          `/api/marketing/email-campaigns?organizationId=${organizationId}&page=${page}&pageSize=${pageSize}`
+        )
+        const data = await response.json()
+        if (data.success) {
+          setCampaigns(data.data.campaigns)
+          setTotal(data.data.total)
+        }
+      } catch (error) {
+        console.error('Failed to fetch campaigns:', error)
+      } finally {
+        setLoading(false)
       }
-    } catch (error) {
-      console.error('Failed to fetch campaigns:', error)
-    } finally {
-      setLoading(false)
     }
-  }
+    fetchCampaigns()
+  }, [organizationId, page, pageSize])
 
   if (loading) {
     return <div className="p-4">Loading campaigns...</div>

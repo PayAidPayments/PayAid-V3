@@ -19,6 +19,10 @@ const updateInvoiceSchema = z.object({
   status: z.enum(['draft', 'sent', 'paid', 'overdue', 'cancelled']).optional(),
   paidAt: z.string().datetime().optional(),
   items: z.array(itemSchema).optional(),
+  paymentMode: z.string().optional(),
+  paymentTransactionId: z.string().optional(),
+  paymentDatetime: z.string().datetime().optional(),
+  paymentChannel: z.string().optional(),
 })
 
 // GET /api/invoices/[id] - Get a single invoice
@@ -100,6 +104,10 @@ export async function PATCH(
     if (validated.status === 'paid' && !validated.paidAt) {
       updateData.paidAt = new Date()
     }
+    if (validated.paymentMode) updateData.paymentMode = validated.paymentMode
+    if (validated.paymentTransactionId) updateData.paymentTransactionId = validated.paymentTransactionId
+    if (validated.paymentDatetime) updateData.paymentDatetime = new Date(validated.paymentDatetime)
+    if (validated.paymentChannel) updateData.paymentChannel = validated.paymentChannel
 
     if (validated.items && validated.items.length > 0) {
       const invoiceItems = validated.items.map((item) => {

@@ -1,12 +1,12 @@
 /**
- * Phase 10: Edge middleware – tenant from path (no DB).
+ * Phase 10: Edge proxy – tenant from path (no DB).
  */
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 const DASHBOARD_PATH = '/dashboard'
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   if (!pathname.startsWith(DASHBOARD_PATH)) return NextResponse.next()
 

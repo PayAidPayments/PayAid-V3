@@ -61,6 +61,7 @@ export default function FinanceRecurringBillingPage() {
 
   useEffect(() => {
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, token])
 
   const fetchData = async () => {

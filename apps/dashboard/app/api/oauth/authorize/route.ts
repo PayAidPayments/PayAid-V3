@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionToken } from '@/packages/auth-sdk/client'
+import { captureIntegrationError, enforceIntegrationRateLimit } from '@/lib/integrations/security'
 
 /**
  * OAuth2 Authorization Endpoint
@@ -9,6 +10,13 @@ import { getSessionToken } from '@/packages/auth-sdk/client'
  */
 
 export async function GET(request: NextRequest) {
+  const limited = enforceIntegrationRateLimit(request, {
+    key: 'integration:oauth:authorize',
+    limit: 30,
+    windowMs: 60_000,
+  })
+  if (limited) return limited
+
   try {
     // Verify user is authenticated
     const token = await getSessionToken(request)
@@ -73,9 +81,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(redirectUrlObj.toString())
   } catch (error: any) {
-    console.error('[OAuth] Authorization error:', error)
+    await captureIntegrationError({
+      scope: 'oauth_authorize',
+      error,
+      context: { path: '/api/oauth/authorize' },
+    })
     return NextResponse.json(
-      { error: 'server_error', error_description: error.message },
+      { error: 'server_error', error_description: 'Authorization request failed' },
       { status: 500 }
     )
   }

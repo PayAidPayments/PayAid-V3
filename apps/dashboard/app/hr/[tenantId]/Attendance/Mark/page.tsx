@@ -249,7 +249,7 @@ export default function HRAttendanceMarkPage() {
         {/* Attendance Status Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Today's Attendance</CardTitle>
+            <CardTitle>Today&apos;s Attendance</CardTitle>
             <CardDescription>Your check-in and check-out times</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Target, TrendingUp, AlertTriangle, Zap, RefreshCw, ChevronRight, Info, ExternalLink, BarChart3, Users, Briefcase, CheckSquare2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -66,6 +66,31 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
   const [expandedActionIndex, setExpandedActionIndex] = useState<number | null>(null)
   const { token } = useAuthStore()
 
+  // `stats` from the parent is often a new object each render; depend on stable metrics only
+  // so we do not re-fetch /api/ai/insights multiple times on open.
+  const statsEffectKey = useMemo(() => {
+    if (!stats) return 'empty'
+    return [
+      stats.revenueThisMonth ?? 0,
+      stats.totalLeads ?? 0,
+      stats.convertedLeads ?? 0,
+      stats.activeDeals ?? 0,
+      stats.forecastedRevenue ?? 0,
+      stats.overdueTasks ?? 0,
+      stats.dealsClosingThisMonth ?? 0,
+      stats.atRiskContacts ?? 0,
+    ].join('|')
+  }, [
+    stats?.revenueThisMonth,
+    stats?.totalLeads,
+    stats?.convertedLeads,
+    stats?.activeDeals,
+    stats?.forecastedRevenue,
+    stats?.overdueTasks,
+    stats?.dealsClosingThisMonth,
+    stats?.atRiskContacts,
+  ])
+
   const getPeriodLabel = () => {
     const now = new Date()
     if (timePeriod === 'month') {
@@ -79,6 +104,8 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
     return 'this period'
   }
 
+  const fetchSeqRef = useRef(0)
+
   useEffect(() => {
     if (!tenantId || !token) {
       setLoading(false)
@@ -89,13 +116,14 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
       return
     }
 
+    const seq = ++fetchSeqRef.current
     let cancelled = false
     const run = async () => {
-      if (cancelled) return
+      if (cancelled || seq !== fetchSeqRef.current) return
       try {
         await fetchAIInsights()
       } catch (err) {
-        if (cancelled) return
+        if (cancelled || seq !== fetchSeqRef.current) return
         const message = err instanceof Error ? err.message : String(err)
         console.warn('[AICommandCenter] Insights fetch failed, using fallback:', message)
         try {
@@ -107,7 +135,7 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
     }
 
     const cancelIdle = scheduleIdleTask(() => {
-      if (!cancelled) void run()
+      if (!cancelled && seq === fetchSeqRef.current) void run()
     })
 
     return () => {
@@ -115,7 +143,7 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
       cancelIdle()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenantId, token, stats, timePeriod])
+  }, [tenantId, token, timePeriod, statsEffectKey])
 
   // Parse action text and create ActionItem with metadata.
   // insightsMetrics: from same API that generated the action text, so supporting data matches the narrative.

@@ -62,6 +62,7 @@ export function DocumentsList({ tenantId }: { tenantId: string }) {
 
   useEffect(() => {
     if (token) loadDocuments()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   const loadDocuments = async () => {

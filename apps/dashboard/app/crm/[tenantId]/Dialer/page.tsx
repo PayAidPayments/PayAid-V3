@@ -63,7 +63,22 @@ export default function DialerPage() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    // Load active session if any
+    if (!token) return
+    const fetchActiveSession = async () => {
+      try {
+        const response = await fetch('/api/crm/dialer/session', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.session) {
+            setActiveSession(data.session)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching session:', error)
+      }
+    }
     fetchActiveSession()
   }, [tenantId, token])
 
@@ -85,25 +100,6 @@ export default function DialerPage() {
       }
     }
   }, [isCalling, currentCall])
-
-  const fetchActiveSession = async () => {
-    try {
-      if (!token) return
-
-      const response = await fetch('/api/crm/dialer/session', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.session) {
-          setActiveSession(data.session)
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching session:', error)
-    }
-  }
 
   const handleStartCall = async (contact: CallContact) => {
     if (!token) return

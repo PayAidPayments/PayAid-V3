@@ -287,6 +287,7 @@ export default function CheckoutPageDetailPage() {
                 {page.contentJson.header && (
                   <div className="bg-white p-4 rounded border-b">
                     {page.contentJson.header.logo && (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={page.contentJson.header.logo}
                         alt="Logo"
@@ -305,6 +306,7 @@ export default function CheckoutPageDetailPage() {
                     <h4 className="font-semibold mb-4">Order Summary</h4>
                     {page.contentJson.orderSummary?.image && (
                       <div className="flex items-center gap-3 mb-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={page.contentJson.orderSummary.image}
                           alt="Product"
@@ -336,6 +338,7 @@ export default function CheckoutPageDetailPage() {
                 {page.contentJson.trustBadges && page.contentJson.trustBadges.length > 0 && (
                   <div className="flex gap-2 justify-center">
                     {page.contentJson.trustBadges.map((badge: any, idx: number) => (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         key={idx}
                         src={badge.image}

@@ -35,29 +35,27 @@ export default function AppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
 
   useEffect(() => {
-    fetchAppointments()
-  }, [selectedDate])
-
-  const fetchAppointments = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/appointments?date=${selectedDate}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setAppointments(data.appointments || [])
+    const fetchAppointments = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/appointments?date=${selectedDate}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setAppointments(data.appointments || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch appointments:', error)
+      } finally {
+        setLoading(false)
       }
-    } catch (error) {
-      console.error('Failed to fetch appointments:', error)
-    } finally {
-      setLoading(false)
     }
-  }
+    fetchAppointments()
+  }, [selectedDate, token])
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {

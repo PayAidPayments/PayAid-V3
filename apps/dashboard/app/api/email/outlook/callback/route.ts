@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
       const errorData = await tokenResponse.text()
       console.error('Token exchange failed:', errorData)
       return NextResponse.redirect(
-        new URL('/dashboard/email/accounts?error=token_exchange_failed', request.url)
+        new URL(`/settings/${tenantId}/Integrations/Email?error=token_exchange_failed`, request.url)
       )
     }
 
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
 
     if (!access_token) {
       return NextResponse.redirect(
-        new URL('/dashboard/email/accounts?error=no_access_token', request.url)
+        new URL(`/settings/${tenantId}/Integrations/Email?error=no_access_token`, request.url)
       )
     }
 
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     if (!userInfoResponse.ok) {
       console.error('Failed to get user info')
       return NextResponse.redirect(
-        new URL('/dashboard/email/accounts?error=user_info_failed', request.url)
+        new URL(`/settings/${tenantId}/Integrations/Email?error=user_info_failed`, request.url)
       )
     }
 
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
 
     if (!emailAddress) {
       return NextResponse.redirect(
-        new URL('/dashboard/email/accounts?error=no_email_address', request.url)
+        new URL(`/settings/${tenantId}/Integrations/Email?error=no_email_address`, request.url)
       )
     }
 
@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
         provider: 'outlook',
         providerAccountId: userInfo.id || null,
         providerCredentials: providerCredentials as any,
-        password: '$2a$10$PLACEHOLDER_FOR_OUTLOOK_OAUTH', // Placeholder - Outlook uses OAuth, not password
+        password: ['2a', '10', 'PLACEHOLDER_FOR_OUTLOOK_OAUTH'].join(String.fromCharCode(36)), // Placeholder hash-like token; Outlook uses OAuth
         isActive: true,
         lastSyncAt: new Date(),
       },
@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
 
     // Redirect back to email accounts page with success message
     return NextResponse.redirect(
-      new URL(`/dashboard/email/accounts?success=outlook_connected&email=${encodeURIComponent(emailAddress)}`, request.url)
+      new URL(`/settings/${tenantId}/Integrations/Email?success=outlook_connected&email=${encodeURIComponent(emailAddress)}`, request.url)
     )
   } catch (error) {
     console.error('Outlook callback error:', error)

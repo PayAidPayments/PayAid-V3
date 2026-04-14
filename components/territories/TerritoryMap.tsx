@@ -35,21 +35,20 @@ export function TerritoryMap({ tenantId }: TerritoryMapProps) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const fetchTerritories = async () => {
+      try {
+        const response = await fetch(`/api/territories?tenantId=${tenantId}`)
+        if (!response.ok) throw new Error('Failed to fetch territories')
+        const data = await response.json()
+        setTerritories(data.data || [])
+      } catch (error) {
+        console.error('Error fetching territories:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchTerritories()
   }, [tenantId])
-
-  const fetchTerritories = async () => {
-    try {
-      const response = await fetch(`/api/territories?tenantId=${tenantId}`)
-      if (!response.ok) throw new Error('Failed to fetch territories')
-      const data = await response.json()
-      setTerritories(data.data || [])
-    } catch (error) {
-      console.error('Error fetching territories:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   // Indian states for visualization
   const indianStates = [

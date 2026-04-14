@@ -13,7 +13,9 @@ import {
   ArrowUpRight,
   IndianRupee,
   Warehouse,
-  ShoppingCart
+  ShoppingCart,
+  Bell,
+  CheckCircle2,
 } from 'lucide-react'
 import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
 import { GlassCard } from '@/components/modules/GlassCard'
@@ -70,6 +72,25 @@ interface InventoryDashboardStats {
   }>
 }
 
+interface ReorderTrigger {
+  id: string
+  product_id: string
+  product_name: string
+  sku: string
+  location_name: string
+  quantity_on_hand: number
+  reorder_level: number
+  deficit: number
+  urgency: 'critical' | 'low' | 'normal'
+  estimated_reorder_value: number
+}
+
+interface ReorderData {
+  triggers: ReorderTrigger[]
+  total: number
+  has_critical: boolean
+}
+
 // PayAid brand colors for charts
 const PAYAID_PURPLE = '#53328A'
 const PAYAID_GOLD = '#F5C700'
@@ -83,10 +104,32 @@ export default function InventoryDashboardPage() {
   const [stats, setStats] = useState<InventoryDashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [reorderData, setReorderData] = useState<ReorderData | null>(null)
+  const [reorderLoading, setReorderLoading] = useState(true)
 
   useEffect(() => {
     fetchDashboardStats()
-  }, [tenantId])
+    fetchReorderTriggers()
+  }, [tenantId])  
+
+  const fetchReorderTriggers = async () => {
+    try {
+      setReorderLoading(true)
+      const token = useAuthStore.getState().token
+      if (!token) return
+      const res = await fetch('/api/v1/inventory/reorder-triggers?limit=8', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setReorderData(data)
+      }
+    } catch {
+      // Non-critical; dashboard still renders
+    } finally {
+      setReorderLoading(false)
+    }
+  }
 
   const fetchDashboardStats = async () => {
     try {
@@ -409,6 +452,93 @@ export default function InventoryDashboardPage() {
                 <div className="text-center py-8 text-gray-500">
                   <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>No product data available</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Band 4 — Reorder Alerts */}
+        <div className="mt-6">
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div className="flex items-center gap-2">
+                <Bell className={`w-5 h-5 ${reorderData?.has_critical ? 'text-red-500' : 'text-amber-500'}`} />
+                <div>
+                  <CardTitle className="text-lg font-semibold">Reorder Alerts</CardTitle>
+                  <CardDescription>
+                    Items below reorder threshold — action required
+                  </CardDescription>
+                </div>
+              </div>
+              {reorderData && reorderData.total > 0 && (
+                <Link
+                  href={`/inventory/${tenantId}/Stock-Alerts`}
+                  className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 font-medium inline-flex items-center gap-1"
+                >
+                  View all {reorderData.total} <ArrowUpRight className="w-3.5 h-3.5" />
+                </Link>
+              )}
+            </CardHeader>
+            <CardContent>
+              {reorderLoading ? (
+                <div className="flex items-center gap-2 py-4 text-sm text-gray-500">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Checking stock levels…
+                </div>
+              ) : !reorderData?.triggers?.length ? (
+                <div className="flex items-center gap-3 py-6 text-sm text-emerald-700 dark:text-emerald-400">
+                  <CheckCircle2 className="w-5 h-5 shrink-0" />
+                  <span>All items are above their reorder threshold. No action needed.</span>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {reorderData.triggers.slice(0, 8).map((t) => (
+                    <div
+                      key={t.id}
+                      className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                        t.urgency === 'critical'
+                          ? 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800'
+                          : 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800'
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {t.product_name}
+                          </p>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                              t.urgency === 'critical'
+                                ? 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300'
+                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300'
+                            }`}
+                          >
+                            {t.urgency === 'critical' ? '⚠ Critical' : 'Low stock'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          SKU: {t.sku} · {t.location_name} · On hand:{' '}
+                          <span className="font-semibold text-red-600 dark:text-red-400">
+                            {t.quantity_on_hand}
+                          </span>{' '}
+                          / Reorder at: {t.reorder_level} · Need: {t.deficit} units
+                        </p>
+                      </div>
+                      <Link
+                        href={`/inventory/${tenantId}/Stock-Alerts`}
+                        className="ml-3 shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+                      >
+                        Reorder
+                      </Link>
+                    </div>
+                  ))}
+                  {reorderData.has_critical && (
+                    <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5 pt-1">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      Critical items are out of stock or at 25% of reorder level — reorder immediately.
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>

@@ -3,58 +3,85 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  AlertTriangle, 
-  RefreshCw, 
+import {
+  AlertTriangle,
+  RefreshCw,
   Package,
   MapPin,
   Bell,
-  CheckCircle2
+  CheckCircle2,
+  ShoppingCart,
+  TrendingDown,
 } from 'lucide-react'
 import { PageLoading } from '@/components/ui/loading'
+import { formatINRForDisplay } from '@/lib/utils/formatINR'
 
-interface StockAlert {
-  productId: string
-  productName: string
+interface ReorderTrigger {
+  id: string
+  product_id: string
+  product_name: string
   sku: string
-  currentQuantity: number
-  reorderLevel: number
-  locationId?: string
-  locationName?: string
-  severity: 'low' | 'critical' | 'out_of_stock'
+  location_id: string
+  location_name: string
+  quantity_on_hand: number
+  reserved: number
+  available: number
+  reorder_level: number
+  deficit: number
+  urgency: 'critical' | 'low' | 'normal'
+  estimated_reorder_value: number
+}
+
+interface ReorderData {
+  triggers: ReorderTrigger[]
+  total: number
+  has_critical: boolean
+  generated_at: string
+}
+
+type UrgencyFilter = 'all' | 'critical' | 'low'
+
+function urgencyBadgeClass(urgency: string) {
+  if (urgency === 'critical') return 'bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-200'
+  return 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200'
+}
+
+function urgencyBorderClass(urgency: string) {
+  if (urgency === 'critical') return 'border-red-400 dark:border-red-700'
+  return 'border-amber-400 dark:border-amber-700'
 }
 
 export default function StockAlertsPage() {
   const params = useParams()
   const tenantId = params.tenantId as string
   const { token } = useAuthStore()
-  const [alerts, setAlerts] = useState<StockAlert[]>([])
+
+  const [data, setData] = useState<ReorderData | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [filter, setFilter] = useState<'all' | 'low' | 'critical' | 'out_of_stock'>('all')
+  const [filter, setFilter] = useState<UrgencyFilter>('all')
+  const [approvingId, setApprovingId] = useState<string | null>(null)
+  const [approveQtys, setApproveQtys] = useState<Record<string, number>>({})
 
   useEffect(() => {
     fetchAlerts()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchAlerts = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/inventory/stock-alerts', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const res = await fetch('/api/v1/inventory/reorder-triggers?limit=100', {
+        headers: { Authorization: `Bearer ${token}` },
       })
-
-      if (response.ok) {
-        const data = await response.json()
-        setAlerts(data.alerts || [])
+      if (res.ok) {
+        const json = await res.json()
+        setData(json)
       }
     } catch (error) {
-      console.error('Failed to fetch stock alerts:', error)
+      console.error('Failed to fetch reorder triggers:', error)
     } finally {
       setLoading(false)
     }
@@ -66,36 +93,46 @@ export default function StockAlertsPage() {
     setRefreshing(false)
   }
 
-  const handleSendNotifications = async () => {
+  const handleApprove = async (trigger: ReorderTrigger) => {
+    const qty = approveQtys[trigger.id] ?? trigger.deficit
+    if (!qty || qty <= 0) {
+      window.alert('Please enter a valid quantity to order.')
+      return
+    }
     try {
-      const response = await fetch('/api/inventory/stock-alerts?notify=true', {
+      setApprovingId(trigger.id)
+      const res = await fetch(`/api/v1/inventory/reorder-triggers/${trigger.id}/approve`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quantity_to_order: qty }),
       })
-
-      if (response.ok) {
-        const data = await response.json()
-        alert(`Notifications sent for ${data.count} alerts`)
+      if (res.ok) {
+        const json = await res.json()
+        window.alert(
+          `Reorder approved!\nProduct: ${trigger.product_name}\nQty: ${qty} units${
+            json.po_draft ? `\nDraft PO created: ${json.po_draft.po_number}` : ''
+          }`,
+        )
         await fetchAlerts()
+      } else {
+        const err = await res.json().catch(() => ({}))
+        window.alert(`Approval failed: ${err.error ?? 'Unknown error'}`)
       }
-    } catch (error) {
-      console.error('Failed to send notifications:', error)
-      alert('Failed to send notifications')
+    } catch (e) {
+      console.error('Approve error:', e)
+      window.alert('Failed to submit approval. Please try again.')
+    } finally {
+      setApprovingId(null)
     }
   }
 
-  const filteredAlerts = alerts.filter(alert => {
-    if (filter === 'all') return true
-    return alert.severity === filter
-  })
+  const triggers = data?.triggers ?? []
+  const filtered = triggers.filter((t) => filter === 'all' || t.urgency === filter)
 
-  const severityCounts = {
-    all: alerts.length,
-    low: alerts.filter(a => a.severity === 'low').length,
-    critical: alerts.filter(a => a.severity === 'critical').length,
-    out_of_stock: alerts.filter(a => a.severity === 'out_of_stock').length,
+  const counts = {
+    all: triggers.length,
+    critical: triggers.filter((t) => t.urgency === 'critical').length,
+    low: triggers.filter((t) => t.urgency === 'low').length,
   }
 
   if (loading) {
@@ -105,194 +142,185 @@ export default function StockAlertsPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Stock Alerts</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Monitor low stock, critical stock, and out-of-stock items
+          <p className="mt-1 text-gray-600 dark:text-gray-400">
+            Items below their reorder threshold — approve reorders directly from here
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          {alerts.length > 0 && (
-            <Button
-              onClick={handleSendNotifications}
-              className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#3F1F62] hover:to-[#E0B200] text-white"
-            >
-              <Bell className="w-4 h-4 mr-2" />
-              Send Notifications
-            </Button>
-          )}
-        </div>
+        <Button
+          variant="outline"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Alerts</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+              <Bell className="w-4 h-4" /> Total Alerts
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{severityCounts.all}</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{counts.all}</div>
           </CardContent>
         </Card>
-
-        <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <Card className="dark:bg-gray-800 dark:border-gray-700 border-red-300 dark:border-red-800">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Low Stock</CardTitle>
+            <CardTitle className="text-sm font-medium text-red-700 dark:text-red-400 flex items-center gap-1.5">
+              <TrendingDown className="w-4 h-4" /> Critical
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{severityCounts.low}</div>
+            <div className="text-2xl font-bold text-red-700 dark:text-red-400">{counts.critical}</div>
+            <p className="text-xs text-red-500 dark:text-red-500 mt-0.5">Out of stock or ≤25% of threshold</p>
           </CardContent>
         </Card>
-
-        <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <Card className="dark:bg-gray-800 dark:border-gray-700 border-amber-300 dark:border-amber-800">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Critical</CardTitle>
+            <CardTitle className="text-sm font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4" /> Low Stock
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{severityCounts.critical}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="dark:bg-gray-800 dark:border-gray-700">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Out of Stock</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{severityCounts.out_of_stock}</div>
+            <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">{counts.low}</div>
+            <p className="text-xs text-amber-500 dark:text-amber-500 mt-0.5">Between 25–50% of threshold</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
       <div className="flex gap-2">
-        {(['all', 'low', 'critical', 'out_of_stock'] as const).map((filterType) => (
+        {(['all', 'critical', 'low'] as const).map((f) => (
           <Button
-            key={filterType}
-            variant={filter === filterType ? 'default' : 'outline'}
-            onClick={() => setFilter(filterType)}
+            key={f}
+            size="sm"
+            variant={filter === f ? 'default' : 'outline'}
+            onClick={() => setFilter(f)}
             className={
-              filter === filterType
-                ? 'bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#3F1F62] hover:to-[#E0B200] text-white'
+              filter === f
+                ? 'bg-gradient-to-r from-[#53328A] to-[#6B4BA1] text-white'
                 : 'dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
             }
           >
-            {filterType === 'all'
-              ? 'All'
-              : filterType === 'low'
-              ? 'Low Stock'
-              : filterType === 'critical'
-              ? 'Critical'
-              : 'Out of Stock'}{' '}
-            ({severityCounts[filterType]})
+            {f === 'all' ? 'All' : f === 'critical' ? '⚠ Critical' : 'Low Stock'} ({counts[f]})
           </Button>
         ))}
       </div>
 
-      {/* Alerts List */}
-      {filteredAlerts.length === 0 ? (
+      {/* Alerts list */}
+      {filtered.length === 0 ? (
         <Card className="text-center py-12 dark:bg-gray-800 dark:border-gray-700">
           <CardContent>
-            <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">No Stock Alerts</h3>
+            <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              {filter === 'all' ? 'No Stock Alerts' : `No ${filter === 'critical' ? 'Critical' : 'Low Stock'} Alerts`}
+            </h3>
             <p className="text-gray-600 dark:text-gray-400">
-              All products are above their reorder levels
+              All products are above their reorder thresholds.
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {filteredAlerts.map((alert) => (
+        <div className="space-y-3">
+          {filtered.map((trigger) => (
             <Card
-              key={`${alert.productId}-${alert.locationId || 'default'}`}
-              className={`dark:bg-gray-800 dark:border-gray-700 ${
-                alert.severity === 'out_of_stock'
-                  ? 'border-red-500'
-                  : alert.severity === 'critical'
-                  ? 'border-orange-500'
-                  : 'border-yellow-500'
-              }`}
+              key={trigger.id}
+              className={`dark:bg-gray-800 dark:border-gray-700 border-l-4 ${urgencyBorderClass(trigger.urgency)}`}
             >
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4 flex-1">
+              <CardContent className="pt-5 pb-4">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
                     <div
-                      className={`p-3 rounded-lg ${
-                        alert.severity === 'out_of_stock'
-                          ? 'bg-red-100 dark:bg-red-900'
-                          : alert.severity === 'critical'
-                          ? 'bg-orange-100 dark:bg-orange-900'
-                          : 'bg-yellow-100 dark:bg-yellow-900'
+                      className={`p-2.5 rounded-lg shrink-0 ${
+                        trigger.urgency === 'critical'
+                          ? 'bg-red-100 dark:bg-red-900/40'
+                          : 'bg-amber-100 dark:bg-amber-900/40'
                       }`}
                     >
                       <AlertTriangle
-                        className={`w-6 h-6 ${
-                          alert.severity === 'out_of_stock'
+                        className={`w-5 h-5 ${
+                          trigger.urgency === 'critical'
                             ? 'text-red-600 dark:text-red-400'
-                            : alert.severity === 'critical'
-                            ? 'text-orange-600 dark:text-orange-400'
-                            : 'text-yellow-600 dark:text-yellow-400'
+                            : 'text-amber-600 dark:text-amber-400'
                         }`}
                       />
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {alert.productName}
+                    <div className="min-w-0 space-y-1.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          {trigger.product_name}
                         </h3>
-                        <Badge
-                          variant={
-                            alert.severity === 'out_of_stock'
-                              ? 'destructive'
-                              : alert.severity === 'critical'
-                              ? 'default'
-                              : 'secondary'
-                          }
-                          className={
-                            alert.severity === 'out_of_stock'
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                              : alert.severity === 'critical'
-                              ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
-                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                          }
-                        >
-                          {alert.severity === 'out_of_stock'
-                            ? 'Out of Stock'
-                            : alert.severity === 'critical'
-                            ? 'Critical'
-                            : 'Low Stock'}
+                        <Badge className={urgencyBadgeClass(trigger.urgency)}>
+                          {trigger.urgency === 'critical' ? '⚠ Critical' : 'Low Stock'}
                         </Badge>
                       </div>
-                      <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center gap-2">
-                          <Package className="w-4 h-4" />
-                          <span>SKU: {alert.sku}</span>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-1">
+                          <Package className="w-3.5 h-3.5" /> SKU: {trigger.sku}
                         </div>
-                        {alert.locationName && (
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4" />
-                            <span>Location: {alert.locationName}</span>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5" /> {trigger.location_name}
+                        </div>
                         <div>
-                          Current Stock: <strong className="text-gray-900 dark:text-gray-100">{alert.currentQuantity}</strong> | Reorder Level: <strong className="text-gray-900 dark:text-gray-100">{alert.reorderLevel}</strong>
+                          On hand:{' '}
+                          <span className="font-semibold text-red-600 dark:text-red-400">
+                            {trigger.quantity_on_hand}
+                          </span>
+                          {' / '}
+                          Threshold: {trigger.reorder_level}
+                        </div>
+                        <div>
+                          Deficit:{' '}
+                          <span className="font-semibold">{trigger.deficit} units</span>
+                          {' · '}
+                          Est. {formatINRForDisplay(trigger.estimated_reorder_value)}
                         </div>
                       </div>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <input
+                      type="number"
+                      min={1}
+                      defaultValue={trigger.deficit}
+                      onChange={(e) =>
+                        setApproveQtys((prev) => ({
+                          ...prev,
+                          [trigger.id]: Math.max(1, parseInt(e.target.value) || trigger.deficit),
+                        }))
+                      }
+                      className="w-20 text-sm px-2 py-1.5 rounded-lg border border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      title="Quantity to order"
+                      placeholder="Qty"
+                    />
+                    <Button
+                      size="sm"
+                      disabled={approvingId === trigger.id}
+                      onClick={() => handleApprove(trigger)}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-60"
+                      title={approvingId === trigger.id ? 'Approving…' : 'Approve reorder'}
+                    >
+                      <ShoppingCart className="w-3.5 h-3.5 mr-1.5" />
+                      {approvingId === trigger.id ? 'Approving…' : 'Approve Reorder'}
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
           ))}
+          {data && (
+            <p className="text-xs text-slate-400 dark:text-gray-500 text-right">
+              Generated {new Date(data.generated_at).toLocaleString()} · {data.total} triggers total
+            </p>
+          )}
         </div>
       )}
     </div>

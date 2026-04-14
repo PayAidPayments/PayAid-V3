@@ -58,5 +58,21 @@ describe('GET /api/v1/signals (M2 smoke)', () => {
       limit: 20,
     })
   })
+
+  it('returns 500 when listing signals fails unexpectedly', async () => {
+    const auth = require('@/lib/middleware/auth')
+    const service = require('@/lib/ai-native/m0-service')
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_m2', userId: 'usr_1' })
+    service.listSignals.mockRejectedValue(new Error('signals list failed'))
+
+    const req = new NextRequest('http://localhost/api/v1/signals?limit=20', {
+      headers: { authorization: 'Bearer t' },
+    })
+    const res = await GET(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body.error).toBe('signals list failed')
+  })
 })
 

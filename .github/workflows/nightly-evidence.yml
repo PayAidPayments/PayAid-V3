@@ -1,0 +1,43 @@
+name: Nightly Evidence Archive
+
+on:
+  schedule:
+    - cron: '30 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  nightly-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PAYAID_BASE_URL: ${{ secrets.PAYAID_BASE_URL }}
+      PAYAID_TENANT_ID: ${{ secrets.PAYAID_TENANT_ID }}
+      PAYAID_AUTH_TOKEN: ${{ secrets.PAYAID_AUTH_TOKEN }}
+      NIGHTLY_EVIDENCE_DIR: docs/evidence/nightly
+      M2_HTTP_TIMEOUT_MS: '90000'
+      M2_HTTP_RETRIES: '3'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run nightly evidence archive
+        run: npm run nightly:evidence:archive
+
+      - name: Upload nightly evidence artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-evidence-${{ github.run_id }}
+          path: docs/evidence/nightly/
+          if-no-files-found: warn
+

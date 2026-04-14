@@ -254,6 +254,7 @@ export default function LandingPageDetailPage() {
                       {section.type === 'hero' && (
                         <div className="relative rounded-lg overflow-hidden" style={{ minHeight: '300px' }}>
                           {section.backgroundImage && (
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={section.backgroundImage}
                               alt={section.title}
@@ -282,6 +283,7 @@ export default function LandingPageDetailPage() {
                             {section.items?.map((item: any, idx: number) => (
                               <div key={idx} className="border rounded p-4">
                                 {item.image && (
+                                  // eslint-disable-next-line @next/next/no-img-element
                                   <img
                                     src={item.image}
                                     alt={item.title}
@@ -307,6 +309,7 @@ export default function LandingPageDetailPage() {
                               <div key={idx} className="border rounded p-4">
                                 <div className="flex items-center gap-3 mb-2">
                                   {item.image && (
+                                    // eslint-disable-next-line @next/next/no-img-element
                                     <img
                                       src={item.image}
                                       alt={item.name}
@@ -335,6 +338,7 @@ export default function LandingPageDetailPage() {
                             {section.items?.map((item: any, idx: number) => (
                               <div key={idx} className="border rounded p-4">
                                 {item.image && (
+                                  // eslint-disable-next-line @next/next/no-img-element
                                   <img
                                     src={item.image}
                                     alt={item.name}

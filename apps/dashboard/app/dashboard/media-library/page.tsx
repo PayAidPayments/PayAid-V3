@@ -403,6 +403,7 @@ export default function MediaLibraryPage() {
                 onClick={() => setSelectedMedia(item)}
               >
                 <div className="aspect-square relative bg-gray-100">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.fileUrl}
                     alt={item.title || item.fileName}
@@ -469,6 +470,7 @@ export default function MediaLibraryPage() {
                 {media.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={item.fileUrl}
                         alt={item.title || item.fileName}
@@ -564,6 +566,7 @@ export default function MediaLibraryPage() {
               <div className="p-6">
                 {/* Image */}
                 <div className="mb-6">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={selectedMedia.fileUrl}
                     alt={selectedMedia.title || selectedMedia.fileName}

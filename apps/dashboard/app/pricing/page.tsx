@@ -1243,7 +1243,7 @@ export default function PricingLandingPage() {
               </svg>
             </div>
             <h3>Unlimited Contacts</h3>
-            <p>Don't pay extra every month just for having a successful business or big mailing list! Have as many contacts as you need without having to pay more.</p>
+            <p>Don&apos;t pay extra every month just for having a successful business or big mailing list! Have as many contacts as you need without having to pay more.</p>
           </div>
           <div className="feature-card scroll-reveal">
             <div className="feature-icon">
@@ -1253,7 +1253,7 @@ export default function PricingLandingPage() {
               </svg>
             </div>
             <h3>Increase Email Deliverability</h3>
-            <p>Use your own sub-domain to ensure your emails are hitting inboxes so they'll be seen by your customers.</p>
+            <p>Use your own sub-domain to ensure your emails are hitting inboxes so they&apos;ll be seen by your customers.</p>
           </div>
           <div className="feature-card scroll-reveal">
             <div className="feature-icon">

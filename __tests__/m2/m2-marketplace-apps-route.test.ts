@@ -32,4 +32,19 @@ describe('GET /api/marketplace/apps (M2 smoke)', () => {
     expect(body.apps[0]).toHaveProperty('id')
     expect(body.apps[0]).toHaveProperty('name')
   })
+
+  it('returns 500 when listing apps fails unexpectedly', async () => {
+    const auth = require('@/lib/middleware/auth')
+    auth.requireModuleAccess.mockRejectedValue(new Error('apps list failed'))
+    auth.handleLicenseError.mockReturnValueOnce(null)
+
+    const req = new NextRequest('http://localhost/api/marketplace/apps', {
+      headers: { authorization: 'Bearer t' },
+    })
+    const res = await GET(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body.error).toBe('apps list failed')
+  })
 })

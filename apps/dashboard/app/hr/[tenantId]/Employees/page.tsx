@@ -112,18 +112,19 @@ export default function HREmployeesPage() {
                 type="text"
                 placeholder="Search employees..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); setPage(1) }}
                 className="h-10 rounded-md border border-gray-300 bg-white text-gray-900 px-3 flex-1"
               />
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
                 className="h-10 rounded-md border border-gray-300 bg-white text-gray-900 px-3"
               >
                 <option value="">All Status</option>
                 <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-                <option value="ON_LEAVE">On Leave</option>
+                <option value="PROBATION">On Probation</option>
+                <option value="NOTICE">Notice Period</option>
+                <option value="EXITED">Exited</option>
               </select>
             </div>
           </CardContent>

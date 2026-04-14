@@ -27,6 +27,10 @@ jest.mock('@/lib/ai-native/m0-service', () => ({
   markWorkflowAudit: jest.fn().mockResolvedValue(undefined),
 }))
 
+jest.mock('@/lib/analytics/track', () => ({
+  trackEvent: jest.fn(),
+}))
+
 describe('POST /api/v1/workflows/[id]/publish (M2 smoke)', () => {
   beforeEach(() => {
     jest.clearAllMocks()

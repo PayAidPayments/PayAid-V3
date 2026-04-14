@@ -10,13 +10,82 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { format } from 'date-fns'
 import { PageLoading } from '@/components/ui/loading'
 import { FileText, Bot, Trophy, XCircle } from 'lucide-react'
-import { CloseDealModal } from '@/components/crm/deal/CloseDealModal'
-import { DealTimeline } from '@/components/crm/deal/DealTimeline'
-import { AuditActionTimelineCard } from '@/components/crm/AuditActionTimelineCard'
-import { DealRevenueInsightCard } from '@/components/crm/DealRevenueInsightCard'
 import { DealHealthCard } from '@/components/crm/DealHealthCard'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuthStore } from '@/lib/stores/auth'
+
+function PlaceholderCard({ title, message }: { title: string; message: string }) {
+  return (
+    <Card className="dark:bg-gray-800 dark:border-gray-700">
+      <CardHeader>
+        <CardTitle className="dark:text-gray-100">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-slate-500 dark:text-gray-400">{message}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+function DealTimeline(_: {
+  dealId: string
+  tenantId: string
+  deal: {
+    createdAt: string | Date
+    updatedAt: string | Date
+    stage: string
+    actualCloseDate?: string
+    wonReason?: string
+    lostReason?: string
+    contactId?: string
+  }
+}) {
+  return <PlaceholderCard title="Deal Timeline" message="Detailed timeline is temporarily unavailable in this build." />
+}
+
+function AuditActionTimelineCard(_: { entityType: string; entityId: string; tenantId: string; title: string }) {
+  return <PlaceholderCard title="Deal Automation Timeline" message="Audit actions are temporarily unavailable." />
+}
+
+function DealRevenueInsightCard(_: { dealId: string; tenantId: string; stage: string }) {
+  return <PlaceholderCard title="Revenue Insight" message="Revenue insights are temporarily unavailable in this build." />
+}
+
+function CloseDealModal({
+  outcome,
+  onClose,
+  onConfirm,
+}: {
+  outcome: 'won' | 'lost'
+  dealName: string
+  tenantId: string
+  onClose: () => void
+  onConfirm: (data: { reason?: string; competitor?: string }) => Promise<void>
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          Confirm mark as {outcome}
+        </h3>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          Close this deal now? Reason entry is unavailable in this build.
+        </p>
+        <div className="mt-3 flex justify-end gap-2">
+          <Button size="sm" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button
+            size="sm"
+            onClick={async () => {
+              await onConfirm({})
+            }}
+          >
+            Confirm
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function DealDetailPage() {
   const params = useParams()

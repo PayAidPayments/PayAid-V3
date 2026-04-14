@@ -201,6 +201,7 @@ export default function LogosPage() {
                 ) : logo.variations.length > 0 ? (
                   <div className="space-y-2">
                     <div className="w-full h-48 bg-gray-50 rounded flex items-center justify-center overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={logo.variations[0].thumbnailUrl || logo.variations[0].imageUrl}
                         alt={logo.businessName}

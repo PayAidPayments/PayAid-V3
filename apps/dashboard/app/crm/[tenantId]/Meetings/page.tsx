@@ -53,36 +53,31 @@ export default function MeetingsPage() {
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'today' | 'qualified'>('all')
 
   useEffect(() => {
+    const fetchMeetings = async () => {
+      try {
+        setLoading(true)
+        if (!token) return
+        const params = new URLSearchParams()
+        if (filter !== 'all') params.append('filter', filter)
+        const response = await fetch(
+          `/api/crm/meetings?${params.toString()}${tenantId ? `&tenantId=${encodeURIComponent(tenantId)}` : ''}`,
+          { headers: { 'Authorization': `Bearer ${token}` } }
+        )
+        if (response.ok) {
+          const data = await response.json()
+          setMeetings(data.meetings || [])
+        } else {
+          setMeetings([])
+        }
+      } catch (error) {
+        console.error('Error fetching meetings:', error)
+        setMeetings([])
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchMeetings()
   }, [tenantId, token, filter])
-
-  const fetchMeetings = async () => {
-    try {
-      setLoading(true)
-      if (!token) return
-
-      const params = new URLSearchParams()
-      if (filter !== 'all') {
-        params.append('filter', filter)
-      }
-
-      const response = await fetch(`/api/crm/meetings?${params.toString()}${tenantId ? `&tenantId=${encodeURIComponent(tenantId)}` : ''}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setMeetings(data.meetings || [])
-      } else {
-        setMeetings([])
-      }
-    } catch (error) {
-      console.error('Error fetching meetings:', error)
-      setMeetings([])
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const getStatusColor = (status: string) => {
     switch (status) {

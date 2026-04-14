@@ -91,13 +91,13 @@ export default function MyAppsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Your Published Apps</CardTitle>
-          <CardDescription>Apps you've submitted to the marketplace</CardDescription>
+          <CardDescription>Apps you&apos;ve submitted to the marketplace</CardDescription>
         </CardHeader>
         <CardContent>
           {!apps || apps.length === 0 ? (
             <div className="text-center py-12">
               <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-4">You haven't published any apps yet</p>
+              <p className="text-gray-600 mb-4">You haven&apos;t published any apps yet</p>
               <Button asChild>
                 <Link href="/dashboard/developer/portal/submit">
                   Submit Your First App

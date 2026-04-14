@@ -57,6 +57,7 @@ export default function BlogPostPage() {
 
       {/* Hero Image */}
       <div className="relative h-96 w-full">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={post.image}
           alt={post.title}
@@ -116,6 +117,7 @@ export default function BlogPostPage() {
                   className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow border border-gray-200"
                 >
                   <div className="relative h-48 w-full">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={relatedPost.image}
                       alt={relatedPost.title}

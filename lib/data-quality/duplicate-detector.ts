@@ -3,6 +3,7 @@
  * Finds and merges duplicate contacts
  */
 
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 
 export interface DuplicateMatch {
@@ -162,107 +163,272 @@ export class DuplicateDetectorService {
   }
 
   /**
-   * Merge duplicate contacts
+   * Merge duplicate contacts: reassigns related records to the primary, merges scalars, deletes the duplicate.
    */
   static async mergeContacts(
     tenantId: string,
     primaryContactId: string,
     duplicateContactId: string
   ) {
-    const primary = await prisma.contact.findFirst({
-      where: { id: primaryContactId, tenantId },
-      include: {
-        deals: true,
-        tasks: true,
-        interactions: true,
-        emailMessages: true,
-        formSubmissions: true,
-      },
-    })
-
-    const duplicate = await prisma.contact.findFirst({
-      where: { id: duplicateContactId, tenantId },
-      include: {
-        deals: true,
-        tasks: true,
-        interactions: true,
-        emailMessages: true,
-        formSubmissions: true,
-      },
-    })
-
-    if (!primary || !duplicate) {
-      throw new Error('Contact not found')
+    if (primaryContactId === duplicateContactId) {
+      throw new Error('Cannot merge a contact with itself')
     }
 
-    // Merge data (keep primary, fill gaps from duplicate)
-    const mergedData: any = {
-      ...(primary.name || duplicate.name ? { name: primary.name || duplicate.name } : {}),
-      ...(primary.email || duplicate.email ? { email: primary.email || duplicate.email } : {}),
-      ...(primary.phone || duplicate.phone ? { phone: primary.phone || duplicate.phone } : {}),
-      ...(primary.company || duplicate.company ? { company: primary.company || duplicate.company } : {}),
-      ...(primary.address || duplicate.address ? { address: primary.address || duplicate.address } : {}),
-      ...(primary.city || duplicate.city ? { city: primary.city || duplicate.city } : {}),
-      ...(primary.state || duplicate.state ? { state: primary.state || duplicate.state } : {}),
-      ...(primary.postalCode || duplicate.postalCode ? { postalCode: primary.postalCode || duplicate.postalCode } : {}),
-      // Merge tags
-      tags: [...new Set([...primary.tags, ...duplicate.tags])],
-      // Merge notes
-      notes: [primary.notes, duplicate.notes].filter(Boolean).join('\n\n---\n\n'),
-      // Use higher lead score
-      leadScore: Math.max(primary.leadScore, duplicate.leadScore),
-      // Use most recent lastContactedAt
-      lastContactedAt: primary.lastContactedAt && duplicate.lastContactedAt
-        ? new Date(Math.max(primary.lastContactedAt.getTime(), duplicate.lastContactedAt.getTime()))
-        : primary.lastContactedAt || duplicate.lastContactedAt,
-    }
+    return prisma.$transaction(async (tx) => {
+      const warnings: string[] = []
+      const notices: string[] = []
 
-    // Update primary contact with merged data
-    await prisma.contact.update({
-      where: { id: primaryContactId },
-      data: mergedData,
+      const primary = await tx.contact.findFirst({
+        where: { id: primaryContactId, tenantId },
+      })
+      const duplicate = await tx.contact.findFirst({
+        where: { id: duplicateContactId, tenantId },
+      })
+
+      if (!primary || !duplicate) {
+        throw new Error('Contact not found')
+      }
+
+      const mergedData: Prisma.ContactUpdateInput = {
+        name: primary.name || duplicate.name,
+        email: primary.email ?? duplicate.email ?? undefined,
+        phone: primary.phone ?? duplicate.phone ?? undefined,
+        company: primary.company ?? duplicate.company ?? undefined,
+        address: primary.address ?? duplicate.address ?? undefined,
+        city: primary.city ?? duplicate.city ?? undefined,
+        state: primary.state ?? duplicate.state ?? undefined,
+        postalCode: primary.postalCode ?? duplicate.postalCode ?? undefined,
+        country: primary.country ?? duplicate.country ?? undefined,
+        gstin: primary.gstin ?? duplicate.gstin ?? undefined,
+        accountId: primary.accountId ?? duplicate.accountId ?? undefined,
+        sourceId: primary.sourceId ?? duplicate.sourceId ?? undefined,
+        source: primary.source ?? duplicate.source ?? undefined,
+        assignedToId: primary.assignedToId ?? duplicate.assignedToId ?? undefined,
+        tags: [...new Set([...primary.tags, ...duplicate.tags])],
+        notes: [primary.notes, duplicate.notes].filter(Boolean).join('\n\n---\n\n') || undefined,
+        internalNotes:
+          [
+            (primary as { internalNotes?: string | null }).internalNotes,
+            (duplicate as { internalNotes?: string | null }).internalNotes,
+          ]
+            .filter((s): s is string => Boolean(s && String(s).trim()))
+            .join('\n\n---\n\n') || undefined,
+        leadScore: Math.max(primary.leadScore, duplicate.leadScore),
+        lastContactedAt:
+          primary.lastContactedAt && duplicate.lastContactedAt
+            ? new Date(Math.max(primary.lastContactedAt.getTime(), duplicate.lastContactedAt.getTime()))
+            : primary.lastContactedAt ?? duplicate.lastContactedAt ?? undefined,
+        nextFollowUp:
+          primary.nextFollowUp && duplicate.nextFollowUp
+            ? new Date(Math.min(primary.nextFollowUp.getTime(), duplicate.nextFollowUp.getTime()))
+            : primary.nextFollowUp ?? duplicate.nextFollowUp ?? undefined,
+      }
+
+      await tx.contact.update({
+        where: { id: primaryContactId },
+        data: mergedData,
+      })
+
+      await tx.customerInsight.deleteMany({ where: { contactId: duplicateContactId } })
+
+      const dupLoyalty = await tx.loyaltyPoints.findMany({
+        where: { customerId: duplicateContactId },
+      })
+      for (const row of dupLoyalty) {
+        const primaryRow = await tx.loyaltyPoints.findUnique({
+          where: {
+            tenantId_programId_customerId: {
+              tenantId: row.tenantId,
+              programId: row.programId,
+              customerId: primaryContactId,
+            },
+          },
+        })
+        if (primaryRow) {
+          await tx.loyaltyPoints.update({
+            where: { id: primaryRow.id },
+            data: {
+              currentPoints: new Prisma.Decimal(primaryRow.currentPoints).add(row.currentPoints),
+              totalEarned: new Prisma.Decimal(primaryRow.totalEarned).add(row.totalEarned),
+              totalRedeemed: new Prisma.Decimal(primaryRow.totalRedeemed).add(row.totalRedeemed),
+              tier: primaryRow.tier ?? row.tier ?? undefined,
+              lastTransactionAt: (() => {
+                const a = primaryRow.lastTransactionAt?.getTime() ?? 0
+                const b = row.lastTransactionAt?.getTime() ?? 0
+                if (a === 0 && b === 0) return undefined
+                return new Date(Math.max(a, b))
+              })(),
+              pointsExpiryAt: (() => {
+                const a = primaryRow.pointsExpiryAt?.getTime()
+                const b = row.pointsExpiryAt?.getTime()
+                if (a == null && b == null) return undefined
+                if (a == null) return row.pointsExpiryAt
+                if (b == null) return primaryRow.pointsExpiryAt
+                return new Date(Math.min(a, b))
+              })(),
+            },
+          })
+          await tx.loyaltyTransaction.updateMany({
+            where: { pointsId: row.id },
+            data: { pointsId: primaryRow.id },
+          })
+          await tx.loyaltyPoints.delete({ where: { id: row.id } })
+        } else {
+          await tx.loyaltyPoints.update({
+            where: { id: row.id },
+            data: { customerId: primaryContactId },
+          })
+        }
+      }
+
+      const dupWa = await tx.whatsappConversation.findMany({
+        where: { contactId: duplicateContactId },
+      })
+      for (const c of dupWa) {
+        const existing = await tx.whatsappConversation.findFirst({
+          where: { accountId: c.accountId, contactId: primaryContactId },
+        })
+        if (existing) {
+          const messageCount = await tx.whatsappMessage.count({
+            where: { conversationId: c.id },
+          })
+          if (messageCount > 0) {
+            await tx.whatsappMessage.updateMany({
+              where: { conversationId: c.id },
+              data: { conversationId: existing.id },
+            })
+            const priT = existing.lastMessageAt?.getTime() ?? 0
+            const dupT = c.lastMessageAt?.getTime() ?? 0
+            const nextLastMs = Math.max(priT, dupT)
+            await tx.whatsappConversation.update({
+              where: { id: existing.id },
+              data: {
+                ...(nextLastMs > 0 ? { lastMessageAt: new Date(nextLastMs) } : {}),
+                unreadCount: existing.unreadCount + c.unreadCount,
+              },
+            })
+            notices.push(
+              `WhatsApp: merged ${messageCount} message${messageCount === 1 ? '' : 's'} from a duplicate thread into the existing conversation for this WhatsApp account.`
+            )
+          } else {
+            notices.push(
+              'WhatsApp: removed an empty duplicate conversation (same WhatsApp account as an existing thread).'
+            )
+          }
+          await tx.whatsappConversation.delete({ where: { id: c.id } })
+        } else {
+          await tx.whatsappConversation.update({
+            where: { id: c.id },
+            data: { contactId: primaryContactId },
+          })
+        }
+      }
+
+      await tx.deal.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.task.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.interaction.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.emailMessage.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.emailContact.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.formSubmission.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.order.updateMany({
+        where: { customerId: duplicateContactId },
+        data: { customerId: primaryContactId },
+      })
+      await tx.invoice.updateMany({
+        where: { customerId: duplicateContactId },
+        data: { customerId: primaryContactId },
+      })
+      await tx.creditNote.updateMany({
+        where: { customerId: duplicateContactId },
+        data: { customerId: primaryContactId },
+      })
+      await tx.debitNote.updateMany({
+        where: { customerId: duplicateContactId },
+        data: { customerId: primaryContactId },
+      })
+      await tx.scheduledEmail.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.nurtureEnrollment.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.whatsappContactIdentity.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.sMSDeliveryReport.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.realEstateAdvance.updateMany({
+        where: { customerId: duplicateContactId },
+        data: { customerId: primaryContactId },
+      })
+      await tx.project.updateMany({
+        where: { clientId: duplicateContactId },
+        data: { clientId: primaryContactId },
+      })
+      await tx.workOrder.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.quote.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.proposal.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.contract.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.appointment.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.surveyResponse.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+      await tx.healthcarePatient.updateMany({
+        where: { contactId: duplicateContactId },
+        data: { contactId: primaryContactId },
+      })
+
+      await tx.contact.delete({
+        where: { id: duplicateContactId },
+      })
+
+      return {
+        success: true,
+        primaryContactId,
+        mergedContactId: duplicateContactId,
+        message: 'Contacts merged successfully',
+        ...(warnings.length > 0 ? { warnings } : {}),
+        ...(notices.length > 0 ? { notices } : {}),
+      }
     })
-
-    // Move deals to primary contact
-    await prisma.deal.updateMany({
-      where: { contactId: duplicateContactId },
-      data: { contactId: primaryContactId },
-    })
-
-    // Move tasks to primary contact
-    await prisma.task.updateMany({
-      where: { contactId: duplicateContactId },
-      data: { contactId: primaryContactId },
-    })
-
-    // Move interactions to primary contact
-    await prisma.interaction.updateMany({
-      where: { contactId: duplicateContactId },
-      data: { contactId: primaryContactId },
-    })
-
-    // Move email messages to primary contact
-    await prisma.emailMessage.updateMany({
-      where: { contactId: duplicateContactId },
-      data: { contactId: primaryContactId },
-    })
-
-    // Move form submissions to primary contact
-    await prisma.formSubmission.updateMany({
-      where: { contactId: duplicateContactId },
-      data: { contactId: primaryContactId },
-    })
-
-    // Delete duplicate contact
-    await prisma.contact.delete({
-      where: { id: duplicateContactId },
-    })
-
-    return {
-      success: true,
-      primaryContactId,
-      mergedContactId: duplicateContactId,
-      message: 'Contacts merged successfully',
-    }
   }
 }

@@ -225,6 +225,7 @@ export default function KYCDocumentDetailPage() {
             <CardContent>
               <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900 min-h-[500px] flex items-center justify-center">
                 {isImage(data.mimeType) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={data.fileUrl}
                     alt={data.fileName}

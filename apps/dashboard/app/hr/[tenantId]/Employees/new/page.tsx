@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import Link from 'next/link'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,6 +23,8 @@ export default function HREmployeeNewPage() {
   const tenantId = params?.tenantId as string
   const moduleConfig = getModuleConfig('hr') || getModuleConfig('crm')!
   const { token } = useAuthStore()
+  const queryClient = useQueryClient()
+  const [submitError, setSubmitError] = useState('')
   const createEmployeeIdempotencyKey = useMemo(
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
@@ -108,15 +111,21 @@ export default function HREmployeeNewPage() {
       return res.json()
     },
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] })
       router.push(`/hr/${tenantId}/Employees/${data.id}`)
+    },
+    onError: (error: Error) => {
+      setSubmitError(error.message || 'Failed to create employee')
     },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitError('')
     createEmployee.mutate({
       ...formData,
       ctcAnnualInr: formData.ctcAnnualInr ? parseFloat(formData.ctcAnnualInr) : undefined,
+      joiningDate: formData.joiningDate ? new Date(formData.joiningDate).toISOString() : undefined,
     })
   }
 
@@ -138,6 +147,11 @@ export default function HREmployeeNewPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {submitError && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                  {submitError}
+                </div>
+              )}
               {/* Personal Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Personal Information</h3>
@@ -255,20 +269,27 @@ export default function HREmployeeNewPage() {
                   </div>
                   <div>
                     <Label htmlFor="locationId">Location</Label>
-                    <CustomSelect
+                    <select
+                      id="locationId"
                       value={formData.locationId}
-                      onValueChange={(value) => setFormData({ ...formData, locationId: value })}
-                      placeholder="Select location"
+                      onChange={(e) => setFormData({ ...formData, locationId: e.target.value })}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <CustomSelectTrigger />
-                      <CustomSelectContent>
-                        {(locations?.locations || []).map((loc: any) => (
-                          <CustomSelectItem key={loc.id} value={loc.id}>
-                            {loc.name}
-                          </CustomSelectItem>
-                        ))}
-                      </CustomSelectContent>
-                    </CustomSelect>
+                      <option value="">— No location —</option>
+                      {(locations?.locations || []).map((loc: any) => (
+                        <option key={loc.id} value={loc.id}>
+                          {loc.name}{loc.city ? ` · ${loc.city}` : ''}{loc.state ? `, ${loc.state}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {locations?.locations?.length === 0 && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        No locations configured.{' '}
+                        <Link href={`/hr/${tenantId}/Settings/Locations`} className="underline font-medium">
+                          Add locations in HR Settings →
+                        </Link>
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="managerId">Manager</Label>

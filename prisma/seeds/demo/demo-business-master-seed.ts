@@ -71,6 +71,213 @@ function getPrisma(): PrismaClient {
   return _prisma
 }
 
+const DEMO_LICENSED_MODULES = [
+  'crm',
+  'sales',
+  'marketing',
+  'finance',
+  'hr',
+  'communication',
+  'ai-studio',
+  'analytics',
+  'projects',
+  'inventory',
+]
+
+const DEMO_EMPLOYEE_BLUEPRINTS = [
+  { firstName: 'Aarav', lastName: 'Mehta', email: 'admin@demo.com', role: 'owner', rbacRole: 'Owner', title: 'Founder & CEO' },
+  { firstName: 'Nisha', lastName: 'Rao', email: 'businessadmin@demobusiness.com', role: 'admin', rbacRole: 'Admin', title: 'Business Administrator' },
+  { firstName: 'Rohan', lastName: 'Kapoor', email: 'rohan.kapoor@demobusiness.com', role: 'sales_manager', rbacRole: 'Sales Manager', title: 'Head of Sales' },
+  { firstName: 'Priya', lastName: 'Singh', email: 'priya.singh@demobusiness.com', role: 'sales_rep', rbacRole: 'Sales Rep', title: 'Account Executive' },
+  { firstName: 'Kunal', lastName: 'Sharma', email: 'kunal.sharma@demobusiness.com', role: 'sales_rep', rbacRole: 'Sales Rep', title: 'Sales Executive' },
+  { firstName: 'Ananya', lastName: 'Iyer', email: 'ananya.iyer@demobusiness.com', role: 'sales_rep', rbacRole: 'Sales Rep', title: 'Business Development Executive' },
+  { firstName: 'Vikram', lastName: 'Patel', email: 'vikram.patel@demobusiness.com', role: 'finance_manager', rbacRole: 'Finance Manager', title: 'Finance Manager' },
+  { firstName: 'Meera', lastName: 'Nair', email: 'meera.nair@demobusiness.com', role: 'finance_analyst', rbacRole: 'Finance Analyst', title: 'Finance Analyst' },
+  { firstName: 'Sanjay', lastName: 'Gupta', email: 'sanjay.gupta@demobusiness.com', role: 'hr_manager', rbacRole: 'HR Manager', title: 'HR Manager' },
+  { firstName: 'Divya', lastName: 'Reddy', email: 'divya.reddy@demobusiness.com', role: 'hr_executive', rbacRole: 'HR Executive', title: 'HR Executive' },
+  { firstName: 'Arjun', lastName: 'Menon', email: 'arjun.menon@demobusiness.com', role: 'marketing_manager', rbacRole: 'Marketing Manager', title: 'Marketing Manager' },
+  { firstName: 'Kavita', lastName: 'Joshi', email: 'kavita.joshi@demobusiness.com', role: 'marketing_executive', rbacRole: 'Marketing Executive', title: 'Growth Marketer' },
+  { firstName: 'Neha', lastName: 'Verma', email: 'neha.verma@demobusiness.com', role: 'support_manager', rbacRole: 'Support Manager', title: 'Customer Success Manager' },
+  { firstName: 'Rahul', lastName: 'Choudhary', email: 'rahul.choudhary@demobusiness.com', role: 'support_agent', rbacRole: 'Support Agent', title: 'Support Specialist' },
+  { firstName: 'Aditi', lastName: 'Malhotra', email: 'aditi.malhotra@demobusiness.com', role: 'operations_manager', rbacRole: 'Operations Manager', title: 'Operations Manager' },
+  { firstName: 'Nikhil', lastName: 'Desai', email: 'nikhil.desai@demobusiness.com', role: 'operations_exec', rbacRole: 'Operations Executive', title: 'Operations Executive' },
+  { firstName: 'Sneha', lastName: 'Kulkarni', email: 'sneha.kulkarni@demobusiness.com', role: 'project_manager', rbacRole: 'Project Manager', title: 'Project Manager' },
+  { firstName: 'Aman', lastName: 'Saxena', email: 'aman.saxena@demobusiness.com', role: 'developer', rbacRole: 'Developer', title: 'Full Stack Developer' },
+  { firstName: 'Pooja', lastName: 'Agarwal', email: 'pooja.agarwal@demobusiness.com', role: 'data_analyst', rbacRole: 'Data Analyst', title: 'Data Analyst' },
+  { firstName: 'Harsh', lastName: 'Bansal', email: 'harsh.bansal@demobusiness.com', role: 'inventory_manager', rbacRole: 'Inventory Manager', title: 'Inventory Manager' },
+]
+
+const ROLE_ADMIN_SET = new Set(['Owner', 'Admin'])
+const DEMO_ROLE_MODULE_BUNDLES: Record<string, string[]> = {
+  Owner: [...DEMO_LICENSED_MODULES],
+  Admin: [...DEMO_LICENSED_MODULES],
+  'Sales Manager': ['crm', 'sales', 'analytics', 'communication'],
+  'Sales Rep': ['crm', 'sales', 'communication'],
+  'Finance Manager': ['finance', 'analytics'],
+  'Finance Analyst': ['finance', 'analytics'],
+  'HR Manager': ['hr', 'analytics'],
+  'HR Executive': ['hr'],
+  'Marketing Manager': ['marketing', 'crm', 'analytics'],
+  'Marketing Executive': ['marketing', 'crm'],
+  'Support Manager': ['crm', 'communication', 'projects', 'analytics'],
+  'Support Agent': ['crm', 'communication'],
+  'Operations Manager': ['inventory', 'projects', 'analytics'],
+  'Operations Executive': ['inventory', 'projects'],
+  'Project Manager': ['projects', 'crm', 'analytics'],
+  Developer: ['projects', 'ai-studio', 'communication'],
+  'Data Analyst': ['analytics'],
+  'Inventory Manager': ['inventory', 'analytics', 'finance'],
+}
+
+async function provisionDemoWorkforce(tenantId: string, hashedPassword: string) {
+  const prisma = getPrisma()
+
+  await prisma.tenant.update({
+    where: { id: tenantId },
+    data: {
+      maxUsers: 100,
+      licensedModules: DEMO_LICENSED_MODULES,
+    },
+  })
+
+  const roleByName = new Map<string, string>()
+  for (const roleName of Array.from(new Set(DEMO_EMPLOYEE_BLUEPRINTS.map((e) => e.rbacRole)))) {
+    const role = await prisma.role.upsert({
+      where: { tenantId_roleName: { tenantId, roleName } },
+      update: {
+        roleType: ROLE_ADMIN_SET.has(roleName) ? 'admin' : 'custom',
+        isActive: true,
+      },
+      create: {
+        tenantId,
+        roleName,
+        description: `${roleName} role for demo workforce`,
+        roleType: ROLE_ADMIN_SET.has(roleName) ? 'admin' : 'custom',
+        isSystem: ROLE_ADMIN_SET.has(roleName),
+        isActive: true,
+      },
+    })
+    roleByName.set(roleName, role.id)
+
+    const roleBundle = new Set(DEMO_ROLE_MODULE_BUNDLES[roleName] || [])
+    for (const moduleName of DEMO_LICENSED_MODULES) {
+      const hasModuleAccess = ROLE_ADMIN_SET.has(roleName) || roleBundle.has(moduleName)
+      const canAdmin = ROLE_ADMIN_SET.has(roleName)
+      await prisma.moduleAccess.upsert({
+        where: { tenantId_roleId_moduleName: { tenantId, roleId: role.id, moduleName } },
+        update: {
+          canView: hasModuleAccess,
+          canCreate: hasModuleAccess,
+          canEdit: hasModuleAccess,
+          canDelete: canAdmin,
+          canAdmin,
+          viewScope: hasModuleAccess ? 'all' : 'none',
+          editScope: hasModuleAccess ? (canAdmin ? 'all' : 'team') : 'none',
+        },
+        create: {
+          tenantId,
+          roleId: role.id,
+          moduleName,
+          canView: hasModuleAccess,
+          canCreate: hasModuleAccess,
+          canEdit: hasModuleAccess,
+          canDelete: canAdmin,
+          canAdmin,
+          viewScope: hasModuleAccess ? 'all' : 'none',
+          editScope: hasModuleAccess ? (canAdmin ? 'all' : 'team') : 'none',
+        },
+      })
+    }
+  }
+
+  const users = []
+  for (let idx = 0; idx < DEMO_EMPLOYEE_BLUEPRINTS.length; idx++) {
+    const blueprint = DEMO_EMPLOYEE_BLUEPRINTS[idx]
+    const fullName = `${blueprint.firstName} ${blueprint.lastName}`.trim()
+    const user = await prisma.user.upsert({
+      where: { email: blueprint.email },
+      update: {
+        name: fullName,
+        password: hashedPassword,
+        role: blueprint.role,
+        tenantId,
+      },
+      create: {
+        email: blueprint.email,
+        name: fullName,
+        password: hashedPassword,
+        role: blueprint.role,
+        tenantId,
+      },
+    })
+    users.push(user)
+
+    await prisma.tenantMember.upsert({
+      where: { userId_tenantId: { userId: user.id, tenantId } },
+      update: { role: blueprint.role },
+      create: { userId: user.id, tenantId, role: blueprint.role },
+    })
+
+    const roleId = roleByName.get(blueprint.rbacRole)
+    if (roleId) {
+      await prisma.userRole.upsert({
+        where: { tenantId_userId_roleId: { tenantId, userId: user.id, roleId } },
+        update: { metadata: { seededBy: 'demo-business-master-seed', title: blueprint.title } },
+        create: {
+          tenantId,
+          userId: user.id,
+          roleId,
+          metadata: { seededBy: 'demo-business-master-seed', title: blueprint.title },
+        },
+      })
+    }
+
+    await prisma.employee.upsert({
+      where: {
+        tenantId_officialEmail: { tenantId, officialEmail: blueprint.email },
+      },
+      update: {
+        firstName: blueprint.firstName,
+        lastName: blueprint.lastName,
+        status: 'ACTIVE',
+        userId: user.id,
+      },
+      create: {
+        tenantId,
+        userId: user.id,
+        employeeCode: `DBPL-EMP-${String(idx + 1).padStart(3, '0')}`,
+        firstName: blueprint.firstName,
+        lastName: blueprint.lastName,
+        officialEmail: blueprint.email,
+        mobileCountryCode: '+91',
+        mobileNumber: `900000${String(idx + 1).padStart(4, '0')}`,
+        joiningDate: new Date('2025-03-01T00:00:00.000Z'),
+        status: 'ACTIVE',
+      },
+    })
+
+    if (blueprint.role.includes('sales') || blueprint.role === 'owner' || blueprint.role === 'admin') {
+      await prisma.salesRep.upsert({
+        where: { userId: user.id },
+        update: { tenantId, isOnLeave: false },
+        create: {
+          userId: user.id,
+          tenantId,
+          specialization: blueprint.title,
+          conversionRate: 0.12,
+          isOnLeave: false,
+        },
+      })
+    }
+  }
+
+  const adminUser =
+    users.find((u) => u.email === 'admin@demo.com') ||
+    users.find((u) => u.role === 'owner') ||
+    users[0]
+  return { users, adminUser }
+}
+
 export interface DemoBusinessSeedResult {
   crm: CRMSeedResult
   salesBilling: SalesBillingSeedResult
@@ -268,28 +475,15 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
   
   console.log('')
 
-  // 2. Get or create admin user
+  // 2. Ensure demo tenant has full module access
   const hashedPassword = await bcrypt.hash('Test@1234', 10)
-  let user = await getPrisma().user.findUnique({
-    where: { email: 'admin@demo.com' },
+  await getPrisma().tenant.update({
+    where: { id: tenantId },
+    data: {
+      maxUsers: 100,
+      licensedModules: DEMO_LICENSED_MODULES,
+    },
   })
-
-  if (!user) {
-    console.log('👤 Creating admin user...')
-    user = await getPrisma().user.create({
-      data: {
-        email: 'admin@demo.com',
-        name: 'Admin User',
-        password: hashedPassword,
-        role: 'owner',
-        tenantId,
-      },
-    })
-  }
-
-  const userId = user.id
-  console.log(`✅ Using user: ${user.name} (${userId})`)
-  console.log('')
 
   // 3. RESET - Delete all existing demo data
   // NOTE: This deletes ALL data including current month data
@@ -298,25 +492,19 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
   await resetDemoBusinessData(getPrisma(), tenantId)
   console.log('')
 
-  // 3.5. Get or create SalesRep for the admin user (needed for assignedToId in contacts/deals)
-  // MUST be after reset to ensure SalesRep exists
-  let salesRep = await getPrisma().salesRep.findUnique({
+  const workforce = await provisionDemoWorkforce(tenantId, hashedPassword)
+  const userId = workforce.adminUser.id
+  console.log(`✅ Demo workforce ready: ${workforce.users.length} linked users/employees`)
+  console.log(`✅ Using user: ${workforce.adminUser.name} (${userId})`)
+  console.log('')
+
+  // 3.5. Get SalesRep for admin user (required for CRM seeding assignment)
+  const salesRep = await getPrisma().salesRep.findUnique({
     where: { userId },
   })
-
   if (!salesRep) {
-    console.log('👤 Creating SalesRep for admin user...')
-    salesRep = await getPrisma().salesRep.create({
-      data: {
-        userId,
-        tenantId,
-        specialization: 'General Sales',
-        conversionRate: 0,
-        isOnLeave: false,
-      },
-    })
+    throw new Error(`SalesRep missing for admin user ${userId} after workforce provisioning`)
   }
-
   const salesRepId = salesRep.id
   console.log(`✅ Using SalesRep: ${salesRepId}`)
   console.log('')

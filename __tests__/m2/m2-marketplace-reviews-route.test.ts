@@ -53,6 +53,22 @@ describe('GET /api/marketplace/apps/[id]/reviews (M2 smoke)', () => {
     expect(body.averageRating).toBe(4.5)
     expect(db.prisma.marketplaceAppReview.findMany).toHaveBeenCalled()
   })
+
+  it('returns 500 when fetching reviews fails unexpectedly', async () => {
+    const auth = require('@/lib/middleware/auth')
+    const db = require('@/lib/db/prisma')
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_m2', userId: 'usr_1' })
+    db.prisma.marketplaceAppReview.findMany.mockRejectedValue(new Error('reviews read failed'))
+
+    const req = new NextRequest(`http://localhost/api/marketplace/apps/${appId}/reviews`, {
+      headers: { authorization: 'Bearer t' },
+    })
+    const res = await GET(req, ctx)
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body.error).toBe('reviews read failed')
+  })
 })
 
 describe('POST /api/marketplace/apps/[id]/reviews (M2 smoke)', () => {

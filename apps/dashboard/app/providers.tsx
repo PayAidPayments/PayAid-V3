@@ -1,12 +1,36 @@
 'use client'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useState } from 'react'
+import dynamic from 'next/dynamic'
+import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { ThemeProvider } from '@/lib/contexts/theme-context'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { ModuleProvider } from '@/contexts/ModuleContext'
+
+const ModuleShell = dynamic(
+  () => import('./ModuleShell').then((m) => ({ default: m.ModuleShell })),
+  { ssr: true }
+)
+
+/** Routes that do not need ModuleProvider (avoids pulling `moduleRegistry` into the same compile graph as auth pages). */
+function useMinimalProviderShell(): boolean {
+  const pathname = usePathname() ?? ''
+  const path = pathname.split('?')[0].replace(/\/+$/, '') || '/'
+  if (path === '/') return true
+  if (path === '/login' || path === '/signup' || path === '/register') return true
+  if (/^\/(crm|sales|finance)\/login$/.test(path)) return true
+  return false
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const minimalShell = useMinimalProviderShell()
+
+  useEffect(() => {
+    if (minimalShell && typeof window !== 'undefined') {
+      void import('./ModuleShell')
+    }
+  }, [minimalShell])
+
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -28,9 +52,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <ModuleProvider>
-            {children}
-          </ModuleProvider>
+          {minimalShell ? (
+            children
+          ) : (
+            <ModuleShell>{children}</ModuleShell>
+          )}
         </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>

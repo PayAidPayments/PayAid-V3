@@ -18,26 +18,25 @@ export default function VoiceAgentCallsPage() {
   const [showCallDialog, setShowCallDialog] = useState(false)
 
   useEffect(() => {
+    const fetchCalls = async () => {
+      try {
+        const response = await fetch(`/api/v1/voice-agents/${agentId}/calls`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setCalls(data.calls || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch calls:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchCalls()
   }, [agentId])
-
-  const fetchCalls = async () => {
-    try {
-      const response = await fetch(`/api/v1/voice-agents/${agentId}/calls`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setCalls(data.calls || [])
-      }
-    } catch (error) {
-      console.error('Failed to fetch calls:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <div className="space-y-6">

@@ -68,6 +68,7 @@ export default function SalesAutomationPage() {
 
   useEffect(() => {
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, token])
 
   const fetchData = async () => {

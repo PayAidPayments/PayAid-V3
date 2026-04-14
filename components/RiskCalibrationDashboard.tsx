@@ -31,6 +31,7 @@ export function RiskCalibrationDashboard() {
 
   useEffect(() => {
     fetchMetrics()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [decisionType])
 
   const fetchMetrics = async () => {

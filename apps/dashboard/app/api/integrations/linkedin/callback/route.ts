@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { LinkedInService } from '@/lib/integrations/social-media'
 import { prisma } from '@/lib/db/prisma'
+import { encrypt } from '@/lib/encryption'
 
 /**
  * GET /api/integrations/linkedin/callback
@@ -25,12 +26,50 @@ export async function GET(request: NextRequest) {
     }
 
     const service = new LinkedInService(linkedInConfig)
-    const accessToken = await service.getAccessToken(code)
+    const tokenJson: any = await service.exchangeAuthorizationCode(code)
+    const accessToken = tokenJson?.access_token
+    if (!accessToken) {
+      throw new Error('Failed to obtain LinkedIn access token')
+    }
+    const refreshToken = tokenJson?.refresh_token || null
+    const expiresIn = Number(tokenJson?.expires_in || 0)
+    const expiresAt = expiresIn > 0 ? new Date(Date.now() + expiresIn * 1000) : null
+    const profile = await service.getProfile(accessToken).catch(() => null)
 
-    // Store access token (would be in integration settings)
-    // await prisma.integrationSetting.create({...})
+    await prisma.oAuthIntegration.upsert({
+      where: {
+        tenantId_provider: {
+          tenantId,
+          provider: 'linkedin',
+        },
+      },
+      create: {
+        tenantId,
+        provider: 'linkedin',
+        accessToken: encrypt(accessToken),
+        refreshToken: refreshToken ? encrypt(refreshToken) : null,
+        expiresAt,
+        tokenType: 'Bearer',
+        providerUserId: profile?.id || null,
+        providerEmail: profile?.email || null,
+        providerName: [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || null,
+        isActive: true,
+        lastUsedAt: new Date(),
+      },
+      update: {
+        accessToken: encrypt(accessToken),
+        refreshToken: refreshToken ? encrypt(refreshToken) : undefined,
+        expiresAt,
+        tokenType: 'Bearer',
+        providerUserId: profile?.id || null,
+        providerEmail: profile?.email || null,
+        providerName: [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || null,
+        isActive: true,
+        lastUsedAt: new Date(),
+      },
+    })
 
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/integrations?success=linkedin_connected`)
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings/${tenantId}/Integrations/Social?success=linkedin_connected`)
   } catch (error) {
     console.error('[LinkedIn Callback] Error:', error)
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/integrations?error=oauth_failed`)

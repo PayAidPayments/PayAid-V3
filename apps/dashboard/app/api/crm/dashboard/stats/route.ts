@@ -280,6 +280,7 @@ export async function GET(request: NextRequest) {
         contactsCreatedInPeriod,
         revenueAgg,
         activeDealsCount,
+        atRiskContacts,
       ] = await Promise.all([
         prisma.deal
           .count({
@@ -341,6 +342,11 @@ export async function GET(request: NextRequest) {
             where: { ...dealFilter, stage: { not: 'lost' } },
           })
           .catch(() => 0),
+        prisma.contact
+          .count({
+            where: { ...contactFilter, churnRisk: true },
+          })
+          .catch(() => 0),
       ])
 
       const tl = Number(totalLeads) || 0
@@ -358,6 +364,7 @@ export async function GET(request: NextRequest) {
         contactsCreatedThisMonth: contactsCreatedInPeriod || 0,
         activeCustomers: cl,
         conversionRate: tl > 0 ? (cl / tl) * 100 : 0,
+        atRiskContacts: Number(atRiskContacts) || 0,
         quarterlyPerformance: [],
         pipelineByStage: [{ stage: 'Active', count: Number(activeDealsCount || 0), value: 0 }],
         monthlyLeadCreation: [],
@@ -394,6 +401,7 @@ export async function GET(request: NextRequest) {
     let totalLeads = 0
     let convertedLeads = 0
     let contactsCreatedInPeriod = 0
+    let atRiskContacts = 0
 
     if (!chartsOnly) {
       const userRole = user?.userId
@@ -499,8 +507,23 @@ export async function GET(request: NextRequest) {
       } catch (error: any) {
         console.error('[CRM_DASHBOARD] Query 8b failed:', error?.message)
       }
+
+      try {
+        atRiskContacts = await prisma.contact.count({
+          where: { ...contactFilter, churnRisk: true },
+        })
+      } catch (error: any) {
+        console.error('[CRM_DASHBOARD] Query at-risk contacts failed:', error?.message)
+      }
     } else {
       console.log('[CRM_STATS] chartsOnly=1 — skipping core KPI queries (merged from lite on client)')
+      try {
+        atRiskContacts = await prisma.contact.count({
+          where: { ...contactFilter, churnRisk: true },
+        })
+      } catch (error: any) {
+        console.error('[CRM_DASHBOARD] Query at-risk contacts (chartsOnly) failed:', error?.message)
+      }
     }
 
     let topLeadSourcesRaw: any[] = []
@@ -872,6 +895,7 @@ export async function GET(request: NextRequest) {
       contactsCreatedThisMonth: contactsCreatedInPeriod || 0,
       activeCustomers: convertedLeads || 0,
       conversionRate: totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0,
+      atRiskContacts: atRiskContacts || 0,
       quarterlyPerformance: (() => {
         // CRITICAL: NO HARDCODED VALUES - Only return real database data
         if (Array.isArray(quarterlyPerformance) && quarterlyPerformance.length > 0) {
@@ -1002,6 +1026,7 @@ export async function GET(request: NextRequest) {
           monthlyLeadCreation: stats.monthlyLeadCreation,
           topLeadSources: stats.topLeadSources,
           periodLabel: stats.periodLabel,
+          atRiskContacts: stats.atRiskContacts,
         },
         {
           headers: {

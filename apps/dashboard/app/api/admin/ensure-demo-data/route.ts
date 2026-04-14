@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { authenticateRequest } from '@/lib/middleware/auth'
+import { polishCrmDashboardForDemoTenant } from '@/lib/demo/polish-crm-dashboard'
+import { ensureMinimalContactDetails, shouldBackfillContactDetails } from '@/lib/crm/ensure-contact-details'
 
 const TARGET_DEALS = 45
 const TARGET_TASKS = 25
@@ -31,6 +33,24 @@ export async function GET(request: NextRequest) {
       if (dbUser?.tenantId !== tenantId) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
+    }
+
+    try {
+      await polishCrmDashboardForDemoTenant(tenantId)
+    } catch (e) {
+      console.warn('[ensure-demo-data] polishCrmDashboardForDemoTenant:', (e as Error)?.message)
+    }
+
+    try {
+      const tenantMeta = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { name: true, subdomain: true },
+      })
+      if (shouldBackfillContactDetails(tenantMeta)) {
+        await ensureMinimalContactDetails(tenantId)
+      }
+    } catch (e) {
+      console.warn('[ensure-demo-data] ensureMinimalContactDetails:', (e as Error)?.message)
     }
 
     const [dealCount, contactCount, taskCount] = await Promise.all([

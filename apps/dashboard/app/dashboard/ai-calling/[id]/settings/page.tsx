@@ -162,7 +162,7 @@ export default function AICallingBotSettingsPage() {
         <CardContent>
           {faqs.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <p>No FAQs added yet. Click "Add FAQ" to get started.</p>
+              <p>No FAQs added yet. Click &quot;Add FAQ&quot; to get started.</p>
             </div>
           ) : (
             <div className="space-y-4">

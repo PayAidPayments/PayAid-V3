@@ -145,20 +145,32 @@ export function useContacts(params?: { page?: number; limit?: number; type?: str
     },
     retryDelay: 1000, // Wait 1 second between retries
     enabled: true, // Always enable the query
+    placeholderData: (previousData: any) => previousData, // Keep previous data while fetching new (prevents flash of empty state on search)
+    staleTime: 0, // Always re-fetch on mount so newly created contacts appear immediately
   })
 }
 
-export function useContact(id: string, tenantId?: string) {
+export function useContact(
+  id: string,
+  tenantId?: string,
+  options?: { include360?: boolean }
+) {
+  const include360 = options?.include360 === true
   return useQuery({
-    queryKey: ['contact', id, tenantId],
+    queryKey: ['contact', id, tenantId, include360 ? '360' : 'base'],
     queryFn: async () => {
-      const url = tenantId
-        ? `/api/contacts/${id}?tenantId=${encodeURIComponent(tenantId)}`
-        : `/api/contacts/${id}`
-      const response = await fetch(url, {
+      const qs = new URLSearchParams()
+      if (tenantId) qs.set('tenantId', tenantId)
+      if (include360) qs.set('include360', '1')
+      const suffix = qs.toString() ? `?${qs.toString()}` : ''
+      const response = await fetch(`/api/contacts/${id}${suffix}`, {
         headers: getAuthHeaders(),
       })
-      if (!response.ok) throw new Error('Failed to fetch contact')
+      if (response.status === 404) return null
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error((err as { error?: string }).error || 'Failed to fetch contact')
+      }
       return response.json()
     },
     enabled: !!id,
@@ -235,16 +247,33 @@ export function useDeleteContact() {
 }
 
 // Deals hooks
-export function useDeals(params?: { page?: number; limit?: number; stage?: string; contactId?: string; bypassCache?: boolean; tenantId?: string }) {
+export function useDeals(params?: {
+  page?: number
+  limit?: number
+  stage?: string
+  contactId?: string
+  /** Comma-separated contact IDs (Contact 360 / multi-select). */
+  contactIds?: string
+  /** CRM account ID — deals whose linked contact belongs to this account. */
+  accountId?: string
+  bypassCache?: boolean
+  tenantId?: string
+  timePeriod?: 'month' | 'quarter' | 'financial-year' | 'year'
+  periodCategory?: 'created' | 'closing' | 'won' | 'lost'
+}) {
   const queryString = new URLSearchParams()
   if (params?.page) queryString.set('page', params.page.toString())
   if (params?.limit) queryString.set('limit', params.limit.toString())
   if (params?.stage) queryString.set('stage', params.stage)
   if (params?.contactId) queryString.set('contactId', params.contactId)
+  if (params?.contactIds) queryString.set('contactIds', params.contactIds)
+  if (params?.accountId) queryString.set('accountId', params.accountId)
   // CRITICAL: Add bypassCache parameter to force fresh data from database
   if (params?.bypassCache) queryString.set('bypassCache', 'true')
   // When viewing CRM by tenant (e.g. /crm/[tenantId]/Deals), pass tenantId so API returns that tenant's deals
   if (params?.tenantId) queryString.set('tenantId', params.tenantId)
+  if (params?.timePeriod) queryString.set('timePeriod', params.timePeriod)
+  if (params?.periodCategory) queryString.set('periodCategory', params.periodCategory)
 
   return useQuery({
     queryKey: ['deals', params],
@@ -261,7 +290,12 @@ export function useDeals(params?: { page?: number; limit?: number; stage?: strin
           // If 500 error, return empty data instead of throwing
           if (response.status === 500) {
             console.warn('[useDeals] Server returned 500, returning empty data')
-            return { deals: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0 }, pipelineSummary: [] }
+            return {
+              deals: [],
+              pagination: { page: 1, limit: 50, total: 0, totalPages: 0 },
+              pipelineSummary: [],
+              topClosingDeals: [],
+            }
           }
           const errorData = await response.json().catch(() => ({ error: 'Failed to fetch deals' }))
           console.error('[useDeals] API error:', errorData)
@@ -294,7 +328,12 @@ export function useDeals(params?: { page?: number; limit?: number; stage?: strin
       } catch (error: any) {
         console.error('[useDeals] Error fetching deals:', error)
         // Return empty data structure instead of throwing to prevent UI crashes
-        return { deals: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0 }, pipelineSummary: [] }
+        return {
+          deals: [],
+          pagination: { page: 1, limit: 50, total: 0, totalPages: 0 },
+          pipelineSummary: [],
+          topClosingDeals: [],
+        }
       }
     },
     retry: false, // Don't retry on error to prevent multiple failed requests

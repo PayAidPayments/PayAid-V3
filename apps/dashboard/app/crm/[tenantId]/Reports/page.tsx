@@ -42,42 +42,40 @@ export default function CRMReportsPage() {
   const [reportData, setReportData] = useState<ReportData | null>(null)
 
   useEffect(() => {
+    const fetchReportData = async () => {
+      try {
+        setLoading(true)
+        if (!token) return
+
+        const response = await fetch(`/api/crm/dashboard/stats?timePeriod=all${tenantId ? `&tenantId=${encodeURIComponent(tenantId)}` : ''}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setReportData({
+            pipelineByStage: data.pipelineByStage || [],
+            leadConversion: {
+              totalLeads: data.totalLeads || 0,
+              convertedLeads: data.convertedLeads || 0,
+              conversionRate: data.conversionRate || 0,
+            },
+            activityMetrics: {
+              totalTasks: data.totalTasks || 0,
+              completedTasks: data.completedTasks || 0,
+              overdueTasks: data.overdueTasks || 0,
+              totalMeetings: data.totalMeetings || 0,
+            },
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching report data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchReportData()
   }, [tenantId, token])
-
-  const fetchReportData = async () => {
-    try {
-      setLoading(true)
-      if (!token) return
-
-      // Fetch dashboard stats which includes pipeline data
-      const response = await fetch(`/api/crm/dashboard/stats?timePeriod=all${tenantId ? `&tenantId=${encodeURIComponent(tenantId)}` : ''}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setReportData({
-          pipelineByStage: data.pipelineByStage || [],
-          leadConversion: {
-            totalLeads: data.totalLeads || 0,
-            convertedLeads: data.convertedLeads || 0,
-            conversionRate: data.conversionRate || 0,
-          },
-          activityMetrics: {
-            totalTasks: data.totalTasks || 0,
-            completedTasks: data.completedTasks || 0,
-            overdueTasks: data.overdueTasks || 0,
-            totalMeetings: data.totalMeetings || 0,
-          },
-        })
-      }
-    } catch (error) {
-      console.error('Error fetching report data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   if (loading) {
     return <PageLoading message="Loading reports..." fullScreen={false} />

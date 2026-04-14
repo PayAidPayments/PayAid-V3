@@ -63,10 +63,13 @@ export class LinkedInService {
     return `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`
   }
 
-  /**
-   * Exchange authorization code for access token
-   */
-  async getAccessToken(code: string): Promise<string> {
+  async exchangeAuthorizationCode(code: string): Promise<{
+    access_token: string
+    expires_in?: number
+    refresh_token?: string
+    refresh_token_expires_in?: number
+    scope?: string
+  }> {
     const response = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
       method: 'POST',
       headers: {
@@ -85,7 +88,14 @@ export class LinkedInService {
       throw new Error('Failed to get LinkedIn access token')
     }
 
-    const data = await response.json()
+    return response.json()
+  }
+
+  /**
+   * Exchange authorization code for access token
+   */
+  async getAccessToken(code: string): Promise<string> {
+    const data = await this.exchangeAuthorizationCode(code)
     this.accessToken = data.access_token
     return this.accessToken
   }

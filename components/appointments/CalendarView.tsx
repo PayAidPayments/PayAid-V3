@@ -35,28 +35,22 @@ export function CalendarView({ appointments, loading, token }: CalendarViewProps
   const [calendarData, setCalendarData] = useState<any>(null)
 
   useEffect(() => {
-    fetchCalendarData()
-  }, [currentDate, view])
-
-  const fetchCalendarData = async () => {
-    try {
-      const response = await fetch(
-        `/api/appointments/calendar?view=${view}&date=${currentDate.toISOString()}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
+    const fetchCalendarData = async () => {
+      try {
+        const response = await fetch(
+          `/api/appointments/calendar?view=${view}&date=${currentDate.toISOString()}`,
+          { headers: { 'Authorization': `Bearer ${token}` } }
+        )
+        if (response.ok) {
+          const data = await response.json()
+          setCalendarData(data)
         }
-      )
-
-      if (response.ok) {
-        const data = await response.json()
-        setCalendarData(data)
+      } catch (error) {
+        console.error('Failed to fetch calendar data:', error)
       }
-    } catch (error) {
-      console.error('Failed to fetch calendar data:', error)
     }
-  }
+    fetchCalendarData()
+  }, [currentDate, view, token])
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()

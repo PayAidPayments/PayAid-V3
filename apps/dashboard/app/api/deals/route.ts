@@ -94,6 +94,8 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const stage = searchParams.get('stage')
     const contactId = searchParams.get('contactId')
+    const contactIdsParam = searchParams.get('contactIds')
+    const accountIdParam = searchParams.get('accountId')
     const timePeriodParam = searchParams.get('timePeriod') as TimePeriod | null
     const periodCategoryParam = searchParams.get('periodCategory')
     const periodBounds =
@@ -107,9 +109,20 @@ export async function GET(request: NextRequest) {
     const timeKey = timePeriodParam && isValidTimePeriod(timePeriodParam) ? timePeriodParam : 'none'
 
     // Build cache key (include period context so list + KPIs stay consistent when cached)
-    const cacheKey = `deals:${tenantId}:${page}:${limit}:${stage || 'all'}:${contactId || 'all'}:${timeKey}:${periodCatKey}`
+    const contactIdsKey = contactIdsParam ? contactIdsParam.slice(0, 120) : 'none'
+    const accountKey = accountIdParam || 'none'
+    const cacheKey = `deals:${tenantId}:${page}:${limit}:${stage || 'all'}:${contactId || 'all'}:cids:${contactIdsKey}:acc:${accountKey}:${timeKey}:${periodCatKey}`
     const bypassCache = searchParams.get('bypassCache') === 'true'
-    console.log('[DEALS_API] Query parameters:', { page, limit, stage, contactId, bypassCache, cacheKey })
+    console.log('[DEALS_API] Query parameters:', {
+      page,
+      limit,
+      stage,
+      contactId,
+      contactIds: contactIdsParam,
+      accountId: accountIdParam,
+      bypassCache,
+      cacheKey,
+    })
 
     // Check cache (multi-layer: L1 memory -> L2 Redis) unless bypassed
     if (!bypassCache) {
@@ -137,7 +150,24 @@ export async function GET(request: NextRequest) {
       tenantId: tenantId,
     }
 
-    if (contactId) where.contactId = contactId
+    const cuidLike = (id: string) => /^c[a-z0-9]{8,}$/i.test(id.trim())
+    if (contactIdsParam) {
+      const ids = [
+        ...new Set(
+          contactIdsParam
+            .split(',')
+            .map((s) => s.trim())
+            .filter((id) => cuidLike(id))
+        ),
+      ].slice(0, 100)
+      if (ids.length > 0) {
+        where.contactId = { in: ids }
+      }
+    } else if (accountIdParam && cuidLike(accountIdParam)) {
+      where.contact = { is: { accountId: accountIdParam } }
+    } else if (contactId && cuidLike(contactId)) {
+      where.contactId = contactId
+    }
 
     if (periodCategoryActive && periodBounds) {
       const { start, end } = periodBounds

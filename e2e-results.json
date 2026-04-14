@@ -32,6 +32,78 @@
           "/.*\\.spec\\.(ts|js)/"
         ],
         "timeout": 300000
+      },
+      {
+        "outputDir": "D:/Cursor Projects/PayAid V3/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 3
+        },
+        "id": "crm",
+        "name": "crm",
+        "testDir": "D:/Cursor Projects/PayAid V3/tests",
+        "testIgnore": [
+          "**/ui-scanner.spec.ts"
+        ],
+        "testMatch": [
+          "/.*\\.spec\\.(ts|js)/"
+        ],
+        "timeout": 300000
+      },
+      {
+        "outputDir": "D:/Cursor Projects/PayAid V3/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 3
+        },
+        "id": "hr",
+        "name": "hr",
+        "testDir": "D:/Cursor Projects/PayAid V3/tests",
+        "testIgnore": [
+          "**/ui-scanner.spec.ts"
+        ],
+        "testMatch": [
+          "/.*\\.spec\\.(ts|js)/"
+        ],
+        "timeout": 300000
+      },
+      {
+        "outputDir": "D:/Cursor Projects/PayAid V3/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 3
+        },
+        "id": "voice",
+        "name": "voice",
+        "testDir": "D:/Cursor Projects/PayAid V3/tests",
+        "testIgnore": [
+          "**/ui-scanner.spec.ts"
+        ],
+        "testMatch": [
+          "/.*\\.spec\\.(ts|js)/"
+        ],
+        "timeout": 300000
+      },
+      {
+        "outputDir": "D:/Cursor Projects/PayAid V3/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 3
+        },
+        "id": "dashboard",
+        "name": "dashboard",
+        "testDir": "D:/Cursor Projects/PayAid V3/tests",
+        "testIgnore": [
+          "**/ui-scanner.spec.ts"
+        ],
+        "testMatch": [
+          "/.*\\.spec\\.(ts|js)/"
+        ],
+        "timeout": 300000
       }
     ],
     "quiet": false,
@@ -66,34 +138,34 @@
     "workers": 4,
     "webServer": {
       "command": "npm run dev",
-      "url": "http://127.0.0.1:3000",
+      "url": "http://localhost:3000/api/payaid-internal/ping",
       "reuseExistingServer": true,
-      "timeout": 300000,
+      "timeout": 900000,
       "stdout": "pipe",
       "stderr": "pipe"
     }
   },
   "suites": [
     {
-      "title": "cofounder.spec.ts",
-      "file": "cofounder.spec.ts",
+      "title": "e2e\\contact-360.spec.ts",
+      "file": "e2e/contact-360.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "AI Co-founder page",
-          "file": "cofounder.spec.ts",
-          "line": 37,
+          "title": "Contact 360",
+          "file": "e2e/contact-360.spec.ts",
+          "line": 52,
           "column": 6,
           "specs": [
             {
-              "title": "loads boardroom layout or redirects to login",
-              "ok": true,
+              "title": "contact detail renders 360 card and profile",
+              "ok": false,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 120000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "chromium",
@@ -102,32 +174,93 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 7849,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
+                      "status": "timedOut",
+                      "duration": 633875,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:55:8",
+                        "location": {
+                          "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
+                          "column": 8,
+                          "line": 55
+                        },
+                        "snippet": "  53 |   test.describe.configure({ timeout: 420_000, retries: 0 })\n  54 |\n> 55 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  56 |     await installLightStubs(page)\n  57 |     await loginAsTenant(page, tenantSlug)\n  58 |     const loginHeading = page.getByRole('heading', { name: /sign in|log in/i }).first()"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
+                            "column": 8,
+                            "line": 55
+                          },
+                          "message": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  53 |   test.describe.configure({ timeout: 420_000, retries: 0 })\n  54 |\n> 55 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  56 |     await installLightStubs(page)\n  57 |     await loginAsTenant(page, tenantSlug)\n  58 |     const loginHeading = page.getByRole('heading', { name: /sign in|log in/i }).first()\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:55:8"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts",
+                            "column": 18,
+                            "line": 28
+                          },
+                          "message": "Error: page.goto: Target page, context or browser has been closed\n\n   at e2e\\crm-audit\\fixtures.ts:28\n\n  26 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  27 |     try {\n> 28 |       await page.goto(url, {\n     |                  ^\n  29 |         waitUntil,\n  30 |         timeout: navigationTimeout,\n  31 |       })\n    at gotoWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts:28:18)\n    at loginAsTenant (D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts:154:3)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:57:5"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "[CRM-AUDIT][AUTH] start origin=http://localhost:3000 tenantSegment=cmjptk2mw0000aocw31u48n64 email=ad…@demo.com\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][AUTH] no API token — falling back to UI login flow\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][AUTH] goto /login (deterministic auth entry)…\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][NAV] retry 2/2 http://localhost:3000/login… — page.goto: net::ERR_ABORTED; maybe frame was detached?\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/login\", waiting until \"commit\"\u001b[22m\n\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=1 threw: apiRequestContext.post: Timeout 240000ms exceeded.\nCall log:\n\u001b[2m  - → POST http://localhost:3000/api/auth/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Content-Type: application/json\u001b[22m\n\u001b[2m    - content-length: 49\u001b[22m\n\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=2 threw: apiRequestContext.post: Target page, context or browser has been closed\nCall log:\n\u001b[2m  - → POST http://localhost:3000/api/auth/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Content-Type: application/json\u001b[22m\n\u001b[2m    - content-length: 49\u001b[22m\n\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=3 threw: apiRequestContext.post: Test timeout of 420000ms exceeded.\n"
+                        }
+                      ],
                       "retry": 0,
-                      "startTime": "2026-03-06T13:56:42.749Z",
+                      "startTime": "2026-04-11T09:19:47.192Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\Cursor Projects\\PayAid V3\\test-results\\e2e-contact-360-Contact-36-6d7f8-enders-360-card-and-profile-chromium\\video.webm"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
+                        "column": 8,
+                        "line": 55
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
-              "id": "688dbd041ee1e2719315-0a7057aa1be71d87704d",
-              "file": "cofounder.spec.ts",
-              "line": 40,
+              "id": "237ce8fb5ec9562699a6-6802c83c5dc1a6288c17",
+              "file": "e2e/contact-360.spec.ts",
+              "line": 64,
               "column": 7
             },
             {
-              "title": "suggestion chips are present when on Co-founder page",
-              "ok": true,
+              "title": "optional rollup sections expose stable test ids when data exists",
+              "ok": false,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 120000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "chromium",
@@ -136,32 +269,93 @@
                     {
                       "workerIndex": 1,
                       "parallelIndex": 1,
-                      "status": "passed",
-                      "duration": 8376,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
+                      "status": "timedOut",
+                      "duration": 630452,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:55:8",
+                        "location": {
+                          "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
+                          "column": 8,
+                          "line": 55
+                        },
+                        "snippet": "  53 |   test.describe.configure({ timeout: 420_000, retries: 0 })\n  54 |\n> 55 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  56 |     await installLightStubs(page)\n  57 |     await loginAsTenant(page, tenantSlug)\n  58 |     const loginHeading = page.getByRole('heading', { name: /sign in|log in/i }).first()"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
+                            "column": 8,
+                            "line": 55
+                          },
+                          "message": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  53 |   test.describe.configure({ timeout: 420_000, retries: 0 })\n  54 |\n> 55 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  56 |     await installLightStubs(page)\n  57 |     await loginAsTenant(page, tenantSlug)\n  58 |     const loginHeading = page.getByRole('heading', { name: /sign in|log in/i }).first()\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:55:8"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts",
+                            "column": 18,
+                            "line": 28
+                          },
+                          "message": "Error: page.goto: Target page, context or browser has been closed\n\n   at e2e\\crm-audit\\fixtures.ts:28\n\n  26 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  27 |     try {\n> 28 |       await page.goto(url, {\n     |                  ^\n  29 |         waitUntil,\n  30 |         timeout: navigationTimeout,\n  31 |       })\n    at gotoWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts:28:18)\n    at loginAsTenant (D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts:154:3)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:57:5"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "[CRM-AUDIT][AUTH] start origin=http://localhost:3000 tenantSegment=cmjptk2mw0000aocw31u48n64 email=ad…@demo.com\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][AUTH] no API token — falling back to UI login flow\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][AUTH] goto /login (deterministic auth entry)…\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][NAV] retry 2/2 http://localhost:3000/login… — page.goto: net::ERR_ABORTED; maybe frame was detached?\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/login\", waiting until \"commit\"\u001b[22m\n\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=1 threw: apiRequestContext.post: Timeout 240000ms exceeded.\nCall log:\n\u001b[2m  - → POST http://localhost:3000/api/auth/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Content-Type: application/json\u001b[22m\n\u001b[2m    - content-length: 49\u001b[22m\n\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=2 threw: apiRequestContext.post: Target page, context or browser has been closed\nCall log:\n\u001b[2m  - → POST http://localhost:3000/api/auth/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Content-Type: application/json\u001b[22m\n\u001b[2m    - content-length: 49\u001b[22m\n\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=3 threw: apiRequestContext.post: Test timeout of 420000ms exceeded.\n"
+                        }
+                      ],
                       "retry": 0,
-                      "startTime": "2026-03-06T13:56:42.729Z",
+                      "startTime": "2026-04-11T09:19:47.457Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\Cursor Projects\\PayAid V3\\test-results\\e2e-contact-360-Contact-36-3225f-e-test-ids-when-data-exists-chromium\\video.webm"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
+                        "column": 8,
+                        "line": 55
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
-              "id": "688dbd041ee1e2719315-5e9d80258e8bdf85df49",
-              "file": "cofounder.spec.ts",
-              "line": 48,
+              "id": "237ce8fb5ec9562699a6-32b8c377a6bdba174ed9",
+              "file": "e2e/contact-360.spec.ts",
+              "line": 81,
               "column": 7
             },
             {
-              "title": "clicking a suggestion chip does not show application error",
-              "ok": true,
+              "title": "account detail page",
+              "ok": false,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 120000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "chromium",
@@ -170,23 +364,84 @@
                     {
                       "workerIndex": 2,
                       "parallelIndex": 2,
-                      "status": "passed",
-                      "duration": 7758,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
+                      "status": "timedOut",
+                      "duration": 632848,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:55:8",
+                        "location": {
+                          "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
+                          "column": 8,
+                          "line": 55
+                        },
+                        "snippet": "  53 |   test.describe.configure({ timeout: 420_000, retries: 0 })\n  54 |\n> 55 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  56 |     await installLightStubs(page)\n  57 |     await loginAsTenant(page, tenantSlug)\n  58 |     const loginHeading = page.getByRole('heading', { name: /sign in|log in/i }).first()"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
+                            "column": 8,
+                            "line": 55
+                          },
+                          "message": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  53 |   test.describe.configure({ timeout: 420_000, retries: 0 })\n  54 |\n> 55 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  56 |     await installLightStubs(page)\n  57 |     await loginAsTenant(page, tenantSlug)\n  58 |     const loginHeading = page.getByRole('heading', { name: /sign in|log in/i }).first()\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:55:8"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts",
+                            "column": 18,
+                            "line": 28
+                          },
+                          "message": "Error: page.goto: Target page, context or browser has been closed\n\n   at e2e\\crm-audit\\fixtures.ts:28\n\n  26 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  27 |     try {\n> 28 |       await page.goto(url, {\n     |                  ^\n  29 |         waitUntil,\n  30 |         timeout: navigationTimeout,\n  31 |       })\n    at gotoWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts:28:18)\n    at loginAsTenant (D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts:154:3)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:57:5"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "[CRM-AUDIT][AUTH] start origin=http://localhost:3000 tenantSegment=cmjptk2mw0000aocw31u48n64 email=ad…@demo.com\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][AUTH] no API token — falling back to UI login flow\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][AUTH] goto /login (deterministic auth entry)…\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][NAV] retry 2/2 http://localhost:3000/login… — page.goto: net::ERR_ABORTED; maybe frame was detached?\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/login\", waiting until \"commit\"\u001b[22m\n\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=1 threw: apiRequestContext.post: Timeout 240000ms exceeded.\nCall log:\n\u001b[2m  - → POST http://localhost:3000/api/auth/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Content-Type: application/json\u001b[22m\n\u001b[2m    - content-length: 49\u001b[22m\n\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=2 threw: apiRequestContext.post: Target page, context or browser has been closed\nCall log:\n\u001b[2m  - → POST http://localhost:3000/api/auth/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Content-Type: application/json\u001b[22m\n\u001b[2m    - content-length: 49\u001b[22m\n\n"
+                        },
+                        {
+                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=3 threw: apiRequestContext.post: Test timeout of 420000ms exceeded.\n"
+                        }
+                      ],
                       "retry": 0,
-                      "startTime": "2026-03-06T13:56:42.731Z",
+                      "startTime": "2026-04-11T09:19:47.419Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\Cursor Projects\\PayAid V3\\test-results\\e2e-contact-360-Contact-360-account-detail-page-chromium\\video.webm"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
+                        "column": 8,
+                        "line": 55
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
-              "id": "688dbd041ee1e2719315-d36fc89826cf9dd53db6",
-              "file": "cofounder.spec.ts",
-              "line": 61,
+              "id": "237ce8fb5ec9562699a6-48cb0e6f25da3095d41a",
+              "file": "e2e/contact-360.spec.ts",
+              "line": 121,
               "column": 7
             }
           ]
@@ -196,11 +451,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-03-06T13:56:27.547Z",
-    "duration": 24562.997000000003,
-    "expected": 3,
+    "startTime": "2026-04-11T09:04:19.134Z",
+    "duration": 1632908.577,
+    "expected": 0,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 3,
     "flaky": 0
   }
 }

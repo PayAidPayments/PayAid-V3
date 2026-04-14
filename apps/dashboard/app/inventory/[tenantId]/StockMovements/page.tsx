@@ -12,6 +12,7 @@ import { PageLoading } from '@/components/ui/loading'
 import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 import { RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { format } from 'date-fns'
+import { apiRequest } from '@/lib/api/client'
 
 export default function InventoryStockMovementsPage() {
   const params = useParams()
@@ -26,12 +27,7 @@ export default function InventoryStockMovementsPage() {
       if (typeFilter !== 'all') {
         params.append('type', typeFilter)
       }
-      const response = await fetch(`/api/inventory/stock-movements?${params.toString()}`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      })
+      const response = await apiRequest(`/api/inventory/stock-movements?${params.toString()}`)
       if (!response.ok) {
         throw new Error('Failed to fetch stock movements')
       }

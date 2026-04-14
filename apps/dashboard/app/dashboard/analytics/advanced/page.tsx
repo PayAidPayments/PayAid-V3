@@ -47,6 +47,7 @@ export default function AdvancedAnalyticsPage() {
 
   useEffect(() => {
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, period])
 
   const fetchData = async () => {

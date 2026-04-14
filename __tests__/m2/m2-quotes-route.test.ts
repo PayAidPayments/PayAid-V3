@@ -68,6 +68,29 @@ describe('POST /api/quotes (M2 smoke)', () => {
     expect(res.status).toBe(400)
     expect(body.error).toBe('Validation error')
   })
+
+  it('returns 500 when quote generation fails unexpectedly', async () => {
+    const auth = require('@/lib/middleware/auth')
+    const quotes = require('@/lib/quotes/quote-generator')
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_m2', userId: 'usr_1' })
+    quotes.QuoteGeneratorService.generateQuoteFromDeal.mockRejectedValue(new Error('quote service down'))
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    const req = new NextRequest('http://localhost/api/quotes', {
+      method: 'POST',
+      headers: { authorization: 'Bearer t', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        dealId: 'd_1',
+        lineItems: [{ productName: 'Service A', quantity: 1, unitPrice: 1000 }],
+      }),
+    })
+    const res = await POST(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body.error).toBe('quote service down')
+    consoleSpy.mockRestore()
+  })
 })
 
 describe('GET /api/quotes (M2 smoke)', () => {
@@ -91,6 +114,24 @@ describe('GET /api/quotes (M2 smoke)', () => {
     expect(body.success).toBe(true)
     expect(body.data).toHaveLength(1)
     expect(body.data[0].id).toBe('q_1')
+  })
+
+  it('returns 500 when list quotes fails unexpectedly', async () => {
+    const auth = require('@/lib/middleware/auth')
+    const quotes = require('@/lib/quotes/quote-generator')
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_m2', userId: 'usr_1' })
+    quotes.QuoteGeneratorService.listQuotes.mockRejectedValue(new Error('list quotes failed'))
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    const req = new NextRequest('http://localhost/api/quotes?status=draft', {
+      headers: { authorization: 'Bearer t' },
+    })
+    const res = await GET(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body.error).toBe('Failed to list quotes')
+    consoleSpy.mockRestore()
   })
 })
 

@@ -127,44 +127,38 @@ export default function FieldConfigurationPage() {
 
   // Load layout
   useEffect(() => {
+    const loadLayout = async () => {
+      try {
+        const token = useAuthStore.getState().token
+        if (!token) return
+        const response = await fetch(
+          `/api/crm/field-layouts?module=crm&entityType=${entityType}&viewType=${viewType}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        if (response.ok) {
+          const data = await response.json()
+          if (data.layout) {
+            setLayout(data.layout)
+          } else {
+            setLayout({
+              sections: [
+                {
+                  id: 'section-1',
+                  name: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} Information`,
+                  displayOrder: 0,
+                  fields: [],
+                },
+              ],
+              showLeadImage: entityType === 'lead',
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Error loading layout:', error)
+      }
+    }
     loadLayout()
   }, [tenantId, entityType, viewType])
-
-  const loadLayout = async () => {
-    try {
-      const token = useAuthStore.getState().token
-      if (!token) return
-
-      const response = await fetch(
-        `/api/crm/field-layouts?module=crm&entityType=${entityType}&viewType=${viewType}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.layout) {
-          setLayout(data.layout)
-        } else {
-          // Initialize default layout
-          setLayout({
-            sections: [
-              {
-                id: 'section-1',
-                name: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} Information`,
-                displayOrder: 0,
-                fields: [],
-              },
-            ],
-            showLeadImage: entityType === 'lead',
-          })
-        }
-      }
-    } catch (error) {
-      console.error('Error loading layout:', error)
-    }
-  }
 
   const saveLayout = async () => {
     try {

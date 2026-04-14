@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { decodeToken } from '@/lib/auth/jwt'
+import { assertIntegrationPermission, toPermissionDeniedResponse } from '@/lib/integrations/permissions'
+import { writeIntegrationAudit } from '@/lib/integrations/audit'
+import { enforceIntegrationRateLimit } from '@/lib/integrations/security'
 
 /**
  * Gmail OAuth Integration
@@ -15,7 +18,15 @@ import { decodeToken } from '@/lib/auth/jwt'
 
 // GET /api/email/gmail/auth - Initiate Gmail OAuth
 export async function GET(request: NextRequest) {
+  const limited = enforceIntegrationRateLimit(request, {
+    key: 'integration:oauth:gmail:connect',
+    limit: 8,
+    windowMs: 60_000,
+  })
+  if (limited) return limited
+
   try {
+    await assertIntegrationPermission(request, 'configure')
     const { tenantId } = await requireModuleAccess(request, 'communication')
 
     // Get current user ID from request (needed for EmailAccount creation)
@@ -51,11 +62,22 @@ export async function GET(request: NextRequest) {
       state, // Pass tenantId:userId in state for callback
     })}`
 
+    await writeIntegrationAudit({
+      tenantId,
+      userId,
+      entityType: 'integration_email_oauth',
+      entityId: `${tenantId}:gmail`,
+      action: 'gmail_oauth_connect_initiated',
+      after: { provider: 'gmail' },
+    })
+
     return NextResponse.json({
       authUrl: googleAuthUrl,
       message: 'Gmail OAuth integration - redirect user to authUrl to connect Gmail account',
     })
   } catch (error) {
+    const permissionDenied = toPermissionDeniedResponse(error)
+    if (permissionDenied) return NextResponse.json(permissionDenied.json, { status: permissionDenied.status })
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }

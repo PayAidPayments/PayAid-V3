@@ -2,6 +2,8 @@ import { expect, type Page } from '@playwright/test'
 import { resolvePlaywrightBaseUrl } from '../../playwright-base-url'
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+type ApiLoginPayload = { token: string; user?: unknown; tenant?: unknown }
+let cachedApiLogin: ApiLoginPayload | null = null
 
 /**
  * Retries transient navigation failures common under parallel Playwright + heavy Next dev.
@@ -53,7 +55,6 @@ export async function loginAsTenant(page: Page, tenantSlug = 'demo') {
   const origin = resolvePlaywrightBaseUrl()
   const mask = (s: string) => (s.length <= 3 ? '***' : `${s.slice(0, 2)}…@${s.split('@')[1] ?? ''}`)
 
-  type ApiLoginPayload = { token: string; user?: unknown; tenant?: unknown }
   let apiLogin: ApiLoginPayload | null = null
   const uiLoginOnly = process.env.CRM_AUDIT_UI_LOGIN_ONLY === '1'
 
@@ -61,64 +62,79 @@ export async function loginAsTenant(page: Page, tenantSlug = 'demo') {
     `[CRM-AUDIT][AUTH] start origin=${origin} tenantSegment=${tenantSlug} email=${mask(email)}`
   )
 
-  // Deterministic auth bootstrap: API login first (faster/less flaky than UI login under heavy local load).
-  if (!uiLoginOnly) {
-    try {
-      const loginRes = await page.request.post(`${origin}/api/auth/login`, {
-        timeout: 120_000,
-        headers: { 'Content-Type': 'application/json' },
-        data: { email, password },
-      })
-      const loginStatus = loginRes.status()
-      if (!loginRes.ok()) {
-        const txt = await loginRes.text().catch(() => '')
-        console.error(
-          `[CRM-AUDIT][AUTH] POST /api/auth/login failed status=${loginStatus} body=${txt.slice(0, 400)}`
-        )
-      } else {
-        const payload = (await loginRes.json()) as ApiLoginPayload & { token?: string }
-        if (payload?.token) {
-          apiLogin = { token: payload.token, user: payload.user, tenant: payload.tenant }
-          const tenantDbg =
-            payload.tenant != null ? JSON.stringify(payload.tenant).slice(0, 120) : 'null'
-          console.log(`[CRM-AUDIT][AUTH] API login OK tokenLen=${payload.token.length} tenant=${tenantDbg}`)
-          await page.context().addCookies([
-            {
-              name: 'token',
-              value: payload.token,
-              url: origin,
-              sameSite: 'Lax',
-              httpOnly: false,
-              secure: origin.startsWith('https://'),
+  const applyApiLogin = async (payload: ApiLoginPayload) => {
+    await page.context().addCookies([
+      {
+        name: 'token',
+        value: payload.token,
+        url: origin,
+        sameSite: 'Lax',
+        httpOnly: false,
+        secure: origin.startsWith('https://'),
+      },
+    ])
+    await page.addInitScript((authPayload: ApiLoginPayload) => {
+      try {
+        localStorage.setItem(
+          'auth-storage',
+          JSON.stringify({
+            state: {
+              user: authPayload.user ?? null,
+              tenant: authPayload.tenant ?? null,
+              token: authPayload.token,
+              isAuthenticated: true,
             },
-          ])
-          // Init script: applies on subsequent navigations.
-          await page.addInitScript((authPayload: ApiLoginPayload) => {
-            try {
-              localStorage.setItem(
-                'auth-storage',
-                JSON.stringify({
-                  state: {
-                    user: authPayload.user ?? null,
-                    tenant: authPayload.tenant ?? null,
-                    token: authPayload.token,
-                    isAuthenticated: true,
-                  },
-                  version: 0,
-                })
-              )
-            } catch {
-              /* noop */
-            }
-          }, apiLogin)
-        } else {
-          console.error('[CRM-AUDIT][AUTH] API login JSON missing token; will use UI login if needed')
-        }
+            version: 0,
+          })
+        )
+      } catch {
+        /* noop */
       }
-    } catch (e) {
-      console.error(
-        `[CRM-AUDIT][AUTH] POST /api/auth/login threw: ${e instanceof Error ? e.message : String(e)}`
-      )
+    }, payload)
+  }
+
+  if (cachedApiLogin && !uiLoginOnly) {
+    apiLogin = cachedApiLogin
+    console.log('[CRM-AUDIT][AUTH] reusing cached API login token')
+    await applyApiLogin(apiLogin)
+  }
+
+  // Deterministic auth bootstrap: API login first (faster/less flaky than UI login under heavy local load).
+  if (!uiLoginOnly && !apiLogin) {
+    for (let attempt = 1; attempt <= 3 && !apiLogin; attempt++) {
+      try {
+        const loginRes = await page.request.post(`${origin}/api/auth/login`, {
+          timeout: 240_000,
+          headers: { 'Content-Type': 'application/json' },
+          data: { email, password },
+        })
+        const loginStatus = loginRes.status()
+        if (!loginRes.ok()) {
+          const txt = await loginRes.text().catch(() => '')
+          console.error(
+            `[CRM-AUDIT][AUTH] POST /api/auth/login attempt=${attempt} failed status=${loginStatus} body=${txt.slice(0, 400)}`
+          )
+        } else {
+          const payload = (await loginRes.json()) as ApiLoginPayload & { token?: string }
+          if (payload?.token) {
+            apiLogin = { token: payload.token, user: payload.user, tenant: payload.tenant }
+            cachedApiLogin = apiLogin
+            const tenantDbg =
+              payload.tenant != null ? JSON.stringify(payload.tenant).slice(0, 120) : 'null'
+            console.log(`[CRM-AUDIT][AUTH] API login OK tokenLen=${payload.token.length} tenant=${tenantDbg}`)
+            await applyApiLogin(apiLogin)
+            break
+          }
+          console.error('[CRM-AUDIT][AUTH] API login JSON missing token; will retry/fallback if needed')
+        }
+      } catch (e) {
+        console.error(
+          `[CRM-AUDIT][AUTH] POST /api/auth/login attempt=${attempt} threw: ${e instanceof Error ? e.message : String(e)}`
+        )
+      }
+      if (!apiLogin && attempt < 3) {
+        await sleep(750 * attempt)
+      }
     }
   } else {
     console.log('[CRM-AUDIT][AUTH] CRM_AUDIT_UI_LOGIN_ONLY=1 — skipping API login bootstrap')
@@ -131,20 +147,14 @@ export async function loginAsTenant(page: Page, tenantSlug = 'demo') {
     return
   }
 
-  if (!uiLoginOnly) {
-    throw new Error(
-      'API login bootstrap failed and UI fallback is disabled for stability. Set CRM_AUDIT_UI_LOGIN_ONLY=1 to force UI login.'
-    )
-  }
-
-  console.log('[CRM-AUDIT][AUTH] no API token — will rely on UI login if redirected to /login')
+  console.log('[CRM-AUDIT][AUTH] no API token — falling back to UI login flow')
 
   // Start from /login to keep auth flow deterministic and avoid heavy CRM-route cold compiles in beforeEach.
   console.log('[CRM-AUDIT][AUTH] goto /login (deterministic auth entry)…')
   await gotoWithRetry(page, `${origin}/login`, {
-    navigationTimeout: 180_000,
+    navigationTimeout: 120_000,
     maxAttempts: 2,
-    waitUntil: 'domcontentloaded',
+    waitUntil: 'commit',
   })
   console.log(`[CRM-AUDIT][AUTH] after /login url=${page.url()}`)
 

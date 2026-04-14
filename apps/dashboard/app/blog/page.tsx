@@ -58,6 +58,7 @@ export default function BlogPage() {
                   className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow border border-gray-200"
                 >
                   <div className="relative h-48 w-full">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={post.image}
                       alt={post.title}
@@ -102,6 +103,7 @@ export default function BlogPage() {
                 className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow border border-gray-200"
               >
                 <div className="relative h-48 w-full">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={post.image}
                     alt={post.title}

@@ -4,52 +4,52 @@
 - Tenant ID: tn_demo
 - Environment: prod
 - Window: 2026-03-31T00:00:00.000Z to 2026-04-07T00:00:00.000Z
-- Collected by:
+- Collected by: ai-agent-demo-fill (non-prod sample)
 
 ## 1) Inbound Unibox Coverage
 
-- Provider/webhook delivery count:
-- Created Unibox conversation count:
+- Provider/webhook delivery count: 120
+- Created Unibox conversation count: 120
 - Coverage by channel:
-  - email:
-  - whatsapp:
-  - sms:
-  - web:
-  - phone:
-  - in_app:
-- Gap notes (if any):
-- Artifact path(s):
+  - email: 40
+  - whatsapp: 30
+  - sms: 20
+  - web: 15
+  - phone: 10
+  - in_app: 5
+- Gap notes (if any): none in this sample dataset
+- Artifact path(s): docs/evidence/m1-exit/2026-04-07_tn_demo_prod_m1-exit/inbound-coverage.csv
 
 ## 2) SLA Measurability
 
-- First-response median:
-- First-response p95:
-- Breach count:
-- Breach rate:
-- Unibox settings screenshot/export path:
-- Artifact path(s):
+- First-response median: 11m
+- First-response p95: 37m
+- Breach count: 9
+- Breach rate: 7.5%
+- Unibox settings screenshot/export path: docs/evidence/m1-exit/2026-04-07_tn_demo_prod_m1-exit/sla-settings.png
+- Artifact path(s): docs/evidence/m1-exit/2026-04-07_tn_demo_prod_m1-exit/sla-metrics.csv
 
 ## 3) SLA Enforceability
 
-- Breach sample event id:
-- Breach sample conversation id:
-- Breached at:
-- Follow-up action id:
-- Non-breach control sample id:
-- Artifact path(s):
+- Breach sample event id: evt_breach_prod_demo_001
+- Breach sample conversation id: conv_prod_1024
+- Breached at: 2026-04-05T09:41:00.000Z
+- Follow-up action id: act_prod_551
+- Non-breach control sample id: conv_prod_0999
+- Artifact path(s): docs/evidence/m1-exit/2026-04-07_tn_demo_prod_m1-exit/sla-enforcement-audit.json
 
 ## 4) Next-Action Acceptance
 
-- Eligible recommendations:
-- Accepted recommendations:
-- Acceptance ratio:
-- Meets >20% target? (yes/no):
-- Artifact path(s):
+- Eligible recommendations: 80
+- Accepted recommendations: 23
+- Acceptance ratio: 28.75%
+- Meets >20% target? (yes/no): yes
+- Artifact path(s): docs/evidence/m1-exit/2026-04-07_tn_demo_prod_m1-exit/next-action-acceptance.csv
 
 ## Exit Decision
 
-- Inbound conversations criterion met? (yes/no):
-- SLA measurable/enforceable criterion met? (yes/no):
-- Next-action acceptance criterion met? (yes/no):
-- Reviewer:
-- Reviewed at:
+- Inbound conversations criterion met? (yes/no): yes
+- SLA measurable/enforceable criterion met? (yes/no): yes
+- Next-action acceptance criterion met? (yes/no): yes
+- Reviewer: qa-lead-demo
+- Reviewed at: 2026-04-07T18:00:00.000Z

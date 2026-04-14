@@ -29,34 +29,30 @@ export function BroadcastHistory() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const response = await fetch('/api/super-admin/communication/history?limit=20')
+        const contentType = response.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text()
+          console.error('Server returned non-JSON response:', text.substring(0, 200))
+          setLoading(false)
+          return
+        }
+        const data = await response.json()
+        if (response.ok) {
+          setBroadcasts(data.broadcasts || [])
+        } else {
+          console.error('Failed to fetch broadcast history:', data.error)
+        }
+      } catch (error) {
+        console.error('Failed to fetch broadcast history:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchHistory()
   }, [])
-
-  const fetchHistory = async () => {
-    try {
-      const response = await fetch('/api/super-admin/communication/history?limit=20')
-      
-      // Check if response is JSON before parsing
-      const contentType = response.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text()
-        console.error('Server returned non-JSON response:', text.substring(0, 200))
-        setLoading(false)
-        return
-      }
-
-      const data = await response.json()
-      if (response.ok) {
-        setBroadcasts(data.broadcasts || [])
-      } else {
-        console.error('Failed to fetch broadcast history:', data.error)
-      }
-    } catch (error) {
-      console.error('Failed to fetch broadcast history:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {

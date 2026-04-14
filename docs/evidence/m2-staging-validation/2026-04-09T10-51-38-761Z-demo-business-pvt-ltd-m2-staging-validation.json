@@ -1,0 +1,371 @@
+{
+  "summary": {
+    "collected_at_utc": "2026-04-09T10:51:38.761Z",
+    "tenant_id": "demo-business-pvt-ltd",
+    "checks": {
+      "marketplace_min_8_apps": {
+        "pass": true,
+        "total_catalog_apps": 8,
+        "installed_count": 0,
+        "first_8_app_ids": [
+          "webhook-connector",
+          "tally-sync",
+          "razorpay-connector",
+          "whatsapp-business",
+          "google-workspace",
+          "shiprocket",
+          "zoho-books-sync",
+          "slack-notifications"
+        ],
+        "note": "Catalog meets M2 threshold (>=8)."
+      },
+      "calls_crm_linkage_present_in_sample": {
+        "pass": true,
+        "sampled_calls": 2,
+        "linked_calls": 2,
+        "linked_ratio": 1,
+        "sample_linked_call_ids": [
+          "cmnrc8qgt0001p8y6jr8x5rgr",
+          "cmnrc4mms0001e6sj7yegreq7"
+        ],
+        "note": "Found calls with CRM linkage fields (contact_id/deal_id/lead_id)."
+      },
+      "sdr_audit_trace_present": {
+        "pass": true,
+        "sampled_actions": 5,
+        "sdr_run_actions": 5,
+        "sample_action_ids": [
+          "cmnrcwo7m000fqautszadnh9t",
+          "cmnrcwe2t000dqautnp95uhzn",
+          "cmnrcvn9d0009qaut6hcpsm9h",
+          "cmnrc8qsp0003p8y6mz1w3z1n",
+          "cmnrc5ek4000de6sjh5a10mou"
+        ],
+        "note": "Found SDR run audit actions."
+      },
+      "calls_crm_fk_db_integrity": {
+        "skipped": true,
+        "pass": true,
+        "note": "Set M2_VALIDATE_CALL_FK=1 with DATABASE_URL and PAYAID_TENANT_ID to verify AICall → Contact/Deal integrity."
+      }
+    },
+    "overall": {
+      "pass": true
+    }
+  },
+  "raw": {
+    "marketplace": {
+      "url": "http://localhost:3000/api/v1/marketplace/apps",
+      "status": 200,
+      "ok": true,
+      "payload": {
+        "apps": [
+          {
+            "id": "webhook-connector",
+            "name": "Webhook Connector",
+            "description": "Receive real-time events from PayAid via HTTP callbacks",
+            "category": "Integration",
+            "icon": "🔗",
+            "rating": 4.8,
+            "reviews": 124,
+            "installed": false,
+            "status": "available",
+            "permissions": [
+              "webhook:read",
+              "webhook:write"
+            ],
+            "event_subscriptions": [
+              "*"
+            ],
+            "plan": "free",
+            "schema_version": "1.0"
+          },
+          {
+            "id": "tally-sync",
+            "name": "Tally Sync",
+            "description": "Two-way sync between PayAid and Tally accounting",
+            "category": "Accounting",
+            "icon": "📊",
+            "rating": 4.5,
+            "reviews": 89,
+            "installed": false,
+            "status": "available",
+            "permissions": [
+              "finance:read",
+              "finance:write"
+            ],
+            "event_subscriptions": [
+              "invoice.created",
+              "invoice.updated"
+            ],
+            "plan": "starter",
+            "schema_version": "1.0"
+          },
+          {
+            "id": "razorpay-connector",
+            "name": "Razorpay Payment Gateway",
+            "description": "Accept payments and generate payment links via Razorpay",
+            "category": "Payments",
+            "icon": "💳",
+            "rating": 4.7,
+            "reviews": 156,
+            "installed": false,
+            "status": "available",
+            "permissions": [
+              "payments:read",
+              "payments:write"
+            ],
+            "event_subscriptions": [
+              "payment.captured",
+              "payment.failed"
+            ],
+            "plan": "starter",
+            "schema_version": "1.0"
+          },
+          {
+            "id": "whatsapp-business",
+            "name": "WhatsApp Business",
+            "description": "Send and receive WhatsApp messages from within PayAid",
+            "category": "Communication",
+            "icon": "💬",
+            "rating": 4.9,
+            "reviews": 312,
+            "installed": false,
+            "status": "available",
+            "permissions": [
+              "messaging:send",
+              "contacts:read"
+            ],
+            "event_subscriptions": [
+              "message.received",
+              "message.delivered"
+            ],
+            "plan": "pro",
+            "schema_version": "1.0"
+          },
+          {
+            "id": "google-workspace",
+            "name": "Google Workspace",
+            "description": "Sync contacts, calendar events, and emails with Google",
+            "category": "Productivity",
+            "icon": "🔵",
+            "rating": 4.6,
+            "reviews": 201,
+            "installed": false,
+            "status": "available",
+            "permissions": [
+              "contacts:read",
+              "contacts:write",
+              "calendar:read"
+            ],
+            "event_subscriptions": [
+              "contact.created",
+              "event.created"
+            ],
+            "plan": "free",
+            "schema_version": "1.0"
+          },
+          {
+            "id": "shiprocket",
+            "name": "Shiprocket",
+            "description": "Automate shipping and logistics for ecommerce orders",
+            "category": "Logistics",
+            "icon": "🚚",
+            "rating": 4.4,
+            "reviews": 77,
+            "installed": false,
+            "status": "available",
+            "permissions": [
+              "orders:read",
+              "shipments:write"
+            ],
+            "event_subscriptions": [
+              "order.created",
+              "shipment.delivered"
+            ],
+            "plan": "starter",
+            "schema_version": "1.0"
+          },
+          {
+            "id": "zoho-books-sync",
+            "name": "Zoho Books Sync",
+            "description": "Export invoices and contacts to Zoho Books",
+            "category": "Accounting",
+            "icon": "📒",
+            "rating": 4.3,
+            "reviews": 54,
+            "installed": false,
+            "status": "available",
+            "permissions": [
+              "finance:read"
+            ],
+            "event_subscriptions": [
+              "invoice.created"
+            ],
+            "plan": "pro",
+            "schema_version": "1.0"
+          },
+          {
+            "id": "slack-notifications",
+            "name": "Slack Notifications",
+            "description": "Push deal, lead, and alert notifications to Slack channels",
+            "category": "Collaboration",
+            "icon": "🔔",
+            "rating": 4.8,
+            "reviews": 187,
+            "installed": false,
+            "status": "available",
+            "permissions": [
+              "notifications:write"
+            ],
+            "event_subscriptions": [
+              "deal.stage_changed",
+              "lead.assigned",
+              "alert.triggered"
+            ],
+            "plan": "free",
+            "schema_version": "1.0"
+          }
+        ],
+        "total": 8,
+        "installed_count": 0
+      },
+      "attempt": 0
+    },
+    "calls": {
+      "url": "http://localhost:3000/api/v1/calls?limit=100&page=1",
+      "status": 200,
+      "ok": true,
+      "payload": {
+        "calls": [
+          {
+            "id": "cmnrc8qgt0001p8y6jr8x5rgr",
+            "phone_number": "+919900000001",
+            "direction": "outbound",
+            "status": "completed",
+            "duration_seconds": 60,
+            "handled_by_ai": false,
+            "contact_id": "demo-contact-1",
+            "deal_id": null,
+            "lead_id": null,
+            "disposition": null,
+            "started_at": "2026-04-09T10:31:33.506Z",
+            "ended_at": "2026-04-09T10:32:33.506Z",
+            "created_at": "2026-04-09T10:32:33.524Z"
+          },
+          {
+            "id": "cmnrc4mms0001e6sj7yegreq7",
+            "phone_number": "+919900000001",
+            "direction": "outbound",
+            "status": "completed",
+            "duration_seconds": 120,
+            "handled_by_ai": false,
+            "contact_id": "demo-contact-1",
+            "deal_id": null,
+            "lead_id": null,
+            "disposition": null,
+            "started_at": "2026-04-09T10:27:21.814Z",
+            "ended_at": "2026-04-09T10:29:21.814Z",
+            "created_at": "2026-04-09T10:29:21.923Z"
+          }
+        ],
+        "pagination": {
+          "total": 2,
+          "page": 1,
+          "limit": 100,
+          "pages": 1
+        }
+      },
+      "attempt": 0
+    },
+    "sdr_audit": {
+      "url": "http://localhost:3000/api/v1/audit/actions?entityType=sdr_run&limit=100",
+      "status": 200,
+      "ok": true,
+      "payload": {
+        "actions": [
+          {
+            "id": "cmnrcwo7m000fqautszadnh9t",
+            "entity_type": "sdr_run",
+            "entity_id": "cmnrcvmrb0007qaut8qnz0l9b",
+            "changed_by": "cmlrq4rmu000412b1yg3g7b2l",
+            "summary": "SDR run stopped: evidence_collection",
+            "before": null,
+            "after": {
+              "stopped_at": "2026-04-09T10:51:09.577Z",
+              "playbook_id": "cmnrcujnp0001qaut8p8r18gr",
+              "stop_reason": "evidence_collection",
+              "policy_decision": {
+                "reason": "evidence_collection",
+                "outcome": "blocked",
+                "occurred_at": "2026-04-09T10:51:09.577Z",
+                "decision_type": "manual_stop"
+              }
+            },
+            "timestamp": "2026-04-09T10:51:10.332Z"
+          },
+          {
+            "id": "cmnrcwe2t000dqautnp95uhzn",
+            "entity_type": "sdr_run",
+            "entity_id": "cmnrcvmrb0007qaut8qnz0l9b",
+            "changed_by": "cmlrq4rmu000412b1yg3g7b2l",
+            "summary": "SDR run paused",
+            "before": null,
+            "after": {
+              "paused_at": "2026-04-09T10:50:57.195Z",
+              "playbook_id": "cmnrcujnp0001qaut8p8r18gr"
+            },
+            "timestamp": "2026-04-09T10:50:57.198Z"
+          },
+          {
+            "id": "cmnrcvn9d0009qaut6hcpsm9h",
+            "entity_type": "sdr_run",
+            "entity_id": "cmnrcvmrb0007qaut8qnz0l9b",
+            "changed_by": "cmlrq4rmu000412b1yg3g7b2l",
+            "summary": "SDR run started for playbook cmnrcujnp0001qaut8p8r18gr with 1 contacts",
+            "before": null,
+            "after": {
+              "guardrails": {
+                "require_approval": false
+              },
+              "started_at": "2026-04-09T10:50:21.799Z",
+              "playbook_id": "cmnrcujnp0001qaut8p8r18gr",
+              "contact_count": 1
+            },
+            "timestamp": "2026-04-09T10:50:22.464Z"
+          },
+          {
+            "id": "cmnrc8qsp0003p8y6mz1w3z1n",
+            "entity_type": "sdr_run",
+            "entity_id": "evidence-run-1",
+            "changed_by": "cmlrq4rmu000412b1yg3g7b2l",
+            "summary": "evidence_seed_sdr_run",
+            "before": null,
+            "after": {
+              "at": "2026-04-09T10:32:33.506Z",
+              "seeded": true
+            },
+            "timestamp": "2026-04-09T10:32:33.959Z"
+          },
+          {
+            "id": "cmnrc5ek4000de6sjh5a10mou",
+            "entity_type": "sdr_run",
+            "entity_id": "cmnrc5duq000be6sjqlb349j3",
+            "changed_by": "cmlrq4rmu000412b1yg3g7b2l",
+            "summary": "SDR run started for playbook cmnrc4tly0005e6sj9ocephqa with 1 contacts",
+            "before": null,
+            "after": {
+              "guardrails": {},
+              "started_at": "2026-04-09T10:29:57.212Z",
+              "playbook_id": "cmnrc4tly0005e6sj9ocephqa",
+              "contact_count": 1
+            },
+            "timestamp": "2026-04-09T10:29:58.130Z"
+          }
+        ],
+        "count": 5
+      },
+      "attempt": 0
+    }
+  }
+}

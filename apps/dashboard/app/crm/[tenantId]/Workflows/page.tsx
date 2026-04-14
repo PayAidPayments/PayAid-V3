@@ -62,6 +62,7 @@ export default function CRMWorkflowsPage() {
 
   useEffect(() => {
     if (token) void loadWorkflows()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   async function createWorkflow() {

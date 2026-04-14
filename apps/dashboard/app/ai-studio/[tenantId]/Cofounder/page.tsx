@@ -28,6 +28,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Send, Bot, User, Loader2, ChevronDown, LayoutGrid, History, AlertCircle, ExternalLink, Paperclip, Download, Table2, Zap, FolderPlus, Pencil } from 'lucide-react'
 import { formatINR } from '@/lib/utils/formatINR'
+import { useToast, ToastContainer } from '@/components/ui/toast'
 import { getSuggestionsForAgent } from '@/lib/ai/co-founder-suggestions'
 import {
   SPECIALIST_CATEGORY_ORDER,
@@ -80,6 +81,8 @@ function StructuredActionButton({
   getAuthHeaders: () => Record<string, string>
   conversationId: string | null
 }) {
+  const [creating, setCreating] = useState(false)
+  const { toast, ToastContainer: ActionToastContainer } = useToast()
   const defaultLabels: Record<string, string> = {
     open_deal: 'Open deal', open_crm: 'Open CRM', open_finance: 'Open Finance', open_hr: 'Open HR',
     create_task: 'Create task', open_invoice: 'Open invoice', open_quotes: 'Open Quotes',
@@ -153,31 +156,43 @@ function StructuredActionButton({
   }
   if (action.type === 'create_task') {
     return (
-      <Button
-        size="sm"
-        variant="outline"
-        className="text-xs"
-        style={{ borderColor: PAYAID_PURPLE, color: PAYAID_PURPLE }}
-        onClick={async () => {
-          try {
-            await fetch('/api/ai/cofounder/actions/convert-to-task', {
-              method: 'POST',
-              headers: getAuthHeaders(),
-              body: JSON.stringify({
-                action: action.title || label,
-                description: action.description,
-                priority: action.priority || 'medium',
-                dueDate: action.due,
-                conversationId: conversationId || undefined,
-              }),
-            })
-          } catch (e) {
-            console.error(e)
-          }
-        }}
-      >
-        {label}
-      </Button>
+      <>
+        {ActionToastContainer}
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-xs"
+          style={{ borderColor: PAYAID_PURPLE, color: PAYAID_PURPLE }}
+          disabled={creating}
+          title={creating ? 'Creating task…' : undefined}
+          onClick={async () => {
+            setCreating(true)
+            try {
+              const res = await fetch('/api/ai/cofounder/actions/convert-to-task', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                  action: action.title || label,
+                  description: action.description,
+                  priority: action.priority || 'medium',
+                  dueDate: action.due,
+                  conversationId: conversationId || undefined,
+                }),
+              })
+              if (!res.ok) throw new Error('Failed to create task')
+              toast.success('Task created', action.title || label)
+            } catch (e) {
+              console.error(e)
+              toast.error('Failed to create task', 'Please try again.')
+            } finally {
+              setCreating(false)
+            }
+          }}
+        >
+          {creating ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+          {label}
+        </Button>
+      </>
     )
   }
   return null
@@ -215,6 +230,8 @@ export default function CoFounderPage() {
   const [projectName, setProjectName] = useState('')
   const [projectInstructions, setProjectInstructions] = useState('')
   const [projectContextNotes, setProjectContextNotes] = useState('')
+  const [creatingTasks, setCreatingTasks] = useState(false)
+  const { toast, ToastContainer: PageToastContainer } = useToast()
 
   const { data: agentsData } = useQuery<{ agents: Agent[] }>({
     queryKey: ['ai-agents'],
@@ -541,6 +558,7 @@ export default function CoFounderPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col">
+      {PageToastContainer}
       <div className="flex flex-1 min-h-0 max-w-[1600px] w-full mx-auto">
         {/* Left: Specialists — fixed width, hide on small */}
         <aside className="hidden lg:flex flex-col w-[280px] flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -823,24 +841,48 @@ export default function CoFounderPage() {
                             variant="outline"
                             className="text-xs"
                             style={{ borderColor: PAYAID_PURPLE, color: PAYAID_PURPLE }}
+                            disabled={creatingTasks}
+                            title={creatingTasks ? 'Creating tasks…' : `Create ${suggestedActions.length} task${suggestedActions.length !== 1 ? 's' : ''} from this plan`}
                             onClick={async () => {
+                              setCreatingTasks(true)
                               try {
-                                await fetch('/api/ai/cofounder/actions/convert-to-task', {
-                                  method: 'POST',
-                                  headers: getAuthHeaders(),
-                                  body: JSON.stringify({
-                                    action: suggestedActions[0].action,
-                                    description: suggestedActions[0].description,
-                                    priority: suggestedActions[0].priority || 'medium',
-                                    conversationId: conversationId || undefined,
-                                  }),
-                                })
+                                const results = await Promise.allSettled(
+                                  suggestedActions.map((sa) =>
+                                    fetch('/api/ai/cofounder/actions/convert-to-task', {
+                                      method: 'POST',
+                                      headers: getAuthHeaders(),
+                                      body: JSON.stringify({
+                                        action: sa.action,
+                                        description: sa.description,
+                                        priority: sa.priority || 'medium',
+                                        conversationId: conversationId || undefined,
+                                      }),
+                                    }).then((r) => { if (!r.ok) throw new Error('Failed'); return r.json() })
+                                  )
+                                )
+                                const succeeded = results.filter((r) => r.status === 'fulfilled').length
+                                const failed = results.length - succeeded
+                                if (failed === 0) {
+                                  toast.success(
+                                    `${succeeded} task${succeeded !== 1 ? 's' : ''} created`,
+                                    'Check Tasks in CRM to view them.'
+                                  )
+                                } else {
+                                  toast.warning(
+                                    `${succeeded} of ${results.length} tasks created`,
+                                    `${failed} task${failed !== 1 ? 's' : ''} failed. Please try again.`
+                                  )
+                                }
                               } catch (e) {
                                 console.error(e)
+                                toast.error('Failed to create tasks', 'Please try again.')
+                              } finally {
+                                setCreatingTasks(false)
                               }
                             }}
                           >
-                            Create tasks from this plan
+                            {creatingTasks ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                            {creatingTasks ? 'Creating tasks…' : 'Create tasks from this plan'}
                           </Button>
                           <Link href={`/crm/${tenantId}/Home`}>
                             <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: `${PAYAID_PURPLE}60` }}>

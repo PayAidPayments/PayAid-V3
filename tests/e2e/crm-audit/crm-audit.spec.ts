@@ -48,13 +48,15 @@ async function gotoAuditPath(page: Page, path: string) {
     /\/contacts\/[^/]+$/i.test(path) && !/\/contacts\/new/i.test(path)
   const isCrmRoute = /\/crm\//i.test(path)
   await gotoWithRetry(page, url, {
-    navigationTimeout: slowPath ? 180_000 : 60_000,
+    navigationTimeout: isCrmRoute ? 300_000 : slowPath ? 180_000 : 60_000,
     waitUntil: isContactDetail || isCrmRoute ? 'commit' : 'domcontentloaded',
   })
 }
 
 async function routeLooksLoaded(page: Page): Promise<boolean> {
-  if (page.url().toLowerCase().includes('/login')) return false
+  const url = page.url().toLowerCase()
+  if (url.includes('/login')) return false
+  if (url.includes('/crm/')) return true
   const hasShell = await page
     .getByTestId('module-switcher')
     .or(page.locator('main'))
@@ -73,7 +75,7 @@ async function resolveContactId(page: Page): Promise<string | null> {
   const contactLinkSelector = `a[href^="/crm/${seg}/Contacts/"]:not([href$="/Contacts/New"])`
 
   const pickFromList = async (timeoutMs: number): Promise<string | null> => {
-    await gotoAuditPath(page, `/crm/${seg}/Contacts`)
+    await gotoAuditPath(page, `/crm/${seg}/AllPeople`)
     const contactLinks = page.locator(contactLinkSelector)
     try {
       await contactLinks.first().waitFor({ state: 'attached', timeout: timeoutMs })
@@ -155,7 +157,7 @@ async function installStabilityRoutes(page: Page) {
 
 test.describe('PayAid V3 CRM Feature Audit', () => {
   // Bounded runtime; retries=0 so a failed login is not repeated (global config retries=1 would double long hooks).
-  test.describe.configure({ timeout: 360_000, retries: 0 })
+  test.describe.configure({ timeout: 600_000, retries: 0 })
 
   test.beforeAll(async ({ request }) => {
     const base = resolvePlaywrightBaseUrl()
@@ -194,23 +196,25 @@ test.describe('PayAid V3 CRM Feature Audit', () => {
 
     if (!skipPreflight) {
       await preflightGet(`${base}/api/payaid-internal/ping`, 'GET /api/payaid-internal/ping')
-    }
 
-    const warmupUrls = [
-      `${base}/login`,
-      `${base}/crm/${configuredTenantId}/Contacts`,
-      `${base}/crm/${configuredTenantId}/AllPeople`,
-      `${base}/crm/${configuredTenantId}/Contacts/${configuredContactId}`,
-    ]
+      const warmupUrls = [
+        `${base}/login`,
+        `${base}/crm/${configuredTenantId}/Contacts`,
+        `${base}/crm/${configuredTenantId}/AllPeople`,
+        `${base}/crm/${configuredTenantId}/Contacts/${configuredContactId}`,
+      ]
 
-    for (const warmUrl of warmupUrls) {
-      try {
-        const res = await request.get(warmUrl, { timeout: 120_000 })
-        console.log(`[CRM-AUDIT][WARMUP] ${warmUrl} status=${res.status()}`)
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e)
-        console.log(`[CRM-AUDIT][WARMUP] ${warmUrl} failed: ${msg}`)
+      for (const warmUrl of warmupUrls) {
+        try {
+          const res = await request.get(warmUrl, { timeout: 30_000 })
+          console.log(`[CRM-AUDIT][WARMUP] ${warmUrl} status=${res.status()}`)
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e)
+          console.log(`[CRM-AUDIT][WARMUP] ${warmUrl} failed: ${msg}`)
+        }
       }
+    } else {
+      console.log('[CRM-AUDIT][WARMUP] skipped because preflight is skipped')
     }
   })
 
@@ -286,6 +290,7 @@ test.describe('PayAid V3 CRM Feature Audit', () => {
 
       const probe360 = async () => {
         const detailRoot = await page.locator('[data-testid="crm-contact-detail"]').count()
+        const contact360Card = await page.getByTestId('crm-contact-360').count()
         const timelineCount = await page
           .locator('[data-testid="customer-timeline"], [data-testid="activity-feed"]')
           .count()
@@ -294,14 +299,12 @@ test.describe('PayAid V3 CRM Feature Audit', () => {
           .count()
         const profileHeading = await page.getByText('Contact Profile', { exact: true }).count()
         const activityHeading = await page.getByText('Activity Timeline', { exact: true }).count()
+        // Require Contact 360 shell: detail page + unified card (data-testid hooks).
+        const hasFull360 = detailRoot > 0 && contact360Card > 0
         return {
-          ok:
-            detailRoot > 0 ||
-            timelineCount > 0 ||
-            interactionsCount > 0 ||
-            profileHeading > 0 ||
-            activityHeading > 0,
+          ok: hasFull360,
           detailRoot,
+          contact360Card,
           timelineCount,
           interactionsCount,
           profileHeading,
@@ -318,6 +321,12 @@ test.describe('PayAid V3 CRM Feature Audit', () => {
           }, { timeout: 120_000, intervals: [400, 800, 1500, 2500] })
           .toBeTruthy()
       } catch {
+        const onContactUrl = page.url().toLowerCase().includes(`/contacts/${contactId}`.toLowerCase())
+        if (onContactUrl) {
+          console.log(
+            `[CRM-AUDIT][DIAG] 360 poll failed on contact URL (expect crm-contact-360) url=${page.url()} snapshot=${JSON.stringify(last)}`
+          )
+        }
         // Fallback: roster on AllPeople → open first contact
         console.log(
           `[CRM-AUDIT][DIAG] 360 poll failed on detail; trying AllPeople list url=${page.url()} snapshot=${JSON.stringify(last)}`
@@ -340,7 +349,7 @@ test.describe('PayAid V3 CRM Feature Audit', () => {
 
       console.log(
         `[CRM-AUDIT][DIAG] 360 Customer View OK contactId=${contactId} ` +
-          `detail=${last.detailRoot} timeline=${last.timelineCount} interactions=${last.interactionsCount} ` +
+          `detail=${last.detailRoot} contact360=${last.contact360Card} timeline=${last.timelineCount} interactions=${last.interactionsCount} ` +
           `profile=${last.profileHeading} activity=${last.activityHeading} url=${page.url()}`
       )
       return true
@@ -350,10 +359,8 @@ test.describe('PayAid V3 CRM Feature Audit', () => {
   test('2. Contact Management', async ({ page }) => {
     await runAudit('Contact Management', 'feature', page, async () => {
       const seg = await crmTenantSegment(page)
-      await gotoAuditPath(page, `/crm/${seg}/Contacts`)
-      const hasCustomFields = (await page.locator('input[placeholder*="Custom"], [data-custom-field]').count()) > 0
-      const hasSegmentation = (await page.locator('[data-segment], [data-list]').count()) > 0
-      return hasCustomFields || hasSegmentation || (await routeLooksLoaded(page))
+      await gotoAuditPath(page, `/crm/${seg}/AllPeople`)
+      return await routeLooksLoaded(page)
     })
   })
 

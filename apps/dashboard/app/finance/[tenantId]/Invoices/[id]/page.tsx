@@ -8,6 +8,8 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { PageLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
 import { formatINRStandard } from '@/lib/utils/formatINR'
@@ -77,6 +79,50 @@ export default function FinanceInvoiceDetailPage() {
   const [sendSuccess, setSendSuccess] = useState('')
   const [portalLinkCopied, setPortalLinkCopied] = useState(false)
   const { token } = useAuthStore()
+
+  // Record Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentForm, setPaymentForm] = useState({
+    paymentDate: new Date().toISOString().split('T')[0],
+    paymentMode: 'bank_transfer',
+    utrChequeNo: '',
+    paymentError: '',
+  })
+  const [paymentSuccess, setPaymentSuccess] = useState('')
+
+  const recordPaymentMutation = useMutation({
+    mutationFn: async () => {
+      const { token } = useAuthStore.getState()
+      const response = await fetch(`/api/invoices/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          status: 'paid',
+          paidAt: new Date(paymentForm.paymentDate).toISOString(),
+          paymentMode: paymentForm.paymentMode,
+          paymentTransactionId: paymentForm.utrChequeNo || undefined,
+          paymentDatetime: new Date(paymentForm.paymentDate).toISOString(),
+        }),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.error || 'Failed to record payment')
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoice', id] })
+      setShowPaymentModal(false)
+      setPaymentSuccess('Payment recorded successfully!')
+      setTimeout(() => setPaymentSuccess(''), 5000)
+    },
+    onError: (err: Error) => {
+      setPaymentForm((prev) => ({ ...prev, paymentError: err.message }))
+    },
+  })
 
   const { data: gatewaySettings } = useQuery({
     queryKey: ['settings', 'payment-gateway', 'status'],
@@ -575,6 +621,20 @@ export default function FinanceInvoiceDetailPage() {
                       {format(new Date(invoice.paidAt), 'MMM dd, yyyy')}
                     </div>
                   </div>
+                  {invoice.paymentMode && (
+                    <div>
+                      <div className="text-gray-500 dark:text-gray-400">Mode</div>
+                      <div className="font-medium dark:text-gray-100 capitalize">
+                        {invoice.paymentMode.replace(/_/g, ' ')}
+                      </div>
+                    </div>
+                  )}
+                  {invoice.paymentTransactionId && (
+                    <div>
+                      <div className="text-gray-500 dark:text-gray-400">UTR / Cheque No.</div>
+                      <div className="font-medium dark:text-gray-100 font-mono text-xs">{invoice.paymentTransactionId}</div>
+                    </div>
+                  )}
                   <div className="text-green-600 dark:text-green-400 font-semibold">✓ Paid</div>
                 </>
               ) : (
@@ -661,34 +721,111 @@ export default function FinanceInvoiceDetailPage() {
                   Mark as Sent
                 </Button>
               )}
-              {invoice.status === 'sent' && !invoice.paidAt && (
+              {paymentSuccess && (
+                <div className="p-3 text-sm text-green-700 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                  {paymentSuccess}
+                </div>
+              )}
+              {invoice.status !== 'paid' && (
                 <Button
-                  className="w-full"
-                  onClick={async () => {
-                    if (confirm('Mark invoice as paid?')) {
-                      try {
-                        await fetch(`/api/invoices/${id}`, {
-                          method: 'PATCH',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${useAuthStore.getState().token}`,
-                          },
-                          body: JSON.stringify({ status: 'paid', paidAt: new Date().toISOString() }),
-                        })
-                        queryClient.invalidateQueries({ queryKey: ['invoice', id] })
-                      } catch (error) {
-                        alert('Failed to update invoice')
-                      }
-                    }
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={() => {
+                    setPaymentForm({ paymentDate: new Date().toISOString().split('T')[0], paymentMode: 'bank_transfer', utrChequeNo: '', paymentError: '' })
+                    setShowPaymentModal(true)
                   }}
                 >
-                  Mark as Paid
+                  Record Payment Received
                 </Button>
               )}
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Record Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold dark:text-gray-100">Record Payment</h2>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              {paymentForm.paymentError && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                  {paymentForm.paymentError}
+                </div>
+              )}
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Invoice Amount</span>
+                <span className="text-base font-semibold dark:text-gray-100">{formatINRStandard(invoice.total)}</span>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="paymentDate">Payment Date *</Label>
+                <Input
+                  id="paymentDate"
+                  type="date"
+                  value={paymentForm.paymentDate}
+                  onChange={(e) => setPaymentForm((prev) => ({ ...prev, paymentDate: e.target.value }))}
+                  max={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="paymentMode">Payment Mode *</Label>
+                <select
+                  id="paymentMode"
+                  value={paymentForm.paymentMode}
+                  onChange={(e) => setPaymentForm((prev) => ({ ...prev, paymentMode: e.target.value }))}
+                  className="flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                >
+                  <option value="bank_transfer">Bank Transfer / NEFT / RTGS</option>
+                  <option value="upi">UPI</option>
+                  <option value="cheque">Cheque</option>
+                  <option value="cash">Cash</option>
+                  <option value="imps">IMPS</option>
+                  <option value="demand_draft">Demand Draft</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="utrChequeNo">
+                  {paymentForm.paymentMode === 'cheque' ? 'Cheque Number' : 'UTR Number / Reference'}
+                  <span className="text-gray-400 font-normal ml-1">(optional)</span>
+                </Label>
+                <Input
+                  id="utrChequeNo"
+                  value={paymentForm.utrChequeNo}
+                  onChange={(e) => setPaymentForm((prev) => ({ ...prev, utrChequeNo: e.target.value }))}
+                  placeholder={paymentForm.paymentMode === 'cheque' ? 'e.g. 001234' : 'e.g. HDFC0001234567'}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowPaymentModal(false)}
+                disabled={recordPaymentMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => recordPaymentMutation.mutate()}
+                disabled={recordPaymentMutation.isPending || !paymentForm.paymentDate}
+                title={recordPaymentMutation.isPending ? 'Saving…' : 'Confirm payment'}
+              >
+                {recordPaymentMutation.isPending ? 'Saving…' : 'Confirm Payment'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

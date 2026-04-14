@@ -21,7 +21,7 @@ export default function AIGovernancePage() {
       <Card>
         <CardHeader>
           <CardTitle>Current Policy</CardTitle>
-          <CardDescription>Your organization's AI usage policy</CardDescription>
+          <CardDescription>Your organization&apos;s AI usage policy</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">

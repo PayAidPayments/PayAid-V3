@@ -61,6 +61,7 @@ export default function AppointmentDetailPage() {
     if (appointmentId) {
       fetchAppointment()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointmentId])
 
   const fetchAppointment = async () => {

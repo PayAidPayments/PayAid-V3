@@ -329,6 +329,7 @@ export default function ImageAdsPage() {
                 <div className="space-y-4">
                   {resultUrlB && <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Variant A</p>}
                   <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 max-w-md">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={resultUrl} alt="Ad creative A" className="w-full h-auto object-contain" />
                   </div>
                   <div className="flex gap-2 flex-wrap items-center">
@@ -363,6 +364,7 @@ export default function ImageAdsPage() {
                 <div className="space-y-4">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Variant B</p>
                   <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 max-w-md">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={resultUrlB} alt="Ad creative B" className="w-full h-auto object-contain" />
                   </div>
                   <div className="flex gap-2 flex-wrap items-center">

@@ -1,20 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useContact, useDeleteContact } from '@/lib/hooks/use-api'
 import { Button } from '@/components/ui/button'
 import { format, formatDistanceToNow } from 'date-fns'
-import { LeadAllocationDialog } from '@/components/LeadAllocationDialog'
-import { LeadScoringBadge } from '@/components/LeadScoringBadge'
-import { NurtureSequenceApplier } from '@/components/NurtureSequenceApplier'
-import { StageBadge } from '@/components/crm/StageBadge'
 import { useQueryClient } from '@tanstack/react-query'
 import { PageLoading } from '@/components/ui/loading'
-import { ContactInfoTimelineCard } from '@/components/crm/contact/ContactInfoTimelineCard'
-import type { ActivityFilter } from '@/components/crm/contact/ContactTimeline'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { 
   RefreshCw,
@@ -33,6 +26,8 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { usePageAIExtraStore } from '@/lib/stores/page-ai-extra'
 import { useToast } from '@/components/ui/toast'
 
+type ActivityFilter = 'all' | 'email' | 'call' | 'whatsapp' | 'meeting' | 'task' | 'note' | 'deal'
+
 function ContactRailSkeleton({ className = 'h-28' }: { className?: string }) {
   return (
     <div
@@ -42,26 +37,131 @@ function ContactRailSkeleton({ className = 'h-28' }: { className?: string }) {
   )
 }
 
-const ContactIntelligenceCard = dynamic(
-  () => import('@/components/crm/contact/ContactIntelligenceCard').then((m) => ({ default: m.ContactIntelligenceCard })),
-  { loading: () => <ContactRailSkeleton className="h-36" /> }
-)
-const AutomationStatusCard = dynamic(
-  () => import('@/components/crm/contact/AutomationStatusCard').then((m) => ({ default: m.AutomationStatusCard })),
-  { loading: () => <ContactRailSkeleton className="h-28" /> }
-)
-const AuditActionTimelineCard = dynamic(
-  () => import('@/components/crm/AuditActionTimelineCard').then((m) => ({ default: m.AuditActionTimelineCard })),
-  { loading: () => <ContactRailSkeleton className="h-32" /> }
-)
-const AIAssistCard = dynamic(
-  () => import('@/components/crm/contact/AIAssistCard').then((m) => ({ default: m.AIAssistCard })),
-  { loading: () => <ContactRailSkeleton className="h-48" /> }
-)
-const NextBestActionCard = dynamic(
-  () => import('@/components/crm/contact/NextBestActionCard').then((m) => ({ default: m.NextBestActionCard })),
-  { loading: () => <ContactRailSkeleton className="h-32" /> }
-)
+function StageBadge({ stage }: { stage?: string }) {
+  return (
+    <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 capitalize">
+      {stage || 'contact'}
+    </span>
+  )
+}
+
+function LeadScoringBadge({ score }: { score: number }) {
+  return (
+    <span className="px-2 py-1 text-xs rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+      Score: {score}
+    </span>
+  )
+}
+
+function ContactInfoTimelineCard({
+  contact,
+}: {
+  contact: any
+  tenantId: string
+  contactId: string
+  timelineFilter: ActivityFilter
+  onRefetchContact: () => void
+}) {
+  const latest = Array.isArray(contact?.interactions) ? contact.interactions.slice(0, 5) : []
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm p-4">
+      <h3 className="text-sm font-semibold text-slate-900 dark:text-gray-100 mb-2">Latest activity</h3>
+      {latest.length > 0 ? (
+        <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+          {latest.map((item: any) => (
+            <li key={item.id} className="flex items-center justify-between gap-2">
+              <span className="capitalize">{item.type || 'activity'}</span>
+              <span className="text-xs text-slate-500">
+                {item.createdAt ? formatDistanceToNow(new Date(item.createdAt), { addSuffix: true }) : '-'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-slate-500 dark:text-slate-400">No recent activities yet.</p>
+      )}
+    </div>
+  )
+}
+
+function SimpleCard({ title, message }: { title: string; message: string }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm p-4">
+      <h3 className="text-sm font-semibold text-slate-900 dark:text-gray-100">{title}</h3>
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{message}</p>
+    </div>
+  )
+}
+
+function NextBestActionCard(_: { contactId: string; tenantId: string; contact: any; onOpenMoreActions: () => void }) {
+  return <SimpleCard title="Next Best Actions" message="Use Contact and More actions for quick follow-ups." />
+}
+
+function ContactIntelligenceCard(_: { contact: any; onOpenNurture: () => void; onRescore: () => void; isRescoring: boolean }) {
+  return <SimpleCard title="Contact Intelligence" message="Insights are temporarily unavailable in this build." />
+}
+
+function AutomationStatusCard(_: { contact: any }) {
+  return <SimpleCard title="Automation Status" message="Automation timeline is temporarily unavailable." />
+}
+
+function AuditActionTimelineCard(_: { entityType: string; entityId: string; tenantId: string; title: string }) {
+  return <SimpleCard title="Contact Automation Timeline" message="Audit actions are temporarily unavailable." />
+}
+
+function AIAssistCard(_: { contact: any; tenantId: string; onEnriched: () => void }) {
+  return <SimpleCard title="AI Assist" message="AI enrich panel is temporarily unavailable." />
+}
+
+function LeadAllocationDialog({
+  contactName,
+  onClose,
+}: {
+  contactId: string
+  contactName: string
+  tenantId: string
+  currentRep: any
+  onAssign: (payload: { repId: string; repName: string; repEmail?: string }) => void
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Assign owner</h3>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          Owner reassignment UI is unavailable in this build for {contactName}.
+        </p>
+        <div className="mt-3 flex justify-end">
+          <Button size="sm" variant="outline" onClick={onClose}>Close</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function NurtureSequenceApplier({
+  contactName,
+  onClose,
+}: {
+  contactId: string
+  contactName: string
+  onEnroll: () => void
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Nurture sequence</h3>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          Nurture enrollment UI is unavailable in this build for {contactName}.
+        </p>
+        <div className="mt-3 flex justify-end">
+          <Button size="sm" variant="outline" onClick={onClose}>Close</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function ContactDetailPage() {
   const params = useParams()

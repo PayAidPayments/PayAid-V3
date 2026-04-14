@@ -63,6 +63,7 @@ export function PresentationsList({ tenantId }: { tenantId: string }) {
 
   useEffect(() => {
     if (token) loadPresentations()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   const loadPresentations = async () => {

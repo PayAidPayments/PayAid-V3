@@ -1,0 +1,57 @@
+{
+  "generated_at_utc": "2026-04-09T10:05:00.000Z",
+  "note": "Real exported artifacts only (no synthetic fixtures).",
+  "artifacts": {
+    "m2_staging_validation": [
+      {
+        "path": "docs/evidence/m2-staging-validation/2026-04-09T08-26-28-449Z-demo-business-pvt-ltd-m2-staging-validation.json",
+        "overall_pass": false
+      },
+      {
+        "path": "docs/evidence/m2-staging-validation/2026-04-09T09-30-53-494Z-demo-business-pvt-ltd-m2-staging-validation.json",
+        "overall_pass": false
+      },
+      {
+        "path": "docs/evidence/m2-staging-validation/2026-04-09T09-35-59-980Z-demo-business-pvt-ltd-m2-staging-validation.json",
+        "overall_pass": false,
+        "primary_failure_reason": "v1 endpoints returned 404 on hosted URL"
+      },
+      {
+        "path": "docs/evidence/m2-staging-validation/2026-04-09T09-39-48-788Z-demo-business-pvt-ltd-m2-staging-validation.json",
+        "overall_pass": false,
+        "primary_failure_reason": "invalid/expired auth token against localhost"
+      },
+      {
+        "path": "docs/evidence/m2-staging-validation/2026-04-09T10-18-01-048Z-demo-business-pvt-ltd-m2-staging-validation.json",
+        "overall_pass": false,
+        "primary_failure_reason": "marketplace endpoint 500 and SDR audit endpoint 403 (calls endpoint reachable: 200 with empty dataset)"
+      },
+      {
+        "path": "docs/evidence/m2-staging-validation/2026-04-09T10-28-51-621Z-demo-business-pvt-ltd-m2-staging-validation.json",
+        "overall_pass": false,
+        "primary_failure_reason": "only SDR audit trace check still failing (marketplace and calls checks now pass)"
+      },
+      {
+        "path": "docs/evidence/m2-staging-validation/2026-04-09T10-51-38-092Z-demo-business-pvt-ltd-m2-staging-validation.json",
+        "overall_pass": true,
+        "note": "All three M2 staging API checks passed (marketplace, calls CRM linkage, SDR audit trace)."
+      }
+    ],
+    "release_gates": [
+      {
+        "path": "docs/evidence/release-gates/2026-04-09T09-12-02-600Z-release-gate-suite.json",
+        "all_pass": true
+      },
+      {
+        "path": "docs/evidence/release-gates/2026-04-09T09-15-15-945Z-crm-audit-gate.json",
+        "exit_code": 1
+      }
+    ],
+    "load_tests": [
+      {
+        "path": "docs/evidence/load-tests/2026-04-09T09-08-07-663Z-load-test.json",
+        "exit_code": 1
+      }
+    ]
+  }
+}

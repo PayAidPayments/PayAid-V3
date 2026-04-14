@@ -57,6 +57,7 @@ export default function CustomerSuccessPage() {
 
   useEffect(() => {
     fetchCustomerSuccessData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, token])
 
   const fetchCustomerSuccessData = async () => {

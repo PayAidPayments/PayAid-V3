@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Bot, X, Send, Mic, MicOff, Loader2, Minus } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useCurrentPageContext } from '@/lib/hooks/useCurrentPageContext'
+import { usePageAIExtraStore } from '@/lib/stores/page-ai-extra'
 import { cn } from '@/lib/utils/cn'
 
 interface Message {
@@ -43,6 +44,7 @@ const moduleEntities: Record<string, string> = {
  */
 export function PageAIAssistant() {
   const ctx = useCurrentPageContext()
+  const pageExtra = usePageAIExtraStore((s) => s.extra)
   const { token, tenant } = useAuthStore()
   const businessName = tenant?.name || 'Your company'
   const moduleLabel = ctx.module.charAt(0).toUpperCase() + ctx.module.slice(1).replace(/-/g, ' ')
@@ -122,6 +124,7 @@ export function PageAIAssistant() {
             tenantId: ctx.tenantId,
             businessName,
             entities: (moduleEntities[ctx.module] || 'data on this page').split(/, | or /).map((s) => s.trim()).filter(Boolean),
+            ...(pageExtra && typeof pageExtra === 'object' ? { pageExtra } : {}),
           },
         }),
       })

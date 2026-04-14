@@ -1,0 +1,6 @@
+{
+  "collected_at_utc": "2026-04-09T09:01:06.208Z",
+  "command": "node node_modules/jest/bin/jest.js --runInBand tests/performance/load.test.ts",
+  "exit_code": 1,
+  "output_excerpt": "No tests found, exiting with code 1\nRun with `--passWithNoTests` to exit with code 0\nIn D:\\Cursor Projects\\PayAid V3\n  24195 files checked.\n  testMatch: **/__tests__/**/*.test.ts, **/__tests__/**/*.test.tsx - 116 matches\n  testPathIgnorePatterns: \\\\node_modules\\\\ - 24195 matches\n  testRegex:  - 0 matches\nPattern: tests\\\\performance\\\\load.test.ts - 0 matches\n\n"
+}

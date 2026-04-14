@@ -48,6 +48,36 @@ describe('GET /api/calls (M2 smoke)', () => {
     expect(body.pagination.total).toBe(1)
     expect(body.pagination.page).toBe(1)
   })
+
+  it('returns 401 when unauthenticated', async () => {
+    const auth = require('@/lib/middleware/auth')
+    auth.authenticateRequest.mockResolvedValue(null)
+
+    const req = new NextRequest('http://localhost/api/calls')
+    const res = await GET(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(401)
+    expect(body.error).toBe('Unauthorized')
+  })
+
+  it('returns 500 when fetching calls fails unexpectedly', async () => {
+    const auth = require('@/lib/middleware/auth')
+    const db = require('@/lib/db/prisma')
+    auth.authenticateRequest.mockResolvedValue({ tenantId: 'tn_m2', sub: 'usr_1' })
+    db.prisma.aICall.findMany.mockRejectedValue(new Error('calls read failed'))
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    const req = new NextRequest('http://localhost/api/calls?page=1&limit=50', {
+      headers: { authorization: 'Bearer t' },
+    })
+    const res = await GET(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body.error).toBe('Failed to get calls')
+    consoleSpy.mockRestore()
+  })
 })
 
 describe('POST /api/calls (M2 smoke)', () => {
@@ -95,5 +125,21 @@ describe('POST /api/calls (M2 smoke)', () => {
 
     expect(res.status).toBe(400)
     expect(body.error).toBe('Validation error')
+  })
+
+  it('returns 401 when unauthenticated', async () => {
+    const auth = require('@/lib/middleware/auth')
+    auth.authenticateRequest.mockResolvedValue(null)
+
+    const req = new NextRequest('http://localhost/api/calls', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ phoneNumber: '+911234567890' }),
+    })
+    const res = await POST(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(401)
+    expect(body.error).toBe('Unauthorized')
   })
 })

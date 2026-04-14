@@ -9,26 +9,25 @@ export default function VoiceAgentAnalyticsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const response = await fetch('/api/v1/voice-agents/analytics', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setAnalytics(data.analytics)
+        }
+      } catch (error) {
+        console.error('Failed to fetch analytics:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchAnalytics()
   }, [])
-
-  const fetchAnalytics = async () => {
-    try {
-      const response = await fetch('/api/v1/voice-agents/analytics', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setAnalytics(data.analytics)
-      }
-    } catch (error) {
-      console.error('Failed to fetch analytics:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   if (loading) {
     return <div className="text-center py-8">Loading analytics...</div>

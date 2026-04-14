@@ -10,7 +10,7 @@ import Link from 'next/link'
 import { apiRequest } from '@/lib/api/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Target, CheckCircle, Mail, MessageSquare, Phone } from 'lucide-react'
+import { Target, CheckCircle, Mail, MessageSquare } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 interface NurtureData {
@@ -22,6 +22,7 @@ interface NurtureData {
 interface NextBestActionCardProps {
   contactId: string
   tenantId: string
+  onOpenMoreActions?: () => void
   contact: {
     name?: string
     email?: string | null
@@ -37,7 +38,7 @@ function formatWhatsAppPhone(phone: string | null | undefined): string {
   return digits.startsWith('91') ? digits : '91' + digits
 }
 
-export function NextBestActionCard({ contactId, tenantId, contact }: NextBestActionCardProps) {
+export function NextBestActionCard({ contactId, tenantId, contact, onOpenMoreActions }: NextBestActionCardProps) {
   const isProspect = contact?.type === 'lead'
   const lastContacted = contact?.lastContactedAt ? new Date(contact.lastContactedAt) : null
   const now = new Date()
@@ -69,7 +70,7 @@ export function NextBestActionCard({ contactId, tenantId, contact }: NextBestAct
       : nurtureAction || (isProspect ? 'Reach out to move this lead forward' : 'Schedule a check-in with this contact')
 
   return (
-    <Card className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
+    <Card data-testid="next-best-action-card" className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold text-slate-900 dark:text-gray-100 flex items-center gap-2">
           <Target className="w-4 h-4 text-indigo-500" />
@@ -101,13 +102,14 @@ export function NextBestActionCard({ contactId, tenantId, contact }: NextBestAct
               </Button>
             </a>
           )}
-          <Link href={`/crm/${tenantId}/Dialer?contactId=${contactId}`}>
-            <Button size="sm" variant="outline" className="gap-1.5 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-              <Phone className="w-3.5 h-3.5" />
-              Log call
-            </Button>
-          </Link>
         </div>
+        <button
+          type="button"
+          onClick={onOpenMoreActions}
+          className="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+        >
+          More actions
+        </button>
         {lastContacted && (
           <p className="text-xs text-slate-500 dark:text-gray-400">
             Last contact: {formatDistanceToNow(lastContacted, { addSuffix: true })}

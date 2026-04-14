@@ -144,6 +144,7 @@ export default function ModelStudioPage() {
             >
               {preview ? (
                 <div className="space-y-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={preview} alt="Garment" className="max-h-48 mx-auto object-contain rounded-lg" />
                   <p className="text-sm text-slate-600 dark:text-slate-400 truncate">{file?.name}</p>
                   <Button variant="outline" size="sm" onClick={() => { setFile(null); setPreview(null); }}>
@@ -264,6 +265,7 @@ export default function ModelStudioPage() {
           <CardContent>
             <div className="space-y-4">
               <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 max-w-md">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={resultUrl} alt="On-model" className="w-full h-auto object-contain" />
               </div>
               <div className="flex gap-2 flex-wrap items-center">

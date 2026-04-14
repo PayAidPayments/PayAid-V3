@@ -194,7 +194,7 @@ export default function ApiKeysPage() {
                 </Button>
               </div>
             </div>
-            <Button onClick={() => setShowNewKey(null)}>I've saved it</Button>
+            <Button onClick={() => setShowNewKey(null)}>I&apos;ve saved it</Button>
           </CardContent>
         </Card>
       )}

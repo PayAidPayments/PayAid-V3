@@ -1,0 +1,8 @@
+{
+  "collected_at_utc": "2026-04-09T09:40:10.298Z",
+  "command": "npm run lint -w dashboard",
+  "exit_code": 1,
+  "timed_out": true,
+  "summary": null,
+  "output_excerpt": "\n> dashboard@0.1.0 lint\n> node ../../node_modules/cross-env/dist/bin/cross-env.js ESLINT_USE_FLAT_CONFIG=true eslint .\n\n\n"
+}

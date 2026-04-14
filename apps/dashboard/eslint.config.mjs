@@ -7,6 +7,20 @@ const next = require('eslint-config-next')
  * Next.js 16 removed `next lint`; use ESLint CLI with the official flat preset.
  * @see https://nextjs.org/docs/app/api-reference/config/eslint
  */
-const config = [...next]
-
-export default config
+/** `react/*` rules must sit in the same flat-config block as `plugins.react` (the `name: 'next'` block in `eslint-config-next`). */
+const nextConfigs = [...next]
+export default nextConfigs.map((block) =>
+  block && block.name === 'next'
+    ? {
+        ...block,
+        rules: {
+          ...(block.rules ?? {}),
+          'react/jsx-key': 'warn',
+          'react/display-name': 'warn',
+          // Temporarily lowered to warnings while we burn down legacy app-router migration debt.
+          'react/no-unescaped-entities': 'warn',
+          'react-hooks/set-state-in-effect': 'warn',
+        },
+      }
+    : block
+)

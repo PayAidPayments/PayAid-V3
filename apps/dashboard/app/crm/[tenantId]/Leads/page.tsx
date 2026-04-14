@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import nextDynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { useContacts } from '@/lib/hooks/use-api'
+import { getAuthHeaders, useContacts } from '@/lib/hooks/use-api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -53,7 +54,13 @@ import { EntityPageLayout } from '@/components/crm/layout/EntityPageLayout'
 import { KPIBar } from '@/components/crm/layout/KPIBar'
 import { RowActionsMenu } from '@/components/crm/RowActionsMenu'
 import { BulkActionsBar } from '@/components/crm/BulkActionsBar'
-import { LeadsKanban } from '@/components/crm/LeadsKanban'
+const LeadsKanban = nextDynamic(
+  () => import('@/components/crm/LeadsKanban').then((m) => m.LeadsKanban),
+  {
+    ssr: false,
+    loading: () => <PageLoading message="Loading board…" fullScreen={false} />,
+  }
+)
 import ContactImportDialog from '@/components/contacts/contact-import-dialog'
 import { DisqualifyLeadModal } from '@/components/crm/DisqualifyLeadModal'
 import { useQueryClient } from '@tanstack/react-query'
@@ -142,6 +149,7 @@ export default function CRMLeadsPage() {
   const actionsMenuRef = useRef<HTMLDivElement>(null)
   const createMenuRef = useRef<HTMLDivElement>(null)
   const profileMenuRef = useRef<HTMLDivElement>(null)
+  const warmedContactIdsRef = useRef<Record<string, boolean>>({})
 
   // Use stage='prospect' for prospects; pass tenantId so list matches current tenant
   const { data, isLoading } = useContacts({ page, limit, search, stage: 'prospect', tenantId: tenantId || undefined })
@@ -178,6 +186,32 @@ export default function CRMLeadsPage() {
     return true
   })
 
+  const warmContactDetail = (contactId: string) => {
+    if (!tenantId || !contactId) return
+    if (warmedContactIdsRef.current[contactId]) return
+    warmedContactIdsRef.current[contactId] = true
+
+    const detailHref = `/crm/${tenantId}/Contacts/${contactId}`
+    router.prefetch(detailHref)
+
+    queryClient
+      .prefetchQuery({
+        queryKey: ['contact', contactId, tenantId],
+        queryFn: async () => {
+          const url = `/api/contacts/${contactId}?tenantId=${encodeURIComponent(tenantId)}`
+          const response = await fetch(url, {
+            headers: getAuthHeaders(),
+          })
+          if (!response.ok) throw new Error('Failed to fetch contact')
+          return response.json()
+        },
+        staleTime: 15_000,
+      })
+      .catch(() => {
+        // Best-effort warmup only.
+      })
+  }
+
   // Close menus when clicking outside (profile menu handled by ModuleTopBar)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -193,8 +227,10 @@ export default function CRMLeadsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Fetch saved filters
+  // Defer saved filters / users until after first paint to reduce contention on cold Leads navigations.
   useEffect(() => {
+    if (!tenantId) return
+
     const fetchSavedFilters = async () => {
       try {
         setLoadingFilters(true)
@@ -203,7 +239,7 @@ export default function CRMLeadsPage() {
 
         const response = await fetch(`/api/crm/saved-filters?entityType=lead`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         })
 
@@ -218,11 +254,6 @@ export default function CRMLeadsPage() {
       }
     }
 
-    fetchSavedFilters()
-  }, [tenantId])
-
-  // Fetch users for owner assignment
-  useEffect(() => {
     const fetchUsers = async () => {
       try {
         const token = useAuthStore.getState().token
@@ -230,7 +261,7 @@ export default function CRMLeadsPage() {
 
         const response = await fetch(`/api/crm/users`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         })
 
@@ -243,7 +274,23 @@ export default function CRMLeadsPage() {
       }
     }
 
-    fetchUsers()
+    const run = () => {
+      void fetchSavedFilters()
+      void fetchUsers()
+    }
+    let idleId: number | ReturnType<typeof setTimeout> | undefined
+    let useIdle = false
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      idleId = window.requestIdleCallback(run, { timeout: 2500 })
+      useIdle = true
+    } else if (typeof window !== 'undefined') {
+      idleId = window.setTimeout(run, 0)
+    }
+    return () => {
+      if (idleId == null || typeof window === 'undefined') return
+      if (useIdle) window.cancelIdleCallback(idleId as number)
+      else clearTimeout(idleId as ReturnType<typeof setTimeout>)
+    }
   }, [tenantId])
 
   const handleLogout = () => {
@@ -1475,7 +1522,13 @@ export default function CRMLeadsPage() {
                                     : '-'}
                               </TableCell>
                               <TableCell className="py-3 px-3 align-middle min-w-0">
-                                <Link href={`/crm/${tenantId}/Contacts/${lead.id}`} className="font-medium text-slate-800 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 truncate block">
+                                <Link
+                                  href={`/crm/${tenantId}/Contacts/${lead.id}`}
+                                  onMouseEnter={() => warmContactDetail(lead.id)}
+                                  onFocus={() => warmContactDetail(lead.id)}
+                                  onPointerDown={() => warmContactDetail(lead.id)}
+                                  className="font-medium text-slate-800 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 truncate block"
+                                >
                                   {lead.name}
                                 </Link>
                               </TableCell>
@@ -1851,7 +1904,7 @@ export default function CRMLeadsPage() {
                         onChange={(e) => setConversionData({ ...conversionData, accountOwnerId: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       >
-                        <option value="">Use prospect's current owner</option>
+                        <option value="">Use prospect&apos;s current owner</option>
                         {users.map((u) => (
                           <option key={u.id} value={u.id}>
                             {u.name || u.email} {u.role && `(${u.role})`}
@@ -1892,7 +1945,7 @@ export default function CRMLeadsPage() {
                         onChange={(e) => setConversionData({ ...conversionData, contactOwnerId: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       >
-                        <option value="">Use prospect's current owner</option>
+                        <option value="">Use prospect&apos;s current owner</option>
                         {users.map((u) => (
                           <option key={u.id} value={u.id}>
                             {u.name || u.email} {u.role && `(${u.role})`}
@@ -1953,7 +2006,7 @@ export default function CRMLeadsPage() {
                         onChange={(e) => setConversionData({ ...conversionData, dealOwnerId: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       >
-                        <option value="">Use prospect's current owner</option>
+                        <option value="">Use prospect&apos;s current owner</option>
                         {users.map((u) => (
                           <option key={u.id} value={u.id}>
                             {u.name || u.email} {u.role && `(${u.role})`}

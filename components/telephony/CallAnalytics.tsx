@@ -35,35 +35,32 @@ export function CallAnalytics({ tenantId }: CallAnalyticsProps) {
   const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d')
 
   useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true)
+        const endDate = new Date()
+        const startDate = new Date()
+        if (period === '7d') {
+          startDate.setDate(startDate.getDate() - 7)
+        } else if (period === '30d') {
+          startDate.setDate(startDate.getDate() - 30)
+        } else {
+          startDate.setDate(startDate.getDate() - 90)
+        }
+        const response = await fetch(
+          `/api/telephony/analytics?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+        )
+        if (!response.ok) throw new Error('Failed to fetch analytics')
+        const data = await response.json()
+        setAnalytics(data.data)
+      } catch (error) {
+        console.error('Error fetching call analytics:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchAnalytics()
   }, [tenantId, period])
-
-  const fetchAnalytics = async () => {
-    try {
-      setLoading(true)
-      const endDate = new Date()
-      const startDate = new Date()
-      
-      if (period === '7d') {
-        startDate.setDate(startDate.getDate() - 7)
-      } else if (period === '30d') {
-        startDate.setDate(startDate.getDate() - 30)
-      } else {
-        startDate.setDate(startDate.getDate() - 90)
-      }
-
-      const response = await fetch(
-        `/api/telephony/analytics?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
-      )
-      if (!response.ok) throw new Error('Failed to fetch analytics')
-      const data = await response.json()
-      setAnalytics(data.data)
-    } catch (error) {
-      console.error('Error fetching call analytics:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60)

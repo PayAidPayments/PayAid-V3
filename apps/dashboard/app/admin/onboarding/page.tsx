@@ -26,29 +26,28 @@ export default function AdminOnboardingPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const fetchProgress = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch('/api/settings/tenant')
+        if (res.ok) {
+          const j = await res.json()
+          const tenant = j.data || j
+          setProgress({
+            company: !!tenant?.name,
+            kyc: !!(tenant?.gstin || tenant?.address),
+            billing: !!tenant?.subscriptionId,
+            users: true,
+          })
+        }
+      } catch {
+        setProgress({})
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchProgress()
   }, [])
-
-  const fetchProgress = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/settings/tenant')
-      if (res.ok) {
-        const j = await res.json()
-        const tenant = j.data || j
-        setProgress({
-          company: !!(tenant?.name),
-          kyc: !!(tenant?.gstin || tenant?.address),
-          billing: !!tenant?.subscriptionId,
-          users: true,
-        })
-      }
-    } catch {
-      setProgress({})
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const completed = Object.values(progress).filter(Boolean).length
   const total = STEPS.length

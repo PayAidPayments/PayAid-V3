@@ -8,10 +8,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { decodeToken } from '@/lib/auth/jwt'
+import { assertIntegrationPermission, toPermissionDeniedResponse } from '@/lib/integrations/permissions'
+import { writeIntegrationAudit } from '@/lib/integrations/audit'
+import { enforceIntegrationRateLimit } from '@/lib/integrations/security'
 
 // GET /api/email/outlook/auth - Initiate Outlook OAuth
 export async function GET(request: NextRequest) {
+  const limited = enforceIntegrationRateLimit(request, {
+    key: 'integration:oauth:outlook:connect',
+    limit: 8,
+    windowMs: 60_000,
+  })
+  if (limited) return limited
+
   try {
+    await assertIntegrationPermission(request, 'configure')
     const { tenantId } = await requireModuleAccess(request, 'communication')
 
     // Get current user ID from request
@@ -52,11 +63,22 @@ export async function GET(request: NextRequest) {
       state, // Pass tenantId:userId in state for callback
     })}`
 
+    await writeIntegrationAudit({
+      tenantId,
+      userId,
+      entityType: 'integration_email_oauth',
+      entityId: `${tenantId}:outlook`,
+      action: 'outlook_oauth_connect_initiated',
+      after: { provider: 'outlook' },
+    })
+
     return NextResponse.json({
       authUrl: microsoftAuthUrl,
       message: 'Outlook OAuth integration - redirect user to authUrl to connect Outlook account',
     })
   } catch (error) {
+    const permissionDenied = toPermissionDeniedResponse(error)
+    if (permissionDenied) return NextResponse.json(permissionDenied.json, { status: permissionDenied.status })
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }

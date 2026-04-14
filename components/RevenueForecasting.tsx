@@ -68,6 +68,7 @@ export function RevenueForecasting() {
 
   useEffect(() => {
     fetchForecast()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [horizonDays])
 
   const fetchForecast = async () => {

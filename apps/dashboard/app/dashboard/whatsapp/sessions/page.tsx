@@ -244,6 +244,7 @@ export default function WhatsAppSessionsPage() {
                   {session.status === 'pending_qr' && session.qrCodeUrl && (
                     <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg">
                       <p className="text-sm font-medium mb-2">Scan QR Code with WhatsApp</p>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={session.qrCodeUrl}
                         alt="WhatsApp QR Code"

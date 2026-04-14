@@ -14,7 +14,7 @@ export default function EditContactPage() {
   const tenantId = params.tenantId as string
   const id = params.id as string
   const router = useRouter()
-  const { data: contact, isLoading } = useContact(id, tenantId)
+  const { data: contact, isLoading, isError, error, refetch } = useContact(id, tenantId)
   const updateContact = useUpdateContact()
   const [formData, setFormData] = useState({
     name: '',
@@ -30,6 +30,7 @@ export default function EditContactPage() {
     postalCode: '',
     country: 'India',
     notes: '',
+    internalNotes: '',
   })
   const [error, setError] = useState('')
 
@@ -49,6 +50,7 @@ export default function EditContactPage() {
         postalCode: contact.postalCode || '',
         country: contact.country || 'India',
         notes: contact.notes || '',
+        internalNotes: contact.internalNotes || '',
       })
     }
   }, [contact])
@@ -76,12 +78,31 @@ export default function EditContactPage() {
     return <PageLoading message="Loading contact..." fullScreen={false} />
   }
 
+  if (isError) {
+    return (
+      <div className="p-6 text-center space-y-4">
+        <p className="text-gray-600 dark:text-gray-400">
+          {error instanceof Error ? error.message : 'Could not load this contact.'}
+        </p>
+        <Button type="button" variant="outline" onClick={() => refetch()}>
+          Try again
+        </Button>
+        <Link href={`/crm/${tenantId}/AllPeople`}>
+          <Button variant="secondary" className="ml-2">Back to All People</Button>
+        </Link>
+      </div>
+    )
+  }
+
   if (!contact) {
     return (
-      <div className="p-6 text-center">
-        <p className="text-gray-600 dark:text-gray-400 mb-4">Contact not found</p>
-        <Link href={`/crm/${tenantId}/Contacts`}>
-          <Button className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">Back to Contacts</Button>
+      <div className="p-6 text-center space-y-4">
+        <p className="text-gray-600 dark:text-gray-400 mb-4">Contact not found or you don&apos;t have access.</p>
+        <Button type="button" variant="outline" onClick={() => refetch()}>
+          Try again
+        </Button>
+        <Link href={`/crm/${tenantId}/AllPeople`}>
+          <Button className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 ml-2">Back to All People</Button>
         </Link>
       </div>
     )
@@ -298,6 +319,24 @@ export default function EditContactPage() {
                   value={formData.notes}
                   onChange={handleChange}
                   rows={4}
+                  className="flex w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                  disabled={updateContact.isPending}
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label htmlFor="internalNotes" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Staff notes (internal)
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Not shown on the activity timeline or to customers — team use only.
+                </p>
+                <textarea
+                  id="internalNotes"
+                  name="internalNotes"
+                  value={formData.internalNotes}
+                  onChange={handleChange}
+                  rows={3}
                   className="flex w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
                   disabled={updateContact.isPending}
                 />

@@ -321,6 +321,7 @@ export default function NewAICampaignPage() {
             {characterImage && (
               <div className="mt-4">
                 <p className="text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Generated Character:</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={characterImage} alt="Character" className="w-32 h-32 object-cover rounded-lg" />
               </div>
             )}

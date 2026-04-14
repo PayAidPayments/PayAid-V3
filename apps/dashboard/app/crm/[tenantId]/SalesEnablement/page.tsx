@@ -59,31 +59,30 @@ export default function SalesEnablementPage() {
   const [createSubmitting, setCreateSubmitting] = useState(false)
 
   useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        setLoading(true)
+        if (!token) return
+
+        const response = await fetch('/api/crm/sales-enablement/resources', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setResources(data.resources || [])
+        } else {
+          setResources([])
+        }
+      } catch (error) {
+        console.error('Error fetching resources:', error)
+        setResources([])
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchResources()
   }, [tenantId, token])
-
-  const fetchResources = async () => {
-    try {
-      setLoading(true)
-      if (!token) return
-
-      const response = await fetch('/api/crm/sales-enablement/resources', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setResources(data.resources || [])
-      } else {
-        setResources([])
-      }
-    } catch (error) {
-      console.error('Error fetching resources:', error)
-      setResources([])
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const getTypeIcon = (type: string) => {
     switch (type) {

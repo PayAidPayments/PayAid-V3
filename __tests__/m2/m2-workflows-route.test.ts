@@ -61,5 +61,21 @@ describe('GET /api/v1/workflows (M2 smoke)', () => {
     expect(body.workflows[0].status).toBe('active')
     expect(service.listWorkflows).toHaveBeenCalledWith('tn_m2')
   })
+
+  it('returns 500 when list workflows fails unexpectedly', async () => {
+    const auth = require('@/lib/middleware/auth')
+    const service = require('@/lib/ai-native/m0-service')
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_m2', userId: 'usr_1' })
+    service.listWorkflows.mockRejectedValue(new Error('workflow list failed'))
+
+    const req = new NextRequest('http://localhost/api/v1/workflows', {
+      headers: { authorization: 'Bearer t' },
+    })
+    const res = await GET(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body.error).toBe('workflow list failed')
+  })
 })
 

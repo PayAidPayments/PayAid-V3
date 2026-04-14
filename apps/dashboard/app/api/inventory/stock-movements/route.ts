@@ -27,23 +27,17 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
 
-    // Build query for stock transfers (these represent movements)
     const where: any = { tenantId }
 
-    if (type) {
-      // Map type to transfer direction
-      if (type === 'IN') {
-        where.toLocationId = locationId || undefined
-      } else if (type === 'OUT') {
-        where.fromLocationId = locationId || undefined
-      }
+    if (type && type !== 'all') {
+      where.movementType = type
     }
 
     if (productId) {
       where.productId = productId
     }
 
-    if (locationId && !type) {
+    if (locationId) {
       where.OR = [
         { fromLocationId: locationId },
         { toLocationId: locationId },
@@ -52,44 +46,18 @@ export async function GET(request: NextRequest) {
 
     if (startDate || endDate) {
       where.createdAt = {}
-      if (startDate) {
-        where.createdAt.gte = new Date(startDate)
-      }
-      if (endDate) {
-        where.createdAt.lte = new Date(endDate)
-      }
+      if (startDate) where.createdAt.gte = new Date(startDate)
+      if (endDate) where.createdAt.lte = new Date(endDate)
     }
 
     const [transfers, total] = await Promise.all([
       prisma.stockTransfer.findMany({
         where,
         include: {
-          product: {
-            select: {
-              id: true,
-              name: true,
-              sku: true,
-            },
-          },
-          fromLocation: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          toLocation: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          createdBy: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
+          product: { select: { id: true, name: true, sku: true } },
+          fromLocation: { select: { id: true, name: true } },
+          toLocation: { select: { id: true, name: true } },
+          createdBy: { select: { id: true, name: true, email: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
@@ -98,36 +66,35 @@ export async function GET(request: NextRequest) {
       prisma.stockTransfer.count({ where }),
     ])
 
-    // Transform transfers into stock movements format
     const movements = transfers.map((transfer) => {
-      // Determine movement type based on transfer
-      let movementType: 'IN' | 'OUT' | 'TRANSFER' = 'TRANSFER'
-      let warehouseName = null
+      const resolvedType = (transfer.movementType as 'IN' | 'OUT' | 'TRANSFER' | 'ADJUSTMENT') ||
+        (transfer.fromLocationId && transfer.toLocationId ? 'TRANSFER'
+          : transfer.toLocationId ? 'IN'
+          : transfer.fromLocationId ? 'OUT'
+          : 'ADJUSTMENT')
 
-      if (transfer.fromLocationId && transfer.toLocationId) {
-        movementType = 'TRANSFER'
-        warehouseName = `${transfer.fromLocation?.name} → ${transfer.toLocation?.name}`
-      } else if (transfer.toLocationId) {
-        movementType = 'IN'
-        warehouseName = transfer.toLocation?.name || null
-      } else if (transfer.fromLocationId) {
-        movementType = 'OUT'
-        warehouseName = transfer.fromLocation?.name || null
+      let warehouseName: string | null = null
+      if (resolvedType === 'TRANSFER') {
+        warehouseName = `${transfer.fromLocation?.name ?? ''} → ${transfer.toLocation?.name ?? ''}`
+      } else if (resolvedType === 'IN') {
+        warehouseName = transfer.toLocation?.name ?? null
+      } else {
+        warehouseName = transfer.fromLocation?.name ?? null
       }
 
       return {
         id: transfer.id,
         productId: transfer.productId,
         productName: transfer.product.name,
-        type: movementType,
+        type: resolvedType,
         quantity: transfer.quantity,
         warehouseName,
         fromLocationId: transfer.fromLocationId,
-        fromLocationName: transfer.fromLocation?.name || null,
+        fromLocationName: transfer.fromLocation?.name ?? null,
         toLocationId: transfer.toLocationId,
-        toLocationName: transfer.toLocation?.name || null,
-        reason: transfer.notes || null,
-        referenceNumber: transfer.transferNumber || null,
+        toLocationName: transfer.toLocation?.name ?? null,
+        reason: (transfer as any).reason ?? transfer.notes ?? null,
+        referenceNumber: (transfer as any).referenceNumber ?? transfer.transferNumber ?? null,
         createdBy: transfer.createdBy,
         date: transfer.createdAt,
         status: transfer.status,
@@ -187,10 +154,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Location not found' }, { status: 404 })
     }
 
+    // Generate a unique transfer/movement number
+    const movementNumber = `SM-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+
     // Handle different movement types
     if (validated.type === 'IN') {
-      // Stock In - increase inventory
-      const inventory = await prisma.inventoryLocation.upsert({
+      await prisma.inventoryLocation.upsert({
         where: {
           tenantId_productId_locationId: {
             tenantId,
@@ -198,9 +167,7 @@ export async function POST(request: NextRequest) {
             locationId: validated.locationId,
           },
         },
-        update: {
-          quantity: { increment: validated.quantity },
-        },
+        update: { quantity: { increment: validated.quantity } },
         create: {
           tenantId,
           productId: validated.productId,
@@ -209,33 +176,7 @@ export async function POST(request: NextRequest) {
           reorderLevel: product.reorderLevel || 10,
         },
       })
-
-      // Update main product quantity
-      const totalQuantity = await prisma.inventoryLocation.aggregate({
-        where: { tenantId, productId: validated.productId },
-        _sum: { quantity: true },
-      })
-
-      await prisma.product.update({
-        where: { id: validated.productId },
-        data: {
-          quantity: totalQuantity._sum.quantity || 0,
-        },
-      })
-
-      return NextResponse.json({
-        movement: {
-          id: inventory.id,
-          productId: validated.productId,
-          productName: product.name,
-          type: 'IN',
-          quantity: validated.quantity,
-          warehouseName: location.name,
-          date: new Date(),
-        },
-      }, { status: 201 })
     } else if (validated.type === 'OUT') {
-      // Stock Out - decrease inventory
       const inventory = await prisma.inventoryLocation.findUnique({
         where: {
           tenantId_productId_locationId: {
@@ -247,13 +188,10 @@ export async function POST(request: NextRequest) {
       })
 
       if (!inventory || inventory.quantity < validated.quantity) {
-        return NextResponse.json(
-          { error: 'Insufficient stock' },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: 'Insufficient stock' }, { status: 400 })
       }
 
-      const updated = await prisma.inventoryLocation.update({
+      await prisma.inventoryLocation.update({
         where: {
           tenantId_productId_locationId: {
             tenantId,
@@ -261,38 +199,11 @@ export async function POST(request: NextRequest) {
             locationId: validated.locationId,
           },
         },
-        data: {
-          quantity: { decrement: validated.quantity },
-        },
+        data: { quantity: { decrement: validated.quantity } },
       })
-
-      // Update main product quantity
-      const totalQuantity = await prisma.inventoryLocation.aggregate({
-        where: { tenantId, productId: validated.productId },
-        _sum: { quantity: true },
-      })
-
-      await prisma.product.update({
-        where: { id: validated.productId },
-        data: {
-          quantity: totalQuantity._sum.quantity || 0,
-        },
-      })
-
-      return NextResponse.json({
-        movement: {
-          id: updated.id,
-          productId: validated.productId,
-          productName: product.name,
-          type: 'OUT',
-          quantity: validated.quantity,
-          warehouseName: location.name,
-          date: new Date(),
-        },
-      }, { status: 201 })
     } else {
       // ADJUSTMENT - set specific quantity
-      const inventory = await prisma.inventoryLocation.upsert({
+      await prisma.inventoryLocation.upsert({
         where: {
           tenantId_productId_locationId: {
             tenantId,
@@ -300,9 +211,7 @@ export async function POST(request: NextRequest) {
             locationId: validated.locationId,
           },
         },
-        update: {
-          quantity: validated.quantity,
-        },
+        update: { quantity: validated.quantity },
         create: {
           tenantId,
           productId: validated.productId,
@@ -311,32 +220,50 @@ export async function POST(request: NextRequest) {
           reorderLevel: product.reorderLevel || 10,
         },
       })
-
-      // Update main product quantity
-      const totalQuantity = await prisma.inventoryLocation.aggregate({
-        where: { tenantId, productId: validated.productId },
-        _sum: { quantity: true },
-      })
-
-      await prisma.product.update({
-        where: { id: validated.productId },
-        data: {
-          quantity: totalQuantity._sum.quantity || 0,
-        },
-      })
-
-      return NextResponse.json({
-        movement: {
-          id: inventory.id,
-          productId: validated.productId,
-          productName: product.name,
-          type: 'ADJUSTMENT',
-          quantity: validated.quantity,
-          warehouseName: location.name,
-          date: new Date(),
-        },
-      }, { status: 201 })
     }
+
+    // Roll up product total quantity
+    const totalQuantity = await prisma.inventoryLocation.aggregate({
+      where: { tenantId, productId: validated.productId },
+      _sum: { quantity: true },
+    })
+    await prisma.product.update({
+      where: { id: validated.productId },
+      data: { quantity: totalQuantity._sum.quantity || 0 },
+    })
+
+    // Persist an audit record in StockTransfer so the list page can display it
+    const transfer = await prisma.stockTransfer.create({
+      data: {
+        tenantId,
+        transferNumber: movementNumber,
+        movementType: validated.type,
+        productId: validated.productId,
+        quantity: validated.quantity,
+        // IN → toLocation only; OUT → fromLocation only; ADJUSTMENT → toLocation
+        fromLocationId: validated.type === 'OUT' ? validated.locationId : null,
+        toLocationId: validated.type !== 'OUT' ? validated.locationId : null,
+        status: 'COMPLETED',
+        reason: validated.reason || null,
+        notes: validated.notes || null,
+        referenceNumber: validated.referenceNumber || null,
+        transferDate: new Date(),
+        createdById: userId || null,
+      },
+    })
+
+    return NextResponse.json({
+      movement: {
+        id: transfer.id,
+        productId: validated.productId,
+        productName: product.name,
+        type: validated.type,
+        quantity: validated.quantity,
+        warehouseName: location.name,
+        referenceNumber: movementNumber,
+        date: transfer.createdAt,
+      },
+    }, { status: 201 })
   } catch (error: any) {
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)

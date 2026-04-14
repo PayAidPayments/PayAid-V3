@@ -9,7 +9,7 @@ const optionalEmail = z.union([z.string().email(), z.literal('')]).optional().tr
 
 const createEmployeeSchema = z.object({
   // Basic Information
-  employeeCode: z.string().min(1),
+  employeeCode: z.string().min(1).optional(),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   officialEmail: z.string().email(),

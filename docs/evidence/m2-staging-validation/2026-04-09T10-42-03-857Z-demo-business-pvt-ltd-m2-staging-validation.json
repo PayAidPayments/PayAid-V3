@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "collected_at_utc": "2026-04-09T10:42:03.857Z",
+    "tenant_id": "demo-business-pvt-ltd",
+    "checks": {
+      "marketplace_min_8_apps": {
+        "pass": false,
+        "total_catalog_apps": 0,
+        "installed_count": 0,
+        "first_8_app_ids": [],
+        "note": "Catalog below threshold or unavailable."
+      },
+      "calls_crm_linkage_present_in_sample": {
+        "pass": false,
+        "sampled_calls": 0,
+        "linked_calls": 0,
+        "linked_ratio": 0,
+        "sample_linked_call_ids": [],
+        "note": "No linked calls found in sample (or endpoint failed)."
+      },
+      "sdr_audit_trace_present": {
+        "pass": false,
+        "sampled_actions": 0,
+        "sdr_run_actions": 0,
+        "sample_action_ids": [],
+        "note": "No SDR run audit actions found in sample."
+      },
+      "calls_crm_fk_db_integrity": {
+        "skipped": true,
+        "pass": true,
+        "note": "Set M2_VALIDATE_CALL_FK=1 with DATABASE_URL and PAYAID_TENANT_ID to verify AICall → Contact/Deal integrity."
+      }
+    },
+    "overall": {
+      "pass": false
+    }
+  },
+  "raw": {
+    "marketplace": {
+      "url": "http://localhost:3000/api/v1/marketplace/apps",
+      "status": 0,
+      "ok": false,
+      "payload": {
+        "error": "This operation was aborted",
+        "code": 20,
+        "retry_attempts": 2
+      },
+      "attempt": 1
+    },
+    "calls": {
+      "url": "http://localhost:3000/api/v1/calls?limit=100&page=1",
+      "status": 401,
+      "ok": false,
+      "payload": {
+        "error": "Invalid or expired token. Please log out and log back in.",
+        "message": "Invalid or expired token. Please log out and log back in.",
+        "code": "INVALID_TOKEN",
+        "moduleId": "crm"
+      },
+      "attempt": 0
+    },
+    "sdr_audit": {
+      "url": "http://localhost:3000/api/v1/audit/actions?entityType=sdr_run&limit=100",
+      "status": 401,
+      "ok": false,
+      "payload": {
+        "error": "Invalid or expired token. Please log out and log back in.",
+        "message": "Invalid or expired token. Please log out and log back in.",
+        "code": "INVALID_TOKEN",
+        "moduleId": "crm"
+      },
+      "attempt": 0
+    }
+  }
+}

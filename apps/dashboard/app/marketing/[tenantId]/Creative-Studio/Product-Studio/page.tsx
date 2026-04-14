@@ -248,6 +248,7 @@ export default function ProductStudioPage() {
             >
               {mode === 'single' && preview ? (
                 <div className="space-y-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={preview} alt="Product" className="max-h-48 mx-auto object-contain rounded-lg" />
                   <p className="text-sm text-slate-600 dark:text-slate-400 truncate">{file?.name}</p>
                   <Button variant="outline" size="sm" onClick={() => { setFile(null); setPreview(null); }}>
@@ -394,6 +395,7 @@ export default function ProductStudioPage() {
                 <div className="space-y-2">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Main</p>
                   <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={result.main} alt="Main" className="w-full h-48 object-contain" />
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -428,6 +430,7 @@ export default function ProductStudioPage() {
                 <div className="space-y-2">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Lifestyle</p>
                   <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={result.lifestyle} alt="Lifestyle" className="w-full h-48 object-contain" />
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -462,6 +465,7 @@ export default function ProductStudioPage() {
                 <div className="space-y-2">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Infographic</p>
                   <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={result.infographic} alt="Infographic" className="w-full h-48 object-contain" />
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -514,6 +518,7 @@ export default function ProductStudioPage() {
                     <div className="space-y-2">
                       <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Main</p>
                       <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={item.set.main} alt="Main" className="w-full h-40 object-contain" />
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -532,6 +537,7 @@ export default function ProductStudioPage() {
                     <div className="space-y-2">
                       <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Lifestyle</p>
                       <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={item.set.lifestyle} alt="Lifestyle" className="w-full h-40 object-contain" />
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -550,6 +556,7 @@ export default function ProductStudioPage() {
                     <div className="space-y-2">
                       <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Infographic</p>
                       <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={item.set.infographic} alt="Infographic" className="w-full h-40 object-contain" />
                       </div>
                       <div className="flex flex-wrap gap-2">

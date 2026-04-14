@@ -52,73 +52,35 @@ export default function NewAppointmentPage() {
   })
 
   useEffect(() => {
+    const fetchContacts = async () => {
+      try {
+        const response = await fetch('/api/appointments/contacts', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setContacts(data.contacts || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch contacts:', error)
+      }
+    }
+    const fetchServices = async () => {
+      try {
+        const response = await fetch('/api/appointments/services', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setServices(data.services || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch services:', error)
+      }
+    }
     fetchContacts()
     fetchServices()
   }, [])
-
-  useEffect(() => {
-    if (selectedContactId) {
-      const contact = contacts.find(c => c.id === selectedContactId)
-      if (contact) {
-        setFormData(prev => ({
-          ...prev,
-          contactName: contact.name,
-          contactEmail: contact.email || '',
-          contactPhone: contact.phone || '',
-        }))
-      }
-    }
-  }, [selectedContactId, contacts])
-
-  useEffect(() => {
-    if (selectedServiceId) {
-      const service = services.find(s => s.id === selectedServiceId)
-      if (service) {
-        const startTime = new Date(`2000-01-01T${formData.startTime}`)
-        const endTime = new Date(startTime.getTime() + service.duration * 60000)
-        const endTimeStr = `${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`
-        
-        setFormData(prev => ({
-          ...prev,
-          duration: service.duration,
-          endTime: endTimeStr,
-          amount: service.price.toString(),
-        }))
-      }
-    }
-  }, [selectedServiceId, services, formData.startTime])
-
-  const fetchContacts = async () => {
-    try {
-      const response = await fetch('/api/appointments/contacts', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setContacts(data.contacts || [])
-      }
-    } catch (error) {
-      console.error('Failed to fetch contacts:', error)
-    }
-  }
-
-  const fetchServices = async () => {
-    try {
-      const response = await fetch('/api/appointments/services', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setServices(data.services || [])
-      }
-    } catch (error) {
-      console.error('Failed to fetch services:', error)
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

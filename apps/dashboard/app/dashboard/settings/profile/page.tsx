@@ -251,6 +251,7 @@ export default function ProfileSettingsPage() {
                 <div className="flex items-center gap-4">
                   {formData.avatar && (
                     <div className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={formData.avatar}
                         alt="Profile"

@@ -66,6 +66,7 @@ export default function CRMSequencesPage() {
 
   useEffect(() => {
     if (token) void loadSequences()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   async function createSequence() {

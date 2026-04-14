@@ -25,23 +25,22 @@ export function FlagHistory({ flagId, onClose }: FlagHistoryProps) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const fetchHistory = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/super-admin/feature-flags/${flagId}/history`)
+        if (res.ok) {
+          const json = await res.json()
+          setHistory(json.data || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch history:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchHistory()
   }, [flagId])
-
-  const fetchHistory = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/super-admin/feature-flags/${flagId}/history`)
-      if (res.ok) {
-        const json = await res.json()
-        setHistory(json.data || [])
-      }
-    } catch (error) {
-      console.error('Failed to fetch history:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   if (loading) {
     return (

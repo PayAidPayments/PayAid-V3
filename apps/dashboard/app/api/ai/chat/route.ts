@@ -11,13 +11,16 @@ import { mediumPriorityQueue } from '@/lib/queue/bull'
 
 const chatSchema = z.object({
   message: z.string().min(1),
-  context: z.object({
-    module: z.string().optional(),
-    tenantId: z.string().optional(),
-    page: z.string().optional(),
-    businessName: z.string().optional(),
-    entities: z.array(z.string()).optional(),
-  }).optional(),
+  context: z
+    .object({
+      module: z.string().optional(),
+      tenantId: z.string().optional(),
+      page: z.string().optional(),
+      businessName: z.string().optional(),
+      entities: z.array(z.string()).optional(),
+    })
+    .passthrough()
+    .optional(),
 })
 
 // POST /api/ai/chat - Chat with AI assistant
@@ -347,12 +350,23 @@ export async function POST(request: NextRequest) {
 
 function buildSystemPrompt(
   tenantId: string,
-  context?: { module?: string; tenantId?: string; page?: string; businessName?: string; entities?: string[] }
+  context?: {
+    module?: string
+    tenantId?: string
+    page?: string
+    businessName?: string
+    entities?: string[]
+    pageExtra?: unknown
+  }
 ): string {
   const moduleLabel = context?.module || 'general'
   const pageLabel = context?.page || 'Home'
   const businessName = context?.businessName || 'this company'
   const entitiesList = context?.entities?.length ? context.entities.join(', ') : 'data on this page'
+  const pageExtraSnap =
+    context?.pageExtra != null && typeof context.pageExtra === 'object'
+      ? `\nSCREEN DATA (use these counts; do not invent): ${JSON.stringify(context.pageExtra)}`
+      : ''
   const pageScopedIntro =
     context?.module && context?.page
       ? `
@@ -372,6 +386,7 @@ You ONLY help with this company's data on this page.
 - Use tenant_id = ${tenantId} for data.
 - REFUSE non-business questions with: "I can only help with your company data on this page."
 - When referencing numbers, ALWAYS match the underlying API responses for this page.
+${pageExtraSnap}
 `
       : ''
 

@@ -17,7 +17,13 @@ export default function CRMAccountsPage() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   // Accounts page shows customers - use stage filter instead of type
-  const { data, isLoading } = useContacts({ page, limit: 20, search, stage: 'customer' })
+  const { data, isLoading } = useContacts({
+    page,
+    limit: 20,
+    search,
+    stage: 'customer',
+    tenantId: tenantId || undefined,
+  })
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">Loading...</div>

@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 import { useState, useMemo, useEffect, useRef } from 'react'
+import nextDynamic from 'next/dynamic'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useDeals, useDeleteDeal } from '@/lib/hooks/use-api'
@@ -14,12 +15,19 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { format, isThisMonth, isPast, isWithinInterval } from 'date-fns'
+import { format } from 'date-fns'
 import { Briefcase, TrendingUp, CheckCircle2, XCircle, Calendar, DollarSign, AlertCircle, Filter, LayoutGrid, List, Columns3 } from 'lucide-react'
 // ModuleTopBar is now in layout.tsx
 import { PageLoading } from '@/components/ui/loading'
-import { getTimePeriodBounds, validateFilterParams, type DealCategory, type TimePeriod } from '@/lib/utils/crm-filters'
-import { DealsKanban } from '@/components/crm/DealsKanban'
+import { getTimePeriodBounds, validateFilterParams } from '@/lib/utils/crm-filters'
+
+const DealsKanban = nextDynamic(
+  () => import('@/components/crm/DealsKanban').then((m) => m.DealsKanban),
+  {
+    ssr: false,
+    loading: () => <PageLoading message="Loading board…" fullScreen={false} />,
+  }
+)
 
 // Deal Row Component
 function DealRow({ deal, tenantId, onDelete }: { deal: any; tenantId: string; onDelete: (id: string) => void }) {
@@ -84,25 +92,50 @@ function DealRow({ deal, tenantId, onDelete }: { deal: any; tenantId: string; on
 }
 
 export default function CRMDealsPage() {
-  try {
     const params = useParams()
     const searchParams = useSearchParams()
     const tenantId = params?.tenantId as string
+    const urlContactId = searchParams?.get('contactId')?.trim() || undefined
+    const urlContactIds = searchParams?.get('contactIds')?.trim() || undefined
+    const urlAccountId = searchParams?.get('accountId')?.trim() || undefined
+    const fromContact360 = searchParams?.get('from') === 'contact360'
     const { token } = useAuthStore()
     const [uiPage, setUiPage] = useState(1)
+    const [rowsPerPage, setRowsPerPage] = useState<10 | 20 | 50 | 100>(10)
     const [stageFilter, setStageFilter] = useState<string>('')
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
     const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
     const queryClient = useQueryClient()
-    // Use bypassCache on initial load to ensure fresh data after seeding.
-    // Pass tenantId from the route so the API returns deals for the tenant we're viewing.
-    const { data, isLoading, error: dealsError, refetch } = useDeals({ 
-      page: 1, 
-      limit: 1000, 
-      stage: stageFilter || undefined,
-      bypassCache: true, // Always bypass cache to get fresh data
+
+    const periodCategoryForApi =
+      selectedCategory === 'created' ||
+      selectedCategory === 'closing' ||
+      selectedCategory === 'won' ||
+      selectedCategory === 'lost'
+        ? selectedCategory
+        : undefined
+
+    const listStageForApi = selectedCategory?.startsWith('stage-')
+      ? selectedCategory.replace('stage-', '')
+      : stageFilter || undefined
+
+    // Paginated fetch + cache; period KPIs + drill-down filters come from the API (see /api/deals).
+    const { data, isLoading, error: dealsError, refetch } = useDeals({
+      page: uiPage,
+      limit: rowsPerPage,
+      stage: listStageForApi || undefined,
+      periodCategory: periodCategoryForApi,
+      timePeriod,
+      bypassCache: false,
       tenantId: tenantId || undefined,
+      contactId: urlContactIds || urlAccountId ? undefined : urlContactId,
+      contactIds: urlContactIds,
+      accountId: urlAccountId,
     })
+
+    useEffect(() => {
+      setUiPage(1)
+    }, [selectedCategory, stageFilter, rowsPerPage, timePeriod, urlContactId, urlContactIds, urlAccountId])
     const deleteDeal = useDeleteDeal()
     const hasCheckedDataRef = useRef(false)
     const hasTriggeredSeedRef = useRef(false)
@@ -112,7 +145,6 @@ export default function CRMDealsPage() {
     const [diagnosticsResult, setDiagnosticsResult] = useState<string | null>(null)
     const hasTriggeredEnsureDemoRef = useRef(false)
     const [viewMode, setViewMode] = useState<'list' | 'pipeline' | 'board'>('list')
-    const [rowsPerPage, setRowsPerPage] = useState<10 | 20 | 50 | 100>(10)
     const [sortKey, setSortKey] = useState<'value' | 'stage' | 'expectedCloseDate'>('expectedCloseDate')
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
     const [selectedDealIds, setSelectedDealIds] = useState<string[]>([])
@@ -198,211 +230,7 @@ export default function CRMDealsPage() {
     }
   }
 
-  // Use shared filter utility for time period bounds
-  const getTimePeriodBoundsLocal = () => {
-    return getTimePeriodBounds(timePeriod)
-  }
-
-  // Categorize deals using shared filter logic
-  const categorizedDeals = useMemo(() => {
-    if (!data?.deals) {
-      console.log('[DEALS_PAGE] No deals data:', { data, hasData: !!data, hasDeals: !!data?.deals })
-      return {
-        created: [],
-        closing: [],
-        won: [],
-        lost: [],
-        allWon: [],
-        allLost: [],
-        byStage: {} as Record<string, any[]>,
-        all: []
-      }
-    }
-
-    const period = getTimePeriodBounds()
-    const periodStart = period.start
-    const periodEnd = period.end
-    
-    // Debug logging
-    console.log('[DEALS_PAGE] Categorizing deals:', {
-      totalDeals: data.deals.length,
-      timePeriod,
-      periodStart: periodStart.toISOString(),
-      periodEnd: periodEnd.toISOString(),
-      sampleDeal: data.deals[0] ? {
-        id: data.deals[0].id,
-        name: data.deals[0].name,
-        stage: data.deals[0].stage,
-        createdAt: data.deals[0].createdAt,
-        expectedCloseDate: data.deals[0].expectedCloseDate,
-        actualCloseDate: data.deals[0].actualCloseDate,
-      } : null
-    })
-
-    const created: any[] = []
-    const closing: any[] = []
-    const won: any[] = []
-    const lost: any[] = []
-    const allWon: any[] = []
-    const allLost: any[] = []
-    const byStage: Record<string, any[]> = {}
-
-    data.deals.forEach((deal: any) => {
-      // Created in period
-      if (deal.createdAt) {
-        const createdDate = new Date(deal.createdAt)
-        if (isWithinInterval(createdDate, { start: periodStart, end: periodEnd })) {
-          created.push(deal)
-        }
-      }
-
-      // Closing in period
-      if (deal.expectedCloseDate) {
-        const closeDate = new Date(deal.expectedCloseDate)
-        if (isWithinInterval(closeDate, { start: periodStart, end: periodEnd })) {
-          closing.push(deal)
-        }
-      }
-
-      // Won deals
-      if (deal.stage === 'won') {
-        allWon.push(deal)
-        // Won in period - prioritize actualCloseDate, then closedAt, then updatedAt, then createdAt
-        // For revenue calculation, we need to check when the deal was actually closed/won
-        const closedDate = deal.actualCloseDate || deal.closedAt || deal.updatedAt || (deal.createdAt && deal.stage === 'won' ? deal.createdAt : null)
-        if (closedDate) {
-          try {
-            const closed = new Date(closedDate)
-            // Validate date and check if it's within the period
-            if (!isNaN(closed.getTime())) {
-              // Check if date is within period (inclusive of start and end)
-              const dateTime = closed.getTime()
-              const startTime = periodStart.getTime()
-              const endTime = periodEnd.getTime()
-              if (dateTime >= startTime && dateTime <= endTime) {
-                won.push(deal)
-              }
-            }
-          } catch (e) {
-            // If date parsing fails, skip this deal for period filtering
-            console.warn('Failed to parse closed date for deal:', deal.id, closedDate, e)
-          }
-        } else {
-          // If no close date but deal is won, include it if created in period (fallback)
-          if (deal.createdAt) {
-            try {
-              const created = new Date(deal.createdAt)
-              if (!isNaN(created.getTime())) {
-                const dateTime = created.getTime()
-                const startTime = periodStart.getTime()
-                const endTime = periodEnd.getTime()
-                if (dateTime >= startTime && dateTime <= endTime) {
-                  won.push(deal)
-                }
-              }
-            } catch (e) {
-              console.warn('Failed to parse created date for won deal:', deal.id, e)
-            }
-          }
-        }
-      }
-
-      // Lost deals
-      if (deal.stage === 'lost') {
-        allLost.push(deal)
-        // Lost in period - prioritize actualCloseDate, then updatedAt, then createdAt
-        const closedDate = deal.actualCloseDate || deal.updatedAt || (deal.createdAt && deal.stage === 'lost' ? deal.createdAt : null)
-        if (closedDate) {
-          try {
-            const closed = new Date(closedDate)
-            // Validate date and check if it's within the period
-            if (!isNaN(closed.getTime())) {
-              // Check if date is within period (inclusive of start and end)
-              const dateTime = closed.getTime()
-              const startTime = periodStart.getTime()
-              const endTime = periodEnd.getTime()
-              if (dateTime >= startTime && dateTime <= endTime) {
-                lost.push(deal)
-              }
-            }
-          } catch (e) {
-            // If date parsing fails, skip this deal for period filtering
-            console.warn('Failed to parse closed date for deal:', deal.id, closedDate, e)
-          }
-        }
-      }
-
-      // By stage
-      const stage = deal.stage || 'lead'
-      if (!byStage[stage]) {
-        byStage[stage] = []
-      }
-      byStage[stage].push(deal)
-    })
-
-    return {
-      created: created.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-      closing: closing.sort((a, b) => {
-        if (!a.expectedCloseDate) return 1
-        if (!b.expectedCloseDate) return -1
-        return new Date(a.expectedCloseDate).getTime() - new Date(b.expectedCloseDate).getTime()
-      }),
-      won: won.sort((a, b) => {
-        const aDate = a.actualCloseDate || a.updatedAt
-        const bDate = b.actualCloseDate || b.updatedAt
-        if (!aDate) return 1
-        if (!bDate) return -1
-        return new Date(bDate).getTime() - new Date(aDate).getTime()
-      }),
-      lost: lost.sort((a, b) => {
-        const aDate = a.actualCloseDate || a.updatedAt
-        const bDate = b.actualCloseDate || b.updatedAt
-        if (!aDate) return 1
-        if (!bDate) return -1
-        return new Date(bDate).getTime() - new Date(aDate).getTime()
-      }),
-      allWon: allWon.sort((a, b) => {
-        const aDate = a.actualCloseDate || a.updatedAt
-        const bDate = b.actualCloseDate || b.updatedAt
-        if (!aDate) return 1
-        if (!bDate) return -1
-        return new Date(bDate).getTime() - new Date(aDate).getTime()
-      }),
-      allLost: allLost.sort((a, b) => {
-        const aDate = a.actualCloseDate || a.updatedAt
-        const bDate = b.actualCloseDate || b.updatedAt
-        if (!aDate) return 1
-        if (!bDate) return -1
-        return new Date(bDate).getTime() - new Date(aDate).getTime()
-      }),
-      byStage,
-      all: data.deals
-    }
-  }, [data?.deals, timePeriod])
-
-  const stats = useMemo(() => {
-    const all = categorizedDeals.all
-    const period = getTimePeriodBoundsLocal()
-    const totalValue = all.reduce((sum: number, deal: any) => sum + (deal.value || 0), 0)
-    const wonValue = categorizedDeals.won.reduce((sum: number, deal: any) => sum + (deal.value || 0), 0)
-    const closingValue = categorizedDeals.closing.reduce((sum: number, deal: any) => sum + (deal.value || 0), 0)
-
-    return {
-      total: all.length,
-      created: categorizedDeals.created.length,
-      closing: categorizedDeals.closing.length,
-      won: categorizedDeals.won.length,
-      lost: categorizedDeals.lost.length,
-      totalValue,
-      wonValue,
-      closingValue,
-      periodLabel: period.label,
-      byStage: Object.keys(categorizedDeals.byStage).reduce((acc, stage) => {
-        acc[stage] = categorizedDeals.byStage[stage].length
-        return acc
-      }, {} as Record<string, number>)
-    }
-  }, [categorizedDeals, timePeriod])
+  const getTimePeriodBoundsLocal = () => getTimePeriodBounds(timePeriod)
 
   const pipeline = useMemo(() => {
     const stageOrder = ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
@@ -414,24 +242,76 @@ export default function CRMDealsPage() {
       won: { label: 'Won', color: 'bg-emerald-500' },
       lost: { label: 'Lost', color: 'bg-red-500' },
     }
+    const summary = Array.isArray(data?.pipelineSummary) ? data!.pipelineSummary! : []
+    const byStage: Record<string, { count: number; value: number }> = {}
+    for (const row of summary) {
+      const st = String((row as { stage?: string }).stage || 'lead')
+      byStage[st] = {
+        count: Number((row as { _count?: { id?: number } })._count?.id ?? 0),
+        value: Number((row as { _sum?: { value?: number | null } })._sum?.value ?? 0),
+      }
+    }
     const segments = stageOrder.map((stage) => {
-      const dealsInStage = categorizedDeals.byStage?.[stage] ?? []
-      const value = dealsInStage.reduce((s: number, d: any) => s + (Number(d?.value) || 0), 0)
+      const meta = byStage[stage] ?? { count: 0, value: 0 }
       return {
         stage,
         label: stageMeta[stage]?.label ?? stage,
         color: stageMeta[stage]?.color ?? 'bg-slate-400',
-        count: dealsInStage.length,
-        value,
+        count: meta.count,
+        value: meta.value,
       }
     })
     const totalValue = segments.reduce((s, seg) => s + seg.value, 0)
     return { totalValue, segments }
-  }, [categorizedDeals.byStage])
+  }, [data?.pipelineSummary])
+
+  const stats = useMemo(() => {
+    const period = getTimePeriodBoundsLocal()
+    const ps = data?.periodStats as
+      | {
+          created: { count: number; value: number }
+          closing: { count: number; value: number }
+          won: { count: number; value: number }
+          lost: { count: number; value: number }
+        }
+      | undefined
+    const totalFromPager = data?.pagination?.total ?? 0
+    const byStage: Record<string, number> = {}
+    for (const seg of pipeline.segments) {
+      byStage[seg.stage] = seg.count
+    }
+    if (ps) {
+      return {
+        total: totalFromPager,
+        created: ps.created.count,
+        closing: ps.closing.count,
+        won: ps.won.count,
+        lost: ps.lost.count,
+        totalValue: pipeline.totalValue,
+        wonValue: ps.won.value,
+        closingValue: ps.closing.value,
+        periodLabel: period.label,
+        byStage,
+      }
+    }
+    return {
+      total: totalFromPager,
+      created: 0,
+      closing: 0,
+      won: 0,
+      lost: 0,
+      totalValue: pipeline.totalValue,
+      wonValue: 0,
+      closingValue: 0,
+      periodLabel: period.label,
+      byStage,
+    }
+  }, [data?.periodStats, data?.pagination?.total, pipeline, timePeriod])
 
   const topClosingDeals = useMemo(() => {
-    return (categorizedDeals.closing ?? []).slice(0, 10)
-  }, [categorizedDeals.closing])
+    const t = data?.topClosingDeals
+    return Array.isArray(t) ? t : []
+  }, [data?.topClosingDeals])
 
   // Keep hook order stable across renders; gate UI after all hooks are declared.
   if (dealsError) {
@@ -458,12 +338,10 @@ export default function CRMDealsPage() {
     return list
   }, [deals, sortKey, sortDir])
 
-  const totalDeals = sortedDeals.length
+  const totalDeals = data?.pagination?.total ?? sortedDeals.length
   const pageCount = Math.max(1, Math.ceil(totalDeals / rowsPerPage))
   const currentPage = Math.min(Math.max(1, uiPage), pageCount)
-  const pageStart = (currentPage - 1) * rowsPerPage
-  const pageEnd = Math.min(totalDeals, pageStart + rowsPerPage)
-  const pagedDeals = sortedDeals.slice(pageStart, pageEnd)
+  const pagedDeals = sortedDeals
 
   useEffect(() => {
     if (uiPage !== currentPage) setUiPage(currentPage)
@@ -493,22 +371,8 @@ export default function CRMDealsPage() {
     }
   }
 
-  // Get deals to display based on selected category
-  const getDealsToDisplay = () => {
-    if (!selectedCategory) return null
-
-    if (selectedCategory === 'created') return categorizedDeals.created
-    if (selectedCategory === 'closing') return categorizedDeals.closing
-    if (selectedCategory === 'won') return categorizedDeals.won
-    if (selectedCategory === 'lost') return categorizedDeals.lost
-    if (selectedCategory.startsWith('stage-')) {
-      const stage = selectedCategory.replace('stage-', '')
-      return categorizedDeals.byStage[stage] || []
-    }
-    return null
-  }
-
-  const displayedDeals = getDealsToDisplay()
+  const displayedDeals = selectedCategory ? sortedDeals : null
+  const categoryListTotal = data?.pagination?.total ?? sortedDeals.length
 
   // Handle errors/loading after all hooks are initialized to avoid hook-order mismatch.
   if (pageError) {
@@ -530,9 +394,26 @@ export default function CRMDealsPage() {
     return <PageLoading message="Loading deals..." fullScreen={false} />
   }
 
-  return (
+    return (
     <div className="w-full flex flex-col flex-1 min-w-0 bg-gray-50 dark:bg-gray-900 relative" style={{ zIndex: 1 }}>
       <div className="flex-1 min-w-0 p-4 sm:p-6 space-y-6">
+        {fromContact360 && (urlAccountId || urlContactIds || urlContactId) && (
+          <div
+            className="rounded-xl border border-indigo-200 bg-indigo-50/90 dark:bg-indigo-950/50 dark:border-indigo-800 px-4 py-3 text-sm text-indigo-900 dark:text-indigo-100 flex flex-wrap items-center justify-between gap-2"
+            data-testid="deals-contact-360-filter-banner"
+          >
+            <span>
+              Showing deals from Contact 360
+              {urlAccountId ? ' (same CRM account)' : urlContactIds ? ' (selected contacts)' : ' (this contact)'}
+            </span>
+            <Link
+              href={`/crm/${tenantId}/Deals`}
+              className="text-indigo-600 dark:text-indigo-300 font-medium hover:underline shrink-0"
+            >
+              Clear filter
+            </Link>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Deals</h1>
@@ -819,11 +700,11 @@ export default function CRMDealsPage() {
                         {selectedCategory === 'closing' && <Calendar className="w-5 h-5" />}
                         {selectedCategory === 'won' && <CheckCircle2 className="w-5 h-5" />}
                         {selectedCategory === 'lost' && <XCircle className="w-5 h-5" />}
-                        {selectedCategory === 'created' && `Deals Created ${stats.periodLabel} (${displayedDeals.length})`}
-                        {selectedCategory === 'closing' && `Deals Closing ${stats.periodLabel} (${displayedDeals.length})`}
-                        {selectedCategory === 'won' && `Deals Won ${stats.periodLabel} (${displayedDeals.length})`}
-                        {selectedCategory === 'lost' && `Deals Lost ${stats.periodLabel} (${displayedDeals.length})`}
-                        {selectedCategory.startsWith('stage-') && `Deals - ${selectedCategory.replace('stage-', '').toUpperCase()} (${displayedDeals.length})`}
+                        {selectedCategory === 'created' && `Deals Created ${stats.periodLabel} (${categoryListTotal})`}
+                        {selectedCategory === 'closing' && `Deals Closing ${stats.periodLabel} (${categoryListTotal})`}
+                        {selectedCategory === 'won' && `Deals Won ${stats.periodLabel} (${categoryListTotal})`}
+                        {selectedCategory === 'lost' && `Deals Lost ${stats.periodLabel} (${categoryListTotal})`}
+                        {selectedCategory.startsWith('stage-') && `Deals - ${selectedCategory.replace('stage-', '').toUpperCase()} (${categoryListTotal})`}
                       </CardTitle>
                       <CardDescription>
                         {selectedCategory === 'created' && `Deals created ${stats.periodLabel.toLowerCase()}`}
@@ -1580,23 +1461,6 @@ export default function CRMDealsPage() {
         )}
       </div>
     </div>
-  )
-  } catch (error: any) {
-    console.error('[DEALS_PAGE] Component error:', error)
-    return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="text-center py-12">
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Error Loading Deals Page</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {error?.message || 'An unexpected error occurred'}
-            </p>
-            <Button onClick={() => window.location.reload()}>Reload Page</Button>
-          </CardContent>
-        </Card>
-      </div>
     )
-  }
 }
 
