@@ -4,6 +4,7 @@ import { config as loadEnv } from 'dotenv'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, '../..')
+const isVercel = process.env.VERCEL === '1'
 
 // Load root .env so DATABASE_URL and other vars are available when running from apps/dashboard
 try {
@@ -35,10 +36,16 @@ const nextConfig = {
     ]
   },
   experimental: {
-    optimizePackageImports: ['@radix-ui/*', 'lucide-react', 'framer-motion', 'recharts', 'handsontable', '@tiptap/react'],
+    // This optimization improves bundle ergonomics but increases compile pressure.
+    // Keep it off on Vercel to reduce OOM risk on 8 GB build workers.
+    ...(isVercel
+      ? {}
+      : {
+          optimizePackageImports: ['@radix-ui/*', 'lucide-react', 'framer-motion', 'recharts', 'handsontable', '@tiptap/react'],
+        }),
     // Vercel (8GB): prefer lower peak memory over faster parallel build throughput.
     // This avoids worker SIGKILL/OOM in large monorepo compiles.
-    ...(process.env.VERCEL === '1'
+    ...(isVercel
       ? {
           memoryBasedWorkersCount: false,
           webpackMemoryOptimizations: true,

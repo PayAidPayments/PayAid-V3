@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/dev-server.cjs",
-    "build": "next build --webpack",
+    "build": "node scripts/next-build.cjs",
     "build:turbo": "next build --turbopack",
     "typecheck": "tsc --noEmit --pretty false",
     "bench:crm-stats": "node scripts/bench-crm-stats.mjs",

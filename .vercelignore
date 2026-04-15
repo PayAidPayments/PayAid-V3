@@ -12,3 +12,16 @@ AppData
 !DEPLOYMENT_INSTRUCTIONS.md
 !PRODUCTION_DEPLOYMENT_READY.md
 
+# Exclude large non-runtime content to keep deploy payload under Vercel file limits.
+archive
+docs/evidence
+uploads
+tmp
+temp
+dist
+coverage
+playwright-report
+test-results
+artifacts
+.cursor
+
