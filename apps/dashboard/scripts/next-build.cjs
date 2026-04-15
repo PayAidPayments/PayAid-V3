@@ -2,24 +2,52 @@ const { spawn } = require('node:child_process')
 
 const isVercel = process.env.VERCEL === '1'
 const nextBin = require.resolve('next/dist/bin/next')
-const args = ['build', isVercel ? '--turbopack' : '--webpack']
 
 if (isVercel) {
   // Keep Vercel builds conservative on memory-constrained workers.
   process.env.NEXT_TELEMETRY_DISABLED = process.env.NEXT_TELEMETRY_DISABLED || '1'
 }
 
-console.log(`[next-build] running: next ${args.join(' ')}`)
+function runBuild(mode) {
+  return new Promise((resolve) => {
+    const args = ['build', mode === 'turbopack' ? '--turbopack' : '--webpack']
+    console.log(`[next-build] running: next ${args.join(' ')}`)
+    const child = spawn(process.execPath, [nextBin, ...args], {
+      stdio: 'inherit',
+      env: process.env,
+    })
 
-const child = spawn(process.execPath, [nextBin, ...args], {
-  stdio: 'inherit',
-  env: process.env,
-})
+    child.on('exit', (code, signal) => {
+      resolve({ code: code ?? 1, signal })
+    })
+  })
+}
 
-child.on('exit', (code, signal) => {
-  if (signal) {
-    console.error(`[next-build] terminated by signal: ${signal}`)
+;(async () => {
+  const preferredMode = isVercel ? 'turbopack' : 'webpack'
+  const first = await runBuild(preferredMode)
+  if (first.signal) {
+    console.error(`[next-build] terminated by signal: ${first.signal}`)
     process.exit(1)
   }
-  process.exit(code ?? 1)
+  if (first.code === 0) {
+    process.exit(0)
+  }
+
+  // Turbopack can fail on some server-relative imports (e.g. Bull internals).
+  // Retry with webpack for compatibility before failing the build.
+  if (preferredMode === 'turbopack') {
+    console.warn('[next-build] turbopack failed; retrying with webpack fallback')
+    const fallback = await runBuild('webpack')
+    if (fallback.signal) {
+      console.error(`[next-build] webpack fallback terminated by signal: ${fallback.signal}`)
+      process.exit(1)
+    }
+    process.exit(fallback.code)
+  }
+
+  process.exit(first.code)
+})().catch((err) => {
+  console.error('[next-build] unexpected failure:', err)
+  process.exit(1)
 })

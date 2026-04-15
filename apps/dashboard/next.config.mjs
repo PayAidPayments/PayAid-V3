@@ -19,6 +19,10 @@ try {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Turbopack currently struggles with Bull's server-relative child-process imports.
+  // Keep Bull external so app-route/instrumentation bundles do not attempt to resolve
+  // node_modules/bull/lib/process/* at build time.
+  serverExternalPackages: ['bull', 'ioredis'],
   // Prevent Vercel deployment stalls in large monorepo typecheck phase.
   // Keep strict typecheck in local/CI via `npm run -w apps/dashboard typecheck`.
   typescript: { ignoreBuildErrors: process.env.VERCEL === '1' },
