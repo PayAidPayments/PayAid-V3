@@ -19,14 +19,14 @@ interface CustomSelectContextValue {
   open: boolean
   setOpen: (open: boolean) => void
   items: Map<string, React.ReactNode>
-  setItems: (items: Map<string, React.ReactNode>) => void
+  setItems: React.Dispatch<React.SetStateAction<Map<string, React.ReactNode>>>
 }
 
 const CustomSelectContext = React.createContext<CustomSelectContextValue>({
   open: false,
   setOpen: () => {},
   items: new Map(),
-  setItems: () => {},
+  setItems: () => new Map(),
 })
 
 const CustomSelect = ({ value, onValueChange, placeholder = 'Select...', children, className, id }: CustomSelectProps) => {
@@ -112,6 +112,16 @@ interface CustomSelectContentProps extends React.HTMLAttributes<HTMLDivElement> 
   children: React.ReactNode
 }
 
+function mapsEqual(a: Map<string, React.ReactNode>, b: Map<string, React.ReactNode>) {
+  if (a === b) return true
+  if (a.size !== b.size) return false
+  for (const [k, v] of a.entries()) {
+    if (!b.has(k)) return false
+    if (!Object.is(v, b.get(k))) return false
+  }
+  return true
+}
+
 const CustomSelectContent = React.forwardRef<HTMLDivElement, CustomSelectContentProps>(
   ({ className, children, ...props }, ref) => {
     const context = React.useContext(CustomSelectContext)
@@ -129,7 +139,7 @@ const CustomSelectContent = React.forwardRef<HTMLDivElement, CustomSelectContent
           }
         }
       })
-      setItems(itemsMap)
+      setItems((prev) => (mapsEqual(prev, itemsMap) ? prev : itemsMap))
     }, [children, setItems])
 
     if (!context.open) return null

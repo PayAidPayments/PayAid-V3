@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, useInView, useAnimation } from 'framer-motion'
 import { getAllIndustries, getRecommendedModules } from '@/lib/industries/config'
-import { MODULE_PRICING, INDUSTRY_PACKAGE_PRICING, getBestPricing, type IndustryPackagePricing } from '@/lib/pricing/config'
+import { MODULE_PRICING, getBestPricing } from '@/lib/pricing/config'
 import { modules } from '@/lib/modules.config'
 import { getModuleMarketingHref } from '@/lib/moduleMarketing'
 import { Button } from '@/components/ui/button'
@@ -86,8 +86,6 @@ export default function LandingPage() {
   const [selectedTier, setSelectedTier] = useState<'starter' | 'professional'>('starter')
   const [activeTab, setActiveTab] = useState<'crm' | 'invoicing' | 'inventory' | 'analytics'>('crm')
   const [isPaused, setIsPaused] = useState(false)
-  const [pricingTableBilling, setPricingTableBilling] = useState<'monthly' | 'annual'>('annual')
-  const [industryPackageTier, setIndustryPackageTier] = useState<'starter' | 'professional'>('professional')
   const [showAllModules, setShowAllModules] = useState(false)
   const [selectedQuery, setSelectedQuery] = useState<string>('')
   const [isThinking, setIsThinking] = useState(false)
@@ -506,7 +504,7 @@ export default function LandingPage() {
                         <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Multi-Location Management</Link></li>
                         <li><a href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>E-Commerce Integration</a></li>
                         <li><a href="/compliance" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>GST Compliance</a></li>
-                        <li><Link href="#pricing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'pricing')}>Business Scaling</Link></li>
+                        <li><Link href="/pricing" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block">Business Scaling</Link></li>
                       </ul>
                     </div>
                   </div>
@@ -514,9 +512,8 @@ export default function LandingPage() {
               </div>
 
               <Link 
-                href="#pricing" 
+                href="/pricing" 
                 className="text-gray-900 hover:text-[#53328A] font-medium transition-colors cursor-pointer"
-                onClick={(e) => handleAnchorClick(e, 'pricing')}
               >
                 Pricing
               </Link>
@@ -603,6 +600,11 @@ export default function LandingPage() {
                         key={idx}
                         onClick={() => {
                           setHasUserInteracted(true)
+                          // Prevent "flash" of the full response: move into thinking state immediately
+                          // before the effect-driven typing animation starts.
+                          setTypedResponse('')
+                          setIsThinking(true)
+                          setIsTyping(false)
                           setSelectedQuery(item.query)
                         }}
                         className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
@@ -680,7 +682,12 @@ export default function LandingPage() {
                           <>
                             <p
                               className="text-gray-800 leading-relaxed"
-                              dangerouslySetInnerHTML={{ __html: typedResponse || selectedItem.response }}
+                              // Never fall back to the full response while the typing animation is in progress
+                              // (prevents a brief flash of the full HTML before we reset typedResponse).
+                              dangerouslySetInnerHTML={{
+                                __html:
+                                  isTyping || hasUserInteracted ? typedResponse : selectedItem.response,
+                              }}
                             />
                             {isTyping && (
                               <span className="inline-block w-2 h-4 bg-[#53328A] ml-1 animate-pulse"></span>
@@ -1366,367 +1373,6 @@ export default function LandingPage() {
             ))}
           </motion.div>
         </motion.div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20 bg-gradient-to-b from-[#53328A] to-[#2D1B47] text-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">Simple, Transparent Pricing</h2>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto mb-2">Pay per module, not per user. Choose what you need, scale as you grow.</p>
-            <p className="text-lg text-white/70 max-w-2xl mx-auto">Mix and match modules or choose an industry package for maximum savings.</p>
-          </div>
-
-          {/* Visual Comparison Cards */}
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={{
-              visible: { opacity: 1 },
-              hidden: { opacity: 0 }
-            }}
-            transition={{ staggerChildren: 0.2 }}
-          >
-            <motion.div
-              className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20"
-              variants={{
-                visible: { opacity: 1, y: 0 },
-                hidden: { opacity: 0, y: 20 }
-              }}
-            >
-              <div className="text-4xl mb-4">💰</div>
-              <h4 className="text-xl font-bold mb-2">Pay Per Module</h4>
-              <p className="text-white/80 text-sm mb-4">Only pay for what you need. Start with one module, add more as you grow.</p>
-              <div className="text-2xl font-bold text-[#F5C700]">From ₹1,999/mo</div>
-            </motion.div>
-            <motion.div
-              className="bg-gradient-to-br from-[#F5C700]/20 to-[#F5C700]/10 rounded-xl p-6 border-2 border-[#F5C700]"
-              variants={{
-                visible: { opacity: 1, y: 0 },
-                hidden: { opacity: 0, y: 20 }
-              }}
-            >
-              <div className="text-4xl mb-4">🎯</div>
-              <h4 className="text-xl font-bold mb-2">Industry Packages</h4>
-              <p className="text-white/90 text-sm mb-4">Pre-configured modules for your industry. Save 20% vs individual modules + 20% annual discount.</p>
-              <div className="text-2xl font-bold text-[#F5C700]">From ₹5,118/mo</div>
-              <div className="text-sm text-white/70 mt-2">
-                <span className="line-through">₹6,397/mo</span>
-                <span className="ml-2">(Starter plan)</span>
-              </div>
-              <div className="text-xs text-white/60 mt-1">Monthly equivalent • Billed annually</div>
-            </motion.div>
-            <motion.div
-              className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20"
-              variants={{
-                visible: { opacity: 1, y: 0 },
-                hidden: { opacity: 0, y: 20 }
-              }}
-            >
-              <div className="text-4xl mb-4">📈</div>
-              <h4 className="text-xl font-bold mb-2">Annual Savings</h4>
-              <p className="text-white/80 text-sm mb-4">Pay annually and save 20% on all modules. Best value for growing businesses.</p>
-              <div className="text-2xl font-bold text-[#F5C700]">Save 20%</div>
-              <div className="text-sm text-white/70 mt-2">On annual plans</div>
-            </motion.div>
-          </motion.div>
-
-          {/* Module Pricing Table */}
-          <div className="mb-16">
-            <h3 className="text-2xl font-bold mb-6 text-center">Individual Module Pricing</h3>
-            
-            {/* Billing Toggle */}
-            <div className="flex justify-center mb-6">
-              <div className="flex items-center gap-3">
-                <span className="text-white/70 text-sm">View Pricing:</span>
-                <div className="bg-white/10 backdrop-blur-lg rounded-lg p-1 inline-flex gap-2">
-                  <button
-                    onClick={() => setPricingTableBilling('monthly')}
-                    className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                      pricingTableBilling === 'monthly'
-                        ? 'bg-[#F5C700] text-gray-900'
-                        : 'text-white/70 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    Monthly
-                  </button>
-                  <button
-                    onClick={() => setPricingTableBilling('annual')}
-                    className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                      pricingTableBilling === 'annual'
-                        ? 'bg-[#F5C700] text-gray-900'
-                        : 'text-white/70 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    Annual <span className="text-xs">(Save 20%)</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-white/20">
-                    <th className="pb-4 text-white font-semibold">Module</th>
-                    <th className="pb-4 text-white font-semibold text-right">Starter</th>
-                    <th className="pb-4 text-white font-semibold text-right">Professional</th>
-                  </tr>
-                </thead>
-                <tbody className="space-y-2">
-                  {[
-                    { name: 'CRM', id: 'crm' },
-                    { name: 'Finance & Accounting', id: 'finance' },
-                    { name: 'Sales', id: 'sales' },
-                    { name: 'Inventory', id: 'inventory' },
-                    { name: 'HR & Payroll', id: 'hr' },
-                    { name: 'Marketing', id: 'marketing' },
-                    { name: 'Projects', id: 'projects' },
-                    { name: 'Analytics', id: 'analytics', note: 'Free with any module' },
-                    { name: 'AI Studio', id: 'ai-studio', note: 'Always Free' },
-                    { name: 'Communication', id: 'communication' },
-                    { name: 'Workflow Automation', id: 'workflow' },
-                    { name: 'Appointments', id: 'appointments' },
-                    { name: 'Productivity Suite', id: 'productivity', note: 'Docs, Spreadsheets, Slides, Drive, Meet, PDF Tools' },
-                  ].map((module) => {
-                    const pricing = MODULE_PRICING[module.id]
-                    if (!pricing) return null
-                    return (
-                      <tr key={module.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                        <td className="py-3 text-white">
-                          {module.name}
-                          {module.note && <span className="text-xs text-[#F5C700] ml-2">({module.note})</span>}
-                        </td>
-                        <td className="py-3 text-right text-white">
-                          {pricing.starter === 0 ? (
-                            <span className="text-[#F5C700] font-bold">FREE</span>
-                          ) : pricingTableBilling === 'annual' ? (
-                            <div className="flex flex-col items-end">
-                              <div className="text-sm text-white/60 line-through">
-                                ₹{Math.round(pricing.starter * 12).toLocaleString('en-IN')}/year
-                              </div>
-                              <div className="font-bold text-[#F5C700]">
-                                ₹{Math.round(pricing.starter * 12 * 0.8).toLocaleString('en-IN')}/year
-                              </div>
-                              <div className="text-xs text-white/60 mt-1">
-                                ₹{pricing.starter.toLocaleString('en-IN')}/month equivalent
-                              </div>
-                              <div className="text-xs text-[#F5C700] font-semibold mt-1">
-                                ⚠️ Up to 5 users
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-end">
-                              <div className="font-bold text-[#F5C700]">
-                                ₹{pricing.starter.toLocaleString('en-IN')}/month
-                              </div>
-                              <div className="text-xs text-white/60 mt-1">
-                                ₹{Math.round(pricing.starter * 12).toLocaleString('en-IN')}/year
-                              </div>
-                              <div className="text-xs text-[#F5C700] font-semibold mt-1">
-                                ⚠️ Up to 5 users
-                              </div>
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-3 text-right text-white">
-                          {pricing.professional === 0 ? (
-                            <span className="text-[#F5C700] font-bold">FREE</span>
-                          ) : pricingTableBilling === 'annual' ? (
-                            <div className="flex flex-col items-end">
-                              <div className="text-sm text-white/60 line-through">
-                                ₹{Math.round(pricing.professional * 12).toLocaleString('en-IN')}/year
-                              </div>
-                              <div className="font-bold text-[#F5C700]">
-                                ₹{Math.round(pricing.professional * 12 * 0.8).toLocaleString('en-IN')}/year
-                              </div>
-                              <div className="text-xs text-white/60 mt-1">
-                                ₹{pricing.professional.toLocaleString('en-IN')}/month equivalent
-                              </div>
-                              <div className="text-xs text-[#F5C700] font-semibold mt-1">
-                                ✓ Unlimited users
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-end">
-                              <div className="font-bold text-[#F5C700]">
-                                ₹{pricing.professional.toLocaleString('en-IN')}/month
-                              </div>
-                              <div className="text-xs text-white/60 mt-1">
-                                ₹{Math.round(pricing.professional * 12).toLocaleString('en-IN')}/year
-                              </div>
-                              <div className="text-xs text-[#F5C700] font-semibold mt-1">
-                                ✓ Unlimited users
-                              </div>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <p className="text-center text-white/70 mt-4 text-sm">
-              * <strong>Starter:</strong> ₹1,999/month per module{pricingTableBilling === 'annual' && ` (₹${Math.round(1999 * 12 * 0.8).toLocaleString()}/year with 20% discount)`}, <strong>up to 5 users per module</strong> | <strong>Professional:</strong> ₹3,999/month per module{pricingTableBilling === 'annual' && ` (₹${Math.round(3999 * 12 * 0.8).toLocaleString()}/year with 20% discount)`}, unlimited users, advanced features
-              {pricingTableBilling === 'annual' && <><br/>All plans are billed annually with 20% discount. Prices shown are annual totals.</>}
-            </p>
-          </div>
-
-          {/* Industry Packages */}
-          <div>
-            <h3 className="text-2xl font-bold mb-6 text-center">Industry Packages (Save 20%)</h3>
-            
-            {/* Tier Toggle for Industry Packages */}
-            <div className="flex justify-center mb-6">
-              <div className="flex items-center gap-3">
-                <span className="text-white/70 text-sm">Plan Type:</span>
-                <div className="bg-white/10 backdrop-blur-lg rounded-lg p-1 inline-flex gap-2">
-                  <button
-                    onClick={() => setIndustryPackageTier('starter')}
-                    className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                      industryPackageTier === 'starter'
-                        ? 'bg-[#F5C700] text-gray-900'
-                        : 'text-white/70 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    Starter
-                  </button>
-                  <button
-                    onClick={() => setIndustryPackageTier('professional')}
-                    className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                      industryPackageTier === 'professional'
-                        ? 'bg-[#F5C700] text-gray-900'
-                        : 'text-white/70 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    Professional
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <p className="text-center text-white/70 mb-6 text-sm">
-              All packages are billed annually with 20% discount. {industryPackageTier === 'starter' && 'Starter plan: Up to 5 users per module.'}
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Object.entries(INDUSTRY_PACKAGE_PRICING).map(([industryId, packageData]: [string, IndustryPackagePricing]) => {
-                const industryNames: Record<string, string> = {
-                  'restaurant': 'Restaurant',
-                  'retail': 'Retail',
-                  'service-business': 'Service Business',
-                  'ecommerce': 'E-Commerce',
-                  'professional-services': 'Professional Services',
-                  'manufacturing': 'Manufacturing',
-                }
-                // Calculate pricing based on selected tier
-                const monthlyIndividualPrice = packageData.modules.reduce((sum, moduleId) => {
-                  const modulePricing = MODULE_PRICING[moduleId]
-                  if (!modulePricing) return sum
-                  return sum + (industryPackageTier === 'starter' ? modulePricing.starter : modulePricing.professional)
-                }, 0)
-                const monthlyPackagePrice = Math.round(monthlyIndividualPrice * (1 - packageData.savingsPercentage / 100))
-                
-                // Annual pricing with 20% discount
-                const annualIndividualPrice = Math.round(monthlyIndividualPrice * 12 * 0.8)
-                const annualPackagePrice = Math.round(monthlyPackagePrice * 12 * 0.8)
-                const annualSavings = annualIndividualPrice - annualPackagePrice
-                
-                return (
-                  <motion.div
-                    key={industryId}
-                    className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 hover:border-[#F5C700] transition-all"
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true }}
-                    variants={{
-                      visible: { opacity: 1, y: 0, scale: 1 },
-                      hidden: { opacity: 0, y: 20, scale: 0.95 }
-                    }}
-                    transition={{ duration: 0.4 }}
-                    whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-                  >
-                    <h4 className="text-xl font-bold mb-2">
-                      {industryNames[industryId] || industryId}
-                      <span className="text-sm text-[#F5C700] ml-2">({industryPackageTier === 'starter' ? 'Starter' : 'Professional'})</span>
-                    </h4>
-                    <div className="mb-4">
-                      <div className="text-sm text-white/60 line-through mb-1">
-                        ₹{Math.round(monthlyPackagePrice * 12).toLocaleString('en-IN')}/year
-                      </div>
-                      <div className="text-3xl font-bold text-[#F5C700] mb-1">
-                        ₹{annualPackagePrice.toLocaleString('en-IN')}
-                        <span className="text-lg text-white/70 font-normal">/year</span>
-                      </div>
-                      <div className="text-xs text-white/60 mb-1">
-                        ₹{Math.round(annualPackagePrice / 12).toLocaleString('en-IN')}/month equivalent
-                      </div>
-                      <div className="text-xs text-white/60 mb-2">After free trial • Billed annually</div>
-                      {industryPackageTier === 'starter' && (
-                        <div className="text-xs text-[#F5C700] font-semibold mb-2">
-                          ⚠️ Up to 5 users per module
-                        </div>
-                      )}
-                      <div className="text-sm text-[#F5C700] font-semibold mt-1">
-                        Save ₹{annualSavings.toLocaleString('en-IN')} ({packageData.savingsPercentage}% package discount + 20% annual discount)
-                      </div>
-                    </div>
-                    <div className="mb-4">
-                      <p className="text-sm text-white/80 mb-2">Includes:</p>
-                      <ul className="space-y-1 text-sm text-white/70">
-                        {packageData.modules.filter(m => m !== 'ai-studio').map((module) => {
-                          const moduleNames: Record<string, string> = {
-                            'crm': 'CRM',
-                            'finance': 'Finance & Accounting',
-                            'sales': 'Sales',
-                            'inventory': 'Inventory',
-                            'marketing': 'Marketing',
-                            'projects': 'Projects',
-                            'hr': 'HR & Payroll',
-                            'analytics': 'Analytics',
-                            'communication': 'Communication',
-                          }
-                          return (
-                            <li key={module} className="flex items-center gap-2">
-                              <span className="text-[#F5C700]">✓</span>
-                              <span>{moduleNames[module] || module}</span>
-                            </li>
-                          )
-                        })}
-                        <li className="flex items-center gap-2">
-                          <span className="text-[#F5C700]">✓</span>
-                          <span>AI Studio (Free)</span>
-                        </li>
-                      </ul>
-                    </div>
-                    <Button
-                      className="w-full bg-[#F5C700] text-gray-900 hover:bg-[#E0B200]"
-                      size="lg"
-                    >
-                      Start Free Trial
-                    </Button>
-                  </motion.div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Enterprise CTA */}
-          <div className="mt-12 text-center">
-            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20 max-w-2xl mx-auto">
-              <h3 className="text-2xl font-bold mb-2">Enterprise Solutions</h3>
-              <p className="text-white/80 mb-6">Need custom modules, white-label options, or dedicated support? Let&apos;s build a solution tailored to your business.</p>
-              <Button
-                className="bg-white/20 text-white hover:bg-white/30"
-                size="lg"
-              >
-                Contact Sales
-              </Button>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* Testimonials Section */}
