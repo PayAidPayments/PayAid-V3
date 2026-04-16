@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
-import { motion, useInView, useAnimation } from 'framer-motion'
+import { motion, useInView } from './motion-lite'
 import { getAllIndustries, getRecommendedModules } from '@/lib/industries/config'
 import { MODULE_PRICING, getBestPricing } from '@/lib/pricing/config'
 import { modules } from '@/lib/modules.config'
@@ -20,7 +21,10 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 import { Logo } from '@/components/brand/Logo'
-import LottieHero from '@/components/landing/LottieHero'
+const LottieHero = dynamic(() => import('@/components/landing/LottieHero'), {
+  ssr: false,
+  loading: () => <div className="h-full w-full animate-pulse rounded-2xl bg-slate-100" />,
+})
 import { 
   ChevronDown, 
   Users, 
