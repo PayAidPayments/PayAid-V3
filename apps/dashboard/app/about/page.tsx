@@ -123,7 +123,7 @@ export default function AboutPage() {
           <h2 className="text-3xl font-bold mb-12 text-center" style={{ color: '#53328A' }}>
             Core Team
           </h2>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <div className="bg-white rounded-xl p-6 text-center">
               <h3 className="text-xl font-bold mb-2" style={{ color: '#53328A' }}>
                 Ragam Shashikanth
