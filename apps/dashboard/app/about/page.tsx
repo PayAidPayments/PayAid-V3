@@ -144,16 +144,6 @@ export default function AboutPage() {
                 Previous role at HDFC Bank Ltd.
               </p>
             </div>
-            <div className="bg-white rounded-xl p-6 text-center">
-              <h3 className="text-xl font-bold mb-2" style={{ color: '#53328A' }}>
-                Venkatesh Goud
-              </h3>
-              <p className="text-gray-600 mb-4">State Head - South</p>
-              <p className="text-sm text-gray-600">
-                Total Experience: 14 years<br />
-                Previous roles at Axis Bank Ltd. and Bijli Pay.
-              </p>
-            </div>
           </div>
         </div>
       </section>
