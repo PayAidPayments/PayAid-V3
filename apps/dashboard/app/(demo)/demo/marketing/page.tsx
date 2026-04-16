@@ -31,8 +31,9 @@ function DemoMarketingContent() {
   const tenantId = tenant?.id ?? queryTenantId ?? ''
 
   useEffect(() => {
-    if (!checked) setChecked(true)
-  }, [checked])
+    const id = globalThis.setTimeout(() => setChecked(true), 0)
+    return () => globalThis.clearTimeout(id)
+  }, [])
 
   useEffect(() => {
     if (!checked) return

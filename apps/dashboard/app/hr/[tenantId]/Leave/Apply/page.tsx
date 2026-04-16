@@ -20,7 +20,7 @@ export default function HRLeaveApplyPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:leave-request:create:${crypto.randomUUID()}`
-        : `hr:leave-request:create:${Date.now()}`,
+        : 'hr:leave-request:create:fallback',
     []
   )
   const [formData, setFormData] = useState({

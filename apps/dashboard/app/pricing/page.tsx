@@ -1405,21 +1405,25 @@ export default function PricingLandingPage() {
           <div className="testimonial-card scroll-reveal">
             <div className="stars">★★★★★</div>
             <p className="testimonial-text">
-              "Running a restaurant chain was already hard. What made it harder? Juggling 5–6 different tools just to keep operations aligned. This platform changed everything. We now manage orders, payments, and staff across all locations from one dashboard. Saved us ₹18,000 per month."
+              {
+                '"Running a restaurant chain was already hard. What made it harder? Juggling 5–6 different tools just to keep operations aligned. This platform changed everything. We now manage orders, payments, and staff across all locations from one dashboard. Saved us ₹18,000 per month."'
+              }
             </p>
             <p className="testimonial-role">Restaurant Owner, Mumbai</p>
           </div>
           <div className="testimonial-card scroll-reveal">
             <div className="stars">★★★★★</div>
             <p className="testimonial-text">
-              "As a growing retail business, managing our remote team was chaotic. We were juggling multiple tools, and everything felt disconnected. This platform creates a unified experience—and it's been a total game changer. Real-time visibility keeps teams aligned instantly."
+              {`"As a growing retail business, managing our remote team was chaotic. We were juggling multiple tools, and everything felt disconnected. This platform creates a unified experience—and it's been a total game changer. Real-time visibility keeps teams aligned instantly."`}
             </p>
             <p className="testimonial-role">Retail Store Manager, Delhi</p>
           </div>
           <div className="testimonial-card scroll-reveal">
             <div className="stars">★★★★★</div>
             <p className="testimonial-text">
-              "The AI co-founder feature turns every conversation into execution. It captures insights, suggests actions, and helps execute—turning every discussion into business growth. It feels like having a strategic partner on our team every day."
+              {
+                '"The AI co-founder feature turns every conversation into execution. It captures insights, suggests actions, and helps execute—turning every discussion into business growth. It feels like having a strategic partner on our team every day."'
+              }
             </p>
             <p className="testimonial-role">Service Business Owner, Bangalore</p>
           </div>

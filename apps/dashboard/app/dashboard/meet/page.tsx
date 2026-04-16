@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Video, Plus, Calendar, Clock, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -9,13 +9,7 @@ export default function MeetPage() {
   const [upcomingMeetings, setUpcomingMeetings] = useState<any[]>([])
   const { token } = useAuthStore()
 
-  useEffect(() => {
-    if (token) {
-      loadMeetings()
-    }
-  }, [token])
-
-  const loadMeetings = async () => {
+  const loadMeetings = useCallback(async () => {
     if (!token) return
     try {
       const response = await fetch('/api/meet?status=scheduled', {
@@ -30,7 +24,15 @@ export default function MeetPage() {
     } catch (error) {
       console.error('Error loading meetings:', error)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    if (!token) return
+    const id = globalThis.setTimeout(() => {
+      void loadMeetings()
+    }, 0)
+    return () => globalThis.clearTimeout(id)
+  }, [token, loadMeetings])
 
   return (
     <div className="space-y-6">

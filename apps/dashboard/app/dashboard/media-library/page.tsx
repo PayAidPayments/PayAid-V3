@@ -19,6 +19,7 @@ import {
   HardDrive
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
+import { CopyAction } from '@/components/ui/copy-action'
 
 interface MediaItem {
   id: string
@@ -680,15 +681,17 @@ export default function MediaLibraryPage() {
                     <Download className="h-4 w-4" />
                     Download
                   </a>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(selectedMedia.fileUrl)
-                      alert('Image URL copied to clipboard!')
+                  <CopyAction
+                    textToCopy={selectedMedia.fileUrl}
+                    successMessage="Image URL copied to clipboard."
+                    label="Copy URL"
+                    copiedLabel="Copied"
+                    buttonProps={{
+                      variant: 'outline',
+                      className: 'px-4 py-2 border-gray-300',
                     }}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Copy URL
-                  </button>
+                    showFeedback={false}
+                  />
                   <button
                     onClick={() => handleDelete(selectedMedia.id)}
                     className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"

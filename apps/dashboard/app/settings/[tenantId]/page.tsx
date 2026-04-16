@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
-import { Building2, Users, CreditCard, LayoutGrid, ArrowLeft, UserCircle2, Activity } from 'lucide-react'
+import { Building2, Users, CreditCard, LayoutGrid, ArrowLeft, UserCircle2, Activity, Bot } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -113,6 +113,21 @@ export default function SettingsPage() {
         <CardContent>
           <Link href={`/settings/${tenantId}/Activity`}>
             <Button variant="outline">View activity</Button>
+          </Link>
+        </CardContent>
+      </Card>
+
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
+            <Bot className="w-5 h-5" />
+            Agent Activity
+          </CardTitle>
+          <CardDescription>Specialist prompts, policy checks, and action outcomes</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href={`/settings/${tenantId}/Agent-Activity`}>
+            <Button variant="outline">View agent activity</Button>
           </Link>
         </CardContent>
       </Card>

@@ -21,5 +21,6 @@ export function getSettingsNavItems(tenantId: string): SettingsNavItem[] {
     { name: 'Modules', href: `${base}/Modules` },
     { name: 'Activity', href: `${base}/Activity` },
     { name: 'AI Usage', href: `${base}/AI-Usage` },
+    { name: 'Agent Activity', href: `${base}/Agent-Activity` },
   ]
 }

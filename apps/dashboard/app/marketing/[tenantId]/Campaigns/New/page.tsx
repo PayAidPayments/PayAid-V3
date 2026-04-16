@@ -9,6 +9,8 @@ import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/lib/stores/auth'
+import { apiRequest } from '@/lib/api/client'
+import { parseErrorMessage, withRetryGuidance } from '@/lib/ui/request-error-guidance'
 
 const VALID_TYPES = ['email', 'whatsapp', 'sms'] as const
 type CampaignType = (typeof VALID_TYPES)[number]
@@ -28,7 +30,7 @@ export default function NewCampaignPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `marketing:campaign:create:${crypto.randomUUID()}`
-        : `marketing:campaign:create:${Date.now()}`,
+        : 'marketing:campaign:create:fallback',
     []
   )
   const typeFromUrl = parseType(searchParams?.get('type') ?? null)
@@ -41,30 +43,41 @@ export default function NewCampaignPage() {
   })
 
   useEffect(() => {
-    setFormData((prev) => ({ ...prev, type: typeFromUrl }))
+    const timeoutId = globalThis.setTimeout(() => {
+      setFormData((prev) => ({ ...prev, type: typeFromUrl }))
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [typeFromUrl])
 
   const createCampaign = useMutation({
     mutationFn: async (data: any) => {
-      const response = await fetch('/api/marketing/campaigns', {
+      const response = await apiRequest('/api/marketing/campaigns', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'x-idempotency-key': createCampaignIdempotencyKey,
           ...(token && { Authorization: `Bearer ${token}` }),
         },
+        timeoutMs: 25000,
         body: JSON.stringify(data),
       })
-      if (!response.ok) throw new Error('Failed to create campaign')
+      if (!response.ok) {
+        const message = await parseErrorMessage(response, 'Failed to create campaign')
+        throw new Error(message)
+      }
       return response.json()
     },
     onSuccess: (data) => {
       router.push(`/marketing/${tenantId}/Campaigns/${data.campaign.id}`)
     },
+    onError: (err) => {
+      setError(withRetryGuidance(err instanceof Error ? err.message : 'Failed to create campaign'))
+    },
   })
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
     createCampaign.mutate({
       ...formData,
       scheduledFor: formData.scheduledFor ? new Date(formData.scheduledFor).toISOString() : undefined,
@@ -97,6 +110,11 @@ export default function NewCampaignPage() {
             <CardDescription className="dark:text-gray-400">Enter the details for your marketing campaign</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {error && (
+              <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+                {error}
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Campaign Name *

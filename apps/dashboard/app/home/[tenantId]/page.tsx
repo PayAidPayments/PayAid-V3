@@ -88,12 +88,18 @@ export default function TenantHomePage() {
   })
 
   useEffect(() => {
-    setMounted(true)
+    const id = globalThis.setTimeout(() => setMounted(true), 0)
+    return () => globalThis.clearTimeout(id)
   }, [])
 
   // Auth check: useLayoutEffect so it runs before paint when possible
   useLayoutEffect(() => {
     if (!tenantId) return
+
+    const pendingAuthTimeouts: ReturnType<typeof globalThis.setTimeout>[] = []
+    const deferHasCheckedAuth = () => {
+      pendingAuthTimeouts.push(globalThis.setTimeout(() => setHasCheckedAuth(true), 0))
+    }
 
     const runAuthCheck = (isRetry = false) => {
       const { token: tokenFromStorage, tenant: tenantFromStorage } = getAuthFromStorage()
@@ -116,7 +122,7 @@ export default function TenantHomePage() {
         return
       }
       if (finalIsAuthenticated && finalTenant?.id && tenantId === finalTenant.id) {
-        setHasCheckedAuth(true)
+        deferHasCheckedAuth()
         return
       }
       if (!finalIsAuthenticated && !tokenFromStorage) {
@@ -130,10 +136,13 @@ export default function TenantHomePage() {
         }
         return
       }
-      setHasCheckedAuth(true)
+      deferHasCheckedAuth()
     }
 
     runAuthCheck()
+    return () => {
+      for (const id of pendingAuthTimeouts) globalThis.clearTimeout(id)
+    }
   }, [tenantId, router])
 
   // Fallback: if URL has tenantId and we have matching auth in storage, show page after a short delay
@@ -182,7 +191,10 @@ export default function TenantHomePage() {
 
   useEffect(() => {
     if (!hasCheckedAuth) return
-    fetchSummary()
+    const id = globalThis.setTimeout(() => {
+      fetchSummary()
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [hasCheckedAuth, fetchSummary])
 
   // Retry summary when token/tenant appear after rehydration (e.g. auth storage just loaded)
@@ -198,25 +210,28 @@ export default function TenantHomePage() {
   }, [hasCheckedAuth, summary, summaryLoading, tenantId, tenant?.id, fetchSummary])
 
   useEffect(() => {
-    if (!authTenantId || !hasCheckedAuth) {
-      setBriefingLoading(false)
-      return
-    }
-    const authToken = useAuthStore.getState().token ?? (typeof window !== 'undefined' ? getAuthFromStorage().token : null)
-    if (!authToken) {
-      setBriefingLoading(false)
-      return
-    }
-    setBriefingLoading(true)
-    fetch(`/api/home/briefing?tenantId=${encodeURIComponent(authTenantId)}`, {
-      headers: { Authorization: `Bearer ${authToken}` },
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.bullets && Array.isArray(data.bullets)) setBriefingBullets(data.bullets)
+    const id = globalThis.setTimeout(() => {
+      if (!authTenantId || !hasCheckedAuth) {
+        setBriefingLoading(false)
+        return
+      }
+      const authToken = useAuthStore.getState().token ?? (typeof window !== 'undefined' ? getAuthFromStorage().token : null)
+      if (!authToken) {
+        setBriefingLoading(false)
+        return
+      }
+      setBriefingLoading(true)
+      fetch(`/api/home/briefing?tenantId=${encodeURIComponent(authTenantId)}`, {
+        headers: { Authorization: `Bearer ${authToken}` },
       })
-      .catch(() => {})
-      .finally(() => setBriefingLoading(false))
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.bullets && Array.isArray(data.bullets)) setBriefingBullets(data.bullets)
+        })
+        .catch(() => {})
+        .finally(() => setBriefingLoading(false))
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [authTenantId, hasCheckedAuth])
 
   if (!mounted || !hasCheckedAuth) {

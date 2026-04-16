@@ -21,7 +21,8 @@ export function Header() {
   const { isSuperAdmin, isBusinessAdmin } = usePermissions();
 
   useEffect(() => {
-    setMounted(true);
+    const id = globalThis.setTimeout(() => setMounted(true), 0);
+    return () => globalThis.clearTimeout(id);
   }, []);
 
   // Fetch news unread count (deferred: /api/news is heavy on first dev compile; do not block shell paint)

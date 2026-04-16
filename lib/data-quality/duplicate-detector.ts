@@ -189,7 +189,7 @@ export class DuplicateDetectorService {
         throw new Error('Contact not found')
       }
 
-      const mergedData: Prisma.ContactUpdateInput = {
+      const mergedData: Prisma.ContactUncheckedUpdateInput = {
         name: primary.name || duplicate.name,
         email: primary.email ?? duplicate.email ?? undefined,
         phone: primary.phone ?? duplicate.phone ?? undefined,

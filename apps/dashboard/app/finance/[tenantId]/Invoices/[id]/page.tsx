@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PageLoading } from '@/components/ui/loading'
+import { CopyAction } from '@/components/ui/copy-action'
 import { format } from 'date-fns'
 import { formatINRStandard } from '@/lib/utils/formatINR'
 
@@ -77,7 +78,6 @@ export default function FinanceInvoiceDetailPage() {
   const [sendError, setSendError] = useState('')
   const [sendErrorCode, setSendErrorCode] = useState<string | null>(null)
   const [sendSuccess, setSendSuccess] = useState('')
-  const [portalLinkCopied, setPortalLinkCopied] = useState(false)
   const { token } = useAuthStore()
 
   // Record Payment modal state
@@ -212,6 +212,25 @@ export default function FinanceInvoiceDetailPage() {
     }
   }
 
+  const resolvePortalLink = async () => {
+    if (!token || !tenantId || !invoice?.customer?.id) return ''
+    try {
+      const r = await fetch(
+        `/api/portal/token?tenantId=${encodeURIComponent(tenantId)}&contactId=${encodeURIComponent(invoice.customer.id)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      const data = await r.json()
+      if (data.portalUrl) {
+        return data.portalUrl as string
+      }
+    } catch {
+      // ignore
+    }
+    return ''
+  }
+
   if (isLoading) {
     return <PageLoading message="Loading invoice..." fullScreen={false} />
   }
@@ -268,27 +287,14 @@ export default function FinanceInvoiceDetailPage() {
             </p>
           )}
           {invoice.customer?.id && (
-            <Button
-              variant="outline"
-              onClick={async () => {
-                if (!token || !tenantId) return
-                try {
-                  const r = await fetch(`/api/portal/token?tenantId=${encodeURIComponent(tenantId)}&contactId=${encodeURIComponent(invoice.customer.id)}`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                  })
-                  const data = await r.json()
-                  if (data.portalUrl) {
-                    await navigator.clipboard.writeText(data.portalUrl)
-                    setPortalLinkCopied(true)
-                    setTimeout(() => setPortalLinkCopied(false), 2000)
-                  }
-                } catch {
-                  // ignore
-                }
-              }}
-            >
-              {portalLinkCopied ? 'Copied!' : 'Copy portal link'}
-            </Button>
+            <CopyAction
+              textToCopy={resolvePortalLink}
+              successMessage="Portal link copied to clipboard."
+              label="Copy portal link"
+              copiedLabel="Copied"
+              buttonProps={{ variant: 'outline' }}
+              showFeedback={false}
+            />
           )}
           <Button variant="outline" onClick={downloadPDF}>
             Download PDF

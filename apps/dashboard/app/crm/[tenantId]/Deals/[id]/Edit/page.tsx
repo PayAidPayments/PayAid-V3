@@ -30,7 +30,8 @@ export default function EditDealPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (deal) {
+    if (!deal) return
+    const id = globalThis.setTimeout(() => {
       setFormData({
         name: deal.name || '',
         value: deal.value?.toString() || '',
@@ -39,7 +40,8 @@ export default function EditDealPage() {
         contactId: deal.contactId || '',
         expectedCloseDate: deal.expectedCloseDate ? new Date(deal.expectedCloseDate).toISOString().split('T')[0] : '',
       })
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [deal])
 
   const handleSubmit = async (e: React.FormEvent) => {

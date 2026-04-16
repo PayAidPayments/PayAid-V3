@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthStore } from '@/lib/stores/auth'
+import { apiRequest } from '@/lib/api/client'
+import { parseErrorMessage, withRetryGuidance } from '@/lib/ui/request-error-guidance'
 
 interface OrderItem {
   productId: string
@@ -123,12 +125,12 @@ export default function NewOrderPage() {
     }
 
     try {
-      const response = await fetch('/api/orders', {
+      const response = await apiRequest('/api/orders', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
+        timeoutMs: 25000,
         body: JSON.stringify({
           customerId: formData.customerId || undefined,
           customerName: formData.customerName,
@@ -149,14 +151,14 @@ export default function NewOrderPage() {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create order')
+        const message = await parseErrorMessage(response, 'Failed to create order')
+        throw new Error(message)
       }
 
       const order = await response.json()
       router.push(`/sales/${tenantId}/Orders/${order.id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create order')
+      setError(withRetryGuidance(err instanceof Error ? err.message : 'Failed to create order'))
       setIsSubmitting(false)
     }
   }

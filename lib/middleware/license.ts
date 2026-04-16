@@ -47,6 +47,7 @@ export async function checkModuleAccess(
   tenantId: string
   licensedModules: string[]
   subscriptionTier: string
+  roles: string[]
 }> {
   // Get token from Authorization header
   const authHeader = request.headers.get('authorization')
@@ -95,6 +96,7 @@ export async function checkModuleAccess(
       tenantId: payload.tenantId,
       licensedModules,
       subscriptionTier,
+      roles: payload.roles || (payload.role ? [payload.role] : []),
     }
   } catch (error) {
     if (error instanceof LicenseError) {
@@ -132,6 +134,7 @@ export async function requireModuleAccess(
   tenantId: string
   licensedModules: string[]
   subscriptionTier: string
+  roles: string[]
 }> {
   try {
     return await checkModuleAccess(request, moduleId)

@@ -20,7 +20,7 @@ export default function NewAdvancePage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `finance:advance:create:${crypto.randomUUID()}`
-        : `finance:advance:create:${Date.now()}`,
+        : 'finance:advance:create:fallback',
     []
   )
   const [type, setType] = useState<'TO_VENDOR' | 'FROM_CUSTOMER'>('TO_VENDOR')

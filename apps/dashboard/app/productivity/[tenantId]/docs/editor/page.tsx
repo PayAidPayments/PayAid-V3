@@ -18,18 +18,21 @@ export default function DocsEditorPage() {
 
   useEffect(() => {
     if (!tenantId) return
-    // TODO: fetch doc id from query, get signed URL from API (Supabase storage)
-    // For now show placeholder; when ONLYOFFICE_URL is set and doc URL is available, build config and set in state
-    const docId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null
-    if (docId) {
-      setConfig({
-        url: undefined, // signed download URL from your API
-        key: docId + '_' + Date.now(),
-        title: 'Document',
-      })
-    } else {
-      setConfig({})
-    }
+    const timeoutId = globalThis.setTimeout(() => {
+      // TODO: fetch doc id from query, get signed URL from API (Supabase storage)
+      // For now show placeholder; when ONLYOFFICE_URL is set and doc URL is available, build config and set in state
+      const docId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null
+      if (docId) {
+        setConfig({
+          url: undefined, // signed download URL from your API
+          key: docId + '_' + Date.now(),
+          title: 'Document',
+        })
+      } else {
+        setConfig({})
+      }
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [tenantId])
 
   if (error) {

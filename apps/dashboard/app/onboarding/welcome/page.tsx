@@ -45,11 +45,14 @@ export default function OnboardingWelcome() {
   const [completedSteps, setCompletedSteps] = useState<string[]>([])
 
   useEffect(() => {
-    // Check completed steps from localStorage or API
-    const saved = localStorage.getItem('onboarding_completed')
-    if (saved) {
-      setCompletedSteps(JSON.parse(saved))
-    }
+    const timeoutId = globalThis.setTimeout(() => {
+      // Check completed steps from localStorage or API
+      const saved = localStorage.getItem('onboarding_completed')
+      if (saved) {
+        setCompletedSteps(JSON.parse(saved))
+      }
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [])
 
   const markStepComplete = (stepId: string) => {
@@ -137,7 +140,7 @@ export default function OnboardingWelcome() {
                 Onboarding Complete! 🎉
               </h2>
               <p className="text-gray-600 mb-4">
-                You're all set to start using PayAid V3. Explore all features and start
+                You&apos;re all set to start using PayAid V3. Explore all features and start
                 collaborating with your team!
               </p>
               <Button

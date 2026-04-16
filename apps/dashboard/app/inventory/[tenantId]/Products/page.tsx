@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useParams } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -178,7 +179,7 @@ export default function InventoryProductsPage() {
                 <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
                   <div className="py-1">
                     <Link
-                      href={`/inventory/${tenantId}/Products/new`}
+                      href={`/inventory/${tenantId}/Products/New`}
                       className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
                     >
                       <Plus className="w-4 h-4 mr-3" />
@@ -353,7 +354,7 @@ export default function InventoryProductsPage() {
               {products.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-gray-600 mb-4">No products found</p>
-                  <Link href={`/inventory/${tenantId}/Products/new`}>
+                  <Link href={`/inventory/${tenantId}/Products/New`}>
                     <Button>Create Your First Product</Button>
                   </Link>
                 </div>
@@ -393,9 +394,12 @@ export default function InventoryProductsPage() {
                             </TableCell>
                             <TableCell>
                               {product.images && product.images.length > 0 ? (
-                                <img
+                                <Image
                                   src={product.images[0]}
                                   alt={product.name}
+                                  width={40}
+                                  height={40}
+                                  unoptimized
                                   className="w-10 h-10 object-cover rounded"
                                 />
                               ) : (

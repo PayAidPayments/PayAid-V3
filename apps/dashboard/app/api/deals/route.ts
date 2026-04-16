@@ -6,6 +6,7 @@ import { multiLayerCache } from '@/lib/cache/multi-layer'
 import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
 import { getTimePeriodBounds, type TimePeriod } from '@/lib/utils/crm-filters'
 import { z } from 'zod'
+import { dbOverloadResponse, isTransientDbOverloadError } from '@/lib/api/db-overload'
 
 function isValidTimePeriod(t: string | null): t is TimePeriod {
   return t === 'month' || t === 'quarter' || t === 'financial-year' || t === 'year'
@@ -75,7 +76,9 @@ export async function GET(request: NextRequest) {
     const userTenantId = user?.tenantId ?? null
     const hasAccess = requestTenantId && (jwtTenantId === requestTenantId || userTenantId === requestTenantId)
     // Demo fallback: when viewing Demo Business tenant as admin@demo.com, always use requested tenant so demos never show empty
+    const allowDemoTenantOverride = process.env.NEXT_PUBLIC_CRM_ALLOW_DEMO_SEED === '1'
     const isDemoTenantRequest =
+      allowDemoTenantOverride &&
       requestTenantId &&
       user?.email === 'admin@demo.com' &&
       (await prisma.tenant.findUnique({
@@ -813,6 +816,9 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       )
+    }
+    if (isTransientDbOverloadError(error)) {
+      return dbOverloadResponse('Deal')
     }
 
     console.error('Create deal error:', error)

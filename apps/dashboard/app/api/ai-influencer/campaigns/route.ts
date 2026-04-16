@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth/jwt'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
+import { dbOverloadResponse, isTransientDbOverloadError } from '@/lib/api/db-overload'
 
 const createCampaignSchema = z.object({
   name: z.string().optional(),
@@ -52,6 +53,9 @@ export async function POST(request: NextRequest) {
         { error: 'Validation error', details: error.errors },
         { status: 400 }
       )
+    }
+    if (isTransientDbOverloadError(error)) {
+      return dbOverloadResponse('AI influencer campaign')
     }
 
     console.error('Campaign creation error:', error)

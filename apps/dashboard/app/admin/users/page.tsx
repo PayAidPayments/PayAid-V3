@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { UsersTable } from '@/components/Admin/users/UsersTable'
 import { InviteUserModal } from '@/components/Admin/users/InviteUserModal'
 import { UserModuleAccessModal } from '@/components/Admin/users/UserModuleAccessModal'
@@ -26,17 +26,20 @@ export default function AdminUsersPage() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [selectedUserName, setSelectedUserName] = useState('')
 
-  const fetchUsers = () => {
+  const fetchUsers = useCallback(() => {
     setLoading(true)
     fetch('/api/admin/users')
       .then((r) => (r.ok ? r.json() : { data: [] }))
       .then((j) => setUsers(j.data ?? []))
       .finally(() => setLoading(false))
-  }
+  }, [])
 
   useEffect(() => {
-    fetchUsers()
-  }, [])
+    const id = globalThis.setTimeout(() => {
+      fetchUsers()
+    }, 0)
+    return () => globalThis.clearTimeout(id)
+  }, [fetchUsers])
 
   const handleOpenModuleAccess = (userId: string, userName: string) => {
     setSelectedUserId(userId)

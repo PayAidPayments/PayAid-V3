@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useMutation } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/api/client'
+import { parseErrorMessage, withRetryGuidance } from '@/lib/ui/request-error-guidance'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,6 +34,7 @@ export default function NewLandingPagePage() {
     mutationFn: async (data: typeof formData) => {
       const response = await apiRequest('/api/sales/landing-pages', {
         method: 'POST',
+        timeoutMs: 25000,
         body: JSON.stringify({
           ...data,
           contentJson: {},
@@ -41,8 +43,8 @@ export default function NewLandingPagePage() {
         }),
       })
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create landing page')
+        const message = await parseErrorMessage(response, 'Failed to create landing page')
+        throw new Error(message)
       }
       return response.json()
     },
@@ -50,7 +52,7 @@ export default function NewLandingPagePage() {
       router.push(`/sales/${tenantId}/Landing-Pages/${data.id}`)
     },
     onError: (err: Error) => {
-      setError(err.message)
+      setError(withRetryGuidance(err.message))
     },
   })
 

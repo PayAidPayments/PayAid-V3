@@ -18,7 +18,7 @@ async function generateAIContent(params: { prompt: string; model?: string; maxTo
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: params.model || 'llama3',
+        model: params.model || process.env.OLLAMA_MODEL || 'llama3.1:8b',
         prompt: params.prompt,
         stream: false,
       }),
@@ -55,7 +55,7 @@ User prompt: ${validatedData.prompt}`
   // Generate content using AI gateway
   const aiResponse = await generateAIContent({
     prompt,
-    model: 'ollama', // Use free Ollama by default
+    model: process.env.OLLAMA_MODEL || 'llama3.1:8b',
     maxTokens: 1000,
   })
 

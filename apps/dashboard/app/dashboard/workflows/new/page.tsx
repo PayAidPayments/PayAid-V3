@@ -87,7 +87,8 @@ export default function NewWorkflowPage() {
                 className="w-full"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Examples: "Send email when invoice is overdue", "Create task when deal is created", "Welcome new leads with SMS"
+                Examples: &quot;Send email when invoice is overdue&quot;, &quot;Create task when deal is
+                created&quot;, &quot;Welcome new leads with SMS&quot;
               </p>
             </div>
             <div className="flex gap-2">

@@ -74,7 +74,10 @@ const SUCCESS = '#059669'
 const INFO = '#0284C7'
 const CHART_COLORS = [PURPLE_PRIMARY, GOLD_ACCENT, SUCCESS, INFO, '#EC4899']
 
-export default function MarketingDashboardPage(props: PageProps<'/marketing/[tenantId]/Home'>) {
+export default function MarketingDashboardPage(props: {
+  params: Promise<{ tenantId: string }>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { tenantId } = use(props.params)
   const { user, token } = useAuthStore()
   const [enriched, setEnriched] = useState<EnrichedData | null>(null)
@@ -83,47 +86,52 @@ export default function MarketingDashboardPage(props: PageProps<'/marketing/[ten
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!tenantId || !token) {
-      setLoading(false)
-      return
-    }
     const controller = new AbortController()
-    const headers: HeadersInit = { ...(token && { Authorization: `Bearer ${token}` }) }
+    const timeoutId = globalThis.setTimeout(() => {
+      if (!tenantId || !token) {
+        setLoading(false)
+        return
+      }
+      const headers: HeadersInit = { ...(token && { Authorization: `Bearer ${token}` }) }
 
-    Promise.all([
-      fetch(`/api/marketing/dashboard/enriched`, { headers, signal: controller.signal }).then(async (r) => {
-        if (r.ok) return r.json()
-        const body = await r.json().catch(() => ({} as { error?: string; message?: string; details?: string }))
-        const base =
-          body?.error ||
-          body?.message ||
-          (r.status === 403
-            ? 'Marketing is not enabled for this workspace. Enable it in Settings → Modules.'
-            : r.status === 401
-              ? 'Session expired. Sign in again.'
-              : 'Failed to load dashboard')
-        const msg = body?.details && r.status >= 500 ? `${base}: ${body.details}` : base
-        return Promise.reject(new Error(msg))
-      }),
-      fetch(`/api/marketing/insights`, { headers, signal: controller.signal }).then((r) =>
-        r.ok ? r.json() : { insights: [] as string[], source: 'static' as const }
-      ),
-    ])
-      .then(([enrichedData, insightsData]) => {
-        setEnriched(enrichedData)
-        setInsights(insightsData?.insights ? insightsData : { insights: [], source: 'static' })
-        setError(null)
-      })
-      .catch((e) => {
-        if (e?.name !== 'AbortError') {
-          setError(e?.message ?? 'Failed to load dashboard')
-          setEnriched(null)
-          setInsights(null)
-        }
-      })
-      .finally(() => setLoading(false))
+      Promise.all([
+        fetch(`/api/marketing/dashboard/enriched`, { headers, signal: controller.signal }).then(async (r) => {
+          if (r.ok) return r.json()
+          const body = await r.json().catch(() => ({} as { error?: string; message?: string; details?: string }))
+          const base =
+            body?.error ||
+            body?.message ||
+            (r.status === 403
+              ? 'Marketing is not enabled for this workspace. Enable it in Settings → Modules.'
+              : r.status === 401
+                ? 'Session expired. Sign in again.'
+                : 'Failed to load dashboard')
+          const msg = body?.details && r.status >= 500 ? `${base}: ${body.details}` : base
+          return Promise.reject(new Error(msg))
+        }),
+        fetch(`/api/marketing/insights`, { headers, signal: controller.signal }).then((r) =>
+          r.ok ? r.json() : { insights: [] as string[], source: 'static' as const }
+        ),
+      ])
+        .then(([enrichedData, insightsData]) => {
+          setEnriched(enrichedData)
+          setInsights(insightsData?.insights ? insightsData : { insights: [], source: 'static' })
+          setError(null)
+        })
+        .catch((e) => {
+          if (e?.name !== 'AbortError') {
+            setError(e?.message ?? 'Failed to load dashboard')
+            setEnriched(null)
+            setInsights(null)
+          }
+        })
+        .finally(() => setLoading(false))
+    }, 0)
 
-    return () => controller.abort()
+    return () => {
+      globalThis.clearTimeout(timeoutId)
+      controller.abort()
+    }
   }, [tenantId, token])
 
   if (!tenantId) return <PageLoading message="Loading..." fullScreen={true} />

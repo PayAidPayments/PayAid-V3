@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageLoading } from '@/components/ui/loading'
 import { Copy, Eye, BarChart3, Settings } from 'lucide-react'
+import { CopyAction, COPY_ACTION_PRESETS } from '@/components/ui/copy-action'
 
 interface Website {
   id: string
@@ -58,11 +59,7 @@ export default function WebsitesPage() {
     },
   })
 
-  const copyTrackingCode = (code: string) => {
-    const script = `<script data-tracking-code="${code}" src="/payaid-tracker.js"></script>`
-    navigator.clipboard.writeText(script)
-    alert('Tracking code copied to clipboard!')
-  }
+  const getTrackingScript = (code: string) => `<script data-tracking-code="${code}" src="/payaid-tracker.js"></script>`
 
   const websites = data?.websites || []
 
@@ -107,13 +104,15 @@ export default function WebsitesPage() {
                         readOnly
                         className="font-mono text-xs"
                       />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copyTrackingCode(website.trackingCode)}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
+                      <CopyAction
+                        textToCopy={() => getTrackingScript(website.trackingCode)}
+                        successMessage="Tracking script copied to clipboard."
+                        label="Copy"
+                        copiedLabel="Copied"
+                        icon={<Copy className="h-4 w-4" />}
+                        buttonProps={{ variant: 'outline', size: 'sm' }}
+                        {...COPY_ACTION_PRESETS.compactSettings}
+                      />
                     </div>
                     <p className="text-xs text-gray-500">
                       Add this script tag to your website

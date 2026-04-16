@@ -16,7 +16,9 @@ const SLOW_ROUTE_SUFFIXES = [
   '/finance/', '/hr/', '/inventory/StockMovements',
 ];
 function routeTimeout(route: string) {
+  const isCrmOrHomeBootRoute = route.startsWith('/home/') || route.startsWith('/crm/')
   const isSlow =
+    isCrmOrHomeBootRoute ||
     SLOW_ROUTE_SUFFIXES.some((s) => route.includes(s)) ||
     (route.includes('/sales/') && (route.endsWith('/Home') || route.includes('/Orders') || route.includes('/Landing-Pages')));
   return isSlow ? 360_000 : DEFAULT_ROUTE_TIMEOUT_MS;

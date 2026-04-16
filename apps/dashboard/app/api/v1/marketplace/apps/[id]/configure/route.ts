@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
+import { Prisma } from '@prisma/client'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { assertTenantFeatureEnabled, TenantFeatureDisabledError } from '@/lib/feature-flags/tenant-feature'
 import { marketplaceConfigureBodySchema } from '@/lib/ai-native/m2-contracts'
@@ -64,7 +65,7 @@ export async function POST(
           config: { ...((prevSnapshot.config as Record<string, unknown> | undefined) ?? {}), ...validated.config },
           configured_at: new Date().toISOString(),
           schema_version: '1.0',
-        },
+        } as Prisma.InputJsonValue,
       },
     })
 

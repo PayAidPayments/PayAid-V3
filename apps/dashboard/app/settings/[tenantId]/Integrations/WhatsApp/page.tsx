@@ -62,11 +62,14 @@ export default function WhatsAppWahaSettingsPage() {
 
   useEffect(() => {
     if (!data) return
-    setForm({
-      baseUrl: data.baseUrl || '',
-      apiKey: '',
-      defaultInstance: data.defaultInstance || '',
-    })
+    const timeoutId = globalThis.setTimeout(() => {
+      setForm({
+        baseUrl: data.baseUrl || '',
+        apiKey: '',
+        defaultInstance: data.defaultInstance || '',
+      })
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [data])
 
   const encryptionWarning = useMemo(() => {

@@ -98,25 +98,60 @@ export async function GET(request: NextRequest) {
     // ── 6b. Sequence enrollment-to-positive-reply conversion ─────────────────
     // Sequences are Workflow records created with triggerEvent='sequence.manual'
     // Enrollments are WorkflowExecution records for those workflows
-    const enrollmentRows = await prisma.workflowExecution.findMany({
-      where: {
-        tenantId,
-        workflow: { triggerEvent: 'sequence.manual' },
-        startedAt: { gte: since },
-      },
-      select: { result: true },
-      take: 5000,
-    })
-    const enrollmentTotal = enrollmentRows.length
-    const enrollmentPositive = enrollmentRows.filter((row) => {
-      const result = row.result as Record<string, unknown> | null
-      return String(result?.replyStatus || '').toUpperCase() === 'POSITIVE'
-    }).length
-    const enrollmentWithReply = enrollmentRows.filter((row) => {
-      const result = row.result as Record<string, unknown> | null
-      const status = String(result?.replyStatus || '').trim()
-      return status.length > 0
-    }).length
+    const workflowExecutionModel = (prisma as any).workflowExecution
+    let enrollmentTotal = 0
+    let enrollmentPositive = 0
+    let enrollmentWithReply = 0
+
+    // Prefer row-level scan for richer semantics, but keep count-only fallback for
+    // test/runtime contexts where `findMany` is not available on the mocked model.
+    if (typeof workflowExecutionModel?.findMany === 'function') {
+      const enrollmentRows = await workflowExecutionModel.findMany({
+        where: {
+          tenantId,
+          workflow: { triggerEvent: 'sequence.manual' },
+          startedAt: { gte: since },
+        },
+        select: { result: true },
+        take: 5000,
+      })
+      enrollmentTotal = enrollmentRows.length
+      enrollmentPositive = enrollmentRows.filter((row: { result: unknown }) => {
+        const result = row.result as Record<string, unknown> | null
+        return String(result?.replyStatus || '').toUpperCase() === 'POSITIVE'
+      }).length
+      enrollmentWithReply = enrollmentRows.filter((row: { result: unknown }) => {
+        const result = row.result as Record<string, unknown> | null
+        const status = String(result?.replyStatus || '').trim()
+        return status.length > 0
+      }).length
+    } else {
+      ;[enrollmentTotal, enrollmentPositive, enrollmentWithReply] = await Promise.all([
+        workflowExecutionModel.count({
+          where: {
+            tenantId,
+            workflow: { triggerEvent: 'sequence.manual' },
+            startedAt: { gte: since },
+          },
+        }),
+        workflowExecutionModel.count({
+          where: {
+            tenantId,
+            workflow: { triggerEvent: 'sequence.manual' },
+            startedAt: { gte: since },
+            result: { path: ['replyStatus'], equals: 'POSITIVE' },
+          } as any,
+        }),
+        workflowExecutionModel.count({
+          where: {
+            tenantId,
+            workflow: { triggerEvent: 'sequence.manual' },
+            startedAt: { gte: since },
+            result: { path: ['replyStatus'], not: null },
+          } as any,
+        }),
+      ])
+    }
     const enrollmentConversionRate =
       enrollmentTotal > 0
         ? parseFloat(((enrollmentPositive / enrollmentTotal) * 100).toFixed(1))

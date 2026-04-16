@@ -51,6 +51,9 @@ interface ActivitiesCommandCenterProps {
   activities: ActivityItem[]
   activityFilter: string
   onActivityFilterChange: (value: string) => void
+  hasMoreFromServer?: boolean
+  isLoadingMoreFromServer?: boolean
+  onLoadMoreFromServer?: () => void
 }
 
 interface TimelineCluster {
@@ -212,6 +215,9 @@ export function ActivitiesCommandCenter({
   activities,
   activityFilter,
   onActivityFilterChange,
+  hasMoreFromServer = false,
+  isLoadingMoreFromServer = false,
+  onLoadMoreFromServer,
 }: ActivitiesCommandCenterProps) {
   const params = useParams()
   const router = useRouter()
@@ -333,15 +339,19 @@ export function ActivitiesCommandCenter({
   const runReplyAction = (activity: ActivityItem) => {
     if (activity.type === 'email' && activity.contact?.email) {
       const subject = encodeURIComponent(`Re: ${activity.title}`)
-      window.location.href = `mailto:${activity.contact.email}?subject=${subject}`
+      globalThis.location.assign(`mailto:${activity.contact.email}?subject=${subject}`)
+      return
+    }
+    if (activity.type === 'task' && tenantId) {
+      router.push(`/crm/${tenantId}/Tasks/${extractEntityId(activity.id)}`)
       return
     }
     if (activity.type === 'call' && activity.contact?.id && tenantId) {
       router.push(`/crm/${tenantId}/Dialer?contactId=${activity.contact.id}`)
       return
     }
-    if (activity.contact?.id && tenantId) {
-      router.push(`/crm/${tenantId}/Contacts/${activity.contact.id}`)
+    if (activity.type === 'meeting' && tenantId) {
+      router.push(`/crm/${tenantId}/Meetings`)
       return
     }
     if (tenantId) {
@@ -372,8 +382,12 @@ export function ActivitiesCommandCenter({
 
   const runAssignAction = (activity: ActivityItem) => {
     if (!tenantId) return
+    if (activity.type === 'task') {
+      router.push(`/crm/${tenantId}/Tasks/${extractEntityId(activity.id)}`)
+      return
+    }
     if (activity.contact?.id) {
-      router.push(`/crm/${tenantId}/Contacts/${activity.contact.id}`)
+      router.push(`/crm/${tenantId}/Tasks/new?contactId=${activity.contact.id}&title=${encodeURIComponent(`Assign owner: ${activity.title}`)}&priority=high`)
       return
     }
     if (activity.type === 'deal') {
@@ -389,11 +403,44 @@ export function ActivitiesCommandCenter({
       router.push(`/crm/${tenantId}/Deals/${extractEntityId(activity.id)}/Edit`)
       return
     }
+    if (activity.type === 'task') {
+      router.push(`/crm/${tenantId}/Tasks/${extractEntityId(activity.id)}`)
+      return
+    }
     if (activity.contact?.id) {
       router.push(`/crm/${tenantId}/Deals/new?contactId=${activity.contact.id}`)
       return
     }
     router.push(`/crm/${tenantId}/Deals`)
+  }
+
+  const handleKpiCardClick = (label: string) => {
+    switch (label) {
+      case 'Overdue':
+        setActiveView('Needs Action')
+        setSortMode('priority')
+        onActivityFilterChange('task')
+        break
+      case 'Due Today':
+        setActiveView('My Queue')
+        onActivityFilterChange('task')
+        break
+      case 'Awaiting Reply':
+        setActiveView('Needs Action')
+        onActivityFilterChange('email')
+        break
+      case 'Meetings Booked':
+        setActiveView('Meetings')
+        break
+      case 'Calls Completed':
+        setActiveView('Calls')
+        break
+      case 'Tasks Done (7d)':
+        setActiveView('Tasks')
+        break
+      default:
+        break
+    }
   }
 
   const renderQueueSection = (title: string, items: ActivityItem[], tone: 'risk' | 'pending' | 'normal') => {
@@ -494,12 +541,19 @@ export function ActivitiesCommandCenter({
           { label: 'Calls Completed', value: kpis.callsCompleted, tone: 'text-emerald-600 dark:text-emerald-400' },
           { label: 'Tasks Done (7d)', value: kpis.tasksDone, tone: 'text-slate-700 dark:text-slate-200' },
         ].map((item) => (
-          <Card key={item.label} className="h-28 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all">
-            <CardContent className="h-full flex flex-col justify-between py-4">
+          <button
+            key={item.label}
+            type="button"
+            onClick={() => handleKpiCardClick(item.label)}
+            className="text-left"
+          >
+            <Card className="h-28 w-full rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all">
+              <CardContent className="h-full flex flex-col justify-between py-4">
               <p className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">{item.label}</p>
               <p className={`text-2xl font-semibold ${item.tone}`}>{item.value}</p>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </button>
         ))}
       </div>
 
@@ -704,6 +758,16 @@ export function ActivitiesCommandCenter({
               {activities.length > filteredActivities.length ? (
                 <Button size="sm" variant="ghost" onClick={() => setWindowSize((size) => size + 80)}>
                   Load more timeline rows
+                </Button>
+              ) : null}
+              {hasMoreFromServer && onLoadMoreFromServer ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onLoadMoreFromServer}
+                  disabled={isLoadingMoreFromServer}
+                >
+                  {isLoadingMoreFromServer ? 'Loading older activities...' : 'Load older activities from server'}
                 </Button>
               ) : null}
             </CardContent>

@@ -97,7 +97,8 @@ export default function InvoiceSettingsPage() {
 
   // Load settings into form
   useEffect(() => {
-    if (settings) {
+    if (!settings) return
+    const id = globalThis.setTimeout(() => {
       setFormData({
         template: settings.template || 'standard',
         defaultReverseCharge: settings.defaultReverseCharge || false,
@@ -107,7 +108,8 @@ export default function InvoiceSettingsPage() {
         invoicePrefix: settings.invoicePrefix || 'INV',
         autoGenerateNumber: settings.autoGenerateNumber !== false,
       })
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [settings])
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -47,7 +47,7 @@ export default function UsersPage() {
     enabled: Boolean(tenantId),
   })
 
-  const users = data ?? []
+  const users = useMemo(() => data ?? [], [data])
   const adminsCount = useMemo(() => users.filter((u) => (u.role || '').toLowerCase() === 'admin').length, [users])
 
   const inviteUser = useMutation({

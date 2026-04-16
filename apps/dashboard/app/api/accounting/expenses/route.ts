@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
+import { dbOverloadResponse, isTransientDbOverloadError } from '@/lib/api/db-overload'
 
 const createExpenseSchema = z.object({
   description: z.string().min(1),
@@ -218,6 +219,9 @@ export async function POST(request: NextRequest) {
     // Handle license errors
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
+    }
+    if (isTransientDbOverloadError(error)) {
+      return dbOverloadResponse('Expense')
     }
     
     console.error('Create expense error:', error)

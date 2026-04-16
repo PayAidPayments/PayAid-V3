@@ -59,14 +59,8 @@ export async function GET(request: NextRequest) {
         contactId: true,
         value: true,
         actualCloseDate: true,
-        contact: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
+        contactName: true,
+        contactEmail: true,
       },
       orderBy: { actualCloseDate: 'asc' },
     })
@@ -84,7 +78,7 @@ export async function GET(request: NextRequest) {
     >()
 
     for (const deal of deals) {
-      if (!deal.contactId || !deal.contact) continue
+      if (!deal.contactId) continue
       const key = deal.contactId
       const existing = contactMap.get(key)
       if (existing) {
@@ -93,11 +87,8 @@ export async function GET(request: NextRequest) {
       } else {
         contactMap.set(key, {
           contact_id: deal.contactId,
-          contact_name:
-            [deal.contact.firstName, deal.contact.lastName].filter(Boolean).join(' ') ||
-            deal.contact.email ||
-            deal.contactId,
-          contact_email: deal.contact.email,
+          contact_name: deal.contactName || deal.contactEmail || deal.contactId,
+          contact_email: deal.contactEmail,
           values: [deal.value],
           dates: deal.actualCloseDate ? [deal.actualCloseDate] : [],
         })

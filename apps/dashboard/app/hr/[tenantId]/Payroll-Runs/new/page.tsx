@@ -50,21 +50,21 @@ export default function PayrollRunNewPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:payroll:cycle:create:${crypto.randomUUID()}`
-        : `hr:payroll:cycle:create:${Date.now()}`,
+        : 'hr:payroll:cycle:create:fallback',
     []
   )
   const payrollGenerateIdempotencyKey = useMemo(
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:payroll:generate:${crypto.randomUUID()}`
-        : `hr:payroll:generate:${Date.now()}`,
+        : 'hr:payroll:generate:fallback',
     []
   )
   const payrollDisburseIdempotencyKey = useMemo(
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:payroll:bulk-payout:${crypto.randomUUID()}`
-        : `hr:payroll:bulk-payout:${Date.now()}`,
+        : 'hr:payroll:bulk-payout:fallback',
     []
   )
   const [step, setStep] = useState(1)

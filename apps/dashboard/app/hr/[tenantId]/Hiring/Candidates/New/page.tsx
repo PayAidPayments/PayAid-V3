@@ -18,7 +18,7 @@ export default function NewCandidatePage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:candidate:create:${crypto.randomUUID()}`
-        : `hr:candidate:create:${Date.now()}`,
+        : 'hr:candidate:create:fallback',
     []
   )
   const [formData, setFormData] = useState({

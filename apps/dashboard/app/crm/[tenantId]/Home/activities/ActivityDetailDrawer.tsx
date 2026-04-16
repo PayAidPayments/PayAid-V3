@@ -14,6 +14,8 @@ import { format } from 'date-fns'
 import { Calendar, CheckCircle2, Clock3, FileText, Link2, User } from 'lucide-react'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import type { ActivityItem } from './types'
+import { useParams, useRouter } from 'next/navigation'
+import { useUpdateTask } from '@/lib/hooks/use-api'
 
 interface ActivityDetailDrawerProps {
   open: boolean
@@ -32,9 +34,50 @@ export default function ActivityDetailDrawer({
   onOpenChange,
   activity,
 }: ActivityDetailDrawerProps) {
+  const params = useParams()
+  const router = useRouter()
+  const updateTask = useUpdateTask()
+  const tenantIdParam = params?.tenantId
+  const tenantId = Array.isArray(tenantIdParam) ? (tenantIdParam[0] || '') : ((tenantIdParam as string) || '')
+
   if (!activity) return null
 
   const companyName = getCompanyName(activity.contact?.company)
+  const entityId = activity.id.includes('_') ? activity.id.split('_').slice(1).join('_') : activity.id
+
+  const handleMarkDone = () => {
+    if (activity.type === 'task') {
+      updateTask.mutate(
+        {
+          id: entityId,
+          data: { status: 'completed' },
+        },
+        {
+          onSuccess: () => onOpenChange(false),
+        }
+      )
+      return
+    }
+    if (tenantId) {
+      router.push(`/crm/${tenantId}/Activities`)
+      onOpenChange(false)
+    }
+  }
+
+  const handleScheduleFollowUp = () => {
+    if (!tenantId) return
+    const params = new URLSearchParams()
+    if (activity.contact?.id) params.set('contactId', activity.contact.id)
+    params.set('title', `Follow up: ${activity.title}`)
+    if (activity.metadata?.dueDate) params.set('dueDate', activity.metadata.dueDate)
+    params.set('priority', 'high')
+    router.push(`/crm/${tenantId}/Tasks/new?${params.toString()}`)
+    onOpenChange(false)
+  }
+
+  const handleAISummary = () => {
+    window.dispatchEvent(new CustomEvent('open-page-ai'))
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -112,15 +155,30 @@ export default function ActivityDetailDrawer({
                 <div className="rounded-lg bg-slate-50 dark:bg-slate-900 p-2">Next step: {activity.metadata?.nextStep || 'Call back in 24 hours'}</div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button size="sm" className="inline-flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  className="inline-flex items-center gap-1.5"
+                  onClick={handleMarkDone}
+                  disabled={updateTask.isPending}
+                >
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Mark done
+                  {updateTask.isPending ? 'Saving...' : 'Mark done'}
                 </Button>
-                <Button size="sm" variant="outline" className="inline-flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="inline-flex items-center gap-1.5"
+                  onClick={handleScheduleFollowUp}
+                >
                   <Calendar className="h-3.5 w-3.5" />
                   Schedule follow-up
                 </Button>
-                <Button size="sm" variant="outline" className="inline-flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="inline-flex items-center gap-1.5"
+                  onClick={handleAISummary}
+                >
                   <FileText className="h-3.5 w-3.5" />
                   AI summary
                 </Button>

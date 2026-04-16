@@ -36,7 +36,7 @@ export default function HRDocumentsUploadPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:document:upload:${crypto.randomUUID()}`
-        : `hr:document:upload:${Date.now()}`,
+        : 'hr:document:upload:fallback',
     []
   )
 

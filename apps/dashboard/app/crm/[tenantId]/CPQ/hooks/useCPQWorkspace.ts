@@ -36,19 +36,27 @@ export function useCPQWorkspace(tenantId: string) {
     enabled: !!tenantId,
   })
 
-  const quotes: Quote[] = data?.quotes ?? []
+  const quotes: Quote[] = useMemo(() => data?.quotes ?? [], [data?.quotes])
   const selectedQuote = useMemo(
     () => quotes.find((q) => q.id === selectedQuoteId) ?? quotes[0] ?? null,
     [quotes, selectedQuoteId]
   )
 
   useEffect(() => {
-    if (quotes.length > 0 && !selectedQuoteId) setSelectedQuoteId(quotes[0].id)
+    if (quotes.length === 0 || selectedQuoteId) return
+    const id = globalThis.setTimeout(() => {
+      setSelectedQuoteId(quotes[0].id)
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [quotes, selectedQuoteId])
 
   useEffect(() => {
-    setDraftLineItems(quoteToDraftItems(selectedQuote))
-  }, [selectedQuote?.id])
+    const next = quoteToDraftItems(selectedQuote)
+    const id = globalThis.setTimeout(() => {
+      setDraftLineItems(next)
+    }, 0)
+    return () => globalThis.clearTimeout(id)
+  }, [selectedQuote])
 
   const pricing = useMemo(() => {
     const subtotal = draftLineItems.reduce((sum, li) => sum + li.qty * li.unitPrice, 0)

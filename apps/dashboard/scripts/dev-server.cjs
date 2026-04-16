@@ -2,6 +2,7 @@
  * Start Next dev after optionally freeing the listen port (Windows-friendly).
  *
  * SKIP_FREE_PORT=1     — do not kill; use PORT only (fail if busy)
+ * SKIP_EXTERNAL_PREFLIGHT=1 — skip Groq/Upstash/Supabase DNS+TCP checks
  * PORT=3001            — preferred port
  * DEV_PORT_TRY_RANGE=25 — if preferred busy after kill, try PORT..PORT+range-1
  * NEXT_DEV_HOST=0.0.0.0 — listen address (default 0.0.0.0 so localhost + 127.0.0.1 work on Windows)
@@ -17,14 +18,23 @@ const dotenv = require('dotenv')
 
 const appRoot = path.join(__dirname, '..')
 const skipFree = process.env.SKIP_FREE_PORT === '1' || process.env.CI === 'true'
+const skipExternalPreflight = process.env.SKIP_EXTERNAL_PREFLIGHT === '1'
 const portRange =
   parseInt(process.env.DEV_PORT_TRY_RANGE || '25', 10) || 25
 
 // Load env here too (before next dev) so we can run external preflight checks.
-dotenv.config({ path: path.join(appRoot, '..', '..', '.env') })
-dotenv.config({ path: path.join(appRoot, '..', '..', '.env.local'), override: true })
-dotenv.config({ path: path.join(appRoot, '..', '..', '.env.development'), override: true })
-dotenv.config({ path: path.join(appRoot, '..', '..', '.env.development.local'), override: true })
+dotenv.config({ path: path.join(appRoot, '..', '..', '.env'), quiet: true })
+dotenv.config({ path: path.join(appRoot, '..', '..', '.env.local'), override: true, quiet: true })
+dotenv.config({
+  path: path.join(appRoot, '..', '..', '.env.development'),
+  override: true,
+  quiet: true,
+})
+dotenv.config({
+  path: path.join(appRoot, '..', '..', '.env.development.local'),
+  override: true,
+  quiet: true,
+})
 
 function withTimeout(promise, ms, label) {
   return Promise.race([
@@ -270,7 +280,11 @@ function choosePort() {
 }
 
 async function main() {
-  await runExternalPreflight()
+  if (skipExternalPreflight) {
+    console.log('[dev-server] Skipping external preflight (SKIP_EXTERNAL_PREFLIGHT=1)')
+  } else {
+    await runExternalPreflight()
+  }
 
   const nextCli = resolveNextCli()
   const port = choosePort()

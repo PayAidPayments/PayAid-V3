@@ -105,9 +105,11 @@ export default function CandidateDetailPage() {
   })
 
   useEffect(() => {
-    if (candidate?.candidateJobs?.length && selectedJobId === null) {
+    if (!candidate?.candidateJobs?.length || selectedJobId !== null) return
+    const timeoutId = globalThis.setTimeout(() => {
       setSelectedJobId(candidate.candidateJobs[0].requisition.id)
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [candidate?.candidateJobs, selectedJobId])
 
   const updateMutation = useMutation({

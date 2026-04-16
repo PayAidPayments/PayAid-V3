@@ -17,26 +17,29 @@ export default function AIInfluencerPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (token) {
-      fetch('/api/ai-influencer/campaigns', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.campaigns) {
-            setCampaigns(data.campaigns)
-          }
-          setLoading(false)
+    const timeoutId = globalThis.setTimeout(() => {
+      if (token) {
+        fetch('/api/ai-influencer/campaigns', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         })
-        .catch((err) => {
-          console.error('Failed to fetch campaigns:', err)
-          setLoading(false)
-        })
-    } else {
-      setLoading(false)
-    }
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.campaigns) {
+              setCampaigns(data.campaigns)
+            }
+            setLoading(false)
+          })
+          .catch((err) => {
+            console.error('Failed to fetch campaigns:', err)
+            setLoading(false)
+          })
+      } else {
+        setLoading(false)
+      }
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [token])
 
   if (loading) {

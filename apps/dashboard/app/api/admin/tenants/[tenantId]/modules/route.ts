@@ -128,8 +128,7 @@ export async function PUT(
     }
 
     // Validate module exists
-    const module = getModule(moduleId)
-    if (!module) {
+    if (!getModule(moduleId)) {
       return NextResponse.json(
         { error: 'Invalid module' },
         { status: 400 }

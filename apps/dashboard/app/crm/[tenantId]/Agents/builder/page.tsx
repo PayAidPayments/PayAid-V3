@@ -52,12 +52,14 @@ export default function WorkflowBuilderPage() {
   })
 
   useEffect(() => {
-    if (workflow) {
+    if (!workflow) return
+    const timeoutId = globalThis.setTimeout(() => {
       setName(workflow.name ?? '')
       setDescription(workflow.description ?? '')
       setTriggerType((workflow.trigger?.type as string) ?? 'manual')
       setSteps(Array.isArray(workflow.steps) ? workflow.steps : [])
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [workflow])
 
   const saveMutation = useMutation({

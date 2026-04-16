@@ -90,16 +90,19 @@ export default function EmailSmtpSettingsPage() {
 
   useEffect(() => {
     if (!data) return
-    setForm((prev) => ({
-      ...prev,
-      host: data.host || '',
-      port: data.port != null ? String(data.port) : prev.port,
-      username: data.username || '',
-      password: '',
-      fromName: data.fromName || '',
-      fromEmail: data.fromEmail || '',
-      useTls: Boolean(data.useTls),
-    }))
+    const timeoutId = globalThis.setTimeout(() => {
+      setForm((prev) => ({
+        ...prev,
+        host: data.host || '',
+        port: data.port != null ? String(data.port) : prev.port,
+        username: data.username || '',
+        password: '',
+        fromName: data.fromName || '',
+        fromEmail: data.fromEmail || '',
+        useTls: Boolean(data.useTls),
+      }))
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [data])
 
   const encryptionWarning = useMemo(() => {

@@ -12,6 +12,7 @@ import { z } from 'zod'
 import { formatINR } from '@/lib/currency'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
+import { assertCrmRoleAllowed, CrmRoleError } from '@/lib/crm/rbac'
 
 const CreatePipelineSchema = z.object({
   organizationId: z.string().uuid(),
@@ -120,7 +121,8 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId, roles } = await requireModuleAccess(request, 'crm')
+    assertCrmRoleAllowed(roles, ['admin'], 'pipeline write')
     const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
     if (idempotencyKey) {
       const existing = await findIdempotentRequest(tenantId, `crm:pipelines:create:${idempotencyKey}`)
@@ -186,6 +188,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response, { status: 201 })
   } catch (error) {
+    if (error instanceof CrmRoleError) {
+      return NextResponse.json(
+        { success: false, statusCode: error.status, error: { code: error.code, message: error.message } },
+        { status: error.status }
+      )
+    }
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }

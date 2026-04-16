@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Mail, MessageSquare, Sparkles, Copy, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/lib/stores/auth'
+import { CopyAction, COPY_ACTION_PRESETS } from '@/components/ui/copy-action'
 
 interface ContactAIOutreachPanelProps {
   contact: any
@@ -114,11 +115,6 @@ export const ContactAIOutreachPanel: React.FC<ContactAIOutreachPanelProps> = ({
     }
   }
 
-  const handleCopyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    alert('Copied to clipboard!')
-  }
-
   const handleSendEmail = () => {
     if (generatedEmail) {
       // Open email composer with generated content
@@ -178,13 +174,21 @@ export const ContactAIOutreachPanel: React.FC<ContactAIOutreachPanelProps> = ({
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold text-slate-700 dark:text-gray-300">Generated Email</p>
             <div className="flex items-center gap-1">
-              <button
-                onClick={() => handleCopyToClipboard(generatedEmail)}
-                className="p-1 hover:bg-slate-100 dark:hover:bg-gray-700 rounded transition-colors"
-                title="Copy"
-              >
-                <Copy className="w-3 h-3 text-slate-600 dark:text-gray-400" />
-              </button>
+              <CopyAction
+                textToCopy={generatedEmail}
+                successMessage="Email draft copied to clipboard."
+                label="Copy"
+                copiedLabel="Copied"
+                icon={<Copy className="w-3 h-3 text-slate-600 dark:text-gray-400" />}
+                buttonProps={{
+                  variant: 'ghost',
+                  size: 'sm',
+                  className: 'p-1 h-auto hover:bg-slate-100 dark:hover:bg-gray-700 rounded',
+                  title: 'Copy',
+                }}
+                showFeedback={false}
+                {...COPY_ACTION_PRESETS.compactSettings}
+              />
               {contact.email && (
                 <button
                   onClick={handleSendEmail}
@@ -208,13 +212,21 @@ export const ContactAIOutreachPanel: React.FC<ContactAIOutreachPanelProps> = ({
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold text-slate-700 dark:text-gray-300">Generated WhatsApp</p>
             <div className="flex items-center gap-1">
-              <button
-                onClick={() => handleCopyToClipboard(generatedWhatsApp)}
-                className="p-1 hover:bg-slate-100 dark:hover:bg-gray-700 rounded transition-colors"
-                title="Copy"
-              >
-                <Copy className="w-3 h-3 text-slate-600 dark:text-gray-400" />
-              </button>
+              <CopyAction
+                textToCopy={generatedWhatsApp}
+                successMessage="WhatsApp draft copied to clipboard."
+                label="Copy"
+                copiedLabel="Copied"
+                icon={<Copy className="w-3 h-3 text-slate-600 dark:text-gray-400" />}
+                buttonProps={{
+                  variant: 'ghost',
+                  size: 'sm',
+                  className: 'p-1 h-auto hover:bg-slate-100 dark:hover:bg-gray-700 rounded',
+                  title: 'Copy',
+                }}
+                showFeedback={false}
+                {...COPY_ACTION_PRESETS.compactSettings}
+              />
               {contact.phone && (
                 <button
                   onClick={handleSendWhatsApp}

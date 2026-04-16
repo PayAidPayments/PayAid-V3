@@ -65,6 +65,7 @@ model Tenant {
   attendanceRecords            AttendanceRecord[]
   biometricDevices             BiometricDevice[]
   auditLogs                    AuditLog[]
+  specialistActivityLogs       SpecialistActivityLog[]
   apiKeys                      ApiKey[]
   apiUsageLogs                 ApiUsageLog[]
   manufacturingBOMs            ManufacturingBOM[]
@@ -704,6 +705,45 @@ model AuditLog {
   @@index([tenantId, timestamp])
   @@index([changedBy])
   @@index([ipAddress])
+}
+
+model SpecialistActivityLog {
+  id                 String   @id @default(cuid())
+  tenantId           String
+  userId             String
+  specialistId       String
+  specialistName     String
+  specialistVersion  String   @default("v1")
+  module             String
+  recordType         String?
+  recordId           String?
+  sessionId          String
+  intent             String?
+  prompt             String
+  contextSources     String[]
+  permissionsChecked String[]
+  permissionResult   String
+  actionLevel        String
+  draftArtifactId    String?
+  proposedAction     String?
+  approvalRequired   Boolean  @default(false)
+  approvalBy         String?
+  result             String
+  errorCode          String?
+  reason             String?
+  latencyMs          Int?
+  metadata           Json?
+  createdAt          DateTime @default(now())
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, specialistId, createdAt])
+  @@index([tenantId, module, createdAt])
+  @@index([tenantId, actionLevel, createdAt])
+  @@index([tenantId, result, createdAt])
+  @@index([tenantId, permissionResult, createdAt])
+  @@index([tenantId, sessionId])
 }
 
 // Merchant Onboarding - Track onboarding status and workflow

@@ -90,7 +90,10 @@ export default function HRDashboardPage() {
   })
 
   useEffect(() => {
-    setIsDark(document.documentElement.classList.contains('dark'))
+    const timeoutId = globalThis.setTimeout(() => {
+      setIsDark(document.documentElement.classList.contains('dark'))
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [])
 
   if (!tenantId) {

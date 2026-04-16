@@ -20,6 +20,7 @@ import { TaxRuleSelector } from '@/components/tax/TaxRuleSelector'
 import { TaxBreakdown } from '@/components/tax/TaxBreakdown'
 import { getAuthHeaders } from '@/lib/api/client'
 import { PAYMENT_TERMS, calculateDueDateFromTerms, normalizePaymentTerm } from '@/lib/finance/payment-terms'
+import { withRetryGuidance } from '@/lib/ui/request-error-guidance'
 
 // Invoice template options (matching settings page)
 const invoiceTemplates = [
@@ -107,12 +108,14 @@ export default function NewInvoicePage() {
   
   // Fetch tenant default currency
   useEffect(() => {
-    if (tenantData?.defaultCurrency) {
+    if (!tenantData?.defaultCurrency) return
+    const id = globalThis.setTimeout(() => {
       setFormData(prev => ({
         ...prev,
         currency: tenantData.defaultCurrency || 'INR',
       }))
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [tenantData])
   
   // Fetch tax calculation when items change (using flexible tax engine)
@@ -206,7 +209,8 @@ export default function NewInvoicePage() {
 
   // Auto-fill from tenant (business profile)
   useEffect(() => {
-    if (tenantData) {
+    if (!tenantData) return
+    const id = globalThis.setTimeout(() => {
       setFormData(prev => {
         const updates: any = {}
         
@@ -231,45 +235,49 @@ export default function NewInvoicePage() {
         
         return prev
       })
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [tenantData])
 
   // Apply default invoice settings
   useEffect(() => {
-    if (invoiceSettings) {
+    if (!invoiceSettings) return
+    const id = globalThis.setTimeout(() => {
       setFormData(prev => ({
         ...prev,
         reverseCharge: invoiceSettings.defaultReverseCharge || false,
         terms: normalizePaymentTerm(invoiceSettings.defaultPaymentTerms) || prev.terms,
         notes: invoiceSettings.defaultNotes || prev.notes,
       }))
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [invoiceSettings])
 
   // Auto-fill customer details when prefillCustomerId changes (from URL)
   useEffect(() => {
-    if (prefillCustomerId && contacts.length > 0) {
-      const customer = contacts.find((c: any) => c.id === prefillCustomerId)
-      if (customer) {
-        setFormData(prev => ({
-          ...prev,
-          customerId: customer.id,
-          customerName: customer.name || '',
-          customerEmail: customer.email || '',
-          customerPhone: customer.phone || '',
-          customerAddress: customer.address || '',
-          customerCity: customer.city || '',
-          customerState: customer.state || '',
-          customerPostalCode: customer.postalCode || '',
-          customerGSTIN: customer.gstin || '',
-          // Only set placeOfSupply from customer if customer has a state
-          // Otherwise, keep current value or use tenant state
-          placeOfSupply: customer.state 
-            ? customer.state 
-            : (prev.placeOfSupply || tenantData?.state || ''),
-        }))
-      }
-    }
+    if (!prefillCustomerId || contacts.length === 0) return
+    const customer = contacts.find((c: any) => c.id === prefillCustomerId)
+    if (!customer) return
+    const id = globalThis.setTimeout(() => {
+      setFormData(prev => ({
+        ...prev,
+        customerId: customer.id,
+        customerName: customer.name || '',
+        customerEmail: customer.email || '',
+        customerPhone: customer.phone || '',
+        customerAddress: customer.address || '',
+        customerCity: customer.city || '',
+        customerState: customer.state || '',
+        customerPostalCode: customer.postalCode || '',
+        customerGSTIN: customer.gstin || '',
+        // Only set placeOfSupply from customer if customer has a state
+        // Otherwise, keep current value or use tenant state
+        placeOfSupply: customer.state 
+          ? customer.state 
+          : (prev.placeOfSupply || tenantData?.state || ''),
+      }))
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [prefillCustomerId, contacts, tenantData])
 
   // Helper function to calculate due date from payment terms (shared + normalized)
@@ -280,16 +288,17 @@ export default function NewInvoicePage() {
 
   // Auto-populate due date based on payment terms and invoice date
   useEffect(() => {
-    if (formData.terms && formData.invoiceDate && formData.terms !== 'Custom') {
-      const calculatedDueDate = calculateDueDate(formData.terms, formData.invoiceDate)
-      if (calculatedDueDate && calculatedDueDate !== formData.dueDate) {
-        setFormData(prev => ({
-          ...prev,
-          dueDate: calculatedDueDate,
-        }))
-      }
-    }
-  }, [formData.terms, formData.invoiceDate])
+    if (!formData.terms || !formData.invoiceDate || formData.terms === 'Custom') return
+    const calculatedDueDate = calculateDueDate(formData.terms, formData.invoiceDate)
+    if (!calculatedDueDate || calculatedDueDate === formData.dueDate) return
+    const id = globalThis.setTimeout(() => {
+      setFormData(prev => ({
+        ...prev,
+        dueDate: calculatedDueDate,
+      }))
+    }, 0)
+    return () => globalThis.clearTimeout(id)
+  }, [formData.terms, formData.invoiceDate, formData.dueDate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -376,7 +385,7 @@ export default function NewInvoicePage() {
         errorMessage = err
       }
       
-      setError(errorMessage)
+      setError(withRetryGuidance(errorMessage))
     }
   }
 

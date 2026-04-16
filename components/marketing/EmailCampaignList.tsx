@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
 // EmailCampaign type based on Campaign model
 interface EmailCampaign {
   id: string
@@ -21,26 +22,37 @@ interface EmailCampaignListProps {
 }
 
 export function EmailCampaignList({ organizationId }: EmailCampaignListProps) {
+  const router = useRouter()
   const [campaigns, setCampaigns] = useState<EmailCampaign[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
+  const [error, setError] = useState<string | null>(null)
   const pageSize = 20
 
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
         setLoading(true)
+        setError(null)
         const response = await fetch(
           `/api/marketing/email-campaigns?organizationId=${organizationId}&page=${page}&pageSize=${pageSize}`
         )
+        if (!response.ok) {
+          throw new Error(`Failed to load campaigns (${response.status})`)
+        }
         const data = await response.json()
         if (data.success) {
           setCampaigns(data.data.campaigns)
           setTotal(data.data.total)
+        } else {
+          throw new Error(data.error?.message || 'Failed to load campaigns')
         }
       } catch (error) {
         console.error('Failed to fetch campaigns:', error)
+        setCampaigns([])
+        setTotal(0)
+        setError(error instanceof Error ? error.message : 'Failed to fetch campaigns')
       } finally {
         setLoading(false)
       }
@@ -67,10 +79,21 @@ export function EmailCampaignList({ organizationId }: EmailCampaignListProps) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Email Campaigns</h2>
-        <Button onClick={() => {/* Open create modal */}}>Create Campaign</Button>
+        <Button onClick={() => router.push(`/marketing/${organizationId}/Campaigns/New`)}>Create Campaign</Button>
       </div>
 
+      {error && (
+        <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+          {error}
+        </div>
+      )}
+
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+        {campaigns.length === 0 ? (
+          <div className="p-8 text-center text-sm text-gray-600 dark:text-gray-300">
+            No campaigns yet. Create your first campaign to start outreach.
+          </div>
+        ) : (
         <table className="w-full">
           <thead>
             <tr className="border-b">
@@ -107,6 +130,7 @@ export function EmailCampaignList({ organizationId }: EmailCampaignListProps) {
             ))}
           </tbody>
         </table>
+        )}
 
         {total > pageSize && (
           <div className="p-4 flex justify-between">

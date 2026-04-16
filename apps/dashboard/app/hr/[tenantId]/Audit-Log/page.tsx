@@ -31,14 +31,17 @@ export default function HRAuditLogPage() {
 
   useEffect(() => {
     if (!tenantId || !token) return
-    setLoading(true)
-    const url = new URL('/api/hr/audit-logs', window.location.origin)
-    url.searchParams.set('limit', '100')
-    if (entityFilter) url.searchParams.set('entityType', entityFilter)
-    fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => (r.ok ? r.json() : { logs: [] }))
-      .then((data) => setLogs(data.logs || []))
-      .finally(() => setLoading(false))
+    const timeoutId = globalThis.setTimeout(() => {
+      setLoading(true)
+      const url = new URL('/api/hr/audit-logs', window.location.origin)
+      url.searchParams.set('limit', '100')
+      if (entityFilter) url.searchParams.set('entityType', entityFilter)
+      fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => (r.ok ? r.json() : { logs: [] }))
+        .then((data) => setLogs(data.logs || []))
+        .finally(() => setLoading(false))
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [tenantId, token, entityFilter])
 
   return (

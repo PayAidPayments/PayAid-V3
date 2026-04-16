@@ -278,18 +278,24 @@ export default function CRMLeadsPage() {
       void fetchSavedFilters()
       void fetchUsers()
     }
-    let idleId: number | ReturnType<typeof setTimeout> | undefined
-    let useIdle = false
-    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-      idleId = window.requestIdleCallback(run, { timeout: 2500 })
-      useIdle = true
-    } else if (typeof window !== 'undefined') {
-      idleId = window.setTimeout(run, 0)
+    const win = window as Window & {
+      requestIdleCallback?: (callback: IdleRequestCallback, opts?: IdleRequestOptions) => number
+      cancelIdleCallback?: (id: number) => void
+    }
+    let idleCallbackId: number | undefined
+    let timeoutId: ReturnType<typeof globalThis.setTimeout> | undefined
+    if (typeof win.requestIdleCallback === 'function') {
+      idleCallbackId = win.requestIdleCallback(run, { timeout: 2500 })
+    } else {
+      timeoutId = globalThis.setTimeout(run, 0)
     }
     return () => {
-      if (idleId == null || typeof window === 'undefined') return
-      if (useIdle) window.cancelIdleCallback(idleId as number)
-      else clearTimeout(idleId as ReturnType<typeof setTimeout>)
+      if (idleCallbackId != null && typeof win.cancelIdleCallback === 'function') {
+        win.cancelIdleCallback(idleCallbackId)
+      }
+      if (timeoutId != null) {
+        globalThis.clearTimeout(timeoutId)
+      }
     }
   }, [tenantId])
 

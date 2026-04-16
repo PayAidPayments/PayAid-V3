@@ -16,18 +16,7 @@ export default function MeetingPage() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const localStreamRef = useRef<MediaStream | null>(null)
 
-  useEffect(() => {
-    // Initialize WebRTC
-    initializeMedia()
-    return () => {
-      // Cleanup
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => track.stop())
-      }
-    }
-  }, [])
-
-  const initializeMedia = async () => {
+  async function initializeMedia() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: isVideoOn,
@@ -41,6 +30,15 @@ export default function MeetingPage() {
       console.error('Error accessing media devices:', error)
     }
   }
+
+  useEffect(() => {
+    void initializeMedia()
+    return () => {
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((track) => track.stop())
+      }
+    }
+  }, [])
 
   const toggleVideo = async () => {
     if (localStreamRef.current) {

@@ -74,7 +74,8 @@ export default function ProfileSettingsPage() {
 
   // Load profile data into form
   useEffect(() => {
-    if (profile) {
+    if (!profile) return
+    const id = globalThis.setTimeout(() => {
       setFormData({
         name: profile.name || '',
         email: profile.email || '',
@@ -82,7 +83,8 @@ export default function ProfileSettingsPage() {
         password: '',
         confirmPassword: '',
       })
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [profile])
 
   const handleSubmit = async (e: React.FormEvent) => {

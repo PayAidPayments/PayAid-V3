@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { xlsxBufferFromJsonRows } from '@/lib/spreadsheet/exceljs-export'
+import { assertCrmRoleAllowed, CrmRoleError } from '@/lib/crm/rbac'
 
 // GET /api/crm/contacts/export?format=csv|excel&type=customer|lead|all
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, roles } = await requireModuleAccess(request, 'crm')
+    assertCrmRoleAllowed(roles, ['admin', 'manager'], 'contact export')
 
     const searchParams = request.nextUrl.searchParams
     const format = searchParams.get('format') || 'excel' // 'csv' or 'excel'
@@ -110,6 +112,9 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error: any) {
+    if (error instanceof CrmRoleError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status })
+    }
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }

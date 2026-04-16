@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation'
 import { useVoiceWebSocket } from '@/lib/hooks/useVoiceWebSocket'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { RealTimeVoiceDemo } from '@/components/voice-agent/RealTimeVoiceDemo'
+import { useCopyToClipboardFeedback } from '@/lib/hooks/useCopyToClipboardFeedback'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -56,6 +57,7 @@ export default function VoiceAgentDemoPage() {
   const [showDiagnosticsModal, setShowDiagnosticsModal] = useState(false)
   const [diagnosticsData, setDiagnosticsData] = useState<any>(null)
   const [diagnosticsCopied, setDiagnosticsCopied] = useState(false)
+  const diagnosticsCopy = useCopyToClipboardFeedback({ copiedDurationMs: 2000, feedbackDurationMs: 2000 })
   const diagnosticsTextRef = useRef<HTMLTextAreaElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -2275,18 +2277,18 @@ If still not working, check the browser console (F12) for detailed error message
                       className="h-7 text-xs"
                       onClick={async () => {
                         const text = JSON.stringify(diagnosticsData, null, 2)
-                        try {
-                          await navigator.clipboard.writeText(text)
+                        const copied = await diagnosticsCopy.copyText(text, 'Diagnostic information copied to clipboard.')
+                        if (copied) {
                           setDiagnosticsCopied(true)
                           setTimeout(() => setDiagnosticsCopied(false), 2000)
-                        } catch (err) {
-                          // Fallback: select text in textarea
-                          if (diagnosticsTextRef.current) {
-                            diagnosticsTextRef.current.select()
-                            document.execCommand('copy')
-                            setDiagnosticsCopied(true)
-                            setTimeout(() => setDiagnosticsCopied(false), 2000)
-                          }
+                          return
+                        }
+                        // Fallback: select text in textarea
+                        if (diagnosticsTextRef.current) {
+                          diagnosticsTextRef.current.select()
+                          document.execCommand('copy')
+                          setDiagnosticsCopied(true)
+                          setTimeout(() => setDiagnosticsCopied(false), 2000)
                         }
                       }}
                     >

@@ -25,6 +25,7 @@ import {
 import { useAuthStore } from '@/lib/stores/auth'
 import { usePageAIExtraStore } from '@/lib/stores/page-ai-extra'
 import { useToast } from '@/components/ui/toast'
+import { CopyAction } from '@/components/ui/copy-action'
 
 type ActivityFilter = 'all' | 'email' | 'call' | 'whatsapp' | 'meeting' | 'task' | 'note' | 'deal'
 
@@ -176,7 +177,6 @@ export default function ContactDetailPage() {
   const [showMoreActions, setShowMoreActions] = useState(false)
   const [showContactActions, setShowContactActions] = useState(false)
   const [timelineFilter, setTimelineFilter] = useState<ActivityFilter>('all')
-  const [portalLinkCopied, setPortalLinkCopied] = useState(false)
   const [rescoreLoading, setRescoreLoading] = useState(false)
   const { token } = useAuthStore()
   const { toast, ToastContainer: PageToastContainer } = useToast()
@@ -251,7 +251,7 @@ export default function ContactDetailPage() {
     }
   }
 
-  const handleCopyPortalLink = async () => {
+  const resolvePortalLink = async () => {
     if (!token || !tenantId || !isCustomerPortalEligible) return
     try {
       const r = await fetch(
@@ -260,14 +260,12 @@ export default function ContactDetailPage() {
       )
       const data = await r.json()
       if (r.ok && data.portalUrl) {
-        await navigator.clipboard.writeText(data.portalUrl)
-        setPortalLinkCopied(true)
-        toast.success('Portal link copied', 'Customer portal link copied to clipboard.')
-        setTimeout(() => setPortalLinkCopied(false), 2000)
+        return data.portalUrl as string
       }
     } catch {
       toast.error('Portal link failed', 'Could not generate portal link right now.')
     }
+    return ''
   }
 
   useEffect(() => {
@@ -453,17 +451,21 @@ export default function ContactDetailPage() {
                       </Button>
                     </Link>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start"
-                    disabled={!isCustomerPortalEligible}
-                    title={!isCustomerPortalEligible ? 'Portal link is available only for customers' : undefined}
-                    onClick={handleCopyPortalLink}
-                  >
-                    <Link2 className="w-3.5 h-3.5 mr-2" />
-                    {portalLinkCopied ? 'Portal copied' : 'Copy portal link'}
-                  </Button>
+                  <CopyAction
+                    textToCopy={resolvePortalLink}
+                    successMessage="Customer portal link copied to clipboard."
+                    label="Copy portal link"
+                    copiedLabel="Copied"
+                    icon={<Link2 className="w-3.5 h-3.5 mr-2" />}
+                    buttonProps={{
+                      variant: 'ghost',
+                      size: 'sm',
+                      className: 'w-full justify-start',
+                      disabled: !isCustomerPortalEligible,
+                      title: !isCustomerPortalEligible ? 'Portal link is available only for customers' : undefined,
+                    }}
+                    showFeedback={false}
+                  />
                   <Link href={`/crm/${tenantId}/Contacts/${id}/Edit`}>
                     <Button variant="ghost" size="sm" className="w-full justify-start">
                       <Edit className="w-3.5 h-3.5 mr-2" />

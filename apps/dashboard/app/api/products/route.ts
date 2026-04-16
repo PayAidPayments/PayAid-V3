@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db/prisma'
 import { authenticateRequest, requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { cache } from '@/lib/redis/client'
 import { z } from 'zod'
+import { dbOverloadResponse, isTransientDbOverloadError } from '@/lib/api/db-overload'
 
 const createProductSchema = z.object({
   name: z.string().min(1),
@@ -165,6 +166,9 @@ export async function POST(request: NextRequest) {
         { error: 'Validation error', details: error.errors },
         { status: 400 }
       )
+    }
+    if (isTransientDbOverloadError(error)) {
+      return dbOverloadResponse('Product')
     }
 
     console.error('Create product error:', error)

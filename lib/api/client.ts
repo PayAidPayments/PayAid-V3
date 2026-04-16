@@ -18,7 +18,7 @@ export function getAuthHeaders(): Record<string, string> {
  */
 export async function apiRequest(
   url: string,
-  options: RequestInit = {}
+  options: RequestInit & { timeoutMs?: number } = {}
 ): Promise<Response> {
   const { token } = useAuthStore.getState()
 
@@ -29,8 +29,17 @@ export async function apiRequest(
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  return fetch(url, {
-    ...options,
-    headers,
-  })
+  const controller = new AbortController()
+  const timeoutMs = options.timeoutMs ?? 30000
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(url, {
+      ...options,
+      headers,
+      signal: options.signal ?? controller.signal,
+    })
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }

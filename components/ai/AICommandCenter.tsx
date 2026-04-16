@@ -36,19 +36,23 @@ function scheduleIdleTask(run: () => void, timeoutMs = 2500): () => void {
     run()
     return () => {}
   }
+  const win = window as Window & {
+    requestIdleCallback?: (callback: IdleRequestCallback, opts?: IdleRequestOptions) => number
+    cancelIdleCallback?: (id: number) => void
+  }
   let idleId: number | undefined
-  let timeoutId: ReturnType<typeof setTimeout> | undefined
-  if ('requestIdleCallback' in window) {
-    idleId = window.requestIdleCallback(() => run(), { timeout: timeoutMs })
+  let timeoutId: ReturnType<typeof globalThis.setTimeout> | undefined
+  if (typeof win.requestIdleCallback === 'function') {
+    idleId = win.requestIdleCallback(() => run(), { timeout: timeoutMs })
   } else {
-    timeoutId = window.setTimeout(run, 400)
+    timeoutId = globalThis.setTimeout(run, 400)
   }
   return () => {
-    if (idleId != null && 'cancelIdleCallback' in window) {
-      window.cancelIdleCallback(idleId)
+    if (idleId != null && typeof win.cancelIdleCallback === 'function') {
+      win.cancelIdleCallback(idleId)
     }
     if (timeoutId != null) {
-      clearTimeout(timeoutId)
+      globalThis.clearTimeout(timeoutId)
     }
   }
 }
@@ -639,7 +643,11 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
         </div>
 
         {/* Monthly Target Progress */}
-        <div className="space-y-2 pt-4 border-t border-purple-100 dark:border-purple-900">
+        <Link
+          href={tenantId ? `/crm/${tenantId}/Deals?category=won&timePeriod=${timePeriod}` : '#'}
+          className="block space-y-2 pt-4 border-t border-purple-100 dark:border-purple-900 rounded-lg hover:bg-purple-50/40 dark:hover:bg-purple-900/20 transition-colors"
+          title="Open won deals backing target progress"
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Target className="h-5 w-5 text-purple-600" />
@@ -654,7 +662,7 @@ export function AICommandCenter({ tenantId, stats, timePeriod = 'month', userNam
             <span>Current: {formatINRForDisplay(summary.currentRevenue)}</span>
             <span>Target: {formatINRForDisplay(summary.targetRevenue)}</span>
           </div>
-        </div>
+        </Link>
 
         {/* Micro-KPIs – equal width, no empty space */}
         <div className="grid grid-cols-3 gap-4 pt-4 border-t border-purple-100 dark:border-purple-900 min-w-0">

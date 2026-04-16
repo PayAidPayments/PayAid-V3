@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { cache } from '@/lib/redis/client'
+import { assertCrmRoleAllowed, CrmRoleError } from '@/lib/crm/rbac'
+import { logCrmAudit } from '@/lib/audit-log-crm'
 
 async function resolveCrmRequestTenantId(
   request: NextRequest,
@@ -21,7 +23,8 @@ async function resolveCrmRequestTenantId(
 
   if (user?.tenantId === requestTenantId) return requestTenantId
 
-  const isDemoAdmin = user?.email === 'admin@demo.com'
+  const allowDemoTenantOverride = process.env.NEXT_PUBLIC_CRM_ALLOW_DEMO_SEED === '1'
+  const isDemoAdmin = allowDemoTenantOverride && user?.email === 'admin@demo.com'
   if (isDemoAdmin) {
     const isDemoTenant = await prisma.tenant
       .findUnique({ where: { id: requestTenantId }, select: { name: true } })
@@ -53,6 +56,7 @@ async function userMayReadContactInTenant(
   jwtTenantId: string,
   contactTenantId: string
 ): Promise<boolean> {
+  const allowDemoTenantOverride = process.env.NEXT_PUBLIC_CRM_ALLOW_DEMO_SEED === '1'
   if (contactTenantId === jwtTenantId) return true
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -64,7 +68,8 @@ async function userMayReadContactInTenant(
     const hasAccess =
       jwtTenantId === requestTenantId ||
       user?.tenantId === requestTenantId ||
-      (user?.email === 'admin@demo.com' &&
+      (allowDemoTenantOverride &&
+        user?.email === 'admin@demo.com' &&
         (await prisma.tenant
           .findUnique({ where: { id: requestTenantId }, select: { name: true } })
           .then((t) => t?.name?.toLowerCase().includes('demo') ?? false)
@@ -257,14 +262,45 @@ export async function PATCH(
         where: {
           tenantId: tenantId,
           email: validated.email,
+          NOT: { id: resolvedParams.id },
         },
       })
 
       if (duplicate) {
         return NextResponse.json(
-          { error: 'Contact with this email already exists' },
-          { status: 400 }
+          {
+            error: 'A contact with this email already exists',
+            code: 'DUPLICATE_EMAIL',
+            existingId: duplicate.id,
+          },
+          { status: 409 }
         )
+      }
+    }
+
+    // Duplicate phone parity with POST create (trimmed, tenant-scoped, exclude self)
+    if (validated.phone?.trim()) {
+      const normalized = validated.phone.trim()
+      const existingPhone = existing.phone?.trim() || ''
+      if (normalized !== existingPhone) {
+        const duplicateByPhone = await prisma.contact.findFirst({
+          where: {
+            tenantId,
+            phone: normalized,
+            NOT: { id: resolvedParams.id },
+          },
+          select: { id: true, name: true },
+        })
+        if (duplicateByPhone) {
+          return NextResponse.json(
+            {
+              error: 'A contact with this phone number already exists',
+              code: 'DUPLICATE_PHONE',
+              existingId: duplicateByPhone.id,
+            },
+            { status: 409 }
+          )
+        }
       }
     }
 
@@ -305,7 +341,8 @@ export async function DELETE(
 ) {
   try {
     const resolvedParams = await params
-    const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
+    const { userId, tenantId: jwtTenantId, roles } = await requireModuleAccess(request, 'crm')
+    assertCrmRoleAllowed(roles, ['admin', 'manager'], 'contact delete')
     const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
 
     const existing = await prisma.contact.findFirst({
@@ -322,6 +359,16 @@ export async function DELETE(
       )
     }
 
+    await logCrmAudit({
+      tenantId,
+      userId,
+      entityType: 'contact',
+      entityId: resolvedParams.id,
+      action: 'delete',
+      changeSummary: `Contact deleted: ${existing.name}`,
+      beforeSnapshot: { name: existing.name, email: existing.email, phone: existing.phone, stage: existing.stage },
+    })
+
     await prisma.contact.delete({
       where: { id: resolvedParams.id },
     })
@@ -336,6 +383,9 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof CrmRoleError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status })
+    }
     console.error('Delete contact error:', error)
     return NextResponse.json(
       { error: 'Failed to delete contact' },

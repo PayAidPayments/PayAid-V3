@@ -19,7 +19,7 @@ export default function HRPayrollCyclesNewPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:payroll:cycle:create:${crypto.randomUUID()}`
-        : `hr:payroll:cycle:create:${Date.now()}`,
+        : 'hr:payroll:cycle:create:fallback',
     []
   )
   const [formData, setFormData] = useState({

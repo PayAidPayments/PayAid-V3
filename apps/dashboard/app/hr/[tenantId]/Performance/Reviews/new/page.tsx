@@ -23,7 +23,7 @@ export default function HRPerformanceReviewNewPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:performance-review:create:${crypto.randomUUID()}`
-        : `hr:performance-review:create:${Date.now()}`,
+        : 'hr:performance-review:create:fallback',
     []
   )
 

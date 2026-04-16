@@ -706,6 +706,7 @@ export function useTasks(params?: {
   dueDateFrom?: string
   dueDateTo?: string
   stats?: boolean
+  tenantId?: string
 }) {
   const queryString = new URLSearchParams()
   if (params?.page) queryString.set('page', params.page.toString())
@@ -719,6 +720,7 @@ export function useTasks(params?: {
   if (params?.dueDateFrom) queryString.set('dueDateFrom', params.dueDateFrom)
   if (params?.dueDateTo) queryString.set('dueDateTo', params.dueDateTo)
   if (params?.stats === false) queryString.set('stats', 'false')
+  if (params?.tenantId) queryString.set('tenantId', params.tenantId)
 
   return useQuery({
     queryKey: ['tasks', params],
@@ -752,11 +754,17 @@ export function useTask(id: string, tenantId?: string) {
 export function useCreateTask() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch('/api/tasks', {
+    mutationFn: async (data: Record<string, unknown>) => {
+      const tenantId = typeof data.tenantId === 'string' ? data.tenantId : undefined
+      const body = { ...data }
+      delete body.tenantId
+      const url = tenantId
+        ? `/api/tasks?tenantId=${encodeURIComponent(tenantId)}`
+        : '/api/tasks'
+      const response = await fetch(url, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(data),
+        body: JSON.stringify(body),
       })
       if (!response.ok) {
         const error = await response.json()
@@ -773,8 +781,11 @@ export function useCreateTask() {
 export function useUpdateTask() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const response = await fetch(`/api/tasks/${id}`, {
+    mutationFn: async ({ id, data, tenantId }: { id: string; data: any; tenantId?: string }) => {
+      const url = tenantId
+        ? `/api/tasks/${id}?tenantId=${encodeURIComponent(tenantId)}`
+        : `/api/tasks/${id}`
+      const response = await fetch(url, {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
@@ -795,8 +806,13 @@ export function useUpdateTask() {
 export function useDeleteTask() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (id: string) => {
-      const response = await fetch(`/api/tasks/${id}`, {
+    mutationFn: async (arg: string | { id: string; tenantId?: string }) => {
+      const id = typeof arg === 'string' ? arg : arg.id
+      const tenantId = typeof arg === 'string' ? undefined : arg.tenantId
+      const url = tenantId
+        ? `/api/tasks/${id}?tenantId=${encodeURIComponent(tenantId)}`
+        : `/api/tasks/${id}`
+      const response = await fetch(url, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       })
@@ -814,8 +830,13 @@ export function useDeleteTask() {
 export function useRemindTask() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (id: string) => {
-      const response = await fetch(`/api/tasks/remind/${id}`, {
+    mutationFn: async (arg: string | { id: string; tenantId?: string }) => {
+      const id = typeof arg === 'string' ? arg : arg.id
+      const tenantId = typeof arg === 'string' ? undefined : arg.tenantId
+      const url = tenantId
+        ? `/api/tasks/remind/${id}?tenantId=${encodeURIComponent(tenantId)}`
+        : `/api/tasks/remind/${id}`
+      const response = await fetch(url, {
         method: 'POST',
         headers: getAuthHeaders(),
       })
@@ -834,8 +855,13 @@ export function useRemindTask() {
 export function useBulkCompleteTasks() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (ids: string[]) => {
-      const response = await fetch('/api/tasks/bulk-complete', {
+    mutationFn: async (arg: string[] | { ids: string[]; tenantId?: string }) => {
+      const ids = Array.isArray(arg) ? arg : arg.ids
+      const tenantId = Array.isArray(arg) ? undefined : arg.tenantId
+      const url = tenantId
+        ? `/api/tasks/bulk-complete?tenantId=${encodeURIComponent(tenantId)}`
+        : '/api/tasks/bulk-complete'
+      const response = await fetch(url, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ ids }),
@@ -852,11 +878,12 @@ export function useBulkCompleteTasks() {
   })
 }
 
-export function useTaskTemplates() {
+export function useTaskTemplates(tenantId?: string) {
   return useQuery({
-    queryKey: ['task-templates'],
+    queryKey: ['task-templates', tenantId],
     queryFn: async () => {
-      const response = await fetch('/api/task-templates', { headers: getAuthHeaders() })
+      const qs = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''
+      const response = await fetch(`/api/task-templates${qs}`, { headers: getAuthHeaders() })
       if (!response.ok) throw new Error('Failed to fetch task templates')
       return response.json()
     },
@@ -866,11 +893,15 @@ export function useTaskTemplates() {
 export function useCreateTaskFromTemplate() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (payload: { templateId: string; contactId?: string; dueDate?: string }) => {
-      const response = await fetch('/api/tasks/from-template', {
+    mutationFn: async (payload: { templateId: string; contactId?: string; dueDate?: string; tenantId?: string }) => {
+      const { tenantId, ...body } = payload
+      const url = tenantId
+        ? `/api/tasks/from-template?tenantId=${encodeURIComponent(tenantId)}`
+        : '/api/tasks/from-template'
+      const response = await fetch(url, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       })
       if (!response.ok) {
         const error = await response.json().catch(() => ({}))

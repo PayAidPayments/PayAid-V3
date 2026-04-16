@@ -23,18 +23,23 @@ export default function IndustryLandingPage() {
 
     const config = getIndustryConfig(industryId)
     if (config) {
-      setIndustry(config)
-      
-      // Fetch recommended modules
-      fetch(`/api/industries/${industryId}/modules`)
-        .then(res => res.json())
-        .then(data => {
-          setRecommendedModules(data)
-          setLoading(false)
-        })
-        .catch(() => setLoading(false))
+      const timeoutId = globalThis.setTimeout(() => {
+        setIndustry(config)
+        // Fetch recommended modules
+        fetch(`/api/industries/${industryId}/modules`)
+          .then(res => res.json())
+          .then(data => {
+            setRecommendedModules(data)
+            setLoading(false)
+          })
+          .catch(() => setLoading(false))
+      }, 0)
+      return () => globalThis.clearTimeout(timeoutId)
     } else {
-      setLoading(false)
+      const timeoutId = globalThis.setTimeout(() => {
+        setLoading(false)
+      }, 0)
+      return () => globalThis.clearTimeout(timeoutId)
     }
   }, [industryId])
 

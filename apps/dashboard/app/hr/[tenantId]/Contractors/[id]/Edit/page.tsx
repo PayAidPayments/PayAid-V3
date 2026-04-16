@@ -26,7 +26,7 @@ export default function HRContractorEditPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:contractor:update:${contractorId}:${crypto.randomUUID()}`
-        : `hr:contractor:update:${contractorId}:${Date.now()}`,
+        : `hr:contractor:update:${contractorId}:fallback`,
     [contractorId]
   )
 
@@ -74,7 +74,8 @@ export default function HRContractorEditPage() {
 
   // Populate form when contractor data loads
   useEffect(() => {
-    if (contractor) {
+    if (!contractor) return
+    const timeoutId = globalThis.setTimeout(() => {
       setFormData({
         firstName: contractor.firstName || '',
         lastName: contractor.lastName || '',
@@ -93,7 +94,8 @@ export default function HRContractorEditPage() {
         state: contractor.state || '',
         pincode: contractor.pincode || '',
       })
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [contractor])
 
   const updateContractor = useMutation({

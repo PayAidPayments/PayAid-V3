@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { mediumPriorityQueue } from '@/lib/queue/bull'
+import { dbOverloadResponse, isTransientDbOverloadError } from '@/lib/api/db-overload'
 
 const createCampaignSchema = z.object({
   name: z.string().min(1),
@@ -284,6 +285,9 @@ export async function POST(request: NextRequest) {
         { error: 'Validation error', details: error.errors },
         { status: 400 }
       )
+    }
+    if (isTransientDbOverloadError(error)) {
+      return dbOverloadResponse('Campaign')
     }
 
     console.error('Create campaign error:', error)

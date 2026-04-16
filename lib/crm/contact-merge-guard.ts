@@ -5,15 +5,14 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
+import {
+  contactHasMergeGuardKey,
+  contactsShare360DuplicateKey,
+} from '@/lib/crm/contact-merge-key'
 
 export type MergeGuardResult =
   | { allowed: true }
-  | { allowed: false; status: 409 | 400; message: string }
-
-function trimEq(a: string | null | undefined, b: string | null | undefined): boolean {
-  const t = (v: string | null | undefined) => (v?.trim() ?? '')
-  return t(a).length > 0 && t(a) === t(b)
-}
+  | { allowed: false; status: 404 | 409 | 400; message: string; code?: string }
 
 export async function assertContactMergeAllowedBy360Suggestions(
   tenantId: string,
@@ -37,30 +36,32 @@ export async function assertContactMergeAllowedBy360Suggestions(
   ])
 
   if (!primary || !duplicate) {
-    return { allowed: false, status: 400, message: 'Contact not found' }
+    return {
+      allowed: false,
+      status: 404,
+      code: 'MERGE_CONTACT_NOT_FOUND',
+      message: 'One or both contacts were not found in this workspace.',
+    }
   }
 
-  const primaryHasKey = Boolean(primary.email?.trim() || primary.phone?.trim() || primary.gstin?.trim())
-  if (!primaryHasKey) {
+  if (!contactHasMergeGuardKey(primary)) {
     return {
       allowed: false,
       status: 409,
+      code: 'MERGE_GUARD_NO_PRIMARY_KEY',
       message:
         'Merge guard: this contact has no email, phone, or GSTIN to verify the duplicate match. Retry with bypassDuplicateSuggestionGuard: true if you intend to merge anyway.',
     }
   }
 
-  const emailMatch = trimEq(primary.email, duplicate.email)
-  const phoneMatch = trimEq(primary.phone, duplicate.phone)
-  const gstinMatch = trimEq(primary.gstin, duplicate.gstin)
-
-  if (emailMatch || phoneMatch || gstinMatch) {
+  if (contactsShare360DuplicateKey(primary, duplicate)) {
     return { allowed: true }
   }
 
   return {
     allowed: false,
     status: 409,
+    code: 'MERGE_GUARD_NO_OVERLAP',
     message:
       'Merge guard: the other contact does not share this contact’s email, phone, or GSTIN (same rules as Contact 360 suggestions). To merge anyway, send bypassDuplicateSuggestionGuard: true.',
   }

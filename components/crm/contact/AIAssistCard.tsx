@@ -5,6 +5,7 @@ import { Sparkles, Mail, MessageSquare, Copy, Send, FileCode } from 'lucide-reac
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/lib/stores/auth'
 import { TemplatePickerModal } from './TemplatePickerModal'
+import { CopyAction, COPY_ACTION_PRESETS } from '@/components/ui/copy-action'
 
 interface AIAssistCardProps {
   contact: any
@@ -107,13 +108,6 @@ export const AIAssistCard: React.FC<AIAssistCardProps> = ({ contact, tenantId, o
     }
   }
 
-  const handleCopy = () => {
-    if (generatedMessage) {
-      navigator.clipboard.writeText(generatedMessage)
-      alert('Copied to clipboard!')
-    }
-  }
-
   const handleSend = () => {
     if (!generatedMessage) return
 
@@ -206,13 +200,21 @@ export const AIAssistCard: React.FC<AIAssistCardProps> = ({ contact, tenantId, o
             </p>
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={handleCopy}
-              className="flex-1 px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 rounded-lg hover:bg-slate-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-1"
-            >
-              <Copy className="w-3 h-3" />
-              Copy
-            </button>
+            <CopyAction
+              textToCopy={generatedMessage}
+              successMessage="Message copied to clipboard."
+              label="Copy"
+              copiedLabel="Copied"
+              icon={<Copy className="w-3 h-3" />}
+              buttonProps={{
+                variant: 'secondary',
+                size: 'sm',
+                className:
+                  'flex-1 px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-600',
+              }}
+              showFeedback={false}
+              {...COPY_ACTION_PRESETS.compactSettings}
+            />
             <button
               onClick={handleSend}
               className="flex-1 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1"

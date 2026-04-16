@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { INDIAN_STATES } from '@/lib/utils/indian-states'
+import { CopyAction, COPY_ACTION_PRESETS } from '@/components/ui/copy-action'
 
 function getAuthHeaders() {
   const { token } = useAuthStore.getState()
@@ -70,7 +71,8 @@ export default function TenantSettingsPage() {
 
   // Load tenant data into form
   useEffect(() => {
-    if (tenant) {
+    if (!tenant) return
+    const id = globalThis.setTimeout(() => {
       setFormData({
         name: tenant.name || '',
         gstin: tenant.gstin || '',
@@ -84,7 +86,8 @@ export default function TenantSettingsPage() {
         website: tenant.website || '',
         logo: tenant.logo || '',
       })
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [tenant])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,19 +109,8 @@ export default function TenantSettingsPage() {
     })
   }
 
-  // Move useState before conditional return to follow React Hooks rules
-  const [copied, setCopied] = useState(false)
-
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">Loading...</div>
-  }
-
-  const copyOrgId = async () => {
-    if (tenant?.id) {
-      await navigator.clipboard.writeText(tenant.id)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
   }
 
   return (
@@ -147,14 +139,14 @@ export default function TenantSettingsPage() {
               <code className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-mono text-gray-800">
                 {tenant.id}
               </code>
-              <Button
-                onClick={copyOrgId}
-                variant="outline"
-                size="sm"
-                className="shrink-0"
-              >
-                {copied ? '✓ Copied!' : 'Copy'}
-              </Button>
+              <CopyAction
+                textToCopy={tenant.id}
+                successMessage="Organization ID copied to clipboard."
+                label="Copy"
+                copiedLabel="Copied"
+                buttonProps={{ variant: 'outline', size: 'sm' }}
+                {...COPY_ACTION_PRESETS.compactSettings}
+              />
             </div>
             <p className="mt-3 text-xs text-gray-600">
               This unique identifier helps our support team quickly locate your organization&apos;s account when you contact us for help.

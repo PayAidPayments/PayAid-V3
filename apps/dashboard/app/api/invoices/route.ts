@@ -11,6 +11,7 @@ import { logAudit } from '@/lib/audit/log'
 import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 import { z } from 'zod'
 import { mediumPriorityQueue } from '@/lib/queue/bull'
+import { dbOverloadResponse, isTransientDbOverloadError } from '@/lib/api/db-overload'
 
 const createInvoiceSchema = z.object({
   customerId: z.string().optional(),
@@ -457,6 +458,9 @@ export async function POST(request: NextRequest) {
     // Handle license errors
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
+    }
+    if (isTransientDbOverloadError(error)) {
+      return dbOverloadResponse('Invoice')
     }
     
     return NextResponse.json(

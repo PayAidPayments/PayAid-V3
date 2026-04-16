@@ -10,6 +10,7 @@ import { FormulaBar } from '@/components/spreadsheet/FormulaBar'
 import { StatusBar } from '@/components/spreadsheet/StatusBar'
 import { FindReplaceModal } from '@/components/spreadsheet/FindReplaceModal'
 import { applyFindReplace, countFind, applySort, applyFilter, applyFilterByValues, getColumnUniqueValues, computePivot, smartFillNext, type FilterCondition } from '@/lib/spreadsheet/editor-utils'
+import { useCopyToClipboardFeedback } from '@/lib/hooks/useCopyToClipboardFeedback'
 
 const MAX_HISTORY = 100
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart as RechartsPieChart, Pie, Cell } from 'recharts'
@@ -675,12 +676,19 @@ export function SpreadsheetEditor({ spreadsheetId, backHref, newSpreadsheetHref 
     historyIndexRef.current = nextIdx
     setHistoryState((prev) => ({ ...prev, index: nextIdx }))
   }, [])
+  const shareCopy = useCopyToClipboardFeedback({ copiedDurationMs: 2000, feedbackDurationMs: 2000 })
 
   const handleShare = useCallback(() => {
     const url = typeof window !== 'undefined' ? window.location.href : ''
     if (!url) return
-    navigator.clipboard.writeText(url).then(() => alert('Link copied to clipboard')).catch(() => alert('Could not copy link'))
-  }, [])
+    shareCopy.copyText(url, 'Link copied to clipboard').then((copied) => {
+      if (copied) {
+        alert('Link copied to clipboard')
+      } else {
+        alert('Could not copy link')
+      }
+    })
+  }, [shareCopy])
 
   /** Apply style to every cell in the current selection range */
   const applyStyleToRange = useCallback(

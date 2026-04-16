@@ -77,10 +77,8 @@ export async function GET(request: NextRequest) {
 // POST /api/interactions - Create a new interaction
 export async function POST(request: NextRequest) {
   try {
-    const user = await authenticateRequest(request)
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
+    const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
 
     const body = await request.json()
     const validated = createInteractionSchema.parse(body)
@@ -89,7 +87,7 @@ export async function POST(request: NextRequest) {
     const contact = await prisma.contact.findFirst({
       where: {
         id: validated.contactId,
-        tenantId: user.tenantId,
+        tenantId,
       },
     })
 

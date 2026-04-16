@@ -64,19 +64,21 @@ export default function ProjectsTimeTrackingPage() {
     },
   })
 
+  const entries = data?.entries
+
   // Client-side search filtering
   const filteredEntries = useMemo(() => {
-    if (!data?.entries) return []
-    if (!searchQuery.trim()) return data.entries
-    
+    if (!entries) return []
+    if (!searchQuery.trim()) return entries
+
     const query = searchQuery.toLowerCase()
-    return data.entries.filter((entry: any) =>
+    return entries.filter((entry: any) =>
       entry.taskName?.toLowerCase().includes(query) ||
       entry.projectName?.toLowerCase().includes(query) ||
       entry.description?.toLowerCase().includes(query) ||
       entry.user?.name?.toLowerCase().includes(query)
     )
-  }, [data?.entries, searchQuery])
+  }, [entries, searchQuery])
 
   const projects = projectsData?.projects || []
 

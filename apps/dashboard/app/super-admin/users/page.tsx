@@ -32,7 +32,10 @@ export default function SuperAdminUsersPage() {
   }
 
   useEffect(() => {
-    fetchUsers()
+    const loadId = window.setTimeout(() => {
+      fetchUsers()
+    }, 0)
+    return () => window.clearTimeout(loadId)
   }, [])
 
   return (

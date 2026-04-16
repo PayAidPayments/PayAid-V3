@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -40,8 +40,6 @@ import { motion } from 'framer-motion'
 import { AIScoreBadge, calculateDealScore, calculateContactScore } from '@/components/ai/AIScoreBadge'
 import { ActivitiesCommandCenter } from './activities/ActivitiesCommandCenter'
 import type { ActivityItem } from './activities/types'
-
-// Single Page AI is provided by AppShell (PageAIAssistant). Band 1 uses full AI Command Center (insights, regenerate, expandable actions).
 import { AICommandCenter } from '@/components/ai/AICommandCenter'
 import { 
   LineChart, 
@@ -190,7 +188,10 @@ export default function CRMDashboardPage() {
   const router = useRouter()
   const { user, tenant, token, fetchUser } = useAuthStore()
   const [authHydrated, setAuthHydrated] = useState<boolean>(() => useAuthStore.persist.hasHydrated())
-  const enableBackgroundAutoSeed = process.env.NEXT_PUBLIC_CRM_AUTO_SEED === '1'
+  // GA-safe default: demo auto-seeding is OFF unless explicitly enabled.
+  const enableBackgroundAutoSeed =
+    process.env.NEXT_PUBLIC_CRM_ALLOW_DEMO_SEED === '1' &&
+    process.env.NEXT_PUBLIC_CRM_AUTO_SEED === '1'
   
   // Get tenantId from URL params first, fallback to auth store
   // Handle both string and array cases (Next.js can return either)
@@ -227,6 +228,7 @@ export default function CRMDashboardPage() {
   const fetchDashboardStatsRef = useRef<
     ((signal?: AbortSignal, retryCount?: number, mode?: 'lite' | 'full' | 'charts', background?: boolean) => Promise<void>) | null
   >(null)
+  const fetchActivityFeedRef = useRef<((signal?: AbortSignal) => Promise<void>) | null>(null)
   const [supportOpenTickets, setSupportOpenTickets] = useState(0)
   const perfMarksSetRef = useRef({
     mounted: false,
@@ -234,7 +236,7 @@ export default function CRMDashboardPage() {
     secondaryVisible: false,
   })
 
-  const trackPerfEvent = (metric: 'mount_to_kpi_visible' | 'mount_to_secondary_visible', durationMs: number) => {
+  const trackPerfEvent = useCallback((metric: 'mount_to_kpi_visible' | 'mount_to_secondary_visible', durationMs: number) => {
     if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
       return
     }
@@ -258,7 +260,7 @@ export default function CRMDashboardPage() {
     }).catch(() => {
       // Ignore telemetry errors.
     })
-  }
+  }, [tenantId, timePeriod, currentView])
 
   useEffect(() => {
     if (typeof performance === 'undefined') return
@@ -346,7 +348,7 @@ export default function CRMDashboardPage() {
     } catch {
       // measure can fail if marks are missing; ignore
     }
-  }, [stats, loading])
+  }, [stats, loading, trackPerfEvent])
 
   useEffect(() => {
     if (typeof performance === 'undefined') return
@@ -364,15 +366,21 @@ export default function CRMDashboardPage() {
     } catch {
       // measure can fail if marks are missing; ignore
     }
-  }, [showSecondaryBands])
+  }, [showSecondaryBands, trackPerfEvent])
 
   // When dashboard loads with no deals, ensure demo data once so demos are never empty
   useEffect(() => {
-    if (!enableBackgroundAutoSeed) return
     if (!tenantId || !token || !stats || hasTriggeredEnsureDemoRef.current) return
+    const isOperationallyEmpty =
+      (stats.dealsCreatedThisMonth || 0) === 0 &&
+      (stats.dealsClosingThisMonth || 0) === 0 &&
+      (stats.revenueThisMonth || 0) === 0 &&
+      (stats.overdueTasks || 0) === 0 &&
+      ((stats.pipelineByStage || []).length === 0)
+    if (!enableBackgroundAutoSeed && !isOperationallyEmpty) return
     const pipelineTotal = (stats.pipelineByStage || []).reduce((s: number, p: any) => s + (Number(p?.count) || 0), 0)
     const hasDeals = (stats.dealsCreatedThisMonth || 0) + (stats.dealsClosingThisMonth || 0) + pipelineTotal > 0
-    if (hasDeals) return
+    if (hasDeals && !isOperationallyEmpty) return
     hasTriggeredEnsureDemoRef.current = true
     ;(async () => {
       try {
@@ -382,9 +390,12 @@ export default function CRMDashboardPage() {
         )
         if (res.ok) {
           const json = await res.json()
-          if (json.created?.deals > 0 || json.created?.tasks > 0) {
+          if (json.created?.deals > 0 || json.created?.tasks > 0 || json.created?.contacts > 0) {
             if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-              fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
+              const run = fetchDashboardStatsRef.current
+              if (run) {
+                run(abortControllerRef.current.signal, 0, 'full', true)
+              }
             }
           }
         }
@@ -439,7 +450,10 @@ export default function CRMDashboardPage() {
               setTimeout(() => {
                 if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
                   console.log('[CRM_DASHBOARD] Refreshing stats after seed completes...')
-                  fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
+                  const run = fetchDashboardStatsRef.current
+                  if (run) {
+                    run(abortControllerRef.current.signal, 0, 'full', true)
+                  }
                 }
               }, 30000) // Wait 30 seconds for seed to complete (optimized from 2 minutes)
               return // Don't trigger another seed
@@ -479,7 +493,10 @@ export default function CRMDashboardPage() {
                       if (attempts >= maxAttempts) {
                         console.log('[CRM_DASHBOARD] Max polling attempts reached, refreshing stats anyway...')
                         if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                          fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
+                          const run = fetchDashboardStatsRef.current
+                          if (run) {
+                            run(abortControllerRef.current.signal, 0, 'full', true)
+                          }
                         }
                         return
                       }
@@ -496,7 +513,10 @@ export default function CRMDashboardPage() {
                             // Seed completed, refresh stats
                             console.log('[CRM_DASHBOARD] Seed completed, refreshing stats...')
                             if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                              fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
+                              const run = fetchDashboardStatsRef.current
+                              if (run) {
+                                run(abortControllerRef.current.signal, 0, 'full', true)
+                              }
                               
                               // After fetching stats, check if we still have zeros and ensure current month data
                               setTimeout(async () => {
@@ -520,7 +540,10 @@ export default function CRMDashboardPage() {
                                             // Wait a moment then refresh again
                                             setTimeout(() => {
                                               if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                                                fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
+                                                const run = fetchDashboardStatsRef.current
+                                                if (run) {
+                                                  run(abortControllerRef.current.signal, 0, 'full', true)
+                                                }
                                               }
                                             }, 2000)
                                           } else {
@@ -533,7 +556,10 @@ export default function CRMDashboardPage() {
                                           // Retry after 10 seconds
                                           setTimeout(() => {
                                             if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                                              fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
+                                              const run = fetchDashboardStatsRef.current
+                                              if (run) {
+                                                run(abortControllerRef.current.signal, 0, 'full', true)
+                                              }
                                             }
                                           }, 10000)
                                         } else {
@@ -559,7 +585,10 @@ export default function CRMDashboardPage() {
                           // If status check fails, wait and try refreshing anyway
                           setTimeout(() => {
                             if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                              fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
+                              const run = fetchDashboardStatsRef.current
+                              if (run) {
+                                run(abortControllerRef.current.signal, 0, 'full', true)
+                              }
                             }
                           }, 10000)
                         }
@@ -568,7 +597,10 @@ export default function CRMDashboardPage() {
                         // On error, wait a bit and refresh anyway
                         setTimeout(() => {
                           if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                            fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
+                            const run = fetchDashboardStatsRef.current
+                            if (run) {
+                              run(abortControllerRef.current.signal, 0, 'full', true)
+                            }
                           }
                         }, 10000)
                       }
@@ -585,7 +617,10 @@ export default function CRMDashboardPage() {
                       console.log('[CRM_DASHBOARD] Seed already running, will wait for completion')
                       setTimeout(() => {
                         if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-                          fetchDashboardStats(abortControllerRef.current.signal, 0, 'full', true)
+                          const run = fetchDashboardStatsRef.current
+                          if (run) {
+                            run(abortControllerRef.current.signal, 0, 'full', true)
+                          }
                         }
                       }, 30000) // Wait 30 seconds (optimized from 2 minutes)
                     }
@@ -637,17 +672,25 @@ export default function CRMDashboardPage() {
   
   // Update view when URL query params change
   useEffect(() => {
+    if (viewParam === 'activity' && tenantId) {
+      router.replace(`/crm/${tenantId}/Activities`)
+      return
+    }
     if (viewParam === 'custom' || viewParam === 'sales' || viewParam === 'activity') {
       setCurrentView(viewParam as 'custom' | 'sales' | 'activity')
     } else {
       setCurrentView(user?.role === 'owner' || user?.role === 'admin' || user?.role === 'manager' ? 'manager' : 'tasks')
     }
-  }, [viewParam, user?.role])
+  }, [viewParam, user?.role, tenantId, router])
 
   // Main data loading effect - only for stats and view-specific data
   useEffect(() => {
     // Don't fetch until tenant + auth hydration are ready.
     if (!tenantId || !authHydrated) {
+      return
+    }
+    // Activity mode now has its own lightweight route.
+    if (viewParam === 'activity') {
       return
     }
     if (!token) {
@@ -677,7 +720,9 @@ export default function CRMDashboardPage() {
         setShowSecondaryBands(false)
         
         // Fast-path response for first paint.
-        await fetchDashboardStats(signal, 0, 'lite', false)
+        const runStats = fetchDashboardStatsRef.current
+        if (!runStats) return
+        await runStats(signal, 0, 'lite', false)
 
         // Hydrate full chart-heavy stats in background without blocking.
         // Guard against duplicate starts (StrictMode/effect reruns).
@@ -691,7 +736,7 @@ export default function CRMDashboardPage() {
                 fullHydrationStartedRef.current = false
                 return
               }
-              fetchDashboardStats(undefined, 0, 'charts', true).catch(() => {
+              runStats(undefined, 0, 'charts', true).catch(() => {
                 // Non-blocking background refresh
               }).finally(() => {
                 setIsHydratingFullStats(false)
@@ -715,7 +760,9 @@ export default function CRMDashboardPage() {
                 }
               })
             } else if (currentView === 'activity') {
-              fetchActivityFeed(signal).catch(err => {
+              const runActivity = fetchActivityFeedRef.current
+              if (!runActivity) return
+              runActivity(signal).catch(err => {
                 if (err?.name !== 'AbortError') {
                   console.error('Error loading activity feed:', err)
                 }
@@ -746,10 +793,13 @@ export default function CRMDashboardPage() {
       fullHydrationStartedRef.current = false
       fetchingStatsRef.current = false
     }
-  }, [tenantId, authHydrated, token, currentView, timePeriod]) // Removed activityFilter - it has its own effect
+  }, [tenantId, authHydrated, token, currentView, timePeriod, viewParam]) // Removed activityFilter - it has its own effect
 
   // Separate effect for activity filter changes (only affects activity feed)
   useEffect(() => {
+    if (viewParam === 'activity') {
+      return
+    }
     // Only fetch if we're in activity view
     if (currentView !== 'activity') {
       return
@@ -770,7 +820,9 @@ export default function CRMDashboardPage() {
       
       try {
         fetchingActivityRef.current = true
-        await fetchActivityFeed(signal)
+        const runActivity = fetchActivityFeedRef.current
+        if (!runActivity) return
+        await runActivity(signal)
       } catch (error: any) {
         if (error?.name === 'AbortError') {
           return
@@ -789,10 +841,11 @@ export default function CRMDashboardPage() {
       }
       fetchingActivityRef.current = false
     }
-  }, [activityFilter, currentView])
+  }, [activityFilter, currentView, viewParam])
 
   // Demo tenant: idempotent CRM KPI polish. Uses ref so this can live with other effects (before fetchDashboardStats is defined).
   useEffect(() => {
+    if (!enableBackgroundAutoSeed) return
     if (!tenantId || !token) return
     if (!showSecondaryBands) return
     if (crmDemoPolishTenantRef.current === tenantId) return
@@ -821,7 +874,7 @@ export default function CRMDashboardPage() {
       })()
     }, 1500)
     return cancelIdle
-  }, [tenantId, token, showSecondaryBands])
+  }, [tenantId, token, showSecondaryBands, enableBackgroundAutoSeed])
 
   useEffect(() => {
     if (!tenantId || !token) return
@@ -899,7 +952,7 @@ export default function CRMDashboardPage() {
     }
   }
 
-  const fetchActivityFeed = async (signal?: AbortSignal) => {
+  const fetchActivityFeed = useCallback(async (signal?: AbortSignal) => {
     try {
       const token = useAuthStore.getState().token
       if (!token) return
@@ -936,10 +989,10 @@ export default function CRMDashboardPage() {
       console.error('Error fetching activity feed:', err)
       setActivityFeedData([])
     }
-  }
+  }, [activityFilter])
 
 
-  const fetchDashboardStats = async (
+  const fetchDashboardStats = useCallback(async (
     signal?: AbortSignal,
     retryCount = 0,
     mode: 'lite' | 'full' | 'charts' = 'lite',
@@ -1338,8 +1391,9 @@ export default function CRMDashboardPage() {
         atRiskContacts: 0,
       })
     }
-  }
+  }, [tenantId, timePeriod, token])
 
+  fetchActivityFeedRef.current = fetchActivityFeed
   fetchDashboardStatsRef.current = fetchDashboardStats
 
   // Show loading if tenantId is not available yet or not a valid string
@@ -1565,7 +1619,7 @@ export default function CRMDashboardPage() {
     }
   })()
 
-  // Plain object (not useMemo): must not use hooks after early returns above — Rules of Hooks.
+  // Keep AI Command Center on Home dashboard.
   const aiCommandCenterStats = {
     ...safeStats,
     activeDeals: (safeStats.pipelineByStage || []).reduce((s: number, p: any) => s + (Number(p?.count) || 0), 0),
@@ -1627,7 +1681,7 @@ export default function CRMDashboardPage() {
                     router.push(`/crm/${tenantId}/Deals/`)
                     break
                   case 'activity':
-                    router.push(`/crm/${tenantId}/Home/?view=activity`)
+                    router.push(`/crm/${tenantId}/Activities`)
                     break
                   default:
                     router.push(`/crm/${tenantId}/Home/`)
@@ -1676,7 +1730,7 @@ export default function CRMDashboardPage() {
       )}
 
       <div className="p-6 space-y-6 overflow-y-auto" style={{ minHeight: 'calc(100vh - 200px)' }}>
-        {/* Band 1: AI Command Center - full version with AI insights, regenerate, expandable actions, target progress, micro-KPIs */}
+        {/* Band 1: AI Command Center */}
         {safeStats && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}

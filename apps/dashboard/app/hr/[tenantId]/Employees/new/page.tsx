@@ -29,7 +29,7 @@ export default function HREmployeeNewPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:employee:create:${crypto.randomUUID()}`
-        : `hr:employee:create:${Date.now()}`,
+        : 'hr:employee:create:fallback',
     []
   )
 

@@ -30,20 +30,23 @@ export default function DocsHomePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!token) {
-      setLoading(false)
-      return
-    }
-    fetch('/api/documents', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => (r.ok ? r.json() : { documents: [] }))
-      .then((data) => {
-        const list = (data.documents || []).slice(0, 6)
-        setRecentDocs(list)
+    const timeoutId = globalThis.setTimeout(() => {
+      if (!token) {
+        setLoading(false)
+        return
+      }
+      fetch('/api/documents', {
+        headers: { Authorization: `Bearer ${token}` },
       })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+        .then((r) => (r.ok ? r.json() : { documents: [] }))
+        .then((data) => {
+          const list = (data.documents || []).slice(0, 6)
+          setRecentDocs(list)
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false))
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [token])
 
   const formatDate = (d: string) =>

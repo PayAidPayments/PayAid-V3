@@ -23,6 +23,8 @@ import * as XLSX from 'xlsx'
 type SortOption = 'updated' | 'name'
 type ViewMode = 'grid' | 'list'
 
+const ACCEPT_EXT = ['csv', 'xlsx', 'xls'] as const
+
 interface SheetItem {
   id: string
   name: string
@@ -119,11 +121,7 @@ export default function SpreadsheetsListPage() {
     setMenuOpenId(null)
   }, [view])
 
-  useEffect(() => {
-    if (token) loadSpreadsheets()
-  }, [token])
-
-  const loadSpreadsheets = async () => {
+  const loadSpreadsheets = useCallback(async () => {
     if (!token) return
     setIsLoadingList(true)
     try {
@@ -139,7 +137,11 @@ export default function SpreadsheetsListPage() {
     } finally {
       setIsLoadingList(false)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    if (token) loadSpreadsheets()
+  }, [token, loadSpreadsheets])
 
   const filtered = spreadsheets.filter(
     (s) =>
@@ -271,7 +273,6 @@ export default function SpreadsheetsListPage() {
     }
   }
 
-  const ACCEPT_EXT = ['csv', 'xlsx', 'xls'] as const
   const acceptTypes = '.csv,.xlsx,.xls'
 
   const createSpreadsheetFromData = useCallback(
@@ -311,7 +312,7 @@ export default function SpreadsheetsListPage() {
       await loadSpreadsheets()
       router.push(`/spreadsheet/${tenantId}/Spreadsheets/${created.id}`)
     },
-    [token, tenantId, router]
+    [token, tenantId, router, loadSpreadsheets]
   )
 
   const processFile = useCallback(

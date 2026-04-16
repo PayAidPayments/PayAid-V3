@@ -1,13 +1,5 @@
-'use client'
-
 import dynamic from 'next/dynamic'
 
-/**
- * Public marketing landing at `/`.
- * The landing module is very large; a static import from the RSC tree made Turbopack sit on
- * `Compiling / ...` for a long time (or appear hung). Code-splitting keeps the `/` entry small;
- * ProvidersLoader already loads `Providers` eagerly, so this is only one lazy boundary.
- */
 const LandingPage = dynamic(
   () => import('@/components/landing/LandingPage').then((m) => ({ default: m.default })),
   {

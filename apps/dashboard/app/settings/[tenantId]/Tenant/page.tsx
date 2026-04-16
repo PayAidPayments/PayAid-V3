@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { INDIAN_STATES } from '@/lib/utils/indian-states'
+import { CopyAction, COPY_ACTION_PRESETS } from '@/components/ui/copy-action'
 
 function getAuthHeaders() {
   const { token } = useAuthStore.getState()
@@ -34,7 +35,6 @@ export default function TenantSettingsPage() {
   })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [copied, setCopied] = useState(false)
   const [branding, setBranding] = useState({
     brandColor: '#0f172a',
     useBrandColor: true,
@@ -73,19 +73,22 @@ export default function TenantSettingsPage() {
 
   useEffect(() => {
     if (tenant) {
-      setFormData({
-        name: tenant.name || '',
-        gstin: tenant.gstin || '',
-        address: tenant.address || '',
-        city: tenant.city || '',
-        state: tenant.state || '',
-        postalCode: tenant.postalCode || '',
-        country: tenant.country || 'India',
-        phone: tenant.phone || '',
-        email: tenant.email || '',
-        website: tenant.website || '',
-        logo: tenant.logo || '',
-      })
+      const timeoutId = globalThis.setTimeout(() => {
+        setFormData({
+          name: tenant.name || '',
+          gstin: tenant.gstin || '',
+          address: tenant.address || '',
+          city: tenant.city || '',
+          state: tenant.state || '',
+          postalCode: tenant.postalCode || '',
+          country: tenant.country || 'India',
+          phone: tenant.phone || '',
+          email: tenant.email || '',
+          website: tenant.website || '',
+          logo: tenant.logo || '',
+        })
+      }, 0)
+      return () => globalThis.clearTimeout(timeoutId)
     }
   }, [tenant])
 
@@ -95,7 +98,10 @@ export default function TenantSettingsPage() {
       const raw = localStorage.getItem(key)
       if (!raw) return
       const parsed = JSON.parse(raw) as Partial<typeof branding>
-      setBranding((p) => ({ ...p, ...parsed }))
+      const applyId = window.setTimeout(() => {
+        setBranding((p) => ({ ...p, ...parsed }))
+      }, 0)
+      return () => window.clearTimeout(applyId)
     } catch {
       // ignore
     }
@@ -125,14 +131,6 @@ export default function TenantSettingsPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  const copyOrgId = async () => {
-    if (tenant?.id) {
-      await navigator.clipboard.writeText(tenant.id)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
-  }
-
   if (isLoading) return <div className="flex items-center justify-center h-64">Loading...</div>
 
   return (
@@ -151,7 +149,14 @@ export default function TenantSettingsPage() {
           <CardContent>
             <div className="flex items-center gap-3">
               <code className="flex-1 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md text-sm font-mono text-slate-800 dark:text-slate-200">{tenant.id}</code>
-              <Button onClick={copyOrgId} variant="outline" size="sm" className="shrink-0">{copied ? '✓ Copied!' : 'Copy'}</Button>
+              <CopyAction
+                textToCopy={tenant.id}
+                successMessage="Organization ID copied to clipboard."
+                label="Copy"
+                copiedLabel="Copied"
+                buttonProps={{ variant: 'outline', size: 'sm', className: 'shrink-0' }}
+                {...COPY_ACTION_PRESETS.compactSettingsLongCopy}
+              />
             </div>
           </CardContent>
         </Card>

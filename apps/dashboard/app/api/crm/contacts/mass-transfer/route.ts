@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
+import { assertCrmRoleAllowed, CrmRoleError } from '@/lib/crm/rbac'
+import { logCrmAudit } from '@/lib/audit-log-crm'
 
 const massTransferSchema = z.object({
   contactIds: z.array(z.string()).min(1, 'At least one contact must be selected'),
@@ -12,7 +14,8 @@ const massTransferSchema = z.object({
 // POST /api/crm/contacts/mass-transfer - Mass transfer contacts to a user
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId, roles } = await requireModuleAccess(request, 'crm')
+    assertCrmRoleAllowed(roles, ['admin', 'manager'], 'contact mass transfer')
     const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
     if (idempotencyKey) {
       const existing = await findIdempotentRequest(tenantId, `crm:contacts:mass_transfer:${idempotencyKey}`)
@@ -65,9 +68,19 @@ export async function POST(request: NextRequest) {
         assignedToId: validated.assignToUserId,
       },
     })
-
-    // Note: Activity logging can be added here if Activity model exists
-    // For now, we'll skip it to avoid errors
+    await logCrmAudit({
+      tenantId,
+      userId,
+      entityType: 'contact',
+      entityId: `bulk-${validated.contactIds[0]}`,
+      action: 'update',
+      changeSummary: `Mass transferred ${result.count} contact(s)`,
+      afterSnapshot: {
+        contactIds: validated.contactIds,
+        assignToUserId: validated.assignToUserId,
+        transferredCount: result.count,
+      },
+    })
 
     if (idempotencyKey) {
       await markIdempotentRequest(tenantId, userId, `crm:contacts:mass_transfer:${idempotencyKey}`, {
@@ -81,6 +94,9 @@ export async function POST(request: NextRequest) {
       transferred: result.count,
     })
   } catch (error: any) {
+    if (error instanceof CrmRoleError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status })
+    }
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }

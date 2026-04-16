@@ -1,11 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Phone, ArrowLeft, Play } from 'lucide-react'
+import { ArrowLeft, Play } from 'lucide-react'
 import Link from 'next/link'
 import { VoiceCallList } from '@/components/voice-agent/voice-call-list'
 import { InitiateCallDialog } from '@/components/voice-agent/initiate-call-dialog'
@@ -17,26 +15,27 @@ export default function VoiceAgentCallsPage() {
   const [loading, setLoading] = useState(true)
   const [showCallDialog, setShowCallDialog] = useState(false)
 
-  useEffect(() => {
-    const fetchCalls = async () => {
-      try {
-        const response = await fetch(`/api/v1/voice-agents/${agentId}/calls`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-        })
-        if (response.ok) {
-          const data = await response.json()
-          setCalls(data.calls || [])
-        }
-      } catch (error) {
-        console.error('Failed to fetch calls:', error)
-      } finally {
-        setLoading(false)
+  const fetchCalls = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/v1/voice-agents/${agentId}/calls`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setCalls(data.calls || [])
       }
+    } catch (error) {
+      console.error('Failed to fetch calls:', error)
+    } finally {
+      setLoading(false)
     }
-    fetchCalls()
   }, [agentId])
+
+  useEffect(() => {
+    void fetchCalls()
+  }, [fetchCalls])
 
   return (
     <div className="space-y-6">

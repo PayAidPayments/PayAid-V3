@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   useTasks,
@@ -91,6 +91,7 @@ function statusVariant(status: string): 'default' | 'secondary' | 'destructive' 
 
 export default function CRMTasksPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const router = useRouter()
   const tenantId = (params?.tenantId as string) || ''
   const [searchInput, setSearchInput] = useState('')
@@ -103,10 +104,21 @@ export default function CRMTasksPage() {
   const [quickFilter, setQuickFilter] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const queryClient = useQueryClient()
-  const { data: templatesData } = useTaskTemplates()
+  const { data: templatesData } = useTaskTemplates(tenantId || undefined)
   const createFromTemplate = useCreateTaskFromTemplate()
   const templates = templatesData?.templates ?? []
   const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false)
+
+  useEffect(() => {
+    const filterParam = (searchParams?.get('filter') || '').toLowerCase()
+    if (filterParam === 'overdue' || filterParam === 'open' || filterParam === 'today' || filterParam === 'completed_today' || filterParam === 'high') {
+      const id = globalThis.setTimeout(() => {
+        setQuickFilter(filterParam)
+        setPage(1)
+      }, 0)
+      return () => globalThis.clearTimeout(id)
+    }
+  }, [searchParams])
 
   const statusParam = useMemo(() => {
     if (quickFilter === 'overdue') return 'overdue'
@@ -127,6 +139,7 @@ export default function CRMTasksPage() {
     dueDateFrom: filters.dueDateFrom || undefined,
     dueDateTo: filters.dueDateTo || undefined,
     stats: true,
+    tenantId: tenantId || undefined,
   })
 
   const calendarRange = useMemo(() => {
@@ -144,6 +157,7 @@ export default function CRMTasksPage() {
     dueDateFrom: view === 'calendar' ? calendarRange.dueDateFrom : undefined,
     dueDateTo: view === 'calendar' ? calendarRange.dueDateTo : undefined,
     stats: false,
+    tenantId: tenantId || undefined,
   })
   const calendarTasks = view === 'calendar' ? (calendarData?.tasks ?? []) : []
 
@@ -181,9 +195,12 @@ export default function CRMTasksPage() {
 
   const handleBulkComplete = () => {
     if (selectedIds.size === 0) return
-    bulkComplete.mutate(Array.from(selectedIds), {
-      onSuccess: () => setSelectedIds(new Set()),
-    })
+    bulkComplete.mutate(
+      { ids: Array.from(selectedIds), tenantId: tenantId || undefined },
+      {
+        onSuccess: () => setSelectedIds(new Set()),
+      }
+    )
   }
 
   const handleExportCSV = () => {
@@ -313,7 +330,7 @@ export default function CRMTasksPage() {
                         className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted"
                         onClick={() => {
                           createFromTemplate.mutate(
-                            { templateId: tpl.id },
+                            { templateId: tpl.id, tenantId: tenantId || undefined },
                             {
                               onSuccess: (task: { id: string }) => {
                                 setTemplateDropdownOpen(false)
@@ -550,6 +567,7 @@ export default function CRMTasksPage() {
                                         updateTask.mutate({
                                           id: task.id,
                                           data: { status: 'completed' },
+                                          tenantId: tenantId || undefined,
                                         })
                                       }
                                     >
@@ -565,7 +583,9 @@ export default function CRMTasksPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8"
-                                  onClick={() => remindTask.mutate(task.id)}
+                                  onClick={() =>
+                                    remindTask.mutate({ id: task.id, tenantId: tenantId || undefined })
+                                  }
                                   title="Send reminder"
                                 >
                                   <Bell className="h-4 w-4" />
@@ -642,8 +662,14 @@ export default function CRMTasksPage() {
                 reminderSentAt: t.reminderSentAt,
               }))}
               tenantId={tenantId}
-              onComplete={(id) => updateTask.mutate({ id, data: { status: 'completed' } })}
-              onRemind={(id) => remindTask.mutate(id)}
+              onComplete={(id) =>
+                updateTask.mutate({
+                  id,
+                  data: { status: 'completed' },
+                  tenantId: tenantId || undefined,
+                })
+              }
+              onRemind={(id) => remindTask.mutate({ id, tenantId: tenantId || undefined })}
               onStatusChange={() => queryClient.invalidateQueries({ queryKey: ['tasks'] })}
             />
           )}

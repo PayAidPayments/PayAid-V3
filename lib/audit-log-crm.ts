@@ -11,7 +11,7 @@ export type AuditAction = 'create' | 'update' | 'delete'
 export async function logCrmAudit(params: {
   tenantId: string
   userId: string
-  entityType: 'contact' | 'deal' | 'lead'
+  entityType: 'contact' | 'deal' | 'lead' | 'task'
   entityId: string
   action: AuditAction
   changeSummary: string

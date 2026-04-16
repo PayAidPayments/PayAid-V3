@@ -23,7 +23,7 @@ export default function HROffboardingNewPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:offboarding:create:${crypto.randomUUID()}`
-        : `hr:offboarding:create:${Date.now()}`,
+        : 'hr:offboarding:create:fallback',
     []
   )
 

@@ -157,5 +157,192 @@ export async function polishCrmDashboardForDemoTenant(tenantId: string): Promise
     modified = true
   }
 
+  // Ensure enough contacts across stages so conversion/win/churn cards are meaningful.
+  const existingContacts = await prisma.contact.findMany({
+    where: { tenantId },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+    select: { id: true, stage: true, churnRisk: true },
+  })
+
+  if (existingContacts.length < 10) {
+    const nowSuffix = Date.now().toString().slice(-6)
+    const toCreate = 10 - existingContacts.length
+    for (let i = 0; i < toCreate; i++) {
+      await prisma.contact.create({
+        data: {
+          tenantId,
+          name: `Demo Contact ${i + 1}`,
+          email: `demo-contact-${nowSuffix}-${i + 1}@example.com`,
+          company: i % 2 === 0 ? 'Demo Manufacturing Pvt Ltd' : 'Demo Retail LLP',
+          stage: i < 4 ? 'customer' : 'prospect',
+          status: 'active',
+          source: i % 2 === 0 ? 'Content Marketing' : 'YouTube',
+          churnRisk: i % 5 === 0,
+        },
+      })
+    }
+    modified = true
+  }
+
+  const contactPool = await prisma.contact.findMany({
+    where: { tenantId },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+    select: { id: true, stage: true, churnRisk: true },
+  })
+
+  const customerCount = contactPool.filter((c) => c.stage === 'customer').length
+  if (customerCount < 3) {
+    const promoteIds = contactPool.slice(0, Math.min(3 - customerCount, contactPool.length)).map((c) => c.id)
+    if (promoteIds.length > 0) {
+      await prisma.contact.updateMany({
+        where: { id: { in: promoteIds } },
+        data: { stage: 'customer' },
+      })
+      modified = true
+    }
+  }
+
+  const churnCount = contactPool.filter((c) => c.churnRisk).length
+  if (churnCount < 2) {
+    const churnIds = contactPool.slice(0, Math.min(2 - churnCount, contactPool.length)).map((c) => c.id)
+    if (churnIds.length > 0) {
+      await prisma.contact.updateMany({
+        where: { id: { in: churnIds } },
+        data: { churnRisk: true },
+      })
+      modified = true
+    }
+  }
+
+  // Ensure active pipeline deals with value so avg deal size / forecasted value are non-zero.
+  const activeDealsCount = await prisma.deal.count({
+    where: {
+      tenantId,
+      stage: { in: ['lead', 'qualified', 'proposal', 'negotiation'] },
+    },
+  })
+  if (activeDealsCount < 8) {
+    const eligibleContacts = await prisma.contact.findMany({
+      where: { tenantId },
+      take: 8,
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    })
+    const stages: Array<'lead' | 'qualified' | 'proposal' | 'negotiation'> = ['lead', 'qualified', 'proposal', 'negotiation']
+    const createCount = Math.min(8 - activeDealsCount, eligibleContacts.length)
+    for (let i = 0; i < createCount; i++) {
+      await prisma.deal.create({
+        data: {
+          tenantId,
+          contactId: eligibleContacts[i].id,
+          name: `Demo Pipeline Deal ${i + 1}`,
+          value: 180_000 + i * 45_000,
+          probability: 35 + i * 5,
+          stage: stages[i % stages.length],
+          expectedCloseDate: new Date(now.getFullYear(), now.getMonth(), Math.min(28, now.getDate() + 7 + i)),
+        },
+      })
+    }
+    modified = true
+  }
+
+  // Ensure overdue/open/completed tasks so overdue drill-through has matching data.
+  const overdueTaskCount = await prisma.task.count({
+    where: {
+      tenantId,
+      dueDate: { lt: now },
+      status: { in: ['pending', 'in_progress'] },
+    },
+  })
+  if (overdueTaskCount < 8) {
+    const taskContacts = await prisma.contact.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: { id: true },
+    })
+    const createCount = Math.min(8 - overdueTaskCount, taskContacts.length || 8)
+    for (let i = 0; i < createCount; i++) {
+      await prisma.task.create({
+        data: {
+          tenantId,
+          title: `Urgent follow-up ${i + 1}`,
+          description: 'Auto-seeded overdue task for demo dashboard realism.',
+          priority: i % 2 === 0 ? 'high' : 'medium',
+          status: i % 3 === 0 ? 'in_progress' : 'pending',
+          dueDate: new Date(now.getTime() - (i + 1) * 24 * 60 * 60 * 1000),
+          contactId: taskContacts[i % Math.max(taskContacts.length, 1)]?.id || null,
+        },
+      })
+    }
+    modified = true
+  }
+
+  const completedTaskCount = await prisma.task.count({
+    where: {
+      tenantId,
+      status: 'completed',
+      completedAt: { gte: monthStart, lte: monthEnd },
+    },
+  })
+  if (completedTaskCount < 5) {
+    const taskContacts = await prisma.contact.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: { id: true },
+    })
+    for (let i = completedTaskCount; i < 5; i++) {
+      const completedAt = new Date(now.getTime() - (i + 1) * 6 * 60 * 60 * 1000)
+      await prisma.task.create({
+        data: {
+          tenantId,
+          title: `Completed check-in ${i + 1}`,
+          description: 'Auto-seeded completed task for demo metrics.',
+          priority: 'medium',
+          status: 'completed',
+          dueDate: completedAt,
+          completedAt,
+          contactId: taskContacts[i % Math.max(taskContacts.length, 1)]?.id || null,
+        },
+      })
+    }
+    modified = true
+  }
+
+  // Ensure interaction history for Activities command center cards.
+  const interactionCount = await prisma.interaction.count({
+    where: {
+      contact: { tenantId },
+    },
+  })
+  if (interactionCount < 16) {
+    const interactionContacts = await prisma.contact.findMany({
+      where: { tenantId },
+      take: 8,
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, email: true },
+    })
+    if (interactionContacts.length > 0) {
+    const kinds = ['call', 'email', 'meeting', 'whatsapp'] as const
+    for (let i = interactionCount; i < 16; i++) {
+      const kind = kinds[i % kinds.length]
+      await prisma.interaction.create({
+        data: {
+          type: kind,
+          subject: `${kind === 'call' ? 'Call' : kind === 'meeting' ? 'Meeting' : 'Message'} with customer ${i + 1}`,
+          notes: 'Demo interaction seeded to support activity timeline and AI insights.',
+          outcome: i % 3 === 0 ? 'follow-up required' : i % 3 === 1 ? 'meeting booked' : 'replied',
+          duration: kind === 'call' || kind === 'meeting' ? 20 + i : null,
+          contactId: interactionContacts[i % interactionContacts.length].id,
+        },
+      })
+    }
+    modified = true
+    }
+  }
+
   return { applied: true, modified }
 }

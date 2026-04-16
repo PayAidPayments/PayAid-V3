@@ -23,7 +23,7 @@ export default function HRAssetNewPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:asset:create:${crypto.randomUUID()}`
-        : `hr:asset:create:${Date.now()}`,
+        : 'hr:asset:create:fallback',
     []
   )
 

@@ -35,7 +35,8 @@ export default function EditContactPage() {
   const [formError, setFormError] = useState('')
 
   useEffect(() => {
-    if (contact) {
+    if (!contact) return
+    const id = globalThis.setTimeout(() => {
       setFormData({
         name: contact.name || '',
         email: contact.email || '',
@@ -52,7 +53,8 @@ export default function EditContactPage() {
         notes: contact.notes || '',
         internalNotes: contact.internalNotes || '',
       })
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [contact])
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -8,6 +8,7 @@ import { useCreateDeal } from '@/lib/hooks/use-api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { withRetryGuidance } from '@/lib/ui/request-error-guidance'
 
 export default function NewDealPage() {
   const params = useParams()
@@ -115,7 +116,7 @@ export default function NewDealPage() {
         }
       }
       
-      setError(errorMessage)
+      setError(withRetryGuidance(errorMessage))
       console.error('Deal creation error:', err)
     }
   }

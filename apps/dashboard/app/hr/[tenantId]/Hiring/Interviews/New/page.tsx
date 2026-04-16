@@ -30,7 +30,7 @@ export default function NewInterviewPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:interview:create:${crypto.randomUUID()}`
-        : `hr:interview:create:${Date.now()}`,
+        : 'hr:interview:create:fallback',
     []
   )
   const [formData, setFormData] = useState({

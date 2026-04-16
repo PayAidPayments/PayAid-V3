@@ -32,7 +32,7 @@ export default function NewTaxDeclarationPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:tax-decl:create:${crypto.randomUUID()}`
-        : `hr:tax-decl:create:${Date.now()}`,
+        : 'hr:tax-decl:create:fallback',
     []
   )
   const [formData, setFormData] = useState({

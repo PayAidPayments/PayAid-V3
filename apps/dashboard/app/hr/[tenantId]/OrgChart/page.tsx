@@ -83,18 +83,21 @@ export default function HROrgChartPage() {
 
   useEffect(() => {
     if (!tenantId || !token) return
-    setLoading(true)
-    setError(null)
-    fetch(`/api/hr/org-chart?tenantId=${encodeURIComponent(tenantId)}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => {
-        if (!r.ok) throw new Error(r.status === 401 ? 'Unauthorized' : 'Failed to load org chart')
-        return r.json()
+    const timeoutId = globalThis.setTimeout(() => {
+      setLoading(true)
+      setError(null)
+      fetch(`/api/hr/org-chart?tenantId=${encodeURIComponent(tenantId)}`, {
+        headers: { Authorization: `Bearer ${token}` },
       })
-      .then((data) => setTree(data.tree ?? []))
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
-      .finally(() => setLoading(false))
+        .then((r) => {
+          if (!r.ok) throw new Error(r.status === 401 ? 'Unauthorized' : 'Failed to load org chart')
+          return r.json()
+        })
+        .then((data) => setTree(data.tree ?? []))
+        .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
+        .finally(() => setLoading(false))
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [tenantId, token])
 
   return (

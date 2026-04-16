@@ -182,13 +182,13 @@ function ModuleCardComponent({ module, icon: _Icon, metrics }: ModuleCardProps) 
           <span />
         )}
         {isComingSoon ? (
-          <a
+          <Link
             href="/#pricing"
             onClick={(e) => e.stopPropagation()}
             className="inline-flex items-center text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 shrink-0"
           >
             Get notified
-          </a>
+          </Link>
         ) : (
           <span className="inline-flex items-center text-sm font-semibold text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors shrink-0">
             Open

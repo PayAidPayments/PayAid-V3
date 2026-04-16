@@ -171,23 +171,31 @@ export function TasksKanbanView({
       if (col.id === 'overdue') {
         const dueDate = addDays(startOfDay(new Date()), -1)
         updateTask.mutate(
-          { id: taskId, data: { status: 'pending', dueDate: dueDate.toISOString() } },
+          {
+            id: taskId,
+            data: { status: 'pending', dueDate: dueDate.toISOString() },
+            tenantId: tenantId || undefined,
+          },
           { onSuccess: () => onStatusChange(taskId, 'pending', dueDate) }
         )
       } else if (col.id === 'due_soon') {
         const dueDate = endOfWeek(addDays(new Date(), 7), { weekStartsOn: 1 })
         updateTask.mutate(
-          { id: taskId, data: { status: 'pending', dueDate: dueDate.toISOString() } },
+          {
+            id: taskId,
+            data: { status: 'pending', dueDate: dueDate.toISOString() },
+            tenantId: tenantId || undefined,
+          },
           { onSuccess: () => onStatusChange(taskId, 'pending', dueDate) }
         )
       } else {
         updateTask.mutate(
-          { id: taskId, data: { status: col.status } },
+          { id: taskId, data: { status: col.status }, tenantId: tenantId || undefined },
           { onSuccess: () => onStatusChange(taskId, col.status) }
         )
       }
     },
-    [tasks, updateTask, onStatusChange]
+    [tasks, updateTask, onStatusChange, tenantId]
   )
 
   const sensors = useSensors(

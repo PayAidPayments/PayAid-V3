@@ -25,7 +25,7 @@ export default function HRAssetEditPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:asset:update:${assetId}:${crypto.randomUUID()}`
-        : `hr:asset:update:${assetId}:${Date.now()}`,
+        : `hr:asset:update:${assetId}:fallback`,
     [assetId]
   )
 
@@ -66,7 +66,8 @@ export default function HRAssetEditPage() {
 
   // Populate form when asset data loads
   useEffect(() => {
-    if (asset) {
+    if (!asset) return
+    const timeoutId = globalThis.setTimeout(() => {
       setFormData({
         name: asset.name || '',
         category: asset.category || '',
@@ -78,7 +79,8 @@ export default function HRAssetEditPage() {
         location: asset.location || '',
         notes: asset.notes || '',
       })
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [asset])
 
   const updateAsset = useMutation({

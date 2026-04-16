@@ -5,8 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils/cn'
 import { useAuthStore } from '@/lib/stores/auth'
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { CopyAction, COPY_ACTION_PRESETS } from '@/components/ui/copy-action'
 
 const settingsMenu = [
   {
@@ -55,15 +54,6 @@ const settingsMenu = [
 
 function OrgIdCard() {
   const { tenant } = useAuthStore()
-  const [copied, setCopied] = useState(false)
-
-  const copyToClipboard = async () => {
-    if (tenant?.id) {
-      await navigator.clipboard.writeText(tenant.id)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
-  }
 
   if (!tenant?.id) return null
 
@@ -83,14 +73,14 @@ function OrgIdCard() {
           <code className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-mono text-gray-800">
             {tenant.id}
           </code>
-          <Button
-            onClick={copyToClipboard}
-            variant="outline"
-            size="sm"
-            className="shrink-0"
-          >
-            {copied ? '✓ Copied!' : 'Copy'}
-          </Button>
+          <CopyAction
+            textToCopy={tenant.id}
+            successMessage="Organization ID copied to clipboard."
+            label="Copy"
+            copiedLabel="Copied"
+            buttonProps={{ variant: 'outline', size: 'sm' }}
+            {...COPY_ACTION_PRESETS.compactSettings}
+          />
         </div>
         <p className="mt-3 text-xs text-gray-600">
           This unique identifier helps our support team quickly locate your organization&apos;s account.

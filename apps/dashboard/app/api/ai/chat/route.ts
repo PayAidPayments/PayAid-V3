@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { requireCanonicalAiGatewayAccess, requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { getOllamaClient } from '@/lib/ai/ollama'
 import { getGroqClient } from '@/lib/ai/groq'
 import { getHuggingFaceClient } from '@/lib/ai/huggingface'
@@ -8,6 +8,10 @@ import { prisma } from '@/lib/db/prisma'
 import { analyzePromptContext, formatClarifyingQuestions } from '@/lib/ai/context-analyzer'
 import { z } from 'zod'
 import { mediumPriorityQueue } from '@/lib/queue/bull'
+import { listSpecialistsForModule } from '@/lib/ai/specialists/registry'
+import { evaluateSpecialistPolicy } from '@/lib/ai/specialists/policy'
+import { recordSpecialistAuditEvent } from '@/lib/ai/specialists/audit'
+import type { SpecialistActionLevel } from '@/lib/ai/specialists/types'
 
 const chatSchema = z.object({
   message: z.string().min(1),
@@ -18,6 +22,10 @@ const chatSchema = z.object({
       page: z.string().optional(),
       businessName: z.string().optional(),
       entities: z.array(z.string()).optional(),
+      specialistId: z.string().optional(),
+      actionLevel: z.enum(['read', 'draft', 'guarded_write', 'restricted']).optional(),
+      approvalConfirmed: z.boolean().optional(),
+      sessionId: z.string().optional(),
     })
     .passthrough()
     .optional(),
@@ -26,11 +34,102 @@ const chatSchema = z.object({
 // POST /api/ai/chat - Chat with AI assistant
 export async function POST(request: NextRequest) {
   try {
+    const startedAt = Date.now()
     // Check AI Studio module license
-    const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
+    const { tenantId, userId, licensedModules, roles } = await requireModuleAccess(request, 'ai-studio')
+    const authPayload = await requireCanonicalAiGatewayAccess(request)
 
     const body = await request.json()
     const validated = chatSchema.parse(body)
+    const moduleName = validated.context?.module || 'general'
+    const fallbackSpecialist = listSpecialistsForModule(moduleName)[0]
+    const specialistId = validated.context?.specialistId || fallbackSpecialist?.id || 'knowledge-specialist'
+    const actionLevel = (validated.context?.actionLevel || 'read') as SpecialistActionLevel
+    const approvalConfirmed = Boolean(validated.context?.approvalConfirmed)
+    const sessionId = validated.context?.sessionId || crypto.randomUUID()
+
+    const policy = evaluateSpecialistPolicy({
+      specialistId,
+      module: moduleName,
+      requestedActionLevel: actionLevel,
+      userRoles: roles || authPayload.roles || [],
+      userModules: licensedModules || authPayload.modules || [],
+    })
+
+    if (!policy.allowed) {
+      await recordSpecialistAuditEvent({
+        tenantId,
+        userId,
+        event: {
+          eventType: 'specialist.action.blocked',
+          specialistId,
+          specialistName: policy.specialist?.name || specialistId,
+          module: moduleName,
+          actionLevel,
+          sessionId,
+          prompt: validated.message,
+          permissionResult: 'denied',
+          reason: policy.reason,
+          result: 'blocked',
+          latencyMs: Date.now() - startedAt,
+        },
+      })
+
+      return NextResponse.json(
+        {
+          error: policy.reason || 'Specialist permission denied',
+          code: 'SPECIALIST_POLICY_DENIED',
+          specialistId,
+        },
+        { status: 403 }
+      )
+    }
+
+    if ((actionLevel === 'guarded_write' || actionLevel === 'restricted') && !approvalConfirmed) {
+      const reason = 'Approval confirmation required for guarded/restricted action level'
+      await recordSpecialistAuditEvent({
+        tenantId,
+        userId,
+        event: {
+          eventType: 'specialist.action.blocked',
+          specialistId,
+          specialistName: policy.specialist?.name || specialistId,
+          module: moduleName,
+          actionLevel,
+          sessionId,
+          prompt: validated.message,
+          permissionResult: 'denied',
+          reason,
+          result: 'blocked',
+          latencyMs: Date.now() - startedAt,
+        },
+      })
+
+      return NextResponse.json(
+        {
+          error: reason,
+          code: 'SPECIALIST_APPROVAL_REQUIRED',
+          specialistId,
+          actionLevel,
+        },
+        { status: 409 }
+      )
+    }
+
+    await recordSpecialistAuditEvent({
+      tenantId,
+      userId,
+      event: {
+        eventType: 'specialist.permissions.checked',
+        specialistId,
+        specialistName: policy.specialist?.name || specialistId,
+        module: moduleName,
+        actionLevel,
+        sessionId,
+        prompt: validated.message,
+        permissionResult: 'granted',
+      },
+    })
 
     // Check if query is personal/non-business and reject it
     const personalKeywords = [
@@ -43,6 +142,23 @@ export async function POST(request: NextRequest) {
     const isPersonalQuery = personalKeywords.some(keyword => lowerMessage.includes(keyword))
     
     if (isPersonalQuery) {
+      await recordSpecialistAuditEvent({
+        tenantId,
+        userId,
+        event: {
+          eventType: 'specialist.response.completed',
+          specialistId,
+          specialistName: policy.specialist?.name || specialistId,
+          module: moduleName,
+          actionLevel,
+          sessionId,
+          prompt: validated.message,
+          permissionResult: 'granted',
+          reason: 'business-only filter',
+          result: 'success',
+          latencyMs: Date.now() - startedAt,
+        },
+      })
       return NextResponse.json({
         message: "I'm a business assistant and can only help with business-related questions. How can I assist you with your business today? I can help with:\n\n• Business proposals and quotes\n• Social media posts (LinkedIn, Facebook, etc.)\n• Pitch decks and business plans\n• Marketing content\n• Sales strategies\n• Financial analysis\n• And other business operations",
         service: 'filtered',
@@ -77,6 +193,23 @@ export async function POST(request: NextRequest) {
     // If we don't have enough context, ask clarifying questions instead of giving generic response
     if (!contextAnalysis.hasEnoughContext && contextAnalysis.confidence === 'low') {
       const clarifyingMessage = formatClarifyingQuestions(contextAnalysis)
+      await recordSpecialistAuditEvent({
+        tenantId,
+        userId,
+        event: {
+          eventType: 'specialist.response.completed',
+          specialistId,
+          specialistName: policy.specialist?.name || specialistId,
+          module: moduleName,
+          actionLevel,
+          sessionId,
+          prompt: validated.message,
+          permissionResult: 'granted',
+          reason: 'clarification required',
+          result: 'success',
+          latencyMs: Date.now() - startedAt,
+        },
+      })
       return NextResponse.json({
         message: clarifyingMessage,
         service: 'context-analyzer',
@@ -295,11 +428,34 @@ export async function POST(request: NextRequest) {
       console.error('Failed to queue AI interaction log (non-critical):', queueError)
     }
 
+    await recordSpecialistAuditEvent({
+      tenantId,
+      userId,
+      event: {
+        eventType: 'specialist.response.completed',
+        specialistId,
+        specialistName: policy.specialist?.name || specialistId,
+        module: moduleName,
+        actionLevel,
+        sessionId,
+        prompt: validated.message,
+        permissionResult: 'granted',
+        contextSources: ['business_context', 'module_context'],
+        result: 'success',
+        latencyMs: Date.now() - startedAt,
+      },
+    })
+
     return NextResponse.json({
       message: response.message,
       cached: false,
       usage: response.usage,
       service: usedService,
+      specialist: {
+        id: specialistId,
+        name: policy.specialist?.name || specialistId,
+        actionLevel,
+      },
     })
   } catch (error) {
     // Handle license errors

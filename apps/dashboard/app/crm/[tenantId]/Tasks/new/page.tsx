@@ -18,7 +18,7 @@ export default function NewCRMTaskPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const createTask = useCreateTask()
-  const { data: contactsData } = useContacts()
+  const { data: contactsData } = useContacts({ tenantId: tenantId || undefined })
   const contacts = contactsData?.contacts ?? []
   const { token } = useAuthStore()
 
@@ -74,16 +74,19 @@ export default function NewCRMTaskPage() {
 
   useEffect(() => {
     if (!prefillTitle && !prefillContactId && !isMeetingPrefill && !prefillPriority && !prefillDueDate) return
-    setFormData((prev) => ({
-      ...prev,
-      title: prefillTitle || (isMeetingPrefill && !prev.title ? 'Schedule meeting' : prev.title),
-      contactId: prefillContactId || prev.contactId,
-      priority: prefillPriority || prev.priority,
-      dueDate: prefillDueDate || prev.dueDate,
-      description:
-        prev.description ||
-        (isMeetingPrefill ? 'Meeting requested from activity quick action.' : prev.description),
-    }))
+    const id = globalThis.setTimeout(() => {
+      setFormData((prev) => ({
+        ...prev,
+        title: prefillTitle || (isMeetingPrefill && !prev.title ? 'Schedule meeting' : prev.title),
+        contactId: prefillContactId || prev.contactId,
+        priority: prefillPriority || prev.priority,
+        dueDate: prefillDueDate || prev.dueDate,
+        description:
+          prev.description ||
+          (isMeetingPrefill ? 'Meeting requested from activity quick action.' : prev.description),
+      }))
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [prefillTitle, prefillContactId, isMeetingPrefill, prefillPriority, prefillDueDate])
 
   const selectedContactMissingFromList =
@@ -120,7 +123,7 @@ export default function NewCRMTaskPage() {
         }
       }
 
-      await createTask.mutateAsync(payload)
+      await createTask.mutateAsync({ ...payload, tenantId })
       router.push(`/crm/${tenantId}/Tasks`)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create task'

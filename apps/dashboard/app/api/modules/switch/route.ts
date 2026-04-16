@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get module config
-    const module = getModule(moduleId)
-    if (!module) {
+    const resolvedModule = getModule(moduleId)
+    if (!resolvedModule) {
       return NextResponse.json(
         { error: 'Module not found' },
         { status: 404 }
@@ -103,13 +103,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       module: {
-        id: module.id,
-        name: module.name,
-        description: module.description,
-        icon: module.icon,
+        id: resolvedModule.id,
+        name: resolvedModule.name,
+        description: resolvedModule.description,
+        icon: resolvedModule.icon,
       },
       routes: moduleRoutes?.routes || [],
-      defaultRoute: module.routes[0]?.path,
+      defaultRoute: resolvedModule.routes[0]?.path,
     })
   } catch (error) {
     console.error('Module switch error:', error)

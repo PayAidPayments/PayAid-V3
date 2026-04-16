@@ -24,7 +24,7 @@ export default function HRReimbursementNewPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:reimbursement:create:${crypto.randomUUID()}`
-        : `hr:reimbursement:create:${Date.now()}`,
+        : 'hr:reimbursement:create:fallback',
     []
   )
 

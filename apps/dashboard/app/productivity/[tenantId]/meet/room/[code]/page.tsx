@@ -6,6 +6,7 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { ArrowLeft, Video, Copy } from 'lucide-react'
 import Link from 'next/link'
 import { PageLoading } from '@/components/ui/loading'
+import { CopyAction } from '@/components/ui/copy-action'
 
 const MEET_BASE_URL = process.env.NEXT_PUBLIC_MEET_BASE_URL || ''
 
@@ -25,30 +26,33 @@ export default function MeetRoomPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!code || !token) {
-      setLoading(false)
-      if (!token) setError('Sign in to join')
-      return
-    }
     let cancelled = false
-    fetch(`/api/meet/by-code/${code}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('Meeting not found')
-        return res.json()
+    const timeoutId = globalThis.setTimeout(() => {
+      if (!code || !token) {
+        setLoading(false)
+        if (!token) setError('Sign in to join')
+        return
+      }
+      fetch(`/api/meet/by-code/${code}`, {
+        headers: { Authorization: `Bearer ${token}` },
       })
-      .then((data) => {
-        if (!cancelled) setMeeting(data)
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load meeting')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+        .then((res) => {
+          if (!res.ok) throw new Error('Meeting not found')
+          return res.json()
+        })
+        .then((data) => {
+          if (!cancelled) setMeeting(data)
+        })
+        .catch((e) => {
+          if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load meeting')
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
+    }, 0)
     return () => {
       cancelled = true
+      globalThis.clearTimeout(timeoutId)
     }
   }, [code, token])
 
@@ -97,14 +101,19 @@ export default function MeetRoomPage() {
             <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">Code: {meeting.meetingCode}</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => navigator.clipboard.writeText(inviteLink)}
-          className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
-        >
-          <Copy className="h-4 w-4" />
-          Copy invite link
-        </button>
+        <CopyAction
+          textToCopy={inviteLink}
+          successMessage="Invite link copied to clipboard."
+          label="Copy invite link"
+          copiedLabel="Copied"
+          icon={<Copy className="h-4 w-4" />}
+          buttonProps={{
+            variant: 'ghost',
+            size: 'sm',
+            className: 'text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100',
+          }}
+          showFeedback={false}
+        />
       </div>
 
       {MEET_BASE_URL && joinUrl ? (

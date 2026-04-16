@@ -23,7 +23,7 @@ export default function HROnboardingNewPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:onboarding:create:${crypto.randomUUID()}`
-        : `hr:onboarding:create:${Date.now()}`,
+        : 'hr:onboarding:create:fallback',
     []
   )
 

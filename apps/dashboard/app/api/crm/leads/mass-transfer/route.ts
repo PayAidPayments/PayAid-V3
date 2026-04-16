@@ -4,6 +4,8 @@ import { prismaWithRetry } from '@/lib/db/connection-retry'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
+import { assertCrmRoleAllowed, CrmRoleError } from '@/lib/crm/rbac'
+import { logCrmAudit } from '@/lib/audit-log-crm'
 
 const massTransferSchema = z.object({
   leadIds: z.array(z.string()).min(1, 'At least one lead must be selected'),
@@ -13,7 +15,8 @@ const massTransferSchema = z.object({
 // POST /api/crm/leads/mass-transfer - Mass transfer leads to a user
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId, roles } = await requireModuleAccess(request, 'crm')
+    assertCrmRoleAllowed(roles, ['admin', 'manager'], 'lead mass transfer')
     const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
     if (idempotencyKey) {
       const existing = await findIdempotentRequest(tenantId, `crm:leads:mass_transfer:${idempotencyKey}`)
@@ -90,6 +93,20 @@ export async function POST(request: NextRequest) {
       })
     )
 
+    await logCrmAudit({
+      tenantId,
+      userId,
+      entityType: 'lead',
+      entityId: `bulk-${validated.leadIds[0]}`,
+      action: 'update',
+      changeSummary: `Mass transferred ${result.count} lead(s)`,
+      afterSnapshot: {
+        leadIds: validated.leadIds,
+        assignToUserId: validated.assignToUserId,
+        transferredCount: result.count,
+      },
+    })
+
     if (idempotencyKey) {
       await markIdempotentRequest(tenantId, userId, `crm:leads:mass_transfer:${idempotencyKey}`, {
         transferred: result.count,
@@ -102,6 +119,9 @@ export async function POST(request: NextRequest) {
       transferred: result.count,
     })
   } catch (error: any) {
+    if (error instanceof CrmRoleError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status })
+    }
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }

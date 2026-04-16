@@ -52,6 +52,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = mergeContactsSchema.parse(body)
 
+    if (validated.primaryContactId === validated.duplicateContactId) {
+      return NextResponse.json(
+        {
+          error: 'Primary and duplicate contact must be different',
+          code: 'MERGE_SAME_CONTACT',
+        },
+        { status: 400 }
+      )
+    }
+
     const guard = await assertContactMergeAllowedBy360Suggestions(
       tenantId,
       validated.primaryContactId,
@@ -59,7 +69,13 @@ export async function POST(request: NextRequest) {
       { bypassGuard: validated.bypassDuplicateSuggestionGuard === true }
     )
     if (!guard.allowed) {
-      return NextResponse.json({ error: guard.message, code: 'MERGE_GUARD' }, { status: guard.status })
+      const guardMessage = 'message' in guard ? guard.message : 'Merge blocked by guard'
+      const guardCode = 'code' in guard && guard.code ? guard.code : 'MERGE_GUARD'
+      const guardStatus = 'status' in guard ? guard.status : 409
+      return NextResponse.json(
+        { error: guardMessage, code: guardCode },
+        { status: guardStatus }
+      )
     }
 
     const result = await DuplicateDetectorService.mergeContacts(

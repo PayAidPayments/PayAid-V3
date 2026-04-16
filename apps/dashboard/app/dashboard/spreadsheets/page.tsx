@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, FileSpreadsheet, Search, Filter } from 'lucide-react'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -10,13 +10,7 @@ export default function SpreadsheetsPage() {
   const [spreadsheets, setSpreadsheets] = useState<any[]>([])
   const { token } = useAuthStore()
 
-  useEffect(() => {
-    if (token) {
-      loadSpreadsheets()
-    }
-  }, [token])
-
-  const loadSpreadsheets = async () => {
+  const loadSpreadsheets = useCallback(async () => {
     if (!token) return
     try {
       const response = await fetch('/api/spreadsheets', {
@@ -31,7 +25,15 @@ export default function SpreadsheetsPage() {
     } catch (error) {
       console.error('Error loading spreadsheets:', error)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    if (!token) return
+    const id = globalThis.setTimeout(() => {
+      void loadSpreadsheets()
+    }, 0)
+    return () => globalThis.clearTimeout(id)
+  }, [token, loadSpreadsheets])
 
   return (
     <div className="space-y-6">

@@ -9,6 +9,7 @@ import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
 import { logCrmAudit } from '@/lib/audit-log-crm'
 import { resolveTenantFromParam } from '@/lib/tenant/resolve-tenant'
 import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
+import { dbOverloadResponse, isTransientDbOverloadError } from '@/lib/api/db-overload'
 
 // Optional email/phone: allow empty string from forms and coerce to undefined for DB
 const optionalEmail = z.union([z.string().email(), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v))
@@ -65,7 +66,9 @@ export async function GET(request: NextRequest) {
       }).catch(() => null)
       const userTenantId = user?.tenantId ?? null
       const hasAccess = jwtTenantId === requestTenantId || userTenantId === requestTenantId
+      const allowDemoTenantOverride = process.env.NEXT_PUBLIC_CRM_ALLOW_DEMO_SEED === '1'
       const isDemoTenantRequest =
+        allowDemoTenantOverride &&
         user?.email === 'admin@demo.com' &&
         (await prismaRead.tenant.findUnique({
           where: { id: requestTenantId },
@@ -562,6 +565,9 @@ export async function POST(request: NextRequest) {
         { error: 'Validation error', details: error.errors },
         { status: 400 }
       )
+    }
+    if (isTransientDbOverloadError(error)) {
+      return dbOverloadResponse('Contact')
     }
 
     console.error('Create contact error:', error)

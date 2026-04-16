@@ -19,7 +19,7 @@ export default function FinanceVendorsNewPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `finance:vendor:create:${crypto.randomUUID()}`
-        : `finance:vendor:create:${Date.now()}`,
+        : 'finance:vendor:create:fallback',
     []
   )
   const [formData, setFormData] = useState({

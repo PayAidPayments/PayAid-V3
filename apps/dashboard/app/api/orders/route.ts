@@ -9,6 +9,7 @@ import { z } from 'zod'
 import { mediumPriorityQueue } from '@/lib/queue/bull'
 import { getSendGridClient } from '@/lib/email/sendgrid'
 import { emailTemplates, renderTemplate } from '@/lib/email/templates'
+import { dbOverloadResponse, isTransientDbOverloadError } from '@/lib/api/db-overload'
 
 const createOrderSchema = z.object({
   customerId: z.string().optional(),
@@ -278,6 +279,9 @@ export async function POST(request: NextRequest) {
         { error: 'Validation error', details: error.errors },
         { status: 400 }
       )
+    }
+    if (isTransientDbOverloadError(error)) {
+      return dbOverloadResponse('Order')
     }
 
     console.error('Create order error:', error)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Presentation, Search, Filter } from 'lucide-react'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -10,13 +10,7 @@ export default function SlidesPage() {
   const [presentations, setPresentations] = useState<any[]>([])
   const { token } = useAuthStore()
 
-  useEffect(() => {
-    if (token) {
-      loadPresentations()
-    }
-  }, [token])
-
-  const loadPresentations = async () => {
+  const loadPresentations = useCallback(async () => {
     if (!token) return
     try {
       const response = await fetch('/api/slides', {
@@ -31,7 +25,15 @@ export default function SlidesPage() {
     } catch (error) {
       console.error('Error loading presentations:', error)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    if (!token) return
+    const id = globalThis.setTimeout(() => {
+      void loadPresentations()
+    }, 0)
+    return () => globalThis.clearTimeout(id)
+  }, [token, loadPresentations])
 
   return (
     <div className="space-y-6">

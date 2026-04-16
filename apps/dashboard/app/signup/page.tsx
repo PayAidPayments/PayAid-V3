@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useMemo, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getIndustryConfig } from '@/lib/industries/config'
-import { Logo } from '@/components/brand/Logo'
 
 // Get subdomain domain from environment (defaults to payaid.com)
 const SUBDOMAIN_DOMAIN = process.env.NEXT_PUBLIC_SUBDOMAIN_DOMAIN || 'payaid.com'
@@ -30,41 +29,19 @@ function SignupForm() {
     subdomain: '',
   })
   const [error, setError] = useState('')
-  const [industry, setIndustry] = useState<any>(null)
-
-  useEffect(() => {
-    if (industryId) {
-      // Handle custom industry
-      if (industryId === 'custom') {
-        const customName = searchParams.get('name')
-        if (customName) {
-          setIndustry({
-            id: 'custom',
-            name: decodeURIComponent(customName),
-            icon: '💼',
-            description: 'Custom industry configuration',
-          })
-          if (!formData.tenantName) {
-            setFormData(prev => ({
-              ...prev,
-              tenantName: `My ${decodeURIComponent(customName)} Business`,
-            }))
-          }
-        }
-      } else {
-        const config = getIndustryConfig(industryId)
-        if (config) {
-          setIndustry(config)
-          // Pre-fill business name suggestion based on industry
-          if (!formData.tenantName) {
-            setFormData(prev => ({
-              ...prev,
-              tenantName: `My ${config.name} Business`,
-            }))
-          }
-        }
+  const industry = useMemo(() => {
+    if (!industryId) return null
+    if (industryId === 'custom') {
+      const customName = searchParams.get('name')
+      if (!customName) return null
+      return {
+        id: 'custom',
+        name: decodeURIComponent(customName),
+        icon: '💼',
+        description: 'Custom industry configuration',
       }
     }
+    return getIndustryConfig(industryId) ?? null
   }, [industryId, searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {

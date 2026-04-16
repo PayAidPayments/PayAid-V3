@@ -26,7 +26,7 @@ export default function HREmployeeEditPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:employee:update:${employeeId}:${crypto.randomUUID()}`
-        : `hr:employee:update:${employeeId}:${Date.now()}`,
+        : `hr:employee:update:${employeeId}:fallback`,
     [employeeId]
   )
 
@@ -104,7 +104,8 @@ export default function HREmployeeEditPage() {
 
   // Populate form when employee data loads
   useEffect(() => {
-    if (employee) {
+    if (!employee) return
+    const timeoutId = globalThis.setTimeout(() => {
       setFormData({
         firstName: employee.firstName || '',
         lastName: employee.lastName || '',
@@ -123,7 +124,8 @@ export default function HREmployeeEditPage() {
         ptApplicable: employee.ptApplicable ?? true,
         tdsApplicable: employee.tdsApplicable ?? true,
       })
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [employee])
 
   const updateEmployee = useMutation({

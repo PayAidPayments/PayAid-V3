@@ -26,11 +26,13 @@ export default function FinanceLoginPage() {
   const { login, isLoading, isAuthenticated, tenant } = useAuthStore()
   
   useEffect(() => {
-    setMounted(true)
-    
-    if (isAuthenticated && tenant?.id) {
-      router.push(`/finance/${tenant.id}/Home/`)
-    }
+    const id = globalThis.setTimeout(() => {
+      setMounted(true)
+      if (isAuthenticated && tenant?.id) {
+        router.push(`/finance/${tenant.id}/Home/`)
+      }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [isAuthenticated, tenant?.id, router])
 
   const handleSubmit = async (e: React.FormEvent) => {

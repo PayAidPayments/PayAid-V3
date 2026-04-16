@@ -9,6 +9,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { logCrmAudit } from '@/lib/audit-log-crm'
 import { z } from 'zod'
 import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
+import { assertCrmRoleAllowed, CrmRoleError } from '@/lib/crm/rbac'
 
 const bodySchema = z.object({
   contactIds: z.array(z.string().min(1)).min(1, 'At least one contact ID is required'),
@@ -16,7 +17,8 @@ const bodySchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId, roles } = await requireModuleAccess(request, 'crm')
+    assertCrmRoleAllowed(roles, ['admin', 'manager'], 'bulk contact archive')
     const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
     if (idempotencyKey) {
       const existing = await findIdempotentRequest(tenantId, `crm:contacts:bulk_delete:${idempotencyKey}`)
@@ -59,6 +61,9 @@ export async function POST(request: NextRequest) {
       contactIds,
     })
   } catch (error: any) {
+    if (error instanceof CrmRoleError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status })
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid request', details: error.errors },

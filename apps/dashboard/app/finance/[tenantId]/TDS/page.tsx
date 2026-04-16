@@ -145,8 +145,9 @@ export default function FinanceTDSPage() {
               <ul className="space-y-3">
                 {dueDates.slice(0, 6).map((d: { form: string; period: string; dueDate: string; description: string }, i: number) => {
                   const due = new Date(d.dueDate)
-                  const isPast = due < new Date()
-                  const daysLeft = Math.ceil((due.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                  const now = new Date()
+                  const isPast = due < now
+                  const daysLeft = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
                   return (
                     <li key={i} className="flex justify-between items-start text-sm">
                       <div>

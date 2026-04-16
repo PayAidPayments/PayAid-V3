@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useMutation } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/api/client'
+import { parseErrorMessage, withRetryGuidance } from '@/lib/ui/request-error-guidance'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -40,14 +41,15 @@ export default function NewCheckoutPagePage() {
     mutationFn: async (data: typeof formData) => {
       const response = await apiRequest('/api/sales/checkout-pages', {
         method: 'POST',
+        timeoutMs: 25000,
         body: JSON.stringify({
           ...data,
           contentJson: {},
         }),
       })
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create checkout page')
+        const message = await parseErrorMessage(response, 'Failed to create checkout page')
+        throw new Error(message)
       }
       return response.json()
     },
@@ -55,7 +57,7 @@ export default function NewCheckoutPagePage() {
       router.push(`/sales/${tenantId}/Checkout-Pages/${data.id}`)
     },
     onError: (err: Error) => {
-      setError(err.message)
+      setError(withRetryGuidance(err.message))
     },
   })
 

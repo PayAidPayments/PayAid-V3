@@ -11,8 +11,13 @@ export async function GET(request: NextRequest) {
     const user = await authenticateRequest(request)
     
     const searchParams = request.nextUrl.searchParams
-    const limit = parseInt(searchParams.get('limit') || '100')
-    const type = searchParams.get('type') // Optional: filter by type
+    const requestedLimit = parseInt(searchParams.get('limit') || '100', 10)
+    const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 200) : 100
+    const type = (searchParams.get('type') || '').toLowerCase() // Optional: filter by type
+    const mode = (searchParams.get('mode') || 'full').toLowerCase() === 'light' ? 'light' : 'full'
+    const cursor = searchParams.get('cursor')
+    const cursorDate = cursor ? new Date(cursor) : null
+    const hasValidCursor = !!(cursorDate && !Number.isNaN(cursorDate.getTime()))
 
     // Get user role for proper filtering
     let userRole: string | undefined
@@ -35,108 +40,126 @@ export async function GET(request: NextRequest) {
       ]
     }
 
+    const interactionTypes = new Set(['call', 'email', 'meeting', 'whatsapp', 'sms'])
+    const fetchTasks = !type || type === 'task'
+    const fetchDeals = !type || type === 'deal'
+    const fetchInteractions = !type || interactionTypes.has(type)
+    const sourceCount = [fetchTasks, fetchInteractions, fetchDeals].filter(Boolean).length || 1
+    const perSourceTake = Math.min(120, Math.max(20, Math.ceil(limit / sourceCount) + 8))
+
+    const taskWhere: any = {
+      ...baseFilter,
+      ...(hasValidCursor ? { updatedAt: { lt: cursorDate! } } : {}),
+    }
+    const interactionWhere: any = {
+      contact: {
+        tenantId,
+      },
+      ...(fetchInteractions && type ? { type } : {}),
+      ...(hasValidCursor ? { createdAt: { lt: cursorDate! } } : {}),
+      ...(user?.userId && userRole !== 'owner' && userRole !== 'admin' && userRole !== 'manager'
+        ? { createdByRepId: user.userId }
+        : {}),
+    }
+    const dealWhere: any = {
+      tenantId,
+      ...(hasValidCursor ? { updatedAt: { lt: cursorDate! } } : {}),
+      ...(user?.userId && userRole !== 'owner' && userRole !== 'admin' && userRole !== 'manager'
+        ? {
+            assignedTo: {
+              userId: user.userId,
+            },
+          }
+        : {}),
+    }
+
     // Fetch all activity types in parallel
     const [tasks, interactions, deals] = await Promise.all([
       // Tasks (activities)
-      prismaWithRetry(() =>
-        prisma.task.findMany({
-          where: {
-            ...baseFilter,
-            ...(type === 'task' ? {} : {}), // All tasks for activity feed
-          },
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            status: true,
-            dueDate: true,
-            createdAt: true,
-            updatedAt: true,
-            assignedToId: true,
-            contactId: true,
-            contact: {
+      fetchTasks
+        ? prismaWithRetry(() =>
+            prisma.task.findMany({
+              where: taskWhere,
               select: {
                 id: true,
-                name: true,
-                email: true,
-                company: true,
-              },
-            },
-          },
-          orderBy: { updatedAt: 'desc' },
-          take: limit,
-        })
-      ),
-      // Interactions (calls, emails, meetings, WhatsApp, SMS)
-      prismaWithRetry(() =>
-        prisma.interaction.findMany({
-          where: {
-            contact: {
-              tenantId,
-            },
-            ...(type ? { type } : {}),
-            ...(user?.userId && userRole !== 'owner' && userRole !== 'admin' && userRole !== 'manager'
-              ? { createdByRepId: user.userId }
-              : {}),
-          },
-          select: {
-            id: true,
-            type: true,
-            subject: true,
-            notes: true,
-            duration: true,
-            outcome: true,
-            createdAt: true,
-            contactId: true,
-            contact: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                company: true,
-              },
-            },
-          },
-          orderBy: { createdAt: 'desc' },
-          take: limit,
-        })
-      ),
-      // Deals (created, updated, won, lost)
-      prismaWithRetry(() =>
-        prisma.deal.findMany({
-          where: {
-            tenantId,
-            ...(user?.userId && userRole !== 'owner' && userRole !== 'admin' && userRole !== 'manager'
-              ? {
-                  assignedTo: {
-                    userId: user.userId,
+                title: true,
+                ...(mode === 'full' ? { description: true } : {}),
+                status: true,
+                dueDate: true,
+                createdAt: true,
+                updatedAt: true,
+                assignedToId: true,
+                contactId: true,
+                contact: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    company: true,
                   },
-                }
-              : {}),
-          },
-          select: {
-            id: true,
-            name: true,
-            value: true,
-            stage: true,
-            probability: true,
-            expectedCloseDate: true,
-            createdAt: true,
-            updatedAt: true,
-            contactId: true,
-            contact: {
+                },
+              },
+              orderBy: { updatedAt: 'desc' },
+              take: perSourceTake,
+            })
+          )
+        : Promise.resolve([]),
+      // Interactions (calls, emails, meetings, WhatsApp, SMS)
+      fetchInteractions
+        ? prismaWithRetry(() =>
+            prisma.interaction.findMany({
+              where: interactionWhere,
+              select: {
+                id: true,
+                type: true,
+                subject: true,
+                ...(mode === 'full' ? { notes: true, duration: true } : {}),
+                outcome: true,
+                createdAt: true,
+                contactId: true,
+                contact: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    company: true,
+                  },
+                },
+              },
+              orderBy: { createdAt: 'desc' },
+              take: perSourceTake,
+            })
+          )
+        : Promise.resolve([]),
+      // Deals (created, updated, won, lost)
+      fetchDeals
+        ? prismaWithRetry(() =>
+            prisma.deal.findMany({
+              where: dealWhere,
               select: {
                 id: true,
                 name: true,
-                email: true,
-                company: true,
+                value: true,
+                stage: true,
+                probability: true,
+                expectedCloseDate: true,
+                createdAt: true,
+                updatedAt: true,
+                contactId: true,
+                contact: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    company: true,
+                  },
+                },
               },
-            },
-          },
-          orderBy: { updatedAt: 'desc' },
-          take: limit,
-        })
-      ),
+              orderBy: { updatedAt: 'desc' },
+              take: perSourceTake,
+            })
+          )
+        : Promise.resolve([]),
     ])
 
     // Combine and sort all activities chronologically
@@ -148,7 +171,7 @@ export async function GET(request: NextRequest) {
         id: `task_${task.id}`,
         type: 'task',
         title: task.title,
-        description: task.description,
+        description: mode === 'full' ? task.description : undefined,
         status: task.status,
         timestamp: task.updatedAt || task.createdAt,
         contact: task.contact,
@@ -165,7 +188,7 @@ export async function GET(request: NextRequest) {
         id: `interaction_${interaction.id}`,
         type: interaction.type, // email, call, meeting, whatsapp, sms
         title: interaction.subject || `${interaction.type} interaction`,
-        description: interaction.notes,
+        description: mode === 'full' ? interaction.notes : undefined,
         timestamp: interaction.createdAt,
         contact: interaction.contact,
         metadata: {
@@ -201,13 +224,25 @@ export async function GET(request: NextRequest) {
 
     // Limit to requested number
     const limitedActivities = activities.slice(0, limit)
+    const lastTimestamp = limitedActivities.length > 0 ? limitedActivities[limitedActivities.length - 1].timestamp : null
+    const nextCursor = limitedActivities.length === limit && lastTimestamp
+      ? new Date(lastTimestamp).toISOString()
+      : null
+    const sourceHitCap =
+      (Array.isArray(tasks) && tasks.length >= perSourceTake) ||
+      (Array.isArray(interactions) && interactions.length >= perSourceTake) ||
+      (Array.isArray(deals) && deals.length >= perSourceTake)
+    const hasMore = Boolean(nextCursor && sourceHitCap)
 
     const durationMs = Date.now() - startTime
-    console.log(`[CRM_ACTIVITY_FEED] tenant=${tenantId} user=${user?.userId || 'unknown'} type=${type || 'all'} limit=${limit} duration=${durationMs}ms`)
+    console.log(`[CRM_ACTIVITY_FEED] tenant=${tenantId} user=${user?.userId || 'unknown'} type=${type || 'all'} limit=${limit} mode=${mode} cursor=${cursor || 'none'} duration=${durationMs}ms`)
 
     return NextResponse.json({
       activities: limitedActivities,
       total: activities.length,
+      nextCursor,
+      hasMore,
+      mode,
     }, {
       headers: {
         // User-specific / role-filtered: private caching only

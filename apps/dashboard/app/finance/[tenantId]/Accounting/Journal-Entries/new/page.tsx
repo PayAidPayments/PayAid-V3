@@ -20,7 +20,7 @@ export default function NewJournalEntryPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `finance:je:create:${crypto.randomUUID()}`
-        : `finance:je:create:${Date.now()}`,
+        : 'finance:je:create:fallback',
     []
   )
   const [transactionDate, setTransactionDate] = useState(() => new Date().toISOString().slice(0, 10))

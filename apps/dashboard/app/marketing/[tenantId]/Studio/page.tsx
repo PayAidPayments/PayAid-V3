@@ -92,7 +92,7 @@ export default function MarketingStudioPage() {
       const data = await res.json()
       return (data.images ?? []).map((img: { id: string; url: string }) => ({ id: img.id, url: img.url }))
     },
-    [getHeaders]
+    [postHeaders]
   )
 
   const onGenerateVideo = useCallback(
@@ -112,7 +112,7 @@ export default function MarketingStudioPage() {
       }
       return { id: data.id, url: data.url }
     },
-    [postHeaders]
+    [getHeaders]
   )
 
   const onLaunch = useCallback(

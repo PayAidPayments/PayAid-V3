@@ -12,6 +12,7 @@ import { useDeals, useDeleteDeal } from '@/lib/hooks/use-api'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
+import { CopyAction } from '@/components/ui/copy-action'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -144,6 +145,8 @@ export default function CRMDealsPage() {
     const [diagnosticsOpen, setDiagnosticsOpen] = useState(false)
     const [diagnosticsResult, setDiagnosticsResult] = useState<string | null>(null)
     const hasTriggeredEnsureDemoRef = useRef(false)
+    // GA-safe default: demo auto-seeding is OFF unless explicitly enabled.
+    const allowDemoAutoSeed = process.env.NEXT_PUBLIC_CRM_ALLOW_DEMO_SEED === '1'
     const [viewMode, setViewMode] = useState<'list' | 'pipeline' | 'board'>('list')
     const [sortKey, setSortKey] = useState<'value' | 'stage' | 'expectedCloseDate'>('expectedCloseDate')
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
@@ -153,6 +156,7 @@ export default function CRMDealsPage() {
     // When page loads with 0 deals, ensure demo data once so demos are never empty
     useEffect(() => {
       if (
+        !allowDemoAutoSeed ||
         hasTriggeredEnsureDemoRef.current ||
         !tenantId ||
         !token ||
@@ -178,7 +182,7 @@ export default function CRMDealsPage() {
           }
         } catch (_) {}
       })()
-    }, [tenantId, token, isLoading, data, refetch, queryClient])
+    }, [allowDemoAutoSeed, tenantId, token, isLoading, data, refetch, queryClient])
 
     // Function to refresh deals data (bypass cache)
     const refreshDeals = async () => {
@@ -341,6 +345,8 @@ export default function CRMDealsPage() {
   const totalDeals = data?.pagination?.total ?? sortedDeals.length
   const pageCount = Math.max(1, Math.ceil(totalDeals / rowsPerPage))
   const currentPage = Math.min(Math.max(1, uiPage), pageCount)
+  const pageStart = totalDeals > 0 ? (currentPage - 1) * rowsPerPage : 0
+  const pageEnd = totalDeals > 0 ? Math.min(totalDeals, currentPage * rowsPerPage) : 0
   const pagedDeals = sortedDeals
 
   useEffect(() => {
@@ -740,7 +746,7 @@ export default function CRMDealsPage() {
                     No deals found in this category for {stats.periodLabel.toLowerCase()}
                   </p>
                   <p className="text-sm text-gray-500 mb-4">
-                    Total deals in database: {deals.length}. Try changing the time period filter or seed demo data.
+                    Total deals in database: {deals.length}. Try changing the time period filter.
                   </p>
                   <div className="flex gap-2 justify-center">
                     <Button 
@@ -750,10 +756,11 @@ export default function CRMDealsPage() {
                     >
                       Show All Deals
                     </Button>
-                    <Button 
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
+                    {allowDemoAutoSeed ? (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
                         try {
                           if (!token) {
                             alert('Please log in first')
@@ -827,11 +834,13 @@ export default function CRMDealsPage() {
                           alert('Error seeding data. Please check console.')
                           setSeedStatus({ running: false })
                         }
-                      }}
-                    >
-                          Seed Demo Data
-                        </Button>
-                        <Dialog open={diagnosticsOpen} onOpenChange={setDiagnosticsOpen}>
+                        }}
+                      >
+                        Seed Demo Data
+                      </Button>
+                    ) : null}
+                    {allowDemoAutoSeed ? (
+                      <Dialog open={diagnosticsOpen} onOpenChange={setDiagnosticsOpen}>
                           <DialogTrigger asChild>
                             <Button 
                               variant="outline"
@@ -930,21 +939,14 @@ export default function CRMDealsPage() {
                             </DialogHeader>
                             <div className="flex-1 overflow-hidden flex flex-col">
                               <div className="flex justify-end mb-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    if (diagnosticsResult) {
-                                      navigator.clipboard.writeText(diagnosticsResult).then(() => {
-                                        alert('Diagnosis results copied to clipboard!')
-                                      }).catch(() => {
-                                        alert('Failed to copy. Please select and copy manually.')
-                                      })
-                                    }
-                                  }}
-                                >
-                                  📋 Copy to Clipboard
-                                </Button>
+                                <CopyAction
+                                  textToCopy={diagnosticsResult || ''}
+                                  successMessage="Diagnosis results copied to clipboard."
+                                  label="📋 Copy to Clipboard"
+                                  copiedLabel="Copied"
+                                  buttonProps={{ variant: 'outline', size: 'sm' }}
+                                  showFeedback={false}
+                                />
                               </div>
                               <textarea
                                 readOnly
@@ -958,7 +960,8 @@ export default function CRMDealsPage() {
                               />
                             </div>
                           </DialogContent>
-                        </Dialog>
+                      </Dialog>
+                    ) : null}
                       </div>
                     </CardContent>
                   </Card>
@@ -1004,9 +1007,9 @@ export default function CRMDealsPage() {
                   </div>
                   <p className="text-slate-900 dark:text-gray-100 font-semibold mb-1">No deals yet</p>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Create your first deal or seed demo data to explore the pipeline views.
+                    Create your first deal to start tracking your pipeline.
                   </p>
-                  {seedStatus?.running ? (
+                  {allowDemoAutoSeed && seedStatus?.running ? (
                     <div className="text-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent mx-auto mb-4"></div>
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
@@ -1022,15 +1025,16 @@ export default function CRMDealsPage() {
                   ) : (
                     <>
                       <p className="text-sm text-gray-500 mb-4">
-                        {isLoading ? 'Loading deals...' : 'Deals will appear here once created. The seed script should create demo deals automatically.'}
+                        {isLoading ? 'Loading deals...' : 'Deals will appear here once created.'}
                       </p>
                       <div className="flex gap-2 justify-center">
                         <Link href={`/crm/${tenantId}/Deals/new`}>
                           <Button>Create Your First Deal</Button>
                         </Link>
-                        <Button 
-                          variant="outline"
-                          onClick={async () => {
+                        {allowDemoAutoSeed ? (
+                          <Button 
+                            variant="outline"
+                            onClick={async () => {
                             try {
                               const token = useAuthStore.getState().token
                               if (!token) {
@@ -1094,11 +1098,13 @@ export default function CRMDealsPage() {
                               console.error('[DEALS_PAGE] Seed error:', err)
                               alert(`Error seeding data: ${err?.message || 'Unknown error'}\n\nPlease check console and server logs.`)
                             }
-                          }}
-                        >
-                          Seed Demo Data
-                        </Button>
-                        <Dialog open={diagnosticsOpen} onOpenChange={setDiagnosticsOpen}>
+                            }}
+                          >
+                            Seed Demo Data
+                          </Button>
+                        ) : null}
+                        {allowDemoAutoSeed ? (
+                          <Dialog open={diagnosticsOpen} onOpenChange={setDiagnosticsOpen}>
                           <DialogTrigger asChild>
                             <Button 
                               variant="outline"
@@ -1197,21 +1203,14 @@ export default function CRMDealsPage() {
                             </DialogHeader>
                             <div className="flex-1 overflow-hidden flex flex-col">
                               <div className="flex justify-end mb-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    if (diagnosticsResult) {
-                                      navigator.clipboard.writeText(diagnosticsResult).then(() => {
-                                        alert('Diagnosis results copied to clipboard!')
-                                      }).catch(() => {
-                                        alert('Failed to copy. Please select and copy manually.')
-                                      })
-                                    }
-                                  }}
-                                >
-                                  📋 Copy to Clipboard
-                                </Button>
+                                <CopyAction
+                                  textToCopy={diagnosticsResult || ''}
+                                  successMessage="Diagnosis results copied to clipboard."
+                                  label="📋 Copy to Clipboard"
+                                  copiedLabel="Copied"
+                                  buttonProps={{ variant: 'outline', size: 'sm' }}
+                                  showFeedback={false}
+                                />
                               </div>
                               <textarea
                                 readOnly
@@ -1225,7 +1224,8 @@ export default function CRMDealsPage() {
                               />
                             </div>
                           </DialogContent>
-                        </Dialog>
+                          </Dialog>
+                        ) : null}
                         <Button 
                           variant="outline"
                           onClick={refreshDeals}
@@ -1234,7 +1234,7 @@ export default function CRMDealsPage() {
                         >
                           {isLoading ? 'Refreshing...' : 'Refresh Data'}
                         </Button>
-                        {seedStatus?.running && (
+                        {allowDemoAutoSeed && seedStatus?.running && (
                           <Button 
                             variant="outline"
                             onClick={() => {

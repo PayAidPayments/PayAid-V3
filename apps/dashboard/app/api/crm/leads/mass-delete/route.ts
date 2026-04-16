@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
+import { assertCrmRoleAllowed, CrmRoleError } from '@/lib/crm/rbac'
+import { logCrmAudit } from '@/lib/audit-log-crm'
 
 const massDeleteSchema = z.object({
   leadIds: z.array(z.string()).min(1, 'At least one lead must be selected'),
@@ -11,7 +13,8 @@ const massDeleteSchema = z.object({
 // POST /api/crm/leads/mass-delete - Mass delete leads
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId, roles } = await requireModuleAccess(request, 'crm')
+    assertCrmRoleAllowed(roles, ['admin', 'manager'], 'lead mass delete')
     const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
     if (idempotencyKey) {
       const existing = await findIdempotentRequest(tenantId, `crm:leads:mass_delete:${idempotencyKey}`)
@@ -47,6 +50,16 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    await logCrmAudit({
+      tenantId,
+      userId,
+      entityType: 'lead',
+      entityId: `bulk-${validated.leadIds[0]}`,
+      action: 'delete',
+      changeSummary: `Mass deleted ${result.count} lead(s)`,
+      beforeSnapshot: { leadIds: validated.leadIds, deletedCount: result.count },
+    })
+
     if (idempotencyKey) {
       await markIdempotentRequest(tenantId, userId, `crm:leads:mass_delete:${idempotencyKey}`, {
         deleted: result.count,
@@ -59,6 +72,9 @@ export async function POST(request: NextRequest) {
       deleted: result.count,
     })
   } catch (error: any) {
+    if (error instanceof CrmRoleError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status })
+    }
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }

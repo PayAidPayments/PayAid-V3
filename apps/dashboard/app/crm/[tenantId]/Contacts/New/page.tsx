@@ -7,6 +7,7 @@ import { useCreateContact } from '@/lib/hooks/use-api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { withRetryGuidance } from '@/lib/ui/request-error-guidance'
 
 export default function NewContactPage() {
   const params = useParams()
@@ -39,7 +40,8 @@ export default function NewContactPage() {
       const contact = await createContact.mutateAsync(formData)
       router.push(`/crm/${tenantId}/Contacts/${contact.id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create contact')
+      const message = err instanceof Error ? err.message : 'Failed to create contact'
+      setError(withRetryGuidance(message))
     }
   }
 

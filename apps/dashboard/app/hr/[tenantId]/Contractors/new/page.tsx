@@ -24,7 +24,7 @@ export default function HRContractorNewPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:contractor:create:${crypto.randomUUID()}`
-        : `hr:contractor:create:${Date.now()}`,
+        : 'hr:contractor:create:fallback',
     []
   )
 

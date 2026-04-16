@@ -29,7 +29,7 @@ export default function NewOfferPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:offer:create:${crypto.randomUUID()}`
-        : `hr:offer:create:${Date.now()}`,
+        : 'hr:offer:create:fallback',
     []
   )
   const [formData, setFormData] = useState({

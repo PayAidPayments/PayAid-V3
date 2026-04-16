@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { prisma } from '@/lib/db/prisma'
 import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
+import { assertCrmRoleAllowed, CrmRoleError } from '@/lib/crm/rbac'
 
 const thresholdSchema = z.object({
   minValue: z.number().int().min(0).max(100),
@@ -30,7 +31,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId, roles } = await requireModuleAccess(request, 'crm')
+    assertCrmRoleAllowed(roles, ['admin'], 'score threshold write')
     const idempotencyKey = request.headers.get('x-idempotency-key')?.trim()
     if (idempotencyKey) {
       const existing = await findIdempotentRequest(tenantId, `crm:score_threshold:create:${idempotencyKey}`)
@@ -62,6 +64,9 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ success: true, threshold }, { status: 201 })
   } catch (error: any) {
+    if (error instanceof CrmRoleError) {
+      return NextResponse.json({ success: false, error: error.message, code: error.code }, { status: error.status })
+    }
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }

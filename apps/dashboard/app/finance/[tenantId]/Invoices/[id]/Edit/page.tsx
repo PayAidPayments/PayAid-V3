@@ -32,7 +32,8 @@ export default function EditInvoicePage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (invoice) {
+    if (!invoice) return
+    const id = globalThis.setTimeout(() => {
       setFormData({
         customerId: invoice.customerId || '',
         invoiceDate: invoice.invoiceDate ? new Date(invoice.invoiceDate).toISOString().split('T')[0] : '',
@@ -54,7 +55,8 @@ export default function EditInvoicePage() {
       } else {
         setItems([{ description: 'Item', quantity: 1, rate: invoice.subtotal ?? 0, gstRate: 18 }])
       }
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [invoice])
 
   const handleSubmit = async (e: React.FormEvent) => {

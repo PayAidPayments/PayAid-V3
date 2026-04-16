@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { CopyAction, COPY_ACTION_PRESETS } from '@/components/ui/copy-action'
 
 interface MeetingItem {
   id: string
@@ -84,11 +85,8 @@ export function MeetList({ tenantId }: { tenantId: string }) {
     router.push(`/productivity/${tenantId}/meet/room/${code}`)
   }
 
-  const copyJoinLink = (code: string) => {
-    const url = typeof window !== 'undefined' ? `${window.location.origin}/productivity/${tenantId}/meet/room/${code}` : ''
-    navigator.clipboard.writeText(url)
-    // Could add toast
-  }
+  const getJoinLink = (code: string) =>
+    typeof window !== 'undefined' ? `${window.location.origin}/productivity/${tenantId}/meet/room/${code}` : ''
 
   const upcoming = meetings.filter((m) => m.status === 'scheduled' || m.status === 'in-progress')
   const past = meetings.filter((m) => m.status === 'ended' || m.status === 'cancelled')
@@ -156,15 +154,16 @@ export function MeetList({ tenantId }: { tenantId: string }) {
                       <span className="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
                         {m.meetingCode}
                       </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => copyJoinLink(m.meetingCode)}
-                        className="gap-1"
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                        Copy link
-                      </Button>
+                      <CopyAction
+                        textToCopy={() => getJoinLink(m.meetingCode)}
+                        successMessage="Meeting link copied to clipboard."
+                        label="Copy link"
+                        copiedLabel="Copied"
+                        icon={<Copy className="h-3.5 w-3.5" />}
+                        buttonProps={{ size: 'sm', variant: 'outline', className: 'gap-1' }}
+                        showFeedback={false}
+                        {...COPY_ACTION_PRESETS.compactSettings}
+                      />
                       <Button
                         size="sm"
                         onClick={() => router.push(`/productivity/${tenantId}/meet/room/${m.meetingCode}`)}

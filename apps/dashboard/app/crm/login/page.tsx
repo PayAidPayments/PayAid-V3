@@ -27,12 +27,14 @@ export default function CRMLoginPage() {
   const { login, isLoading, isAuthenticated, tenant } = useAuthStore()
   
   useEffect(() => {
-    setMounted(true)
-    
-    // If already logged in, redirect to CRM dashboard
-    if (isAuthenticated && tenant?.id) {
-      router.push(`/crm/${tenant.id}/Home/`)
-    }
+    const id = globalThis.setTimeout(() => {
+      setMounted(true)
+      // If already logged in, redirect to CRM dashboard
+      if (isAuthenticated && tenant?.id) {
+        router.push(`/crm/${tenant.id}/Home/`)
+      }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [isAuthenticated, tenant?.id, router])
 
   const handleSubmit = async (e: React.FormEvent) => {

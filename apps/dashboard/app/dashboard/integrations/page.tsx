@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -135,24 +136,24 @@ export default function IntegrationsPage() {
         >
           Marketplace
         </button>
-        <a
+        <Link
           href="/dashboard/api-docs"
           className="px-4 py-2 font-medium text-gray-600 hover:text-gray-900"
         >
           API Documentation
-        </a>
-        <a
+        </Link>
+        <Link
           href="/dashboard/settings?tab=api-keys"
           className="px-4 py-2 font-medium text-gray-600 hover:text-gray-900"
         >
           API Keys
-        </a>
-        <a
+        </Link>
+        <Link
           href="/dashboard/settings?tab=webhooks"
           className="px-4 py-2 font-medium text-gray-600 hover:text-gray-900"
         >
           Webhooks
-        </a>
+        </Link>
       </div>
 
       {/* Search and Filters */}

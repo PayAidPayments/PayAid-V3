@@ -44,7 +44,10 @@ export default function ProfileSettingsPage() {
       const raw = localStorage.getItem(key)
       if (!raw) return
       const parsed = JSON.parse(raw) as Partial<typeof prefs>
-      setPrefs((p) => ({ ...p, ...parsed }))
+      const id = globalThis.setTimeout(() => {
+        setPrefs((p) => ({ ...p, ...parsed }))
+      }, 0)
+      return () => globalThis.clearTimeout(id)
     } catch {
       // ignore
     }
@@ -100,7 +103,8 @@ export default function ProfileSettingsPage() {
   })
 
   useEffect(() => {
-    if (profile) {
+    if (!profile) return
+    const id = globalThis.setTimeout(() => {
       setFormData({
         name: profile.name || '',
         email: profile.email || '',
@@ -108,7 +112,8 @@ export default function ProfileSettingsPage() {
         password: '',
         confirmPassword: '',
       })
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [profile])
 
   const handleSubmit = async (e: React.FormEvent) => {

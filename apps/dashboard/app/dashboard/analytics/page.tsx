@@ -58,9 +58,11 @@ export default function AnalyticsPage() {
 
   // Auto-select first website if available
   useEffect(() => {
-    if (websites.length > 0 && !selectedWebsiteId) {
+    if (websites.length === 0 || selectedWebsiteId) return
+    const id = globalThis.setTimeout(() => {
       setSelectedWebsiteId(websites[0].id)
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [websites, selectedWebsiteId])
 
   const analytics = analyticsData

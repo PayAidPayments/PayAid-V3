@@ -31,16 +31,19 @@ export default function HRRemindersPage() {
 
   useEffect(() => {
     if (!tenantId || !token) return
-    setLoading(true)
-    fetch(`/api/hr/reminders?days=${days}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => (r.ok ? r.json() : { reminders: [], probationCount: 0, contractCount: 0, reviewCount: 0 }))
-      .then((data) => {
-        setReminders(data.reminders || [])
-        setProbationCount(data.probationCount ?? 0)
-        setContractCount(data.contractCount ?? 0)
-        setReviewCount(data.reviewCount ?? 0)
-      })
-      .finally(() => setLoading(false))
+    const timeoutId = globalThis.setTimeout(() => {
+      setLoading(true)
+      fetch(`/api/hr/reminders?days=${days}`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => (r.ok ? r.json() : { reminders: [], probationCount: 0, contractCount: 0, reviewCount: 0 }))
+        .then((data) => {
+          setReminders(data.reminders || [])
+          setProbationCount(data.probationCount ?? 0)
+          setContractCount(data.contractCount ?? 0)
+          setReviewCount(data.reviewCount ?? 0)
+        })
+        .finally(() => setLoading(false))
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [tenantId, token, days])
 
   const allReminders = [...reminders].sort(

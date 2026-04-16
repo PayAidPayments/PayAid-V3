@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { z } from 'zod'
+import { dbOverloadResponse, isTransientDbOverloadError } from '@/lib/api/db-overload'
 
 const createStockMovementSchema = z.object({
   productId: z.string(),
@@ -273,6 +274,9 @@ export async function POST(request: NextRequest) {
         { error: 'Invalid input', details: error.errors },
         { status: 400 }
       )
+    }
+    if (isTransientDbOverloadError(error)) {
+      return dbOverloadResponse('Stock movement')
     }
     console.error('Create stock movement error:', error)
     return NextResponse.json(

@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/stores/auth'
+import { apiRequest } from '@/lib/api/client'
+import { parseErrorMessage, withRetryGuidance } from '@/lib/ui/request-error-guidance'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,7 +23,6 @@ export default function FinanceExpensesNewPage() {
   const params = useParams()
   const tenantId = params.tenantId as string
   const router = useRouter()
-  const { token } = useAuthStore()
   const createExpenseIdempotencyKey = useMemo(
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
@@ -73,12 +74,12 @@ export default function FinanceExpensesNewPage() {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch('/api/accounting/expenses', {
+      const response = await apiRequest('/api/accounting/expenses', {
         method: 'POST',
         headers: {
-          ...getAuthHeaders(),
           'x-idempotency-key': createExpenseIdempotencyKey,
         },
+        timeoutMs: 25000,
         body: JSON.stringify({
           ...formData,
           amount: parseFloat(formData.amount),
@@ -91,13 +92,13 @@ export default function FinanceExpensesNewPage() {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create expense')
+        const message = await parseErrorMessage(response, 'Failed to create expense')
+        throw new Error(message)
       }
 
       router.push(`/finance/${tenantId}/Accounting/Expenses`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create expense')
+      setError(withRetryGuidance(err instanceof Error ? err.message : 'Failed to create expense'))
       setIsSubmitting(false)
     }
   }

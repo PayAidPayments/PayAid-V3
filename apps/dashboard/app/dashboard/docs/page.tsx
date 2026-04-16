@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, FileText, Search, Filter } from 'lucide-react'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -10,13 +10,7 @@ export default function DocsPage() {
   const [documents, setDocuments] = useState<any[]>([])
   const { token } = useAuthStore()
 
-  useEffect(() => {
-    if (token) {
-      loadDocuments()
-    }
-  }, [token])
-
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
     if (!token) return
     try {
       const response = await fetch('/api/documents', {
@@ -31,7 +25,15 @@ export default function DocsPage() {
     } catch (error) {
       console.error('Error loading documents:', error)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    if (!token) return
+    const id = globalThis.setTimeout(() => {
+      void loadDocuments()
+    }, 0)
+    return () => globalThis.clearTimeout(id)
+  }, [token, loadDocuments])
 
   return (
     <div className="space-y-6">

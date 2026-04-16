@@ -22,6 +22,8 @@ import {
 } from 'lucide-react'
 import { PageLoading } from '@/components/ui/loading'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
+import { apiRequest } from '@/lib/api/client'
+import { parseErrorMessage, withRetryGuidance } from '@/lib/ui/request-error-guidance'
 
 interface AdCampaign {
   id: string
@@ -47,6 +49,13 @@ export default function AdsManagementPage() {
   const [loading, setLoading] = useState(true)
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [newCampaign, setNewCampaign] = useState({
+    name: '',
+    platform: 'google' as AdCampaign['platform'],
+    budget: '',
+  })
 
   useEffect(() => {
     fetchCampaigns()
@@ -119,6 +128,56 @@ export default function AdsManagementPage() {
         return 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200'
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+    }
+  }
+
+  const handleCreateCampaign = async () => {
+    if (!token) {
+      setCreateError('Please sign in again and retry.')
+      return
+    }
+    const budgetValue = Number(newCampaign.budget)
+    if (!newCampaign.name.trim()) {
+      setCreateError('Campaign name is required.')
+      return
+    }
+    if (!Number.isFinite(budgetValue) || budgetValue <= 0) {
+      setCreateError('Please enter a valid budget amount.')
+      return
+    }
+
+    setCreateLoading(true)
+    setCreateError(null)
+    try {
+      const response = await apiRequest('/api/marketing/ads/campaigns', {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        timeoutMs: 25000,
+        body: JSON.stringify({
+          name: newCampaign.name.trim(),
+          platform: newCampaign.platform,
+          budget: budgetValue,
+        }),
+      })
+
+      if (!response.ok) {
+        const message = await parseErrorMessage(response, 'Failed to create campaign')
+        throw new Error(message)
+      }
+      const data = await response.json().catch(() => ({}))
+
+      if (data.campaign) {
+        setCampaigns((prev) => [data.campaign as AdCampaign, ...prev])
+      }
+      setShowCreateModal(false)
+      setNewCampaign({ name: '', platform: 'google', budget: '' })
+    } catch (error) {
+      console.error('Error creating campaign:', error)
+      setCreateError(withRetryGuidance(error instanceof Error ? error.message : 'Failed to create campaign'))
+    } finally {
+      setCreateLoading(false)
     }
   }
 
@@ -317,13 +376,25 @@ export default function AdsManagementPage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Campaign Name
                 </label>
-                <Input placeholder="e.g., Q1 Product Launch" />
+                <Input
+                  placeholder="e.g., Q1 Product Launch"
+                  value={newCampaign.name}
+                  onChange={(e) => setNewCampaign((prev) => ({ ...prev, name: e.target.value }))}
+                  disabled={createLoading}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Platform
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg">
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg"
+                  value={newCampaign.platform}
+                  onChange={(e) =>
+                    setNewCampaign((prev) => ({ ...prev, platform: e.target.value as AdCampaign['platform'] }))
+                  }
+                  disabled={createLoading}
+                >
                   <option value="google">Google Ads</option>
                   <option value="facebook">Facebook Ads</option>
                   <option value="linkedin">LinkedIn Ads</option>
@@ -334,17 +405,37 @@ export default function AdsManagementPage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Budget (₹)
                 </label>
-                <Input type="number" placeholder="10000" />
+                <Input
+                  type="number"
+                  placeholder="10000"
+                  value={newCampaign.budget}
+                  onChange={(e) => setNewCampaign((prev) => ({ ...prev, budget: e.target.value }))}
+                  disabled={createLoading}
+                />
               </div>
+              {createError && (
+                <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+                  {createError}
+                </div>
+              )}
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button
                   variant="outline"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => {
+                    if (createLoading) return
+                    setShowCreateModal(false)
+                  }}
+                  disabled={createLoading}
                 >
                   Cancel
                 </Button>
-                <Button className="bg-purple-600 hover:bg-purple-700">
-                  Create Campaign
+                <Button
+                  className="bg-purple-600 hover:bg-purple-700"
+                  onClick={handleCreateCampaign}
+                  disabled={createLoading}
+                  title={createLoading ? 'Please wait' : 'Create campaign'}
+                >
+                  {createLoading ? 'Creating…' : 'Create Campaign'}
                 </Button>
               </div>
             </CardContent>

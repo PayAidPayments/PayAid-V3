@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, Copy, FileSignature, Loader2 } from 'lucide-react'
 import { getAuthHeaders } from '@/lib/hooks/use-api'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
-import { useState } from 'react'
+import { CopyAction } from '@/components/ui/copy-action'
 
 function formatDt(value: string | Date | null | undefined): string | null {
   if (value == null) return null
@@ -43,7 +43,6 @@ export default function CRMProposalDetailPage() {
   const params = useParams()
   const tenantId = params.tenantId as string
   const id = params.id as string
-  const [copied, setCopied] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['crm', 'proposal', tenantId, id],
@@ -189,24 +188,15 @@ export default function CRMProposalDetailPage() {
               </div>
               {p.publicToken && p.publicViewEnabled ? (
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(p.publicToken)
-                        setCopied(true)
-                        setTimeout(() => setCopied(false), 2000)
-                      } catch {
-                        // ignore
-                      }
-                    }}
-                  >
-                    <Copy className="h-3.5 w-3.5 mr-1" />
-                    {copied ? 'Copied token' : 'Copy public token'}
-                  </Button>
+                  <CopyAction
+                    textToCopy={p.publicToken}
+                    successMessage="Public token copied to clipboard."
+                    label="Copy public token"
+                    copiedLabel="Copied"
+                    icon={<Copy className="h-3.5 w-3.5 mr-1" />}
+                    buttonProps={{ type: 'button', variant: 'outline', size: 'sm', className: 'text-xs' }}
+                    showFeedback={false}
+                  />
                   <span className="text-[11px] text-slate-500 dark:text-gray-400">
                     Use with your customer-facing proposal URL (host depends on deployment).
                   </span>

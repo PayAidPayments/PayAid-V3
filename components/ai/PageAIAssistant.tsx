@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bot, X, Send, Mic, MicOff, Loader2, Minus } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -15,11 +15,21 @@ interface Message {
   timestamp: Date
 }
 
+type ActionLevel = 'read' | 'draft' | 'guarded_write' | 'restricted'
+
+interface Specialist {
+  id: string
+  name: string
+  promise: string
+  promptChips: string[]
+}
+
 function buildErrorMessage(status: number, data: { message?: string; error?: string; hint?: string }): string {
   const serverMessage = data?.message || data?.error
   const hint = data?.hint
   if (status === 401) return 'Please sign in again to use the AI assistant.'
   if (status === 403) return serverMessage || "You don't have access to the AI assistant."
+  if (status === 409) return serverMessage || 'Approval is required before running this action mode.'
   if (status === 400) return serverMessage || "Your message couldn't be processed. Please rephrase."
   if (serverMessage || hint) return [serverMessage, hint].filter(Boolean).join('\n\n')
   return "I couldn't get a response right now. Please try again."
@@ -64,8 +74,16 @@ export function PageAIAssistant() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
+  const [specialists, setSpecialists] = useState<Specialist[]>([])
+  const [specialistId, setSpecialistId] = useState('')
+  const [actionLevel, setActionLevel] = useState<ActionLevel>('read')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const selectedSpecialist = useMemo(
+    () => specialists.find((specialist) => specialist.id === specialistId),
+    [specialists, specialistId]
+  )
+  const requiresApproval = actionLevel === 'guarded_write' || actionLevel === 'restricted'
 
   // Keep greeting in sync when tenant/module/page changes (e.g. after nav)
   useEffect(() => {
@@ -76,6 +94,34 @@ export function PageAIAssistant() {
         : prev
     )
   }, [businessName, moduleLabel, pageLabel, entities])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadSpecialists() {
+      if (!token) return
+      try {
+        const response = await fetch(`/api/ai/specialists?module=${encodeURIComponent(ctx.module)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!response.ok) return
+        const data = (await response.json()) as { specialists?: Specialist[] }
+        if (cancelled) return
+        const list = Array.isArray(data.specialists) ? data.specialists : []
+        setSpecialists(list)
+        if (list.length > 0 && (!specialistId || !list.some((specialist) => specialist.id === specialistId))) {
+          setSpecialistId(list[0]!.id)
+        }
+      } catch {
+        // Keep assistant functional if specialist listing fails.
+      }
+    }
+
+    loadSpecialists()
+    return () => {
+      cancelled = true
+    }
+  }, [ctx.module, specialistId, token])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -93,6 +139,15 @@ export function PageAIAssistant() {
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
+    let approvalConfirmed = false
+    if (requiresApproval) {
+      approvalConfirmed = window.confirm(
+        actionLevel === 'restricted'
+          ? 'Restricted mode can trigger high-impact actions. Confirm you want to continue.'
+          : 'Guarded write mode can propose write actions. Confirm you want to continue.'
+      )
+      if (!approvalConfirmed) return
+    }
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -125,6 +180,10 @@ export function PageAIAssistant() {
             businessName,
             entities: (moduleEntities[ctx.module] || 'data on this page').split(/, | or /).map((s) => s.trim()).filter(Boolean),
             ...(pageExtra && typeof pageExtra === 'object' ? { pageExtra } : {}),
+            specialistId,
+            actionLevel,
+            approvalConfirmed,
+            sessionId: crypto.randomUUID(),
           },
         }),
       })
@@ -212,6 +271,65 @@ export function PageAIAssistant() {
             {!isMinimized && (
               <>
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 dark:bg-slate-950/50">
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Specialist
+                        <select
+                          value={specialistId}
+                          onChange={(e) => setSpecialistId(e.target.value)}
+                          className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1.5 text-xs"
+                        >
+                          {specialists.length === 0 ? (
+                            <option value="">Loading...</option>
+                          ) : (
+                            specialists.map((specialist) => (
+                              <option key={specialist.id} value={specialist.id}>
+                                {specialist.name}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                      </label>
+                      <label className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Mode
+                        <select
+                          value={actionLevel}
+                          onChange={(e) => setActionLevel(e.target.value as ActionLevel)}
+                          className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1.5 text-xs"
+                        >
+                          <option value="read">Suggest only</option>
+                          <option value="draft">Draft for approval</option>
+                          <option value="guarded_write">Guarded write</option>
+                          <option value="restricted">Restricted action</option>
+                        </select>
+                      </label>
+                    </div>
+                    {selectedSpecialist?.promise && (
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300">{selectedSpecialist.promise}</p>
+                    )}
+                    {requiresApproval ? (
+                      <p className="text-[11px] rounded-md border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 px-2 py-1">
+                        {actionLevel === 'restricted'
+                          ? 'Restricted mode requires explicit approval on every send.'
+                          : 'Guarded write mode requires explicit approval on every send.'}
+                      </p>
+                    ) : null}
+                    {selectedSpecialist?.promptChips?.length ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedSpecialist.promptChips.slice(0, 3).map((chip) => (
+                          <button
+                            key={chip}
+                            type="button"
+                            onClick={() => setInput(chip)}
+                            className="rounded-full border border-slate-200 dark:border-slate-600 px-2 py-1 text-[11px] hover:bg-slate-100 dark:hover:bg-slate-700"
+                          >
+                            {chip}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
                   {messages.map((message) => (
                     <div key={message.id} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
                       <div

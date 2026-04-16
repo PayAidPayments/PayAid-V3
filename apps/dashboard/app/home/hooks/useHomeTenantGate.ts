@@ -19,11 +19,16 @@ export function useHomeTenantGate(tenantId: string | undefined) {
   })
 
   useEffect(() => {
-    setMounted(true)
+    const id = globalThis.setTimeout(() => setMounted(true), 0)
+    return () => globalThis.clearTimeout(id)
   }, [])
 
   useLayoutEffect(() => {
     if (!tenantId) return
+    const pendingAuthTimeouts: ReturnType<typeof globalThis.setTimeout>[] = []
+    const deferHasCheckedAuth = () => {
+      pendingAuthTimeouts.push(globalThis.setTimeout(() => setHasCheckedAuth(true), 0))
+    }
 
     const runAuthCheck = (isRetry = false) => {
       const { token: tokenFromStorage, tenant: tenantFromStorage } = getAuthFromStorage()
@@ -46,7 +51,7 @@ export function useHomeTenantGate(tenantId: string | undefined) {
         return
       }
       if (finalIsAuthenticated && finalTenant?.id && tenantId === finalTenant.id) {
-        setHasCheckedAuth(true)
+        deferHasCheckedAuth()
         return
       }
       if (!finalIsAuthenticated && !tokenFromStorage) {
@@ -60,10 +65,13 @@ export function useHomeTenantGate(tenantId: string | undefined) {
         }
         return
       }
-      setHasCheckedAuth(true)
+      deferHasCheckedAuth()
     }
 
     runAuthCheck()
+    return () => {
+      for (const id of pendingAuthTimeouts) globalThis.clearTimeout(id)
+    }
   }, [tenantId, router])
 
   useEffect(() => {

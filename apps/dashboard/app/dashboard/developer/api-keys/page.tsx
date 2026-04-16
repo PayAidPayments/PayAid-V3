@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Key, Plus, Trash2, Copy, Check, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { Key, Trash2, Copy, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
+import { CopyAction, COPY_ACTION_PRESETS } from '@/components/ui/copy-action'
 
 interface ApiKey {
   id: string
@@ -35,7 +36,6 @@ interface NewKeyResult {
 export default function ApiKeysPage() {
   const queryClient = useQueryClient()
   const [showNewKey, setShowNewKey] = useState<NewKeyResult | null>(null)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
   const [showKey, setShowKey] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery({
@@ -128,12 +128,6 @@ export default function ApiKeysPage() {
     })
   }
 
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
-  }
-
   const allScopes = scopesData?.scopes
     ? Object.values(scopesData.scopes).flat() as Array<{ value: string; label: string }>
     : []
@@ -184,14 +178,15 @@ export default function ApiKeysPage() {
                 >
                   {showKey === showNewKey.apiKey.id ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => copyToClipboard(showNewKey.apiKey.key, 'new-key')}
-                >
-                  {copiedId === 'new-key' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
+                <CopyAction
+                  textToCopy={showNewKey.apiKey.key}
+                  successMessage="API key copied to clipboard."
+                  label="Copy"
+                  copiedLabel="Copied"
+                  icon={<Copy className="h-4 w-4" />}
+                  buttonProps={{ variant: 'outline', size: 'sm' }}
+                  {...COPY_ACTION_PRESETS.compactSettings}
+                />
               </div>
             </div>
             <Button onClick={() => setShowNewKey(null)}>I&apos;ve saved it</Button>

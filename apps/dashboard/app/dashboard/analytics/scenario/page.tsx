@@ -42,7 +42,7 @@ export default function ScenarioPlanningPage() {
           Scenario Planning
         </h1>
         <p className="text-gray-600 mt-1">
-          Analyze "what if" scenarios for your business decisions
+          Analyze &quot;what if&quot; scenarios for your business decisions
         </p>
       </div>
 

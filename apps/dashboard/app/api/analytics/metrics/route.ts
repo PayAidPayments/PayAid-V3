@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const organizationId = searchParams.get('organizationId')
-    const module = searchParams.get('module')
+    const moduleFilter = searchParams.get('module')
 
     if (!organizationId) {
       return NextResponse.json(
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     // Get metrics based on module
     let metrics: Record<string, unknown> = {}
 
-    if (!module || module === 'crm') {
+    if (!moduleFilter || moduleFilter === 'crm') {
       const [totalContacts, activeDeals, pipelineValue] = await Promise.all([
         prisma.contact.count({ where: { tenantId: organizationId } }),
         prisma.deal.count({
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (!module || module === 'finance') {
+    if (!moduleFilter || moduleFilter === 'finance') {
       const [totalInvoices, totalRevenue, pendingAmount] = await Promise.all([
         prisma.invoice.count({ where: { tenantId: organizationId } }),
         prisma.invoice.aggregate({

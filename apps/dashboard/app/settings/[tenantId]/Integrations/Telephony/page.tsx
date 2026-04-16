@@ -78,17 +78,20 @@ export default function TelephonySettingsPage() {
 
   useEffect(() => {
     if (!data) return
-    setForm((p) => ({
-      ...p,
-      provider: (data.provider || 'none') as 'none' | 'twilio' | 'exotel',
-      accountSid: data.accountSid || '',
-      authToken: '',
-      apiKey: '',
-      apiSecret: '',
-      apiBaseUrl: data.apiBaseUrl || '',
-      fromNumber: data.fromNumber || '',
-      webhookBaseUrl: data.webhookBaseUrl || '',
-    }))
+    const timeoutId = globalThis.setTimeout(() => {
+      setForm((p) => ({
+        ...p,
+        provider: (data.provider || 'none') as 'none' | 'twilio' | 'exotel',
+        accountSid: data.accountSid || '',
+        authToken: '',
+        apiKey: '',
+        apiSecret: '',
+        apiBaseUrl: data.apiBaseUrl || '',
+        fromNumber: data.fromNumber || '',
+        webhookBaseUrl: data.webhookBaseUrl || '',
+      }))
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [data])
 
   const encryptionWarning = useMemo(() => {

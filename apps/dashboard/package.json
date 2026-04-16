@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/dev-server.cjs",
+    "dev:fast": "node ../../node_modules/cross-env/dist/bin/cross-env.js SKIP_EXTERNAL_PREFLIGHT=1 SKIP_FREE_PORT=1 NEXT_DEV_HOST=127.0.0.1 PAYAID_DISABLE_OPTIMIZE_PACKAGE_IMPORTS=1 node scripts/dev-server.cjs",
     "build": "node scripts/next-build.cjs",
     "build:turbo": "next build --turbopack",
     "typecheck": "tsc --noEmit --pretty false",

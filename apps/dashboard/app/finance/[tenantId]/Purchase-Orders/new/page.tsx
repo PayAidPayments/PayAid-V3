@@ -37,7 +37,7 @@ export default function FinancePurchaseOrdersNewPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `finance:po:create:${crypto.randomUUID()}`
-        : `finance:po:create:${Date.now()}`,
+        : 'finance:po:create:fallback',
     []
   )
   const [formData, setFormData] = useState({

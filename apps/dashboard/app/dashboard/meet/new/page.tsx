@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Video, Users, Share2, Copy, Check } from 'lucide-react'
+import { Video, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 
@@ -11,7 +11,6 @@ export default function MeetPage() {
   const { token } = useAuthStore()
   const [meetingCode, setMeetingCode] = useState('')
   const [isJoining, setIsJoining] = useState(false)
-  const [copied, setCopied] = useState(false)
 
   const handleStartInstant = async () => {
     setIsJoining(true)
@@ -41,14 +40,6 @@ export default function MeetPage() {
   const handleJoin = () => {
     if (meetingCode) {
       router.push(`/dashboard/meet/join/${meetingCode}`)
-    }
-  }
-
-  const copyMeetingCode = () => {
-    if (meetingCode) {
-      navigator.clipboard.writeText(meetingCode)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
     }
   }
 

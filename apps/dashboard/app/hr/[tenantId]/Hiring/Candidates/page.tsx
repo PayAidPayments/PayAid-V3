@@ -60,34 +60,43 @@ export default function CandidatesPage() {
   const jobs = jobsData?.requisitions ?? []
 
   useEffect(() => {
-    if (!selectedJobId) {
-      setRankedMap({})
-      return
-    }
     let cancelled = false
-    setIsRanking(true)
-    fetch(`/api/hr/recruitment/jobs/${selectedJobId}/rank-candidates`, { method: 'POST' })
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Failed to rank'))))
-      .then((data) => {
-        if (cancelled) return
-        const map: Record<string, RankedEntry> = {}
-        ;(data.ranked ?? []).forEach((r: { candidateId: string; matchScore: number; matchLevel: string }) => {
-          map[r.candidateId] = {
-            candidateId: r.candidateId,
-            matchScore: r.matchScore,
-            matchLevel: r.matchLevel as RankedEntry['matchLevel'],
-          }
+    if (!selectedJobId) {
+      const timeoutId = globalThis.setTimeout(() => {
+        setRankedMap({})
+      }, 0)
+      return () => {
+        cancelled = true
+        globalThis.clearTimeout(timeoutId)
+      }
+    }
+    const timeoutId = globalThis.setTimeout(() => {
+      if (cancelled) return
+      setIsRanking(true)
+      fetch(`/api/hr/recruitment/jobs/${selectedJobId}/rank-candidates`, { method: 'POST' })
+        .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Failed to rank'))))
+        .then((data) => {
+          if (cancelled) return
+          const map: Record<string, RankedEntry> = {}
+          ;(data.ranked ?? []).forEach((r: { candidateId: string; matchScore: number; matchLevel: string }) => {
+            map[r.candidateId] = {
+              candidateId: r.candidateId,
+              matchScore: r.matchScore,
+              matchLevel: r.matchLevel as RankedEntry['matchLevel'],
+            }
+          })
+          setRankedMap(map)
         })
-        setRankedMap(map)
-      })
-      .catch(() => {
-        if (!cancelled) setRankedMap({})
-      })
-      .finally(() => {
-        if (!cancelled) setIsRanking(false)
-      })
+        .catch(() => {
+          if (!cancelled) setRankedMap({})
+        })
+        .finally(() => {
+          if (!cancelled) setIsRanking(false)
+        })
+    }, 0)
     return () => {
       cancelled = true
+      globalThis.clearTimeout(timeoutId)
     }
   }, [selectedJobId])
 

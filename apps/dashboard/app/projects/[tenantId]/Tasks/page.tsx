@@ -59,19 +59,21 @@ export default function ProjectsTasksPage() {
     },
   })
 
+  const tasks = data?.tasks
+
   // Client-side search filtering
   const filteredTasks = useMemo(() => {
-    if (!data?.tasks) return []
-    if (!searchQuery.trim()) return data.tasks
-    
+    if (!tasks) return []
+    if (!searchQuery.trim()) return tasks
+
     const query = searchQuery.toLowerCase()
-    return data.tasks.filter((task: any) =>
+    return tasks.filter((task: any) =>
       task.name.toLowerCase().includes(query) ||
       task.description?.toLowerCase().includes(query) ||
       task.projectName?.toLowerCase().includes(query) ||
       task.project?.name?.toLowerCase().includes(query)
     )
-  }, [data?.tasks, searchQuery])
+  }, [tasks, searchQuery])
 
   const projects = projectsData?.projects || []
 

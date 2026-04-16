@@ -48,13 +48,21 @@ next-env.d.ts
 
 # prisma
 /prisma/migrations
+!/prisma/migrations/
+/prisma/migrations/*
+!/prisma/migrations/20260415103000_add_specialist_activity_log/
+!/prisma/migrations/20260415103000_add_specialist_activity_log/migration.sql
 
 # separate module repositories (already in their own repos)
 /repositories.vercel
 .env*.local
 
 # Cursor IDE files
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/*.mdc
+!.cursor/memory/
+!.cursor/memory/*.md
 
 # Docker files
 .docker/

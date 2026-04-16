@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Webhook, Plus, Trash2, Copy, Check, AlertCircle, FileText } from 'lucide-react'
+import { Webhook, Trash2, Copy, AlertCircle, FileText } from 'lucide-react'
+import { CopyAction, COPY_ACTION_PRESETS } from '@/components/ui/copy-action'
 
 const AVAILABLE_EVENTS = [
   { value: 'contact.created', label: 'Contact Created' },
@@ -49,7 +50,6 @@ interface NewWebhookResult {
 export default function WebhooksPage() {
   const queryClient = useQueryClient()
   const [showNewWebhook, setShowNewWebhook] = useState<NewWebhookResult | null>(null)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['webhooks'],
@@ -107,12 +107,6 @@ export default function WebhooksPage() {
     })
   }
 
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
-  }
-
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div>
@@ -144,14 +138,15 @@ export default function WebhooksPage() {
                   readOnly
                   className="font-mono text-sm"
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => copyToClipboard(showNewWebhook.webhook.secret, 'new-secret')}
-                >
-                  {copiedId === 'new-secret' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
+                <CopyAction
+                  textToCopy={showNewWebhook.webhook.secret}
+                  successMessage="Webhook secret copied to clipboard."
+                  label="Copy"
+                  copiedLabel="Copied"
+                  icon={<Copy className="h-4 w-4" />}
+                  buttonProps={{ variant: 'outline', size: 'sm' }}
+                  {...COPY_ACTION_PRESETS.compactSettings}
+                />
               </div>
             </div>
             <Button onClick={() => setShowNewWebhook(null)}>I&apos;ve saved it</Button>

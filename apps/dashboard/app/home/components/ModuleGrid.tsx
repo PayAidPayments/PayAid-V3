@@ -73,7 +73,10 @@ export function ModuleGrid({ moduleSummaries }: { moduleSummaries?: Record<strin
   }, [isAuthenticated, tenant?.id, token]);
   
   // Extract stable dependencies to prevent unnecessary recalculations
-  const licensedModules = userData?.tenant?.licensedModules || [];
+  const licensedModules = useMemo(
+    () => userData?.tenant?.licensedModules ?? [],
+    [userData?.tenant?.licensedModules]
+  );
   const userRole = userData?.role || user?.role;
   const trialEndsAt = userData?.tenant?.subscription?.trialEndsAt;
   

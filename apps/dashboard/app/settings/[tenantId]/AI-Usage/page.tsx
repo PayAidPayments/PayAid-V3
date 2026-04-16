@@ -5,7 +5,8 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useQuery } from '@tanstack/react-query'
-import { Bot, RefreshCcw, MessageSquare, Download } from 'lucide-react'
+import { Bot, RefreshCcw, MessageSquare, Download, Copy } from 'lucide-react'
+import { CopyAction, COPY_ACTION_BUTTON_WIDTH_CLASS, COPY_ACTION_PRESETS } from '@/components/ui/copy-action'
 
 type RecentRow = {
   id: string
@@ -22,6 +23,23 @@ function getAuthHeaders(token: string | null) {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
   }
+}
+
+function buildRecentUsageCsv(recent: RecentRow[]): string {
+  const headers = ['Time', 'Service', 'Type', 'Model', 'Agent', 'Artifact', 'Actions']
+  const rows = recent.map((r) => {
+    const meta = r.metadata as { agentId?: string; hasArtifact?: boolean; actionCount?: number } | null | undefined
+    return [
+      new Date(r.createdAt).toISOString(),
+      r.service,
+      r.requestType ?? '',
+      r.modelUsed ?? '',
+      meta?.agentId ?? '',
+      meta?.hasArtifact ? 'Yes' : '',
+      meta?.actionCount ?? '',
+    ].join(',')
+  })
+  return [headers.join(','), ...rows].join('\n')
 }
 
 export default function SettingsAIUsagePage() {
@@ -144,35 +162,34 @@ export default function SettingsAIUsagePage() {
               Refresh
             </Button>
             {recent.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const headers = ['Time', 'Service', 'Type', 'Model', 'Agent', 'Artifact', 'Actions']
-                  const rows = recent.map((r) => {
-                    const meta = r.metadata as { agentId?: string; hasArtifact?: boolean; actionCount?: number } | null | undefined
-                    return [
-                      new Date(r.createdAt).toISOString(),
-                      r.service,
-                      r.requestType ?? '',
-                      r.modelUsed ?? '',
-                      meta?.agentId ?? '',
-                      meta?.hasArtifact ? 'Yes' : '',
-                      meta?.actionCount ?? '',
-                    ].join(',')
-                  })
-                  const csv = [headers.join(','), ...rows].join('\n')
-                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-                  const a = document.createElement('a')
-                  a.href = URL.createObjectURL(blob)
-                  a.download = `ai-usage-${new Date().toISOString().slice(0, 10)}.csv`
-                  a.click()
-                  URL.revokeObjectURL(a.href)
-                }}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
+              <>
+                <CopyAction
+                  textToCopy={() => buildRecentUsageCsv(recent)}
+                  successMessage="CSV copied to clipboard."
+                  label="Copy CSV"
+                  copiedLabel="Copied"
+                  icon={<Copy className="w-4 h-4 mr-2" />}
+                  buttonProps={{ variant: 'outline', size: 'sm' }}
+                  {...COPY_ACTION_PRESETS.wideExport}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={COPY_ACTION_BUTTON_WIDTH_CLASS.wide}
+                  onClick={() => {
+                    const csv = buildRecentUsageCsv(recent)
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+                    const a = document.createElement('a')
+                    a.href = URL.createObjectURL(blob)
+                    a.download = `ai-usage-${new Date().toISOString().slice(0, 10)}.csv`
+                    a.click()
+                    URL.revokeObjectURL(a.href)
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export CSV
+                </Button>
+              </>
             )}
           </div>
         </CardHeader>

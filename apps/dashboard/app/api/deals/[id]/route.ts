@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { logCrmAudit } from '@/lib/audit-log-crm'
 import { z } from 'zod'
+import { assertCrmRoleAllowed, CrmRoleError } from '@/lib/crm/rbac'
 
 const updateDealSchema = z.object({
   name: z.string().min(1).optional(),
@@ -30,7 +31,9 @@ async function resolveDealTenantId(
   }).catch(() => null)
   const userTenantId = user?.tenantId ?? null
   const hasAccess = jwtTenantId === requestTenantId || userTenantId === requestTenantId
+  const allowDemoTenantOverride = process.env.NEXT_PUBLIC_CRM_ALLOW_DEMO_SEED === '1'
   const isDemoTenantRequest =
+    allowDemoTenantOverride &&
     user?.email === 'admin@demo.com' &&
     (await prisma.tenant.findUnique({
       where: { id: requestTenantId },
@@ -202,7 +205,8 @@ export async function DELETE(
 ) {
   try {
     const resolvedParams = await params
-    const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
+    const { userId, tenantId: jwtTenantId, roles } = await requireModuleAccess(request, 'crm')
+    assertCrmRoleAllowed(roles, ['admin', 'manager'], 'deal delete')
     const tenantId = await resolveDealTenantId(request, jwtTenantId, userId)
 
     const existing = await prisma.deal.findFirst({
@@ -235,6 +239,9 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof CrmRoleError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status })
+    }
     // Handle license errors
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)

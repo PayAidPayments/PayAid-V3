@@ -33,7 +33,10 @@ export default function SuperAdminPlansPage() {
   }
 
   useEffect(() => {
-    fetchPlans()
+    const loadId = window.setTimeout(() => {
+      fetchPlans()
+    }, 0)
+    return () => window.clearTimeout(loadId)
   }, [])
 
   const [editingPlan, setEditingPlan] = useState<PlanRow | null>(null)

@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
+import { assertCrmRoleAllowed, CrmRoleError } from '@/lib/crm/rbac'
 
 const scoringWeightsSchema = z.object({
   engagement: z.number().min(0).max(1),
@@ -56,7 +57,8 @@ export async function GET(request: NextRequest) {
 // POST /api/crm/leads/scoring-weights - Set scoring weights
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, roles } = await requireModuleAccess(request, 'crm')
+    assertCrmRoleAllowed(roles, ['admin'], 'scoring weights write')
 
     const body = await request.json()
     const validated = scoringWeightsSchema.parse(body)
@@ -99,6 +101,12 @@ export async function POST(request: NextRequest) {
       message: 'Scoring weights updated successfully',
     })
   } catch (error) {
+    if (error instanceof CrmRoleError) {
+      return NextResponse.json(
+        { success: false, error: error.message, code: error.code },
+        { status: error.status }
+      )
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation error', details: error.errors },

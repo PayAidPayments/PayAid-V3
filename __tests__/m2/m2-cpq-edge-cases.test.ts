@@ -128,9 +128,10 @@ describe('POST /api/v1/quotes/[id]/convert-invoice — edge cases', () => {
     expect(body.success).toBe(true)
     expect(body.conversion.invoice_id).toBe('inv_1')
     expect(body.conversion.invoice_status).toBe('draft')
-    // Invoice should be created with 4 line items
+    // Invoice items are persisted as JSON array in current schema.
     const createCall = (db.prisma.invoice.create as jest.Mock).mock.calls[0][0] as any
-    expect(createCall.data.items.create).toHaveLength(4)
+    expect(Array.isArray(createCall.data.items)).toBe(true)
+    expect(createCall.data.items).toHaveLength(4)
   })
 
   it('handles 0% tax (basic items) — no tax added to total', async () => {
@@ -248,7 +249,7 @@ describe('POST /api/v1/quotes/[id]/convert-invoice — edge cases', () => {
 
     const createCall = (db.prisma.invoice.create as jest.Mock).mock.calls[0][0] as any
     // Should fall back to deal.contactId
-    expect(createCall.data.contactId).toBe('c_1')
+    expect(createCall.data.customerId).toBe('c_1')
   })
 
   it('sets notes default to "Converted from quote {quoteNumber}" when not provided', async () => {
@@ -355,7 +356,8 @@ describe('POST /api/crm/cpq/quotes/[id]/convert-invoice — edge cases', () => {
     expect(body.invoice.id).toBe('inv_1')
     // Verify 2 line items were mapped
     const createCall = (db.prisma.invoice.create as jest.Mock).mock.calls[0][0] as any
-    expect(createCall.data.items.create).toHaveLength(2)
+    expect(Array.isArray(createCall.data.items)).toBe(true)
+    expect(createCall.data.items).toHaveLength(2)
   })
 
   it('returns 422 if status is not accepted', async () => {
@@ -373,14 +375,14 @@ describe('POST /api/crm/cpq/quotes/[id]/convert-invoice — edge cases', () => {
     expect(body.code).toBe('QUOTE_NOT_ACCEPTED')
   })
 
-  it('returns already_converted: true if convertedInvoiceId is already set', async () => {
+  it('returns already_converted: true when conversion audit record exists', async () => {
     const auth = require('@/lib/middleware/auth')
     const db = require('@/lib/db/prisma')
     auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1' })
-    db.prisma.quote.findFirst.mockResolvedValue({
-      ...baseQuote,
-      lineItems: [],
-      convertedInvoiceId: 'inv_existing',
+    db.prisma.quote.findFirst.mockResolvedValue({ ...baseQuote, lineItems: [] })
+    db.prisma.auditLog.findFirst.mockResolvedValue({
+      id: 'al_existing',
+      afterSnapshot: { invoice_id: 'inv_existing', invoice_number: 'INV-CPQ-00001' },
     })
     db.prisma.invoice.findFirst.mockResolvedValue({
       id: 'inv_existing',

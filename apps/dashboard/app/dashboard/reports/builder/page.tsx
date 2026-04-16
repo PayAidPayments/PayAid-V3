@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getAuthHeaders } from '@/lib/hooks/use-api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -42,6 +42,7 @@ function ReportBuilder() {
   const [reportName, setReportName] = useState('')
   const [selectedFields, setSelectedFields] = useState<ReportField[]>([])
   const [draggedField, setDraggedField] = useState<string | null>(null)
+  const nextFieldIdRef = useRef(1)
 
   const saveReport = useMutation({
     mutationFn: async (data: any) => {
@@ -64,7 +65,7 @@ function ReportBuilder() {
     if (!field) return
 
     const newField: ReportField = {
-      id: `field-${Date.now()}`,
+      id: `field-${nextFieldIdRef.current++}`,
       fieldId: field.id,
       label: field.label,
     }

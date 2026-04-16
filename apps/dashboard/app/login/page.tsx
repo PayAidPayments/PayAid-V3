@@ -20,16 +20,19 @@ export default function LoginPage() {
   const { login, isLoading } = useAuthStore()
 
   useEffect(() => {
-    setMounted(true)
-    if (typeof window !== 'undefined') {
-      try {
-        const params = new URLSearchParams(window.location.search)
-        const redirect = params.get('redirect')
-        if (redirect) setRedirectUrl(redirect)
-      } catch {
-        // ignore
+    const id = globalThis.setTimeout(() => {
+      setMounted(true)
+      if (typeof window !== 'undefined') {
+        try {
+          const params = new URLSearchParams(window.location.search)
+          const redirect = params.get('redirect')
+          if (redirect) setRedirectUrl(redirect)
+        } catch {
+          // ignore
+        }
       }
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [])
 
   const clearAuthStorage = () => {

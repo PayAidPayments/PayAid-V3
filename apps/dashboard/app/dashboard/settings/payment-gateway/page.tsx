@@ -64,7 +64,8 @@ export default function PaymentGatewaySettingsPage() {
 
   // Load settings into form
   useEffect(() => {
-    if (settings) {
+    if (!settings) return
+    const id = globalThis.setTimeout(() => {
       // Settings come with masked values, so we only populate if user wants to edit
       setFormData(prev => ({
         ...prev,
@@ -72,7 +73,8 @@ export default function PaymentGatewaySettingsPage() {
         testMode: settings.testMode || false,
         payaidBaseUrl: settings.payaidBaseUrl || '',
       }))
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [settings])
 
   const handleSubmit = async (e: React.FormEvent) => {

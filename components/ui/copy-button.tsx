@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import { Button } from './button'
+import { useCopyToClipboardFeedback } from '@/lib/hooks/useCopyToClipboardFeedback'
 
 interface CopyButtonProps {
   text: string
@@ -12,15 +12,12 @@ interface CopyButtonProps {
 }
 
 export function CopyButton({ text, className, variant = 'ghost', size = 'icon', showText = false }: CopyButtonProps) {
-  const [copied, setCopied] = useState(false)
+  const copy = useCopyToClipboardFeedback({ copiedDurationMs: 2000, feedbackDurationMs: 2000 })
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
-      console.error('Failed to copy:', err)
+    const copied = await copy.copyText(text, 'Copied to clipboard.')
+    if (!copied) {
+      console.error('Failed to copy text from CopyButton.')
     }
   }
 
@@ -30,9 +27,9 @@ export function CopyButton({ text, className, variant = 'ghost', size = 'icon', 
       variant={variant}
       size={size}
       className={className}
-      title={copied ? 'Copied!' : 'Copy to clipboard'}
+      title={copy.isCopied ? 'Copied!' : 'Copy to clipboard'}
     >
-      {copied ? (
+      {copy.isCopied ? (
         <>
           {showText && <span className="mr-2">Copied!</span>}
           <svg

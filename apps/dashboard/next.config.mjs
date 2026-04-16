@@ -5,6 +5,9 @@ import { config as loadEnv } from 'dotenv'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, '../..')
 const isVercel = process.env.VERCEL === '1'
+const isProduction = process.env.NODE_ENV === 'production'
+const disableOptimizePackageImports =
+  process.env.PAYAID_DISABLE_OPTIMIZE_PACKAGE_IMPORTS === '1'
 
 // Load root .env so DATABASE_URL and other vars are available when running from apps/dashboard
 try {
@@ -42,7 +45,7 @@ const nextConfig = {
   experimental: {
     // This optimization improves bundle ergonomics but increases compile pressure.
     // Keep it off on Vercel to reduce OOM risk on 8 GB build workers.
-    ...(isVercel
+    ...(isVercel || disableOptimizePackageImports || !isProduction
       ? {}
       : {
           optimizePackageImports: ['@radix-ui/*', 'lucide-react', 'framer-motion', 'recharts', 'handsontable', '@tiptap/react'],

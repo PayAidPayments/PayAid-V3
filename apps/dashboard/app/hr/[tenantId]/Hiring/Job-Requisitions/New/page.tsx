@@ -27,7 +27,10 @@ export default function NewJobRequisitionPage() {
   const tenantId = params.tenantId as string
   const token = useAuthStore((s) => s.token)
   const createJobReqIdempotencyKey = useMemo(
-    () => `jobreq:${tenantId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`,
+    () =>
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `jobreq:${tenantId}:${crypto.randomUUID()}`
+        : `jobreq:${tenantId}:fallback`,
     [tenantId]
   )
   const [formData, setFormData] = useState({

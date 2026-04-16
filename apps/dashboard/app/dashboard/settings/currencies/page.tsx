@@ -20,10 +20,12 @@ export default function CurrencySettingsPage() {
   const [supportedCurrencies, setSupportedCurrencies] = useState<string[]>(['INR'])
 
   useEffect(() => {
-    if (tenantData) {
+    if (!tenantData) return
+    const id = globalThis.setTimeout(() => {
       setDefaultCurrency(tenantData.defaultCurrency || 'INR')
       setSupportedCurrencies(tenantData.supportedCurrencies || ['INR'])
-    }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [tenantData])
 
   const { data: exchangeRates, isLoading: ratesLoading } = useQuery({
@@ -195,7 +197,7 @@ export default function CurrencySettingsPage() {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              No exchange rates available. Click "Update Rates" to fetch current rates.
+              No exchange rates available. Click &quot;Update Rates&quot; to fetch current rates.
             </div>
           )}
         </CardContent>

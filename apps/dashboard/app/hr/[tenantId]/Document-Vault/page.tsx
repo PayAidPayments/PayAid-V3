@@ -48,14 +48,17 @@ export default function DocumentVaultPage() {
 
   useEffect(() => {
     if (!tenantId || !token) return
-    setLoading(true)
-    fetch(`/api/hr/documents?limit=200`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => (r.ok ? r.json() : { documents: [], checklist: [] }))
-      .then((data) => {
-        setDocuments(data.documents || [])
-        setChecklist(data.checklist || [])
-      })
-      .finally(() => setLoading(false))
+    const timeoutId = globalThis.setTimeout(() => {
+      setLoading(true)
+      fetch(`/api/hr/documents?limit=200`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => (r.ok ? r.json() : { documents: [], checklist: [] }))
+        .then((data) => {
+          setDocuments(data.documents || [])
+          setChecklist(data.checklist || [])
+        })
+        .finally(() => setLoading(false))
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [tenantId, token])
 
   const empName = (e: { firstName: string; lastName: string } | undefined) =>

@@ -93,22 +93,6 @@ export default function DashboardLayout({
     }
   }, [pathname, currentModule, ModuleTopBar])
   
-  // Get the appropriate sidebar component
-  const getSidebarComponent = () => {
-    switch (currentModule) {
-      case 'crm':
-        return CRMSidebar
-      case 'finance':
-        return FinanceSidebar
-      case 'sales':
-        return SalesSidebar
-      default:
-        return Sidebar // Default sidebar for main dashboard and other modules
-    }
-  }
-  
-  const SidebarComponent = getSidebarComponent()
-  
   // Helper function to determine if sidebar should be open based on viewport
   const shouldSidebarBeOpen = (): boolean => {
     if (typeof window === 'undefined') return true // Default to open for SSR
@@ -325,7 +309,15 @@ export default function DashboardLayout({
               ? 'translate-x-0' 
               : '-translate-x-full lg:translate-x-0' // Desktop always shows, mobile/tablet slides
           )}>
-            <SidebarComponent isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            {currentModule === 'crm' ? (
+              <CRMSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            ) : currentModule === 'finance' ? (
+              <FinanceSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            ) : currentModule === 'sales' ? (
+              <SalesSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            ) : (
+              <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            )}
           </div>
         )}
 

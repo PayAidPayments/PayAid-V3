@@ -30,7 +30,7 @@ export default function HRPerformanceOKRNewPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:okr:create:${crypto.randomUUID()}`
-        : `hr:okr:create:${Date.now()}`,
+        : 'hr:okr:create:fallback',
     []
   )
 

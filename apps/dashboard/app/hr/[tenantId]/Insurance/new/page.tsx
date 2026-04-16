@@ -24,7 +24,7 @@ export default function HRInsuranceNewPage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:insurance:plan:create:${crypto.randomUUID()}`
-        : `hr:insurance:plan:create:${Date.now()}`,
+        : 'hr:insurance:plan:create:fallback',
     []
   )
 

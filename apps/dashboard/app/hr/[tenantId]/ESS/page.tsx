@@ -33,27 +33,30 @@ export default function ESSPage() {
 
   useEffect(() => {
     if (!tenantId || !token) return
-    setLoading(true)
-    setError(null)
-    Promise.all([
-      fetch('/api/hr/ess/me', { headers: { Authorization: `Bearer ${token}` } }),
-      fetch('/api/hr/ess/payslips', { headers: { Authorization: `Bearer ${token}` } }),
-      fetch('/api/hr/ess/attendance?days=30', { headers: { Authorization: `Bearer ${token}` } }),
-    ])
-      .then(async ([rMe, rPayslips, rAtt]) => {
-        if (!rMe.ok) {
-          const j = await rMe.json().catch(() => ({}))
-          throw new Error(j.error || 'Not linked to an employee')
-        }
-        const dataMe = await rMe.json()
-        setMe(dataMe)
-        const dataPayslips = rPayslips.ok ? await rPayslips.json() : { payslips: [] }
-        setPayslips(dataPayslips.payslips || [])
-        const dataAtt = rAtt.ok ? await rAtt.json() : { attendance: [] }
-        setAttendance(dataAtt.attendance || [])
-      })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
-      .finally(() => setLoading(false))
+    const timeoutId = globalThis.setTimeout(() => {
+      setLoading(true)
+      setError(null)
+      Promise.all([
+        fetch('/api/hr/ess/me', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/hr/ess/payslips', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/hr/ess/attendance?days=30', { headers: { Authorization: `Bearer ${token}` } }),
+      ])
+        .then(async ([rMe, rPayslips, rAtt]) => {
+          if (!rMe.ok) {
+            const j = await rMe.json().catch(() => ({}))
+            throw new Error(j.error || 'Not linked to an employee')
+          }
+          const dataMe = await rMe.json()
+          setMe(dataMe)
+          const dataPayslips = rPayslips.ok ? await rPayslips.json() : { payslips: [] }
+          setPayslips(dataPayslips.payslips || [])
+          const dataAtt = rAtt.ok ? await rAtt.json() : { attendance: [] }
+          setAttendance(dataAtt.attendance || [])
+        })
+        .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
+        .finally(() => setLoading(false))
+    }, 0)
+    return () => globalThis.clearTimeout(timeoutId)
   }, [tenantId, token])
 
   const monthName = (month: number, year: number) => format(new Date(year, month - 1), 'MMM yyyy')

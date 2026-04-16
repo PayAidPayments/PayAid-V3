@@ -26,11 +26,13 @@ export default function SalesLoginPage() {
   const { login, isLoading, isAuthenticated, tenant } = useAuthStore()
   
   useEffect(() => {
-    setMounted(true)
-    
-    if (isAuthenticated && tenant?.id) {
-      router.push(`/sales/${tenant.id}/Home/`)
-    }
+    const id = globalThis.setTimeout(() => {
+      setMounted(true)
+      if (isAuthenticated && tenant?.id) {
+        router.push(`/sales/${tenant.id}/Home/`)
+      }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [isAuthenticated, tenant?.id, router])
 
   const handleSubmit = async (e: React.FormEvent) => {

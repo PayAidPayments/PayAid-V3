@@ -27,7 +27,7 @@ export default function NewSalaryStructurePage() {
     () =>
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? `hr:salary-structure:create:${crypto.randomUUID()}`
-        : `hr:salary-structure:create:${Date.now()}`,
+        : 'hr:salary-structure:create:fallback',
     []
   )
   const [formData, setFormData] = useState({

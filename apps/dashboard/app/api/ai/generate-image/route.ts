@@ -19,8 +19,22 @@ const generateImageSchema = z.object({
 // POST /api/ai/generate-image - Generate image using AI
 export async function POST(request: NextRequest) {
   try {
-    // Check AI Studio module license
-    const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
+    // Allow both AI Studio and Marketing modules for image generation flows.
+    let tenantId: string
+    let userId: string
+    try {
+      const access = await requireModuleAccess(request, 'ai-studio')
+      tenantId = access.tenantId
+      userId = access.userId
+    } catch (accessError) {
+      if (accessError && typeof accessError === 'object' && 'moduleId' in accessError) {
+        const fallbackAccess = await requireModuleAccess(request, 'marketing')
+        tenantId = fallbackAccess.tenantId
+        userId = fallbackAccess.userId
+      } else {
+        throw accessError
+      }
+    }
 
     const body = await request.json()
     const validated = generateImageSchema.parse(body)

@@ -41,10 +41,13 @@ export default function AICallingBotSettingsPage() {
   })
 
   useEffect(() => {
-    if (data?.bot) {
-      setGreeting(data.bot.greeting || '')
-      setFaqs(Array.isArray(data.bot.faqKnowledgeBase) ? data.bot.faqKnowledgeBase : [])
-    }
+    const bot = data?.bot
+    if (!bot) return
+    const id = globalThis.setTimeout(() => {
+      setGreeting(bot.greeting || '')
+      setFaqs(Array.isArray(bot.faqKnowledgeBase) ? bot.faqKnowledgeBase : [])
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [data])
 
   const updateMutation = useMutation({

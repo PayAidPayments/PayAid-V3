@@ -61,10 +61,15 @@ export function PinnedModules({
   const [pinnedIds, setPinnedIds] = useState<string[]>([])
 
   useEffect(() => {
-    setPinnedIds(loadPinnedFromStorage())
+    const initId = globalThis.setTimeout(() => {
+      setPinnedIds(loadPinnedFromStorage())
+    }, 0)
     const onPinnedChange = () => setPinnedIds(loadPinnedFromStorage())
     window.addEventListener('home-pinned-modules-changed', onPinnedChange)
-    return () => window.removeEventListener('home-pinned-modules-changed', onPinnedChange)
+    return () => {
+      globalThis.clearTimeout(initId)
+      window.removeEventListener('home-pinned-modules-changed', onPinnedChange)
+    }
   }, [])
 
   const removeFromPinned = useCallback((moduleId: string) => {

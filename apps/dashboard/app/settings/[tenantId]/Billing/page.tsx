@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getAuthHeaders } from '@/lib/hooks/use-api'
+import { CopyAction, COPY_ACTION_PRESETS } from '@/components/ui/copy-action'
 
 export default function BillingPage() {
   const params = useParams()
@@ -29,7 +30,9 @@ export default function BillingPage() {
   const [gatewaySuccess, setGatewaySuccess] = useState('')
 
   useEffect(() => {
-    if (typeof window !== 'undefined') setOrigin(window.location.origin)
+    if (typeof window === 'undefined') return
+    const id = globalThis.setTimeout(() => setOrigin(window.location.origin), 0)
+    return () => globalThis.clearTimeout(id)
   }, [])
 
   const { data: gatewaySettings, isLoading: gatewayLoading } = useQuery({
@@ -77,15 +80,18 @@ export default function BillingPage() {
 
   useEffect(() => {
     if (!gatewaySettings) return
-    setGatewayForm((prev) => ({
-      ...prev,
-      // Masked values from server; allow user to click "Edit secrets" to fill real ones.
-      payaidApiKey: gatewaySettings.payaidApiKey || '',
-      payaidSalt: gatewaySettings.payaidSalt || '',
-      payaidBaseUrl: gatewaySettings.payaidBaseUrl || '',
-      isActive: gatewaySettings.isActive || false,
-      testMode: gatewaySettings.testMode || false,
-    }))
+    const id = globalThis.setTimeout(() => {
+      setGatewayForm((prev) => ({
+        ...prev,
+        // Masked values from server; allow user to click "Edit secrets" to fill real ones.
+        payaidApiKey: gatewaySettings.payaidApiKey || '',
+        payaidSalt: gatewaySettings.payaidSalt || '',
+        payaidBaseUrl: gatewaySettings.payaidBaseUrl || '',
+        isActive: gatewaySettings.isActive || false,
+        testMode: gatewaySettings.testMode || false,
+      }))
+    }, 0)
+    return () => globalThis.clearTimeout(id)
   }, [gatewaySettings])
 
   const saveGateway = useMutation({
@@ -218,21 +224,15 @@ export default function BillingPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Input value={webhookUrl || '—'} readOnly className="w-full sm:w-[420px]" />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={!webhookUrl}
-                  onClick={async () => {
-                    if (!webhookUrl) return
-                    await navigator.clipboard.writeText(webhookUrl)
-                    setGatewaySuccess('Webhook URL copied.')
-                    setTimeout(() => setGatewaySuccess(''), 1500)
-                  }}
-                >
-                  <Link2 className="w-4 h-4 mr-2" />
-                  Copy
-                </Button>
+                <CopyAction
+                  textToCopy={webhookUrl}
+                  successMessage="Webhook URL copied to clipboard."
+                  label="Copy"
+                  copiedLabel="Copied"
+                  icon={<Link2 className="w-4 h-4 mr-2" />}
+                  buttonProps={{ variant: 'outline', size: 'sm', disabled: !webhookUrl }}
+                  {...COPY_ACTION_PRESETS.compactSettings}
+                />
               </div>
             </div>
           </div>

@@ -48,31 +48,33 @@ export default function EmailAccountsPage() {
     const success = searchParams.get('success')
     const error = searchParams.get('error')
     const email = searchParams.get('email')
+    if (!success && !error) return
 
-    if (success) {
-      const provider = success.includes('gmail') ? 'Gmail' : 'Outlook'
-      setNotification({
-        type: 'success',
-        message: `${provider} account${email ? ` (${email})` : ''} connected successfully!`,
-      })
-      queryClient.invalidateQueries({ queryKey: ['email-accounts'] })
-      // Clear URL params
-      window.history.replaceState({}, '', '/dashboard/email/accounts')
-    } else if (error) {
-      setNotification({
-        type: 'error',
-        message: `Failed to connect email account: ${decodeURIComponent(error)}`,
-      })
-      // Clear URL params
-      window.history.replaceState({}, '', '/dashboard/email/accounts')
-    }
+    const id = globalThis.setTimeout(() => {
+      if (success) {
+        const provider = success.includes('gmail') ? 'Gmail' : 'Outlook'
+        setNotification({
+          type: 'success',
+          message: `${provider} account${email ? ` (${email})` : ''} connected successfully!`,
+        })
+        queryClient.invalidateQueries({ queryKey: ['email-accounts'] })
+        window.history.replaceState({}, '', '/dashboard/email/accounts')
+      } else if (error) {
+        setNotification({
+          type: 'error',
+          message: `Failed to connect email account: ${decodeURIComponent(error)}`,
+        })
+        window.history.replaceState({}, '', '/dashboard/email/accounts')
+      }
+    }, 0)
+    return () => globalThis.clearTimeout(id)
+  }, [searchParams, queryClient])
 
-    // Auto-dismiss notification after 5 seconds
-    if (notification) {
-      const timer = setTimeout(() => setNotification(null), 5000)
-      return () => clearTimeout(timer)
-    }
-  }, [searchParams, queryClient, notification])
+  useEffect(() => {
+    if (!notification) return
+    const timer = globalThis.setTimeout(() => setNotification(null), 5000)
+    return () => globalThis.clearTimeout(timer)
+  }, [notification])
 
   const { data, isLoading } = useQuery<{ accounts: EmailAccount[] }>({
     queryKey: ['email-accounts'],
