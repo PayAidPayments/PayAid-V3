@@ -52,6 +52,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
+type TasksSortMode = 'updated_desc' | 'updated_asc' | 'due_asc' | 'due_desc' | 'priority_desc'
+
 const DEFAULT_FILTERS: TasksFiltersState = {
   status: '',
   module: '',
@@ -102,6 +104,7 @@ export default function CRMTasksPage() {
   const [view, setView] = useState<'list' | 'kanban' | 'calendar'>('list')
   const [calendarMonth, setCalendarMonth] = useState(() => new Date())
   const [quickFilter, setQuickFilter] = useState<string | null>(null)
+  const [sortMode, setSortMode] = useState<TasksSortMode>('updated_desc')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const queryClient = useQueryClient()
   const { data: templatesData } = useTaskTemplates(tenantId || undefined)
@@ -166,7 +169,20 @@ export default function CRMTasksPage() {
   const remindTask = useRemindTask()
   const bulkComplete = useBulkCompleteTasks()
 
-  const tasks = data?.tasks ?? []
+  const tasks = useMemo(() => data?.tasks ?? [], [data?.tasks])
+  const sortedTasks = useMemo(() => {
+    const priorityRank: Record<string, number> = { high: 3, medium: 2, low: 1 }
+    const byDate = (value?: string | null) => (value ? new Date(value).getTime() : 0)
+    const rows = [...tasks]
+    rows.sort((a: any, b: any) => {
+      if (sortMode === 'updated_asc') return byDate(a.updatedAt) - byDate(b.updatedAt)
+      if (sortMode === 'due_asc') return byDate(a.dueDate) - byDate(b.dueDate)
+      if (sortMode === 'due_desc') return byDate(b.dueDate) - byDate(a.dueDate)
+      if (sortMode === 'priority_desc') return (priorityRank[b.priority] || 0) - (priorityRank[a.priority] || 0)
+      return byDate(b.updatedAt) - byDate(a.updatedAt)
+    })
+    return rows
+  }, [tasks, sortMode])
   const pagination = data?.pagination
   const stats = data?.stats ?? {
     openCount: 0,
@@ -226,12 +242,12 @@ export default function CRMTasksPage() {
 
   const recentActivity = useMemo(
     () =>
-      tasks.slice(0, 5).map((t: any) => ({
+      sortedTasks.slice(0, 5).map((t: any) => ({
         id: t.id,
         title: t.title,
         at: t.updatedAt ? format(new Date(t.updatedAt), 'MMM d') : '',
       })),
-    [tasks]
+    [sortedTasks]
   )
 
   const clearFilters = () => {
@@ -447,7 +463,19 @@ export default function CRMTasksPage() {
                     </span>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                  <select
+                    value={sortMode}
+                    onChange={(e) => setSortMode(e.target.value as TasksSortMode)}
+                    className="h-9 rounded-md border bg-background px-2 text-sm"
+                    aria-label="Sort tasks"
+                  >
+                    <option value="updated_desc">Newest updated</option>
+                    <option value="updated_asc">Oldest updated</option>
+                    <option value="due_asc">Due date (soonest)</option>
+                    <option value="due_desc">Due date (latest)</option>
+                    <option value="priority_desc">Priority (high to low)</option>
+                  </select>
                   {someSelected && (
                     <Button
                       variant="outline"
@@ -490,7 +518,7 @@ export default function CRMTasksPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-slate-100 dark:divide-gray-700">
-                      {tasks.map((task: any) => {
+                      {sortedTasks.map((task: any) => {
                         const due = task.dueDate ? new Date(task.dueDate) : null
                         const isOverdue =
                           due &&
@@ -650,7 +678,7 @@ export default function CRMTasksPage() {
 
           {view === 'kanban' && (
             <TasksKanbanView
-              tasks={tasks.map((t: any) => ({
+              tasks={sortedTasks.map((t: any) => ({
                 id: t.id,
                 title: t.title,
                 description: t.description,

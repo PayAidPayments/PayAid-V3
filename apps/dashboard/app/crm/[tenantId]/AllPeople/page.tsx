@@ -60,7 +60,7 @@ export default function CRMAllPeoplePage() {
 
   // Fetch all contacts for stats calculation (single source for tab counts)
   const { data: allContactsData, isLoading: isLoadingAll } = useContacts({ page: 1, limit: 10000, tenantId: tenantId || undefined })
-  const allContacts = allContactsData?.contacts || []
+  const allContacts = useMemo(() => allContactsData?.contacts ?? [], [allContactsData?.contacts])
 
   // Fetch contacts based on stage filter for table (uses debounced search to avoid per-keystroke requests)
   const contactParams: any = { page, limit, search: debouncedSearch, tenantId: tenantId || undefined }
@@ -223,7 +223,7 @@ export default function CRMAllPeoplePage() {
     )
   }
 
-  if (isLoading || isLoadingAll) {
+  if ((isLoading && !data) || (isLoadingAll && !allContactsData)) {
     return <PageLoading message="Loading contacts..." fullScreen={true} />
   }
 

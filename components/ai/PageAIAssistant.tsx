@@ -227,7 +227,7 @@ export function PageAIAssistant() {
         onClick={() => { setIsOpen(true); setIsMinimized(false) }}
         className={cn(
           // Offset above page edge so it never overlaps content/footer; shift left slightly on small screens.
-          'fixed bottom-10 right-4 sm:right-6 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center',
+          'fixed bottom-10 right-4 sm:right-6 z-[70] w-12 h-12 rounded-full shadow-lg flex items-center justify-center',
           'bg-slate-800 dark:bg-slate-700 text-white hover:shadow-md transition-shadow',
           isOpen && 'hidden'
         )}
@@ -243,7 +243,7 @@ export function PageAIAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             className={cn(
-              'fixed bottom-24 right-4 sm:right-6 z-50 w-96 max-w-[calc(100vw-2rem)]',
+              'fixed bottom-24 right-4 sm:right-6 z-[70] w-96 max-w-[calc(100vw-2rem)]',
               'bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col',
               isMinimized ? 'h-14' : 'h-[24rem]'
             )}

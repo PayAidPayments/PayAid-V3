@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useCreateTask } from '@/lib/hooks/use-api'
-import { useContacts } from '@/lib/hooks/use-api'
+import { useContact, useContacts } from '@/lib/hooks/use-api'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
@@ -58,6 +58,7 @@ export default function NewCRMTaskPage() {
   }
 
   const prefillDueDate = toDateTimeLocal(prefillDueDateParam)
+  const { data: prefilledContact } = useContact(prefillContactId, tenantId || undefined)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -275,7 +276,7 @@ export default function NewCRMTaskPage() {
                 <option value="">— None —</option>
                 {selectedContactMissingFromList && (
                   <option value={formData.contactId}>
-                    Prefilled contact ({formData.contactId})
+                    Prefilled contact ({prefilledContact?.name || prefilledContact?.email || formData.contactId})
                   </option>
                 )}
                 {contacts.map((c: { id: string; name?: string; email?: string }) => (

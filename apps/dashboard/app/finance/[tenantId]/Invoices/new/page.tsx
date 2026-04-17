@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { useContacts, useProducts, useTenant } from '@/lib/hooks/use-api'
+import { useContact, useContacts, useProducts, useTenant } from '@/lib/hooks/use-api'
 import { useCreateInvoice } from '@/lib/hooks/use-api'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
@@ -51,7 +51,11 @@ export default function NewInvoicePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const prefillCustomerId = searchParams.get('customerId')
-  const { data: contactsData, isLoading: contactsLoading, error: contactsError } = useContacts({ limit: 1000 })
+  const { data: contactsData, isLoading: contactsLoading, error: contactsError } = useContacts({
+    limit: prefillCustomerId ? 150 : 1000,
+    tenantId: tenantId || undefined,
+  })
+  const { data: prefillContact } = useContact(prefillCustomerId || '', tenantId || undefined)
   const { data: productsData } = useProducts({ limit: 1000 })
   const { data: tenantData } = useTenant()
   const createInvoice = useCreateInvoice()
@@ -255,8 +259,8 @@ export default function NewInvoicePage() {
 
   // Auto-fill customer details when prefillCustomerId changes (from URL)
   useEffect(() => {
-    if (!prefillCustomerId || contacts.length === 0) return
-    const customer = contacts.find((c: any) => c.id === prefillCustomerId)
+    if (!prefillCustomerId) return
+    const customer = contacts.find((c: any) => c.id === prefillCustomerId) || prefillContact
     if (!customer) return
     const id = globalThis.setTimeout(() => {
       setFormData(prev => ({
@@ -278,7 +282,7 @@ export default function NewInvoicePage() {
       }))
     }, 0)
     return () => globalThis.clearTimeout(id)
-  }, [prefillCustomerId, contacts, tenantData])
+  }, [prefillCustomerId, contacts, prefillContact, tenantData])
 
   // Helper function to calculate due date from payment terms (shared + normalized)
   const calculateDueDate = (terms: string, invoiceDate: string): string => {
@@ -539,7 +543,7 @@ export default function NewInvoicePage() {
                   <label htmlFor="customerId" className="text-sm font-medium">
                     Select Contact (Optional)
                   </label>
-                  {contactsLoading ? (
+                  {contactsLoading && !prefillContact ? (
                     <div className="flex h-10 w-full items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                       Loading contacts...
                     </div>
@@ -598,6 +602,11 @@ export default function NewInvoicePage() {
                       disabled={createInvoice.isPending}
                     >
                       <option value="">Or enter manually</option>
+                      {prefillContact && !contacts.some((c: any) => c.id === prefillContact.id) ? (
+                        <option value={prefillContact.id}>
+                          {prefillContact.name || prefillContact.email || prefillContact.id}
+                        </option>
+                      ) : null}
                       {contacts.length === 0 ? (
                         <option value="" disabled>No contacts available</option>
                       ) : (

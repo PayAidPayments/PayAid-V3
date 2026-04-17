@@ -3,7 +3,7 @@
  * Use this in every CRM layout so the menu stays consistent across all pages.
  *
  * Max 10 items: Home, Prospects, Contacts, Pipeline, Activities,
- * CPQ, Automation, Revenue IQ (M1 funnel/velocity/next actions), Dialer, Agents.
+ * Tasks, CPQ, Automation, Revenue IQ (M1 funnel/velocity/next actions), Dialer.
  * Legacy Phase 1A metrics: `/crm/{tenant}/Metrics` (linked from Revenue IQ page).
  */
 
@@ -24,10 +24,10 @@ export function getCRMTopBarItems(tenantId: string): CRMTopBarItem[] {
     { name: 'Contacts', href: `${base}/Contacts` },
     { name: 'Pipeline', href: `${base}/Deals` },
     { name: 'Activities', href: `${base}/Activities` },
+    { name: 'Tasks', href: `${base}/Tasks` },
     { name: 'CPQ', href: `${base}/CPQ` },
     { name: 'Automation', href: `${base}/SalesAutomation` },
     { name: 'Revenue IQ', href: `${base}/Revenue-Intelligence` },
     { name: 'Dialer', href: `${base}/Dialer` },
-    { name: 'Agents', href: `${base}/Agents` },
   ]
 }

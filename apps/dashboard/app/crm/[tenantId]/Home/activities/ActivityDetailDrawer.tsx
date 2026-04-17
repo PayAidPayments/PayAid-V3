@@ -16,6 +16,7 @@ import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import type { ActivityItem } from './types'
 import { useParams, useRouter } from 'next/navigation'
 import { useUpdateTask } from '@/lib/hooks/use-api'
+import { usePageAIExtraStore } from '@/lib/stores/page-ai-extra'
 
 interface ActivityDetailDrawerProps {
   open: boolean
@@ -34,6 +35,13 @@ export default function ActivityDetailDrawer({
   onOpenChange,
   activity,
 }: ActivityDetailDrawerProps) {
+  const handleDrawerOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      usePageAIExtraStore.getState().setExtra(null)
+    }
+    onOpenChange(nextOpen)
+  }
+
   const params = useParams()
   const router = useRouter()
   const updateTask = useUpdateTask()
@@ -76,12 +84,21 @@ export default function ActivityDetailDrawer({
   }
 
   const handleAISummary = () => {
+    usePageAIExtraStore.getState().setExtra({
+      entity: 'contact',
+      contactId: activity.contact?.id || null,
+      name: activity.contact?.name || activity.contact?.email || 'Selected activity contact',
+      activityId: activity.id,
+      activityType: activity.type,
+      activityTitle: activity.title,
+      activityTimestamp: activity.timestamp,
+    })
     window.dispatchEvent(new CustomEvent('open-page-ai'))
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto" data-testid="activity-detail-drawer">
+    <Sheet open={open} onOpenChange={handleDrawerOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto z-[60]" data-testid="activity-detail-drawer">
         <SheetHeader>
           <SheetTitle className="pr-8">{activity.title}</SheetTitle>
           <SheetDescription>

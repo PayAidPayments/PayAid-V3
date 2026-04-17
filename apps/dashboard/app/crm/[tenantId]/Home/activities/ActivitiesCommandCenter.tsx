@@ -69,12 +69,12 @@ interface TimelineGroup {
 }
 
 const typeStyles: Record<string, string> = {
-  task: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/30',
-  call: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30',
-  email: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/10 dark:text-purple-300 dark:border-purple-500/30',
-  meeting: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/30',
-  whatsapp: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-300 dark:border-green-500/30',
-  deal: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/30',
+  task: 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-700',
+  call: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700',
+  email: 'bg-violet-100 text-violet-900 border-violet-300 dark:bg-violet-900/40 dark:text-violet-100 dark:border-violet-700',
+  meeting: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-900/40 dark:text-amber-100 dark:border-amber-700',
+  whatsapp: 'bg-green-100 text-green-900 border-green-300 dark:bg-green-900/40 dark:text-green-100 dark:border-green-700',
+  deal: 'bg-rose-100 text-rose-900 border-rose-300 dark:bg-rose-900/40 dark:text-rose-100 dark:border-rose-700',
 }
 
 const getCompanyName = (company: string | { name?: string } | null | undefined) => {
@@ -337,9 +337,8 @@ export function ActivitiesCommandCenter({
   }
 
   const runReplyAction = (activity: ActivityItem) => {
-    if (activity.type === 'email' && activity.contact?.email) {
-      const subject = encodeURIComponent(`Re: ${activity.title}`)
-      globalThis.location.assign(`mailto:${activity.contact.email}?subject=${subject}`)
+    if (activity.type === 'email' && activity.contact?.id && tenantId) {
+      router.push(`/crm/${tenantId}/inbox?contactId=${activity.contact.id}&compose=1&channel=email`)
       return
     }
     if (activity.type === 'task' && tenantId) {
@@ -680,7 +679,7 @@ export function ActivitiesCommandCenter({
                                     <div className="flex items-start justify-between gap-3">
                                       <div className="space-y-2 flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                          <Badge className={`border text-[11px] uppercase ${typeStyles[activity.type] || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                                          <Badge className={`border text-[11px] font-semibold uppercase ${typeStyles[activity.type] || 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600'}`}>
                                             <span className="mr-1.5 inline-flex">{getActivityTypeIcon(activity.type)}</span>
                                             {activity.type}
                                           </Badge>

@@ -26,6 +26,13 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { usePageAIExtraStore } from '@/lib/stores/page-ai-extra'
 import { useToast } from '@/components/ui/toast'
 import { CopyAction } from '@/components/ui/copy-action'
+import { LeadAllocationDialog } from '@/components/LeadAllocationDialog'
+import { NurtureSequenceApplier } from '@/components/NurtureSequenceApplier'
+import { NextBestActionCard } from '@/components/crm/contact/NextBestActionCard'
+import { ContactIntelligenceCard } from '@/components/crm/contact/ContactIntelligenceCard'
+import { AutomationStatusCard } from '@/components/crm/contact/AutomationStatusCard'
+import { AuditActionTimelineCard } from '@/components/crm/AuditActionTimelineCard'
+import { AIAssistCard } from '@/components/crm/contact/AIAssistCard'
 
 type ActivityFilter = 'all' | 'email' | 'call' | 'whatsapp' | 'meeting' | 'task' | 'note' | 'deal'
 
@@ -81,85 +88,6 @@ function ContactInfoTimelineCard({
       ) : (
         <p className="text-sm text-slate-500 dark:text-slate-400">No recent activities yet.</p>
       )}
-    </div>
-  )
-}
-
-function SimpleCard({ title, message }: { title: string; message: string }) {
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm p-4">
-      <h3 className="text-sm font-semibold text-slate-900 dark:text-gray-100">{title}</h3>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{message}</p>
-    </div>
-  )
-}
-
-function NextBestActionCard(_: { contactId: string; tenantId: string; contact: any; onOpenMoreActions: () => void }) {
-  return <SimpleCard title="Next Best Actions" message="Use Contact and More actions for quick follow-ups." />
-}
-
-function ContactIntelligenceCard(_: { contact: any; onOpenNurture: () => void; onRescore: () => void; isRescoring: boolean }) {
-  return <SimpleCard title="Contact Intelligence" message="Insights are temporarily unavailable in this build." />
-}
-
-function AutomationStatusCard(_: { contact: any }) {
-  return <SimpleCard title="Automation Status" message="Automation timeline is temporarily unavailable." />
-}
-
-function AuditActionTimelineCard(_: { entityType: string; entityId: string; tenantId: string; title: string }) {
-  return <SimpleCard title="Contact Automation Timeline" message="Audit actions are temporarily unavailable." />
-}
-
-function AIAssistCard(_: { contact: any; tenantId: string; onEnriched: () => void }) {
-  return <SimpleCard title="AI Assist" message="AI enrich panel is temporarily unavailable." />
-}
-
-function LeadAllocationDialog({
-  contactName,
-  onClose,
-}: {
-  contactId: string
-  contactName: string
-  tenantId: string
-  currentRep: any
-  onAssign: (payload: { repId: string; repName: string; repEmail?: string }) => void
-  onClose: () => void
-}) {
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Assign owner</h3>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          Owner reassignment UI is unavailable in this build for {contactName}.
-        </p>
-        <div className="mt-3 flex justify-end">
-          <Button size="sm" variant="outline" onClick={onClose}>Close</Button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function NurtureSequenceApplier({
-  contactName,
-  onClose,
-}: {
-  contactId: string
-  contactName: string
-  onEnroll: () => void
-  onClose: () => void
-}) {
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Nurture sequence</h3>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          Nurture enrollment UI is unavailable in this build for {contactName}.
-        </p>
-        <div className="mt-3 flex justify-end">
-          <Button size="sm" variant="outline" onClick={onClose}>Close</Button>
-        </div>
-      </div>
     </div>
   )
 }
@@ -386,32 +314,28 @@ export default function ContactDetailPage() {
               <PopoverContent align="end" className="w-56 p-2">
                 <div className="space-y-1">
                   {contact.phone ? (
-                    <a href={`tel:${contact.phone}`}>
+                    <Link href={`/crm/${tenantId}/Dialer?contactId=${id}`}>
                       <Button variant="ghost" size="sm" className="w-full justify-start">
                         <Phone className="w-3.5 h-3.5 mr-2" />
                         Call
                       </Button>
-                    </a>
+                    </Link>
                   ) : null}
                   {contact.email ? (
-                    <a href={`mailto:${contact.email}`}>
+                    <Link href={`/crm/${tenantId}/inbox?contactId=${id}&compose=1&channel=email`}>
                       <Button variant="ghost" size="sm" className="w-full justify-start">
                         <Mail className="w-3.5 h-3.5 mr-2" />
                         Email
                       </Button>
-                    </a>
+                    </Link>
                   ) : null}
                   {contact.phone ? (
-                    <a
-                      href={`https://wa.me/${contact.phone.replace(/\D/g, '').startsWith('91') ? contact.phone.replace(/\D/g, '') : `91${contact.phone.replace(/\D/g, '')}`}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <Link href={`/crm/${tenantId}/OutboxOps?contactId=${id}&channel=whatsapp`}>
                       <Button variant="ghost" size="sm" className="w-full justify-start">
                         <MessageSquare className="w-3.5 h-3.5 mr-2" />
                         WhatsApp
                       </Button>
-                    </a>
+                    </Link>
                   ) : null}
                 </div>
               </PopoverContent>
