@@ -51,6 +51,7 @@ import {
   FileText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { useDebouncedSearch } from '@/lib/hooks/use-debounced-search'
 
 type TasksSortMode = 'updated_desc' | 'updated_asc' | 'due_asc' | 'due_desc' | 'priority_desc'
 
@@ -63,15 +64,6 @@ const DEFAULT_FILTERS: TasksFiltersState = {
 }
 
 const PAGE_SIZES = [25, 50, 100]
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delayMs)
-    return () => clearTimeout(t)
-  }, [value, delayMs])
-  return debounced
-}
 
 function priorityDot(priority: string) {
   switch (priority) {
@@ -96,8 +88,7 @@ export default function CRMTasksPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const tenantId = (params?.tenantId as string) || ''
-  const [searchInput, setSearchInput] = useState('')
-  const debouncedSearch = useDebouncedValue(searchInput, 300)
+  const taskSearch = useDebouncedSearch({ delayMs: 300, minChars: 2 })
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [filters, setFilters] = useState<TasksFiltersState>(DEFAULT_FILTERS)
@@ -132,11 +123,11 @@ export default function CRMTasksPage() {
     return filters.status || undefined
   }, [quickFilter, filters.status])
 
-  const { data, isLoading } = useTasks({
+  const { data, isLoading, isFetching } = useTasks({
     page,
     limit: pageSize,
     status: statusParam,
-    search: debouncedSearch || undefined,
+    search: taskSearch.effectiveQuery || undefined,
     module: filters.module || undefined,
     priority: quickFilter === 'high' ? 'high' : filters.priority || undefined,
     dueDateFrom: filters.dueDateFrom || undefined,
@@ -144,6 +135,10 @@ export default function CRMTasksPage() {
     stats: true,
     tenantId: tenantId || undefined,
   })
+
+  useEffect(() => {
+    setPage(1)
+  }, [taskSearch.effectiveQuery])
 
   const calendarRange = useMemo(() => {
     const start = startOfMonth(calendarMonth)
@@ -304,13 +299,19 @@ export default function CRMTasksPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search tasks, clients..."
-                value={searchInput}
-                onChange={(e) => {
-                  setSearchInput(e.target.value)
-                  setPage(1)
-                }}
+                value={taskSearch.rawInput}
+                onChange={(e) => taskSearch.setRawInput(e.target.value)}
                 className="pl-9 bg-background"
               />
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {isFetching
+                ? 'Searching...'
+                : taskSearch.hasMeaningfulInput && !taskSearch.isSearchEligible
+                  ? 'Type at least 2 characters, or use exact email/phone/id.'
+                  : taskSearch.effectiveQuery
+                    ? `Results for "${taskSearch.effectiveQuery}"`
+                    : 'Showing all tasks'}
             </div>
           </div>
           <TasksFilters

@@ -154,9 +154,10 @@ export async function GET(
         select: { id: true, name: true, value: true, stage: true, createdAt: true },
       },
       tasks: {
-        where: { status: { not: 'completed' } },
-        orderBy: { dueDate: 'asc' as const },
-        take: 50,
+        // Keep timeline task context inclusive so reassigned/newly-created tasks are visible.
+        where: { status: { notIn: ['cancelled'] as const } },
+        orderBy: [{ createdAt: 'desc' as const }],
+        take: 100,
         select: {
           id: true,
           title: true,
@@ -165,6 +166,13 @@ export async function GET(
           dueDate: true,
           createdAt: true,
           priority: true,
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
       },
     }

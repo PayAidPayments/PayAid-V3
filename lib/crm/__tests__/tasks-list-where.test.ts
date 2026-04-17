@@ -41,12 +41,41 @@ describe('buildTasksListWhere', () => {
 
   it('adds search OR on title and description', () => {
     const w = buildTasksListWhere(tid, sp({ search: '  Acme  ' }), ref) as { AND: unknown[] }
-    expect(w.AND[1]).toEqual({
-      OR: [
-        { title: { contains: 'Acme', mode: 'insensitive' } },
-        { description: { contains: 'Acme', mode: 'insensitive' } },
-      ],
-    })
+    expect(w.AND[1]).toEqual(
+      expect.objectContaining({
+        OR: expect.arrayContaining([
+          { title: { contains: 'Acme', mode: 'insensitive' } },
+          { description: { contains: 'Acme', mode: 'insensitive' } },
+          {
+            contact: {
+              is: {
+                OR: expect.arrayContaining([
+                  { name: { contains: 'Acme', mode: 'insensitive' } },
+                  { email: { contains: 'Acme', mode: 'insensitive' } },
+                ]),
+              },
+            },
+          },
+        ]),
+      })
+    )
+  })
+
+  it('ignores generic one-character search terms', () => {
+    const w = buildTasksListWhere(tid, sp({ search: 'a' }), ref)
+    expect(w).toEqual({ tenantId: tid })
+  })
+
+  it('allows exact email lookup even when short', () => {
+    const w = buildTasksListWhere(tid, sp({ search: 'a@b.co' }), ref) as { AND: unknown[] }
+    expect(w.AND[1]).toEqual(
+      expect.objectContaining({
+        OR: expect.arrayContaining([
+          { id: { equals: 'a@b.co' } },
+          { title: { contains: 'a@b.co', mode: 'insensitive' } },
+        ]),
+      })
+    )
   })
 
   it('adds explicit status for pending', () => {

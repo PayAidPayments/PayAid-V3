@@ -32,6 +32,7 @@ import { PageLoading } from '@/components/ui/loading'
 import { LeadAllocationDialog } from '@/components/LeadAllocationDialog'
 import { RowActionsMenu } from '@/components/crm/RowActionsMenu'
 import { useToast } from '@/components/ui/toast'
+import { useDebouncedSearch } from '@/lib/hooks/use-debounced-search'
 
 type StageFilter = 'all' | 'prospect' | 'contact' | 'customer'
 
@@ -42,17 +43,8 @@ export default function CRMAllPeoplePage() {
   const { toast, ToastContainer: PageToastContainer } = useToast()
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(100)
-  const [search, setSearch] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const contactSearch = useDebouncedSearch({ delayMs: 300, minChars: 2 })
   const [stageFilter, setStageFilter] = useState<StageFilter>('all')
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search)
-      setPage(1)
-    }, 350)
-    return () => clearTimeout(timer)
-  }, [search])
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
   const [contactToAssign, setContactToAssign] = useState<{ id: string; name: string; currentRep?: { id: string; name: string } | null } | null>(null)
   const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
@@ -63,12 +55,16 @@ export default function CRMAllPeoplePage() {
   const allContacts = useMemo(() => allContactsData?.contacts ?? [], [allContactsData?.contacts])
 
   // Fetch contacts based on stage filter for table (uses debounced search to avoid per-keystroke requests)
-  const contactParams: any = { page, limit, search: debouncedSearch, tenantId: tenantId || undefined }
+  const contactParams: any = { page, limit, search: contactSearch.effectiveQuery, tenantId: tenantId || undefined }
   if (stageFilter !== 'all') {
     contactParams.stage = stageFilter
   }
 
-  const { data, isLoading, error } = useContacts(contactParams)
+  const { data, isLoading, isFetching, error } = useContacts(contactParams)
+
+  useEffect(() => {
+    setPage(1)
+  }, [contactSearch.effectiveQuery])
   
   const contacts = data?.contacts || []
   const pagination = data?.pagination
@@ -473,10 +469,19 @@ export default function CRMAllPeoplePage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <Input
                   placeholder="Search by name, email, phone, or company..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  value={contactSearch.rawInput}
+                  onChange={(e) => contactSearch.setRawInput(e.target.value)}
                   className="pl-10"
                 />
+              </div>
+              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {isFetching
+                  ? 'Searching...'
+                  : contactSearch.hasMeaningfulInput && !contactSearch.isSearchEligible
+                    ? 'Type at least 2 characters, or use exact email/phone/id.'
+                    : contactSearch.effectiveQuery
+                      ? `Results for "${contactSearch.effectiveQuery}"`
+                      : 'Showing all contacts'}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -526,7 +531,7 @@ export default function CRMAllPeoplePage() {
                     {contacts.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={9} className="text-center py-8 text-gray-500 dark:text-gray-400">
-                          {search ? 'No contacts found matching your search.' : `No ${stageFilter === 'all' ? 'contacts' : stageFilter + 's'} found.`}
+                          {contactSearch.effectiveQuery ? 'No contacts found matching your search.' : `No ${stageFilter === 'all' ? 'contacts' : stageFilter + 's'} found.`}
                         </TableCell>
                       </TableRow>
                     ) : (

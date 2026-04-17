@@ -1,3 +1,5 @@
+import { normalizeSearchQuery, shouldRunServerSearch } from '@/lib/search/query-normalization'
+
 /**
  * Prisma `where` builder for CRM task list filters (used by GET /api/tasks).
  * Extracted for unit tests and stable filter semantics.
@@ -35,12 +37,36 @@ export function buildTasksListWhere(
   if (contactId) parts.push({ contactId })
   if (assignedToId) parts.push({ assignedToId })
 
-  if (search?.trim()) {
-    const q = search.trim()
+  const normalizedSearch = normalizeSearchQuery(search ?? '')
+  if (shouldRunServerSearch(normalizedSearch, 2)) {
+    const q = normalizedSearch
     parts.push({
       OR: [
+        { id: { equals: q } },
         { title: { contains: q, mode: 'insensitive' as const } },
         { description: { contains: q, mode: 'insensitive' as const } },
+        {
+          contact: {
+            is: {
+              OR: [
+                { name: { contains: q, mode: 'insensitive' as const } },
+                { email: { contains: q, mode: 'insensitive' as const } },
+                { phone: { contains: q, mode: 'insensitive' as const } },
+                { company: { contains: q, mode: 'insensitive' as const } },
+              ],
+            },
+          },
+        },
+        {
+          assignedTo: {
+            is: {
+              OR: [
+                { name: { contains: q, mode: 'insensitive' as const } },
+                { email: { contains: q, mode: 'insensitive' as const } },
+              ],
+            },
+          },
+        },
       ],
     })
   }

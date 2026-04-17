@@ -45,10 +45,11 @@ export function useContacts(params?: { page?: number; limit?: number; type?: str
 
   return useQuery({
     queryKey: ['contacts', params],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       try {
         const response = await fetch(queryUrl, {
           headers: getAuthHeaders(),
+          signal,
         })
         if (!response.ok) {
           let error: any
@@ -146,7 +147,7 @@ export function useContacts(params?: { page?: number; limit?: number; type?: str
     retryDelay: 1000, // Wait 1 second between retries
     enabled: true, // Always enable the query
     placeholderData: (previousData: any) => previousData, // Keep previous data while fetching new (prevents flash of empty state on search)
-    staleTime: 0, // Always re-fetch on mount so newly created contacts appear immediately
+    staleTime: 30_000, // Reuse recent search/page results for snappier list filtering
   })
 }
 
@@ -724,13 +725,16 @@ export function useTasks(params?: {
 
   return useQuery({
     queryKey: ['tasks', params],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const response = await fetch(`/api/tasks?${queryString}`, {
         headers: getAuthHeaders(),
+        signal,
       })
       if (!response.ok) throw new Error('Failed to fetch tasks')
       return response.json()
     },
+    placeholderData: (previousData: any) => previousData,
+    staleTime: 30_000,
   })
 }
 
