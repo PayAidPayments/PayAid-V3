@@ -240,6 +240,9 @@ export default function CRMDashboardPage() {
     if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
       return
     }
+    if (!token) {
+      return
+    }
     const payload = {
       event: 'crm_home_perf',
       entity_id: tenantId,
@@ -253,13 +256,16 @@ export default function CRMDashboardPage() {
     // Fire-and-forget to avoid blocking render/navigation.
     fetch('/api/v1/analytics/event', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify(payload),
       keepalive: true,
     }).catch(() => {
       // Ignore telemetry errors.
     })
-  }, [tenantId, timePeriod])
+  }, [tenantId, timePeriod, token])
 
   useEffect(() => {
     if (typeof performance === 'undefined') return

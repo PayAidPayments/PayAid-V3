@@ -37,7 +37,7 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [newsUnreadCount, setNewsUnreadCount] = useState(0)
-  const profileMenuRef = useRef<HTMLDivElement>(null)
+  const profileMenuButtonRef = useRef<HTMLButtonElement>(null)
   const moreMenuRef = useRef<HTMLDivElement>(null)
   const moreMenuButtonRef = useRef<HTMLButtonElement>(null)
   const warmedRouteDataRef = useRef<Record<string, boolean>>({})
@@ -56,7 +56,11 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node
       
-      if (profileMenuRef.current && !profileMenuRef.current.contains(target)) {
+      const clickedProfileButton = profileMenuButtonRef.current?.contains(target) ?? false
+      const clickedProfileDropdown =
+        target instanceof Element && target.closest('[data-profile-menu-dropdown]') !== null
+
+      if (!clickedProfileButton && !clickedProfileDropdown) {
         setProfileMenuOpen(false)
       }
     }
@@ -340,8 +344,9 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
               )}
             </button>
           )}
-          <div className="relative" ref={profileMenuRef}>
+          <div className="relative">
             <button
+              ref={profileMenuButtonRef}
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
               className="flex items-center gap-2 p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
               aria-label="User menu"
@@ -352,37 +357,59 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
               <ChevronDown className={`w-4 h-4 transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {profileMenuOpen && (
-              <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-700 z-50">
-                <div className="py-1" role="menu">
-                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {user?.name || 'User'}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {user?.email || 'No email'}
-                    </p>
-                  </div>
-                  <Link
-                    href={getProfileUrl()}
-                    onClick={() => setProfileMenuOpen(false)}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    role="menuitem"
-                  >
-                    <User className="w-4 h-4 mr-3" />
-                    Profile Settings
-                  </Link>
-                  <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
-                    role="menuitem"
-                  >
-                    <LogOut className="w-4 h-4 mr-3" />
-                    Sign Out
-                  </button>
-                </div>
-              </div>
+            {profileMenuOpen && typeof window !== 'undefined' && profileMenuButtonRef.current && createPortal(
+              <>
+                <div
+                  className="fixed inset-0 z-[209]"
+                  onClick={() => setProfileMenuOpen(false)}
+                  aria-hidden="true"
+                />
+                {(() => {
+                  const rect = profileMenuButtonRef.current!.getBoundingClientRect()
+                  const menuWidth = 224
+                  const left = Math.max(16, rect.right - menuWidth)
+                  return (
+                    <div
+                      data-profile-menu-dropdown
+                      className="fixed w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-700 z-[210]"
+                      style={{
+                        top: `${rect.bottom + 8}px`,
+                        left: `${left}px`,
+                      }}
+                    >
+                      <div className="py-1" role="menu">
+                        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {user?.name || 'User'}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {user?.email || 'No email'}
+                          </p>
+                        </div>
+                        <Link
+                          href={getProfileUrl()}
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          role="menuitem"
+                        >
+                          <User className="w-4 h-4 mr-3" />
+                          Profile Settings
+                        </Link>
+                        <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
+                          role="menuitem"
+                        >
+                          <LogOut className="w-4 h-4 mr-3" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })()}
+              </>,
+              document.body
             )}
           </div>
         </div>
