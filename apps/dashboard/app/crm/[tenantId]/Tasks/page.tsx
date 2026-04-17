@@ -124,8 +124,8 @@ export default function CRMTasksPage() {
   }, [quickFilter, filters.status])
 
   const { data, isLoading, isFetching } = useTasks({
-    page,
-    limit: pageSize,
+    page: 1,
+    limit: 1000,
     status: statusParam,
     search: taskSearch.effectiveQuery || undefined,
     module: filters.module || undefined,
@@ -139,6 +139,9 @@ export default function CRMTasksPage() {
   useEffect(() => {
     setPage(1)
   }, [taskSearch.effectiveQuery])
+  useEffect(() => {
+    setPage(1)
+  }, [sortMode])
 
   const calendarRange = useMemo(() => {
     const start = startOfMonth(calendarMonth)
@@ -224,14 +227,17 @@ export default function CRMTasksPage() {
     overdueCount: 0,
     completedTodayCount: 0,
   }
-  const total = pagination?.total ?? 0
-  const totalPages = pagination?.totalPages ?? 1
+  const total = pagination?.total ?? sortedTasks.length
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const pageStart = Math.max(0, (page - 1) * pageSize)
+  const pageEnd = pageStart + pageSize
+  const paginatedTasks = sortedTasks.slice(pageStart, pageEnd)
 
-  const allSelected = tasks.length > 0 && selectedIds.size === tasks.length
+  const allSelected = paginatedTasks.length > 0 && selectedIds.size === paginatedTasks.length
   const someSelected = selectedIds.size > 0
 
   const handleSelectAll = (checked: boolean) => {
-    if (checked) setSelectedIds(new Set(tasks.map((t: { id: string }) => t.id)))
+    if (checked) setSelectedIds(new Set(paginatedTasks.map((t: { id: string }) => t.id)))
     else setSelectedIds(new Set())
   }
 
@@ -256,7 +262,7 @@ export default function CRMTasksPage() {
 
   const handleExportCSV = () => {
     const headers = ['Title', 'Client', 'Assignee', 'Due', 'Status', 'Priority', 'Module']
-    const rows = tasks.map((t: any) => [
+    const rows = sortedTasks.map((t: any) => [
       `"${(t.title || '').replace(/"/g, '""')}"`,
       `"${(t.contact?.name ?? '').replace(/"/g, '""')}"`,
       `"${(t.assignedTo?.name ?? '').replace(/"/g, '""')}"`,
@@ -536,7 +542,7 @@ export default function CRMTasksPage() {
               </div>
 
               <Card className="flex-1 min-w-0 overflow-hidden">
-                {tasks.length === 0 ? (
+                {paginatedTasks.length === 0 ? (
                   <CardContent className="py-12 text-center text-muted-foreground">
                     <p className="mb-4">No tasks match your filters.</p>
                     <Link href={`/crm/${tenantId}/Tasks/new`}>
@@ -559,7 +565,7 @@ export default function CRMTasksPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-slate-100 dark:divide-gray-700">
-                      {sortedTasks.map((task: any) => {
+                      {paginatedTasks.map((task: any) => {
                         const due = task.dueDate ? new Date(task.dueDate) : null
                         const isOverdue =
                           due &&
@@ -671,11 +677,11 @@ export default function CRMTasksPage() {
               </Card>
 
               {/* Pagination */}
-              {pagination && totalPages > 1 && (
+              {totalPages > 1 && (
                 <div className="flex flex-wrap items-center justify-between gap-4 mt-4">
                   <div className="flex items-center gap-4">
                     <span className="text-sm text-muted-foreground">
-                      {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
+                      {total === 0 ? 0 : pageStart + 1}–{Math.min(pageEnd, total)} of {total}
                     </span>
                     <select
                       value={pageSize}

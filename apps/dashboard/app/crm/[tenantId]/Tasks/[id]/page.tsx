@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useDeleteTask, useTask, useUpdateTask } from '@/lib/hooks/use-api'
+import { useQuery } from '@tanstack/react-query'
+import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -11,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { PageLoading } from '@/components/ui/loading'
 import { ArrowLeft, Calendar, User, FileText, Trash2, ListTodo, Bot } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
 
 function toDateTimeLocal(value: string | Date | null | undefined) {
   if (!value) return ''
@@ -29,13 +32,30 @@ export default function CRMTaskDetailPage() {
   const { data: task, isLoading, isError } = useTask(id, tenantId || undefined)
   const deleteTask = useDeleteTask()
   const updateTask = useUpdateTask()
+  const { token } = useAuthStore()
+  const { toast, ToastContainer: PageToastContainer } = useToast()
+  const [saveSuccess, setSaveSuccess] = useState('')
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium')
   const [status, setStatus] = useState<'pending' | 'in_progress' | 'completed' | 'cancelled'>('pending')
   const [dueLocal, setDueLocal] = useState('')
+  const [assignedToId, setAssignedToId] = useState('')
   const [saveError, setSaveError] = useState('')
+
+  const { data: employeesData } = useQuery({
+    queryKey: ['employees-for-task-edit', tenantId],
+    queryFn: async () => {
+      const res = await fetch('/api/hr/employees?limit=500', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) return { employees: [] }
+      return res.json().catch(() => ({ employees: [] }))
+    },
+    enabled: !!token,
+  })
+  const assignableEmployees = (employeesData?.employees || []).filter((e: any) => e.userId)
 
   useEffect(() => {
     if (!task) return
@@ -45,7 +65,9 @@ export default function CRMTaskDetailPage() {
       setPriority((task.priority as 'low' | 'medium' | 'high') || 'medium')
       setStatus((task.status as typeof status) || 'pending')
       setDueLocal(toDateTimeLocal(task.dueDate))
+      setAssignedToId((task.assignedTo as { id?: string } | null)?.id ?? '')
       setSaveError('')
+      setSaveSuccess('')
     }, 0)
     return () => globalThis.clearTimeout(id)
   }, [task])
@@ -79,13 +101,18 @@ export default function CRMTaskDetailPage() {
       } else {
         data.dueDate = null
       }
+      data.assignedToId = assignedToId || null
       await updateTask.mutateAsync({
         id,
         tenantId: tenantId || undefined,
         data,
       })
+      const savedAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      setSaveSuccess(`Changes saved at ${savedAt}`)
+      toast.success('Task updated', 'Changes have been saved.')
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : 'Failed to save')
+      setSaveSuccess('')
     }
   }
 
@@ -162,6 +189,11 @@ export default function CRMTaskDetailPage() {
       {saveError ? (
         <p className="text-sm text-destructive" role="alert">
           {saveError}
+        </p>
+      ) : null}
+      {saveSuccess ? (
+        <p className="text-sm text-emerald-700 dark:text-emerald-400" role="status">
+          {saveSuccess}
         </p>
       ) : null}
 
@@ -241,8 +273,23 @@ export default function CRMTaskDetailPage() {
             <User className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assigned to</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{assignedName}</p>
-              <CardDescription className="mt-1">Assignee is set at creation; list actions use the same tenant context as this page.</CardDescription>
+              <select
+                className="h-9 min-w-[260px] rounded-md border border-input bg-background px-2 text-sm"
+                value={assignedToId}
+                onChange={(e) => setAssignedToId(e.target.value)}
+                disabled={updateTask.isPending}
+              >
+                <option value="">— Unassigned (assign to me) —</option>
+                {assignableEmployees.map((emp: any) => (
+                  <option key={emp.userId} value={emp.userId}>
+                    {emp.firstName} {emp.lastName}
+                    {emp.designation?.name ? ` · ${emp.designation.name}` : ''}
+                  </option>
+                ))}
+              </select>
+              <CardDescription className="mt-1">
+                Current assignee: {assignedName}. Save to apply reassignment.
+              </CardDescription>
             </div>
           </div>
 
@@ -264,6 +311,7 @@ export default function CRMTaskDetailPage() {
           )}
         </CardContent>
       </Card>
+      {PageToastContainer}
     </div>
   )
 }
