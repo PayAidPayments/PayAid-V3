@@ -132,6 +132,10 @@ export default function LottieHero() {
   }, [])
 
   useLayoutEffect(() => {
+    if (ready !== true) {
+      setHasRenderableSize(false)
+      return
+    }
     const node = heroViewportRef.current
     if (!node) return
 
@@ -152,7 +156,7 @@ export default function LottieHero() {
 
     window.addEventListener('resize', updateRenderableSize)
     return () => window.removeEventListener('resize', updateRenderableSize)
-  }, [])
+  }, [ready])
 
   const fallback = (
     <div className="relative h-full min-h-[500px] w-full min-w-0 lg:min-h-[min(85vh,880px)]">
