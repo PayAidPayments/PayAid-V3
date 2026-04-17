@@ -167,6 +167,7 @@ export default function CRMTasksPage() {
   const tasks = useMemo(() => data?.tasks ?? [], [data?.tasks])
   const sortedTasks = useMemo(() => {
     const priorityRank: Record<string, number> = { high: 3, medium: 2, low: 1 }
+    const nowTs = Date.now()
     const byDate = (value?: string | null) => {
       if (!value) return null
       const ts = new Date(value).getTime()
@@ -185,10 +186,28 @@ export default function CRMTasksPage() {
       if (bTs === null) return -1
       return direction === 'asc' ? aTs - bTs : bTs - aTs
     }
+    const compareSoonestPractical = (aValue?: string | null, bValue?: string | null) => {
+      const aTs = byDate(aValue)
+      const bTs = byDate(bValue)
+      if (aTs === null && bTs === null) return 0
+      if (aTs === null) return 1
+      if (bTs === null) return -1
+
+      const aUpcoming = aTs >= nowTs
+      const bUpcoming = bTs >= nowTs
+
+      // Upcoming tasks first (nearest upcoming due date at top).
+      if (aUpcoming && bUpcoming) return aTs - bTs
+      if (aUpcoming && !bUpcoming) return -1
+      if (!aUpcoming && bUpcoming) return 1
+
+      // Both overdue: most recently overdue first.
+      return bTs - aTs
+    }
     const rows = [...tasks]
     rows.sort((a: any, b: any) => {
       if (sortMode === 'updated_asc') return compareDates(a.updatedAt, b.updatedAt, 'asc')
-      if (sortMode === 'due_asc') return compareDates(a.dueDate, b.dueDate, 'asc')
+      if (sortMode === 'due_asc') return compareSoonestPractical(a.dueDate, b.dueDate)
       if (sortMode === 'due_desc') return compareDates(a.dueDate, b.dueDate, 'desc')
       if (sortMode === 'priority_desc') {
         const priorityDelta = (priorityRank[b.priority] || 0) - (priorityRank[a.priority] || 0)
