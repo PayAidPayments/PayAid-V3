@@ -172,14 +172,35 @@ export default function CRMTasksPage() {
   const tasks = useMemo(() => data?.tasks ?? [], [data?.tasks])
   const sortedTasks = useMemo(() => {
     const priorityRank: Record<string, number> = { high: 3, medium: 2, low: 1 }
-    const byDate = (value?: string | null) => (value ? new Date(value).getTime() : 0)
+    const byDate = (value?: string | null) => {
+      if (!value) return null
+      const ts = new Date(value).getTime()
+      return Number.isFinite(ts) ? ts : null
+    }
+    const compareDates = (
+      aValue?: string | null,
+      bValue?: string | null,
+      direction: 'asc' | 'desc' = 'asc'
+    ) => {
+      const aTs = byDate(aValue)
+      const bTs = byDate(bValue)
+      // Keep undated tasks at the end for both directions.
+      if (aTs === null && bTs === null) return 0
+      if (aTs === null) return 1
+      if (bTs === null) return -1
+      return direction === 'asc' ? aTs - bTs : bTs - aTs
+    }
     const rows = [...tasks]
     rows.sort((a: any, b: any) => {
-      if (sortMode === 'updated_asc') return byDate(a.updatedAt) - byDate(b.updatedAt)
-      if (sortMode === 'due_asc') return byDate(a.dueDate) - byDate(b.dueDate)
-      if (sortMode === 'due_desc') return byDate(b.dueDate) - byDate(a.dueDate)
-      if (sortMode === 'priority_desc') return (priorityRank[b.priority] || 0) - (priorityRank[a.priority] || 0)
-      return byDate(b.updatedAt) - byDate(a.updatedAt)
+      if (sortMode === 'updated_asc') return compareDates(a.updatedAt, b.updatedAt, 'asc')
+      if (sortMode === 'due_asc') return compareDates(a.dueDate, b.dueDate, 'asc')
+      if (sortMode === 'due_desc') return compareDates(a.dueDate, b.dueDate, 'desc')
+      if (sortMode === 'priority_desc') {
+        const priorityDelta = (priorityRank[b.priority] || 0) - (priorityRank[a.priority] || 0)
+        if (priorityDelta !== 0) return priorityDelta
+        return compareDates(a.updatedAt, b.updatedAt, 'desc')
+      }
+      return compareDates(a.updatedAt, b.updatedAt, 'desc')
     })
     return rows
   }, [tasks, sortMode])
