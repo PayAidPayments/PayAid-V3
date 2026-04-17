@@ -247,7 +247,6 @@ export default function CRMDashboardPage() {
         metric,
         durationMs: Math.round(durationMs),
         timePeriod,
-        currentView,
         page: 'crm_home',
       },
     }
@@ -260,7 +259,7 @@ export default function CRMDashboardPage() {
     }).catch(() => {
       // Ignore telemetry errors.
     })
-  }, [tenantId, timePeriod, currentView])
+  }, [tenantId, timePeriod])
 
   useEffect(() => {
     if (typeof performance === 'undefined') return
