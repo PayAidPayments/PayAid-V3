@@ -104,6 +104,8 @@ export async function GET(request: NextRequest) {
     const periodCategoryParam = searchParams.get('periodCategory')
     const periodBounds =
       timePeriodParam && isValidTimePeriod(timePeriodParam) ? getTimePeriodBounds(timePeriodParam) : null
+    // stats=false: list + pagination only (skip tenant-wide stage groupBy and period aggregates). CRM UI defaults to full stats.
+    const wantStats = searchParams.get('stats') !== 'false'
     const periodCategoryActive =
       periodCategoryParam &&
       ['created', 'closing', 'won', 'lost'].includes(periodCategoryParam)
@@ -115,7 +117,7 @@ export async function GET(request: NextRequest) {
     // Build cache key (include period context so list + KPIs stay consistent when cached)
     const contactIdsKey = contactIdsParam ? contactIdsParam.slice(0, 120) : 'none'
     const accountKey = accountIdParam || 'none'
-    const cacheKey = `deals:${tenantId}:${page}:${limit}:${stage || 'all'}:${contactId || 'all'}:cids:${contactIdsKey}:acc:${accountKey}:${timeKey}:${periodCatKey}`
+    const cacheKey = `deals:${tenantId}:${page}:${limit}:${stage || 'all'}:${contactId || 'all'}:cids:${contactIdsKey}:acc:${accountKey}:${timeKey}:${periodCatKey}:stats:${wantStats ? '1' : '0'}`
     const bypassCache = searchParams.get('bypassCache') === 'true'
     console.log('[DEALS_API] Query parameters:', {
       page,
@@ -210,7 +212,9 @@ export async function GET(request: NextRequest) {
     
     // Count for diagnostics / retry paths only — do NOT clear the whole tenant cache on every GET
     // (that prevented caching, hammered Redis, and slowed CRM Deals/Leads audit navigations).
-    const quickCheck = await prisma.deal.count({ where: { tenantId } }).catch(() => 0)
+    const quickCheck = wantStats
+      ? await prisma.deal.count({ where: { tenantId } }).catch(() => 0)
+      : 0
 
     const runPeriodStats = async (): Promise<{
       periodStats: {
@@ -313,32 +317,48 @@ export async function GET(request: NextRequest) {
     }
 
     const runDealsQuery = async () => {
+      const listSelect = {
+        id: true,
+        name: true,
+        value: true,
+        stage: true,
+        probability: true,
+        expectedCloseDate: true,
+        actualCloseDate: true,
+        createdAt: true,
+        updatedAt: true,
+        contact: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            company: true,
+          },
+        },
+      } as const
+
+      if (!wantStats) {
+        const [found, count] = await Promise.all([
+          prisma.deal.findMany({
+            where,
+            skip: (page - 1) * limit,
+            take: limit,
+            orderBy: { createdAt: 'desc' },
+            select: listSelect,
+          }),
+          prisma.deal.count({ where }),
+        ])
+        return [Array.isArray(found) ? found : [], typeof count === 'number' ? count : 0, []] as const
+      }
+
       const [found, count, summary] = await Promise.all([
         prisma.deal.findMany({
           where,
           skip: (page - 1) * limit,
           take: limit,
           orderBy: { createdAt: 'desc' },
-          select: {
-            id: true,
-            name: true,
-            value: true,
-            stage: true,
-            probability: true,
-            expectedCloseDate: true,
-            actualCloseDate: true,
-            createdAt: true,
-            updatedAt: true,
-            contact: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                company: true,
-              },
-            },
-          },
+          select: listSelect,
         }),
         prisma.deal.count({ where }),
         prisma.deal.groupBy({
@@ -370,25 +390,18 @@ export async function GET(request: NextRequest) {
     try {
       console.log('[DEALS_API] Querying deals with where clause:', JSON.stringify(where, null, 2))
       console.log(`[DEALS_API] Quick check: ${quickCheck} deals exist for tenant ${tenantId}`)
-      const [dealResult, periodResult] = await Promise.all([
-        runDealsQuery(),
-        runPeriodStats().catch((e) => {
-          console.warn('[DEALS_API] Period stats query failed:', e)
-          return { periodStats: null, topClosingDeals: [] as any[] }
-        }),
-      ])
-      deals = dealResult[0]
-      total = dealResult[1]
-      pipelineSummary = dealResult[2]
-      periodStats = periodResult.periodStats
-      topClosingDeals = periodResult.topClosingDeals
-    } catch (readError) {
-      console.warn('[DEALS_API] Read replica failed, falling back to primary database:', readError)
-      try {
+      if (!wantStats) {
+        const dealResult = await runDealsQuery()
+        deals = dealResult[0]
+        total = dealResult[1]
+        pipelineSummary = dealResult[2]
+        periodStats = null
+        topClosingDeals = []
+      } else {
         const [dealResult, periodResult] = await Promise.all([
           runDealsQuery(),
           runPeriodStats().catch((e) => {
-            console.warn('[DEALS_API] Period stats query failed (fallback):', e)
+            console.warn('[DEALS_API] Period stats query failed:', e)
             return { periodStats: null, topClosingDeals: [] as any[] }
           }),
         ])
@@ -397,6 +410,31 @@ export async function GET(request: NextRequest) {
         pipelineSummary = dealResult[2]
         periodStats = periodResult.periodStats
         topClosingDeals = periodResult.topClosingDeals
+      }
+    } catch (readError) {
+      console.warn('[DEALS_API] Read replica failed, falling back to primary database:', readError)
+      try {
+        if (!wantStats) {
+          const dealResult = await runDealsQuery()
+          deals = dealResult[0]
+          total = dealResult[1]
+          pipelineSummary = dealResult[2]
+          periodStats = null
+          topClosingDeals = []
+        } else {
+          const [dealResult, periodResult] = await Promise.all([
+            runDealsQuery(),
+            runPeriodStats().catch((e) => {
+              console.warn('[DEALS_API] Period stats query failed (fallback):', e)
+              return { periodStats: null, topClosingDeals: [] as any[] }
+            }),
+          ])
+          deals = dealResult[0]
+          total = dealResult[1]
+          pipelineSummary = dealResult[2]
+          periodStats = periodResult.periodStats
+          topClosingDeals = periodResult.topClosingDeals
+        }
       } catch (fallbackError) {
         console.error('[DEALS_API] Fallback query also failed:', fallbackError)
         deals = []
