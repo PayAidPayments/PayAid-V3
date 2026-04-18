@@ -79,6 +79,13 @@ type LTVData = {
   generated_at: string
 }
 
+type DealHealthRiskFactor = {
+  key: string
+  label: string
+  impact?: string
+  detail?: string
+}
+
 type DealHealthResult = {
   deal_id: string
   deal_name: string
@@ -86,7 +93,8 @@ type DealHealthResult = {
   value: number
   health_score: number
   health_label: string
-  top_factor: string
+  /** Batch API returns the full factor object; legacy callers may send a string key. */
+  top_factor: string | DealHealthRiskFactor | null
   computed_at: string
 }
 
@@ -160,6 +168,18 @@ function winRateColor(pct: number) {
   if (pct >= 65) return 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
   if (pct >= 40) return 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
   return 'bg-red-100 dark:bg-red-950/50 text-red-800 dark:text-red-300'
+}
+
+function formatDealTopFactor(top: DealHealthResult['top_factor']): string | null {
+  if (top == null) return null
+  if (typeof top === 'string') return top.replace(/_/g, ' ')
+  if (typeof top === 'object' && top !== null && 'label' in top && typeof top.label === 'string') {
+    return top.label
+  }
+  if (typeof top === 'object' && top !== null && 'key' in top && typeof top.key === 'string') {
+    return top.key.replace(/_/g, ' ')
+  }
+  return null
 }
 
 export default function RevenueIntelligencePage() {
@@ -853,7 +873,9 @@ export default function RevenueIntelligencePage() {
               .filter((d) => d.stage !== 'closed_won' && d.stage !== 'closed_lost')
               .sort((a, b) => a.health_score - b.health_score)
               .slice(0, 8)
-              .map((deal) => (
+              .map((deal) => {
+                const topRiskLabel = formatDealTopFactor(deal.top_factor)
+                return (
                 <div
                   key={deal.deal_id}
                   className="flex items-center justify-between gap-3 py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0"
@@ -867,9 +889,7 @@ export default function RevenueIntelligencePage() {
                     </Link>
                     <p className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">
                       <span className="capitalize">{deal.stage?.replace(/_/g, ' ')}</span>
-                      {deal.top_factor
-                        ? ` · Risk: ${deal.top_factor.replace(/_/g, ' ')}`
-                        : ''}
+                      {topRiskLabel ? ` · Risk: ${topRiskLabel}` : ''}
                       {' · '}
                       {formatINRStandard(deal.value ?? 0)}
                     </p>
@@ -885,7 +905,8 @@ export default function RevenueIntelligencePage() {
                     </span>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             <p className="text-xs text-slate-400 dark:text-slate-500 pt-2">
               Showing up to 8 lowest-scoring open deals · scores computed at{' '}
               {dealHealthQuery.data.computed_at
