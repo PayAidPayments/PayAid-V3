@@ -40,12 +40,13 @@ export default defineConfig({
     ? undefined
     : process.env.PLAYWRIGHT_NO_WEB_SERVER
       ? undefined
-      : {
+      :         {
           command: 'npm run dev',
-          // Lightweight health endpoint avoids heavy first-route compile during readiness checks.
-          url: `${baseURL}/api/payaid-internal/ping`,
+          // Readiness URL must compile quickly and return without rendering the full app shell.
+          // `/login` can still pull a large client graph; `/api/auth/login` is a tiny route module.
+          url: `${baseURL}/api/auth/login`,
           reuseExistingServer: true,
-          timeout: 900_000,
+          timeout: 1_800_000,
           stdout: 'pipe',
           stderr: 'pipe',
         },

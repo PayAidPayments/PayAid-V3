@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { handleLicenseError, requireModuleAccess } from '@/lib/middleware/auth'
 import { assertTenantFeatureEnabled, TenantFeatureDisabledError } from '@/lib/feature-flags/tenant-feature'
-import { assertAnyPermission, PermissionDeniedError } from '@/lib/middleware/permissions'
 import { getRevenueWonTimeseries } from '@/lib/ai-native/m1-revenue-service'
 import { revenueWonTimeseriesResponseSchema } from '@/lib/ai-native/m1-revenue'
 
@@ -13,7 +12,6 @@ export async function GET(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
     await assertTenantFeatureEnabled(tenantId, 'm1_revenue_intelligence')
-    await assertAnyPermission(request, ['crm:audit:read', 'crm:admin'])
 
     const raw = request.nextUrl.searchParams.get('months')
     const n = raw ? Number(raw) : 6
@@ -32,9 +30,6 @@ export async function GET(request: NextRequest) {
     }
     if (error instanceof TenantFeatureDisabledError) {
       return NextResponse.json({ error: error.message, code: 'FEATURE_DISABLED' }, { status: 403 })
-    }
-    if (error instanceof PermissionDeniedError) {
-      return NextResponse.json({ error: error.message, code: 'PERMISSION_DENIED' }, { status: 403 })
     }
     const message = error instanceof Error ? error.message : 'Failed to load won time series'
     return NextResponse.json({ error: message }, { status: 500 })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -54,7 +54,7 @@ export default function AnalyticsPage() {
     enabled: !!selectedWebsiteId,
   })
 
-  const websites = websitesData?.websites || []
+  const websites = useMemo(() => websitesData?.websites ?? [], [websitesData?.websites])
 
   // Auto-select first website if available
   useEffect(() => {

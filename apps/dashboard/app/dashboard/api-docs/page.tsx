@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,11 +20,7 @@ export default function APIDocsPage() {
   const [loading, setLoading] = useState(true)
   const [openApiSpec, setOpenApiSpec] = useState<any>(null)
 
-  useEffect(() => {
-    fetchAPIDocs()
-  }, [])
-
-  const fetchAPIDocs = async () => {
+  const fetchAPIDocs = useCallback(async () => {
     try {
       setLoading(true)
       const res = await fetch('/api/api-docs/openapi', {
@@ -39,7 +35,11 @@ export default function APIDocsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    fetchAPIDocs()
+  }, [fetchAPIDocs])
 
   const downloadSpec = () => {
     if (!openApiSpec) return

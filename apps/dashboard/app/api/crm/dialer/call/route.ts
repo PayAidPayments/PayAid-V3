@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { resolveCrmRequestTenantId } from '@/lib/crm/resolve-crm-request-tenant'
 import { z } from 'zod'
 
 const callSchema = z.object({
@@ -13,7 +14,8 @@ const callSchema = z.object({
 // POST /api/crm/dialer/call - Initiate a power dialer call
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const { tenantId: jwtTenantId, userId } = await requireModuleAccess(request, 'crm')
+    const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
 
     const body = await request.json()
     const validated = callSchema.parse(body)

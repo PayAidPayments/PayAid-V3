@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -79,11 +79,7 @@ export default function VisitorsPage() {
   const [filter, setFilter] = useState<'all' | 'high-intent'>('all')
   const [selectedWebsite, setSelectedWebsite] = useState<string>('all')
 
-  useEffect(() => {
-    fetchVisitors()
-  }, [tenantId, token, filter, selectedWebsite])
-
-  const fetchVisitors = async () => {
+  const fetchVisitors = useCallback(async () => {
     try {
       setLoading(true)
       if (!token) return
@@ -118,7 +114,11 @@ export default function VisitorsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filter, selectedWebsite, token])
+
+  useEffect(() => {
+    fetchVisitors()
+  }, [tenantId, fetchVisitors])
 
   const getIntentColor = (score: number) => {
     if (score >= 70) return 'text-green-600 dark:text-green-400'

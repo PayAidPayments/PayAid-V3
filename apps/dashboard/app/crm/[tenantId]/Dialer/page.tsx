@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useParams } from 'next/navigation'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { 
   Phone, 
@@ -22,7 +21,6 @@ import {
   Settings
 } from 'lucide-react'
 import { PageLoading } from '@/components/ui/loading'
-import { format } from 'date-fns'
 
 interface CallContact {
   id: string
@@ -53,7 +51,9 @@ interface DialerSession {
 
 export default function DialerPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const tenantId = params?.tenantId as string
+  const prefilledContactId = searchParams?.get('contactId') || ''
   const { token } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [activeSession, setActiveSession] = useState<DialerSession | null>(null)
@@ -61,26 +61,45 @@ export default function DialerPage() {
   const [currentCall, setCurrentCall] = useState<CallContact | null>(null)
   const [callDuration, setCallDuration] = useState(0)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
 
-  useEffect(() => {
-    if (!token) return
-    const fetchActiveSession = async () => {
+  const stopActiveStream = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
+    }
+  }, [])
+
+  const loadDialerSession = useCallback(
+    async (focusContactId?: string) => {
+      if (!token) return
+      setLoading(true)
       try {
-        const response = await fetch('/api/crm/dialer/session', {
-          headers: { 'Authorization': `Bearer ${token}` },
+        const params = new URLSearchParams()
+        params.set('tenantId', tenantId)
+        params.set('limit', '50')
+        if (focusContactId) params.set('contactId', focusContactId)
+        const response = await fetch(`/api/crm/dialer/session?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` },
         })
-        if (response.ok) {
-          const data = await response.json()
-          if (data.session) {
-            setActiveSession(data.session)
-          }
+        if (!response.ok) {
+          throw new Error(`Failed to load dialer session (${response.status})`)
         }
+        const data = await response.json()
+        setActiveSession(data.session || null)
       } catch (error) {
         console.error('Error fetching session:', error)
+        setActiveSession(null)
+      } finally {
+        setLoading(false)
       }
-    }
-    fetchActiveSession()
-  }, [tenantId, token])
+    },
+    [tenantId, token]
+  )
+
+  useEffect(() => {
+    loadDialerSession(prefilledContactId || undefined)
+  }, [loadDialerSession, prefilledContactId])
 
   useEffect(() => {
     if (isCalling && currentCall) {
@@ -101,6 +120,12 @@ export default function DialerPage() {
     }
   }, [isCalling, currentCall])
 
+  useEffect(() => {
+    return () => {
+      stopActiveStream()
+    }
+  }, [stopActiveStream])
+
   const handleStartCall = async (contact: CallContact) => {
     if (!token) return
 
@@ -120,9 +145,10 @@ export default function DialerPage() {
 
       // Get user's microphone permission
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
       
       // Create call record
-      const response = await fetch('/api/crm/dialer/call', {
+      const response = await fetch(`/api/crm/dialer/call?tenantId=${encodeURIComponent(tenantId)}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -148,13 +174,11 @@ export default function DialerPage() {
       // For now, we're using browser-based calling which is free
       
       console.log('WebRTC call initiated:', data)
-      
-      // Stop the stream when call ends
-      stream.getTracks().forEach(track => track.stop())
     } catch (error) {
       console.error('Error starting call:', error)
       setIsCalling(false)
       setCurrentCall(null)
+      stopActiveStream()
       alert('Failed to start call. Please check your microphone permissions.')
     }
   }
@@ -165,7 +189,7 @@ export default function DialerPage() {
     setIsCalling(false)
     
     try {
-      await fetch('/api/crm/dialer/call/end', {
+      await fetch(`/api/crm/dialer/call/end?tenantId=${encodeURIComponent(tenantId)}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -174,6 +198,7 @@ export default function DialerPage() {
         body: JSON.stringify({
           contactId: currentCall.id,
           duration: callDuration,
+          outcome: 'answered',
         }),
       })
 
@@ -197,12 +222,15 @@ export default function DialerPage() {
 
       setCurrentCall(null)
       setCallDuration(0)
+      stopActiveStream()
     } catch (error) {
       console.error('Error ending call:', error)
+      stopActiveStream()
     }
   }
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    if (!token || !currentCall) return
     if (activeSession && currentCall) {
       const updatedSession = { ...activeSession }
       const contactIndex = updatedSession.contactList.findIndex(c => c.id === currentCall.id)
@@ -214,13 +242,31 @@ export default function DialerPage() {
         updatedSession.currentIndex += 1
       }
       setActiveSession(updatedSession)
+      try {
+        await fetch(`/api/crm/dialer/call/end?tenantId=${encodeURIComponent(tenantId)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            contactId: currentCall.id,
+            duration: callDuration,
+            outcome: 'no-answer',
+          }),
+        })
+      } catch (error) {
+        console.error('Error recording skipped call:', error)
+      }
       setIsCalling(false)
       setCurrentCall(null)
       setCallDuration(0)
+      stopActiveStream()
     }
   }
 
-  const handleVoicemail = () => {
+  const handleVoicemail = async () => {
+    if (!token || !currentCall) return
     if (activeSession && currentCall) {
       const updatedSession = { ...activeSession }
       const contactIndex = updatedSession.contactList.findIndex(c => c.id === currentCall.id)
@@ -233,9 +279,26 @@ export default function DialerPage() {
         updatedSession.currentIndex += 1
       }
       setActiveSession(updatedSession)
+      try {
+        await fetch(`/api/crm/dialer/call/end?tenantId=${encodeURIComponent(tenantId)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            contactId: currentCall.id,
+            duration: callDuration,
+            outcome: 'voicemail',
+          }),
+        })
+      } catch (error) {
+        console.error('Error recording voicemail outcome:', error)
+      }
       setIsCalling(false)
       setCurrentCall(null)
       setCallDuration(0)
+      stopActiveStream()
     }
   }
 
@@ -251,6 +314,10 @@ export default function DialerPage() {
   }
 
   const nextContact = getNextContact()
+
+  if (loading) {
+    return <PageLoading message="Loading dialer session..." fullScreen={false} />
+  }
 
   return (
     <div className="space-y-6">
@@ -399,7 +466,10 @@ export default function DialerPage() {
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
                   No active dialing session. Create a contact list to start power dialing.
                 </p>
-                <Button className="bg-purple-600 hover:bg-purple-700">
+                <Button
+                  className="bg-purple-600 hover:bg-purple-700"
+                  onClick={() => loadDialerSession(prefilledContactId || undefined)}
+                >
                   Create Session
                 </Button>
               </div>

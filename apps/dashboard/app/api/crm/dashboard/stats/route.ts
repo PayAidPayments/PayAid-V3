@@ -416,105 +416,125 @@ export async function GET(request: NextRequest) {
         userRole,
       })
 
-      try {
-        const query = {
-          where: {
-            ...dealFilter,
-            createdAt: { gte: periodStart, lte: periodEnd },
-          },
-        }
-        dealsCreatedInPeriod = await prisma.deal.count(query)
-      } catch (error: any) {
-        console.error('[CRM_DASHBOARD] Query 1 failed:', error?.message, error?.code)
-      }
+      const [
+        safeDealsCreatedInPeriod,
+        safeDealsClosingInPeriod,
+        safeOverdueTasks,
+        safeTotalTasks,
+        safeCompletedTasks,
+        safeTotalMeetings,
+        safeTotalLeads,
+        safeConvertedLeads,
+        safeContactsCreatedInPeriod,
+        safeAtRiskContacts,
+      ] = await Promise.all([
+        prisma.deal
+          .count({
+            where: {
+              ...dealFilter,
+              createdAt: { gte: periodStart, lte: periodEnd },
+            },
+          })
+          .catch((error: any) => {
+            console.error('[CRM_DASHBOARD] Query 1 failed:', error?.message, error?.code)
+            return 0
+          }),
+        prisma.deal
+          .count({
+            where: {
+              ...dealFilter,
+              expectedCloseDate: { gte: periodStart, lte: periodEnd },
+              stage: { not: 'lost' },
+            },
+          })
+          .catch((error: any) => {
+            console.error('[CRM_DASHBOARD] Query 2 failed:', error?.message, error?.code)
+            return 0
+          }),
+        prisma.task
+          .count({
+            where: {
+              ...userFilter,
+              dueDate: { lt: now },
+              status: { in: ['pending', 'in_progress'] },
+            },
+          })
+          .catch((error: any) => {
+            console.error('[CRM_DASHBOARD] Query 3 failed:', error?.message, error?.code)
+            return 0
+          }),
+        prisma.task.count({ where: userFilter }).catch((error: any) => {
+          console.error('[CRM_DASHBOARD] Query 4 failed:', error?.message)
+          return 0
+        }),
+        prisma.task
+          .count({
+            where: {
+              ...userFilter,
+              status: 'completed',
+            },
+          })
+          .catch((error: any) => {
+            console.error('[CRM_DASHBOARD] Query 5 failed:', error?.message)
+            return 0
+          }),
+        prisma.meeting.count({ where: { tenantId } }).catch((error: any) => {
+          console.error('[CRM_DASHBOARD] Query 6 failed:', error?.message)
+          return 0
+        }),
+        prisma.contact
+          .count({
+            where: {
+              ...contactFilter,
+              stage: { in: ['prospect', 'contact'] },
+            },
+          })
+          .catch((error: any) => {
+            console.error('[CRM_DASHBOARD] Query 7 failed:', error?.message, error?.code)
+            return 0
+          }),
+        prisma.contact
+          .count({
+            where: {
+              ...contactFilter,
+              stage: 'customer',
+            },
+          })
+          .catch((error: any) => {
+            console.error('[CRM_DASHBOARD] Query 8 failed:', error?.message)
+            return 0
+          }),
+        prisma.contact
+          .count({
+            where: {
+              ...contactFilter,
+              createdAt: { gte: periodStart, lte: periodEnd },
+            },
+          })
+          .catch((error: any) => {
+            console.error('[CRM_DASHBOARD] Query 8b failed:', error?.message)
+            return 0
+          }),
+        prisma.contact
+          .count({
+            where: { ...contactFilter, churnRisk: true },
+          })
+          .catch((error: any) => {
+            console.error('[CRM_DASHBOARD] Query at-risk contacts failed:', error?.message)
+            return 0
+          }),
+      ])
 
-      try {
-        dealsClosingInPeriod = await prisma.deal.count({
-          where: {
-            ...dealFilter,
-            expectedCloseDate: { gte: periodStart, lte: periodEnd },
-            stage: { not: 'lost' },
-          },
-        })
-      } catch (error: any) {
-        console.error('[CRM_DASHBOARD] Query 2 failed:', error?.message, error?.code)
-      }
-
-      try {
-        overdueTasks = await prisma.task.count({
-          where: {
-            ...userFilter,
-            dueDate: { lt: now },
-            status: { in: ['pending', 'in_progress'] },
-          },
-        })
-      } catch (error: any) {
-        console.error('[CRM_DASHBOARD] Query 3 failed:', error?.message, error?.code)
-      }
-
-      try {
-        totalTasks = await prisma.task.count({ where: userFilter })
-      } catch (error: any) {
-        console.error('[CRM_DASHBOARD] Query 4 failed:', error?.message)
-      }
-
-      try {
-        completedTasks = await prisma.task.count({
-          where: {
-            ...userFilter,
-            status: 'completed',
-          },
-        })
-      } catch (error: any) {
-        console.error('[CRM_DASHBOARD] Query 5 failed:', error?.message)
-      }
-
-      try {
-        totalMeetings = await prisma.meeting.count({ where: { tenantId } })
-      } catch (error: any) {
-        console.error('[CRM_DASHBOARD] Query 6 failed:', error?.message)
-      }
-
-      try {
-        totalLeads = await prisma.contact.count({
-          where: {
-            ...contactFilter,
-            stage: { in: ['prospect', 'contact'] },
-          },
-        })
-      } catch (error: any) {
-        console.error('[CRM_DASHBOARD] Query 7 failed:', error?.message, error?.code)
-      }
-
-      try {
-        convertedLeads = await prisma.contact.count({
-          where: {
-            ...contactFilter,
-            stage: 'customer',
-          },
-        })
-      } catch (error: any) {
-        console.error('[CRM_DASHBOARD] Query 8 failed:', error?.message)
-      }
-
-      try {
-        contactsCreatedInPeriod = await prisma.contact.count({
-          where: {
-            ...contactFilter,
-            createdAt: { gte: periodStart, lte: periodEnd },
-          },
-        })
-      } catch (error: any) {
-        console.error('[CRM_DASHBOARD] Query 8b failed:', error?.message)
-      }
-
-      try {
-        atRiskContacts = await prisma.contact.count({
-          where: { ...contactFilter, churnRisk: true },
-        })
-      } catch (error: any) {
-        console.error('[CRM_DASHBOARD] Query at-risk contacts failed:', error?.message)
-      }
+      dealsCreatedInPeriod = safeDealsCreatedInPeriod
+      dealsClosingInPeriod = safeDealsClosingInPeriod
+      overdueTasks = safeOverdueTasks
+      totalTasks = safeTotalTasks
+      completedTasks = safeCompletedTasks
+      totalMeetings = safeTotalMeetings
+      totalLeads = safeTotalLeads
+      convertedLeads = safeConvertedLeads
+      contactsCreatedInPeriod = safeContactsCreatedInPeriod
+      atRiskContacts = safeAtRiskContacts
     } else {
       console.log('[CRM_STATS] chartsOnly=1 — skipping core KPI queries (merged from lite on client)')
       try {
@@ -611,130 +631,97 @@ export async function GET(request: NextRequest) {
       topLeadSources = []
     }
     
-    const [
-      q1DealsCreated,
-      q1LeadsCreated,
-      q2DealsCreated,
-      q2LeadsCreated,
-      q3DealsCreated,
-      q3LeadsCreated,
-      q4DealsCreated,
-      q4LeadsCreated,
-    ] = await Promise.all([
+    const monthRanges = Array.from({ length: 12 }, (_, i) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const start = new Date(date.getFullYear(), date.getMonth(), 1)
+      const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999)
+      return { start, end }
+    })
+
+    const quarterRangeStart = quarters[0].start
+    const quarterRangeEnd = quarters[3].end
+    const oldestMonthStart = monthRanges[11].start
+    const newestMonthEnd = monthRanges[0].end
+    const aggregateRangeStart = new Date(Math.min(quarterRangeStart.getTime(), oldestMonthStart.getTime()))
+    const aggregateRangeEnd = new Date(Math.max(quarterRangeEnd.getTime(), newestMonthEnd.getTime()))
+
+    const [dealCreatedRows, contactCreatedRows] = await Promise.all([
       prisma.deal
-        .count({
+        .findMany({
           where: {
             ...dealFilter,
-            createdAt: { gte: quarters[0].start, lte: quarters[0].end },
+            createdAt: { gte: aggregateRangeStart, lte: aggregateRangeEnd },
           },
+          select: { createdAt: true },
         })
-        .catch((e: any) => {
-          console.error('[CRM_DASHBOARD] Q1 deals failed:', e?.message)
-          return 0
+        .catch((error: any) => {
+          console.error('[CRM_DASHBOARD] Deal created-at aggregation query failed:', error?.message)
+          return [] as Array<{ createdAt: Date }>
         }),
       prisma.contact
-        .count({
+        .findMany({
           where: {
             ...contactFilter,
-            createdAt: { gte: quarters[0].start, lte: quarters[0].end },
+            createdAt: { gte: aggregateRangeStart, lte: aggregateRangeEnd },
           },
+          select: { createdAt: true },
         })
-        .catch((e: any) => {
-          console.error('[CRM_DASHBOARD] Q1 leads failed:', e?.message)
-          return 0
-        }),
-      prisma.deal
-        .count({
-          where: {
-            ...dealFilter,
-            createdAt: { gte: quarters[1].start, lte: quarters[1].end },
-          },
-        })
-        .catch((e: any) => {
-          console.error('[CRM_DASHBOARD] Q2 deals failed:', e?.message)
-          return 0
-        }),
-      prisma.contact
-        .count({
-          where: {
-            ...contactFilter,
-            createdAt: { gte: quarters[1].start, lte: quarters[1].end },
-          },
-        })
-        .catch((e: any) => {
-          console.error('[CRM_DASHBOARD] Q2 leads failed:', e?.message)
-          return 0
-        }),
-      prisma.deal
-        .count({
-          where: {
-            ...dealFilter,
-            createdAt: { gte: quarters[2].start, lte: quarters[2].end },
-          },
-        })
-        .catch((e: any) => {
-          console.error('[CRM_DASHBOARD] Q3 deals failed:', e?.message)
-          return 0
-        }),
-      prisma.contact
-        .count({
-          where: {
-            ...contactFilter,
-            createdAt: { gte: quarters[2].start, lte: quarters[2].end },
-          },
-        })
-        .catch((e: any) => {
-          console.error('[CRM_DASHBOARD] Q3 leads failed:', e?.message)
-          return 0
-        }),
-      prisma.deal
-        .count({
-          where: {
-            ...dealFilter,
-            createdAt: { gte: quarters[3].start, lte: quarters[3].end },
-          },
-        })
-        .catch((e: any) => {
-          console.error('[CRM_DASHBOARD] Q4 deals failed:', e?.message)
-          return 0
-        }),
-      prisma.contact
-        .count({
-          where: {
-            ...contactFilter,
-            createdAt: { gte: quarters[3].start, lte: quarters[3].end },
-          },
-        })
-        .catch((e: any) => {
-          console.error('[CRM_DASHBOARD] Q4 leads failed:', e?.message)
-          return 0
+        .catch((error: any) => {
+          console.error('[CRM_DASHBOARD] Contact created-at aggregation query failed:', error?.message)
+          return [] as Array<{ createdAt: Date }>
         }),
     ])
 
-    // Monthly lead creation: cap at 4 concurrent queries per batch (vs 12 parallel or 12 sequential)
-    const monthlyCounts: number[] = []
-    for (let batchStart = 0; batchStart < 12; batchStart += 4) {
-      const batchLen = Math.min(4, 12 - batchStart)
-      const batch = await Promise.all(
-        Array.from({ length: batchLen }, (_, j) => {
-          const i = batchStart + j
-          const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-          const monthStart = new Date(date.getFullYear(), date.getMonth(), 1)
-          const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999)
-          return prisma.contact
-            .count({
-              where: {
-                ...contactFilter,
-                createdAt: { gte: monthStart, lte: monthEnd },
-              },
-            })
-            .catch((error: unknown) => {
-              console.error(`[CRM_DASHBOARD] Monthly query ${i} failed:`, error)
-              return 0
-            })
-        })
-      )
-      monthlyCounts.push(...batch)
+    const isWithinRange = (date: Date, start: Date, end: Date) =>
+      date.getTime() >= start.getTime() && date.getTime() <= end.getTime()
+
+    const quarterDealCounts = [0, 0, 0, 0]
+    const quarterLeadCounts = [0, 0, 0, 0]
+    const monthlyCounts = Array.from({ length: 12 }, () => 0)
+
+    dealCreatedRows.forEach((row) => {
+      const createdAt = row?.createdAt instanceof Date ? row.createdAt : new Date(row?.createdAt)
+      if (Number.isNaN(createdAt.getTime())) {
+        return
+      }
+      for (let i = 0; i < quarters.length; i++) {
+        if (isWithinRange(createdAt, quarters[i].start, quarters[i].end)) {
+          quarterDealCounts[i] += 1
+          break
+        }
+      }
+    })
+
+    contactCreatedRows.forEach((row) => {
+      const createdAt = row?.createdAt instanceof Date ? row.createdAt : new Date(row?.createdAt)
+      if (Number.isNaN(createdAt.getTime())) {
+        return
+      }
+      for (let i = 0; i < quarters.length; i++) {
+        if (isWithinRange(createdAt, quarters[i].start, quarters[i].end)) {
+          quarterLeadCounts[i] += 1
+          break
+        }
+      }
+      for (let i = 0; i < monthRanges.length; i++) {
+        if (isWithinRange(createdAt, monthRanges[i].start, monthRanges[i].end)) {
+          monthlyCounts[i] += 1
+          break
+        }
+      }
+    })
+
+    const [q1DealsCreated, q2DealsCreated, q3DealsCreated, q4DealsCreated] = quarterDealCounts
+    const [q1LeadsCreated, q2LeadsCreated, q3LeadsCreated, q4LeadsCreated] = quarterLeadCounts
+
+    if (statsVerbose) {
+      console.log('[CRM_DASHBOARD] Aggregated created-at series:', {
+        dealRows: dealCreatedRows.length,
+        contactRows: contactCreatedRows.length,
+        quarterDealCounts,
+        quarterLeadCounts,
+        monthlyPoints: monthlyCounts.length,
+      })
     }
 
     // Calculate revenue from won deals in the period

@@ -60,7 +60,7 @@
 |------|----------------------|------------------|------------------|----------------|--------------|---------------------|-----------|-------|---------------|
 | 2026-04-15 | 25 | 139 | 94 | N/A | N/A | N/A | Pass (smoke, 401 path) | Phani | docs/CRM_GA_SOLO_T02_RUNTIME_EVIDENCE_2026-04-15.md |
 | 2026-04-16 | [ms] | [ms] | [ms] | [ms] | [ms] | [%] | [Pass/Fail] | [Name] | [URL/path] |
-| 2026-04-17 | [ms] | [ms] | [ms] | [ms] | [ms] | [%] | [Pass/Fail] | [Name] | [URL/path] |
+| 2026-04-17 | 3271 | 3367 | 3466 | N/A | N/A | N/A | Fail (hosted steady-state after warmup `CRM_AUTH_WARMUP_ROUNDS=3`, `n=15`; p95 still above 300ms GA guardrail) | Phani | docs/evidence/closure/2026-04-17T04-42-19-970Z-crm-auth-baseline-run.md |
 | 2026-04-20 | [ms] | [ms] | [ms] | [ms] | [ms] | [%] | [Pass/Fail] | [Name] | [URL/path] |
 | 2026-04-21 | [ms] | [ms] | [ms] | [ms] | [ms] | [%] | [Pass/Fail] | [Name] | [URL/path] |
 | 2026-04-22 | [ms] | [ms] | [ms] | [ms] | [ms] | [%] | [Pass/Fail] | [Name] | [URL/path] |
@@ -309,7 +309,7 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 - [ ] 11) Day 10 closure: execute `docs/CRM_GA_SOLO_T10_REHEARSAL_GO_NO_GO_RUNBOOK.md`, fill Day 10 evidence tables, then close Day 10 rows.
 - [ ] 12) SOLO-T11 closure: complete `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` signoffs/risk table and record final decision.
 - [x] 13) CRM unit-test confirmation: executed `npm run test:crm:tasks-filters`, `npm run test:crm:merge-key`, `npm run test:crm:merge-guard`, `npm run test:crm:rbac` successfully after switching to scoped CRM Jest config; evidence in `docs/evidence/closure/2026-04-15T11-01-56-039Z-crm-closure-blockers.md` (latest long-timeout rerun `2026-04-15T12-24-33-070Z` shows intermittent timeout only on `tasks-filters`, so treat as flake watch).
-- [ ] 14) Auth speed baseline: run `npm run collect:crm-auth-baseline` (or `npm run check:crm-closure-env` + `node scripts/crm-auth-speed-sample.mjs`) and complete Day-0 item 4b + speed log row (latest artifacts: local host probes `2026-04-15T11-21-52-930Z` and `2026-04-15T11-22-43-856Z` show endpoint aborts; hosted deployment now reaches successful build completion, and fresh alias probes `docs/evidence/closure/2026-04-15T14-41-33-119Z-crm-auth-baseline-run.md` + `docs/evidence/closure/2026-04-15T14-45-06-557Z-crm-auth-baseline-run.md` confirm login + contacts/deals p95, but tasks still fails with `/api/crm/tasks` `500`; refreshed runtime logs confirm `SyntaxError: Unexpected token '<'` on `/api/crm/tasks` in `docs/evidence/closure/2026-04-15T14-45-00-000Z-crm-auth-baseline-runtime-log-refresh.md`).
+- [x] 14) Auth speed baseline: ran `npm run collect:crm-auth-baseline` against `https://payaid-v3.vercel.app` with `admin@demo.com` and captured full contacts/deals/tasks p50/p95/p99 payload in `docs/evidence/closure/2026-04-17T02-41-31-970Z-crm-auth-baseline-run.md`; direct authenticated check of `/api/crm/tasks` now returns `200` JSON.
 - [x] Blocker command pack: queue #13/#14 copy-paste command snippets documented in `docs/CRM_GA_CLOSURE_EXECUTION_LOG.md` under `Blocker resolution commands`.
 - [x] Evidence paste template: queue #13/#14 result template documented in `docs/CRM_GA_CLOSURE_EXECUTION_LOG.md` under `Paste-back evidence template`.
 - [x] Blocker automation helper: `npm run collect:crm-closure-blockers` added to capture queue #13/#14 outcomes into `docs/evidence/closure/*-crm-closure-blockers.md`.
@@ -333,8 +333,8 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 | Day 9 close | Pending | GTM/Product execution | Phani | Run commercial/demo runbook and fill tables |
 | Day 10 close | Pending | Rehearsal execution | Phani | Run rehearsal + rollback + gate report |
 | SOLO-T11 close | Pending | Final decision signoff | Phani | Complete signoffs and risk disposition |
-| CRM unit-test confirmation | Completed (watch flake) | Intermittent timeout on `tasks-filters` in latest long-timeout rerun | Phani | Baseline pass artifact `docs/evidence/closure/2026-04-15T11-01-56-039Z-crm-closure-blockers.md`; flake evidence `...12-24-33-070Z...` |
-| Auth speed baseline | Blocked | Hosted build now succeeds and baseline login works, but tasks sampler still fails in current deployment (`/api/crm/tasks` 500) while contacts/deals p95 pass (`...14-41-33-119Z...`, `...14-45-06-557Z...`); live runtime logs still show HTML parse failure (`Unexpected token '<'`) for `/api/crm/tasks` | Phani | Fix `/api/crm/tasks` runtime failure in deployed build, then rerun `collect:crm-auth-baseline` and record p95 JSON for all three endpoints |
+| CRM unit-test confirmation | Completed | No active blocker after timeout-window fix; all 4 tests pass in latest collector evidence | Phani | `docs/evidence/closure/2026-04-17T02-24-28-340Z-crm-closure-blockers.md` |
+| Auth speed baseline | Completed | No active blocker; login + contacts/deals/tasks auth baseline all pass on hosted alias | Phani | `docs/evidence/closure/2026-04-17T02-41-31-970Z-crm-auth-baseline-run.md` |
 
 ---
 
@@ -504,7 +504,7 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 - [x] Owner names are filled in the 11-ticket pack.
 - [x] Jira/Linear ticket IDs (T01-T11) are created and mapped.
 - [x] First speed evidence row filled for 2026-04-15 (smoke / 401 path — see speed log + runtime evidence doc).
-- [ ] Authenticated representative p95 baseline captured per runbook (regression-capable row). **Tooling ready:** `scripts/crm-auth-speed-sample.mjs`.
+- [x] Authenticated representative p95 baseline captured per runbook (regression-capable row). Evidence: `docs/evidence/closure/2026-04-17T02-41-31-970Z-crm-auth-baseline-run.md`.
 - [x] Ticket 01 is completed with scope/risk artifact.
 - [x] Ticket 02 (SOLO-T02) is **Done** (closed 2026-04-15); sweep plan + runtime evidence on file.
 - [x] Ticket 02 discovery findings are documented (`docs/CRM_GA_STUB_MOCK_SWEEP_FINDINGS_DAY1.md`).
@@ -538,7 +538,7 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 - [x] 2) Create all 11 tickets using `docs/CRM_CORE_GA_JIRA_COPY_PACK.md`.
 - [x] 3) Backfill ticket IDs into the 11-ticket pack.
 - [x] 4) Capture current speed snapshot and fill first row in Speed evidence log (2026-04-15 smoke row logged).
-- [ ] 4b) Capture **authenticated** p50/p95/p99 baseline per `docs/CRM_SPEED_BASELINE_RUNBOOK.md` (enables regression % on future rows). **Helper:** `node scripts/crm-auth-speed-sample.mjs` with `BASE_URL`, `TENANT_ID`, `AUTH_TOKEN`.
+- [x] 4b) Capture **authenticated** p50/p95/p99 baseline per `docs/CRM_SPEED_BASELINE_RUNBOOK.md` (enables regression % on future rows). Evidence: `docs/evidence/closure/2026-04-17T02-41-31-970Z-crm-auth-baseline-run.md`.
 - [x] 5) Start Ticket 01 immediately; schedule Ticket 02 kickoff right after scope freeze.
 
 ### PR speed protection protocol (effective immediately)

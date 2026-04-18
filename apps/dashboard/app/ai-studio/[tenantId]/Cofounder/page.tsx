@@ -278,7 +278,7 @@ export default function CoFounderPage() {
     enabled: !!token,
   })
 
-  const agents = agentsData?.agents || []
+  const agents = useMemo(() => agentsData?.agents ?? [], [agentsData?.agents])
   const projects = projectsData?.projects || []
 
   type SendPayload = string | { message: string; agentId?: AgentId }

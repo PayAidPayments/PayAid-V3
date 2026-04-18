@@ -5,6 +5,7 @@ import { resolveCrmRequestTenantId } from '@/lib/crm/resolve-crm-request-tenant'
 import { z } from 'zod'
 import { assertCrmRoleAllowed, CrmRoleError } from '@/lib/crm/rbac'
 import { logCrmAudit } from '@/lib/audit-log-crm'
+import { invalidateTasksListCache } from '@/lib/crm/tasks-list-cache'
 
 const updateTaskSchema = z.object({
   title: z.string().min(1).optional(),
@@ -141,6 +142,8 @@ export async function PATCH(
       },
     })
 
+    await invalidateTasksListCache(tenantId)
+
     return NextResponse.json(task)
   } catch (error) {
     if (error && typeof error === 'object' && 'moduleId' in error) {
@@ -186,6 +189,8 @@ export async function DELETE(
     await prisma.task.delete({
       where: { id: resolvedParams.id },
     })
+
+    await invalidateTasksListCache(tenantId)
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -14,6 +14,7 @@ const loginTimeoutMs = Number(process.env.CRM_AUTH_LOGIN_TIMEOUT_MS || '60000')
 const maxHealthAttempts = Number(process.env.CRM_AUTH_HEALTH_ATTEMPTS || '3')
 const maxLoginAttempts = Number(process.env.CRM_AUTH_LOGIN_ATTEMPTS || '3')
 const maxSampleAttempts = Number(process.env.CRM_AUTH_SAMPLE_ATTEMPTS || '2')
+const warmupRounds = Number(process.env.CRM_AUTH_WARMUP_ROUNDS || '2')
 
 function writeArtifact(payload) {
   const outputDir = path.join(process.cwd(), 'docs', 'evidence', 'closure')
@@ -29,6 +30,7 @@ function writeArtifact(payload) {
   lines.push(`- Reason: ${payload.reason || 'none'}`)
   if (payload.tenantId) lines.push(`- Tenant ID: ${payload.tenantId}`)
   lines.push(`- Sample count: ${payload.sampleCount}`)
+  lines.push(`- Warmup rounds (CRM_AUTH_WARMUP_ROUNDS): ${payload.warmupRounds ?? 0}`)
   lines.push(`- Request timeout ms: ${payload.requestTimeoutMs}`)
   lines.push('')
   lines.push('## Raw JSON')
@@ -154,10 +156,28 @@ async function runInlineSampler(url, tenantId, token) {
   const headers = { Authorization: `Bearer ${token}` }
   const routes = {
     contacts: `${url}/api/contacts?tenantId=${enc}&limit=50`,
-    deals: `${url}/api/deals?tenantId=${enc}&limit=50`,
+    deals: `${url}/api/deals?tenantId=${enc}&limit=50&stats=false`,
     tasks: `${url}/api/tasks?tenantId=${enc}&limit=50&stats=false`,
     tasksFallback: `${url}/api/crm/tasks?tenantId=${enc}&limit=50&stats=false`,
   }
+
+  // Warm up serverless + DB paths so p50/p95 reflect steady state (not first cold hit).
+  if (warmupRounds > 0) {
+    for (let w = 0; w < warmupRounds; w += 1) {
+      for (const path of [routes.contacts, routes.deals, routes.tasks]) {
+        try {
+          const controller = new AbortController()
+          const t = setTimeout(() => controller.abort(), requestTimeoutMs)
+          const r = await fetch(path, { headers, signal: controller.signal })
+          await r.arrayBuffer()
+          clearTimeout(t)
+        } catch {
+          // ignore warmup failures; sampler will still report real state
+        }
+      }
+    }
+  }
+
   const contacts = await sampleEndpoint(routes.contacts, headers, sampleCount, maxSampleAttempts)
   const deals = await sampleEndpoint(routes.deals, headers, sampleCount, maxSampleAttempts)
   let tasks = await sampleEndpoint(routes.tasks, headers, sampleCount, maxSampleAttempts)
@@ -187,6 +207,7 @@ async function runInlineSampler(url, tenantId, token) {
     reason: '',
     tenantId: '',
     sampleCount,
+    warmupRounds,
     requestTimeoutMs,
     healthAttempts: [],
     loginAttempts: [],

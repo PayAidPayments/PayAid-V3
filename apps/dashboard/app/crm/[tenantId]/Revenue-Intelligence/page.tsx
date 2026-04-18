@@ -336,7 +336,7 @@ export default function RevenueIntelligencePage() {
       {err && (
         <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
           {err.message.includes('disabled') || err.message.includes('Feature')
-            ? 'Revenue Intelligence may be disabled for this tenant (`m1_revenue_intelligence`), or you lack CRM audit access.'
+            ? 'Revenue Intelligence may be disabled for this tenant (`m1_revenue_intelligence`).'
             : err.message}
         </div>
       )}

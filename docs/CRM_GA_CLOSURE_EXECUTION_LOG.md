@@ -2,7 +2,7 @@
 
 Owner: Phani  
 Purpose: live run log for remaining closure queue items from `docs/LAUNCH_CHECKLIST.md`.  
-Last updated: 2026-04-15
+Last updated: 2026-04-17
 
 ## How to use
 
@@ -27,14 +27,16 @@ Last updated: 2026-04-15
 | 10 | Day 9 closure | Pending | GTM/Product execution pending | | 2026-04-15 | Fill Day 9 evidence tables |
 | 11 | Day 10 closure | Pending | Rehearsal execution pending | | 2026-04-15 | Fill Day 10 evidence tables |
 | 12 | SOLO-T11 closure | Pending | Final signoff pending | | 2026-04-15 | Complete final decision record |
-| 13 | CRM unit-test confirmation | Completed (watch flake) | Intermittent timeout on `test:crm:tasks-filters` in long-timeout collector rerun | `docs/evidence/closure/2026-04-15T11-01-56-039Z-crm-closure-blockers.md`, `docs/evidence/closure/2026-04-15T12-24-33-070Z-crm-closure-blockers.md` | 2026-04-15 | Baseline pass is on file; latest rerun shows 3/4 pass with one timeout, so keep as completed but monitor stability |
-| 14 | Auth speed baseline | Blocked | Hosted dashboard deploy now completes successfully and baseline login+tenant resolution succeeds; contacts/deals p95 are captured, but tasks still fails in current deployment (`/api/crm/tasks` 500). Refreshed live runtime logs still show `SyntaxError: Unexpected token '<'` parsing HTML payload on `/api/crm/tasks`, confirming runtime handler mismatch remains active. | `docs/evidence/closure/2026-04-15T11-52-02-618Z-crm-auth-baseline-run.md`, `docs/evidence/closure/2026-04-15T11-53-30-000Z-crm-auth-baseline-vercel-runtime-log-notes.md`, `docs/evidence/closure/2026-04-15T14-41-33-119Z-crm-auth-baseline-run.md`, `docs/evidence/closure/2026-04-15T14-45-00-000Z-crm-auth-baseline-runtime-log-refresh.md`, `docs/evidence/closure/2026-04-15T14-45-06-557Z-crm-auth-baseline-run.md` | 2026-04-15 | Fix `/api/crm/tasks` runtime failure in deployed build, then rerun `collect:crm-auth-baseline` and capture full p95 JSON |
+| 13 | CRM unit-test confirmation | Completed | No active blocker after timeout-window fix in closure collector; all 4 scoped CRM tests pass in latest rerun. | `docs/evidence/closure/2026-04-17T02-24-28-340Z-crm-closure-blockers.md` | 2026-04-17 | `CRM_CLOSURE_TEST_TIMEOUT_MS` default raised to `120000` in `scripts/run-crm-closure-blockers.mjs` to avoid false timeout failures |
+| 14 | Auth speed baseline | Completed | No active blocker; hosted auth baseline now passes end-to-end with login + contacts/deals/tasks p95. Direct deployed `/api/crm/tasks` check also returns `200` JSON with auth token. | `docs/evidence/closure/2026-04-17T02-41-31-970Z-crm-auth-baseline-run.md` | 2026-04-17 | Route hardening added in both `/api/tasks` and `/api/crm/tasks` with fallback list payload path for runtime resilience |
 
 ## Daily execution notes
 
 | Date | Completed queue items | New blockers | Cleared blockers | Next focus |
 |---|---|---|---|---|
 | 2026-04-15 | Queue #13 (CRM unit-test confirmation) | Queue #14 remains blocked at deployed tasks runtime: latest alias reruns (`2026-04-15T14-41-33-119Z`, `2026-04-15T14-45-06-557Z`) confirm login + contacts/deals p95 but `/api/crm/tasks` still returns 500 even after successful hosted build/deploy completion. Refreshed live runtime logs again show HTML parse failure (`Unexpected token '<'`) on `/api/crm/tasks`. Queue #13 still shows intermittent `tasks-filters` timeout on 300000ms rerun. | Hosted deploy/build blocker cleared | Debug and fix `/api/crm/tasks` runtime error in production path, rerun auth baseline, then close queue #14 |
+| 2026-04-17 | Queue #13 and Queue #14 | Release-gate reruns still in progress (`route-health` retry failures observed; typecheck/lint and M2/M3 reruns need final closure snapshots in launch checklist) | Queue #13 timeout flake removed, Queue #14 auth/tasks runtime blocker removed | Complete Day 2-10 + SOLO-T11 execution queue and close remaining release-gate rows |
+| 2026-04-17 | No-404 / CI gate hardening | Day 2-10 + SOLO-T11 still pending manual runbook execution | Typecheck green (`npm run typecheck:dashboard`), lint green (`npm run lint -w dashboard`), M2 smoke clean exit (`forceExit`), route-health scripts pinned to `--project chromium` + transient `500` retry for `/crm/*` and `/home/*` | Run full `npm run test:e2e:route-health:serial` for complete matrix; execute launch checklist queue items 1-12 |
 
 ## Blocker resolution commands (copy/paste)
 

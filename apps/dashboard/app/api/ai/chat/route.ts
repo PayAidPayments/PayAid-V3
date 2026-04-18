@@ -13,6 +13,20 @@ import { evaluateSpecialistPolicy } from '@/lib/ai/specialists/policy'
 import { recordSpecialistAuditEvent } from '@/lib/ai/specialists/audit'
 import type { SpecialistActionLevel } from '@/lib/ai/specialists/types'
 
+const isAiDebugEnabled = () => process.env.AI_DEBUG === '1'
+
+const aiDebugLog = (...args: unknown[]) => {
+  if (isAiDebugEnabled()) {
+    console.log(...args)
+  }
+}
+
+const aiDebugWarn = (...args: unknown[]) => {
+  if (isAiDebugEnabled()) {
+    console.warn(...args)
+  }
+}
+
 const chatSchema = z.object({
   message: z.string().min(1),
   context: z
@@ -33,8 +47,21 @@ const chatSchema = z.object({
 
 // POST /api/ai/chat - Chat with AI assistant
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now()
+  const jsonWithTiming = (
+    payload: unknown,
+    status = 200,
+    headers?: Record<string, string>
+  ) =>
+    NextResponse.json(payload, {
+      status,
+      headers: {
+        'Server-Timing': `app;dur=${Date.now() - startedAt}`,
+        ...headers,
+      },
+    })
+
   try {
-    const startedAt = Date.now()
     // Check AI Studio module license
     const { tenantId, userId, licensedModules, roles } = await requireModuleAccess(request, 'ai-studio')
     const authPayload = await requireCanonicalAiGatewayAccess(request)
@@ -75,14 +102,11 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      return NextResponse.json(
-        {
-          error: policy.reason || 'Specialist permission denied',
-          code: 'SPECIALIST_POLICY_DENIED',
-          specialistId,
-        },
-        { status: 403 }
-      )
+      return jsonWithTiming({
+        error: policy.reason || 'Specialist permission denied',
+        code: 'SPECIALIST_POLICY_DENIED',
+        specialistId,
+      }, 403)
     }
 
     if ((actionLevel === 'guarded_write' || actionLevel === 'restricted') && !approvalConfirmed) {
@@ -105,15 +129,12 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      return NextResponse.json(
-        {
-          error: reason,
-          code: 'SPECIALIST_APPROVAL_REQUIRED',
-          specialistId,
-          actionLevel,
-        },
-        { status: 409 }
-      )
+      return jsonWithTiming({
+        error: reason,
+        code: 'SPECIALIST_APPROVAL_REQUIRED',
+        specialistId,
+        actionLevel,
+      }, 409)
     }
 
     await recordSpecialistAuditEvent({
@@ -159,7 +180,7 @@ export async function POST(request: NextRequest) {
           latencyMs: Date.now() - startedAt,
         },
       })
-      return NextResponse.json({
+      return jsonWithTiming({
         message: "I'm a business assistant and can only help with business-related questions. How can I assist you with your business today? I can help with:\n\n• Business proposals and quotes\n• Social media posts (LinkedIn, Facebook, etc.)\n• Pitch decks and business plans\n• Marketing content\n• Sales strategies\n• Financial analysis\n• And other business operations",
         service: 'filtered',
         cached: false,
@@ -210,7 +231,7 @@ export async function POST(request: NextRequest) {
           latencyMs: Date.now() - startedAt,
         },
       })
-      return NextResponse.json({
+      return jsonWithTiming({
         message: clarifyingMessage,
         service: 'context-analyzer',
         cached: false,
@@ -236,15 +257,15 @@ export async function POST(request: NextRequest) {
     let response
     let usedService = 'rule-based'
     
-    // Log the user message for debugging (first 200 chars)
-    console.log('🤖 AI Request:', {
+    // Debug logging is opt-in to keep hot-path logging light in production.
+    aiDebugLog('🤖 AI Request:', {
       message: validated.message.substring(0, 200),
       hasBusinessContext: !!businessContext,
       contextLength: businessContext.length,
     })
     
     // Log environment variables (without exposing full keys)
-    console.log('🔑 Environment check:', {
+    aiDebugLog('🔑 Environment check:', {
       hasGroqKey: !!process.env.GROQ_API_KEY,
       groqKeyLength: process.env.GROQ_API_KEY?.length || 0,
       groqModel: process.env.GROQ_MODEL,
@@ -264,7 +285,7 @@ export async function POST(request: NextRequest) {
         throw new Error('GROQ_API_KEY not configured in environment variables')
       }
       
-      console.log('🔄 Attempting Groq API call...')
+      aiDebugLog('🔄 Attempting Groq API call...')
       const groq = getGroqClient()
       response = await groq.chat([
         {
@@ -277,22 +298,22 @@ export async function POST(request: NextRequest) {
         },
       ])
       usedService = 'groq'
-      console.log('✅ Using Groq AI - Response length:', response.message?.length || 0)
-      console.log('📝 Groq response preview:', response.message?.substring(0, 300))
+      aiDebugLog('✅ Using Groq AI - Response length:', response.message?.length || 0)
+      aiDebugLog('📝 Groq response preview:', response.message?.substring(0, 300))
     } catch (groqError) {
       const errorMsg = groqError instanceof Error ? groqError.message : String(groqError)
       console.error('❌ Groq error:', errorMsg)
-      console.error('❌ Groq error stack:', groqError instanceof Error ? groqError.stack : 'No stack trace')
+      aiDebugLog('❌ Groq error stack:', groqError instanceof Error ? groqError.stack : 'No stack trace')
       
       // Check if it's an API key issue
       if (errorMsg.includes('not configured') || errorMsg.includes('API key')) {
-        console.warn('⚠️ Groq API key issue - check .env file')
+        aiDebugWarn('⚠️ Groq API key issue - check .env file')
       }
       try {
         // Fallback to Ollama
         const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
         const ollamaApiKey = process.env.OLLAMA_API_KEY
-        console.log('🔄 Attempting Ollama API call...', { baseUrl: ollamaBaseUrl, hasApiKey: !!ollamaApiKey })
+        aiDebugLog('🔄 Attempting Ollama API call...', { baseUrl: ollamaBaseUrl, hasApiKey: !!ollamaApiKey })
         
         const ollama = getOllamaClient()
         response = await ollama.chat([
@@ -306,8 +327,8 @@ export async function POST(request: NextRequest) {
           },
         ])
         usedService = 'ollama'
-        console.log('✅ Using Ollama AI - Response length:', response.message?.length || 0)
-        console.log('📝 Ollama response preview:', response.message?.substring(0, 300))
+        aiDebugLog('✅ Using Ollama AI - Response length:', response.message?.length || 0)
+        aiDebugLog('📝 Ollama response preview:', response.message?.substring(0, 300))
         
         // Check if Ollama returned a generic rule-based response
         if (response.message && (
@@ -315,22 +336,22 @@ export async function POST(request: NextRequest) {
           response.message.includes('check the') ||
           response.message.includes('To check overdue invoices')
         )) {
-          console.warn('⚠️ Ollama returned generic response, may need better prompting')
+          aiDebugWarn('⚠️ Ollama returned generic response, may need better prompting')
         }
       } catch (ollamaError) {
         const errorMsg = ollamaError instanceof Error ? ollamaError.message : String(ollamaError)
         console.error('❌ Ollama error:', errorMsg)
-        console.error('❌ Ollama error stack:', ollamaError instanceof Error ? ollamaError.stack : 'No stack trace')
+        aiDebugLog('❌ Ollama error stack:', ollamaError instanceof Error ? ollamaError.stack : 'No stack trace')
         
         // Check if it's a connection issue
         if (errorMsg.includes('fetch failed') || errorMsg.includes('ECONNREFUSED') || errorMsg.includes('network')) {
-          console.warn('⚠️ Ollama connection issue - is Ollama running? Check OLLAMA_BASE_URL in .env')
+          aiDebugWarn('⚠️ Ollama connection issue - is Ollama running? Check OLLAMA_BASE_URL in .env')
         }
         try {
           // Fallback to Hugging Face Inference API
           const huggingFaceApiKey = process.env.HUGGINGFACE_API_KEY
           if (huggingFaceApiKey) {
-            console.log('🔄 Attempting Hugging Face API call...', { hasApiKey: !!huggingFaceApiKey })
+            aiDebugLog('🔄 Attempting Hugging Face API call...', { hasApiKey: !!huggingFaceApiKey })
             
             const huggingFace = getHuggingFaceClient()
             response = await huggingFace.chat([
@@ -344,19 +365,19 @@ export async function POST(request: NextRequest) {
               },
             ])
             usedService = 'huggingface'
-            console.log('✅ Using Hugging Face AI - Response length:', response.message?.length || 0)
-            console.log('📝 Hugging Face response preview:', response.message?.substring(0, 300))
+            aiDebugLog('✅ Using Hugging Face AI - Response length:', response.message?.length || 0)
+            aiDebugLog('📝 Hugging Face response preview:', response.message?.substring(0, 300))
           } else {
             throw new Error('Hugging Face API key not configured')
           }
         } catch (huggingFaceError) {
           const errorMsg = huggingFaceError instanceof Error ? huggingFaceError.message : String(huggingFaceError)
           console.error('❌ Hugging Face error:', errorMsg)
-          console.error('❌ Hugging Face error stack:', huggingFaceError instanceof Error ? huggingFaceError.stack : 'No stack trace')
+          aiDebugLog('❌ Hugging Face error stack:', huggingFaceError instanceof Error ? huggingFaceError.stack : 'No stack trace')
           
           // Check if model is loading
           if (errorMsg.includes('loading')) {
-            console.warn('⚠️ Hugging Face model is loading - this is normal for first request')
+            aiDebugWarn('⚠️ Hugging Face model is loading - this is normal for first request')
           }
           
           try {
@@ -385,7 +406,7 @@ export async function POST(request: NextRequest) {
                   usage: data.usage,
                 }
                 usedService = 'openai'
-                console.log('✅ Using OpenAI')
+                aiDebugLog('✅ Using OpenAI')
               } else {
                 throw new Error('OpenAI failed')
               }
@@ -446,7 +467,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({
+    return jsonWithTiming({
       message: response.message,
       cached: false,
       usage: response.usage,
@@ -464,10 +485,7 @@ export async function POST(request: NextRequest) {
     }
     
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      )
+      return jsonWithTiming({ error: 'Validation error', details: error.errors }, 400)
     }
 
     console.error('AI chat error:', error)
@@ -491,15 +509,15 @@ export async function POST(request: NextRequest) {
       hint = 'Please check your internet connection and ensure AI services are accessible.'
     }
     
-    return NextResponse.json(
-      { 
+    return jsonWithTiming(
+      {
         error: 'Failed to process chat request',
         message: userFriendlyMessage,
         hint,
         details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
-        stack: process.env.NODE_ENV === 'development' ? errorStack : undefined,
+        stack: process.env.NODE_ENV === 'development' && isAiDebugEnabled() ? errorStack : undefined,
       },
-      { status: 500 }
+      500
     )
   }
 }
@@ -688,8 +706,9 @@ async function getBusinessContext(tenantId: string, userMessage?: string): Promi
     // IMPORTANT: All queries in this function MUST filter by tenantId to ensure
     // complete data isolation between tenants. Each business only sees their own data.
     
-    // Get tenant business information
-    const tenant = await prisma.tenant.findUnique({
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+
+    const tenantPromise = prisma.tenant.findUnique({
       where: { id: tenantId },
       select: {
         name: true,
@@ -705,39 +724,138 @@ async function getBusinessContext(tenantId: string, userMessage?: string): Promi
       },
     })
 
-    // Extract potential company/client names from user message
-    let relevantContact: any = null
-    let relevantDeal: any = null
-    let relevantProducts: any[] = []
-    
-    if (userMessage) {
-      // Extract potential company/client names from the query
-      // Look for patterns like "for Acme", "Acme proposal", "prepare proposal for Acme", etc.
+    const productsPromise = prisma.product.findMany({
+      where: { tenantId },
+      select: {
+        name: true,
+        description: true,
+        salePrice: true,
+        categories: true,
+      },
+      take: 10,
+      orderBy: { totalSold: 'desc' },
+    })
+
+    const metricsPromise = Promise.all([
+      prisma.contact.count({ where: { tenantId } }),
+      prisma.deal.count({ where: { tenantId } }),
+      prisma.order.count({ where: { tenantId } }),
+      prisma.invoice.count({ where: { tenantId } }),
+      prisma.task.count({ where: { tenantId } }),
+    ])
+
+    const overdueInvoicesPromise = prisma.invoice.findMany({
+      where: {
+        tenantId,
+        status: 'overdue',
+      },
+      select: {
+        invoiceNumber: true,
+        total: true,
+        dueDate: true,
+        customer: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      take: 10,
+    })
+
+    const pendingTasksPromise = prisma.task.findMany({
+      where: {
+        tenantId,
+        status: { in: ['pending', 'in_progress'] },
+      },
+      select: {
+        title: true,
+        priority: true,
+        dueDate: true,
+        contact: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      take: 10,
+      orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
+    })
+
+    const recentDealsPromise = prisma.deal.findMany({
+      where: { tenantId },
+      take: 10,
+      orderBy: [{ value: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        name: true,
+        value: true,
+        stage: true,
+        probability: true,
+        contact: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    })
+
+    const revenuePromise = prisma.order.aggregate({
+      where: {
+        tenantId,
+        createdAt: { gte: thirtyDaysAgo },
+        status: { in: ['confirmed', 'shipped', 'delivered'] },
+      },
+      _sum: {
+        total: true,
+      },
+    })
+
+    const pendingInvoicesPromise = prisma.invoice.findMany({
+      where: {
+        tenantId,
+        status: { in: ['sent', 'draft'] },
+        paidAt: null,
+      },
+      select: {
+        invoiceNumber: true,
+        total: true,
+        dueDate: true,
+        customer: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      take: 10,
+    })
+
+    const relevantContactPromise = (async () => {
+      if (!userMessage) {
+        return { contact: null as any, deal: null as any }
+      }
+
       const companyNamePatterns = [
         /(?:for|with|to|about)\s+([A-Z][a-zA-Z\s&]+?)(?:\s|$|proposal|quote|deal|contract)/i,
         /(?:proposal|quote|deal|contract)\s+(?:for|with|to)\s+([A-Z][a-zA-Z\s&]+?)(?:\s|$)/i,
         /([A-Z][a-zA-Z\s&]{2,}?)(?:\s+proposal|\s+quote|\s+deal)/i,
       ]
-      
-      let extractedNames: string[] = []
+
+      const extractedNames: string[] = []
       for (const pattern of companyNamePatterns) {
         const matches = userMessage.match(pattern)
         if (matches && matches[1]) {
           extractedNames.push(matches[1].trim())
         }
       }
-      
-      // Also try direct company name if query is short
+
       if (userMessage.length < 50 && /^[A-Z]/.test(userMessage.trim())) {
         extractedNames.push(userMessage.trim().split(/\s+/)[0])
       }
-      
-      // Try to find mentioned companies/contacts in the query
+
       const searchTerms = extractedNames.length > 0 ? extractedNames : [userMessage]
       const contactMatches = await prisma.contact.findMany({
         where: {
           tenantId,
-          OR: searchTerms.flatMap(term => [
+          OR: searchTerms.flatMap((term) => [
             { name: { contains: term, mode: 'insensitive' } },
             { company: { contains: term, mode: 'insensitive' } },
           ]),
@@ -759,14 +877,16 @@ async function getBusinessContext(tenantId: string, userMessage?: string): Promi
         take: 1,
       })
 
-      if (contactMatches.length > 0) {
-        relevantContact = contactMatches[0]
-        
-        // Get related deals for this contact
-        const deals = await prisma.deal.findMany({
+      if (contactMatches.length === 0) {
+        return { contact: null as any, deal: null as any }
+      }
+
+      const matchedContact = contactMatches[0]
+      const [deals, interactions] = await Promise.all([
+        prisma.deal.findMany({
           where: {
             tenantId,
-            contactId: relevantContact.id,
+            contactId: matchedContact.id,
           },
           select: {
             name: true,
@@ -778,15 +898,10 @@ async function getBusinessContext(tenantId: string, userMessage?: string): Promi
           },
           orderBy: { createdAt: 'desc' },
           take: 3,
-        })
-        if (deals.length > 0) {
-          relevantDeal = deals[0]
-        }
-
-        // Get past interactions
-        const interactions = await prisma.interaction.findMany({
+        }),
+        prisma.interaction.findMany({
           where: {
-            contactId: relevantContact.id,
+            contactId: matchedContact.id,
           },
           select: {
             type: true,
@@ -796,133 +911,41 @@ async function getBusinessContext(tenantId: string, userMessage?: string): Promi
           },
           orderBy: { createdAt: 'desc' },
           take: 5,
-        })
-        relevantContact.interactions = interactions
+        }),
+      ])
+
+      return {
+        contact: { ...matchedContact, interactions },
+        deal: deals.length > 0 ? deals[0] : null,
       }
-    }
+    })()
 
-    // Get products/services for proposal context
-    const products = await prisma.product.findMany({
-      where: { tenantId },
-      select: {
-        name: true,
-        description: true,
-        salePrice: true,
-        categories: true,
-      },
-      take: 10,
-      orderBy: { totalSold: 'desc' },
-    })
-    relevantProducts = products
-
-    // Get key business metrics
-    const [contactsCount, dealsCount, ordersCount, invoicesCount, tasksCount] = await Promise.all([
-      prisma.contact.count({ where: { tenantId } }),
-      prisma.deal.count({ where: { tenantId } }),
-      prisma.order.count({ where: { tenantId } }),
-      prisma.invoice.count({ where: { tenantId } }),
-      prisma.task.count({ where: { tenantId } }),
+    const [
+      tenant,
+      relevantProducts,
+      [contactsCount, dealsCount, ordersCount, invoicesCount, tasksCount],
+      overdueInvoices,
+      pendingTasks,
+      recentDeals,
+      revenueAgg,
+      pendingInvoices,
+      contactBundle,
+    ] = await Promise.all([
+      tenantPromise,
+      productsPromise,
+      metricsPromise,
+      overdueInvoicesPromise,
+      pendingTasksPromise,
+      recentDealsPromise,
+      revenuePromise,
+      pendingInvoicesPromise,
+      relevantContactPromise,
     ])
 
-    // Get overdue invoices
-    const overdueInvoices = await prisma.invoice.findMany({
-      where: {
-        tenantId,
-        status: 'overdue',
-      },
-      select: {
-        invoiceNumber: true,
-        total: true,
-        dueDate: true,
-        customer: {
-          select: {
-            name: true,
-          },
-        },
-      },
-      take: 10,
-    })
-
-    // Get pending tasks
-    const pendingTasks = await prisma.task.findMany({
-      where: {
-        tenantId,
-        status: { in: ['pending', 'in_progress'] },
-      },
-      select: {
-        title: true,
-        priority: true,
-        dueDate: true,
-        contact: {
-          select: {
-            name: true,
-          },
-        },
-      },
-      take: 10,
-      orderBy: [
-        { priority: 'desc' },
-        { dueDate: 'asc' },
-      ],
-    })
-
-    // Get recent deals - sorted by value (top deals)
-    const recentDeals = await prisma.deal.findMany({
-      where: { tenantId },
-      take: 10,
-      orderBy: [
-        { value: 'desc' }, // Top deals by value
-        { createdAt: 'desc' },
-      ],
-      select: {
-        name: true,
-        value: true,
-        stage: true,
-        probability: true,
-        contact: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    })
-
-    // Get revenue data
-    const recentOrders = await prisma.order.findMany({
-      where: {
-        tenantId,
-        createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
-        status: { in: ['confirmed', 'shipped', 'delivered'] },
-      },
-      select: {
-        total: true,
-        createdAt: true,
-      },
-    })
-
-    const totalRevenue = recentOrders.reduce((sum, o) => sum + o.total, 0)
-
-    // Get pending invoices
-    const pendingInvoices = await prisma.invoice.findMany({
-      where: {
-        tenantId,
-        status: { in: ['sent', 'draft'] },
-        paidAt: null,
-      },
-      select: {
-        invoiceNumber: true,
-        total: true,
-        dueDate: true,
-        customer: {
-          select: {
-            name: true,
-          },
-        },
-      },
-      take: 10,
-    })
-
-    const pendingInvoiceAmount = pendingInvoices.reduce((sum, i) => sum + i.total, 0)
+    const relevantContact = contactBundle.contact
+    const relevantDeal = contactBundle.deal
+    const totalRevenue = Number(revenueAgg?._sum?.total || 0)
+    const pendingInvoiceAmount = pendingInvoices.reduce((sum, i) => sum + Number(i.total || 0), 0)
 
     // Build context string
     let context = `=== BUSINESS DATA ===

@@ -11,6 +11,37 @@ const biometricRowSchema = z.object({
   checkOutTime: z.string().optional(),
 })
 
+interface PreparedAttendanceRow {
+  rowNumber: number
+  employeeCode: string
+  employeeId: string
+  date: Date
+  checkInTime: Date
+  checkOutTime: Date | null
+  workHours: number | null
+  status: 'PRESENT' | 'HALF_DAY' | 'ABSENT'
+}
+
+const buildAttendanceKey = (employeeId: string, date: Date) => `${employeeId}::${date.getTime()}`
+
+const parseTimeParts = (timeValue: string, fieldName: string) => {
+  const parts = String(timeValue || '')
+    .trim()
+    .split(':')
+    .map((part) => Number.parseInt(part, 10))
+
+  if (parts.length < 2 || parts.length > 3 || parts.some((part) => Number.isNaN(part))) {
+    throw new Error(`Invalid ${fieldName} format. Expected HH:MM or HH:MM:SS`)
+  }
+
+  const [hours, minutes, seconds = 0] = parts
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59 || seconds < 0 || seconds > 59) {
+    throw new Error(`Invalid ${fieldName} value`)
+  }
+
+  return { hours, minutes, seconds }
+}
+
 // POST /api/hr/attendance/biometric-import - Import attendance from biometric system
 export async function POST(request: NextRequest) {
   try {
@@ -52,7 +83,9 @@ export async function POST(request: NextRequest) {
 
     const employeeMap = new Map(employees.map((e) => [e.employeeCode, e.id]))
 
-    // Process each row
+    const preparedRows: PreparedAttendanceRow[] = []
+
+    // Validate + normalize each row once
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i] as any
       const rowNumber = i + 2
@@ -81,27 +114,30 @@ export async function POST(request: NextRequest) {
 
         // Parse date and times
         const date = new Date(validated.date)
+        if (Number.isNaN(date.getTime())) {
+          throw new Error('Invalid date value')
+        }
         date.setHours(0, 0, 0, 0)
 
         // Parse check-in time (format: HH:MM or HH:MM:SS)
-        const checkInParts = validated.checkInTime.split(':')
+        const checkInParts = parseTimeParts(validated.checkInTime, 'check-in time')
         const checkInTime = new Date(date)
         checkInTime.setHours(
-          parseInt(checkInParts[0]),
-          parseInt(checkInParts[1] || '0'),
-          parseInt(checkInParts[2] || '0')
+          checkInParts.hours,
+          checkInParts.minutes,
+          checkInParts.seconds
         )
 
         let checkOutTime: Date | null = null
         let workHours: number | null = null
 
         if (validated.checkOutTime) {
-          const checkOutParts = validated.checkOutTime.split(':')
+          const checkOutParts = parseTimeParts(validated.checkOutTime, 'check-out time')
           checkOutTime = new Date(date)
           checkOutTime.setHours(
-            parseInt(checkOutParts[0]),
-            parseInt(checkOutParts[1] || '0'),
-            parseInt(checkOutParts[2] || '0')
+            checkOutParts.hours,
+            checkOutParts.minutes,
+            checkOutParts.seconds
           )
           workHours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60)
         }
@@ -118,46 +154,15 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Check if record exists
-        const existingRecord = await prisma.attendanceRecord.findFirst({
-          where: {
-            employeeId,
-            date,
-            tenantId: tenantId,
-          },
-        })
-
-        // Create or update attendance record
-        let attendanceRecord
-        if (existingRecord) {
-          attendanceRecord = await prisma.attendanceRecord.update({
-            where: { id: existingRecord.id },
-            data: {
-              checkInTime,
-              checkOutTime,
-              workHours,
-              status,
-            },
-          })
-        } else {
-          attendanceRecord = await prisma.attendanceRecord.create({
-            data: {
-              employeeId,
-              date,
-              checkInTime,
-              checkOutTime,
-              workHours,
-              status,
-              source: 'BIOMETRIC',
-              tenantId: tenantId,
-            },
-          })
-        }
-
-        results.success.push({
-          row: rowNumber,
+        preparedRows.push({
+          rowNumber,
           employeeCode: validated.employeeCode,
-          date: date.toISOString().split('T')[0],
+          employeeId,
+          date,
+          checkInTime,
+          checkOutTime,
+          workHours,
+          status: status as PreparedAttendanceRow['status'],
         })
       } catch (error) {
         if (error instanceof z.ZodError) {
@@ -168,6 +173,76 @@ export async function POST(request: NextRequest) {
         } else {
           results.errors.push({
             row: rowNumber,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          })
+        }
+      }
+    }
+
+    // Prefetch all existing attendance records once to avoid per-row read queries.
+    if (preparedRows.length > 0) {
+      const employeeIds = Array.from(new Set(preparedRows.map((row) => row.employeeId)))
+      const allDates = preparedRows.map((row) => row.date.getTime())
+      const minDate = new Date(Math.min(...allDates))
+      const maxDate = new Date(Math.max(...allDates))
+
+      const existingRecords = await prisma.attendanceRecord.findMany({
+        where: {
+          tenantId,
+          employeeId: { in: employeeIds },
+          date: { gte: minDate, lte: maxDate },
+        },
+        select: {
+          id: true,
+          employeeId: true,
+          date: true,
+        },
+      })
+
+      const existingRecordMap = new Map(
+        existingRecords.map((record) => [buildAttendanceKey(record.employeeId, record.date), record.id])
+      )
+
+      for (const row of preparedRows) {
+        const key = buildAttendanceKey(row.employeeId, row.date)
+
+        try {
+          const existingId = existingRecordMap.get(key)
+          if (existingId) {
+            await prisma.attendanceRecord.update({
+              where: { id: existingId },
+              data: {
+                checkInTime: row.checkInTime,
+                checkOutTime: row.checkOutTime,
+                workHours: row.workHours,
+                status: row.status,
+              },
+            })
+          } else {
+            const createdRecord = await prisma.attendanceRecord.create({
+              data: {
+                employeeId: row.employeeId,
+                date: row.date,
+                checkInTime: row.checkInTime,
+                checkOutTime: row.checkOutTime,
+                workHours: row.workHours,
+                status: row.status,
+                source: 'BIOMETRIC',
+                tenantId,
+              },
+              select: { id: true },
+            })
+            existingRecordMap.set(key, createdRecord.id)
+          }
+
+          results.success.push({
+            row: row.rowNumber,
+            employeeCode: row.employeeCode,
+            date: row.date.toISOString().split('T')[0],
+          })
+        } catch (error) {
+          results.errors.push({
+            row: row.rowNumber,
             error: error instanceof Error ? error.message : 'Unknown error',
           })
         }

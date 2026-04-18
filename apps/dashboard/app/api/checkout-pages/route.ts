@@ -19,15 +19,43 @@ export async function GET(request: NextRequest) {
   try {
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'sales')
+    const searchParams = request.nextUrl.searchParams
+    const pageParam = Number(searchParams.get('page') || '1')
+    const limitParam = Number(searchParams.get('limit') || '25')
+    const page = Number.isFinite(pageParam) && pageParam > 0 ? Math.floor(pageParam) : 1
+    const limit = Number.isFinite(limitParam) ? Math.min(Math.max(Math.floor(limitParam), 1), 100) : 25
+    const skip = (page - 1) * limit
 
-    const pages = await prisma.checkoutPage.findMany({
-      where: {
-        tenantId: tenantId,
+    const where = { tenantId: tenantId }
+    const [pages, total] = await Promise.all([
+      prisma.checkoutPage.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          status: true,
+          couponsEnabled: true,
+          showOrderSummary: true,
+          showShippingOptions: true,
+          createdAt: true,
+        },
+      }),
+      prisma.checkoutPage.count({ where }),
+    ])
+
+    return NextResponse.json({
+      pages,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
       },
-      orderBy: { createdAt: 'desc' },
     })
-
-    return NextResponse.json({ pages })
   } catch (error) {
     console.error('Get checkout pages error:', error)
     return NextResponse.json(

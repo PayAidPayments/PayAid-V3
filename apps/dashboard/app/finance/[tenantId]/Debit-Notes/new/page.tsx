@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useMutation } from '@tanstack/react-query'
@@ -37,7 +37,7 @@ export default function NewDebitNotePage() {
   const router = useRouter()
   const { token } = useAuthStore()
   const { data: contactsData } = useContacts({ limit: 1000 })
-  const contacts = contactsData?.contacts || []
+  const contacts = useMemo(() => contactsData?.contacts ?? [], [contactsData?.contacts])
 
   const [formData, setFormData] = useState({
     invoiceId: '',
@@ -84,6 +84,11 @@ export default function NewDebitNotePage() {
     }
   }, [formData.customerId, contacts])
 
+  const itemCalculationSignature = useMemo(
+    () => items.map((i) => `${i.quantity}-${i.rate}-${i.gstRate}`).join(','),
+    [items]
+  )
+
   // Calculate item totals
   useEffect(() => {
     setItems((prevItems) =>
@@ -93,7 +98,7 @@ export default function NewDebitNotePage() {
         return { ...item, amount, taxAmount }
       })
     )
-  }, [items.map((i) => `${i.quantity}-${i.rate}-${i.gstRate}`).join(',')])
+  }, [itemCalculationSignature])
 
   const subtotal = items.reduce((sum, item) => sum + item.amount, 0)
   const tax = items.reduce((sum, item) => sum + item.taxAmount, 0)

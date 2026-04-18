@@ -52,6 +52,8 @@ export default function NewAppointmentPage() {
   })
 
   useEffect(() => {
+    if (!token) return
+
     const fetchContacts = async () => {
       try {
         const response = await fetch('/api/appointments/contacts', {
@@ -80,7 +82,7 @@ export default function NewAppointmentPage() {
     }
     fetchContacts()
     fetchServices()
-  }, [])
+  }, [token])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

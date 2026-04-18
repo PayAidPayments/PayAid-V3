@@ -20,6 +20,11 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams
     const status = searchParams.get('status')
+    const pageParam = Number(searchParams.get('page') || '1')
+    const limitParam = Number(searchParams.get('limit') || '25')
+    const page = Number.isFinite(pageParam) && pageParam > 0 ? Math.floor(pageParam) : 1
+    const limit = Number.isFinite(limitParam) ? Math.min(Math.max(Math.floor(limitParam), 1), 100) : 25
+    const skip = (page - 1) * limit
 
     const where: any = {
       tenantId: tenantId,
@@ -27,12 +32,34 @@ export async function GET(request: NextRequest) {
 
     if (status) where.status = status
 
-    const pages = await prisma.landingPage.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-    })
+    const [pages, total] = await Promise.all([
+      prisma.landingPage.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          status: true,
+          metaTitle: true,
+          metaDescription: true,
+          createdAt: true,
+        },
+      }),
+      prisma.landingPage.count({ where }),
+    ])
 
-    return NextResponse.json({ pages })
+    return NextResponse.json({
+      pages,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
+    })
   } catch (error) {
     console.error('Get landing pages error:', error)
     return NextResponse.json(

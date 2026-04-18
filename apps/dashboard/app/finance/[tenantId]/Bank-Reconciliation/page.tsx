@@ -67,9 +67,9 @@ export default function BankReconciliationPage() {
     },
   })
 
-  const rawTransactions = data?.transactions ?? []
+  const rawTransactions = useMemo(() => data?.transactions ?? [], [data?.transactions])
   const summary = data?.summary ?? { unreconciledCount: 0, reconciledCount: 0, bankAccountsCount: 0 }
-  const apiBankAccounts = data?.bankAccounts ?? []
+  const apiBankAccounts = useMemo(() => data?.bankAccounts ?? [], [data?.bankAccounts])
 
   const bankAccounts = useMemo(() => {
     if (apiBankAccounts.length > 0) return apiBankAccounts

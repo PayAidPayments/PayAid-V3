@@ -17,16 +17,61 @@ interface Notification {
   metadata?: any
 }
 
+type NotificationsResponsePayload = {
+  notifications: Array<{
+    id: string
+    type: string
+    module: string
+    title: string
+    message: string
+    priority: 'LOW' | 'MEDIUM' | 'HIGH'
+    isRead: boolean
+    createdAt: string
+    actionUrl?: string
+  }>
+  unreadCount: number
+  total: number
+  smartFilter: boolean
+  mode: 'lightweight' | 'full'
+  durationMs: number
+  summary?:
+    | {
+        critical: number
+        important: number
+        normal: number
+      }
+    | undefined
+}
+
+const NOTIFICATIONS_CACHE_TTL_MS = 15000
+const notificationsResponseCache = new Map<
+  string,
+  { expiresAt: number; payload: Omit<NotificationsResponsePayload, 'durationMs'> }
+>()
+
 /**
  * GET /api/notifications
  * Get aggregated notifications from all licensed modules for the current user
  */
 export async function GET(request: NextRequest) {
+  const requestStartedAt = Date.now()
+  const jsonWithTiming = (
+    payload: unknown,
+    status = 200,
+    headers?: Record<string, string>
+  ) =>
+    NextResponse.json(payload, {
+      status,
+      headers: {
+        'Server-Timing': `app;dur=${Date.now() - requestStartedAt}`,
+        ...headers,
+      },
+    })
+
   try {
-    const startTime = Date.now()
     const user = await authenticateRequest(request)
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return jsonWithTiming({ error: 'Unauthorized' }, 401)
     }
 
     const searchParams = request.nextUrl.searchParams
@@ -37,6 +82,33 @@ export async function GET(request: NextRequest) {
     // Fast mode by default to protect core page responsiveness under DB pressure.
     // Pass lightweight=false only where full cross-module fanout is explicitly needed.
     const lightweight = searchParams.get('lightweight') !== 'false'
+    const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 50
+    const cacheKey = [
+      user.tenantId,
+      user.userId,
+      unreadOnly ? 'unread' : 'all',
+      safeLimit,
+      moduleFilter || 'all-modules',
+      smartFilter ? 'smart' : 'basic',
+      lightweight ? 'light' : 'full',
+    ].join('|')
+    const cachedResponse = notificationsResponseCache.get(cacheKey)
+    if (cachedResponse && cachedResponse.expiresAt > Date.now()) {
+      return jsonWithTiming(
+        {
+          ...cachedResponse.payload,
+          durationMs: Date.now() - requestStartedAt,
+        },
+        200,
+        {
+          'Cache-Control': 'private, max-age=15, stale-while-revalidate=30',
+          Vary: 'Authorization',
+        }
+      )
+    }
+    if (cachedResponse) {
+      notificationsResponseCache.delete(cacheKey)
+    }
 
     // Get tenant with licensed modules - use minimal retries and handle circuit breaker
     let tenant
@@ -56,14 +128,14 @@ export async function GET(request: NextRequest) {
       // If circuit breaker is open or pool exhausted, return empty notifications
       if (error?.code === 'CIRCUIT_OPEN' || error?.isCircuitBreaker || 
           error?.message?.includes('connection pool') || error?.message?.includes('temporarily unavailable')) {
-        return NextResponse.json(
+        return jsonWithTiming(
           { 
             notifications: [], 
             unreadCount: 0, 
             total: 0,
             grouped: { high: 0, medium: 0, low: 0 },
           },
-          { status: 503 }
+          503
         )
       }
       throw error
@@ -106,8 +178,11 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    const moduleLoaders: Promise<void>[] = []
+
     // 1. CRM Module Notifications
     if (licensedModules.includes('crm') && (!moduleFilter || moduleFilter === 'crm')) {
+      moduleLoaders.push((async () => {
       // Overdue tasks - use minimal retries
       let overdueTasks: Awaited<ReturnType<typeof prisma.task.findMany>> = []
       try {
@@ -230,10 +305,12 @@ export async function GET(request: NextRequest) {
           `/crm/${user.tenantId}/Deals`
         )
       })
+      })())
     }
 
     // 2. Finance Module Notifications
     if (!lightweight && licensedModules.includes('finance') && (!moduleFilter || moduleFilter === 'finance')) {
+      moduleLoaders.push((async () => {
       // Overdue invoices - use minimal retries
       let overdueInvoices: Awaited<ReturnType<typeof prisma.invoice.findMany>> = []
       try {
@@ -322,10 +399,12 @@ export async function GET(request: NextRequest) {
           `/finance/${user.tenantId}/Expenses`
         )
       })
+      })())
     }
 
     // 3. HR Module Notifications
     if (!lightweight && licensedModules.includes('hr') && (!moduleFilter || moduleFilter === 'hr')) {
+      moduleLoaders.push((async () => {
       // Leave requests pending approval
       let pendingLeaves: Awaited<ReturnType<typeof prisma.leaveRequest.findMany<{ include: { employee: { select: { firstName: true; lastName: true } } } }>>> = []
       try {
@@ -372,21 +451,25 @@ export async function GET(request: NextRequest) {
 
       // Attendance issues
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      let missingAttendance: Awaited<ReturnType<typeof prisma.employee.findMany<{ include: { attendanceRecords: true } }>>> = []
+      let missingAttendance: { id: string; firstName: string; lastName: string }[] = []
       try {
         missingAttendance = await prismaWithRetry(() =>
           prisma.employee.findMany({
             where: {
               tenantId: user.tenantId,
               status: 'active',
-            },
-            include: {
               attendanceRecords: {
-                where: {
+                none: {
                   date: today,
                 },
               },
             },
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+            take: 5,
           }),
           {
             maxRetries: 1,
@@ -402,25 +485,24 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      missingAttendance
-        .filter((emp) => emp.attendanceRecords && emp.attendanceRecords.length === 0)
-        .slice(0, 5)
-        .forEach((emp) => {
-          addNotification(
-            `attendance-${emp.id}`,
-            'ATTENDANCE_MISSING',
-            'hr',
-            'Missing Attendance',
-            `${emp.firstName} ${emp.lastName} has not marked attendance today`,
-            'LOW',
-            now,
-            `/hr/${user.tenantId}/Attendance`
-          )
-        })
+      missingAttendance.forEach((emp) => {
+        addNotification(
+          `attendance-${emp.id}`,
+          'ATTENDANCE_MISSING',
+          'hr',
+          'Missing Attendance',
+          `${emp.firstName} ${emp.lastName} has not marked attendance today`,
+          'LOW',
+          now,
+          `/hr/${user.tenantId}/Attendance`
+        )
+      })
+      })())
     }
 
     // 4. Projects Module Notifications
     if (!lightweight && licensedModules.includes('projects') && (!moduleFilter || moduleFilter === 'projects')) {
+      moduleLoaders.push((async () => {
       // Tasks due soon
       let projectTasksDue: Awaited<ReturnType<typeof prisma.projectTask.findMany<{ include: { project: { select: { name: true } } } }>>> = []
       try {
@@ -468,10 +550,12 @@ export async function GET(request: NextRequest) {
           `/projects/${user.tenantId}/Tasks`
         )
       })
+      })())
     }
 
     // 5. Inventory Module Notifications
     if (!lightweight && licensedModules.includes('inventory') && (!moduleFilter || moduleFilter === 'inventory')) {
+      moduleLoaders.push((async () => {
       // Low stock alerts - fetch products and filter in memory (Prisma doesn't support field comparison in where clause)
       let lowStockProducts: Array<{ id: string; name: string; quantity: number; reorderLevel: number | null }> = []
       try {
@@ -518,10 +602,12 @@ export async function GET(request: NextRequest) {
           `/inventory/${user.tenantId}/Products`
         )
       })
+      })())
     }
 
     // 6. Appointments Module Notifications
     if (!lightweight && licensedModules.includes('appointments') && (!moduleFilter || moduleFilter === 'appointments')) {
+      moduleLoaders.push((async () => {
       // Upcoming appointments today
       let todayAppointments: Awaited<ReturnType<typeof prisma.appointment.findMany>> = []
       try {
@@ -564,7 +650,10 @@ export async function GET(request: NextRequest) {
           user.tenantId ? `/appointments/${user.tenantId}/Home?appointment=${apt.id}` : `/dashboard/appointments/${apt.id}`
         )
       })
+      })())
     }
+
+    await Promise.all(moduleLoaders)
 
     // Convert to smart filter format
     const smartNotifications: SmartNotification[] = notifications.map((n) => ({
@@ -584,7 +673,7 @@ export async function GET(request: NextRequest) {
     if (smartFilter) {
       finalNotifications = filterSmartNotifications(smartNotifications, {
         minScore: 30, // Only show notifications with importance score >= 30
-        maxCount: limit,
+        maxCount: safeLimit,
       })
     } else {
       // Sort by priority and date (original behavior)
@@ -595,7 +684,7 @@ export async function GET(request: NextRequest) {
         }
         return b.timestamp.getTime() - a.timestamp.getTime()
       })
-      finalNotifications = finalNotifications.slice(0, limit)
+      finalNotifications = finalNotifications.slice(0, safeLimit)
     }
 
     // Convert back to response format
@@ -615,19 +704,35 @@ export async function GET(request: NextRequest) {
 
     // Get grouped notifications for summary
     const grouped = groupNotificationsByImportance(smartNotifications)
-
-    return NextResponse.json({
+    const payload: NotificationsResponsePayload = {
       notifications: responseNotifications,
       unreadCount,
       total: notifications.length,
       smartFilter: smartFilter,
       mode: lightweight ? 'lightweight' : 'full',
-      durationMs: Date.now() - startTime,
+      durationMs: Date.now() - requestStartedAt,
       summary: smartFilter ? {
         critical: grouped.critical.length,
         important: grouped.important.length,
         normal: grouped.normal.length,
       } : undefined,
+    }
+
+    notificationsResponseCache.set(cacheKey, {
+      expiresAt: Date.now() + NOTIFICATIONS_CACHE_TTL_MS,
+      payload: {
+        notifications: payload.notifications,
+        unreadCount: payload.unreadCount,
+        total: payload.total,
+        smartFilter: payload.smartFilter,
+        mode: payload.mode,
+        summary: payload.summary,
+      },
+    })
+
+    return jsonWithTiming(payload, 200, {
+      'Cache-Control': 'private, max-age=15, stale-while-revalidate=30',
+      Vary: 'Authorization',
     })
   } catch (error: any) {
     console.error('Get notifications error:', error)
@@ -642,20 +747,20 @@ export async function GET(request: NextRequest) {
     const isCircuitOpen = errorCode === 'CIRCUIT_OPEN' || error?.isCircuitBreaker
     
     if (isCircuitOpen || isPoolExhausted) {
-      return NextResponse.json(
+      return jsonWithTiming(
         { 
           notifications: [],
           unreadCount: 0,
           total: 0,
           error: 'Database temporarily unavailable',
         },
-        { status: 503 }
+        503
       )
     }
     
-    return NextResponse.json(
+    return jsonWithTiming(
       { error: 'Failed to get notifications', message: error?.message },
-      { status: 500 }
+      500
     )
   }
 }

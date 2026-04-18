@@ -1,4 +1,5 @@
 module.exports = {
+  forceExit: true,
   testEnvironment: 'node',
   roots: ['<rootDir>/__tests__/m3'],
   testMatch: ['**/*.test.ts'],

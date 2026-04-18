@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuthStore } from '@/lib/stores/auth'
 
 interface Document {
@@ -42,11 +42,7 @@ export default function KnowledgePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [uploading, setUploading] = useState(false)
 
-  useEffect(() => {
-    fetchDocuments()
-  }, [selectedCategory])
-
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     try {
       setLoading(true)
       const url = selectedCategory !== 'all' 
@@ -68,7 +64,11 @@ export default function KnowledgePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedCategory, token])
+
+  useEffect(() => {
+    fetchDocuments()
+  }, [fetchDocuments])
 
   const handleQuery = async (e: React.FormEvent) => {
     e.preventDefault()

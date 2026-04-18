@@ -234,7 +234,9 @@ export default function CRMDealsPage() {
     }
   }
 
-  const getTimePeriodBoundsLocal = () => getTimePeriodBounds(timePeriod)
+  const pipelineSummary = useMemo(() => {
+    return Array.isArray(data?.pipelineSummary) ? data.pipelineSummary : []
+  }, [data?.pipelineSummary])
 
   const pipeline = useMemo(() => {
     const stageOrder = ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
@@ -246,9 +248,8 @@ export default function CRMDealsPage() {
       won: { label: 'Won', color: 'bg-emerald-500' },
       lost: { label: 'Lost', color: 'bg-red-500' },
     }
-    const summary = Array.isArray(data?.pipelineSummary) ? data!.pipelineSummary! : []
     const byStage: Record<string, { count: number; value: number }> = {}
-    for (const row of summary) {
+    for (const row of pipelineSummary) {
       const st = String((row as { stage?: string }).stage || 'lead')
       byStage[st] = {
         count: Number((row as { _count?: { id?: number } })._count?.id ?? 0),
@@ -267,10 +268,10 @@ export default function CRMDealsPage() {
     })
     const totalValue = segments.reduce((s, seg) => s + seg.value, 0)
     return { totalValue, segments }
-  }, [data?.pipelineSummary])
+  }, [pipelineSummary])
 
   const stats = useMemo(() => {
-    const period = getTimePeriodBoundsLocal()
+    const period = getTimePeriodBounds(timePeriod)
     const ps = data?.periodStats as
       | {
           created: { count: number; value: number }
@@ -322,7 +323,9 @@ export default function CRMDealsPage() {
     console.error('[DEALS_PAGE] Error fetching deals:', dealsError)
   }
 
-  const deals = Array.isArray(data?.deals) ? data.deals : []
+  const deals = useMemo(() => {
+    return Array.isArray(data?.deals) ? data.deals : []
+  }, [data?.deals])
 
   const sortedDeals = useMemo(() => {
     const list = [...deals]

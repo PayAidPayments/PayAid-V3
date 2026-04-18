@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { resolveCrmRequestTenantId } from '@/lib/crm/resolve-crm-request-tenant'
 
 // WebRTC Signaling endpoint for power dialer
 // This handles WebRTC offer/answer exchange for browser-to-browser calls
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId: jwtTenantId, userId } = await requireModuleAccess(request, 'crm')
+    const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
 
     const body = await request.json()
     const { type, sdp, callId } = body

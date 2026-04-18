@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams, usePathname } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 
@@ -14,7 +14,7 @@ export default function TenantDashboardCatchAll() {
   const { tenant } = useAuthStore()
 
   const tenantIdFromUrl = params?.tenantId as string | undefined
-  const path = (params?.path as string[]) || []
+  const path = useMemo(() => (params?.path as string[]) || [], [params?.path])
 
   useEffect(() => {
     // Verify tenant matches

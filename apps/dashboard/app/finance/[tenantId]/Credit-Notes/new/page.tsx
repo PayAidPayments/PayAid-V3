@@ -46,7 +46,7 @@ export default function NewCreditNotePage() {
     []
   )
   const { data: contactsData } = useContacts({ limit: 1000 })
-  const contacts = contactsData?.contacts || []
+  const contacts = useMemo(() => contactsData?.contacts ?? [], [contactsData?.contacts])
 
   const [formData, setFormData] = useState({
     invoiceId: '',
@@ -93,6 +93,11 @@ export default function NewCreditNotePage() {
     }
   }, [formData.customerId, contacts])
 
+  const itemCalculationSignature = useMemo(
+    () => items.map((i) => `${i.quantity}-${i.rate}-${i.gstRate}`).join(','),
+    [items]
+  )
+
   // Calculate item totals
   useEffect(() => {
     setItems((prevItems) =>
@@ -102,7 +107,7 @@ export default function NewCreditNotePage() {
         return { ...item, amount, taxAmount }
       })
     )
-  }, [items.map((i) => `${i.quantity}-${i.rate}-${i.gstRate}`).join(',')])
+  }, [itemCalculationSignature])
 
   const subtotal = items.reduce((sum, item) => sum + item.amount, 0)
   const tax = items.reduce((sum, item) => sum + item.taxAmount, 0)

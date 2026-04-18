@@ -8,12 +8,6 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-// Deployment stability override:
-// Vercel repeatedly stalls in "Collecting page data" for this app.
-// Force runtime rendering globally to avoid build-time static data collection.
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 export const metadata: Metadata = {
   title: "PayAid V3 - Business Operating System",
   description: "All-in-one business operating system for Indian startups and SMBs",

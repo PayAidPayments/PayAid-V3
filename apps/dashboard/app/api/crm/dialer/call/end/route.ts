@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { resolveCrmRequestTenantId } from '@/lib/crm/resolve-crm-request-tenant'
 import { z } from 'zod'
 
 const endCallSchema = z.object({
@@ -12,7 +13,8 @@ const endCallSchema = z.object({
 // POST /api/crm/dialer/call/end - End a call and record outcome
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId: jwtTenantId, userId } = await requireModuleAccess(request, 'crm')
+    const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
 
     const body = await request.json()
     const validated = endCallSchema.parse(body)
