@@ -62,6 +62,8 @@ next-env.d.ts
 !/prisma/migrations/20260419120000_crm_config_lead_routing/migration.sql
 !/prisma/migrations/20260420120000_idx_deal_tenant_created_desc/
 !/prisma/migrations/20260420120000_idx_deal_tenant_created_desc/migration.sql
+!/prisma/migrations/20260420130000_idx_task_tenant_priority_due/
+!/prisma/migrations/20260420130000_idx_task_tenant_priority_due/migration.sql
 
 # separate module repositories (already in their own repos)
 /repositories.vercel

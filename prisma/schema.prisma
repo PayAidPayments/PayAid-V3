@@ -1242,6 +1242,8 @@ model Task {
   @@index([assignedToId])
   @@index([contactId], name: "idx_task_contact_fk")
   @@index([tenantId, status, dueDate], name: "idx_task_tenant_status_due")
+  /// List API: WHERE tenantId = ? ORDER BY priority DESC, dueDate ASC (CRM task list)
+  @@index([tenantId, priority, dueDate], name: "idx_task_tenant_priority_due")
 }
 
 model TaskTemplate {

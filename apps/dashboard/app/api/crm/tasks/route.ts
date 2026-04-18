@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
+import { prismaRead } from '@/lib/db/prisma-read'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { resolveCrmRequestTenantId } from '@/lib/crm/resolve-crm-request-tenant'
 import { buildTasksListWhere, utcDayBounds } from '@/lib/crm/tasks-list-where'
@@ -58,16 +59,16 @@ async function fetchTaskListPayload(
   const take = Math.max(1, Math.min(limit, 1000))
   try {
     const [tasks, total, openCount, overdueCount, completedTodayCount] = await Promise.all([
-      prisma.task.findMany({
+      prismaRead.task.findMany({
         where,
         skip,
         take,
         orderBy: [{ priority: 'desc' as const }, { dueDate: 'asc' as const }],
         include: taskInclude,
       }),
-      prisma.task.count({ where }),
+      prismaRead.task.count({ where }),
       wantStats
-        ? prisma.task.count({
+        ? prismaRead.task.count({
             where: {
               tenantId,
               NOT: { status: { in: ['completed', 'cancelled'] } },
@@ -77,7 +78,7 @@ async function fetchTaskListPayload(
       wantStats
         ? (() => {
             const { start } = utcDayBounds()
-            return prisma.task.count({
+            return prismaRead.task.count({
               where: {
                 tenantId,
                 NOT: { status: { in: ['completed', 'cancelled'] } },
@@ -89,7 +90,7 @@ async function fetchTaskListPayload(
       wantStats
         ? (() => {
             const { start, end } = utcDayBounds()
-            return prisma.task.count({
+            return prismaRead.task.count({
               where: {
                 tenantId,
                 status: 'completed',
@@ -103,14 +104,14 @@ async function fetchTaskListPayload(
   } catch (primaryError) {
     console.warn('[CRM API] Primary task query failed, using fallback list payload:', primaryError)
     const [rawTasks, total] = await Promise.all([
-      prisma.task.findMany({
+      prismaRead.task.findMany({
         where,
         skip,
         take,
         orderBy: [{ updatedAt: 'desc' as const }],
         select: taskFallbackSelect,
       }),
-      prisma.task.count({ where }),
+      prismaRead.task.count({ where }),
     ])
 
     const contactIds = Array.from(
@@ -122,13 +123,13 @@ async function fetchTaskListPayload(
 
     const [contacts, assignedUsers] = await Promise.all([
       contactIds.length
-        ? prisma.contact.findMany({
+        ? prismaRead.contact.findMany({
             where: { tenantId, id: { in: contactIds } },
             select: { id: true, name: true, email: true },
           })
         : Promise.resolve([]),
       assignedUserIds.length
-        ? prisma.user.findMany({
+        ? prismaRead.user.findMany({
             where: { tenantId, id: { in: assignedUserIds } },
             select: { id: true, name: true, email: true },
           })
