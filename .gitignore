@@ -58,6 +58,8 @@ next-env.d.ts
 !/prisma/migrations/20260418120000_add_inbound_orchestration_log/migration.sql
 !/prisma/migrations/20260418210000_add_workflow_execution_reply_fields/
 !/prisma/migrations/20260418210000_add_workflow_execution_reply_fields/migration.sql
+!/prisma/migrations/20260419120000_crm_config_lead_routing/
+!/prisma/migrations/20260419120000_crm_config_lead_routing/migration.sql
 
 # separate module repositories (already in their own repos)
 /repositories.vercel

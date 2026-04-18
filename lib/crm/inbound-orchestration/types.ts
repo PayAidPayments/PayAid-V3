@@ -72,6 +72,8 @@ export interface ProcessInboundLeadInput {
   touchLastContactedAt?: boolean
   /** When true, skips writing to `InboundOrchestrationLog` (bulk jobs, tests). */
   skipExecutionLogWrite?: boolean
+  /** When true, skips CRMConfig-based auto-assignment (bulk import, marketing CSV). */
+  skipLeadRouting?: boolean
 }
 
 export interface ProcessInboundLeadError {

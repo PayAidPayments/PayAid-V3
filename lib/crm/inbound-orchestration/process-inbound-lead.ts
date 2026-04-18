@@ -16,6 +16,7 @@ import {
   normalizeInboundContactFields,
   normalizeSourceAttribution,
 } from './source-normalize'
+import { loadLeadRoutingConfig, resolveInboundSalesRepAssignment } from '@/lib/crm/lead-routing'
 
 function pushLog(
   log: InboundExecutionLogEntry[],
@@ -231,14 +232,53 @@ export async function processInboundLead(
   const score = computeInboundLeadScoreV1(contact, normalizedSource.rawMetadata)
   pushLog(executionLog, 'lead.scored', { score })
 
-  const assignedToId =
-    contact.assignedToId !== undefined && contact.assignedToId !== null && contact.assignedToId !== ''
-      ? contact.assignedToId
+  let assignedToId: string | null =
+    contact.assignedToId !== undefined &&
+    contact.assignedToId !== null &&
+    String(contact.assignedToId).trim() !== ''
+      ? String(contact.assignedToId).trim()
       : dup?.contact.assignedToId ?? null
-  pushLog(executionLog, 'lead.assigned', {
-    explicit: Boolean(contact.assignedToId),
-    assignedToId: assignedToId ?? undefined,
-  })
+
+  if (!assignedToId && input.skipLeadRouting !== true) {
+    const routingCfg = await loadLeadRoutingConfig(input.tenantId)
+    const routed = await resolveInboundSalesRepAssignment(routingCfg, {
+      tenantId: input.tenantId,
+      accountId,
+      excludeContactId: dup?.contact.id ?? null,
+      sourceChannel: normalizedSource.sourceChannel,
+      name: contact.name,
+      company: contact.company ?? null,
+      city: contact.city ?? null,
+      state: contact.state ?? null,
+      postalCode: contact.postalCode ?? null,
+      leadScore: score,
+    })
+    if (routed.salesRepId) {
+      assignedToId = routed.salesRepId
+      pushLog(executionLog, 'lead.assigned', {
+        explicit: false,
+        assignedToId,
+        routingReason: routed.reason,
+        ...(routed.detail ?? {}),
+      })
+    } else {
+      pushLog(executionLog, 'lead.assigned', {
+        explicit: false,
+        assignedToId: undefined,
+        routingReason: routed.reason,
+      })
+    }
+  } else {
+    pushLog(executionLog, 'lead.assigned', {
+      explicit: Boolean(
+        contact.assignedToId !== undefined &&
+          contact.assignedToId !== null &&
+          String(contact.assignedToId).trim() !== ''
+      ),
+      assignedToId: assignedToId ?? undefined,
+      skippedRouting: input.skipLeadRouting === true,
+    })
+  }
 
   const sourceData = buildPayaidSourcePayload(normalizedSource, dup?.contact.sourceData)
 
@@ -277,7 +317,7 @@ export async function processInboundLead(
         source: legacySource || dup.contact.source,
         sourceData: sourceData as Prisma.InputJsonValue,
         accountId: accountId,
-        assignedToId: assignedToId ?? dup.contact.assignedToId,
+        assignedToId: assignedToId ?? dup.contact.assignedToId ?? null,
         leadScore: score,
         scoreUpdatedAt: new Date(),
         tags,
