@@ -26,7 +26,7 @@ export function getCRMTopBarItems(tenantId: string): CRMTopBarItem[] {
     { name: 'Activities', href: `${base}/Activities` },
     { name: 'Tasks', href: `${base}/Tasks` },
     { name: 'CPQ', href: `${base}/CPQ` },
-    { name: 'Automation', href: `${base}/SalesAutomation` },
+    { name: 'Automation', href: `${base}/Automation` },
     { name: 'Revenue IQ', href: `${base}/Revenue-Intelligence` },
     { name: 'Dialer', href: `${base}/Dialer` },
   ]

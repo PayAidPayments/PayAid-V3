@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
+import {
+  INBOUND_ORCHESTRATION_SYSTEM_USER_ID,
+  processInboundLead,
+} from '@/lib/crm/inbound-orchestration'
 
 const chatMessageSchema = z.object({
   message: z.string().min(1),
@@ -214,27 +218,39 @@ Be friendly, concise, and helpful. If you don't know the answer, politely ask fo
 
       if (!existingContact && (emailMatch || phoneMatch || nameMatch)) {
         try {
-          // Create contact in CRM
-          const contact = await prisma.contact.create({
-            data: {
-              tenantId: chatbot.tenantId,
-              name: nameMatch || 'Website Visitor',
-              email: emailMatch ? emailMatch[0] : undefined,
-              phone: phoneMatch ? phoneMatch[0] : undefined,
-              company: companyMatch || undefined,
-              type: 'lead',
-              source: 'website',
-              sourceData: {
-                chatbotId: chatbot.id,
-                sessionId,
+          const inbound = await processInboundLead({
+            tenantId: chatbot.tenantId,
+            actorUserId: INBOUND_ORCHESTRATION_SYSTEM_USER_ID,
+            dedupePolicy: 'merge_existing',
+            source: {
+              sourceChannel: 'website_chatbot',
+              sourceSubchannel: chatbot.id,
+              sourceRef: sessionId,
+              capturedBy: INBOUND_ORCHESTRATION_SYSTEM_USER_ID,
+              rawMetadata: {
                 visitorId,
+                chatbotId: chatbot.id,
                 website: chatbot.website?.domain || chatbot.website?.subdomain || undefined,
-              } as any,
+              },
+            },
+            legacySourceLabel: 'website',
+            contact: {
+              name: nameMatch || 'Website Visitor',
+              email: emailMatch ? emailMatch[0] : null,
+              phone: phoneMatch ? phoneMatch[0] : null,
+              company: companyMatch || null,
+              type: 'lead',
+              stage: 'prospect',
+              status: 'active',
               attributionChannel: 'organic',
             },
           })
 
-          contactId = contact.id
+          if (!inbound.ok || !inbound.contact.id) {
+            throw new Error(inbound.error?.message || 'Inbound orchestration failed')
+          }
+
+          contactId = inbound.contact.id
 
           // Update conversation with contact ID
           await prisma.chatbotConversation.update({

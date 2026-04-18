@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
+import {
+  INBOUND_ORCHESTRATION_SYSTEM_USER_ID,
+  processInboundLead,
+} from '@/lib/crm/inbound-orchestration'
 
 const logLeadSchema = z.object({
   visitorId: z.string(),
@@ -37,47 +41,47 @@ export async function POST(
       )
     }
 
-    // Check if contact already exists
-    let contact = null
-    if (validated.email) {
-      contact = await prisma.contact.findFirst({
-        where: {
-          tenantId: chatbot.tenantId,
-          email: validated.email,
+    const inbound = await processInboundLead({
+      tenantId: chatbot.tenantId,
+      actorUserId: INBOUND_ORCHESTRATION_SYSTEM_USER_ID,
+      dedupePolicy: 'merge_existing',
+      source: {
+        sourceChannel: 'website_chatbot',
+        sourceSubchannel: chatbot.id,
+        sourceRef: validated.sessionId,
+        capturedBy: INBOUND_ORCHESTRATION_SYSTEM_USER_ID,
+        rawMetadata: {
+          visitorId: validated.visitorId,
+          chatbotId: chatbot.id,
+          ...(validated.metadata || {}),
         },
-      })
+      },
+      legacySourceLabel: 'website',
+      contact: {
+        name: validated.name || 'Website Visitor',
+        email: validated.email ?? null,
+        phone: validated.phone ?? null,
+        company: validated.company ?? null,
+        type: 'lead',
+        stage: 'prospect',
+        status: 'active',
+        notes: validated.message ?? undefined,
+        attributionChannel: 'organic',
+      },
+    })
+
+    if (!inbound.ok || !inbound.contact.id) {
+      return NextResponse.json(
+        { error: inbound.error?.message || 'Failed to log lead to CRM' },
+        { status: inbound.error?.code === 'CONTACT_LIMIT' ? 403 : 500 }
+      )
     }
 
-    // Create or update contact
+    const contact = await prisma.contact.findFirst({
+      where: { id: inbound.contact.id, tenantId: chatbot.tenantId },
+    })
     if (!contact) {
-      contact = await prisma.contact.create({
-        data: {
-          tenantId: chatbot.tenantId,
-          name: validated.name || 'Website Visitor',
-          email: validated.email,
-          phone: validated.phone,
-          company: validated.company,
-          type: 'lead',
-          source: 'website',
-          sourceData: {
-            chatbotId: chatbot.id,
-            sessionId: validated.sessionId,
-            visitorId: validated.visitorId,
-            metadata: validated.metadata || {},
-          } as any,
-          attributionChannel: 'organic',
-        },
-      })
-    } else {
-      // Update existing contact with new info
-      contact = await prisma.contact.update({
-        where: { id: contact.id },
-        data: {
-          name: validated.name || contact.name,
-          phone: validated.phone || contact.phone,
-          company: validated.company || contact.company,
-        },
-      })
+      return NextResponse.json({ error: 'Contact not found after ingest' }, { status: 500 })
     }
 
     // Create deal if contact is qualified

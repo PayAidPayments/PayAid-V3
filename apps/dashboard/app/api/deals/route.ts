@@ -7,6 +7,7 @@ import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
 import { getTimePeriodBounds, type TimePeriod } from '@/lib/utils/crm-filters'
 import { z } from 'zod'
 import { dbOverloadResponse, isTransientDbOverloadError } from '@/lib/api/db-overload'
+import { processInboundLead } from '@/lib/crm/inbound-orchestration'
 
 function isValidTimePeriod(t: string | null): t is TimePeriod {
   return t === 'month' || t === 'quarter' || t === 'financial-year' || t === 'year'
@@ -652,7 +653,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check CRM module license
-    const { tenantId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
     const body = await request.json()
     const validated = createDealSchema.parse(body)
@@ -679,39 +680,41 @@ export async function POST(request: NextRequest) {
 
       contactId = validated.contactId
     } else if (validated.contactName) {
-      // Auto-create contact from deal information
-      // First, check if contact already exists by email or phone
-      const existingContact = await prisma.contact.findFirst({
-        where: {
-          tenantId: tenantId,
-          OR: [
-            ...(validated.contactEmail ? [{ email: validated.contactEmail }] : []),
-            ...(validated.contactPhone ? [{ phone: validated.contactPhone }] : []),
-          ],
+      const inbound = await processInboundLead({
+        tenantId,
+        actorUserId: userId,
+        dedupePolicy: 'merge_existing',
+        source: {
+          sourceChannel: 'deal_wizard',
+          rawMetadata: { dealName: validated.name },
         },
+        contact: {
+          name: validated.contactName,
+          email: validated.contactEmail || null,
+          phone: validated.contactPhone || null,
+          company: validated.contactCompany || null,
+          type: 'lead',
+          stage: 'prospect',
+          status: 'active',
+        },
+        legacySourceLabel: 'manual',
       })
 
-      if (existingContact) {
-        // Link to existing contact
-        contactId = existingContact.id
-      } else {
-        // Create new contact as prospect
-        const newContact = await prisma.contact.create({
-          data: {
-            name: validated.contactName,
-            email: validated.contactEmail || null,
-            phone: validated.contactPhone || null,
-            company: validated.contactCompany || null,
-            tenantId: tenantId,
-            type: 'lead', // Keep for backward compat
-            stage: 'prospect', // New simplified stage
-            status: 'active',
-            source: 'manual',
-          },
-        })
-        contactId = newContact.id
-        createdContact = true
+      if (!inbound.ok || inbound.error) {
+        if (inbound.error?.code === 'CONTACT_LIMIT') {
+          return NextResponse.json(
+            { error: 'Contact limit reached. Please upgrade your plan.' },
+            { status: 403 }
+          )
+        }
+        return NextResponse.json(
+          { error: inbound.error?.message || 'Failed to create or update contact for deal' },
+          { status: 500 }
+        )
       }
+
+      contactId = inbound.contact.id
+      createdContact = inbound.created
     }
 
     // Create deal

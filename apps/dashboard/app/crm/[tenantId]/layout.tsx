@@ -31,6 +31,8 @@ export default function CRMTenantLayout({
     router.prefetch(`/crm/${tenantId}/Deals/`)
     router.prefetch(`/crm/${tenantId}/Activities/`)
     router.prefetch(`/crm/${tenantId}/Tasks/`)
+    router.prefetch(`/crm/${tenantId}/Automation/`)
+    router.prefetch(`/crm/${tenantId}/SalesAutomation/`)
   }, [tenantId, router])
 
   const topBarItems = tenantId && tenantId.trim() ? getCRMTopBarItems(tenantId) : []

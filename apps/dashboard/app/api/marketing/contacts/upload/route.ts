@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { processInboundLead } from '@/lib/crm/inbound-orchestration'
 
 // POST /api/marketing/contacts/upload - Upload and parse CSV file
 export async function POST(request: NextRequest) {
   try {
     // Check CRM module license (marketing contacts are part of CRM)
-    const { tenantId } = await requireModuleAccess(request, 'marketing')
+    const { tenantId, userId } = await requireModuleAccess(request, 'marketing')
 
     const formData = await request.formData()
     const file = formData.get('file') as File
@@ -81,48 +81,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Find or create contacts
     const contactIds: string[] = []
     const skipped: string[] = []
+    const skipExecutionLogWrite = contacts.length > 80
 
     for (const contactData of contacts) {
       try {
-        // Check if contact exists
-        let contact = null
-        
-        if (contactData.email) {
-          contact = await prisma.contact.findFirst({
-            where: {
-              tenantId: tenantId,
-              email: contactData.email,
-            },
-          })
-        } else if (contactData.phone) {
-          contact = await prisma.contact.findFirst({
-            where: {
-              tenantId: tenantId,
-              phone: contactData.phone,
-            },
-          })
+        const inbound = await processInboundLead({
+          tenantId,
+          actorUserId: userId,
+          dedupePolicy: 'return_existing_without_update',
+          source: {
+            sourceChannel: 'marketing_csv_upload',
+            rawMetadata: { file: file.name },
+          },
+          legacySourceLabel: 'marketing_upload',
+          contact: {
+            name: contactData.name || 'Unknown',
+            email: contactData.email || null,
+            phone: contactData.phone || null,
+            type: 'lead',
+            stage: 'prospect',
+            status: 'active',
+          },
+          skipWorkflows: true,
+          skipExecutionLogWrite,
+        })
+
+        if (!inbound.ok) {
+          skipped.push(contactData.email || contactData.phone || 'Unknown')
+          continue
         }
 
-        if (contact) {
-          contactIds.push(contact.id)
-        } else {
-          // Create new contact
-          const newContact = await prisma.contact.create({
-            data: {
-              tenantId: tenantId,
-              name: contactData.name || 'Unknown',
-              email: contactData.email || null,
-              phone: contactData.phone || null,
-              type: 'lead',
-              status: 'active',
-            },
-          })
-          contactIds.push(newContact.id)
-        }
-      } catch (error) {
+        contactIds.push(inbound.contact.id)
+      } catch {
         skipped.push(contactData.email || contactData.phone || 'Unknown')
       }
     }

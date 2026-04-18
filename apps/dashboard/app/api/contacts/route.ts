@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { prismaRead } from '@/lib/db/prisma-read'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
-import { checkTenantLimits } from '@/lib/middleware/tenant'
 import { z } from 'zod'
 import { multiLayerCache } from '@/lib/cache/multi-layer'
-import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
-import { logCrmAudit } from '@/lib/audit-log-crm'
+import { processInboundLead } from '@/lib/crm/inbound-orchestration'
 import { resolveTenantFromParam } from '@/lib/tenant/resolve-tenant'
 import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 import { dbOverloadResponse, isTransientDbOverloadError } from '@/lib/api/db-overload'
@@ -459,93 +457,77 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check tenant limits
-    const canCreate = await checkTenantLimits(tenantId, 'contacts')
-    if (!canCreate) {
+    const stage = validated.stage || (validated.type === 'lead' ? 'prospect' : validated.type === 'customer' ? 'customer' : 'contact')
+
+    const inbound = await processInboundLead({
+      tenantId,
+      actorUserId: userId,
+      dedupePolicy: 'reject_duplicate',
+      source: {
+        sourceChannel: 'crm_manual',
+        sourceSubchannel: 'api_contacts',
+        capturedBy: userId,
+        rawMetadata: { tags: validated.tags },
+      },
+      contact: {
+        name: validated.name,
+        email: validated.email,
+        phone: validated.phone,
+        company: validated.company,
+        type: validated.type,
+        stage,
+        status: validated.status,
+        address: validated.address,
+        city: validated.city,
+        state: validated.state,
+        postalCode: validated.postalCode,
+        country: validated.country,
+        tags: validated.tags,
+        notes: validated.notes,
+        internalNotes: validated.internalNotes,
+      },
+      legacySourceLabel: validated.source ?? 'crm_manual',
+    })
+
+    if (!inbound.ok && inbound.error?.code === 'CONTACT_LIMIT') {
       return NextResponse.json(
         { error: 'Contact limit reached. Please upgrade your plan.' },
         { status: 403 }
       )
     }
-
-    // Duplicate detection: email and/or phone within tenant
-    if (validated.email) {
-      const existingByEmail = await prisma.contact.findFirst({
-        where: {
-          tenantId: tenantId,
-          email: validated.email,
+    if (!inbound.ok && inbound.error?.code === 'DUPLICATE_EMAIL') {
+      return NextResponse.json(
+        {
+          error: inbound.error.message,
+          code: 'DUPLICATE_EMAIL',
+          existingId: inbound.error.existingId,
         },
-        select: { id: true, name: true },
-      })
-      if (existingByEmail) {
-        return NextResponse.json(
-          { error: 'A contact with this email already exists', code: 'DUPLICATE_EMAIL', existingId: existingByEmail.id },
-          { status: 409 }
-        )
-      }
+        { status: 409 }
+      )
     }
-    if (validated.phone?.trim()) {
-      const existingByPhone = await prisma.contact.findFirst({
-        where: {
-          tenantId: tenantId,
-          phone: validated.phone.trim(),
+    if (!inbound.ok && inbound.error?.code === 'DUPLICATE_PHONE') {
+      return NextResponse.json(
+        {
+          error: inbound.error.message,
+          code: 'DUPLICATE_PHONE',
+          existingId: inbound.error.existingId,
         },
-        select: { id: true, name: true },
-      })
-      if (existingByPhone) {
-        return NextResponse.json(
-          { error: 'A contact with this phone number already exists', code: 'DUPLICATE_PHONE', existingId: existingByPhone.id },
-          { status: 409 }
-        )
-      }
+        { status: 409 }
+      )
+    }
+    if (!inbound.ok) {
+      return NextResponse.json(
+        { error: inbound.error?.message || 'Failed to create contact' },
+        { status: 500 }
+      )
     }
 
-    // Determine stage from type if not provided
-    const stage = validated.stage || (validated.type === 'lead' ? 'prospect' : validated.type === 'customer' ? 'customer' : 'contact')
-
-    const contact = await prisma.contact.create({
-      data: {
-        ...validated,
-        stage: stage, // Set stage based on type or provided value
-        tenantId: tenantId,
-      } as any,
+    const contact = await prisma.contact.findFirst({
+      where: { id: inbound.contact.id, tenantId },
     })
-
-    await logCrmAudit({
-      tenantId,
-      userId,
-      entityType: 'contact',
-      entityId: contact.id,
-      action: 'create',
-      changeSummary: `Created contact: ${contact.name}`,
-      afterSnapshot: { name: contact.name, email: contact.email, stage: contact.stage },
-    })
-
-    // Invalidate cache (multi-layer: clears both L1 and L2)
-    await multiLayerCache.deletePattern(`contacts:${tenantId}:*`).catch(() => {
-      // Ignore cache errors - not critical
-    })
-    // Invalidate dashboard stats cache so the count updates immediately
-    await multiLayerCache.delete(`dashboard:stats:${tenantId}`).catch(() => {
-      // Ignore cache errors - not critical
-    })
-
-    // Trigger workflow automation (e.g. welcome email, create task)
-    triggerWorkflowsByEvent({
-      tenantId,
-      event: 'contact.created',
-      entity: 'contact',
-      entityId: contact.id,
-      data: {
-        contact: {
-          id: contact.id,
-          name: contact.name,
-          email: contact.email,
-          phone: contact.phone,
-          company: contact.company,
-        },
-      },
-    })
+    if (!contact) {
+      return NextResponse.json({ error: 'Contact not found after create' }, { status: 500 })
+    }
 
     if (idempotencyKey) {
       await markIdempotentRequest(tenantId, userId, `contact:create:${idempotencyKey}`, {

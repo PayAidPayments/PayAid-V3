@@ -93,6 +93,7 @@ model Tenant {
   chatbotConversations         ChatbotConversation[]
   checkoutPages                CheckoutPage[]
   contacts                     Contact[]
+  inboundOrchestrationLogs     InboundOrchestrationLog[]
   contractors                  Contractor[]
   customDashboards             CustomDashboard[]
   customFields                 CustomField[]
@@ -998,6 +999,7 @@ model Contact {
   quotes                Quote[]
   contracts             Contract[]
   customerInsights      CustomerInsight[]
+  inboundOrchestrationLogs InboundOrchestrationLog[]
 
   @@index([tenantId])
   @@index([accountId])
@@ -1008,6 +1010,29 @@ model Contact {
   // Performance indexes for 10,000+ users
   @@index([tenantId, status, createdAt(sort: Desc)], name: "idx_contact_tenant_status_created")
   @@index([tenantId, status], name: "idx_contact_list_covering") // Replaces unnamed duplicate
+}
+
+/// Append-only trace of inbound orchestration runs (CRM Automation execution logs).
+model InboundOrchestrationLog {
+  id             String   @id @default(cuid())
+  tenantId       String
+  contactId      String?
+  status         String
+  sourceChannel  String
+  dedupeAction   String?
+  leadScore      Float?
+  contactCreated Boolean  @default(false)
+  trace          Json
+  errorCode      String?
+  errorMessage   String?
+  actorUserId    String
+  createdAt      DateTime @default(now())
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact        Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([tenantId, sourceChannel])
+  @@index([contactId])
 }
 
 model Interaction {

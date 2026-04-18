@@ -4,6 +4,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { z } from 'zod'
 import { parseExcelToRows } from '@/lib/utils/parseExcel'
 import Papa from 'papaparse'
+import { processInboundLead } from '@/lib/crm/inbound-orchestration'
 
 const leadRowSchema = z.object({
   name: z.string().min(1),
@@ -18,7 +19,6 @@ const leadRowSchema = z.object({
 // POST /api/leads/import - Bulk import leads from CSV/XLSX
 export async function POST(request: NextRequest) {
   try {
-    // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
     const formData = await request.formData()
@@ -29,7 +29,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // Read file
     const fileName = file.name.toLowerCase()
     let rows: any[] = []
 
@@ -44,7 +43,6 @@ export async function POST(request: NextRequest) {
     } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
       const arrayBuffer = await file.arrayBuffer()
       const rawRows = await parseExcelToRows(arrayBuffer)
-      // Normalize headers (lowercase, trim)
       rows = rawRows.map((row: any) => {
         const normalized: any = {}
         for (const key in row) {
@@ -60,40 +58,26 @@ export async function POST(request: NextRequest) {
     }
 
     if (rows.length === 0) {
-      return NextResponse.json(
-        { error: 'File is empty or has no valid data' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'File is empty or has no valid data' }, { status: 400 })
     }
 
-    // Get or create lead source
     let leadSourceId = sourceId
     if (!leadSourceId) {
       const defaultSource = await prisma.leadSource.findFirst({
-        where: {
-          tenantId: tenantId,
-          name: 'Bulk Import',
-        },
+        where: { tenantId, name: 'Bulk Import' },
       })
-
       if (defaultSource) {
         leadSourceId = defaultSource.id
       } else {
         const newSource = await prisma.leadSource.create({
-          data: {
-            name: 'Bulk Import',
-            type: 'direct',
-            tenantId: tenantId,
-          },
+          data: { name: 'Bulk Import', type: 'direct', tenantId },
         })
         leadSourceId = newSource.id
       }
     }
 
-    // Validate and process rows
-    const leadsToCreate: any[] = []
+    const leadsToImport: Array<z.infer<typeof leadRowSchema> & { rowNumber: number }> = []
     const errors: Array<{ row: number; error: string }> = []
-    const skipped: number[] = []
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]
@@ -107,49 +91,7 @@ export async function POST(request: NextRequest) {
           value: row.value || row.amount || row['deal value'] || undefined,
           notes: row.notes || row.description || '',
         })
-
-        // Check for duplicates (by email or phone)
-        if (validated.email || validated.phone) {
-          const existing = await prisma.contact.findFirst({
-            where: {
-              tenantId: tenantId,
-              OR: [
-                validated.email ? { email: validated.email } : {},
-                validated.phone ? { phone: validated.phone } : {},
-              ],
-            },
-          })
-
-          if (existing) {
-            skipped.push(i + 1)
-            continue
-          }
-        }
-
-        leadsToCreate.push({
-          name: validated.name,
-          email: validated.email || null,
-          phone: validated.phone || null,
-          company: validated.company || null,
-          type: 'lead',
-          status: 'active',
-          source: validated.source || 'Bulk Import',
-          notes: validated.notes || null,
-          tenantId: tenantId,
-          // Create deal if value provided
-          deals: validated.value
-            ? {
-                create: {
-                  title: `Deal for ${validated.name}`,
-                  valueInr: validated.value,
-                  stage: 'prospecting',
-                  probability: 10,
-                  tenantId: tenantId,
-                  leadSourceId,
-                },
-              }
-            : undefined,
-        })
+        leadsToImport.push({ ...validated, rowNumber: i + 1 })
       } catch (error) {
         if (error instanceof z.ZodError) {
           errors.push({
@@ -162,25 +104,72 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create leads in batches
-    const created = []
-    for (const leadData of leadsToCreate) {
+    const created: Array<{ id: string; name: string }> = []
+    let skipped = 0
+
+    const skipExecutionLogWrite = leadsToImport.length > 80
+
+    for (const row of leadsToImport) {
       try {
-        const { deals, ...contactData } = leadData
-        const contact = await prisma.contact.create({
-          data: {
-            ...contactData,
-            deals: deals,
+        const inbound = await processInboundLead({
+          tenantId,
+          actorUserId: userId,
+          dedupePolicy: 'reject_duplicate',
+          source: {
+            sourceChannel: 'bulk_import',
+            sourceSubchannel: 'leads_csv',
+            sourceRef: leadSourceId ?? undefined,
+            rawMetadata: { row: row.rowNumber, leadSourceId },
           },
-          include: {
-            deals: true,
+          contact: {
+            name: row.name,
+            email: row.email || null,
+            phone: row.phone || null,
+            company: row.company || null,
+            type: 'lead',
+            stage: 'prospect',
+            status: 'active',
+            notes: row.notes || null,
           },
+          legacySourceLabel: row.source || 'Bulk Import',
+          skipWorkflows: true,
+          skipExecutionLogWrite,
         })
-        created.push(contact)
+
+        if (!inbound.ok && inbound.error?.code === 'DUPLICATE_EMAIL') {
+          skipped++
+          continue
+        }
+        if (!inbound.ok && inbound.error?.code === 'DUPLICATE_PHONE') {
+          skipped++
+          continue
+        }
+        if (!inbound.ok) {
+          errors.push({
+            row: row.rowNumber,
+            error: inbound.error?.message || 'Failed to import lead',
+          })
+          continue
+        }
+
+        if (row.value != null && row.value > 0) {
+          await prisma.deal.create({
+            data: {
+              name: `Deal for ${row.name}`,
+              value: row.value,
+              probability: 10,
+              stage: 'lead',
+              tenantId,
+              contactId: inbound.contact.id,
+            },
+          })
+        }
+
+        created.push({ id: inbound.contact.id, name: inbound.contact.name })
       } catch (error: any) {
         errors.push({
-          row: leadsToCreate.indexOf(leadData) + 1,
-          error: error.message || 'Failed to create lead',
+          row: row.rowNumber,
+          error: error?.message || 'Failed to create lead',
         })
       }
     }
@@ -188,15 +177,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       imported: created.length,
-      skipped: skipped.length,
+      skipped,
       errors: errors.length > 0 ? errors : undefined,
       totalRows: rows.length,
     })
   } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Bulk import leads error:', error)
-    return NextResponse.json(
-      { error: 'Failed to import leads' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to import leads' }, { status: 500 })
   }
 }

@@ -6,7 +6,10 @@
 import { prisma } from '@/lib/db/prisma'
 import { FormRendererService } from './form-renderer'
 import { FormBuilderService } from './form-builder'
-import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
+import {
+  INBOUND_ORCHESTRATION_SYSTEM_USER_ID,
+  processInboundLead,
+} from '@/lib/crm/inbound-orchestration'
 
 export interface SubmissionData {
   [fieldId: string]: any
@@ -66,7 +69,7 @@ export class FormSubmissionProcessor {
     // Auto-create contact if enabled
     let contactId: string | null = null
     if (settings.autoCreateContact && contactData) {
-      const { contact, isNew } = await this.createContactFromSubmission(
+      const { contact } = await this.createContactFromSubmission(
         form.tenantId,
         contactData,
         form.id,
@@ -80,7 +83,6 @@ export class FormSubmissionProcessor {
         data: { contactId, status: 'processed' },
       })
 
-      this.triggerAutomationForContact(form.tenantId, contact, isNew, form.id, submission.id)
     }
 
     return {
@@ -160,101 +162,54 @@ export class FormSubmissionProcessor {
     },
     formId: string,
     submissionId: string
-  ): Promise<{ contact: { id: string; name: string; email: string | null; phone: string | null; company: string | null }; isNew: boolean }> {
-    // Check if contact already exists (by email or phone)
-    let existingContact = null
-
-    if (contactData.email) {
-      existingContact = await prisma.contact.findFirst({
-        where: {
-          tenantId,
-          email: contactData.email,
-        },
-      })
-    }
-
-    if (!existingContact && contactData.phone) {
-      existingContact = await prisma.contact.findFirst({
-        where: {
-          tenantId,
-          phone: contactData.phone,
-        },
-      })
-    }
-
-    if (existingContact) {
-      // Update existing contact with new data
-      const contact = await prisma.contact.update({
-        where: { id: existingContact.id },
-        data: {
-          ...(contactData.name && !existingContact.name && { name: contactData.name }),
-          ...(contactData.email && !existingContact.email && { email: contactData.email }),
-          ...(contactData.phone && !existingContact.phone && { phone: contactData.phone }),
-          ...(contactData.company && !existingContact.company && { company: contactData.company }),
-          source: contactData.source || existingContact.source,
-          sourceId: formId,
-          sourceData: {
-            ...((existingContact.sourceData as any) || {}),
-            ...(contactData.sourceData || {}),
-            lastFormSubmission: submissionId,
-          },
-          lastContactedAt: new Date(),
-        },
-        select: { id: true, name: true, email: true, phone: true, company: true },
-      })
-      return { contact, isNew: false }
-    }
-
-    // Create new contact
-    const contact = await prisma.contact.create({
-      data: {
-        tenantId,
-        name: contactData.name || 'Unknown',
-        email: contactData.email,
-        phone: contactData.phone,
-        company: contactData.company,
-        stage: 'prospect',
-        source: contactData.source || 'web_form',
-        sourceId: formId,
-        sourceData: {
-          ...(contactData.sourceData || {}),
-          firstFormSubmission: submissionId,
-        },
-        lastContactedAt: new Date(),
-      },
-      select: { id: true, name: true, email: true, phone: true, company: true },
-    })
-    return { contact, isNew: true }
-  }
-
-  /**
-   * Fire workflow + webhook handlers (same contract as POST /api/contacts).
-   */
-  private static triggerAutomationForContact(
-    tenantId: string,
-    contact: { id: string; name: string; email: string | null; phone: string | null; company: string | null },
-    isNew: boolean,
-    formId: string,
-    submissionId: string
-  ): void {
-    triggerWorkflowsByEvent({
+  ): Promise<{ contact: { id: string; name: string; email: string | null; phone: string | null; company: string | null } }> {
+    const inbound = await processInboundLead({
       tenantId,
-      event: isNew ? 'contact.created' : 'contact.updated',
-      entity: 'contact',
-      entityId: contact.id,
-      data: {
-        contact: {
-          id: contact.id,
-          name: contact.name,
-          email: contact.email,
-          phone: contact.phone,
-          company: contact.company,
+      actorUserId: INBOUND_ORCHESTRATION_SYSTEM_USER_ID,
+      dedupePolicy: 'merge_existing',
+      mergeExistingFields: 'fill_empty_only',
+      source: {
+        sourceChannel: 'web_form',
+        sourceAsset: formId,
+        sourceRef: submissionId,
+        capturedBy: INBOUND_ORCHESTRATION_SYSTEM_USER_ID,
+        rawMetadata: {
+          ...(contactData.sourceData && typeof contactData.sourceData === 'object'
+            ? contactData.sourceData
+            : {}),
+          lastFormSubmission: submissionId,
         },
-        source: 'web_form',
-        formId,
-        submissionId,
       },
+      legacySourceLabel: contactData.source || 'web_form',
+      contact: {
+        name: contactData.name || 'Unknown',
+        email: contactData.email ?? null,
+        phone: contactData.phone ?? null,
+        company: contactData.company ?? null,
+        type: 'lead',
+        stage: 'prospect',
+        status: 'active',
+      },
+      touchLastContactedAt: true,
     })
+
+    if (!inbound.ok || inbound.error) {
+      if (inbound.error?.code === 'CONTACT_LIMIT') {
+        throw new Error('Contact limit reached. Please upgrade your plan.')
+      }
+      throw new Error(inbound.error?.message || 'Failed to create or update contact from form')
+    }
+
+    const contact = inbound.contact
+    return {
+      contact: {
+        id: contact.id,
+        name: contact.name,
+        email: contact.email,
+        phone: contact.phone,
+        company: contact.company,
+      },
+    }
   }
 
   /**
