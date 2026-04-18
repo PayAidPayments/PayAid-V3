@@ -89,6 +89,8 @@
     "verify:dashboard": "npm run test:m0 && npm run lint -w dashboard",
     "test:demo": "cross-env PLAYWRIGHT_NO_WEB_SERVER=1 playwright test tests/e2e.demo.spec.ts -c playwright.config.ts",
     "test:e2e:crm-audit": "cross-env PLAYWRIGHT_NO_WEB_SERVER=1 CRM_AUDIT_SKIP_PREFLIGHT=1 PLAYWRIGHT_BASE_URL=http://localhost:3000 playwright test -c playwright.crm-audit.config.ts",
+    "test:e2e:crm-day2-qa": "npm run verify:db && cross-env PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 PLAYWRIGHT_NO_WEB_SERVER=1 playwright test -c playwright.config.ts tests/e2e/crm-day2-qa-postgating.spec.ts --project chromium --workers=1 --reporter=list",
+    "test:e2e:cpq-workspace": "cross-env PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 PLAYWRIGHT_NO_WEB_SERVER=1 playwright test -c playwright.config.ts tests/e2e/crm-cpq-workspace.spec.ts --project chromium --reporter=list",
     "release:gate:smoke": "node scripts/run-release-gate-suite.mjs",
     "release:gate:crm-audit": "node scripts/run-crm-audit-gate.mjs",
     "test:e2e": "npm run verify:db && npm run fix:ui-scanner-spec && playwright test -c playwright.config.ts",

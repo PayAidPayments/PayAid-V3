@@ -61,6 +61,7 @@
 | 2026-04-15 | 25 | 139 | 94 | N/A | N/A | N/A | Pass (smoke, 401 path) | Phani | docs/CRM_GA_SOLO_T02_RUNTIME_EVIDENCE_2026-04-15.md |
 | 2026-04-16 | [ms] | [ms] | [ms] | [ms] | [ms] | [%] | [Pass/Fail] | [Name] | [URL/path] |
 | 2026-04-17 | 3271 | 3367 | 3466 | N/A | N/A | N/A | Fail (hosted steady-state after warmup `CRM_AUTH_WARMUP_ROUNDS=3`, `n=15`; p95 still above 300ms GA guardrail) | Phani | docs/evidence/closure/2026-04-17T04-42-19-970Z-crm-auth-baseline-run.md |
+| 2026-04-18 | 3218 | 2523 | 3787 | N/A | N/A | N/A | Fail (hosted `payaid-v3.vercel.app`, warmup 3, `n=15`, `stats=false` on deals/tasks sampler; deals p95 improved vs 2026-04-17 row; strict 300ms SLO still open) | Phani | docs/evidence/closure/2026-04-18T14-16-16-086Z-crm-auth-baseline-run.md |
 | 2026-04-20 | [ms] | [ms] | [ms] | [ms] | [ms] | [%] | [Pass/Fail] | [Name] | [URL/path] |
 | 2026-04-21 | [ms] | [ms] | [ms] | [ms] | [ms] | [%] | [Pass/Fail] | [Name] | [URL/path] |
 | 2026-04-22 | [ms] | [ms] | [ms] | [ms] | [ms] | [%] | [Pass/Fail] | [Name] | [URL/path] |
@@ -81,7 +82,7 @@
 - [x] Eng: GA-safe default for demo paths — auto-seed, manual seed/diagnosis UI, and API demo-tenant overrides gated behind `NEXT_PUBLIC_CRM_ALLOW_DEMO_SEED=1` (SOLO-T02).
 - [x] Eng: incremental sweep log updated (2026-04-16 — native CRM `/api/tasks`, Tasks placeholder copy noted) in `docs/CRM_GA_STUB_MOCK_SWEEP_FINDINGS_DAY1.md`; deeper Leads/CPQ/out-of-scope passes still optional.
 - [x] QA: signed-in **runbook** for Home / Deals / Contacts post-gating (`docs/CRM_GA_DAY2_QA_HOME_DEALS_CONTACTS.md`) — execute and record Pass/Fail when ready.
-- [ ] QA: run that runbook signed-in and record results (tables or findings doc).
+- [x] QA: run that runbook signed-in and record results (tables or findings doc). **2026-04-18:** automated smoke via `npm run test:e2e:crm-day2-qa` (`tests/e2e/crm-day2-qa-postgating.spec.ts`) + runbook tables updated; **manual follow-up** remains for deal/contact detail flows and Network-tab seed check (see runbook “Pending (manual)” rows).
 - [x] Product: **parity one-pager** for Day 2 gating (`docs/CRM_GA_DAY2_PRODUCT_PARITY_ONEPAGER.md`) — sign after QA.
 - [ ] Product: complete parity one-pager (decision + date) after QA run.
 
@@ -321,7 +322,7 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 | Queue item | Current state | Blocker type | Next action owner | Notes |
 |---|---|---|---|---|
 | Closure execution log | Active | None | Phani | Update `docs/CRM_GA_CLOSURE_EXECUTION_LOG.md` after each queue item |
-| Day 2 QA | Pending | Signed-in runtime | Phani | Execute `docs/CRM_GA_DAY2_QA_HOME_DEALS_CONTACTS.md` |
+| Day 2 QA | Partial | Automated smoke done; manual detail/seed checks | Phani | `npm run test:e2e:crm-day2-qa` + runbook; finish Pending (manual) rows |
 | Day 2 Product | Pending | Product signoff | Phani | Complete parity one-pager after Day 2 QA |
 | Day 3 QA | Pending | Signed-in runtime | Phani | Execute `docs/CRM_GA_SOLO_T03_QA_RUNBOOK.md` |
 | Day 3 Product | Pending | Product signoff | Phani | Complete Day 3 UAT one-pager after QA |

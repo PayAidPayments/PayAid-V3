@@ -15,7 +15,7 @@ Last updated: 2026-04-17
 
 | Queue # | Item | Status | Blocker | Evidence link | Last update | Notes |
 |---:|---|---|---|---|---|---|
-| 1 | Day 2 QA execution | Pending | Signed-in runtime pending | | 2026-04-15 | Run `docs/CRM_GA_DAY2_QA_HOME_DEALS_CONTACTS.md` |
+| 1 | Day 2 QA execution | Partial | Manual detail flows + Product parity still open | `docs/CRM_GA_DAY2_QA_HOME_DEALS_CONTACTS.md` + `tests/e2e/crm-day2-qa-postgating.spec.ts` | 2026-04-18 | Automated: Home / Deals / AllPeople load smoke **Pass**; manual: deal detail, contact detail, seed network check |
 | 2 | Day 2 Product signoff | Pending | Depends on #1 | | 2026-04-15 | Complete parity one-pager |
 | 3 | Day 3 QA execution | Pending | Signed-in runtime pending | | 2026-04-15 | Run `docs/CRM_GA_SOLO_T03_QA_RUNBOOK.md` |
 | 4 | Day 3 Product signoff | Pending | Depends on #3 | | 2026-04-15 | Complete Day 3 UAT one-pager |
@@ -38,6 +38,7 @@ Last updated: 2026-04-17
 | 2026-04-17 | Queue #13 and Queue #14 | Release-gate reruns still in progress (`route-health` retry failures observed; typecheck/lint and M2/M3 reruns need final closure snapshots in launch checklist) | Queue #13 timeout flake removed, Queue #14 auth/tasks runtime blocker removed | Complete Day 2-10 + SOLO-T11 execution queue and close remaining release-gate rows |
 | 2026-04-17 | No-404 / CI gate hardening | Day 2-10 + SOLO-T11 still pending manual runbook execution | Typecheck green (`npm run typecheck:dashboard`), lint green (`npm run lint -w dashboard`), M2 smoke clean exit (`forceExit`), route-health scripts pinned to `--project chromium` + transient `500` retry for `/crm/*` and `/home/*` | Run full `npm run test:e2e:route-health:serial` for complete matrix; execute launch checklist queue items 1-12 |
 | 2026-04-18 | Full serial route-health + deploy readiness doc | Queue 1–12 still **Pending** (GA product) | **`79 passed`**, exit `0`, `PLAYWRIGHT_NO_WEB_SERVER=1` + single dev server (~55m). Local auth baseline `docs/evidence/closure/2026-04-18T10-08-44-035Z-crm-auth-baseline-run.md`. Published `docs/DEPLOY_READINESS_2026-04-18.md` (engineering deploy **GO**, strict GA speed + manual queue **open**). | Execute launch checklist queue 1–12; hosted `collect:crm-auth-baseline` for SLO |
+| 2026-04-18 | Day 2 QA partial + hosted re-baseline | Queue 1 **Partial**; Day 2 Product row still open | Added `tests/e2e/crm-day2-qa-postgating.spec.ts` + `npm run test:e2e:crm-day2-qa` (requires `npm run dev -w dashboard`). Runbook tables updated. Hosted baseline `docs/evidence/closure/2026-04-18T14-16-16-086Z-crm-auth-baseline-run.md` (deals p95 improved vs 2026-04-17; SLO still fail). | Finish Day 2 manual rows; Product parity one-pager; Day 3+ queue |
 
 ## Blocker resolution commands (copy/paste)
 
