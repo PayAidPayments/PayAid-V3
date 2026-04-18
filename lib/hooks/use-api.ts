@@ -735,6 +735,10 @@ export function useTasks(params?: {
     },
     placeholderData: (previousData: any) => previousData,
     staleTime: 30_000,
+    // App-wide defaults set refetchOnMount: false; without this, returning from task
+    // detail after PATCH invalidation leaves stale list data until a full reload.
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 }
 
@@ -777,7 +781,7 @@ export function useCreateTask() {
       return response.json()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'], refetchType: 'all' })
     },
   })
 }
@@ -801,7 +805,7 @@ export function useUpdateTask() {
       return response.json()
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'], refetchType: 'all' })
       queryClient.invalidateQueries({ queryKey: ['task', variables.id] })
     },
   })
@@ -826,7 +830,7 @@ export function useDeleteTask() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'], refetchType: 'all' })
     },
   })
 }
@@ -851,7 +855,7 @@ export function useRemindTask() {
       return response.json()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'], refetchType: 'all' })
     },
   })
 }
@@ -877,7 +881,7 @@ export function useBulkCompleteTasks() {
       return response.json()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'], refetchType: 'all' })
     },
   })
 }
@@ -914,7 +918,7 @@ export function useCreateTaskFromTemplate() {
       return response.json()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'], refetchType: 'all' })
     },
   })
 }

@@ -12,7 +12,7 @@ import {
   useTaskTemplates,
   useCreateTaskFromTemplate,
 } from '@/lib/hooks/use-api'
-import { useQueryClient } from '@tanstack/react-query'
+import { useIsFetching, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -49,6 +49,7 @@ import {
   ChevronRight,
   ChevronDown,
   FileText,
+  RefreshCw,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
@@ -103,6 +104,7 @@ export default function CRMTasksPage() {
   const [quickFilter, setQuickFilter] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const queryClient = useQueryClient()
+  const tasksListFetchingCount = useIsFetching({ queryKey: ['tasks'] })
   const { data: templatesData } = useTaskTemplates()
   const createFromTemplate = useCreateTaskFromTemplate()
   const templates = templatesData?.templates ?? []
@@ -223,6 +225,10 @@ export default function CRMTasksPage() {
     setPage(1)
   }
 
+  const handleRefreshTasks = () => {
+    void queryClient.invalidateQueries({ queryKey: ['tasks'], refetchType: 'all' })
+  }
+
   if (isLoading && !data) {
     return <PageLoading message="Loading tasks..." fullScreen={false} />
   }
@@ -285,6 +291,21 @@ export default function CRMTasksPage() {
               </Button>
             ))}
           </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2 shrink-0"
+            onClick={handleRefreshTasks}
+            disabled={tasksListFetchingCount > 0}
+            title={tasksListFetchingCount > 0 ? 'Refreshing…' : 'Refresh tasks'}
+            aria-label={tasksListFetchingCount > 0 ? 'Refreshing tasks' : 'Refresh tasks'}
+          >
+            <RefreshCw
+              className={cn('h-4 w-4', tasksListFetchingCount > 0 && 'animate-spin')}
+            />
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
           <div className="flex items-center gap-1">
             <Link href={`/crm/${tenantId}/Tasks/new`}>
               <Button size="sm" className="gap-2">
@@ -644,7 +665,9 @@ export default function CRMTasksPage() {
               tenantId={tenantId}
               onComplete={(id) => updateTask.mutate({ id, data: { status: 'completed' } })}
               onRemind={(id) => remindTask.mutate(id)}
-              onStatusChange={() => queryClient.invalidateQueries({ queryKey: ['tasks'] })}
+              onStatusChange={() =>
+              queryClient.invalidateQueries({ queryKey: ['tasks'], refetchType: 'all' })
+            }
             />
           )}
         </main>
