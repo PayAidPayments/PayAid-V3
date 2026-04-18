@@ -18,6 +18,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { PageLoading } from '@/components/ui/loading'
 import type { LeadRoutingConfigV1 } from '@/lib/crm/lead-routing'
+import { coerceLeadRoutingConfigV1 } from '@/lib/crm/lead-routing/config-schema'
 import { Plus, Trash2 } from 'lucide-react'
 
 type SalesRepOption = { id: string; userId: string; name: string; email: string | null }
@@ -48,22 +49,39 @@ export default function LeadRoutingPage() {
         `/api/crm/lead-routing?tenantId=${encodeURIComponent(tenantId)}`,
         { headers: getAuthHeaders() }
       )
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setError(json?.error || 'Failed to load lead routing')
+      const text = await res.text()
+      let json: Record<string, unknown> = {}
+      try {
+        if (text) json = JSON.parse(text) as Record<string, unknown>
+      } catch {
+        setError(
+          `Lead routing API returned a non-JSON response (HTTP ${res.status}). Check that /api/crm/lead-routing is deployed.`
+        )
         return
       }
-      const cfg = json.config as LeadRoutingConfigV1
-      setSalesReps(json.salesReps || [])
+      if (!res.ok) {
+        const msg =
+          typeof json.error === 'string'
+            ? json.error
+            : `Failed to load lead routing (HTTP ${res.status})`
+        setError(msg)
+        return
+      }
+      const cfg = coerceLeadRoutingConfigV1(json.config)
+      const repsRaw = json.salesReps
+      const reps = Array.isArray(repsRaw)
+        ? (repsRaw as SalesRepOption[]).filter(
+            (r) => r && typeof r.id === 'string' && typeof r.userId === 'string'
+          )
+        : []
+      setSalesReps(reps)
       setEnabled(cfg.enabled)
       setPrimaryStrategy(cfg.primaryStrategy)
       setFallbackSalesRepId(cfg.fallbackSalesRepId ?? null)
       const map = cfg.sourceChannelToSalesRepId ?? {}
-      setSourceRows(
-        Object.entries(map).map(([key, salesRepId]) => ({ key, salesRepId }))
-      )
+      setSourceRows(Object.entries(map).map(([key, salesRepId]) => ({ key, salesRepId })))
     } catch {
-      setError('Failed to load lead routing')
+      setError('Failed to load lead routing (network or unexpected error).')
     } finally {
       setLoading(false)
     }

@@ -1,28 +1,41 @@
 'use client'
 
+import { useRef, useState } from 'react'
 import { CheckCircle2, RefreshCw } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageLoading } from '@/components/ui/loading'
 import {
+  CPQFlowStepper,
   CPQHeader,
   CPQMainGrid,
-  CPQProgressStrip,
-  CPQTabs,
-  QuoteSelectorPanel,
-  QuoteHealthBanner,
-  VersionHistoryPanel,
+  CPQSupportSheet,
+  type CPQSupportSheetMode,
 } from './components'
-import { useCPQWorkspace } from './hooks'
+import { useCPQWorkspace, useObservedHeight } from './hooks'
+
+const MODULE_TOPBAR_PX = 56
+const INSPECTOR_GAP_PX = 8
+const INSPECTOR_BOTTOM_PAD_PX = 12
+/** Approximate CPQ header height before ResizeObserver first run. */
+const CPQ_HEADER_FALLBACK_PX = 264
 
 export default function CPQPage() {
   const params = useParams()
   const tenantId = params?.tenantId as string
+  const cpqHeaderRef = useRef<HTMLDivElement>(null)
+  const cpqHeaderHeight = useObservedHeight(cpqHeaderRef)
+  const [supportOpen, setSupportOpen] = useState(false)
+  const [supportMode, setSupportMode] = useState<CPQSupportSheetMode>('history')
+
+  const openSupport = (mode: CPQSupportSheetMode) => {
+    setSupportMode(mode)
+    setSupportOpen(true)
+  }
+
   const {
     seedMessage,
-    activeTab,
-    setActiveTab,
     catalogSearch,
     setCatalogSearch,
     draftLineItems,
@@ -40,6 +53,8 @@ export default function CPQPage() {
     approvalReason,
     healthChecks,
     healthScore,
+    canSendQuote,
+    sendQuoteTooltip,
     filteredCatalog,
     isLoading,
     error,
@@ -47,7 +62,39 @@ export default function CPQPage() {
     seedMutation,
     approveMutation,
     convertMutation,
+    addCatalogLine,
+    saveDraftMutation,
+    requestApprovalMutation,
+    sendQuoteMutation,
+    documentMutation,
+    documentFeedback,
   } = useCPQWorkspace(tenantId)
+
+  const canSaveQuote = !!selectedQuote && draftLineItems.length > 0
+  const approvalTerminalStatuses = new Set([
+    'pending_approval',
+    'sent',
+    'accepted',
+    'converted',
+    'rejected',
+  ])
+  const canRequestApproval =
+    !!selectedQuote &&
+    approvalRequired &&
+    draftLineItems.length > 0 &&
+    !approvalTerminalStatuses.has(selectedQuote.status ?? '')
+
+  const saveError = saveDraftMutation.error instanceof Error ? saveDraftMutation.error.message : null
+  const sendError = sendQuoteMutation.error instanceof Error ? sendQuoteMutation.error.message : null
+  const requestApprovalError =
+    requestApprovalMutation.error instanceof Error ? requestApprovalMutation.error.message : null
+
+  const issueDocument = async (channel: 'pdf' | 'web') => {
+    if (!selectedQuote || !tenantId) return
+    await documentMutation.mutateAsync(channel)
+    const path = `/crm/${tenantId}/CPQ/preview/${selectedQuote.id}${channel === 'pdf' ? '?print=1' : ''}`
+    globalThis.open(path, '_blank', 'noopener')
+  }
 
   if (isLoading) return <PageLoading message="Loading CPQ workspace..." fullScreen={false} />
 
@@ -57,7 +104,9 @@ export default function CPQPage() {
         <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800">
           <CardContent className="py-16 text-center">
             <p className="text-slate-700 dark:text-slate-200 font-semibold mb-1">No quotes yet</p>
-            <p className="text-sm text-slate-500 mb-6">Load guided demo quotes to showcase configure, pricing, approval, and send workflow.</p>
+            <p className="text-sm text-slate-500 mb-6">
+              Load guided demo quotes to showcase configure, pricing, approval, and send workflow.
+            </p>
             <div className="flex items-center justify-center gap-2">
               <Button
                 variant="outline"
@@ -65,7 +114,7 @@ export default function CPQPage() {
                 onClick={() => seedMutation.mutate()}
                 title={seedMutation.isPending ? 'Seeding demo quotes...' : 'Add demo CPQ records'}
               >
-                {seedMutation.isPending ? 'Seeding Demo Quotes...' : 'Seed Demo Quotes'}
+                {seedMutation.isPending ? 'Seeding demo quotes...' : 'Seed demo quotes'}
               </Button>
               <Button variant="outline" onClick={() => refetch()}>
                 <RefreshCw className="w-4 h-4 mr-2" />
@@ -77,6 +126,11 @@ export default function CPQPage() {
       </div>
     )
   }
+
+  const headerBlockPx =
+    cpqHeaderHeight > 0 ? cpqHeaderHeight : CPQ_HEADER_FALLBACK_PX
+  const inspectorTopPx = MODULE_TOPBAR_PX + headerBlockPx + INSPECTOR_GAP_PX
+  const inspectorMaxHeightCss = `calc(100dvh - ${inspectorTopPx + INSPECTOR_BOTTOM_PAD_PX}px)`
 
   return (
     <div className="max-w-7xl mx-auto w-full px-4 py-5 space-y-5">
@@ -91,15 +145,56 @@ export default function CPQPage() {
           {seedMessage}
         </div>
       ) : null}
+      {saveError ? (
+        <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          {saveError}
+        </div>
+      ) : null}
+      {sendError ? (
+        <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          {sendError}
+        </div>
+      ) : null}
+      {requestApprovalError ? (
+        <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          {requestApprovalError}
+        </div>
+      ) : null}
 
-      <CPQHeader selectedQuote={selectedQuote} onRefresh={() => refetch()} />
-      <QuoteHealthBanner healthScore={healthScore} healthChecks={healthChecks} />
-      <CPQProgressStrip healthChecks={healthChecks} />
+      <CPQHeader
+        ref={cpqHeaderRef}
+        quotes={quotes}
+        selectedQuote={selectedQuote}
+        onSelectQuote={setSelectedQuoteId}
+        onSaveQuote={() => saveDraftMutation.mutate()}
+        onSendQuote={() => sendQuoteMutation.mutate()}
+        isSaving={saveDraftMutation.isPending}
+        isSending={sendQuoteMutation.isPending}
+        canSaveQuote={canSaveQuote}
+        onReloadQuotes={() => refetch()}
+        onOpenHistory={() => openSupport('history')}
+        onOpenPreview={() => openSupport('preview')}
+        canSendQuote={canSendQuote}
+        sendQuoteTooltip={sendQuoteTooltip}
+        approvalRequired={approvalRequired}
+        onRequestApproval={() => requestApprovalMutation.mutate()}
+        isRequestingApproval={requestApprovalMutation.isPending}
+        canRequestApproval={canRequestApproval}
+      />
+
+      <CPQFlowStepper healthChecks={healthChecks} healthScore={healthScore} />
 
       <CPQMainGrid
+        inspectorSticky={{ topPx: inspectorTopPx, maxHeightCss: inspectorMaxHeightCss }}
         catalogSearch={catalogSearch}
         onCatalogSearchChange={setCatalogSearch}
         filteredCatalog={filteredCatalog}
+        onAddCatalogEntry={addCatalogLine}
+        documentFeedback={documentFeedback}
+        isDocumentBusy={documentMutation.isPending}
+        onIssueDocument={(channel) => {
+          void issueDocument(channel)
+        }}
         approvalRequired={approvalRequired}
         approvalReason={approvalReason}
         draftLineItems={draftLineItems}
@@ -120,37 +215,11 @@ export default function CPQPage() {
         isConverting={convertMutation.isPending}
       />
 
-      <Card className="rounded-2xl border-slate-200/80 dark:border-slate-800">
-        <CardContent className="p-4 space-y-4">
-          <CPQTabs activeTab={activeTab} onTabChange={setActiveTab} />
-          {activeTab === 'builder' ? (
-            <div className="text-sm text-slate-600 dark:text-slate-300">
-              Builder focuses on configuration + line items. Use inline quantity edits to see live total changes.
-            </div>
-          ) : null}
-          {activeTab === 'pricing' ? (
-            <div className="text-sm text-slate-600 dark:text-slate-300">
-              Pricing rules applied: GST 18%, negotiated discounts, and recurring/one-time split.
-            </div>
-          ) : null}
-          {activeTab === 'approvals' ? (
-            <div className="text-sm text-slate-600 dark:text-slate-300">
-              Approval matrix checks discount and total thresholds before send.
-            </div>
-          ) : null}
-          {activeTab === 'document' ? (
-            <div data-testid="cpq-document-preview" className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-sm text-slate-600 dark:text-slate-300">
-              Document Preview loads on demand. Generate customer-facing PDF with version, language, and web quote link.
-            </div>
-          ) : null}
-          {activeTab === 'history' ? <VersionHistoryPanel quotes={quotes} /> : null}
-        </CardContent>
-      </Card>
-
-      <QuoteSelectorPanel
+      <CPQSupportSheet
+        open={supportOpen}
+        onOpenChange={setSupportOpen}
+        mode={supportMode}
         quotes={quotes}
-        selectedQuoteId={selectedQuote?.id}
-        onSelectQuote={setSelectedQuoteId}
       />
     </div>
   )

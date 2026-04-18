@@ -33,3 +33,30 @@ export function parseLeadRoutingJson(raw: unknown): LeadRoutingConfigV1 | null {
   const parsed = LeadRoutingConfigV1Schema.safeParse(raw)
   return parsed.success ? parsed.data : null
 }
+
+/**
+ * Merge API/DB payload with defaults so the settings UI never crashes on partial or older shapes.
+ */
+export function coerceLeadRoutingConfigV1(raw: unknown): LeadRoutingConfigV1 {
+  if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { ...DEFAULT_LEAD_ROUTING_CONFIG_V1 }
+  }
+  const o = raw as Record<string, unknown>
+  const srcMap = o.sourceChannelToSalesRepId
+  const mergedChannels =
+    srcMap !== null &&
+    typeof srcMap === 'object' &&
+    !Array.isArray(srcMap) &&
+    Object.keys(srcMap).every((k) => typeof (srcMap as Record<string, unknown>)[k] === 'string')
+      ? { ...DEFAULT_LEAD_ROUTING_CONFIG_V1.sourceChannelToSalesRepId, ...(srcMap as Record<string, string>) }
+      : { ...DEFAULT_LEAD_ROUTING_CONFIG_V1.sourceChannelToSalesRepId }
+
+  const candidate = {
+    ...DEFAULT_LEAD_ROUTING_CONFIG_V1,
+    ...o,
+    version: 1 as const,
+    sourceChannelToSalesRepId: mergedChannels,
+  }
+  const parsed = LeadRoutingConfigV1Schema.safeParse(candidate)
+  return parsed.success ? parsed.data : { ...DEFAULT_LEAD_ROUTING_CONFIG_V1 }
+}

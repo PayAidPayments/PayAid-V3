@@ -1,12 +1,19 @@
 import { CPQBuilderPanel } from './CPQBuilderPanel'
 import { CPQConfigPanel } from './CPQConfigPanel'
 import { CPQRightRail } from './CPQRightRail'
+import type { CatalogEntry } from '../lib/catalog'
 import { DraftLineItem, Quote } from './types'
 
 type CPQMainGridProps = {
+  /** Measured sticky offset for the right inspector (module top bar + CPQ header + gap). */
+  inspectorSticky?: { topPx: number; maxHeightCss: string }
   catalogSearch: string
   onCatalogSearchChange: (value: string) => void
-  filteredCatalog: string[]
+  filteredCatalog: CatalogEntry[]
+  onAddCatalogEntry: (entry: CatalogEntry) => void
+  documentFeedback: string | null
+  isDocumentBusy: boolean
+  onIssueDocument: (channel: 'pdf' | 'web') => void
   approvalRequired: boolean
   approvalReason: string
   draftLineItems: DraftLineItem[]
@@ -39,27 +46,19 @@ type CPQMainGridProps = {
 
 export function CPQMainGrid(props: CPQMainGridProps) {
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-      <section className="xl:col-span-4 space-y-4">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+      <div className="xl:col-span-7 space-y-4">
         <CPQConfigPanel
           catalogSearch={props.catalogSearch}
           onCatalogSearchChange={props.onCatalogSearchChange}
           filteredCatalog={props.filteredCatalog}
-          approvalRequired={props.approvalRequired}
-          approvalReason={props.approvalReason}
+          onAddCatalogEntry={props.onAddCatalogEntry}
         />
-      </section>
-
-      <CPQBuilderPanel
-        draftLineItems={props.draftLineItems}
-        onQtyChange={props.onQtyChange}
-        pricing={props.pricing}
-        margin={props.margin}
-        approvalRequired={props.approvalRequired}
-        approvalReason={props.approvalReason}
-      />
+        <CPQBuilderPanel draftLineItems={props.draftLineItems} onQtyChange={props.onQtyChange} />
+      </div>
 
       <CPQRightRail
+        inspectorSticky={props.inspectorSticky}
         selectedQuote={props.selectedQuote}
         approvalRequired={props.approvalRequired}
         approvalReason={props.approvalReason}
@@ -73,6 +72,11 @@ export function CPQMainGrid(props: CPQMainGridProps) {
         isApproving={props.isApproving}
         isConverting={props.isConverting}
         discountPct={props.margin.discountPct}
+        pricing={props.pricing}
+        margin={props.margin}
+        documentFeedback={props.documentFeedback}
+        isDocumentBusy={props.isDocumentBusy}
+        onIssueDocument={props.onIssueDocument}
       />
     </div>
   )

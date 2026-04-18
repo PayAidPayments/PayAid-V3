@@ -1,21 +1,24 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/api/client'
-import { PRODUCT_CATALOG } from '../components/constants'
-import { QuotesApiPayload, Quote, WorkspaceTab } from '../components/types'
+import { QuotesApiPayload, Quote } from '../components/types'
 import { normalizeQuote, quoteToDraftItems } from '../components/utils'
+import type { CatalogEntry } from '../lib/catalog'
+import { CPQ_CATALOG_ENTRIES } from '../lib/catalog'
+import { draftLineItemsToPatchPayload } from '../lib/draft-to-api'
+import { getCanSendQuote, getSendQuoteTooltip, isApprovalGateCleared } from '../lib/quote-action-state'
 
 export function useCPQWorkspace(tenantId: string) {
   const queryClient = useQueryClient()
 
   const [seedMessage, setSeedMessage] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>('builder')
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null)
   const [catalogSearch, setCatalogSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [draftLineItems, setDraftLineItems] = useState<ReturnType<typeof quoteToDraftItems>>([])
   const [approvalNote, setApprovalNote] = useState('')
   const [rejectReason, setRejectReason] = useState('')
+  const [documentFeedback, setDocumentFeedback] = useState<string | null>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(catalogSearch), 220)
@@ -49,6 +52,10 @@ export function useCPQWorkspace(tenantId: string) {
     }, 0)
     return () => globalThis.clearTimeout(id)
   }, [quotes, selectedQuoteId])
+
+  useEffect(() => {
+    setDocumentFeedback(null)
+  }, [selectedQuoteId])
 
   useEffect(() => {
     const next = quoteToDraftItems(selectedQuote)
@@ -89,15 +96,50 @@ export function useCPQWorkspace(tenantId: string) {
     context: !!selectedQuote?.contact && !!selectedQuote?.deal,
     configure: draftLineItems.length > 0,
     pricing: pricing.total > 0,
-    approval: !approvalRequired || ['approved', 'accepted', 'converted'].includes(selectedQuote?.status ?? ''),
+    approval: isApprovalGateCleared(approvalRequired, selectedQuote?.status),
     send: ['sent', 'accepted', 'converted'].includes(selectedQuote?.status ?? ''),
   }
   const healthScore = Object.values(healthChecks).filter(Boolean).length
 
+  const canSendQuote = useMemo(
+    () =>
+      getCanSendQuote({
+        selectedQuote,
+        draftLineCount: draftLineItems.length,
+        pricingTotal: pricing.total,
+        approvalRequired,
+      }),
+    [approvalRequired, draftLineItems.length, pricing.total, selectedQuote]
+  )
+
+  const sendQuoteTooltip = useMemo(
+    () => getSendQuoteTooltip({ selectedQuote, canSend: canSendQuote, approvalRequired }),
+    [approvalRequired, canSendQuote, selectedQuote]
+  )
+
   const filteredCatalog = useMemo(() => {
-    const filtered = PRODUCT_CATALOG.filter((p) => p.toLowerCase().includes(debouncedSearch.toLowerCase()))
-    return filtered.slice(0, 8)
+    const q = debouncedSearch.toLowerCase()
+    return CPQ_CATALOG_ENTRIES.filter(
+      (e) => e.name.toLowerCase().includes(q) || e.description.toLowerCase().includes(q)
+    ).slice(0, 8)
   }, [debouncedSearch])
+
+  const addCatalogLine = useCallback((entry: CatalogEntry) => {
+    const id = `cat-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`}`
+    setDraftLineItems((prev) => [
+      ...prev,
+      {
+        id,
+        item: entry.name,
+        description: entry.description,
+        qty: 1,
+        unitPrice: entry.defaultUnitPrice,
+        discountRate: 0,
+        taxRate: 0.18,
+        badge: 'recommended',
+      },
+    ])
+  }, [])
 
   const refreshQuotes = () => {
     queryClient.invalidateQueries({ queryKey: ['v1-quotes', tenantId] })
@@ -149,12 +191,90 @@ export function useCPQWorkspace(tenantId: string) {
     onSuccess: () => refreshQuotes(),
   })
 
+  const saveDraftMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedQuote) throw new Error('No quote selected')
+      if (draftLineItems.length === 0) throw new Error('Add at least one line item')
+      const res = await apiRequest(`/api/v1/quotes/${selectedQuote.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(draftLineItemsToPatchPayload(draftLineItems)),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(typeof body?.error === 'string' ? body.error : 'Failed to save quote')
+    },
+    onSuccess: () => refreshQuotes(),
+  })
+
+  const requestApprovalMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedQuote) throw new Error('No quote selected')
+      if (draftLineItems.length === 0) throw new Error('Add at least one line item')
+      const patch = await apiRequest(`/api/v1/quotes/${selectedQuote.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(draftLineItemsToPatchPayload(draftLineItems)),
+      })
+      const patchBody = await patch.json().catch(() => ({}))
+      if (!patch.ok) {
+        throw new Error(typeof patchBody?.error === 'string' ? patchBody.error : 'Failed to save before request')
+      }
+      const req = await apiRequest(`/api/v1/quotes/${selectedQuote.id}/request-approval`, {
+        method: 'POST',
+      })
+      const reqBody = await req.json().catch(() => ({}))
+      if (!req.ok) {
+        throw new Error(
+          typeof reqBody?.error === 'string' ? reqBody.error : 'Request approval failed'
+        )
+      }
+    },
+    onSuccess: () => refreshQuotes(),
+  })
+
+  const sendQuoteMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedQuote) throw new Error('No quote selected')
+      if (draftLineItems.length === 0) throw new Error('Add at least one line item')
+      const patch = await apiRequest(`/api/v1/quotes/${selectedQuote.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(draftLineItemsToPatchPayload(draftLineItems)),
+      })
+      const patchBody = await patch.json().catch(() => ({}))
+      if (!patch.ok) {
+        throw new Error(typeof patchBody?.error === 'string' ? patchBody.error : 'Failed to save before send')
+      }
+      const send = await apiRequest(`/api/v1/quotes/${selectedQuote.id}/send`, { method: 'POST' })
+      const sendBody = await send.json().catch(() => ({}))
+      if (!send.ok) {
+        const msg =
+          typeof sendBody?.error === 'string' ? sendBody.error : send.status === 422 ? 'Send blocked by policy' : 'Failed to send quote'
+        throw new Error(msg)
+      }
+    },
+    onSuccess: () => refreshQuotes(),
+  })
+
+  const documentMutation = useMutation({
+    mutationFn: async (channel: 'pdf' | 'web') => {
+      if (!selectedQuote) throw new Error('No quote selected')
+      const res = await apiRequest(`/api/v1/quotes/${selectedQuote.id}/document`, {
+        method: 'POST',
+        body: JSON.stringify({ channel }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(typeof body?.error === 'string' ? body.error : 'Document request failed')
+      return body as { message?: string; channel?: string }
+    },
+    onSuccess: (data) => {
+      setDocumentFeedback(data.message ?? 'Document request recorded.')
+    },
+  })
+
   return {
     seedMessage,
-    activeTab,
-    setActiveTab,
     catalogSearch,
     setCatalogSearch,
+    filteredCatalog,
+    addCatalogLine,
     draftLineItems,
     setDraftLineItems,
     approvalNote,
@@ -170,12 +290,18 @@ export function useCPQWorkspace(tenantId: string) {
     approvalReason,
     healthChecks,
     healthScore,
-    filteredCatalog,
+    canSendQuote,
+    sendQuoteTooltip,
     isLoading,
     error,
     refetch,
     seedMutation,
     approveMutation,
     convertMutation,
+    saveDraftMutation,
+    requestApprovalMutation,
+    sendQuoteMutation,
+    documentMutation,
+    documentFeedback,
   }
 }
