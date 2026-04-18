@@ -4,7 +4,7 @@ export default function LegacyDashboardGstLayout() {
   return (
     <LegacyModuleRedirectLayout
       loadingMessage="Redirecting to Finance GST..."
-      target={(tenantId) => `/finance/${tenantId}/GST`}
+      pathTemplate="/finance/{tenantId}/GST"
     />
   )
 }

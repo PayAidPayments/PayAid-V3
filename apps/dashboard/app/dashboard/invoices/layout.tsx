@@ -4,7 +4,7 @@ export default function LegacyDashboardInvoicesLayout() {
   return (
     <LegacyModuleRedirectLayout
       loadingMessage="Redirecting to Finance Invoices..."
-      target={(tenantId) => `/finance/${tenantId}/Invoices`}
+      pathTemplate="/finance/{tenantId}/Invoices"
     />
   )
 }

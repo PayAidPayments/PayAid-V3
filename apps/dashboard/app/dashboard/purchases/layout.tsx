@@ -4,7 +4,7 @@ export default function LegacyDashboardPurchasesLayout() {
   return (
     <LegacyModuleRedirectLayout
       loadingMessage="Redirecting to Finance Purchases..."
-      target={(tenantId) => `/finance/${tenantId}/Purchase-Orders`}
+      pathTemplate="/finance/{tenantId}/Purchase-Orders"
     />
   )
 }
