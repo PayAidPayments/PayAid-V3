@@ -60,6 +60,8 @@ next-env.d.ts
 !/prisma/migrations/20260418210000_add_workflow_execution_reply_fields/migration.sql
 !/prisma/migrations/20260419120000_crm_config_lead_routing/
 !/prisma/migrations/20260419120000_crm_config_lead_routing/migration.sql
+!/prisma/migrations/20260420120000_idx_deal_tenant_created_desc/
+!/prisma/migrations/20260420120000_idx_deal_tenant_created_desc/migration.sql
 
 # separate module repositories (already in their own repos)
 /repositories.vercel

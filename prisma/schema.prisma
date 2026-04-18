@@ -1211,6 +1211,8 @@ model Deal {
   @@index([contactId])
   // Performance indexes for 10,000+ users
   @@index([tenantId, stage, value(sort: Desc)], name: "idx_deal_tenant_stage_value")
+  /// List API: WHERE tenantId = ? ORDER BY createdAt DESC (auth baseline + CRM Deals)
+  @@index([tenantId, createdAt(sort: Desc)], name: "idx_deal_tenant_created_desc")
 }
 
 model Task {

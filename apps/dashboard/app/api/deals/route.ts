@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 
     // Prefer the tenant from the URL (page context) so /crm/[tenantId]/Deals always shows that tenant's deals.
     let tenantId = jwtTenantId
-    const user = await prisma.user.findUnique({
+    const user = await prismaRead.user.findUnique({
       where: { id: userId },
       select: { tenantId: true, email: true },
     }).catch(() => null)
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
       allowDemoTenantOverride &&
       requestTenantId &&
       user?.email === 'admin@demo.com' &&
-      (await prisma.tenant.findUnique({
+      (await prismaRead.tenant.findUnique({
         where: { id: requestTenantId },
         select: { name: true },
       }).then((t) => t?.name?.toLowerCase().includes('demo') ?? false).catch(() => false))
@@ -204,8 +204,7 @@ export async function GET(request: NextRequest) {
       where.stage = stage
     }
 
-    // Use main Prisma client to ensure we get the latest data (read replica may lag)
-    // This is especially important after seeding
+    // GET reads use prismaRead (replica when DATABASE_READ_URL is set; else primary URL).
     let deals: any[] = []
     let total = 0
     let pipelineSummary: any[] = []
@@ -213,7 +212,7 @@ export async function GET(request: NextRequest) {
     // Count for diagnostics / retry paths only — do NOT clear the whole tenant cache on every GET
     // (that prevented caching, hammered Redis, and slowed CRM Deals/Leads audit navigations).
     const quickCheck = wantStats
-      ? await prisma.deal.count({ where: { tenantId } }).catch(() => 0)
+      ? await prismaRead.deal.count({ where: { tenantId } }).catch(() => 0)
       : 0
 
     const runPeriodStats = async (): Promise<{
@@ -231,12 +230,12 @@ export async function GET(request: NextRequest) {
       const { start, end } = periodBounds
       const base = { tenantId }
       const [createdAgg, closingAgg, wonAgg, lostAgg, topClosing] = await Promise.all([
-        prisma.deal.aggregate({
+        prismaRead.deal.aggregate({
           where: { ...base, createdAt: { gte: start, lte: end } },
           _count: { _all: true },
           _sum: { value: true },
         }),
-        prisma.deal.aggregate({
+        prismaRead.deal.aggregate({
           where: {
             ...base,
             expectedCloseDate: { gte: start, lte: end },
@@ -245,7 +244,7 @@ export async function GET(request: NextRequest) {
           _count: { _all: true },
           _sum: { value: true },
         }),
-        prisma.deal.aggregate({
+        prismaRead.deal.aggregate({
           where: {
             ...base,
             stage: 'won',
@@ -257,7 +256,7 @@ export async function GET(request: NextRequest) {
           _count: { _all: true },
           _sum: { value: true },
         }),
-        prisma.deal.aggregate({
+        prismaRead.deal.aggregate({
           where: {
             ...base,
             stage: 'lost',
@@ -269,7 +268,7 @@ export async function GET(request: NextRequest) {
           _count: { _all: true },
           _sum: { value: true },
         }),
-        prisma.deal.findMany({
+        prismaRead.deal.findMany({
           where: {
             ...base,
             expectedCloseDate: { gte: start, lte: end },
@@ -340,28 +339,28 @@ export async function GET(request: NextRequest) {
 
       if (!wantStats) {
         const [found, count] = await Promise.all([
-          prisma.deal.findMany({
+          prismaRead.deal.findMany({
             where,
             skip: (page - 1) * limit,
             take: limit,
             orderBy: { createdAt: 'desc' },
             select: listSelect,
           }),
-          prisma.deal.count({ where }),
+          prismaRead.deal.count({ where }),
         ])
         return [Array.isArray(found) ? found : [], typeof count === 'number' ? count : 0, []] as const
       }
 
       const [found, count, summary] = await Promise.all([
-        prisma.deal.findMany({
+        prismaRead.deal.findMany({
           where,
           skip: (page - 1) * limit,
           take: limit,
           orderBy: { createdAt: 'desc' },
           select: listSelect,
         }),
-        prisma.deal.count({ where }),
-        prisma.deal.groupBy({
+        prismaRead.deal.count({ where }),
+        prismaRead.deal.groupBy({
           by: ['stage'],
           where: { tenantId: tenantId },
           _sum: {
@@ -453,19 +452,19 @@ export async function GET(request: NextRequest) {
     if ((deals.length === 0 || total === 0) && !isFilterScoped) {
       // Check actual count in database for this tenant (quick check)
       try {
-        const actualCount = await prisma.deal.count({ 
+        const actualCount = await prismaRead.deal.count({ 
           where: { tenantId },
         })
-        const allTenantsCount = await prisma.deal.count({}).catch(() => 0)
+        const allTenantsCount = await prismaRead.deal.count({}).catch(() => 0)
         
         // Also get a sample deal to see what tenantId it has
-        const sampleDeal = await prisma.deal.findFirst({
+        const sampleDeal = await prismaRead.deal.findFirst({
           where: { tenantId },
           select: { id: true, name: true, tenantId: true, createdAt: true },
         }).catch(() => null)
         
         // Check if there are deals with different tenantIds
-        const allDeals = await prisma.deal.findMany({
+        const allDeals = await prismaRead.deal.findMany({
           take: 5,
           select: { id: true, tenantId: true, name: true },
         }).catch(() => [])
@@ -527,7 +526,7 @@ export async function GET(request: NextRequest) {
       }
       
       // Get a sample deal to debug
-      const sampleDealDebug = await prisma.deal.findFirst({
+      const sampleDealDebug = await prismaRead.deal.findFirst({
         where: { tenantId },
         select: { id: true, name: true, tenantId: true, stage: true, contactId: true, createdAt: true },
       }).catch(() => null)
@@ -537,7 +536,7 @@ export async function GET(request: NextRequest) {
       try {
         const minimalWhere = { tenantId }
         const [testDeals, testTotal] = await Promise.all([
-          prisma.deal.findMany({
+          prismaRead.deal.findMany({
             where: minimalWhere,
             skip: (page - 1) * limit,
             take: limit,
@@ -563,7 +562,7 @@ export async function GET(request: NextRequest) {
               },
             },
           }),
-          prisma.deal.count({ where: minimalWhere }),
+          prismaRead.deal.count({ where: minimalWhere }),
         ])
         
         console.log(`[DEALS_API] Test query (minimal where): Found ${testTotal} deals`)
@@ -571,7 +570,7 @@ export async function GET(request: NextRequest) {
         if (testTotal > 0) {
           // Minimal query worked, now try with original where clause
           const [retryDeals, retryTotal] = await Promise.all([
-            prisma.deal.findMany({
+            prismaRead.deal.findMany({
               where,
               skip: (page - 1) * limit,
               take: limit,
@@ -597,7 +596,7 @@ export async function GET(request: NextRequest) {
                 },
               },
             }),
-            prisma.deal.count({ where }),
+            prismaRead.deal.count({ where }),
           ])
           
           if (retryTotal > 0) {
