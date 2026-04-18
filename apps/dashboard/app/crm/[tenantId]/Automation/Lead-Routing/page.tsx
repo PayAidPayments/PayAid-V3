@@ -60,10 +60,15 @@ export default function LeadRoutingPage() {
         return
       }
       if (!res.ok) {
+        const errField = json.error
         const msg =
-          typeof json.error === 'string'
-            ? json.error
-            : `Failed to load lead routing (HTTP ${res.status})`
+          typeof errField === 'string'
+            ? errField
+            : errField && typeof errField === 'object' && 'message' in errField && typeof (errField as { message: unknown }).message === 'string'
+              ? (errField as { message: string }).message
+              : typeof json.message === 'string'
+                ? json.message
+                : `Failed to load lead routing (HTTP ${res.status})`
         setError(msg)
         return
       }
