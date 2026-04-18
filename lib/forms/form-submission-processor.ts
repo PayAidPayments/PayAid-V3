@@ -6,6 +6,7 @@
 import { prisma } from '@/lib/db/prisma'
 import { FormRendererService } from './form-renderer'
 import { FormBuilderService } from './form-builder'
+import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
 
 export interface SubmissionData {
   [fieldId: string]: any
@@ -65,7 +66,7 @@ export class FormSubmissionProcessor {
     // Auto-create contact if enabled
     let contactId: string | null = null
     if (settings.autoCreateContact && contactData) {
-      const contact = await this.createContactFromSubmission(
+      const { contact, isNew } = await this.createContactFromSubmission(
         form.tenantId,
         contactData,
         form.id,
@@ -78,11 +79,8 @@ export class FormSubmissionProcessor {
         where: { id: submission.id },
         data: { contactId, status: 'processed' },
       })
-    }
 
-    // Trigger automation (if configured)
-    if (contactId) {
-      await this.triggerAutomation(form.tenantId, contactId, form.id, submission.id)
+      this.triggerAutomationForContact(form.tenantId, contact, isNew, form.id, submission.id)
     }
 
     return {
@@ -162,7 +160,7 @@ export class FormSubmissionProcessor {
     },
     formId: string,
     submissionId: string
-  ) {
+  ): Promise<{ contact: { id: string; name: string; email: string | null; phone: string | null; company: string | null }; isNew: boolean }> {
     // Check if contact already exists (by email or phone)
     let existingContact = null
 
@@ -186,7 +184,7 @@ export class FormSubmissionProcessor {
 
     if (existingContact) {
       // Update existing contact with new data
-      return prisma.contact.update({
+      const contact = await prisma.contact.update({
         where: { id: existingContact.id },
         data: {
           ...(contactData.name && !existingContact.name && { name: contactData.name }),
@@ -202,11 +200,13 @@ export class FormSubmissionProcessor {
           },
           lastContactedAt: new Date(),
         },
+        select: { id: true, name: true, email: true, phone: true, company: true },
       })
+      return { contact, isNew: false }
     }
 
     // Create new contact
-    return prisma.contact.create({
+    const contact = await prisma.contact.create({
       data: {
         tenantId,
         name: contactData.name || 'Unknown',
@@ -222,22 +222,39 @@ export class FormSubmissionProcessor {
         },
         lastContactedAt: new Date(),
       },
+      select: { id: true, name: true, email: true, phone: true, company: true },
     })
+    return { contact, isNew: true }
   }
 
   /**
-   * Trigger automation workflows
+   * Fire workflow + webhook handlers (same contract as POST /api/contacts).
    */
-  private static async triggerAutomation(
+  private static triggerAutomationForContact(
     tenantId: string,
-    contactId: string,
+    contact: { id: string; name: string; email: string | null; phone: string | null; company: string | null },
+    isNew: boolean,
     formId: string,
     submissionId: string
-  ) {
-    // This would integrate with the workflow engine
-    // For now, we'll just log it
-    // TODO: Integrate with lib/automation/workflow-engine.ts
-    console.log(`Trigger automation for contact ${contactId} from form ${formId}`)
+  ): void {
+    triggerWorkflowsByEvent({
+      tenantId,
+      event: isNew ? 'contact.created' : 'contact.updated',
+      entity: 'contact',
+      entityId: contact.id,
+      data: {
+        contact: {
+          id: contact.id,
+          name: contact.name,
+          email: contact.email,
+          phone: contact.phone,
+          company: contact.company,
+        },
+        source: 'web_form',
+        formId,
+        submissionId,
+      },
+    })
   }
 
   /**

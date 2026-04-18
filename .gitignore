@@ -52,6 +52,8 @@ next-env.d.ts
 /prisma/migrations/*
 !/prisma/migrations/20260415103000_add_specialist_activity_log/
 !/prisma/migrations/20260415103000_add_specialist_activity_log/migration.sql
+!/prisma/migrations/20260418070000_add_outreach_automation/
+!/prisma/migrations/20260418070000_add_outreach_automation/migration.sql
 
 # separate module repositories (already in their own repos)
 /repositories.vercel

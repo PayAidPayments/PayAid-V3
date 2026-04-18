@@ -153,6 +153,7 @@ model Tenant {
   offers                       Offer[]
   onboardingInstances          OnboardingInstance[]
   onboardingTemplates          OnboardingTemplate[]
+  outreachAutomations          OutreachAutomation[]
   orders                       Order[]
   pfConfigs                    PFConfig?
   ptConfigs                    PTConfig[]
@@ -1829,6 +1830,25 @@ model Campaign {
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, type])
+  @@index([tenantId, createdAt])
+}
+
+/// CRM Sales Automation — tenant-defined outreach programs (separate from marketing `Campaign` broadcasts).
+model OutreachAutomation {
+  id               String   @id @default(cuid())
+  tenantId         String
+  name             String
+  type             String // cold-email | cold-call | linkedin | multi-channel
+  targetCriteria   String?
+  status           String   @default("draft") // draft | active | paused | completed
+  prospectsCount   Int      @default(0)
+  contactedCount   Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
   @@index([tenantId, createdAt])
 }
 

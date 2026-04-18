@@ -10,85 +10,64 @@ const createCampaignSchema = z.object({
   targetCriteria: z.string().optional(),
 })
 
-// GET /api/crm/sales-automation/campaigns - Get all campaigns
+const OUTREACH_TYPES = ['cold-email', 'cold-call', 'linkedin', 'multi-channel'] as const
+
+function mapRowToCampaignPayload(row: {
+  id: string
+  name: string
+  type: string
+  status: string
+  prospectsCount: number
+  contactedCount: number
+  createdAt: Date
+}) {
+  const prospects = Math.max(0, row.prospectsCount)
+  const contacted = Math.max(0, row.contactedCount)
+  const denom = Math.max(prospects, 1)
+  const responseRate = Math.round((contacted / denom) * 1000) / 10
+  return {
+    id: row.id,
+    name: row.name,
+    type: OUTREACH_TYPES.includes(row.type as (typeof OUTREACH_TYPES)[number])
+      ? row.type
+      : 'cold-email',
+    status: row.status,
+    prospectsCount: prospects,
+    contactedCount: contacted,
+    responseRate,
+    conversionRate: 0,
+    createdAt: row.createdAt.toISOString(),
+  }
+}
+
+// GET /api/crm/sales-automation/campaigns — tenant outreach automations (persisted)
 export async function GET(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    // Return sample campaigns data - in production, create SalesAutomationCampaign model
-    const campaigns = [
-      {
-        id: 'campaign-1',
-        name: 'Q1 Enterprise Outreach',
-        type: 'cold-email',
-        status: 'active',
-        prospectsCount: 45,
-        contactedCount: 38,
-        responseRate: 12.5,
-        conversionRate: 3.2,
-        createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: 'campaign-2',
-        name: 'LinkedIn SMB Campaign',
-        type: 'linkedin',
-        status: 'active',
-        prospectsCount: 62,
-        contactedCount: 55,
-        responseRate: 18.3,
-        conversionRate: 4.8,
-        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: 'campaign-3',
-        name: 'Multi-Channel Tech Outreach',
-        type: 'multi-channel',
-        status: 'paused',
-        prospectsCount: 28,
-        contactedCount: 20,
-        responseRate: 15.0,
-        conversionRate: 5.0,
-        createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: 'campaign-4',
-        name: 'Cold Call Follow-up',
-        type: 'cold-call',
-        status: 'active',
-        prospectsCount: 35,
-        contactedCount: 30,
-        responseRate: 22.5,
-        conversionRate: 6.7,
-        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: 'campaign-5',
-        name: 'Email Nurture Sequence',
-        type: 'cold-email',
-        status: 'completed',
-        prospectsCount: 120,
-        contactedCount: 120,
-        responseRate: 25.8,
-        conversionRate: 8.3,
-        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ]
+    const rows = await prisma.outreachAutomation.findMany({
+      where: { tenantId },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+    })
 
+    const campaigns = rows.map(mapRowToCampaignPayload)
     return NextResponse.json({ campaigns })
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }
 
     console.error('Get campaigns error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Failed to fetch campaigns', message: error?.message },
+      { error: 'Failed to fetch campaigns', message },
       { status: 500 }
     )
   }
 }
 
-// POST /api/crm/sales-automation/campaigns - Create a new campaign
+// POST /api/crm/sales-automation/campaigns — create outreach automation (draft)
 export async function POST(request: NextRequest) {
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
@@ -111,32 +90,31 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = createCampaignSchema.parse(body)
 
-    // For now, return success - in production, create campaign record
-    // TODO: Create SalesAutomationCampaign model in Prisma schema
-    
-    const campaignId = `campaign_${Date.now()}`
-    if (idempotencyKey) {
-      await markIdempotentRequest(tenantId, userId, `crm:campaign:create:${idempotencyKey}`, {
-        campaign_id: campaignId,
-      })
-    }
-
-    return NextResponse.json({
-      success: true,
-      campaign: {
-        id: campaignId,
-        name: validated.name,
+    const created = await prisma.outreachAutomation.create({
+      data: {
+        tenantId,
+        name: validated.name.trim(),
         type: validated.type,
+        targetCriteria: validated.targetCriteria?.trim() || null,
         status: 'draft',
         prospectsCount: 0,
         contactedCount: 0,
-        responseRate: 0,
-        conversionRate: 0,
-        createdAt: new Date().toISOString(),
       },
-      note: 'Campaign creation is ready. Database model needs to be added to Prisma schema.',
     })
-  } catch (error: any) {
+
+    if (idempotencyKey) {
+      await markIdempotentRequest(tenantId, userId, `crm:campaign:create:${idempotencyKey}`, {
+        campaign_id: created.id,
+      })
+    }
+
+    const campaign = mapRowToCampaignPayload(created)
+
+    return NextResponse.json({
+      success: true,
+      campaign,
+    })
+  } catch (error: unknown) {
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }
@@ -149,8 +127,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Create campaign error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to create campaign'
     return NextResponse.json(
-      { error: 'Failed to create campaign', message: error?.message },
+      { error: 'Failed to create campaign', message },
       { status: 500 }
     )
   }
