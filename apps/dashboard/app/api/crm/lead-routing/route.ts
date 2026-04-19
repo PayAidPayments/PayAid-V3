@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
+import { prismaRead } from '@/lib/db/prisma-read'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { resolveCrmRequestTenantId } from '@/lib/crm/resolve-crm-request-tenant'
 import {
@@ -50,24 +51,36 @@ export async function GET(request: NextRequest) {
 
     const parsed = (await loadLeadRoutingConfig(tenantId)) ?? DEFAULT_LEAD_ROUTING_CONFIG_V1
 
-    const salesReps = await prisma.salesRep.findMany({
-      where: { tenantId, isOnLeave: false },
-      select: {
-        id: true,
-        userId: true,
-        user: { select: { name: true, email: true } },
-      },
-      orderBy: { user: { name: 'asc' } },
-    })
+    // Avoid orderBy on nested `user` — some Postgres/Prisma builds error on relation sort;
+    // list size is small, so sort in memory after fetch.
+    let salesRepsPayload: Array<{ id: string; userId: string; name: string; email: string | null }> = []
+    try {
+      const rows = await prismaRead.salesRep.findMany({
+        where: { tenantId, isOnLeave: false },
+        select: {
+          id: true,
+          userId: true,
+          user: { select: { name: true, email: true } },
+        },
+      })
+      const mapped = rows.map((r) => ({
+        id: r.id,
+        userId: r.userId,
+        name: (r.user?.name ?? r.user?.email ?? r.id).trim() || r.id,
+        email: r.user?.email ?? null,
+      }))
+      mapped.sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+      )
+      salesRepsPayload = mapped
+    } catch (repErr) {
+      console.error('[lead-routing] salesRep list failed (returning empty reps):', repErr)
+      salesRepsPayload = []
+    }
 
     return NextResponse.json({
       config: parsed,
-      salesReps: salesReps.map((r) => ({
-        id: r.id,
-        userId: r.userId,
-        name: r.user?.name ?? r.user?.email ?? r.id,
-        email: r.user?.email ?? null,
-      })),
+      salesReps: salesRepsPayload,
     })
   } catch (error) {
     if (error && typeof error === 'object' && 'moduleId' in error) {
