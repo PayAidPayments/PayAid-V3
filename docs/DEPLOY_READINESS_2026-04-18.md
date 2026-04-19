@@ -24,7 +24,26 @@ All tenant routes under `/marketing/demo/*`, `/finance/demo/*`, and `/hr/demo/*`
 
 2. **CRM GA closure queue items 1–12** (Day 2 QA through SOLO-T11) — **Still pending** manual runbook execution and Product signoffs (`docs/CRM_GA_CLOSURE_EXECUTION_LOG.md`). Deployment does not substitute for that evidence.
 
+## Post-deploy (hosted) — speed re-baseline + DB migrations
+
+After each production deploy, run **`npx prisma migrate deploy`** against the **same** `DATABASE_URL` Vercel uses for Production (or rely on your pipeline step if migrations run there). Confirm `CRMConfig.leadRouting` exists for Lead Routing save (`20260419120000_crm_config_lead_routing`).
+
+To refresh the **hosted** CRM list p95 evidence row in `docs/LAUNCH_CHECKLIST.md`, run from a trusted machine (secrets not committed):
+
+```bash
+export BASE_URL="https://payaid-v3.vercel.app"
+export CRM_AUTH_WARMUP_ROUNDS=3
+export CRM_AUTH_SAMPLE_COUNT=25
+export CRM_LOGIN_EMAIL="<tenant login email>"
+export CRM_LOGIN_PASSWORD="<tenant login password>"
+npm run collect:crm-auth-baseline
+```
+
+The script writes `docs/evidence/closure/*-crm-auth-baseline-run.md` and prints `outputPath`. Append a new row to **Speed evidence log** in `docs/LAUNCH_CHECKLIST.md` with the p95 numbers. Default script credentials are **not** valid on production; the run will **block** with `Invalid email or password` until `CRM_LOGIN_*` are set.
+
 ## Deploy decision
 
 **Engineering deploy:** **Approved** to proceed to production pipeline subject to normal CI/CD checks on the integration branch.  
 **CRM Core GA announcement:** **Not approved** by this document alone — close remaining launch checklist and speed SLO per `docs/LAUNCH_CHECKLIST.md`.
+
+**Stakeholder demo day:** For a **GO** decision scoped to commercial / walkthrough demos (not GA product claims), use the **Demo Day GO** section in `docs/CRM_MODULE_FEATURE_GO_NO_GO_2026-04-17.md` (2026-04-18).

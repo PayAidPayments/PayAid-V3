@@ -32,6 +32,10 @@ const createContactSchema = z.object({
   internalNotes: z.string().optional().transform((v) => (v === '' ? undefined : v)),
 })
 
+const CONTACTS_LIST_NO_STORE_HEADERS = {
+  'Cache-Control': 'private, no-store, max-age=0, must-revalidate',
+}
+
 // GET /api/contacts - List all contacts
 export async function GET(request: NextRequest) {
   try {
@@ -92,7 +96,7 @@ export async function GET(request: NextRequest) {
       try {
         const cached = await multiLayerCache.get(cacheKey)
         if (cached) {
-          return NextResponse.json(cached)
+          return NextResponse.json(cached, { headers: CONTACTS_LIST_NO_STORE_HEADERS })
         }
       } catch (cacheError) {
         // Cache error is not critical, continue without cache
@@ -281,7 +285,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(result)
+    return NextResponse.json(result, { headers: CONTACTS_LIST_NO_STORE_HEADERS })
   } catch (error: any) {
     // Handle license errors first
     if (error && typeof error === 'object' && 'moduleId' in error) {
