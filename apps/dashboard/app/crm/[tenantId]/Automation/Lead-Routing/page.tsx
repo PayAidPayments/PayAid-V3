@@ -47,7 +47,7 @@ export default function LeadRoutingPage() {
     try {
       const res = await fetch(
         `/api/crm/lead-routing?tenantId=${encodeURIComponent(tenantId)}`,
-        { headers: getAuthHeaders() }
+        { headers: getAuthHeaders(), cache: 'no-store' }
       )
       const text = await res.text()
       let json: Record<string, unknown> = {}
@@ -79,12 +79,20 @@ export default function LeadRoutingPage() {
             (r) => r && typeof r.id === 'string' && typeof r.userId === 'string'
           )
         : []
+      const repIds = new Set(reps.map((r) => r.id))
+      // Stale config can reference deleted reps; Radix Select throws if value has no matching item.
+      const fb =
+        cfg.fallbackSalesRepId && repIds.has(cfg.fallbackSalesRepId) ? cfg.fallbackSalesRepId : null
+      const map = cfg.sourceChannelToSalesRepId ?? {}
+      const rows = Object.entries(map).map(([key, salesRepId]) => ({
+        key,
+        salesRepId: repIds.has(salesRepId) ? salesRepId : '',
+      }))
       setSalesReps(reps)
       setEnabled(cfg.enabled)
       setPrimaryStrategy(cfg.primaryStrategy)
-      setFallbackSalesRepId(cfg.fallbackSalesRepId ?? null)
-      const map = cfg.sourceChannelToSalesRepId ?? {}
-      setSourceRows(Object.entries(map).map(([key, salesRepId]) => ({ key, salesRepId })))
+      setFallbackSalesRepId(fb)
+      setSourceRows(rows)
     } catch {
       setError('Failed to load lead routing (network or unexpected error).')
     } finally {
@@ -119,6 +127,7 @@ export default function LeadRoutingPage() {
           method: 'PATCH',
           headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
+          cache: 'no-store',
         }
       )
       const json = await res.json().catch(() => ({}))

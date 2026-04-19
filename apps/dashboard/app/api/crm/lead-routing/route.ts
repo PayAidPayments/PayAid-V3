@@ -1,15 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
-import { prismaRead } from '@/lib/db/prisma-read'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { resolveCrmRequestTenantId } from '@/lib/crm/resolve-crm-request-tenant'
 import {
   DEFAULT_LEAD_ROUTING_CONFIG_V1,
   LeadRoutingConfigV1Schema,
-  loadLeadRoutingConfig,
-} from '@/lib/crm/lead-routing'
+  type LeadRoutingConfigV1,
+} from '@/lib/crm/lead-routing/config-schema'
+import { loadLeadRoutingConfig } from '@/lib/crm/lead-routing/load-config'
 import { ZodError } from 'zod'
+
+function sanitizeLeadRoutingConfigForReps(
+  cfg: LeadRoutingConfigV1,
+  repIds: Set<string>
+): LeadRoutingConfigV1 {
+  const fb =
+    cfg.fallbackSalesRepId && repIds.has(cfg.fallbackSalesRepId) ? cfg.fallbackSalesRepId : null
+  const nextMap: Record<string, string> = {}
+  const raw = cfg.sourceChannelToSalesRepId ?? {}
+  for (const [k, v] of Object.entries(raw)) {
+    if (typeof v === 'string' && repIds.has(v)) nextMap[k] = v
+  }
+  return { ...cfg, fallbackSalesRepId: fb, sourceChannelToSalesRepId: nextMap }
+}
 
 function leadRoutingErrorResponse(error: unknown): NextResponse {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -47,15 +61,21 @@ function leadRoutingErrorResponse(error: unknown): NextResponse {
 export async function GET(request: NextRequest) {
   try {
     const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
-    const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
+    let tenantId = jwtTenantId
+    try {
+      tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
+    } catch (resolveErr) {
+      console.warn('[lead-routing] resolveCrmRequestTenantId failed; using JWT tenant:', resolveErr)
+      tenantId = jwtTenantId
+    }
 
     const parsed = (await loadLeadRoutingConfig(tenantId)) ?? DEFAULT_LEAD_ROUTING_CONFIG_V1
 
-    // Avoid orderBy on nested `user` — some Postgres/Prisma builds error on relation sort;
-    // list size is small, so sort in memory after fetch.
+    // Avoid orderBy on nested `user` — sort in memory. Use primary prisma (not read replica) so a
+    // misconfigured DATABASE_READ_URL on Vercel cannot break this screen.
     let salesRepsPayload: Array<{ id: string; userId: string; name: string; email: string | null }> = []
     try {
-      const rows = await prismaRead.salesRep.findMany({
+      const rows = await prisma.salesRep.findMany({
         where: { tenantId, isOnLeave: false },
         select: {
           id: true,
@@ -78,10 +98,20 @@ export async function GET(request: NextRequest) {
       salesRepsPayload = []
     }
 
-    return NextResponse.json({
-      config: parsed,
-      salesReps: salesRepsPayload,
-    })
+    const repIds = new Set(salesRepsPayload.map((r) => r.id))
+    const configOut = sanitizeLeadRoutingConfigForReps(parsed, repIds)
+
+    return NextResponse.json(
+      {
+        config: configOut,
+        salesReps: salesRepsPayload,
+      },
+      {
+        headers: {
+          'Cache-Control': 'private, no-store, max-age=0, must-revalidate',
+        },
+      }
+    )
   } catch (error) {
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
