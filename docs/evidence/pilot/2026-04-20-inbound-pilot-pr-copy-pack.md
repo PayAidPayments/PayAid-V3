@@ -154,3 +154,29 @@ echo "GO/NO-GO row: docs/CRM_MODULE_FEATURE_GO_NO_GO_2026-04-17.md"
 4. Open `docs/evidence/pilot/README.md` and `docs/evidence/pilot/RUNBOOK.md` to verify links resolve to current artifact filenames.
 5. If all checks pass, mark handoff complete in your PR thread and archive any superseded local notes.
 
+## Closure communication snippets
+
+### Slack update (copy/paste)
+
+```text
+Inbound pilot release-gate handoff is complete.
+
+PR branch: docs/inbound-pilot-pr-handoff
+Canonical evidence: docs/evidence/pilot/2026-04-20-inbound-pilot-evidence-index.md
+Scope: B3/E3/E4 closure docs + PR/merge handoff pack (including no-gh browser fallback)
+Non-goals remain: Day 2-Day 10 queue closure and hosted p95 <= 300ms claim change
+```
+
+### Jira comment (copy/paste)
+
+```text
+Handoff package finalized for inbound pilot release gate closeout.
+
+- Branch: docs/inbound-pilot-pr-handoff
+- Canonical evidence index: docs/evidence/pilot/2026-04-20-inbound-pilot-evidence-index.md
+- PR body files: docs/evidence/pilot/2026-04-20-inbound-pilot-pr-body.long.md / .short.md
+- Merge support: squash-merge text + browser fallback + post-merge verification checklist included in docs/evidence/pilot/2026-04-20-inbound-pilot-pr-copy-pack.md
+
+Out of scope: GA Day 2-Day 10 queue and hosted speed SLO status change.
+```
+
