@@ -19,6 +19,7 @@ Use this file as the single handoff/source-of-truth pointer for the v1 pilot gat
 - PR body (long): `2026-04-20-inbound-pilot-pr-body.long.md`
 - PR body (short): `2026-04-20-inbound-pilot-pr-body.short.md`
 - Runbook (commands): `RUNBOOK.md`
+- Browser PR fallback (when `gh` is missing): use copy-pack + runbook PR handoff section
 - UI checklist template: `INBOUND_UI_QA_CHECKLIST.template.md`
 
 ## Current gate state

@@ -94,6 +94,9 @@ Evidence index: `docs/evidence/pilot/2026-04-20-inbound-pilot-evidence-index.md`
 ## Handoff commands (copy/paste)
 
 ```bash
+# 0) Optional: confirm GitHub CLI is installed
+gh --version
+
 # 1) Create PR with long body file (swap to *.short.md if preferred)
 gh pr create \
   --title "crm: close inbound pilot gate with hosted/local evidence" \
@@ -106,4 +109,13 @@ gh pr merge --squash
 echo "Evidence index: docs/evidence/pilot/2026-04-20-inbound-pilot-evidence-index.md"
 echo "GO/NO-GO row: docs/CRM_MODULE_FEATURE_GO_NO_GO_2026-04-17.md"
 ```
+
+## Browser fallback (when `gh` is unavailable)
+
+1. Open: `https://github.com/PayAidPayments/PayAid-V3/pull/new/docs/inbound-pilot-pr-handoff`
+2. PR title: `crm: close inbound pilot gate with hosted/local evidence`
+3. Paste body from:
+   - `docs/evidence/pilot/2026-04-20-inbound-pilot-pr-body.long.md` (preferred), or
+   - `docs/evidence/pilot/2026-04-20-inbound-pilot-pr-body.short.md`
+4. Create PR, then use the merge-commit suggestion block above for squash-merge text.
 
