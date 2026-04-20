@@ -93,7 +93,7 @@ Evidence index: `docs/evidence/pilot/2026-04-20-inbound-pilot-evidence-index.md`
 
 ## Squash merge text (for current docs PR branch)
 
-Use this when merging branch `docs/inbound-pilot-pr-handoff` (commits `cda54fe3` + `10388ee3`):
+Use this when merging branch `docs/inbound-pilot-pr-handoff` (commits `cda54fe3` + `10388ee3` + `7defe6d7`):
 
 ```md
 docs(pilot): finalize inbound PR handoff pack and no-gh fallback
@@ -133,4 +133,16 @@ echo "GO/NO-GO row: docs/CRM_MODULE_FEATURE_GO_NO_GO_2026-04-17.md"
    - `docs/evidence/pilot/2026-04-20-inbound-pilot-pr-body.long.md` (preferred), or
    - `docs/evidence/pilot/2026-04-20-inbound-pilot-pr-body.short.md`
 4. Create PR, then use the merge-commit suggestion block above for squash-merge text.
+
+## Browser merge checklist (click-by-click)
+
+1. Open PR URL: `https://github.com/PayAidPayments/PayAid-V3/pull/new/docs/inbound-pilot-pr-handoff`
+2. Confirm base/head is `main <- docs/inbound-pilot-pr-handoff`.
+3. Title: `crm: close inbound pilot gate with hosted/local evidence`.
+4. Body: paste from `docs/evidence/pilot/2026-04-20-inbound-pilot-pr-body.long.md`.
+5. Verify changed files are only pilot handoff docs (copy pack, evidence index, runbook, PR body files, checklist log).
+6. Click **Create pull request**.
+7. On merge screen choose **Squash and merge**.
+8. Replace squash commit text with the block in `## Squash merge text (for current docs PR branch)`.
+9. Confirm merge, then delete remote branch if no follow-up docs edits are pending.
 
