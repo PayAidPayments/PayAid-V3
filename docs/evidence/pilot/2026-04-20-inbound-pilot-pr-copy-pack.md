@@ -93,7 +93,7 @@ Evidence index: `docs/evidence/pilot/2026-04-20-inbound-pilot-evidence-index.md`
 
 ## Squash merge text (for current docs PR branch)
 
-Use this when merging branch `docs/inbound-pilot-pr-handoff` (commits `cda54fe3` + `10388ee3` + `7defe6d7`):
+Use this when merging the latest tip of branch `docs/inbound-pilot-pr-handoff`:
 
 ```md
 docs(pilot): finalize inbound PR handoff pack and no-gh fallback
@@ -145,4 +145,12 @@ echo "GO/NO-GO row: docs/CRM_MODULE_FEATURE_GO_NO_GO_2026-04-17.md"
 7. On merge screen choose **Squash and merge**.
 8. Replace squash commit text with the block in `## Squash merge text (for current docs PR branch)`.
 9. Confirm merge, then delete remote branch if no follow-up docs edits are pending.
+
+## Post-merge verification mini-checklist
+
+1. Confirm merged PR appears in `main` and references evidence index `docs/evidence/pilot/2026-04-20-inbound-pilot-evidence-index.md`.
+2. Confirm `docs/CRM_MODULE_FEATURE_GO_NO_GO_2026-04-17.md` inbound pilot row still points to the canonical evidence bundle.
+3. Confirm `docs/PAYAID_V3_PENDING_ITEMS_PRIORITY_CHECKLIST.md` includes the latest handoff-log lines from this branch.
+4. Open `docs/evidence/pilot/README.md` and `docs/evidence/pilot/RUNBOOK.md` to verify links resolve to current artifact filenames.
+5. If all checks pass, mark handoff complete in your PR thread and archive any superseded local notes.
 
