@@ -91,6 +91,21 @@ crm: close inbound pilot release gate with hosted/local evidence
 Evidence index: `docs/evidence/pilot/2026-04-20-inbound-pilot-evidence-index.md`
 ```
 
+## Squash merge text (for current docs PR branch)
+
+Use this when merging branch `docs/inbound-pilot-pr-handoff` (commits `cda54fe3` + `10388ee3`):
+
+```md
+docs(pilot): finalize inbound PR handoff pack and no-gh fallback
+
+- Materialize long/short PR body files for direct `gh pr create --body-file` usage.
+- Extend copy-pack with merge-message guidance and executable handoff commands.
+- Document browser-based PR fallback for environments without GitHub CLI.
+- Sync canonical evidence index pointers and pending-items update log.
+
+Evidence index: `docs/evidence/pilot/2026-04-20-inbound-pilot-evidence-index.md`
+```
+
 ## Handoff commands (copy/paste)
 
 ```bash
