@@ -3,5 +3,5 @@
   "framework": "nextjs",
   "installCommand": "npm install --legacy-peer-deps --no-audit --no-fund",
   "buildCommand": "NODE_OPTIONS=--max-old-space-size=4096 npm run build",
-  "outputDirectory": "apps/dashboard/.next"
+  "outputDirectory": ".next"
 }
