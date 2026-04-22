@@ -9,6 +9,11 @@ import { generateVoiceResponse } from './llm'
 import { synthesizeSpeech } from './tts'
 import { searchKnowledgeBase } from './knowledge-base'
 import { ToolExecutor, Tool } from './tool-executor'
+import {
+  detectRequestedLanguageSwitch,
+  getLanguageSwitchAcknowledgement,
+  normalizeLanguageCode,
+} from './language-switch'
 
 export interface ConversationTurn {
   role: 'user' | 'assistant'
@@ -66,11 +71,14 @@ export class VoiceAgentOrchestrator {
         audioChunk,
         language || agent.language
       )
-      const detectedLanguage = sttResult.language || agent.language
+      const detectedLanguage = normalizeLanguageCode(sttResult.language || language || agent.language)
       const transcript = sttResult.text
 
       console.log(`[VoiceAgent] Detected language: ${detectedLanguage}`)
       console.log(`[VoiceAgent] Transcript: ${transcript}`)
+
+      const requestedSwitch = detectRequestedLanguageSwitch(transcript, detectedLanguage)
+      const effectiveLanguage = requestedSwitch ?? detectedLanguage
 
       // Step 3: Search Knowledge Base (if enabled)
       let context = ''
@@ -95,7 +103,7 @@ export class VoiceAgentOrchestrator {
         : this.getConversationHistory(agentId)
 
       // Step 5: Generate response using LLM (with tool support)
-      const systemPrompt = this.buildSystemPrompt(agent, detectedLanguage, context)
+      const systemPrompt = this.buildSystemPrompt(agent, effectiveLanguage, context)
       
       // Get agent's tools if any
       const agentTools = this.agentTools.get(agentId) || []
@@ -105,11 +113,16 @@ export class VoiceAgentOrchestrator {
       }
       
       // Generate initial response
-      let response = await generateVoiceResponse(
-        systemPrompt,
-        history.map(h => ({ role: h.role, content: h.content })),
-        detectedLanguage
-      )
+      let response: string
+      if (requestedSwitch) {
+        response = getLanguageSwitchAcknowledgement(effectiveLanguage)
+      } else {
+        response = await generateVoiceResponse(
+          systemPrompt,
+          history.map(h => ({ role: h.role, content: h.content })),
+          effectiveLanguage
+        )
+      }
 
       // Note: Full function calling requires LLM support (OpenAI-style)
       // For now, we use pattern-based tool detection as a fallback
@@ -134,7 +147,7 @@ export class VoiceAgentOrchestrator {
       // Step 7: Text-to-Speech (VEXYL when configured, else Coqui/Bhashini/IndicParler)
       const audioResponse = await synthesizeSpeech(
         response,
-        detectedLanguage,
+        effectiveLanguage,
         agent.voiceId,
         1.0,
         { voiceTone: agent.voiceTone ?? undefined }
@@ -144,7 +157,7 @@ export class VoiceAgentOrchestrator {
         audio: audioResponse,
         transcript,
         response,
-        detectedLanguage,
+        detectedLanguage: effectiveLanguage,
       }
     } catch (error) {
       console.error('[VoiceAgent] Error processing voice call:', error)

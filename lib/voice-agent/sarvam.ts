@@ -148,63 +148,119 @@ export async function sarvamChat(
 
 /** Valid Bulbul v3 speaker IDs (Sarvam API). Agent voiceId may be VEXYL-style (e.g. priya-warm); map to one of these. */
 const SARVAM_SPEAKERS = new Set([
-  'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul',
-  'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa',
-  'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani',
-  'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham', 'rupali',
+  'aditya', 'ritu', 'ashutosh', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev',
+  'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'advait', 'anand',
+  'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham',
+  'rupali', 'niharika',
 ])
 
-/**
- * Canonical app voice ids -> deterministic Sarvam speaker ids.
- * This keeps UI labels (Male/Female + tone) aligned with actual heard voice.
- */
-const APP_VOICE_TO_SARVAM_SPEAKER: Record<string, string> = {
-  // Male options
-  'arjun-formal': 'abhilash',
-  'arjun-calm': 'rahul',
-  'arjun-warm': 'aditya',
-  'rahul-formal': 'rahul',
+type VoiceStyle = 'formal' | 'calm' | 'warm'
+type VoiceGender = 'male' | 'female'
 
-  // Female options
-  'divya-formal': 'vidya',
-  'divya-calm': 'anushka',
-  'divya-warm': 'manisha',
-  'priya-calm': 'priya',
-  'priya-warm': 'priya',
-  'priya-formal': 'priya',
+const STYLE_BY_VOICE_ID: Record<string, VoiceStyle> = {
+  'arjun-formal': 'formal',
+  'arjun-calm': 'calm',
+  'arjun-warm': 'warm',
+  'rahul-formal': 'formal',
+  'divya-formal': 'formal',
+  'divya-calm': 'calm',
+  'divya-warm': 'warm',
+  'priya-formal': 'formal',
+  'priya-calm': 'calm',
+  'priya-warm': 'warm',
 }
 
-const MALE_STYLE_DEFAULTS: Record<string, string> = {
-  formal: 'abhilash',
-  calm: 'rahul',
-  warm: 'aditya',
+const GENDER_BY_VOICE_ID: Record<string, VoiceGender> = {
+  'arjun-formal': 'male',
+  'arjun-calm': 'male',
+  'arjun-warm': 'male',
+  'rahul-formal': 'male',
+  'divya-formal': 'female',
+  'divya-calm': 'female',
+  'divya-warm': 'female',
+  'priya-formal': 'female',
+  'priya-calm': 'female',
+  'priya-warm': 'female',
 }
 
-const FEMALE_STYLE_DEFAULTS: Record<string, string> = {
-  formal: 'vidya',
-  calm: 'anushka',
-  warm: 'manisha',
+const LANGUAGE_STYLE_DEFAULTS: Record<string, Record<VoiceStyle, string>> = {
+  // Hindi-native pool
+  hi: { formal: 'ashutosh', calm: 'rahul', warm: 'aditya' },
+  // English-oriented pool kept separate from Hindi defaults
+  en: { formal: 'rehan', calm: 'soham', warm: 'rupali' },
+  // Regional language defaults tuned for more local-feeling output
+  ta: { formal: 'vijay', calm: 'shruti', warm: 'kavitha' },
+  te: { formal: 'mani', calm: 'gokul', warm: 'tanya' },
+  kn: { formal: 'dev', calm: 'varun', warm: 'roopa' },
+  mr: { formal: 'ratan', calm: 'sumit', warm: 'niharika' },
 }
 
-function toSarvamSpeaker(voiceId?: string): string {
-  const raw = (voiceId || 'priya').toLowerCase().trim()
-  const mapped = APP_VOICE_TO_SARVAM_SPEAKER[raw]
-  if (mapped && SARVAM_SPEAKERS.has(mapped)) return mapped
+const LANGUAGE_MALE_STYLE_DEFAULTS: Record<string, Record<VoiceStyle, string>> = {
+  hi: { formal: 'ashutosh', calm: 'rahul', warm: 'aditya' },
+  en: { formal: 'rehan', calm: 'soham', warm: 'anand' },
+  ta: { formal: 'vijay', calm: 'gokul', warm: 'mani' },
+  te: { formal: 'tarun', calm: 'manan', warm: 'sunny' },
+  kn: { formal: 'dev', calm: 'varun', warm: 'amit' },
+  mr: { formal: 'ratan', calm: 'sumit', warm: 'kabir' },
+}
 
-  // Heuristic support for ids like male-formal / female-calm / custom-male-warm
-  const style = raw.includes('formal') ? 'formal' : raw.includes('warm') ? 'warm' : raw.includes('calm') ? 'calm' : null
-  if (style && raw.includes('male')) {
-    const speaker = MALE_STYLE_DEFAULTS[style]
-    if (speaker && SARVAM_SPEAKERS.has(speaker)) return speaker
-  }
-  if (style && raw.includes('female')) {
-    const speaker = FEMALE_STYLE_DEFAULTS[style]
-    if (speaker && SARVAM_SPEAKERS.has(speaker)) return speaker
-  }
+const LANGUAGE_FEMALE_STYLE_DEFAULTS: Record<string, Record<VoiceStyle, string>> = {
+  hi: { formal: 'ritu', calm: 'neha', warm: 'kavya' },
+  en: { formal: 'shreya', calm: 'rupali', warm: 'niharika' },
+  ta: { formal: 'shruti', calm: 'kavitha', warm: 'roopa' },
+  te: { formal: 'ishita', calm: 'tanya', warm: 'pooja' },
+  kn: { formal: 'suhani', calm: 'roopa', warm: 'simran' },
+  mr: { formal: 'shreya', calm: 'niharika', warm: 'rupali' },
+}
+
+function normalizeLanguage(language?: string): string {
+  const raw = (language || 'hi').toLowerCase().trim()
+  if (raw.includes('-')) return raw.split('-')[0]
+  if (raw === 'od') return 'or'
+  return raw
+}
+
+function getStyle(raw: string): VoiceStyle {
+  if (raw.includes('warm')) return 'warm'
+  if (raw.includes('calm')) return 'calm'
+  return STYLE_BY_VOICE_ID[raw] ?? 'formal'
+}
+
+function getGender(raw: string): VoiceGender | undefined {
+  if (raw.includes('male')) return 'male'
+  if (raw.includes('female')) return 'female'
+  return GENDER_BY_VOICE_ID[raw]
+}
+
+function resolveLanguageStyleSpeaker(language: string, style: VoiceStyle): string {
+  const perLanguage = LANGUAGE_STYLE_DEFAULTS[language] ?? LANGUAGE_STYLE_DEFAULTS.hi
+  return perLanguage[style] ?? perLanguage.formal
+}
+
+function toSarvamSpeaker(voiceId?: string, language?: string): string {
+  const raw = (voiceId || 'priya-formal').toLowerCase().trim()
+  const lang = normalizeLanguage(language)
 
   if (SARVAM_SPEAKERS.has(raw)) return raw
   const base = raw.split(/[-_]/)[0]
   if (base && SARVAM_SPEAKERS.has(base)) return base
+
+  const style = getStyle(raw)
+  const gender = getGender(raw)
+
+  if (gender === 'male') {
+    const speaker = (LANGUAGE_MALE_STYLE_DEFAULTS[lang] ?? LANGUAGE_MALE_STYLE_DEFAULTS.hi)[style]
+    if (speaker && SARVAM_SPEAKERS.has(speaker)) return speaker
+  }
+  if (gender === 'female') {
+    const speaker = (LANGUAGE_FEMALE_STYLE_DEFAULTS[lang] ?? LANGUAGE_FEMALE_STYLE_DEFAULTS.hi)[style]
+    if (speaker && SARVAM_SPEAKERS.has(speaker)) return speaker
+  }
+
+  const languageSpeaker = resolveLanguageStyleSpeaker(lang, style)
+  if (languageSpeaker && SARVAM_SPEAKERS.has(languageSpeaker)) return languageSpeaker
+
+  // Last-resort native-ish fallback for Hindi.
   return 'priya'
 }
 
@@ -221,7 +277,7 @@ export async function sarvamTts(
   if (!apiKey) throw new Error('SARVAM_API_KEY not set')
 
   const targetLanguageCode = LANG_TO_BCP47[language] || (language.includes('-') ? language : `${language}-IN`)
-  const speaker = toSarvamSpeaker(options?.speaker)
+  const speaker = toSarvamSpeaker(options?.speaker, language)
   const speechSampleRate = options?.sampleRate ?? 24000
   const codec = options?.outputCodec ?? 'wav'
 

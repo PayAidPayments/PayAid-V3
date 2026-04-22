@@ -22,15 +22,48 @@ const PURPOSES = [
 ] as const
 
 const LANGUAGES = [
-  { code: 'hi', label: 'Hindi', preview: 'Namaste' },
-  { code: 'en', label: 'English', preview: 'Hello' },
-  { code: 'ta', label: 'Tamil', preview: 'Vanakkam' },
-  { code: 'te', label: 'Telugu', preview: 'Namaskaram' },
-  { code: 'kn', label: 'Kannada', preview: 'Namaskara' },
-  { code: 'mr', label: 'Marathi', preview: 'Namaskar' },
+  { code: 'hi', label: 'Hindi', preview: 'नमस्ते! यह एक नमूना आवाज़ है। कृपया बताइए, क्या मेरी आवाज़ साफ़ सुनाई दे रही है?' },
+  { code: 'en', label: 'English', preview: 'Hello! This is a sample voice line. Please tell me if my voice sounds clear and natural.' },
+  { code: 'ta', label: 'Tamil', preview: 'வணக்கம்! இது ஒரு மாதிரி குரல் பதிவு. என் குரல் தெளிவாக கேட்கிறதா என்பதை சொல்லுங்கள்.' },
+  { code: 'te', label: 'Telugu', preview: 'నమస్కారం! ఇది ఒక నమూనా స్వర సందేశం. నా స్వరం స్పష్టంగా వినిపిస్తున్నదా చెప్పండి.' },
+  { code: 'kn', label: 'Kannada', preview: 'ನಮಸ್ಕಾರ! ಇದು ಒಂದು ಮಾದರಿ ಧ್ವನಿ ಸಂದೇಶ. ನನ್ನ ಧ್ವನಿ ಸ್ಪಷ್ಟವಾಗಿ ಕೇಳಿಸುತ್ತಿದೆಯೇ ಎಂದು ತಿಳಿಸಿ.' },
+  { code: 'mr', label: 'Marathi', preview: 'नमस्कार! हा एक नमुना आवाज संदेश आहे. माझा आवाज स्पष्ट आणि नैसर्गिक वाटतो का ते सांगा.' },
 ]
 
-const DEFAULT_PREVIEW_TEXT = 'Namaste'
+const DEFAULT_PREVIEW_TEXT = 'नमस्ते! यह एक नमूना आवाज़ संदेश है।'
+
+const VOICE_STYLE_PREVIEW_TEXT: Record<string, Record<'formal' | 'calm' | 'warm', string>> = {
+  hi: {
+    formal: 'नमस्ते। कृपया इस संदेश को ध्यान से सुनिए। मैं जानकारी स्पष्ट और व्यवस्थित रूप से साझा कर रहा हूँ।',
+    calm: 'नमस्ते, चिंता मत कीजिए। मैं बात धीरे-धीरे और सरल तरीके से समझाता हूँ।',
+    warm: 'नमस्ते जी! आपसे बात करके अच्छा लगा। मैं दोस्ताना अंदाज़ में आपकी मदद के लिए यहाँ हूँ।',
+  },
+  en: {
+    formal: 'Hello. Please listen carefully to this message. I will share the details in a clear and structured manner.',
+    calm: 'Hello, no worries. I will explain everything slowly and simply so it is easy to follow.',
+    warm: 'Hello! Great to speak with you. I am here to help in a friendly and supportive way.',
+  },
+  ta: {
+    formal: 'வணக்கம். தயவுசெய்து இந்த செய்தியை கவனமாக கேளுங்கள். தகவலை தெளிவாகவும் ஒழுங்காகவும் பகிர்கிறேன்.',
+    calm: 'வணக்கம், கவலைப்பட வேண்டாம். நான் மெதுவாகவும் எளிதாகவும் அனைத்தையும் விளக்குகிறேன்.',
+    warm: 'வணக்கம்! உங்களுடன் பேசுவது மகிழ்ச்சி. நட்பான முறையில் உதவ நான் தயாராக இருக்கிறேன்.',
+  },
+  te: {
+    formal: 'నమస్కారం. దయచేసి ఈ సందేశాన్ని శ్రద్ధగా వినండి. సమాచారాన్ని స్పష్టంగా మరియు క్రమబద్ధంగా చెబుతున్నాను.',
+    calm: 'నమస్కారం, ఆందోళన అవసరం లేదు. నేను నెమ్మదిగా మరియు సులభంగా ప్రతిదీ వివరిస్తాను.',
+    warm: 'నమస్కారం! మీతో మాట్లాడటం ఆనందంగా ఉంది. స్నేహపూర్వకంగా సహాయం చేయడానికి నేను సిద్ధంగా ఉన్నాను.',
+  },
+  kn: {
+    formal: 'ನಮಸ್ಕಾರ. ದಯವಿಟ್ಟು ಈ ಸಂದೇಶವನ್ನು ಗಮನದಿಂದ ಕೇಳಿ. ಮಾಹಿತಿಯನ್ನು ಸ್ಪಷ್ಟವಾಗಿ ಮತ್ತು ಸರಿಯಾಗಿ ಹಂಚಿಕೊಳ್ಳುತ್ತೇನೆ.',
+    calm: 'ನಮಸ್ಕಾರ, ಚಿಂತೆ ಬೇಡ. ನಾನು ನಿಧಾನವಾಗಿ ಮತ್ತು ಸರಳವಾಗಿ ಎಲ್ಲವನ್ನೂ ವಿವರಿಸುತ್ತೇನೆ.',
+    warm: 'ನಮಸ್ಕಾರ! ನಿಮ್ಮೊಂದಿಗೆ ಮಾತನಾಡುವುದು ಸಂತೋಷ. ಸ್ನೇಹಪೂರ್ಣವಾಗಿ ಸಹಾಯ ಮಾಡಲು ನಾನು ಇಲ್ಲಿದ್ದೇನೆ.',
+  },
+  mr: {
+    formal: 'नमस्कार. कृपया हा संदेश लक्षपूर्वक ऐका. मी माहिती स्पष्ट आणि नीटनेटक्या पद्धतीने सांगत आहे.',
+    calm: 'नमस्कार, काळजी करू नका. मी सर्व गोष्टी हळू आणि सोप्या भाषेत समजावून सांगतो.',
+    warm: 'नमस्कार! तुमच्याशी बोलून आनंद झाला. मैत्रीपूर्ण पद्धतीने मदत करण्यासाठी मी येथे आहे.',
+  },
+}
 
 const DEFAULT_GREETINGS: Record<string, string> = {
   collections: 'Namaste! PayAid collections team bol raha hun. Aapka payment reminder dena tha. Kya aap ab baat karna chahenge?',
@@ -44,6 +77,12 @@ function getToken(token: string | null): string | null {
   if (token) return token
   if (typeof window === 'undefined') return null
   return localStorage.getItem('token') || localStorage.getItem('auth-token') || JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.token || null
+}
+
+function getVoiceToneFromId(voiceId: string): 'formal' | 'calm' | 'warm' {
+  if (voiceId.includes('warm')) return 'warm'
+  if (voiceId.includes('calm')) return 'calm'
+  return 'formal'
 }
 
 function buildSystemPrompt(
@@ -143,10 +182,12 @@ export default function CreateVoiceAgentWizardPage() {
   const playPreview = async (type: 'language' | 'voice', value?: string) => {
     const authToken = getToken(token)
     if (!authToken) return
-    const text = type === 'language'
-      ? (LANGUAGES.find((l) => l.code === (value ?? basics.language))?.preview ?? 'Namaste')
-      : (basics.name || 'Ravi')
     const lang = type === 'language' ? (value ?? basics.language) : basics.language
+    const voiceTone = getVoiceToneFromId(type === 'voice' ? (value ?? basics.voiceId) : basics.voiceId)
+    const voiceSamples = VOICE_STYLE_PREVIEW_TEXT[lang] ?? VOICE_STYLE_PREVIEW_TEXT.hi
+    const text = type === 'language'
+      ? (LANGUAGES.find((l) => l.code === lang)?.preview ?? DEFAULT_PREVIEW_TEXT)
+      : (voiceSamples[voiceTone] ?? DEFAULT_PREVIEW_TEXT)
     const voiceId = type === 'voice' ? (value ?? basics.voiceId) : basics.voiceId
     setPreviewPlaying(`${type}-${value ?? 'current'}`)
     setPreviewError(null)
@@ -156,7 +197,18 @@ export default function CreateVoiceAgentWizardPage() {
       url.searchParams.set('lang', lang)
       url.searchParams.set('voiceId', voiceId)
       const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${authToken}` } })
-      if (!res.ok) throw new Error('Voice preview service unavailable')
+      if (!res.ok) {
+        let backendMessage = 'Voice preview service unavailable'
+        try {
+          const payload = await res.json()
+          if (payload?.error && typeof payload.error === 'string') {
+            backendMessage = payload.error
+          }
+        } catch {
+          // Keep generic message if response body is not JSON.
+        }
+        throw new Error(backendMessage)
+      }
       const blob = await res.blob()
       const audioUrl = URL.createObjectURL(blob)
       if (audioRef.current) {
@@ -175,8 +227,9 @@ export default function CreateVoiceAgentWizardPage() {
           setPreviewPlaying(null)
         }
       }
-    } catch {
-      setPreviewError('Voice preview is unavailable right now. Please check TTS service connectivity.')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Voice preview is unavailable right now.'
+      setPreviewError(message)
       setPreviewPlaying(null)
     }
   }

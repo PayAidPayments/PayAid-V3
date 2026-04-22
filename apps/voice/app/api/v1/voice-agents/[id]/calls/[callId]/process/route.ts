@@ -51,7 +51,7 @@ export async function POST(
     const result = await orchestrator.processVoiceCall(
       params.id,
       audioBuffer,
-      validated.language || call.agent.language
+      validated.language || call.languageUsed || call.agent.language
     )
 
     // Update call

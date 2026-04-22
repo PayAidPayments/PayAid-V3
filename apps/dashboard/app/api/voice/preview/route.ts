@@ -4,7 +4,7 @@ import { synthesizeSpeech } from '@/lib/voice-agent/tts'
 import { isSarvamConfigured, sarvamTts } from '@/lib/voice-agent/sarvam'
 
 const MAX_PREVIEW_TEXT_LENGTH = 220
-const DEFAULT_PREVIEW_TEXT = 'Namaste'
+const DEFAULT_PREVIEW_TEXT = 'नमस्ते! यह एक नमूना आवाज़ संदेश है।'
 
 async function requirePreviewAuth(request: NextRequest) {
   const user = await authenticateRequest(request)
@@ -51,11 +51,11 @@ export async function GET(request: NextRequest) {
       ? authHeader.slice(7)
       : authHeader ?? undefined
 
-    let audio: Buffer | null = null
+    let audio: Buffer
     let contentType = 'audio/wav'
-    let lastError: string | null = null
 
-    // Prefer Sarvam for preview when available so local voice gateway route shape does not block UX.
+    // Production-like preview path: Sarvam first and strict when configured.
+    // This avoids falling into local VEXYL/Coqui dev misconfig paths that produce slow 500s.
     if (isSarvamConfigured()) {
       try {
         audio = await sarvamTts(text, lang, {
@@ -65,17 +65,15 @@ export async function GET(request: NextRequest) {
         })
         contentType = 'audio/mpeg'
       } catch (err) {
-        lastError = err instanceof Error ? err.message : 'Sarvam preview failed'
+        const msg = err instanceof Error ? err.message : 'Sarvam preview failed'
+        throw new Error(`Sarvam voice preview failed: ${msg}`)
       }
-    }
-
-    if (!audio) {
+    } else {
       try {
         audio = await synthesizeSpeech(text, lang, voiceId, 1.0, { gatewayToken })
       } catch (err) {
-        const baseError = err instanceof Error ? err.message : 'Preview failed'
-        const merged = lastError ? `${lastError}; fallback error: ${baseError}` : baseError
-        throw new Error(merged)
+        const msg = err instanceof Error ? err.message : 'Preview failed'
+        throw new Error(`Voice preview backend is unavailable: ${msg}`)
       }
     }
 

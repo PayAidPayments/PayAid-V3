@@ -10,6 +10,12 @@ import { generateVoiceResponse } from '@/lib/voice-agent/llm'
 import { synthesizeSpeech } from '@/lib/voice-agent/tts'
 import { searchKnowledgeBase } from '@/lib/voice-agent/knowledge-base'
 import { setPlayback } from '@/lib/voice-agent/playback-cache'
+import {
+  detectRequestedLanguageSwitch,
+  getLanguageSwitchAcknowledgement,
+  normalizeLanguageCode,
+  toTwilioGatherLanguage,
+} from '@/lib/voice-agent/language-switch'
 
 const VoiceResponse = twilio.twiml.VoiceResponse
 
@@ -72,9 +78,11 @@ export async function POST(request: NextRequest) {
     const speechHandlerUrl = `${baseUrl}/api/v1/voice-agents/twilio/speech-handler`
     const playbackUrl = `${baseUrl}/api/v1/voice-agents/twilio/playback?callSid=${encodeURIComponent(callSid)}`
 
+    const activeLanguage = normalizeLanguageCode(call.languageUsed || agent.language || 'en')
+
     if (callStatus === 'completed') {
       const twiml = new VoiceResponse()
-      twiml.say({ voice: 'alice', language: agent.language === 'hi' ? 'hi-IN' : 'en-US' }, 'Thank you for calling. Goodbye.')
+      twiml.say({ voice: 'alice', language: toTwilioGatherLanguage(activeLanguage) }, 'Thank you for calling. Goodbye.')
       twiml.hangup()
       return new NextResponse(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } })
     }
@@ -83,6 +91,47 @@ export async function POST(request: NextRequest) {
     const history = parseHistory(call.transcript)
     history.push({ role: 'user', content: userText })
 
+    const requestedSwitch = detectRequestedLanguageSwitch(userText, activeLanguage)
+    if (requestedSwitch) {
+      const switchAck = getLanguageSwitchAcknowledgement(requestedSwitch)
+
+      history.push({ role: 'assistant', content: switchAck })
+
+      const audio = await synthesizeSpeech(
+        switchAck,
+        requestedSwitch,
+        agent.voiceId ?? undefined,
+        1.0,
+        agent.voiceTone ? { voiceTone: agent.voiceTone } : undefined
+      )
+      setPlayback(callSid, audio)
+
+      await prisma.voiceAgentCall.update({
+        where: { id: call.id },
+        data: {
+          transcript: JSON.stringify(history),
+          languageUsed: requestedSwitch,
+          status: 'in-progress',
+        },
+      })
+
+      const twiml = new VoiceResponse()
+      twiml.play(playbackUrl)
+      twiml.gather({
+        input: ['speech'],
+        action: speechHandlerUrl,
+        method: 'POST',
+        language: toTwilioGatherLanguage(requestedSwitch),
+        speechTimeout: 2,
+        timeout: 5,
+      })
+      twiml.redirect(speechHandlerUrl)
+
+      return new NextResponse(twiml.toString(), {
+        headers: { 'Content-Type': 'text/xml', 'Cache-Control': 'no-cache' },
+      })
+    }
+
     let context = ''
     try {
       const kb = await searchKnowledgeBase(agent.id, userText, 3)
@@ -90,12 +139,12 @@ export async function POST(request: NextRequest) {
     } catch {}
 
     const systemPrompt = buildSystemPrompt(agent, context)
-    const responseText = await generateVoiceResponse(systemPrompt, history, agent.language)
+    const responseText = await generateVoiceResponse(systemPrompt, history, activeLanguage)
     history.push({ role: 'assistant', content: responseText })
 
     const audio = await synthesizeSpeech(
       responseText,
-      agent.language,
+      activeLanguage,
       agent.voiceId ?? undefined,
       1.0,
       agent.voiceTone ? { voiceTone: agent.voiceTone } : undefined
@@ -106,7 +155,7 @@ export async function POST(request: NextRequest) {
       where: { id: call.id },
       data: {
         transcript: JSON.stringify(history),
-        languageUsed: agent.language,
+        languageUsed: activeLanguage,
         status: 'in-progress',
       },
     })
@@ -117,7 +166,7 @@ export async function POST(request: NextRequest) {
       input: ['speech'],
       action: speechHandlerUrl,
       method: 'POST',
-      language: agent.language === 'hi' ? 'hi-IN' : 'en-IN',
+      language: toTwilioGatherLanguage(activeLanguage),
       speechTimeout: 2,
       timeout: 5,
     })
