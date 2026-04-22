@@ -138,12 +138,12 @@ export async function buildSalesAutomationWorkspace(
       { sentAt: { gte: executionLogSince } },
       { scheduledAt: { gte: executionLogSince } },
     ],
-  } as const
+  }
 
   const workflowExecutionInLogWhere = {
     tenantId,
     startedAt: { gte: executionLogSince },
-  } as const
+  }
 
   const [
     workflowsActive,
@@ -293,7 +293,7 @@ export async function buildSalesAutomationWorkspace(
             }
           : {}),
       },
-      orderBy: [{ leadScore: 'desc' }, { updatedAt: 'desc' }],
+      orderBy: [{ leadScore: 'desc' }, { createdAt: 'desc' }],
       skip: opts.queueSkip,
       take: opts.queueTake,
       select: {
@@ -578,14 +578,14 @@ export async function buildSalesAutomationWorkspace(
       id: `sig-score-${c.id}`,
       label: `Lead score ${Math.round(c.leadScore)} · recent update`,
       company: c.company || 'Unknown',
-      severity: (c.leadScore >= 75 ? 'hot' : 'warm') as const,
+      severity: (c.leadScore >= 75 ? 'hot' : 'warm') as SignalRowShape['severity'],
       suggested: 'Assign owner · enroll strongest sequence',
     })),
     ...webEvents.map((ev) => ({
       id: `sig-web-${ev.id}`,
       label: `${ev.eventType}: ${ev.eventName}`,
       company: 'Website visitor',
-      severity: 'warm' as const,
+      severity: 'warm' as SignalRowShape['severity'],
       suggested: 'Match to contact · enroll capture sequence',
     })),
   ].slice(0, 12)
@@ -612,27 +612,8 @@ export async function buildSalesAutomationWorkspace(
   })
 
   const firstSeqName = nurtureTemplates[0]?.name ?? '—'
-  const queueRows: ProspectQueueRowShape[] = prospectsMapped.map((p) => ({
-    ...p,
-    queueStatus:
-      p.status === 'qualified'
-        ? 'Hot · needs owner'
-        : p.status === 'contacted'
-          ? 'Enrolled · in sequence'
-          : 'Ready to enroll',
-    enrolledSeq: p.status === 'contacted' ? firstSeqName : '—',
-    owner: c.assignedTo?.user?.name || 'Unassigned',
-    nextAction:
-      p.intentScore >= 70
-        ? 'Assign AE + enroll “Fast lane”'
-        : p.status === 'pending'
-          ? 'Enroll nurture + verify email'
-          : 'Pause email · schedule call',
-  }))
-
-  // Fix: queueRows map uses wrong variable c - should use contactsQueue index
-  const queueRowsFixed: ProspectQueueRowShape[] = contactsQueue.map((c, idx) => {
-    const p = prospectsMapped[idx]
+  const queueRows: ProspectQueueRowShape[] = contactsQueue.map((c, idx) => {
+    const p = prospectsMapped[idx]!
     return {
       ...p,
       queueStatus:
@@ -697,7 +678,7 @@ export async function buildSalesAutomationWorkspace(
       rows: executionMerged,
       total: executionScheduledTotal + executionWorkflowTotal,
     },
-    prospectQueue: { rows: queueRowsFixed, total: contactsQueueTotal },
+    prospectQueue: { rows: queueRows, total: contactsQueueTotal },
     templates,
     deliverability: {
       bounceCount7d: bounce7d,

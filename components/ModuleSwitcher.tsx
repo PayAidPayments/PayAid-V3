@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useAuthStore } from '@/lib/stores/auth'
 import {
   ChevronDown,
@@ -25,6 +25,7 @@ import {
   getModuleHomeUrl,
   type PayAidModuleConfig,
 } from '@/lib/config/payaid-modules.config'
+import { isModuleListedForTenantLicense } from '@/lib/tenant/module-license-filter'
 
 const RupeeIcon = ({ className }: { className?: string }) => (
   <span className={className} style={{ fontSize: '1rem', fontWeight: 'bold' }}>₹</span>
@@ -76,8 +77,24 @@ export function ModuleSwitcher({ currentModule }: { currentModule?: string }) {
   const tenantId = tenant?.id
 
   const primaryModules = getPrimaryModules()
-  const secondaryByGroup = getSecondaryModulesByGroup()
-  const currentModuleData = primaryModules.find((m) => m.id === currentModule)
+  const secondaryByGroupRaw = getSecondaryModulesByGroup()
+  const licensedModules = tenant?.licensedModules ?? []
+
+  const primaryModulesVisible = useMemo(
+    () => primaryModules.filter((m) => isModuleListedForTenantLicense(m.id, tenantId, licensedModules)),
+    [tenantId, licensedModules, primaryModules]
+  )
+
+  const secondaryByGroup = useMemo(() => {
+    if (!tenantId) return secondaryByGroupRaw
+    const out = { ...secondaryByGroupRaw }
+    for (const k of Object.keys(out) as Array<keyof typeof out>) {
+      out[k] = out[k].filter((m) => isModuleListedForTenantLicense(m.id, tenantId, licensedModules))
+    }
+    return out
+  }, [tenantId, licensedModules, secondaryByGroupRaw])
+
+  const currentModuleData = primaryModulesVisible.find((m) => m.id === currentModule)
 
   const handleModuleSwitch = (mod: PayAidModuleConfig) => {
     const token = useAuthStore.getState().token
@@ -141,7 +158,7 @@ export function ModuleSwitcher({ currentModule }: { currentModule?: string }) {
           <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">
             Primary
           </div>
-          {primaryModules.map((mod) => {
+          {primaryModulesVisible.map((mod) => {
             const Icon = getIcon(mod.icon)
             return (
               <button

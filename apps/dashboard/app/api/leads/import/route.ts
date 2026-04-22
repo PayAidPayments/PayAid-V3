@@ -134,6 +134,7 @@ export async function POST(request: NextRequest) {
           legacySourceLabel: row.source || 'Bulk Import',
           skipWorkflows: true,
           skipExecutionLogWrite,
+          skipPilotLoopArtifacts: true,
           skipLeadRouting: true,
         })
 

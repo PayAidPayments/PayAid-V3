@@ -20,6 +20,8 @@ export interface SubmissionMetadata {
   ipAddress?: string
   userAgent?: string
   referrer?: string
+  /** Stripe-style key; passed through to inbound orchestration (tenant-scoped fingerprint). */
+  idempotencyKey?: string
 }
 
 export class FormSubmissionProcessor {
@@ -69,11 +71,16 @@ export class FormSubmissionProcessor {
     // Auto-create contact if enabled
     let contactId: string | null = null
     if (settings.autoCreateContact && contactData) {
+      const idempotencyFingerprint =
+        metadata.idempotencyKey?.trim() && metadata.idempotencyKey.length <= 400
+          ? `${form.tenantId}:web_form:${form.id}:${metadata.idempotencyKey.trim()}`
+          : undefined
       const { contact } = await this.createContactFromSubmission(
         form.tenantId,
         contactData,
         form.id,
-        submission.id
+        submission.id,
+        idempotencyFingerprint
       )
       contactId = contact.id
 
@@ -161,13 +168,15 @@ export class FormSubmissionProcessor {
       sourceData?: any
     },
     formId: string,
-    submissionId: string
+    submissionId: string,
+    idempotencyFingerprint?: string
   ): Promise<{ contact: { id: string; name: string; email: string | null; phone: string | null; company: string | null } }> {
     const inbound = await processInboundLead({
       tenantId,
       actorUserId: INBOUND_ORCHESTRATION_SYSTEM_USER_ID,
       dedupePolicy: 'merge_existing',
       mergeExistingFields: 'fill_empty_only',
+      idempotencyFingerprint: idempotencyFingerprint ?? null,
       source: {
         sourceChannel: 'web_form',
         sourceAsset: formId,

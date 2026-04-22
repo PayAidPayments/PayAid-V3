@@ -152,7 +152,28 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    await prisma.crmConfig.upsert({
+    const rrPool = validated.pilotInbound?.roundRobinPoolSalesRepIds ?? []
+    for (const repId of rrPool) {
+      const ok = await prisma.salesRep.findFirst({
+        where: { id: repId, tenantId },
+        select: { id: true },
+      })
+      if (!ok) {
+        return NextResponse.json(
+          { error: `Invalid sales rep id in pilotInbound.roundRobinPoolSalesRepIds: ${repId}` },
+          { status: 400 }
+        )
+      }
+    }
+
+    if (validated.primaryStrategy === 'round_robin' && rrPool.length === 0) {
+      return NextResponse.json(
+        { error: 'round_robin strategy requires pilotInbound.roundRobinPoolSalesRepIds (non-empty)' },
+        { status: 400 }
+      )
+    }
+
+    await prisma.cRMConfig.upsert({
       where: { tenantId },
       create: {
         tenantId,

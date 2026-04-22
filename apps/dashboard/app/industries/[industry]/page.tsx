@@ -61,11 +61,11 @@ export default function IndustryLandingPage() {
   }
 
   const handleGetStarted = () => {
-    router.push(`/signup?industry=${industryId}`)
+    router.push('/#industry-selector')
   }
 
   const handleLearnMore = () => {
-    router.push(`/industries/${industryId}/features`)
+    router.push('/features')
   }
 
   return (

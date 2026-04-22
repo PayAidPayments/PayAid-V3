@@ -1,6 +1,7 @@
 // CRITICAL: This file must NEVER be imported in client-side code
-// Add 'server-only' marker to prevent bundling
-import 'server-only'
+import { loadServerOnly } from '@/lib/utils/load-server-only'
+
+loadServerOnly()
 
 import { PrismaClient } from '@prisma/client'
 import { isDevelopment, isProduction } from '@/lib/utils/env'

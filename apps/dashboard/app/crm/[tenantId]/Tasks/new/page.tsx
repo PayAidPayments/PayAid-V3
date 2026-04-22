@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { useCreateTask } from '@/lib/hooks/use-api'
+import { getAuthHeaders, useCreateTask } from '@/lib/hooks/use-api'
 import { useContact, useContacts } from '@/lib/hooks/use-api'
 import { useQuery } from '@tanstack/react-query'
-import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,24 +17,23 @@ export default function NewCRMTaskPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const createTask = useCreateTask()
-  const { data: contactsData } = useContacts({ tenantId: tenantId || undefined })
+  const { data: contactsData } = useContacts({ tenantId: tenantId || undefined, limit: 500 })
   const contacts = contactsData?.contacts ?? []
-  const { token } = useAuthStore()
 
-  // Fetch employees from HR to populate the assignee dropdown
-  const { data: employeesData } = useQuery({
-    queryKey: ['employees-for-task-assign'],
+  // Fetch CRM users (module-scoped) for assignee dropdown.
+  const { data: usersData } = useQuery({
+    queryKey: ['crm-users-for-task-assign', tenantId],
     queryFn: async () => {
-      const res = await fetch('/api/hr/employees?limit=500', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      const qs = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''
+      const res = await fetch(`/api/crm/users${qs}`, {
+        headers: getAuthHeaders(),
       })
-      if (!res.ok) return { employees: [] }
-      return res.json().catch(() => ({ employees: [] }))
+      if (!res.ok) return { users: [] }
+      return res.json().catch(() => ({ users: [] }))
     },
-    enabled: !!token,
+    enabled: !!tenantId,
   })
-  // Only show employees who have a linked user account (userId is set)
-  const assignableEmployees = (employeesData?.employees || []).filter((e: any) => e.userId)
+  const assignableUsers = usersData?.users || []
 
   const prefillTitle = (searchParams?.get('title') || '').trim()
   const prefillContactId = (searchParams?.get('contactId') || '').trim()
@@ -300,16 +298,16 @@ export default function NewCRMTaskPage() {
                 disabled={createTask.isPending}
                 className="flex h-9 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
               >
-                <option value="">— Unassigned (assign to me) —</option>
-                {assignableEmployees.map((emp: any) => (
-                  <option key={emp.userId} value={emp.userId}>
-                    {emp.firstName} {emp.lastName} {emp.designation?.name ? `· ${emp.designation.name}` : ''} {emp.department?.name ? `(${emp.department.name})` : ''}
+                <option value="">— Unassigned (auto-assign to me if available) —</option>
+                {assignableUsers.map((user: any) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name || user.email || user.id}
                   </option>
                 ))}
               </select>
-              {assignableEmployees.length === 0 && (
+              {assignableUsers.length === 0 && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  No employees with linked accounts found. Employees need a PayAid user account to be assigned tasks.
+                  No CRM users available for assignment in this tenant yet.
                 </p>
               )}
             </div>

@@ -1160,7 +1160,7 @@ export default function PricingLandingPage() {
             <li><Link href="/about">About</Link></li>
             <li><Link href="/contact">Contact</Link></li>
           </ul>
-          <Link href="/register" className="cta-header">Start Free Trial</Link>
+          <Link href="/#industry-selector" className="cta-header">Choose Industry &amp; Start</Link>
           <button className="menu-toggle">☰</button>
         </nav>
         {/* Mobile Menu */}
@@ -1171,7 +1171,7 @@ export default function PricingLandingPage() {
             <li><Link href="/pricing">Pricing</Link></li>
             <li><Link href="/about">About</Link></li>
             <li><Link href="/contact">Contact</Link></li>
-            <li><Link href="/register" className="cta-header">Start Free Trial</Link></li>
+            <li><Link href="/#industry-selector" className="cta-header">Choose Industry &amp; Start</Link></li>
           </ul>
         </div>
       </header>
@@ -1335,7 +1335,7 @@ export default function PricingLandingPage() {
                 <li>Email support (Mon-Sat, 09:30 AM - 06:30 PM IST)</li>
                 <li>Add more modules: ₹1,999/module/month</li>
               </ul>
-              <Link href="/register" className="cta-button cta-secondary">Start Free Trial</Link>
+              <Link href="/#industry-selector" className="cta-button cta-secondary">Choose Industry &amp; Start</Link>
             </div>
 
             {/* Professional Tier */}
@@ -1366,7 +1366,7 @@ export default function PricingLandingPage() {
                 <li>Add more modules: ₹3,999/module/month</li>
                 <li>29+ modules available</li>
               </ul>
-              <Link href="/register" className="cta-button cta-primary">Start Free Trial</Link>
+              <Link href="/#industry-selector" className="cta-button cta-primary">Choose Industry &amp; Start</Link>
             </div>
 
             {/* Enterprise Tier */}
@@ -1497,7 +1497,7 @@ export default function PricingLandingPage() {
         <h2>Ready to Transform Your Business?</h2>
         <p>Take the platform for a test drive and discover how this powerful program can help your business increase revenue, save time and save money.</p>
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '2rem' }}>
-          <Link href="/register" className="cta-button-large">Start 14-Day FREE Trial</Link>
+          <Link href="/#industry-selector" className="cta-button-large">Choose Industry &amp; Start</Link>
         </div>
         <p style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: 0.9 }}>No credit card required to start trial.</p>
       </section>

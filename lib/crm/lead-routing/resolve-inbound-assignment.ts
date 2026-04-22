@@ -120,6 +120,27 @@ export async function resolveInboundSalesRepAssignment(
   const draft = draftContactForAllocation(ctx)
   const strategy = config.primaryStrategy
 
+  /**
+   * Pilot: deterministic rotation without a cursor table (fair under concurrency → add `LeadRoundRobinState` later).
+   */
+  const tryRoundRobin = async (): Promise<{
+    salesRepId: string
+    poolSize: number
+    bucket: number
+  } | null> => {
+    const pool = config.pilotInbound?.roundRobinPoolSalesRepIds ?? []
+    const validated: string[] = []
+    for (const id of pool) {
+      if (await validateRepId(ctx.tenantId, id)) validated.push(id)
+    }
+    if (validated.length === 0) return null
+    const count = await prisma.contact.count({ where: { tenantId: ctx.tenantId } })
+    const idx = count % validated.length
+    const salesRepId = validated[idx]
+    if (!salesRepId) return null
+    return { salesRepId, poolSize: validated.length, bucket: idx }
+  }
+
   const tryTerritory = async (): Promise<string | null> => {
     return LeadRouterService.routeLead(
       ctx.tenantId,
@@ -146,7 +167,20 @@ export async function resolveInboundSalesRepAssignment(
     return null
   }
 
-  if (strategy === 'territory') {
+  if (strategy === 'round_robin') {
+    const rr = await tryRoundRobin()
+    if (rr) {
+      return {
+        salesRepId: rr.salesRepId,
+        reason: 'round_robin',
+        detail: {
+          poolSize: rr.poolSize,
+          bucket: rr.bucket,
+          note: 'pilot_modulo_contact_count',
+        },
+      }
+    }
+  } else if (strategy === 'territory') {
     const tid = await tryTerritory()
     if (tid) return { salesRepId: tid, reason: 'territory' }
   } else if (strategy === 'smart') {

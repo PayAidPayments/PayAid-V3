@@ -71,6 +71,7 @@ import {
   TieredModule
 } from '@/lib/modules/module-tiers'
 import { cn } from '@/lib/utils'
+import { isModuleListedForTenantLicense } from '@/lib/tenant/module-license-filter'
 
 // Icon mapping for modules
 const moduleIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -346,8 +347,8 @@ export function ModuleSwitcher() {
         }))
     ]
 
-    return modules.filter(m => 
-      licensedModules.includes(m.id) || licensedModules.length === 0 || true
+    return modules.filter((m) =>
+      isModuleListedForTenantLicense(m.id, tenantId, licensedModules)
     )
   }, [tenantId, licensedModules])
 

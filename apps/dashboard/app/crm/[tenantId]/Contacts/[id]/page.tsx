@@ -97,6 +97,12 @@ export default function ContactDetailPage() {
   const tenantId = params.tenantId as string
   const id = params.id as string
   const router = useRouter()
+  const isNewContactAlias = typeof id === 'string' && id.toLowerCase() === 'new'
+  useEffect(() => {
+    if (isNewContactAlias && tenantId) {
+      router.replace(`/crm/${tenantId}/Contacts/New`)
+    }
+  }, [isNewContactAlias, router, tenantId])
   const queryClient = useQueryClient()
   const { data: contact, isLoading, isError, error, refetch } = useContact(id, tenantId, { include360: true })
   const deleteContact = useDeleteContact()
@@ -230,6 +236,10 @@ export default function ContactDetailPage() {
 
   if (isLoading) {
     return <PageLoading message="Loading contact..." fullScreen={false} />
+  }
+
+  if (isNewContactAlias) {
+    return <PageLoading message="Opening new contact form..." fullScreen={false} />
   }
 
   if (isError) {

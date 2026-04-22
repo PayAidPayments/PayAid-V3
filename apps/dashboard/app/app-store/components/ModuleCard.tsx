@@ -4,6 +4,20 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useCart } from '@/lib/stores/cart'
 import { ModuleDefinition } from '@prisma/client'
+import {
+  BarChart3,
+  Briefcase,
+  FileText,
+  Globe,
+  IndianRupee,
+  MessageSquare,
+  Package,
+  ShoppingCart,
+  Sparkles,
+  UserCircle,
+  Users,
+} from 'lucide-react'
+import { getModuleMarketingHref } from '@/lib/moduleMarketing'
 
 interface ModuleCardProps {
   module: ModuleDefinition
@@ -28,10 +42,23 @@ export default function ModuleCard({ module, isLicensed = false }: ModuleCardPro
     })
   }
 
-  const handleStartTrial = () => {
-    // TODO: Implement free trial logic
-    console.log('Start trial for', module.moduleId)
-  }
+  const iconMap = {
+    Users,
+    ShoppingCart,
+    MessageSquare,
+    IndianRupee,
+    Briefcase,
+    Sparkles,
+    BarChart3,
+    Globe,
+    FileText,
+    UserCircle,
+    Package,
+  } as const
+  const IconComponent = module.icon ? iconMap[module.icon as keyof typeof iconMap] : null
+  const isEmojiIcon = Boolean(module.icon && !IconComponent && !/^[A-Za-z0-9_-]+$/.test(module.icon))
+  const learnMoreHref = getModuleMarketingHref(module.moduleId)
+  const startTrialHref = `/signup?planType=single&modules=${encodeURIComponent(module.moduleId)}`
 
   return (
     <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200">
@@ -39,7 +66,13 @@ export default function ModuleCard({ module, isLicensed = false }: ModuleCardPro
       <div className="flex items-center mb-4">
         {module.icon && (
           <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-            <span className="text-2xl">{module.icon}</span>
+            {IconComponent ? (
+              <IconComponent className="h-6 w-6 text-blue-700" />
+            ) : isEmojiIcon ? (
+              <span className="text-2xl">{module.icon}</span>
+            ) : (
+              <Package className="h-6 w-6 text-blue-700" />
+            )}
           </div>
         )}
         <div>
@@ -107,16 +140,16 @@ export default function ModuleCard({ module, isLicensed = false }: ModuleCardPro
             >
               Add to Cart
             </button>
-            <button
-              onClick={handleStartTrial}
-              className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-semibold hover:bg-gray-200 transition"
+            <Link
+              href={startTrialHref}
+              className="block w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-semibold hover:bg-gray-200 transition text-center"
             >
               Start Free Trial
-            </button>
+            </Link>
           </>
         )}
         <Link
-          href={`/app-store/${module.moduleId}`}
+          href={learnMoreHref}
           className="block text-center text-blue-600 hover:text-blue-700 text-sm font-medium"
         >
           Learn More →

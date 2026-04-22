@@ -73,6 +73,12 @@ async function main() {
   })
   console.log('Super Admin user created/updated:', superAdmin.email)
 
+  await prisma.tenantMember.upsert({
+    where: { userId_tenantId: { userId: superAdmin.id, tenantId: payaidTenant.id } },
+    update: { role: 'owner' },
+    create: { userId: superAdmin.id, tenantId: payaidTenant.id, role: 'owner' },
+  })
+
   // 3. Demo Business tenant (for Business Admin) – use existing 'demo' if present
   let demoTenant = await prisma.tenant.findUnique({
     where: { subdomain: 'demo' },
@@ -116,6 +122,12 @@ async function main() {
     },
   })
   console.log('Business Admin user created/updated:', businessAdmin.email)
+
+  await prisma.tenantMember.upsert({
+    where: { userId_tenantId: { userId: businessAdmin.id, tenantId: demoTenant.id } },
+    update: { role: 'admin' },
+    create: { userId: businessAdmin.id, tenantId: demoTenant.id, role: 'admin' },
+  })
 
   console.log('\n--- Credentials for testing ---\n')
   console.log('SUPER ADMIN (PayAid team – access /super-admin)')

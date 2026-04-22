@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
           },
           skipWorkflows: true,
           skipExecutionLogWrite,
+          skipPilotLoopArtifacts: true,
           skipLeadRouting: true,
         })
 

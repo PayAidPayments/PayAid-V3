@@ -107,6 +107,7 @@ export default function CRMDealsPage() {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
     const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
     const queryClient = useQueryClient()
+    const hasInitialDealsRefetchRef = useRef(false)
 
     const periodCategoryForApi =
       selectedCategory === 'created' ||
@@ -137,6 +138,17 @@ export default function CRMDealsPage() {
     useEffect(() => {
       setUiPage(1)
     }, [selectedCategory, stageFilter, rowsPerPage, timePeriod, urlContactId, urlContactIds, urlAccountId])
+
+    // Keep KPI cards in sync after returning from detail mutations (e.g. mark won/lost).
+    // Global React Query defaults keep data fresh for 5 minutes, so this one-shot refetch
+    // prevents stale card counts while preserving normal caching behavior afterwards.
+    useEffect(() => {
+      if (hasInitialDealsRefetchRef.current) return
+      hasInitialDealsRefetchRef.current = true
+      queryClient.invalidateQueries({ queryKey: ['deals'] })
+      void refetch()
+    }, [queryClient, refetch])
+
     const deleteDeal = useDeleteDeal()
     const hasCheckedDataRef = useRef(false)
     const hasTriggeredSeedRef = useRef(false)

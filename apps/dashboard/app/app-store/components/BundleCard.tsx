@@ -1,6 +1,6 @@
 'use client'
 
-import { useCart } from '@/lib/stores/cart'
+import Link from 'next/link'
 
 interface Bundle {
   id: string
@@ -33,17 +33,7 @@ const moduleIcons: Record<string, string> = {
 }
 
 export default function BundleCard({ bundle }: BundleCardProps) {
-  const { addToCart } = useCart()
-
-  const handlePurchase = () => {
-    addToCart({
-      type: 'bundle',
-      bundleId: bundle.id,
-      name: bundle.name,
-      price: bundle.bundlePrice,
-      modules: bundle.modules,
-    })
-  }
+  const signupHref = `/signup?planType=multi&modules=${encodeURIComponent(bundle.modules.join(','))}`
 
   return (
     <div className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border-2 ${
@@ -101,16 +91,16 @@ export default function BundleCard({ bundle }: BundleCardProps) {
       </div>
 
       {/* CTA Button */}
-      <button
-        onClick={handlePurchase}
+      <Link
+        href={signupHref}
         className={`w-full py-3 px-4 rounded-lg font-semibold transition ${
           bundle.mostPopular
             ? 'bg-blue-600 text-white hover:bg-blue-700'
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-        }`}
+        } block text-center`}
       >
         Get This Bundle
-      </button>
+      </Link>
     </div>
   )
 }

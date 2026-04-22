@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/db/prisma'
 import { checkTenantLimits } from '@/lib/middleware/tenant'
 import { multiLayerCache } from '@/lib/cache/multi-layer'
-import { triggerWorkflowsByEvent } from '@/lib/workflow/trigger'
 import { logCrmAudit } from '@/lib/audit-log-crm'
 import type { Prisma } from '@prisma/client'
 import type {
@@ -17,6 +16,11 @@ import {
   normalizeSourceAttribution,
 } from './source-normalize'
 import { loadLeadRoutingConfig, resolveInboundSalesRepAssignment } from '@/lib/crm/lead-routing'
+import {
+  applyInboundPilotArtifacts,
+  findInboundIdempotentContact,
+  recordInboundIdempotency,
+} from './pilot-post-persist'
 
 function pushLog(
   log: InboundExecutionLogEntry[],
@@ -111,9 +115,10 @@ async function finalizeInboundResult(
   result: ProcessInboundLeadResult
 ): Promise<ProcessInboundLeadResult> {
   if (input.skipExecutionLogWrite === true) return result
+  if (result.dedupeAction === 'idempotent_replay') return result
+  const contactId =
+    result.contact.id && result.contact.id.length > 0 ? result.contact.id : null
   try {
-    const contactId =
-      result.contact.id && result.contact.id.length > 0 ? result.contact.id : null
     await prisma.inboundOrchestrationLog.create({
       data: {
         tenantId: input.tenantId,
@@ -131,6 +136,23 @@ async function finalizeInboundResult(
     })
   } catch (err) {
     console.error('[inbound-orchestration] execution log persist failed:', err)
+    try {
+      await prisma.inboundOrchestrationDeadLetter.create({
+        data: {
+          tenantId: input.tenantId,
+          errorMessage: err instanceof Error ? err.message : String(err),
+          contactId,
+          payload: {
+            status: mapExecutionLogStatus(result),
+            sourceChannel: normalizedSource.sourceChannel,
+            trace: result.executionLog as unknown as Prisma.InputJsonValue,
+            errorCode: result.error?.code ?? null,
+          } as unknown as Prisma.InputJsonValue,
+        },
+      })
+    } catch (dlErr) {
+      console.error('[inbound-orchestration] dead-letter persist failed:', dlErr)
+    }
   }
   return result
 }
@@ -179,11 +201,56 @@ export async function processInboundLead(
   const contact = normalizeInboundContactFields(input.contact)
   const legacySource = (input.legacySourceLabel ?? normalizedSource.sourceChannel).trim()
 
+  // Pilot durable artifacts (decision / SLA / task) are gated only by `skipPilotLoopArtifacts`.
+  // Bulk CSV paths must pass `skipPilotLoopArtifacts: true`; `skipExecutionLogWrite` affects only execution-log persistence.
+  const skipPilotArtifacts = input.skipPilotLoopArtifacts === true
+  const fpRaw = input.idempotencyFingerprint?.trim()
+  const idempotencyFingerprint = fpRaw && fpRaw.length > 0 && fpRaw.length <= 512 ? fpRaw : null
+
   pushLog(executionLog, 'lead.normalized', {
     sourceChannel: normalizedSource.sourceChannel,
     hasEmail: Boolean(contact.email),
     hasPhone: Boolean(contact.phone),
   })
+
+  if (idempotencyFingerprint && !skipPilotArtifacts) {
+    const idem = await findInboundIdempotentContact({
+      tenantId: input.tenantId,
+      fingerprint: idempotencyFingerprint,
+    })
+    if (idem) {
+      const existing = await prisma.contact.findFirst({
+        where: { id: idem.id, tenantId: input.tenantId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          company: true,
+          stage: true,
+          type: true,
+          status: true,
+          source: true,
+          accountId: true,
+          assignedToId: true,
+          leadScore: true,
+        },
+      })
+      if (existing) {
+        pushLog(executionLog, 'lead.persisted', { action: 'idempotent_replay', id: existing.id })
+        return finalizeInboundResult(input, normalizedSource, {
+          ok: true,
+          contact: contactRowFromResult({
+            ...existing,
+            leadScore: existing.leadScore ?? 0,
+          }),
+          created: false,
+          dedupeAction: 'idempotent_replay',
+          executionLog,
+        })
+      }
+    }
+  }
 
   const dup = await findDuplicateContact(input.tenantId, contact.email, contact.phone)
   if (dup && input.dedupePolicy === 'reject_duplicate') {
@@ -239,6 +306,9 @@ export async function processInboundLead(
       ? String(contact.assignedToId).trim()
       : dup?.contact.assignedToId ?? null
 
+  let routingReasonSummary: string = assignedToId ? 'explicit_or_existing' : 'pending'
+  let routingDetailOut: Record<string, unknown> | undefined
+
   if (!assignedToId && input.skipLeadRouting !== true) {
     const routingCfg = await loadLeadRoutingConfig(input.tenantId)
     const routed = await resolveInboundSalesRepAssignment(routingCfg, {
@@ -253,6 +323,8 @@ export async function processInboundLead(
       postalCode: contact.postalCode ?? null,
       leadScore: score,
     })
+    routingReasonSummary = routed.reason
+    routingDetailOut = routed.detail
     if (routed.salesRepId) {
       assignedToId = routed.salesRepId
       pushLog(executionLog, 'lead.assigned', {
@@ -269,6 +341,9 @@ export async function processInboundLead(
       })
     }
   } else {
+    if (input.skipLeadRouting === true && routingReasonSummary === 'pending') {
+      routingReasonSummary = 'skipped_lead_routing'
+    }
     pushLog(executionLog, 'lead.assigned', {
       explicit: Boolean(
         contact.assignedToId !== undefined &&
@@ -367,22 +442,24 @@ export async function processInboundLead(
     }
 
     if (!skipWorkflows) {
-      triggerWorkflowsByEvent({
-        tenantId: input.tenantId,
-        event: 'contact.updated',
-        entity: 'contact',
-        entityId: updated.id,
-        data: {
-          contact: {
-            id: updated.id,
-            name: updated.name,
-            email: updated.email,
-            phone: updated.phone,
-            company: updated.company,
+      void import('@/lib/workflow/trigger').then(({ triggerWorkflowsByEvent }) => {
+        triggerWorkflowsByEvent({
+          tenantId: input.tenantId,
+          event: 'contact.updated',
+          entity: 'contact',
+          entityId: updated.id,
+          data: {
+            contact: {
+              id: updated.id,
+              name: updated.name,
+              email: updated.email,
+              phone: updated.phone,
+              company: updated.company,
+            },
+            inboundOrchestration: true,
+            source: normalizedSource,
           },
-          inboundOrchestration: true,
-          source: normalizedSource,
-        },
+        })
       })
       pushLog(executionLog, 'lead.followup.started', { via: 'contact.updated' })
     }
@@ -390,6 +467,29 @@ export async function processInboundLead(
     if (!skipCache) {
       await multiLayerCache.deletePattern(`contacts:${input.tenantId}:*`).catch(() => {})
       await multiLayerCache.delete(`dashboard:stats:${input.tenantId}`).catch(() => {})
+    }
+
+    try {
+      await applyInboundPilotArtifacts(
+        {
+          tenantId: input.tenantId,
+          contactId: updated.id,
+          sourceChannel: normalizedSource.sourceChannel,
+          selectedSalesRepId: updated.assignedToId,
+          routingReason: routingReasonSummary,
+          routingDetail: routingDetailOut,
+        },
+        { skipPilotArtifacts }
+      )
+      if (idempotencyFingerprint && !skipPilotArtifacts) {
+        await recordInboundIdempotency({
+          tenantId: input.tenantId,
+          fingerprint: idempotencyFingerprint,
+          contactId: updated.id,
+        })
+      }
+    } catch (pilotErr) {
+      console.error('[inbound-orchestration] pilot post-persist failed:', pilotErr)
     }
 
     return finalizeInboundResult(input, normalizedSource, {
@@ -497,22 +597,24 @@ export async function processInboundLead(
   }
 
   if (!skipWorkflows) {
-    triggerWorkflowsByEvent({
-      tenantId: input.tenantId,
-      event: 'contact.created',
-      entity: 'contact',
-      entityId: created.id,
-      data: {
-        contact: {
-          id: created.id,
-          name: created.name,
-          email: created.email,
-          phone: created.phone,
-          company: created.company,
+    void import('@/lib/workflow/trigger').then(({ triggerWorkflowsByEvent }) => {
+      triggerWorkflowsByEvent({
+        tenantId: input.tenantId,
+        event: 'contact.created',
+        entity: 'contact',
+        entityId: created.id,
+        data: {
+          contact: {
+            id: created.id,
+            name: created.name,
+            email: created.email,
+            phone: created.phone,
+            company: created.company,
+          },
+          source: normalizedSource,
+          legacySource,
         },
-        source: normalizedSource,
-        legacySource,
-      },
+      })
     })
     pushLog(executionLog, 'lead.followup.started', { via: 'contact.created' })
   }
@@ -520,6 +622,29 @@ export async function processInboundLead(
   if (!skipCache) {
     await multiLayerCache.deletePattern(`contacts:${input.tenantId}:*`).catch(() => {})
     await multiLayerCache.delete(`dashboard:stats:${input.tenantId}`).catch(() => {})
+  }
+
+  try {
+    await applyInboundPilotArtifacts(
+      {
+        tenantId: input.tenantId,
+        contactId: created.id,
+        sourceChannel: normalizedSource.sourceChannel,
+        selectedSalesRepId: created.assignedToId,
+        routingReason: routingReasonSummary,
+        routingDetail: routingDetailOut,
+      },
+      { skipPilotArtifacts }
+    )
+    if (idempotencyFingerprint && !skipPilotArtifacts) {
+      await recordInboundIdempotency({
+        tenantId: input.tenantId,
+        fingerprint: idempotencyFingerprint,
+        contactId: created.id,
+      })
+    }
+  } catch (pilotErr) {
+    console.error('[inbound-orchestration] pilot post-persist failed:', pilotErr)
   }
 
   return finalizeInboundResult(input, normalizedSource, {

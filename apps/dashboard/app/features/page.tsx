@@ -43,8 +43,8 @@ export default function FeaturesPage() {
               <Link href="/pricing" className="text-gray-700 hover:text-[#53328A]">Pricing</Link>
               <Link href="/app-store" className="text-gray-700 hover:text-[#53328A]">App Store</Link>
             </nav>
-            <Link href="/signup" className="bg-[#53328A] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#6B42A3] transition">
-              Start Free Trial
+            <Link href="/#industry-selector" className="bg-[#53328A] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#6B42A3] transition">
+              Choose Industry & Start
             </Link>
           </div>
         </div>
@@ -189,10 +189,10 @@ export default function FeaturesPage() {
               Browse Modules
             </Link>
             <Link
-              href="/signup"
+              href="/#industry-selector"
               className="bg-white text-[#53328A] px-8 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 transition"
             >
-              Start Free Trial
+              Choose Industry & Start
             </Link>
           </div>
         </div>

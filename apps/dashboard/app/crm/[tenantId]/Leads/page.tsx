@@ -72,7 +72,7 @@ export default function CRMLeadsPage() {
   const tenantId = params?.tenantId as string
   const { user, logout } = useAuthStore()
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(25)
+  const [limit, setLimit] = useState(100)
   const [search, setSearch] = useState('')
   const [selectedLeads, setSelectedLeads] = useState<string[]>([])
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false)

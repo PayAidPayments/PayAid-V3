@@ -62,6 +62,7 @@
 | 2026-04-16 | [ms] | [ms] | [ms] | [ms] | [ms] | [%] | [Pass/Fail] | [Name] | [URL/path] |
 | 2026-04-17 | 3271 | 3367 | 3466 | N/A | N/A | N/A | Fail (hosted steady-state after warmup `CRM_AUTH_WARMUP_ROUNDS=3`, `n=15`; p95 still above 300ms GA guardrail) | Phani | docs/evidence/closure/2026-04-17T04-42-19-970Z-crm-auth-baseline-run.md |
 | 2026-04-18 | 3218 | 2523 | 3787 | N/A | N/A | N/A | Fail (hosted `payaid-v3.vercel.app`, warmup 3, `n=15`, `stats=false` on deals/tasks sampler; deals p95 improved vs 2026-04-17 row; strict 300ms SLO still open) | Phani | docs/evidence/closure/2026-04-18T14-16-16-086Z-crm-auth-baseline-run.md |
+| 2026-04-19 | 2233 | 2189 | 1894 | N/A | N/A | N/A | Fail (hosted `payaid-v3.vercel.app`, warmup 3, `n=25`; auth/login path fixed with valid credentials and all list endpoints `200`, but strict 300ms GA guardrail still open) | Phani | docs/evidence/closure/2026-04-19T14-52-28-898Z-crm-auth-baseline-run.md |
 | 2026-04-20 | [ms] | [ms] | [ms] | [ms] | [ms] | [%] | [Pass/Fail] | [Name] | [URL/path] |
 | 2026-04-21 | [ms] | [ms] | [ms] | [ms] | [ms] | [%] | [Pass/Fail] | [Name] | [URL/path] |
 | 2026-04-22 | [ms] | [ms] | [ms] | [ms] | [ms] | [%] | [Pass/Fail] | [Name] | [URL/path] |
@@ -84,12 +85,12 @@
 - [x] QA: signed-in **runbook** for Home / Deals / Contacts post-gating (`docs/CRM_GA_DAY2_QA_HOME_DEALS_CONTACTS.md`) — execute and record Pass/Fail when ready.
 - [x] QA: run that runbook signed-in and record results (tables or findings doc). **2026-04-18:** automated smoke via `npm run test:e2e:crm-day2-qa` (`tests/e2e/crm-day2-qa-postgating.spec.ts`) + runbook tables updated; **manual follow-up** remains for deal/contact detail flows and Network-tab seed check (see runbook “Pending (manual)” rows).
 - [x] Product: **parity one-pager** for Day 2 gating (`docs/CRM_GA_DAY2_PRODUCT_PARITY_ONEPAGER.md`) — sign after QA.
-- [ ] Product: complete parity one-pager (decision + date) after QA run.
+- [x] Product: complete parity one-pager (decision + date) after QA run. **2026-04-20:** one-pager finalized with decision **Accept for GA track** after Day 2 manual checks passed.
 
 #### Day 3 - Tasks completeness
 - [x] Eng: complete task edit flow and tenant-safe detail loading (native `/api/tasks`, `?tenantId=` wiring, detail Save — see `docs/CRM_GA_SOLO_T03_DELIVERY_NOTE_2026-04-15.md`).
 - [x] QA: signed-in task journey **runbook** published (`docs/CRM_GA_SOLO_T03_QA_RUNBOOK.md`) — execute and record Pass/Fail when you run it.
-- [ ] QA: run the runbook signed-in and record Pass/Fail (in runbook table or findings doc).
+- [x] QA: run the runbook signed-in and record Pass/Fail (in runbook table or findings doc). **2026-04-18:** automated smoke via `npm run test:e2e:crm-day3-qa` (`tests/e2e/crm-day3-tasks-qa-smoke.spec.ts`) + runbook §1 “Open Tasks” row; **manual follow-up** for filters, create, detail, complete/delete (§2–§6).
 - [x] Product: UAT **one-pager template** ready (`docs/CRM_GA_SOLO_T03_PRODUCT_UAT_ONEPAGER.md`) — fill checkboxes + date when UAT is executed.
 - [ ] Product: complete UAT one-pager (checkboxes + decision date) after QA run.
 
@@ -101,7 +102,7 @@
 - [x] Eng: support-facing merge/duplicate error reference published (`docs/CRM_GA_SOLO_T04_SUPPORT_MERGE_ERRORS.md`) to satisfy Ticket 04 support doc criterion.
 - [ ] Eng: any remaining merge/data edge cases from Product (e.g. GSTIN-only tenants, bulk merge) — track in ticket pack.
 - [x] QA: signed-in **runbook** for duplicate/merge API scenarios (`docs/CRM_GA_SOLO_T04_QA_RUNBOOK.md`) — execute and record Pass/Fail when you run it.
-- [ ] QA: run that runbook signed-in and record results (table at bottom of runbook or findings doc).
+- [ ] QA: run that runbook signed-in and record results (table at bottom of runbook or findings doc). **2026-04-21 partial:** A2 (duplicate email reject) and A4 (duplicate phone reject) passed; remaining Day 4 rows pending.
 - [ ] Product: sign off merge UX and failure messaging.
 
 #### Day 5 - RBAC and audit coverage
@@ -297,11 +298,11 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 - [x] Owner prefill: Day 6-Day 10 + SOLO-T11 evidence tables prefilled with current owner (`Phani`) for faster execution logging.
 - [x] Tracking sync: `docs/PAYAID_V3_PENDING_ITEMS_PRIORITY_CHECKLIST.md` updated with CRM GA closeout board status + runtime blockers (2026-04-15).
 - [x] Live closure log published: `docs/CRM_GA_CLOSURE_EXECUTION_LOG.md` (queue item status, blockers, and evidence links in one table).
-- [ ] 1) Day 2 QA execution: run `docs/CRM_GA_DAY2_QA_HOME_DEALS_CONTACTS.md` and mark Day 2 QA row.
-- [ ] 2) Day 2 Product signoff: complete `docs/CRM_GA_DAY2_PRODUCT_PARITY_ONEPAGER.md` and mark Day 2 Product row.
-- [ ] 3) Day 3 QA execution: run `docs/CRM_GA_SOLO_T03_QA_RUNBOOK.md` and mark Day 3 QA row.
-- [ ] 4) Day 3 Product signoff: complete `docs/CRM_GA_SOLO_T03_PRODUCT_UAT_ONEPAGER.md` and mark Day 3 Product row.
-- [ ] 5) Day 4 closure: execute `docs/CRM_GA_SOLO_T04_QA_RUNBOOK.md`, record Product merge UX signoff, then close remaining Day 4 rows.
+- [x] 1) Day 2 QA execution: run `docs/CRM_GA_DAY2_QA_HOME_DEALS_CONTACTS.md` and mark Day 2 QA row. **2026-04-20:** manual deal-detail, contact-detail, and seed-network checks confirmed pass.
+- [x] 2) Day 2 Product signoff: complete `docs/CRM_GA_DAY2_PRODUCT_PARITY_ONEPAGER.md` and mark Day 2 Product row. **2026-04-20:** finalized as **Accept for GA track**.
+- [x] 3) Day 3 QA execution: run `docs/CRM_GA_SOLO_T03_QA_RUNBOOK.md` and mark Day 3 QA row. **2026-04-20 closure:** basic create pass, with-contact+due create pass, detail/edit/save pass, complete/delete pass, tenant context pass.
+- [x] 4) Day 3 Product signoff: complete `docs/CRM_GA_SOLO_T03_PRODUCT_UAT_ONEPAGER.md` and mark Day 3 Product row. **2026-04-20 closure:** decision finalized to **Approved for GA track increment**.
+- [ ] 5) Day 4 closure: execute `docs/CRM_GA_SOLO_T04_QA_RUNBOOK.md`, record Product merge UX signoff, then close remaining Day 4 rows. **2026-04-20 update:** automation started (`npm run test:crm:merge-key`, `npm run test:crm:merge-guard` pass; evidence `docs/evidence/closure/2026-04-20T22-15-00-000Z-crm-day4-merge-guard-tests.md`), manual API checks A-C + D endpoint verification still pending.
 - [ ] 6) Day 5 closure: execute `docs/CRM_GA_SOLO_T05_ROLE_MATRIX_RUNBOOK.md` + `docs/CRM_GA_SOLO_T05_AUDIT_VERIFICATION_RUNBOOK.md`, then close Day 5 rows.
 - [ ] 7) Day 6 closure: execute `docs/CRM_GA_SOLO_T06_PERF_QA_RUNBOOK.md`, fill Day 6 evidence tables, then close Day 6 rows.
 - [ ] 8) Day 7 closure: execute `docs/CRM_GA_SOLO_T07_CI_GATE_RUNBOOK.md`, fill Day 7 evidence tables, then close Day 7 rows.
@@ -310,7 +311,7 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 - [ ] 11) Day 10 closure: execute `docs/CRM_GA_SOLO_T10_REHEARSAL_GO_NO_GO_RUNBOOK.md`, fill Day 10 evidence tables, then close Day 10 rows.
 - [ ] 12) SOLO-T11 closure: complete `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` signoffs/risk table and record final decision.
 - [x] 13) CRM unit-test confirmation: executed `npm run test:crm:tasks-filters`, `npm run test:crm:merge-key`, `npm run test:crm:merge-guard`, `npm run test:crm:rbac` successfully after switching to scoped CRM Jest config; evidence in `docs/evidence/closure/2026-04-15T11-01-56-039Z-crm-closure-blockers.md` (latest long-timeout rerun `2026-04-15T12-24-33-070Z` shows intermittent timeout only on `tasks-filters`, so treat as flake watch).
-- [x] 14) Auth speed baseline: ran `npm run collect:crm-auth-baseline` against `https://payaid-v3.vercel.app` with `admin@demo.com` and captured full contacts/deals/tasks p50/p95/p99 payload in `docs/evidence/closure/2026-04-17T02-41-31-970Z-crm-auth-baseline-run.md`; direct authenticated check of `/api/crm/tasks` now returns `200` JSON.
+- [x] 14) Auth speed baseline: ran `npm run collect:crm-auth-baseline` against `https://payaid-v3.vercel.app` with `admin@demo.com` and captured full contacts/deals/tasks p50/p95/p99 payload in `docs/evidence/closure/2026-04-17T02-41-31-970Z-crm-auth-baseline-run.md`; direct authenticated check of `/api/crm/tasks` now returns `200` JSON. **2026-04-19:** credentialed hosted rerun (`warmup=3`, `n=25`) → `docs/evidence/closure/2026-04-19T14-52-28-898Z-crm-auth-baseline-run.md` (speed evidence log row updated; strict **300ms** SLO still open).
 - [x] Blocker command pack: queue #13/#14 copy-paste command snippets documented in `docs/CRM_GA_CLOSURE_EXECUTION_LOG.md` under `Blocker resolution commands`.
 - [x] Evidence paste template: queue #13/#14 result template documented in `docs/CRM_GA_CLOSURE_EXECUTION_LOG.md` under `Paste-back evidence template`.
 - [x] Blocker automation helper: `npm run collect:crm-closure-blockers` added to capture queue #13/#14 outcomes into `docs/evidence/closure/*-crm-closure-blockers.md`.
@@ -322,11 +323,11 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 | Queue item | Current state | Blocker type | Next action owner | Notes |
 |---|---|---|---|---|
 | Closure execution log | Active | None | Phani | Update `docs/CRM_GA_CLOSURE_EXECUTION_LOG.md` after each queue item |
-| Day 2 QA | Partial | Automated smoke done; manual detail/seed checks | Phani | `npm run test:e2e:crm-day2-qa` + runbook; finish Pending (manual) rows |
-| Day 2 Product | Pending | Product signoff | Phani | Complete parity one-pager after Day 2 QA |
-| Day 3 QA | Pending | Signed-in runtime | Phani | Execute `docs/CRM_GA_SOLO_T03_QA_RUNBOOK.md` |
-| Day 3 Product | Pending | Product signoff | Phani | Complete Day 3 UAT one-pager after QA |
-| Day 4 close | Pending | QA + Product signoff | Phani | Run Day 4 QA + merge UX signoff |
+| Day 2 QA | Completed | None | Phani | Automated smoke pass + manual deal-detail close + manual contact-detail + seed-network check pass captured in `docs/CRM_GA_DAY2_QA_HOME_DEALS_CONTACTS.md` |
+| Day 2 Product | Completed | None | Phani | `docs/CRM_GA_DAY2_PRODUCT_PARITY_ONEPAGER.md` finalized 2026-04-20 with decision **Accept for GA track** |
+| Day 3 QA | Completed | None | Phani | `npm run test:e2e:crm-day3-qa` + `docs/CRM_GA_SOLO_T03_QA_RUNBOOK.md` |
+| Day 3 Product | Completed | None | Phani | `docs/CRM_GA_SOLO_T03_PRODUCT_UAT_ONEPAGER.md` finalized as **Approved for GA track increment** |
+| Day 4 close | Partial | Manual API checks + Product merge UX signoff | Phani | Automation pass captured; complete `docs/CRM_GA_SOLO_T04_QA_RUNBOOK.md` A-C + D endpoint checks |
 | Day 5 close | Pending | QA runtime evidence | Phani | Run role matrix + audit verification |
 | Day 6 close | Pending | Perf execution | Phani | Run perf runbook and fill tables |
 | Day 7 close | Pending | CI execution | Phani | Finalize suite and fill CI evidence |
@@ -335,7 +336,7 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 | Day 10 close | Pending | Rehearsal execution | Phani | Run rehearsal + rollback + gate report |
 | SOLO-T11 close | Pending | Final decision signoff | Phani | Complete signoffs and risk disposition |
 | CRM unit-test confirmation | Completed | No active blocker after timeout-window fix; all 4 tests pass in latest collector evidence | Phani | `docs/evidence/closure/2026-04-17T02-24-28-340Z-crm-closure-blockers.md` |
-| Auth speed baseline | Completed | No active blocker; login + contacts/deals/tasks auth baseline all pass on hosted alias | Phani | `docs/evidence/closure/2026-04-17T02-41-31-970Z-crm-auth-baseline-run.md` |
+| Auth speed baseline | Partial | **GA strict p95 ≤300ms** still fail on hosted (`2026-04-19` credentialed rerun, `n=25`); collector + list routes `200` | Phani | Latest: `docs/evidence/closure/2026-04-19T14-52-28-898Z-crm-auth-baseline-run.md` (history: `2026-04-18T14-16-16-086Z`, `2026-04-17T02-41-31-970Z`) |
 
 ---
 
@@ -525,6 +526,7 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 - [x] **SOLO-T09 prep** — commercial/demo prep map + runbook published (`docs/CRM_GA_SOLO_T09_PREP_COMMERCIAL_DEMO.md`, `docs/CRM_GA_SOLO_T09_COMMERCIAL_DEMO_RUNBOOK.md`); Day 9 execution rows still open.
 - [x] **SOLO-T10 prep** — rehearsal/go-no-go prep map + runbook published (`docs/CRM_GA_SOLO_T10_PREP_REHEARSAL_GO_NO_GO.md`, `docs/CRM_GA_SOLO_T10_REHEARSAL_GO_NO_GO_RUNBOOK.md`); Day 10 execution rows still open.
 - [x] **SOLO-T11 prep** — launch decision/risk-signoff prep map + runbook published (`docs/CRM_GA_SOLO_T11_PREP_DECISION_RISK_SIGNOFF.md`, `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md`); final evidence consolidation/signoffs still open.
+- [x] **CRM inbound pilot handoff closeout** — docs handoff PR `#1` (`crm: close inbound pilot gate with hosted/local evidence`) merged to `main` on 2026-04-20; branch `docs/inbound-pilot-pr-handoff` deleted. Canonical pilot bundle remains `docs/evidence/pilot/2026-04-20-inbound-pilot-evidence-index.md`.
 
 ### Solo next steps (recommended now)
 

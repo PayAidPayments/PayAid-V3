@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import Link from 'next/link'
 
 interface Feature {
   name: string
@@ -25,15 +25,13 @@ const features: Feature[] = [
 ]
 
 const tiers = [
-  { id: 'starter', name: 'Starter', price: '₹1,999', popular: false },
-  { id: 'professional', name: 'Professional', price: '₹3,999', popular: true },
-  { id: 'complete', name: 'Complete', price: 'Custom', popular: false },
-  { id: 'enterprise', name: 'Enterprise', price: 'Custom', popular: false },
+  { id: 'starter', name: 'Starter', price: '₹1,999', popular: false, href: '/signup?planType=multi&modules=crm,finance' },
+  { id: 'professional', name: 'Professional', price: '₹3,999', popular: true, href: '/signup?planType=multi&modules=crm,finance,hr,communication,inventory' },
+  { id: 'complete', name: 'Complete', price: 'Custom', popular: false, href: '/signup?planType=suite' },
+  { id: 'enterprise', name: 'Enterprise', price: 'Custom', popular: false, href: '/contact' },
 ]
 
 export default function ComparisonTable() {
-  const [selectedTier, setSelectedTier] = useState<string | null>(null)
-
   const renderValue = (value: boolean | string) => {
     if (typeof value === 'boolean') {
       return value ? (
@@ -87,16 +85,16 @@ export default function ComparisonTable() {
             <td className="p-4"></td>
             {tiers.map((tier) => (
               <td key={tier.id} className="p-4 text-center">
-                <button
-                  onClick={() => setSelectedTier(tier.id)}
+                <Link
+                  href={tier.href}
                   className={`w-full py-2 px-4 rounded-lg font-semibold transition ${
                     tier.popular
                       ? 'bg-blue-600 text-white hover:bg-blue-700'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
+                  } block`}
                 >
                   {tier.id === 'enterprise' ? 'Contact Sales' : 'Get Started'}
-                </button>
+                </Link>
               </td>
             ))}
           </tr>

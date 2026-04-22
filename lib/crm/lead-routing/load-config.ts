@@ -7,7 +7,7 @@ import { coerceLeadRoutingConfigV1, type LeadRoutingConfigV1 } from './config-sc
  */
 export async function loadLeadRoutingConfig(tenantId: string): Promise<LeadRoutingConfigV1 | null> {
   try {
-    const row = await prisma.crmConfig.findUnique({
+    const row = await prisma.cRMConfig.findUnique({
       where: { tenantId },
       select: { leadRouting: true },
     })

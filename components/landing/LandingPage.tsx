@@ -43,6 +43,7 @@ import {
   Zap,
   CheckCircle2,
   ArrowRight,
+  X,
   UserCircle,
   Wrench,
   Factory,
@@ -84,6 +85,8 @@ function StatCounter({ value, suffix = '' }: { value: number; suffix?: string })
 
 export default function LandingPage() {
   const router = useRouter()
+  const onboardingHref = '/#industry-selector'
+  const demoVideoUrl = process.env.NEXT_PUBLIC_EXPLAINER_VIDEO_URL || ''
   const [selectedIndustry, setSelectedIndustry] = useState<string>('')
   const [selectedModules, setSelectedModules] = useState<string[]>([])
   const [showModuleSelection, setShowModuleSelection] = useState(false)
@@ -96,6 +99,7 @@ export default function LandingPage() {
   const [typedResponse, setTypedResponse] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [hasUserInteracted, setHasUserInteracted] = useState(false)
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false)
   const industries = getAllIndustries()
 
 
@@ -540,10 +544,10 @@ export default function LandingPage() {
                 Sign In
               </Link>
               <Link 
-                href="/signup"
+                href={onboardingHref}
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors cursor-pointer relative z-50"
               >
-                Get Started
+                Choose Industry & Start
               </Link>
             </div>
           </div>
@@ -569,18 +573,20 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12 relative z-10">
                 <Link 
-                  href="/signup"
+                  href={onboardingHref}
                   className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white transition-colors cursor-pointer relative z-10"
                 >
-                  Start Free Trial
+                  Choose Industry & Start
                 </Link>
-                <Link 
-                  href="#dashboard-showcase"
+                <button
+                  type="button"
                   className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 border-2 border-[#53328A] text-[#53328A] hover:bg-purple-50 transition-colors cursor-pointer relative z-10"
-                  onClick={(e) => handleAnchorClick(e, 'dashboard-showcase')}
+                  onClick={() => {
+                    document.getElementById('try-it-now')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }}
                 >
-                  Watch Demo →
-                </Link>
+                  Try Demo →
+                </button>
               </div>
             </div>
 
@@ -591,7 +597,7 @@ export default function LandingPage() {
           </div>
 
           {/* Try It Now - Right after Hero */}
-          <div className="mt-16 bg-white rounded-2xl p-8 border-2 border-purple-200 shadow-lg">
+          <div id="try-it-now" className="mt-16 bg-white rounded-2xl p-8 border-2 border-purple-200 shadow-lg">
             <div className="grid md:grid-cols-2 gap-8 items-start">
               <div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Try It Now</h3>
@@ -624,9 +630,9 @@ export default function LandingPage() {
                     )
                   })}
                 </div>
-                <Link href="/signup">
+                <Link href={onboardingHref}>
                   <Button className="bg-gradient-to-r from-[#53328A] to-[#F5C700] hover:from-[#6B42A3] hover:to-[#E0B200] text-white w-full md:w-auto">
-                    Start Free Trial
+                    Choose Industry & Start
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
@@ -816,7 +822,7 @@ export default function LandingPage() {
           </div>
 
           {/* Industry Selection - Right after Hero */}
-          <div className="max-w-2xl mx-auto mt-16">
+          <div id="industry-selector" className="max-w-2xl mx-auto mt-16 scroll-mt-24">
             <h2 className="text-2xl md:text-3xl font-semibold text-center mb-4 text-gray-900">
               What industry is your business in?
             </h2>
@@ -1322,8 +1328,8 @@ export default function LandingPage() {
               <div key={index} className="bg-gradient-to-br from-purple-50 to-white rounded-xl p-6 border border-purple-100 hover:shadow-lg transition-all">
                 <h3 className="text-xl font-bold text-gray-900 mb-3">{useCase.title}</h3>
                 <p className="text-gray-600 mb-4">{useCase.desc}</p>
-                <Link href="/signup" className="text-[#53328A] font-semibold hover:underline">
-                  Get Started →
+                <Link href={onboardingHref} className="text-[#53328A] font-semibold hover:underline">
+                  Choose Industry & Start →
                 </Link>
               </div>
             ))}
@@ -1416,13 +1422,54 @@ export default function LandingPage() {
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
             Join thousands of Indian businesses already growing with PayAid. Start your free trial today. No credit card required.
           </p>
-          <Link href="/signup">
+          <Link href={onboardingHref}>
             <Button size="lg" className="bg-[#F5C700] text-gray-900 hover:bg-[#E0B200] px-12 py-6 text-lg font-bold">
-              Get Started Today
+              Choose Industry & Start
             </Button>
           </Link>
         </div>
       </section>
+
+      {isDemoModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/70 p-4 flex items-center justify-center"
+          onClick={() => setIsDemoModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-4xl rounded-xl bg-white shadow-2xl overflow-hidden"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">PayAid Explainer Demo</h3>
+              <button
+                type="button"
+                onClick={() => setIsDemoModalOpen(false)}
+                className="inline-flex items-center justify-center rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Close demo video"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="aspect-video bg-black">
+              {demoVideoUrl ? (
+                <iframe
+                  title="PayAid explainer video"
+                  src={demoVideoUrl}
+                  className="h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-white text-center px-6">
+                  <p className="text-sm md:text-base">
+                    Add `NEXT_PUBLIC_EXPLAINER_VIDEO_URL` to show your explainer video in this popup.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">

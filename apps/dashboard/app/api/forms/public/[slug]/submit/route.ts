@@ -22,11 +22,16 @@ export async function POST(
     const validated = submitFormSchema.parse(body)
 
     // Get metadata from request
+    const idem =
+      request.headers.get('Idempotency-Key')?.trim() ||
+      request.headers.get('X-Idempotency-Key')?.trim() ||
+      undefined
     const metadata = {
       source: request.headers.get('referer') || undefined,
       ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
       userAgent: request.headers.get('user-agent') || undefined,
       referrer: request.headers.get('referer') || undefined,
+      idempotencyKey: idem,
     }
 
     const result = await FormSubmissionProcessor.processSubmission(

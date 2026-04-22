@@ -50,8 +50,13 @@ export default function CRMAllPeoplePage() {
   const [timePeriod, setTimePeriod] = useState<'month' | 'quarter' | 'financial-year' | 'year'>('month')
   const [selectedStatCard, setSelectedStatCard] = useState<string | null>(null)
 
-  // Fetch all contacts for stats calculation (single source for tab counts)
-  const { data: allContactsData, isLoading: isLoadingAll } = useContacts({ page: 1, limit: 10000, tenantId: tenantId || undefined })
+  // Stats tab counts (client-side) — keep aligned with GET /api/contacts max page size (PAYAID_CONTACTS_PAGE_MAX, default 2000).
+  const STATS_CONTACTS_LIMIT = 2000
+  const { data: allContactsData, isLoading: isLoadingAll } = useContacts({
+    page: 1,
+    limit: STATS_CONTACTS_LIMIT,
+    tenantId: tenantId || undefined,
+  })
   const allContacts = useMemo(() => allContactsData?.contacts ?? [], [allContactsData?.contacts])
 
   // Fetch contacts based on stage filter for table (uses debounced search to avoid per-keystroke requests)
@@ -489,7 +494,7 @@ export default function CRMAllPeoplePage() {
                 <Download className="w-4 h-4 mr-2" />
                 Export
               </Button>
-              <Link href={`/crm/${tenantId}/Contacts/new`}>
+              <Link href={`/crm/${tenantId}/Contacts/New`}>
                 <Button size="sm">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Contact

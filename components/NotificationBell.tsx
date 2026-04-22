@@ -34,12 +34,15 @@ function getAuthHeaders() {
 export function NotificationBell() {
   const queryClient = useQueryClient()
   const router = useRouter()
+  const { token } = useAuthStore()
   const [showDropdown, setShowDropdown] = useState(false)
 
   // Track consecutive 503 errors to back off polling
   const [consecutive503Errors, setConsecutive503Errors] = useState(0)
 
   // Fetch notifications from all modules
+  const isDev = process.env.NODE_ENV !== 'production'
+
   const { data, isLoading } = useQuery<{ notifications: Notification[]; unreadCount: number; total: number }>({
     queryKey: ['notifications'],
     queryFn: async () => {
@@ -67,11 +70,19 @@ export function NotificationBell() {
     // - Normal: 30 seconds
     // - After 1-2 503s: 60 seconds
     // - After 3+ 503s: 120 seconds (2 minutes)
-    refetchInterval: consecutive503Errors === 0 
-      ? 30000 
-      : consecutive503Errors <= 2 
-        ? 60000 
-        : 120000,
+    refetchInterval:
+      !token
+        ? false
+        : isDev
+          ? false
+          : consecutive503Errors === 0
+            ? 30000
+            : consecutive503Errors <= 2
+              ? 60000
+              : 120000,
+    enabled: !!token,
+    refetchOnWindowFocus: false,
+    staleTime: isDev ? 5 * 60 * 1000 : 30 * 1000,
     retry: false, // Don't retry on 401/503 errors
   })
 

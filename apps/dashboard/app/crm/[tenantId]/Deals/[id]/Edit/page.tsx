@@ -180,7 +180,7 @@ export default function EditDealPage() {
                 <div className="flex items-center justify-between">
                   <label htmlFor="contactId" className="text-sm font-medium text-gray-700 dark:text-gray-300">Contact *</label>
                   <Link
-                    href={`/crm/${tenantId}/Contacts/new?returnTo=${encodeURIComponent(`/crm/${tenantId}/Deals/${id}/Edit`)}`}
+                    href={`/crm/${tenantId}/Contacts/New?returnTo=${encodeURIComponent(`/crm/${tenantId}/Deals/${id}/Edit`)}`}
                     className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
                   >
                     + Create new contact

@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db/prisma'
-import { hashPassword } from '@/lib/auth/password'
-import { signToken, signRefreshToken } from '@/lib/auth/jwt'
 import { z } from 'zod'
 import {
   inferPlanTypeFromSelection,
@@ -39,6 +36,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const input = registerSchema.parse(body)
+    // Lazy-load heavier server modules so route bootstrap stays lighter in dev.
+    const [{ prisma }, { hashPassword }, { signToken, signRefreshToken }] = await Promise.all([
+      import('@/lib/db/prisma'),
+      import('@/lib/auth/password'),
+      import('@/lib/auth/jwt'),
+    ])
 
     const existingUser = await prisma.user.findUnique({
       where: { email: input.email.toLowerCase().trim() },

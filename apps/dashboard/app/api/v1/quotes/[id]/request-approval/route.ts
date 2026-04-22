@@ -19,7 +19,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { tenantId, userId } = await requireModuleAccess(request, 'crm')
+    const { tenantId, userId } = await requireModuleAccess(_request, 'crm')
     await assertTenantFeatureEnabled(tenantId, 'm2_cpq')
     const { id: quoteId } = await params
 

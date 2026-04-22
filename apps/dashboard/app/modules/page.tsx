@@ -18,10 +18,10 @@ export default function ModulesIndexPage() {
               Login
             </Link>
             <Link
-              href="/register"
+              href="/#industry-selector"
               className="font-semibold text-[#53328A] hover:underline"
             >
-              Sign up
+              Choose Industry & Start
             </Link>
           </div>
         </div>

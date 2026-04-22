@@ -14,8 +14,19 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { PageLoading } from '@/components/ui/loading'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { format as formatDate } from 'date-fns'
 import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
+
+type PilotMetrics = {
+  windowHours: number
+  since: string
+  routingDecisions: number
+  deadLetters: number
+  idempotencyRows: number
+  pilotFirstTasksLinked: number
+  orchestrationLogs: number
+}
 
 type OrchestrationLogRow = {
   id: string
@@ -39,26 +50,47 @@ export default function ExecutionLogsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [metrics, setMetrics] = useState<PilotMetrics | null>(null)
+  const [metricsError, setMetricsError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (!tenantId) return
     setLoading(true)
     setError(null)
+    setMetricsError(null)
     try {
-      const res = await fetch(
-        `/api/crm/inbound-orchestration/logs?tenantId=${encodeURIComponent(tenantId)}&limit=50`,
-        { headers: getAuthHeaders() }
-      )
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) {
+      const [logRes, metricsRes] = await Promise.all([
+        fetch(
+          `/api/crm/inbound-orchestration/logs?tenantId=${encodeURIComponent(tenantId)}&limit=50`,
+          { headers: getAuthHeaders() }
+        ),
+        fetch(
+          `/api/crm/inbound-pilot/metrics?tenantId=${encodeURIComponent(tenantId)}&hours=24`,
+          { headers: getAuthHeaders() }
+        ),
+      ])
+      const json = await logRes.json().catch(() => ({}))
+      if (!logRes.ok) {
         setError(json?.error || 'Failed to load execution logs')
         setLogs([])
-        return
+      } else {
+        setLogs(Array.isArray(json.logs) ? json.logs : [])
       }
-      setLogs(Array.isArray(json.logs) ? json.logs : [])
+      const mj = await metricsRes.json().catch(() => ({}))
+      if (!metricsRes.ok) {
+        setMetrics(null)
+        setMetricsError(typeof mj?.error === 'string' ? mj.error : 'Failed to load pilot metrics')
+      } else if (mj && typeof mj.routingDecisions === 'number') {
+        setMetrics(mj as PilotMetrics)
+      } else {
+        setMetrics(null)
+        setMetricsError('Unexpected metrics response')
+      }
     } catch {
       setError('Failed to load execution logs')
       setLogs([])
+      setMetricsError('Failed to load pilot metrics')
+      setMetrics(null)
     } finally {
       setLoading(false)
     }
@@ -99,6 +131,53 @@ export default function ExecutionLogsPage() {
             chatbots, imports, and so on).
           </p>
         </header>
+
+        {metricsError ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+            Pilot metrics unavailable: {metricsError}
+          </div>
+        ) : null}
+
+        {metrics ? (
+          <Card className="rounded-2xl border-slate-200/80 shadow-sm dark:border-slate-800">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Inbound pilot (last {metrics.windowHours}h)</CardTitle>
+              <CardDescription>
+                Counters for routing decisions, orchestration logs, idempotency keys, first-follow-up tasks
+                linked from decisions, and dead letters. Configure SLA / guarantee on{' '}
+                <Link
+                  href={`/crm/${tenantId}/Automation/Lead-Routing`}
+                  className="text-violet-700 hover:underline dark:text-violet-300"
+                >
+                  Lead routing
+                </Link>
+                .
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                {[
+                  { label: 'Routing decisions', value: metrics.routingDecisions },
+                  { label: 'Orchestration logs', value: metrics.orchestrationLogs },
+                  { label: 'Idempotency rows', value: metrics.idempotencyRows },
+                  { label: 'Pilot first tasks', value: metrics.pilotFirstTasksLinked },
+                  { label: 'Dead letters', value: metrics.deadLetters },
+                ].map((m) => (
+                  <div
+                    key={m.label}
+                    className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/50"
+                  >
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      {m.label}
+                    </p>
+                    <p className="text-2xl font-semibold tabular-nums">{m.value}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">Since {metrics.since}</p>
+            </CardContent>
+          </Card>
+        ) : null}
 
         {loading && logs.length === 0 ? (
           <PageLoading message="Loading execution logs…" fullScreen={false} />

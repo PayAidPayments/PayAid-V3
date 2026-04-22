@@ -20,7 +20,7 @@ All tenant routes under `/marketing/demo/*`, `/finance/demo/*`, and `/hr/demo/*`
 
 ## Explicit exceptions (tracked post-deploy)
 
-1. **CRM list API p95 ≤ 300ms (GA guardrail)** — **Not met** on the hosted sample previously measured (`docs/evidence/closure/2026-04-17T06-10-14-447Z-crm-auth-baseline-run.md`). Local dev sampling also remains above 300ms on tasks (`docs/evidence/closure/2026-04-18T10-08-44-035Z-crm-auth-baseline-run.md`). **Deploy proceeds with this risk logged**; GA marketing must not claim the strict SLO until a hosted re-baseline passes or the SLO is formally revised.
+1. **CRM list API p95 ≤ 300ms (GA guardrail)** — **Not met** on the hosted sample previously measured (`docs/evidence/closure/2026-04-17T06-10-14-447Z-crm-auth-baseline-run.md`). Local dev sampling also remains above 300ms on tasks (`docs/evidence/closure/2026-04-18T10-08-44-035Z-crm-auth-baseline-run.md`). **Deploy proceeds with this risk logged**; GA marketing must not claim the strict SLO until a hosted re-baseline passes or the SLO is formally revised. **Formal revision path:** Product + Launch DRI follow **§C** in `docs/CRM_MODULE_FEATURE_GO_NO_GO_2026-04-17.md` (evidence + SOLO-T11 row + amended copy).
 
 2. **CRM GA closure queue items 1–12** (Day 2 QA through SOLO-T11) — **Still pending** manual runbook execution and Product signoffs (`docs/CRM_GA_CLOSURE_EXECUTION_LOG.md`). Deployment does not substitute for that evidence.
 

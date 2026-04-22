@@ -246,6 +246,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // In some tenants, auth identities can exist before a matching User row is fully provisioned.
+    // Fall back to unassigned instead of failing task creation with a foreign-key error.
+    let defaultAssignedToId: string | null = null
+    if (validated.assignedToId) {
+      defaultAssignedToId = validated.assignedToId
+    } else {
+      const selfUser = await prisma.user.findFirst({
+        where: { id: userId, tenantId },
+        select: { id: true },
+      })
+      defaultAssignedToId = selfUser?.id ?? null
+    }
+
     const task = await prisma.task.create({
       data: {
         title: validated.title,
@@ -254,7 +267,7 @@ export async function POST(request: NextRequest) {
         status: validated.status,
         dueDate: validated.dueDate ? new Date(validated.dueDate) : null,
         contactId: validated.contactId,
-        assignedToId: validated.assignedToId || userId,
+        assignedToId: defaultAssignedToId,
         tenantId,
         module: 'crm',
         ...(validated.recurrenceRule != null ? { recurrenceRule: validated.recurrenceRule } : {}),
@@ -276,6 +289,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 })
     }
     console.error('Create task error:', error)
-    return NextResponse.json({ error: 'Failed to create task' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to create task', message: error instanceof Error ? error.message : undefined },
+      { status: 500 }
+    )
   }
 }

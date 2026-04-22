@@ -27,6 +27,9 @@ export function Header() {
 
   // Fetch news unread count (deferred: /api/news is heavy on first dev compile; do not block shell paint)
   useEffect(() => {
+    // Keep local dev responsive during QA by avoiding background unread polling.
+    if (process.env.NODE_ENV !== 'production') return
+
     if (!token) return;
 
     let cancelled = false;
@@ -221,9 +224,9 @@ export function Header() {
                     Sign In
                   </Button>
                 </Link>
-                <Link href="/register">
+                <Link href="/#industry-selector">
                   <Button size="sm">
-                    Get Started
+                    Choose Industry & Start
                   </Button>
                 </Link>
               </>

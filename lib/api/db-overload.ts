@@ -15,6 +15,9 @@ function messageFromUnknown(error: unknown): string {
 export function isTransientDbOverloadError(error: unknown): boolean {
   const msg = messageFromUnknown(error).toLowerCase()
   return (
+    msg.includes('max clients reached') ||
+    msg.includes('emaxconnsession') ||
+    msg.includes('pool_size') ||
     msg.includes('timed out fetching a new connection') ||
     msg.includes('connection pool') ||
     msg.includes("can't reach database server") ||

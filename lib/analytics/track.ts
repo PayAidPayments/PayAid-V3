@@ -16,8 +16,11 @@ export type AnalyticsEventName =
   | 'call_transcript_ingested'
   // M2 CPQ events
   | 'quote_created'
+  | 'quote_updated'
   | 'quote_approved'
   | 'quote_rejected'
+  | 'quote_sent'
+  | 'quote_approval_requested'
   | 'quote_converted_to_invoice'
   // M2 Marketplace events
   | 'marketplace_app_installed'

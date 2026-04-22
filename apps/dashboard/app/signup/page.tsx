@@ -12,6 +12,11 @@ import { getIndustryConfig } from '@/lib/industries/config'
 // Get subdomain domain from environment (defaults to payaid.com)
 const SUBDOMAIN_DOMAIN = process.env.NEXT_PUBLIC_SUBDOMAIN_DOMAIN || 'payaid.com'
 
+function inferPlanTypeFromModules(moduleIds: string[]): 'single' | 'multi' | 'suite' {
+  if (moduleIds.length === 0) return 'suite'
+  return moduleIds.length === 1 ? 'single' : 'multi'
+}
+
 function SignupForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -55,8 +60,18 @@ function SignupForm() {
     }
 
     try {
+      const selectedModules = selectedModulesParam
+        ? selectedModulesParam.split(',').map((moduleId) => moduleId.trim()).filter(Boolean)
+        : []
+      const filteredSelectedModules = [...new Set(selectedModules)]
+      const planType = inferPlanTypeFromModules(filteredSelectedModules)
+
       // Register the user
-      await register(formData)
+      await register({
+        ...formData,
+        planType,
+        selectedModules: filteredSelectedModules,
+      })
       
       // Get token from store after registration
       const authToken = useAuthStore.getState().token

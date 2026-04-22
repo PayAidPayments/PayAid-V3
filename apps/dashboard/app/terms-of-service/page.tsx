@@ -13,11 +13,11 @@ export default function TermsOfServicePage() {
               <span>PayAid V3</span>
             </Link>
             <Link 
-              href="/register" 
+              href="/#industry-selector" 
               className="px-4 py-2 rounded-lg font-medium text-white transition-colors"
               style={{ backgroundColor: '#53328A' }}
             >
-              Start Free Trial
+              Choose Industry & Start
             </Link>
           </div>
         </div>

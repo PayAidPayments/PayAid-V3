@@ -46,6 +46,21 @@ export async function POST(request: NextRequest) {
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
+    /** Pilot: this path uses createMany and skips orchestration — block during narrow pilot if env set. */
+    if (
+      process.env.PAYAID_PILOT_BLOCK_NON_ORCHESTRATED_CONTACT_IMPORT === '1' ||
+      process.env.PAYAID_PILOT_BLOCK_NON_ORCHESTRATED_CONTACT_IMPORT === 'true'
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'Contact CSV import is disabled for the inbound pilot. Use orchestrated paths (e.g. POST /api/contacts, POST /api/leads/import) or unset PAYAID_PILOT_BLOCK_NON_ORCHESTRATED_CONTACT_IMPORT.',
+          code: 'PILOT_INBOUND_GATE',
+        },
+        { status: 403 }
+      )
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File
     const segmentIds = formData.get('segmentIds') as string | null

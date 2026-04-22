@@ -34,6 +34,8 @@ interface AuthState {
     name: string
     tenantName: string
     subdomain: string
+    planType?: 'single' | 'multi' | 'suite'
+    selectedModules?: string[]
   }) => Promise<void>
   logout: () => void
   fetchUser: () => Promise<void>

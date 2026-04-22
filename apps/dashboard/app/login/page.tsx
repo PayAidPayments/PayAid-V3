@@ -217,7 +217,7 @@ export default function LoginPage() {
             <div className="mt-4 space-y-2">
               <div className="text-center text-sm">
                 <span className="text-gray-600">Don&apos;t have an account? </span>
-                <Link href="/signup" className="text-purple-500 hover:text-purple-600 hover:underline font-semibold">Sign up</Link>
+                <Link href="/#industry-selector" className="text-purple-500 hover:text-purple-600 hover:underline font-semibold">Choose industry & start</Link>
               </div>
               <div className="text-center">
                 <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 inline-flex items-center gap-1">

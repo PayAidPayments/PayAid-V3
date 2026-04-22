@@ -5,36 +5,7 @@ import { z } from 'zod'
 import { cache } from '@/lib/redis/client'
 import { assertCrmRoleAllowed, CrmRoleError } from '@/lib/crm/rbac'
 import { logCrmAudit } from '@/lib/audit-log-crm'
-
-async function resolveCrmRequestTenantId(
-  request: NextRequest,
-  jwtTenantId: string,
-  userId: string
-): Promise<string> {
-  const requestTenantId = request.nextUrl.searchParams.get('tenantId') || ''
-  if (!requestTenantId || requestTenantId === jwtTenantId) return jwtTenantId
-
-  const user = await prisma.user
-    .findUnique({
-      where: { id: userId },
-      select: { tenantId: true, email: true },
-    })
-    .catch(() => null)
-
-  if (user?.tenantId === requestTenantId) return requestTenantId
-
-  const allowDemoTenantOverride = process.env.NEXT_PUBLIC_CRM_ALLOW_DEMO_SEED === '1'
-  const isDemoAdmin = allowDemoTenantOverride && user?.email === 'admin@demo.com'
-  if (isDemoAdmin) {
-    const isDemoTenant = await prisma.tenant
-      .findUnique({ where: { id: requestTenantId }, select: { name: true } })
-      .then((t) => t?.name?.toLowerCase().includes('demo') ?? false)
-      .catch(() => false)
-    if (isDemoTenant) return requestTenantId
-  }
-
-  return jwtTenantId
-}
+import { resolveCrmRequestTenantId } from '@/lib/crm/resolve-crm-request-tenant'
 
 async function buildContact360(_tenantId: string, contact: any) {
   return {
@@ -155,7 +126,7 @@ export async function GET(
       },
       tasks: {
         // Keep timeline task context inclusive so reassigned/newly-created tasks are visible.
-        where: { status: { notIn: ['cancelled'] as const } },
+        where: { status: { notIn: ['cancelled'] } },
         orderBy: [{ createdAt: 'desc' as const }],
         take: 100,
         select: {
@@ -207,15 +178,7 @@ export async function GET(
     if (include360) {
       try {
         // Always scope 360 data to the contact's true tenant (resolved tenant can differ on fallback reads)
-        const contact360 = await buildContact360(contact.tenantId, {
-          id: contact.id,
-          email: contact.email,
-          phone: contact.phone,
-          gstin: contact.gstin,
-          accountId: contact.accountId,
-          company: contact.company,
-          account: contact.account,
-        })
+        const contact360 = await buildContact360(contact.tenantId, contact as any)
         return NextResponse.json({ ...contact, contact360 })
       } catch (contact360Error) {
         // Keep contact detail page usable even if a non-critical 360 widget query fails.

@@ -20,6 +20,9 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
   // Fetch news unread count
   useEffect(() => {
+    // Keep local dev responsive during QA by avoiding background unread polling.
+    if (process.env.NODE_ENV !== 'production') return
+
     const fetchNewsCount = async () => {
       try {
         if (!token) return

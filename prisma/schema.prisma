@@ -93,7 +93,10 @@ model Tenant {
   chatbotConversations         ChatbotConversation[]
   checkoutPages                CheckoutPage[]
   contacts                     Contact[]
+  inboundIngressIdempotencies  InboundIngressIdempotency[]
+  inboundOrchestrationDeadLetters InboundOrchestrationDeadLetter[]
   inboundOrchestrationLogs     InboundOrchestrationLog[]
+  inboundRoutingDecisions      InboundRoutingDecision[]
   contractors                  Contractor[]
   customDashboards             CustomDashboard[]
   customFields                 CustomField[]
@@ -1001,7 +1004,9 @@ model Contact {
   quotes                Quote[]
   contracts             Contract[]
   customerInsights      CustomerInsight[]
+  inboundIngressIdempotencies InboundIngressIdempotency[]
   inboundOrchestrationLogs InboundOrchestrationLog[]
+  inboundRoutingDecisions InboundRoutingDecision[]
 
   @@index([tenantId])
   @@index([accountId])
@@ -1035,6 +1040,53 @@ model InboundOrchestrationLog {
   @@index([tenantId, createdAt(sort: Desc)])
   @@index([tenantId, sourceChannel])
   @@index([contactId])
+}
+
+/// Stripe-style idempotency for public ingress (forms, webhooks): same fingerprint → same contact, no duplicate orchestration.
+model InboundIngressIdempotency {
+  id          String   @id @default(cuid())
+  tenantId    String
+  fingerprint String
+  contactId   String
+  createdAt   DateTime @default(now())
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, fingerprint])
+  @@index([contactId])
+}
+
+/// Durable routing + SLA snapshot for one successful inbound persist (separate from execution trace logs).
+model InboundRoutingDecision {
+  id                    String    @id @default(cuid())
+  tenantId              String
+  contactId             String
+  sourceChannel         String
+  routingReason         String
+  selectedSalesRepId    String?
+  routingDetail         Json?
+  slaFirstResponseDueAt DateTime?
+  firstFollowUpTaskId   String?
+  createdAt             DateTime  @default(now())
+  tenant                Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact               Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  firstFollowUpTask     Task?     @relation("PilotFirstFollowUpTask", fields: [firstFollowUpTaskId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([contactId])
+}
+
+/// When `InboundOrchestrationLog` persist fails, store a minimal row for operator visibility.
+model InboundOrchestrationDeadLetter {
+  id           String   @id @default(cuid())
+  tenantId     String
+  errorMessage String
+  payload      Json
+  contactId    String?
+  createdAt    DateTime @default(now())
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt(sort: Desc)])
 }
 
 model Interaction {
@@ -1235,6 +1287,7 @@ model Task {
   assignedTo      User?     @relation("AssignedTasks", fields: [assignedToId], references: [id])
   contact         Contact?  @relation(fields: [contactId], references: [id], onDelete: Cascade)
   tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  inboundPilotFirstFollowUps InboundRoutingDecision[] @relation("PilotFirstFollowUpTask")
 
   @@index([tenantId])
   @@index([tenantId, status])

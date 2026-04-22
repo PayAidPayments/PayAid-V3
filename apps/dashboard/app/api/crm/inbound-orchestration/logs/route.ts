@@ -10,7 +10,10 @@ export async function GET(request: NextRequest) {
   try {
     const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
     const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
-    const limit = Math.min(100, Math.max(1, parseInt(request.nextUrl.searchParams.get('limit') || '40', 10)))
+    const limitRaw = request.nextUrl.searchParams.get('limit')
+    const parsed = limitRaw != null && limitRaw !== '' ? Number.parseInt(limitRaw, 10) : 40
+    const limit =
+      Number.isFinite(parsed) && !Number.isNaN(parsed) ? Math.min(100, Math.max(1, parsed)) : 40
 
     const logs = await prisma.inboundOrchestrationLog.findMany({
       where: { tenantId },

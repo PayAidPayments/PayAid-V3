@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
@@ -11,8 +11,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 // Get subdomain domain from environment (defaults to payaid.com)
 const SUBDOMAIN_DOMAIN = process.env.NEXT_PUBLIC_SUBDOMAIN_DOMAIN || 'payaid.com'
 
+function inferPlanTypeFromModules(moduleIds: string[]): 'single' | 'multi' | 'suite' {
+  if (moduleIds.length === 0) return 'suite'
+  return moduleIds.length === 1 ? 'single' : 'multi'
+}
+
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { register, isLoading } = useAuthStore()
   const [formData, setFormData] = useState({
     name: '',
@@ -34,8 +40,22 @@ export default function RegisterPage() {
     }
 
     try {
-      await register(formData)
-      router.push('/dashboard')
+      const modulesParam = searchParams.get('modules')
+      const selectedModules = modulesParam
+        ? modulesParam.split(',').map((moduleId) => moduleId.trim()).filter(Boolean)
+        : []
+      const filteredSelectedModules = [...new Set(selectedModules)]
+      const planTypeParam = searchParams.get('planType')
+      const planType = planTypeParam === 'single' || planTypeParam === 'multi' || planTypeParam === 'suite'
+        ? planTypeParam
+        : inferPlanTypeFromModules(filteredSelectedModules)
+
+      await register({
+        ...formData,
+        planType,
+        selectedModules: filteredSelectedModules,
+      })
+      router.push('/home')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')
     }

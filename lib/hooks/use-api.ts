@@ -45,92 +45,66 @@ export function useContacts(params?: { page?: number; limit?: number; type?: str
 
   return useQuery({
     queryKey: ['contacts', params],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       try {
         const response = await fetch(queryUrl, {
           headers: getAuthHeaders(),
-          signal,
         })
         if (!response.ok) {
-          let error: any
+          let errorPayload: any = null
           let errorText = ''
           try {
             errorText = await response.text()
-            // Check if errorText is empty or just whitespace
-            if (!errorText || errorText.trim() === '') {
-              error = { 
-                error: `HTTP ${response.status}: ${response.statusText}`,
-                message: `No error details provided by server`,
-              }
-            } else {
+            if (errorText.trim()) {
               try {
-                error = JSON.parse(errorText)
-                // Check if parsed result is an empty object
-                if (Object.keys(error).length === 0) {
-                  error = { 
-                    error: `HTTP ${response.status}: ${response.statusText}`,
-                    message: `Server returned empty error object`,
-                    rawResponse: errorText,
-                  }
-                }
+                errorPayload = JSON.parse(errorText)
               } catch {
-                error = { 
-                  error: errorText || `HTTP ${response.status}: ${response.statusText}`,
-                  message: errorText || `Failed to fetch contacts (${response.status})`,
-                }
+                errorPayload = { message: errorText }
               }
             }
-          } catch (parseError) {
-            error = { 
-              error: `Failed to fetch contacts (${response.status})`,
-              message: `Failed to parse error response`,
-              parseError: parseError instanceof Error ? parseError.message : String(parseError),
-            }
+          } catch {
+            // Ignore parse issues and fall back to status-based messaging below.
           }
-          
-          // Log the full error details with better diagnostics
-          const errorStr = typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+
+          const errorCode =
+            typeof errorPayload?.code === 'string' ? errorPayload.code : undefined
+          const errorMessage =
+            errorPayload?.error ||
+            errorPayload?.message ||
+            `Failed to fetch contacts (${response.status})`
+          const isAuthError = response.status === 401 || errorCode === 'INVALID_TOKEN'
+
           console.error('Contacts API error:', {
             status: response.status,
             statusText: response.statusText,
             url: queryUrl,
-            error: errorStr,
-            fullError: error,
-            hasErrorText: !!errorText,
-            errorTextLength: errorText?.length || 0,
+            error: errorMessage,
+            code: errorCode,
+            isAuthError,
           })
-          
-          // Also log the raw error text if available
-          if (errorText && errorText.trim()) {
-            console.error('Raw error response:', errorText)
-          }
-          
-          // Handle 401 Unauthorized (invalid/expired token)
-          if (response.status === 401 || error.code === 'INVALID_TOKEN') {
+
+          if (isAuthError) {
             console.warn('Token expired or invalid, logging out and redirecting to login')
             handle401Error()
-            // Return a user-friendly error message
             throw new Error('Your session has expired. Please log in again.')
           }
-          
-          // Include more details in error message
-          const errorMsg = error.error || error.message || `Failed to fetch contacts (${response.status})`
-          const errorWithDetails = error.code 
-            ? `${errorMsg} [Code: ${error.code}]`
-            : errorMsg
-          throw new Error(errorWithDetails)
+
+          // DB overload path from API returns 503 + Retry-After + retryAfterSeconds.
+          if (response.status === 503) {
+            const retryAfter = response.headers.get('Retry-After')
+            const retryHint = retryAfter ? ` Retry in about ${retryAfter} seconds.` : ''
+            throw new Error(`${errorMessage}${retryHint}`)
+          }
+
+          throw new Error(errorCode ? `${errorMessage} [Code: ${errorCode}]` : errorMessage)
         }
         const data = await response.json()
         return data
       } catch (error: any) {
-        console.error('Contacts fetch error:', {
-          message: error?.message,
-          name: error?.name,
-          stack: error?.stack,
-          error: error,
-        })
+        const message = error?.message || 'Unknown contacts fetch error'
+        console.error('Contacts fetch error:', message)
         // Re-throw with more context if it's a network error
-        if (error?.message?.includes('fetch') || error?.message?.includes('network')) {
+        if (message.includes('fetch') || message.includes('network')) {
           throw new Error(`Network error: ${error.message}. Please check your connection.`)
         }
         throw error
@@ -141,7 +115,11 @@ export function useContacts(params?: { page?: number; limit?: number; type?: str
       if (error instanceof Error && (error.message.includes('session has expired') || error.message.includes('INVALID_TOKEN'))) {
         return false
       }
-      // Retry other errors up to 2 times
+      // Avoid hammering DB pool when backend is overloaded.
+      if (error instanceof Error && /temporarily busy|max clients reached|Retry in about/i.test(error.message)) {
+        return false
+      }
+      // Retry other errors up to 2 times.
       return failureCount < 2
     },
     retryDelay: 1000, // Wait 1 second between retries
@@ -725,10 +703,9 @@ export function useTasks(params?: {
 
   return useQuery({
     queryKey: ['tasks', params],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       const response = await fetch(`/api/tasks?${queryString}`, {
         headers: getAuthHeaders(),
-        signal,
       })
       if (!response.ok) throw new Error('Failed to fetch tasks')
       return response.json()
@@ -776,7 +753,7 @@ export function useCreateTask() {
       })
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Failed to create task')
+        throw new Error(error.message || error.error || 'Failed to create task')
       }
       return response.json()
     },

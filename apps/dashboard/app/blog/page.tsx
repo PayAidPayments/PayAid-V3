@@ -19,11 +19,11 @@ export default function BlogPage() {
               <span>PayAid V3</span>
             </Link>
             <Link 
-              href="/register" 
+              href="/#industry-selector" 
               className="px-4 py-2 rounded-lg font-medium text-white transition-colors"
               style={{ backgroundColor: '#53328A' }}
             >
-              Start Free Trial
+              Choose Industry & Start
             </Link>
           </div>
         </div>
@@ -143,10 +143,10 @@ export default function BlogPage() {
             Start your free trial and experience the power of PayAid V3
           </p>
           <Link 
-            href="/register"
+            href="/#industry-selector"
             className="inline-block px-8 py-3 rounded-lg font-medium text-purple-900 bg-yellow-400 hover:bg-yellow-300 transition-colors"
           >
-            Start Free Trial
+            Choose Industry & Start
           </Link>
         </div>
       </section>

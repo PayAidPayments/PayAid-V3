@@ -11,7 +11,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 3
+      "actualWorkers": 1
     },
     "preserveOutput": "always",
     "projects": [
@@ -20,7 +20,7 @@
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
-          "actualWorkers": 3
+          "actualWorkers": 1
         },
         "id": "chromium",
         "name": "chromium",
@@ -38,7 +38,7 @@
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
-          "actualWorkers": 3
+          "actualWorkers": 1
         },
         "id": "crm",
         "name": "crm",
@@ -56,7 +56,7 @@
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
-          "actualWorkers": 3
+          "actualWorkers": 1
         },
         "id": "hr",
         "name": "hr",
@@ -74,7 +74,7 @@
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
-          "actualWorkers": 3
+          "actualWorkers": 1
         },
         "id": "voice",
         "name": "voice",
@@ -92,7 +92,7 @@
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
-          "actualWorkers": 3
+          "actualWorkers": 1
         },
         "id": "dashboard",
         "name": "dashboard",
@@ -135,10 +135,10 @@
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
     "version": "1.58.1",
-    "workers": 4,
+    "workers": 1,
     "webServer": {
       "command": "npm run dev",
-      "url": "http://localhost:3000/api/payaid-internal/ping",
+      "url": "http://127.0.0.1:3000/api/payaid-internal/ping",
       "reuseExistingServer": true,
       "timeout": 900000,
       "stdout": "pipe",
@@ -147,315 +147,3056 @@
   },
   "suites": [
     {
-      "title": "e2e\\contact-360.spec.ts",
-      "file": "e2e/contact-360.spec.ts",
+      "title": "route-health.spec.ts",
+      "file": "route-health.spec.ts",
       "column": 0,
       "line": 0,
-      "specs": [],
-      "suites": [
+      "specs": [
         {
-          "title": "Contact 360",
-          "file": "e2e/contact-360.spec.ts",
-          "line": 52,
-          "column": 6,
-          "specs": [
+          "title": "[ROUTE] /",
+          "ok": true,
+          "tags": [],
+          "tests": [
             {
-              "title": "contact detail renders 360 card and profile",
-              "ok": false,
-              "tags": [],
-              "tests": [
+              "timeout": 300000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
                 {
-                  "timeout": 420000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 242725,
+                  "error": {
+                    "message": "TimeoutError: apiRequestContext.get: Timeout 240000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n",
+                    "stack": "TimeoutError: apiRequestContext.get: Timeout 240000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:51:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:75:24)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:87:28",
+                    "location": {
+                      "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                      "column": 28,
+                      "line": 51
+                    },
+                    "snippet": "  49 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  50 |     try {\n> 51 |       return await request.get(route, { timeout: timeoutMs, maxRedirects: 5 });\n     |                            ^\n  52 |     } catch (err) {\n  53 |       lastError = err;\n  54 |       if (attempt < maxAttempts && isConnectionError(err)) {"
+                  },
+                  "errors": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "timedOut",
-                      "duration": 633875,
-                      "error": {
-                        "message": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
-                        "stack": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:55:8",
-                        "location": {
-                          "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
-                          "column": 8,
-                          "line": 55
-                        },
-                        "snippet": "  53 |   test.describe.configure({ timeout: 420_000, retries: 0 })\n  54 |\n> 55 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  56 |     await installLightStubs(page)\n  57 |     await loginAsTenant(page, tenantSlug)\n  58 |     const loginHeading = page.getByRole('heading', { name: /sign in|log in/i }).first()"
+                      "location": {
+                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                        "column": 28,
+                        "line": 51
                       },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
-                            "column": 8,
-                            "line": 55
-                          },
-                          "message": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  53 |   test.describe.configure({ timeout: 420_000, retries: 0 })\n  54 |\n> 55 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  56 |     await installLightStubs(page)\n  57 |     await loginAsTenant(page, tenantSlug)\n  58 |     const loginHeading = page.getByRole('heading', { name: /sign in|log in/i }).first()\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:55:8"
-                        },
-                        {
-                          "location": {
-                            "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts",
-                            "column": 18,
-                            "line": 28
-                          },
-                          "message": "Error: page.goto: Target page, context or browser has been closed\n\n   at e2e\\crm-audit\\fixtures.ts:28\n\n  26 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  27 |     try {\n> 28 |       await page.goto(url, {\n     |                  ^\n  29 |         waitUntil,\n  30 |         timeout: navigationTimeout,\n  31 |       })\n    at gotoWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts:28:18)\n    at loginAsTenant (D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts:154:3)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:57:5"
-                        }
-                      ],
-                      "stdout": [
-                        {
-                          "text": "[CRM-AUDIT][AUTH] start origin=http://localhost:3000 tenantSegment=cmjptk2mw0000aocw31u48n64 email=ad…@demo.com\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][AUTH] no API token — falling back to UI login flow\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][AUTH] goto /login (deterministic auth entry)…\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][NAV] retry 2/2 http://localhost:3000/login… — page.goto: net::ERR_ABORTED; maybe frame was detached?\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/login\", waiting until \"commit\"\u001b[22m\n\n"
-                        }
-                      ],
-                      "stderr": [
-                        {
-                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=1 threw: apiRequestContext.post: Timeout 240000ms exceeded.\nCall log:\n\u001b[2m  - → POST http://localhost:3000/api/auth/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Content-Type: application/json\u001b[22m\n\u001b[2m    - content-length: 49\u001b[22m\n\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=2 threw: apiRequestContext.post: Target page, context or browser has been closed\nCall log:\n\u001b[2m  - → POST http://localhost:3000/api/auth/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Content-Type: application/json\u001b[22m\n\u001b[2m    - content-length: 49\u001b[22m\n\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=3 threw: apiRequestContext.post: Test timeout of 420000ms exceeded.\n"
-                        }
-                      ],
-                      "retry": 0,
-                      "startTime": "2026-04-11T09:19:47.192Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "D:\\Cursor Projects\\PayAid V3\\test-results\\e2e-contact-360-Contact-36-6d7f8-enders-360-card-and-profile-chromium\\video.webm"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
-                        "column": 8,
-                        "line": 55
-                      }
+                      "message": "TimeoutError: apiRequestContext.get: Timeout 240000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n\n  49 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  50 |     try {\n> 51 |       return await request.get(route, { timeout: timeoutMs, maxRedirects: 5 });\n     |                            ^\n  52 |     } catch (err) {\n  53 |       lastError = err;\n  54 |       if (attempt < maxAttempts && isConnectionError(err)) {\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:51:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:75:24)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:87:28"
                     }
                   ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "237ce8fb5ec9562699a6-6802c83c5dc1a6288c17",
-              "file": "e2e/contact-360.spec.ts",
-              "line": 64,
-              "column": 7
-            },
-            {
-              "title": "optional rollup sections expose stable test ids when data exists",
-              "ok": false,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 420000,
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T13:45:04.644Z",
                   "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
-                      "status": "timedOut",
-                      "duration": 630452,
-                      "error": {
-                        "message": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
-                        "stack": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:55:8",
-                        "location": {
-                          "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
-                          "column": 8,
-                          "line": 55
-                        },
-                        "snippet": "  53 |   test.describe.configure({ timeout: 420_000, retries: 0 })\n  54 |\n> 55 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  56 |     await installLightStubs(page)\n  57 |     await loginAsTenant(page, tenantSlug)\n  58 |     const loginHeading = page.getByRole('heading', { name: /sign in|log in/i }).first()"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
-                            "column": 8,
-                            "line": 55
-                          },
-                          "message": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  53 |   test.describe.configure({ timeout: 420_000, retries: 0 })\n  54 |\n> 55 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  56 |     await installLightStubs(page)\n  57 |     await loginAsTenant(page, tenantSlug)\n  58 |     const loginHeading = page.getByRole('heading', { name: /sign in|log in/i }).first()\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:55:8"
-                        },
-                        {
-                          "location": {
-                            "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts",
-                            "column": 18,
-                            "line": 28
-                          },
-                          "message": "Error: page.goto: Target page, context or browser has been closed\n\n   at e2e\\crm-audit\\fixtures.ts:28\n\n  26 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  27 |     try {\n> 28 |       await page.goto(url, {\n     |                  ^\n  29 |         waitUntil,\n  30 |         timeout: navigationTimeout,\n  31 |       })\n    at gotoWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts:28:18)\n    at loginAsTenant (D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts:154:3)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:57:5"
-                        }
-                      ],
-                      "stdout": [
-                        {
-                          "text": "[CRM-AUDIT][AUTH] start origin=http://localhost:3000 tenantSegment=cmjptk2mw0000aocw31u48n64 email=ad…@demo.com\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][AUTH] no API token — falling back to UI login flow\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][AUTH] goto /login (deterministic auth entry)…\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][NAV] retry 2/2 http://localhost:3000/login… — page.goto: net::ERR_ABORTED; maybe frame was detached?\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/login\", waiting until \"commit\"\u001b[22m\n\n"
-                        }
-                      ],
-                      "stderr": [
-                        {
-                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=1 threw: apiRequestContext.post: Timeout 240000ms exceeded.\nCall log:\n\u001b[2m  - → POST http://localhost:3000/api/auth/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Content-Type: application/json\u001b[22m\n\u001b[2m    - content-length: 49\u001b[22m\n\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=2 threw: apiRequestContext.post: Target page, context or browser has been closed\nCall log:\n\u001b[2m  - → POST http://localhost:3000/api/auth/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Content-Type: application/json\u001b[22m\n\u001b[2m    - content-length: 49\u001b[22m\n\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=3 threw: apiRequestContext.post: Test timeout of 420000ms exceeded.\n"
-                        }
-                      ],
-                      "retry": 0,
-                      "startTime": "2026-04-11T09:19:47.457Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "D:\\Cursor Projects\\PayAid V3\\test-results\\e2e-contact-360-Contact-36-3225f-e-test-ids-when-data-exists-chromium\\video.webm"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
-                        "column": 8,
-                        "line": 55
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "237ce8fb5ec9562699a6-32b8c377a6bdba174ed9",
-              "file": "e2e/contact-360.spec.ts",
-              "line": 81,
-              "column": 7
-            },
-            {
-              "title": "account detail page",
-              "ok": false,
-              "tags": [],
-              "tests": [
+                  "attachments": [],
+                  "errorLocation": {
+                    "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                    "column": 28,
+                    "line": 51
+                  }
+                },
                 {
-                  "timeout": 420000,
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 179392,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2026-04-17T13:50:34.999Z",
                   "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
+                  "attachments": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
-                      "status": "timedOut",
-                      "duration": 632848,
-                      "error": {
-                        "message": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
-                        "stack": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:55:8",
-                        "location": {
-                          "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
-                          "column": 8,
-                          "line": 55
-                        },
-                        "snippet": "  53 |   test.describe.configure({ timeout: 420_000, retries: 0 })\n  54 |\n> 55 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  56 |     await installLightStubs(page)\n  57 |     await loginAsTenant(page, tenantSlug)\n  58 |     const loginHeading = page.getByRole('heading', { name: /sign in|log in/i }).first()"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
-                            "column": 8,
-                            "line": 55
-                          },
-                          "message": "\u001b[31mTest timeout of 420000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  53 |   test.describe.configure({ timeout: 420_000, retries: 0 })\n  54 |\n> 55 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  56 |     await installLightStubs(page)\n  57 |     await loginAsTenant(page, tenantSlug)\n  58 |     const loginHeading = page.getByRole('heading', { name: /sign in|log in/i }).first()\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:55:8"
-                        },
-                        {
-                          "location": {
-                            "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts",
-                            "column": 18,
-                            "line": 28
-                          },
-                          "message": "Error: page.goto: Target page, context or browser has been closed\n\n   at e2e\\crm-audit\\fixtures.ts:28\n\n  26 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  27 |     try {\n> 28 |       await page.goto(url, {\n     |                  ^\n  29 |         waitUntil,\n  30 |         timeout: navigationTimeout,\n  31 |       })\n    at gotoWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts:28:18)\n    at loginAsTenant (D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\fixtures.ts:154:3)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts:57:5"
-                        }
-                      ],
-                      "stdout": [
-                        {
-                          "text": "[CRM-AUDIT][AUTH] start origin=http://localhost:3000 tenantSegment=cmjptk2mw0000aocw31u48n64 email=ad…@demo.com\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][AUTH] no API token — falling back to UI login flow\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][AUTH] goto /login (deterministic auth entry)…\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][NAV] retry 2/2 http://localhost:3000/login… — page.goto: net::ERR_ABORTED; maybe frame was detached?\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/login\", waiting until \"commit\"\u001b[22m\n\n"
-                        }
-                      ],
-                      "stderr": [
-                        {
-                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=1 threw: apiRequestContext.post: Timeout 240000ms exceeded.\nCall log:\n\u001b[2m  - → POST http://localhost:3000/api/auth/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Content-Type: application/json\u001b[22m\n\u001b[2m    - content-length: 49\u001b[22m\n\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=2 threw: apiRequestContext.post: Target page, context or browser has been closed\nCall log:\n\u001b[2m  - → POST http://localhost:3000/api/auth/login\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\u001b[2m    - Content-Type: application/json\u001b[22m\n\u001b[2m    - content-length: 49\u001b[22m\n\n"
-                        },
-                        {
-                          "text": "[CRM-AUDIT][AUTH] POST /api/auth/login attempt=3 threw: apiRequestContext.post: Test timeout of 420000ms exceeded.\n"
-                        }
-                      ],
-                      "retry": 0,
-                      "startTime": "2026-04-11T09:19:47.419Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "D:\\Cursor Projects\\PayAid V3\\test-results\\e2e-contact-360-Contact-360-account-detail-page-chromium\\video.webm"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\contact-360.spec.ts",
-                        "column": 8,
-                        "line": 55
-                      }
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Cursor Projects\\PayAid V3\\test-results\\route-health--ROUTE--chromium-retry1\\trace.zip"
                     }
-                  ],
-                  "status": "unexpected"
+                  ]
                 }
               ],
-              "id": "237ce8fb5ec9562699a6-48cb0e6f25da3095d41a",
-              "file": "e2e/contact-360.spec.ts",
-              "line": 121,
-              "column": 7
+              "status": "flaky"
             }
-          ]
+          ],
+          "id": "bf5df823ffcdfcb36376-4e659c5b0109c7a292a6",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /login",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 300000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 50855,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T13:53:36.799Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-ca87ea078dc1803163ac",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /home/demo",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 290451,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T13:54:27.894Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-e062ff93270e2f6ef390",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/Home",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 258908,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T13:59:18.573Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-7802f4f8405fe7dc834a",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/Activities",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 267002,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T14:03:37.817Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-3e4174d42a6b8969beb5",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/Leads",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 425622,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T14:08:06.293Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-ccec810f03a90faddb51",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/Contacts",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 457913,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T14:15:12.012Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-c61e9680f5f59e44737c",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/AllPeople",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 904474,
+                  "error": {
+                    "message": "TimeoutError: apiRequestContext.get: Timeout 900000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/crm/demo/AllPeople\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n",
+                    "stack": "TimeoutError: apiRequestContext.get: Timeout 900000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/crm/demo/AllPeople\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:51:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:75:24)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:87:28",
+                    "location": {
+                      "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                      "column": 28,
+                      "line": 51
+                    },
+                    "snippet": "  49 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  50 |     try {\n> 51 |       return await request.get(route, { timeout: timeoutMs, maxRedirects: 5 });\n     |                            ^\n  52 |     } catch (err) {\n  53 |       lastError = err;\n  54 |       if (attempt < maxAttempts && isConnectionError(err)) {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                        "column": 28,
+                        "line": 51
+                      },
+                      "message": "TimeoutError: apiRequestContext.get: Timeout 900000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/crm/demo/AllPeople\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n\n  49 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  50 |     try {\n> 51 |       return await request.get(route, { timeout: timeoutMs, maxRedirects: 5 });\n     |                            ^\n  52 |     } catch (err) {\n  53 |       lastError = err;\n  54 |       if (attempt < maxAttempts && isConnectionError(err)) {\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:51:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:75:24)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:87:28"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T14:22:50.167Z",
+                  "annotations": [],
+                  "attachments": [],
+                  "errorLocation": {
+                    "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                    "column": 28,
+                    "line": 51
+                  }
+                },
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 522325,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2026-04-17T14:39:08.986Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Cursor Projects\\PayAid V3\\test-results\\route-health--ROUTE-crm-demo-AllPeople-chromium-retry1\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "flaky"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-25a40fc48083f23bd170",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/Deals",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 232098,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T14:47:53.321Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-d1c92cc0a0a5f4e6c83e",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/Tasks",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 160233,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T14:51:45.606Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-9507634114f9aa1c7768",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/Meetings",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 168105,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T14:54:25.960Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-a8a57d37bf98573e14a4",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/CPQ",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 38853,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T14:57:14.495Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-a073d1d699e2615752e7",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/Agents",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 15762,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T14:57:53.436Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-c474616804cb35c01eac",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/Metrics",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6952,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T14:58:09.233Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-f01da8f532e414c3683c",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/Reports",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 17796,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T14:58:16.219Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-ce03c0eaffb8d0820a8e",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/Dialer",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 30171,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T14:58:34.052Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-568e5ccc5e93777d75c7",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/Churn",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 65871,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T14:59:04.286Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-75889343c4b6fde2adf9",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/SalesAutomation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 90439,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T15:00:10.297Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-421cc441d5e275a0b1c4",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/SalesEnablement",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 32868,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T15:01:40.812Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-d2a326402271f2e763f5",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /crm/demo/CustomerSuccess",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 22642,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T15:02:13.778Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-9ecf5085fbc2ab1f5b95",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /sales/demo/Home",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 59604,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T15:02:36.489Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-5570064a910b8750db97",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /sales/demo/Orders",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 41285,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T15:03:36.279Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-b2c2dab5d45cfec777c8",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /sales/demo/Landing-Pages",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 145574,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T15:04:17.680Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-15c4964aae81230bc940",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /sales/demo/Checkout-Pages",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 960000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 319304,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T15:06:43.414Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-0355020491faf4585f5d",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /marketing/demo/Home",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 516217,
+                  "error": {
+                    "message": "TimeoutError: apiRequestContext.get: Timeout 480000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Home\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n",
+                    "stack": "TimeoutError: apiRequestContext.get: Timeout 480000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Home\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:51:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:75:18)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:87:22",
+                    "location": {
+                      "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                      "column": 28,
+                      "line": 51
+                    },
+                    "snippet": "  49 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  50 |     try {\n> 51 |       return await request.get(route, { timeout: timeoutMs, maxRedirects: 5 });\n     |                            ^\n  52 |     } catch (err) {\n  53 |       lastError = err;\n  54 |       if (attempt < maxAttempts && isConnectionError(err)) {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                        "column": 28,
+                        "line": 51
+                      },
+                      "message": "TimeoutError: apiRequestContext.get: Timeout 480000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Home\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n\n  49 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  50 |     try {\n> 51 |       return await request.get(route, { timeout: timeoutMs, maxRedirects: 5 });\n     |                            ^\n  52 |     } catch (err) {\n  53 |       lastError = err;\n  54 |       if (attempt < maxAttempts && isConnectionError(err)) {\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:51:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:75:18)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:87:22"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T15:12:02.957Z",
+                  "annotations": [],
+                  "attachments": [],
+                  "errorLocation": {
+                    "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                    "column": 28,
+                    "line": 51
+                  }
+                },
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 157050,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2026-04-17T15:22:38.718Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Cursor Projects\\PayAid V3\\test-results\\route-health--ROUTE-marketing-demo-Home-chromium-retry1\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "flaky"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-b5b3658e702757ba2ee9",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /marketing/demo/Campaigns",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 383077,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T15:25:16.845Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-da109facedadea93917b",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /marketing/demo/Sequences",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 364718,
+                  "error": {
+                    "message": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Sequences\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n",
+                    "stack": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Sequences\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:51:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:75:24)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:87:28",
+                    "location": {
+                      "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                      "column": 28,
+                      "line": 51
+                    },
+                    "snippet": "  49 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  50 |     try {\n> 51 |       return await request.get(route, { timeout: timeoutMs, maxRedirects: 5 });\n     |                            ^\n  52 |     } catch (err) {\n  53 |       lastError = err;\n  54 |       if (attempt < maxAttempts && isConnectionError(err)) {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                        "column": 28,
+                        "line": 51
+                      },
+                      "message": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Sequences\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n\n  49 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  50 |     try {\n> 51 |       return await request.get(route, { timeout: timeoutMs, maxRedirects: 5 });\n     |                            ^\n  52 |     } catch (err) {\n  53 |       lastError = err;\n  54 |       if (attempt < maxAttempts && isConnectionError(err)) {\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:51:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:75:24)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:87:28"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T15:31:40.584Z",
+                  "annotations": [],
+                  "attachments": [],
+                  "errorLocation": {
+                    "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                    "column": 28,
+                    "line": 51
+                  }
+                },
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 23815,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2026-04-17T15:39:59.080Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Cursor Projects\\PayAid V3\\test-results\\route-health--ROUTE-marketing-demo-Sequences-chromium-retry1\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "flaky"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-06a3b0fee1b7072d87ab",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /marketing/demo/Ads",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 364509,
+                  "error": {
+                    "message": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Ads\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n",
+                    "stack": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Ads\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:51:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:75:24)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:87:28",
+                    "location": {
+                      "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                      "column": 28,
+                      "line": 51
+                    },
+                    "snippet": "  49 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  50 |     try {\n> 51 |       return await request.get(route, { timeout: timeoutMs, maxRedirects: 5 });\n     |                            ^\n  52 |     } catch (err) {\n  53 |       lastError = err;\n  54 |       if (attempt < maxAttempts && isConnectionError(err)) {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                        "column": 28,
+                        "line": 51
+                      },
+                      "message": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Ads\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n\n  49 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  50 |     try {\n> 51 |       return await request.get(route, { timeout: timeoutMs, maxRedirects: 5 });\n     |                            ^\n  52 |     } catch (err) {\n  53 |       lastError = err;\n  54 |       if (attempt < maxAttempts && isConnectionError(err)) {\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:51:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:75:24)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:87:28"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T15:40:25.096Z",
+                  "annotations": [],
+                  "attachments": [],
+                  "errorLocation": {
+                    "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                    "column": 28,
+                    "line": 51
+                  }
+                },
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 191833,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2026-04-17T15:48:34.802Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Cursor Projects\\PayAid V3\\test-results\\route-health--ROUTE-marketing-demo-Ads-chromium-retry1\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "flaky"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-70214b3927a02f250c51",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /marketing/demo/Creative-Studio",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 420527,
+                  "error": {
+                    "message": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Creative-Studio\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n",
+                    "stack": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Creative-Studio\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:51:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:75:18)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:87:22",
+                    "location": {
+                      "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                      "column": 28,
+                      "line": 51
+                    },
+                    "snippet": "  49 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  50 |     try {\n> 51 |       return await request.get(route, { timeout: timeoutMs, maxRedirects: 5 });\n     |                            ^\n  52 |     } catch (err) {\n  53 |       lastError = err;\n  54 |       if (attempt < maxAttempts && isConnectionError(err)) {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                        "column": 28,
+                        "line": 51
+                      },
+                      "message": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Creative-Studio\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n\n  49 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  50 |     try {\n> 51 |       return await request.get(route, { timeout: timeoutMs, maxRedirects: 5 });\n     |                            ^\n  52 |     } catch (err) {\n  53 |       lastError = err;\n  54 |       if (attempt < maxAttempts && isConnectionError(err)) {\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:51:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:75:18)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:87:22"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T15:51:49.461Z",
+                  "annotations": [],
+                  "attachments": [],
+                  "errorLocation": {
+                    "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                    "column": 28,
+                    "line": 51
+                  }
+                },
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 364346,
+                  "error": {
+                    "message": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Creative-Studio\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n",
+                    "stack": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Creative-Studio\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:51:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:75:24)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:87:28",
+                    "location": {
+                      "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                      "column": 28,
+                      "line": 51
+                    },
+                    "snippet": "  49 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  50 |     try {\n> 51 |       return await request.get(route, { timeout: timeoutMs, maxRedirects: 5 });\n     |                            ^\n  52 |     } catch (err) {\n  53 |       lastError = err;\n  54 |       if (attempt < maxAttempts && isConnectionError(err)) {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                        "column": 28,
+                        "line": 51
+                      },
+                      "message": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Creative-Studio\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n\n  49 |   for (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  50 |     try {\n> 51 |       return await request.get(route, { timeout: timeoutMs, maxRedirects: 5 });\n     |                            ^\n  52 |     } catch (err) {\n  53 |       lastError = err;\n  54 |       if (attempt < maxAttempts && isConnectionError(err)) {\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:51:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:75:24)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:87:28"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2026-04-17T16:01:02.950Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Cursor Projects\\PayAid V3\\test-results\\route-health--ROUTE-marketing-demo-Creative-Studio-chromium-retry1\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                    "column": 28,
+                    "line": 51
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-86bd98a9f7c7cbe5348c",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /marketing/demo/Social-Media",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 366699,
+                  "error": {
+                    "message": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Social-Media\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n",
+                    "stack": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Social-Media\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:36:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:58:24)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:71:28",
+                    "location": {
+                      "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                      "column": 28,
+                      "line": 36
+                    },
+                    "snippet": "  34 |\n  35 | const CONNECTION_ERROR_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ECONNABORTED']);\n> 36 | function isConnectionError(err: unknown): boolean {\n     |                            ^\n  37 |   const msg = err instanceof Error ? err.message : String(err);\n  38 |   return [...CONNECTION_ERROR_CODES].some((code) => msg.includes(code));\n  39 | }"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                        "column": 28,
+                        "line": 36
+                      },
+                      "message": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Social-Media\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n\n  34 |\n  35 | const CONNECTION_ERROR_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ECONNABORTED']);\n> 36 | function isConnectionError(err: unknown): boolean {\n     |                            ^\n  37 |   const msg = err instanceof Error ? err.message : String(err);\n  38 |   return [...CONNECTION_ERROR_CODES].some((code) => msg.includes(code));\n  39 | }\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:36:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:58:24)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:71:28"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:08:22.084Z",
+                  "annotations": [],
+                  "attachments": [],
+                  "errorLocation": {
+                    "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                    "column": 28,
+                    "line": 36
+                  }
+                },
+                {
+                  "workerIndex": 8,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 362228,
+                  "error": {
+                    "message": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Social-Media\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n",
+                    "stack": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Social-Media\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:36:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:58:24)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:71:28",
+                    "location": {
+                      "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                      "column": 28,
+                      "line": 36
+                    },
+                    "snippet": "  34 |\n  35 | const CONNECTION_ERROR_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ECONNABORTED']);\n> 36 | function isConnectionError(err: unknown): boolean {\n     |                            ^\n  37 |   const msg = err instanceof Error ? err.message : String(err);\n  38 |   return [...CONNECTION_ERROR_CODES].some((code) => msg.includes(code));\n  39 | }"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                        "column": 28,
+                        "line": 36
+                      },
+                      "message": "TimeoutError: apiRequestContext.get: Timeout 360000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:3000/marketing/demo/Social-Media\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n\n  34 |\n  35 | const CONNECTION_ERROR_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ECONNABORTED']);\n> 36 | function isConnectionError(err: unknown): boolean {\n     |                            ^\n  37 |   const msg = err instanceof Error ? err.message : String(err);\n  38 |   return [...CONNECTION_ERROR_CODES].some((code) => msg.includes(code));\n  39 | }\n    at getWithRetry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:36:28)\n    at getRouteWithTransient500Retry (D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:58:24)\n    at D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts:71:28"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2026-04-17T16:16:11.072Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Cursor Projects\\PayAid V3\\test-results\\route-health--ROUTE-marketing-demo-Social-Media-chromium-retry1\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\Cursor Projects\\PayAid V3\\tests\\route-health.spec.ts",
+                    "column": 28,
+                    "line": 36
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-633245b2fd5766e2cd00",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /marketing/demo/Analytics",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 277205,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:22:37.155Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-66c2d9e3119d685ea8d2",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /marketing/demo/Segments",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 74557,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:27:14.588Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-634befb07e839f6a06d1",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /finance/demo/Home",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 108368,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:28:29.356Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-f6074d145a561e550170",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /finance/demo/Invoices",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 133116,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:30:18.251Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-33daf3643d9b96d150cd",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /finance/demo/Accounting",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 63442,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:32:32.094Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-eb6474486783885d134d",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /finance/demo/GST",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 43407,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:33:36.081Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-cd17017c387db3bf617e",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /finance/demo/TDS",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 41022,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:34:19.677Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-ceef500763b8beb9cc76",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /finance/demo/Purchase-Orders",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 57691,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:35:00.869Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-78ff1e6806e3b4f372bc",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /finance/demo/Bank-Reconciliation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 84100,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:35:58.738Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-1e6381f03ac5c27a5de3",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /finance/demo/E-Invoicing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 138276,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:37:23.003Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-4ea0fe16e8f68f2f9c69",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /finance/demo/Advances",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 275566,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:39:41.858Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-fa659329d9fba62d3930",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /finance/demo/Recurring-Billing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 160832,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:44:17.626Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-3f4cb68f5a42a65f974f",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /finance/demo/Tally-Export",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 108227,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:46:58.648Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-b6e8ea6d0b77e06a4581",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /finance/demo/ca-assistant",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 245840,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:48:47.231Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-5dd5bd78524407e4d0ba",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Home",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 363357,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:52:53.375Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-e264b979d15830a0f01e",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Employees",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 278867,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T16:58:56.980Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-f89c6935e4717f1bec29",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Payroll-Runs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 198205,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:03:36.052Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-a1d464b072dd4443c1c2",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Attendance",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 362805,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:06:54.635Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-ba90d784e1b25620378c",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Leave",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 517,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:12:57.627Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-1fc0a1ada41a30e938e3",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Hiring",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 119650,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:12:58.222Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-a8d9bae764c2488364d5",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Performance",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 17060,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:14:57.997Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-3ac9486e115ca5f537e0",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Reports",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6813,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:15:15.181Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-df2397a4f13c62238c2d",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Statutory-Compliance",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4720,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:15:22.042Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-8ab174f22635c0b4da26",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Reimbursements",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8705,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:15:26.804Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-d2994ee7afe3ebf1b642",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Assets",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5240,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:15:35.549Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-5e14940ae735844f6e5b",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Insurance",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4528,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:15:40.832Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-f4b5038d25c0c1433e11",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Documents",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 14922,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:15:45.402Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-6dd2ef01fb620914adc0",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Payslips",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 13771,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:16:00.374Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-80cc57a1d78206bac513",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Salary-Structures",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7284,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:16:14.180Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-a3e188f7f9c006745531",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /hr/demo/Offboarding",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 420000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4250,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:16:21.496Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-5a3ddb7bb18827ec1b52",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /projects/demo/Home",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9456,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:16:25.886Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-796b07fceb81f56fbb78",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /projects/demo/Projects",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12965,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:16:35.418Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-42e32696682755875415",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /projects/demo/Tasks",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 16367,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:16:48.425Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-79519a565c78f266e992",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /projects/demo/Gantt",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 19866,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:17:04.825Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-9e97395b5d64977e6f15",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /projects/demo/Time",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 21092,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:17:24.759Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-f0b1605a4ea9d1556b97",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /inventory/demo/Home",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 56270,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:17:45.910Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-2009920b17bba08065f4",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /inventory/demo/Products",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 68809,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:18:42.275Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-bd0e0efe2bf9c01bc11c",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /inventory/demo/Warehouses",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 16096,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:19:51.247Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-8f9f8ecf7fb474daa0fe",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /inventory/demo/StockMovements",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12681,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:20:07.424Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-8255e244dafaa3396be0",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /inventory/demo/Stock-Alerts",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 16511,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:20:20.149Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-54a9689ae1195b1f4c32",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /inventory/demo/Reports",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 36566,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:20:36.701Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-53597c474fd118219c4f",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /ai-studio/demo/Home",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 74425,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:21:13.547Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-e062e6c470fb28c2ff6f",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /ai-studio/demo/Chat",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 102085,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:22:28.118Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-9410f6add13746c378da",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /ai-studio/demo/Cofounder",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 61475,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:24:10.716Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-6b34a4a8db2d4207a337",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /ai-studio/demo/Insights",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 30981,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:25:12.353Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-4ac72d86231723b57816",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /productivity/demo/Home",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 18144,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:25:43.503Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-4ce42cf74bff8718cfdc",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /spreadsheet/demo/Home",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 19816,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:26:01.762Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-555bdfea5a340d3623ed",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /spreadsheet/demo/Spreadsheets",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 19155,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:26:21.665Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-ef56ccad1c4645336b37",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
+        },
+        {
+          "title": "[ROUTE] /industry-intelligence/demo/Home",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 540000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 9,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 55771,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-04-17T17:26:40.903Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bf5df823ffcdfcb36376-f1509021d4503c4fdb63",
+          "file": "route-health.spec.ts",
+          "line": 84,
+          "column": 7
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-04-11T09:04:19.134Z",
-    "duration": 1632908.577,
-    "expected": 0,
+    "startTime": "2026-04-17T13:39:47.920Z",
+    "duration": 13670525.878,
+    "expected": 72,
     "skipped": 0,
-    "unexpected": 3,
-    "flaky": 0
+    "unexpected": 2,
+    "flaky": 5
   }
 }

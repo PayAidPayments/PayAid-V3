@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         email: true,
         company: true,
       },
-      orderBy: [{ updatedAt: 'desc' }],
+      orderBy: [{ createdAt: 'desc' }],
       take: limit,
     })
 

@@ -102,6 +102,18 @@ async function main() {
     },
   })
 
+  // Membership rows (CRM audit / smoke scripts expect TenantMember per tenant)
+  await prisma.tenantMember.upsert({
+    where: { userId_tenantId: { userId: user1.id, tenantId: tenant1.id } },
+    update: { role: 'owner' },
+    create: { userId: user1.id, tenantId: tenant1.id, role: 'owner' },
+  })
+  await prisma.tenantMember.upsert({
+    where: { userId_tenantId: { userId: user2.id, tenantId: tenant2.id } },
+    update: { role: 'owner' },
+    create: { userId: user2.id, tenantId: tenant2.id, role: 'owner' },
+  })
+
   // Create comprehensive contacts (20+ contacts with variety)
   const contactNames = [
     { name: 'John Doe', email: 'john@example.com', phone: '+91-9876543210', type: 'customer', company: 'Tech Solutions Inc' },

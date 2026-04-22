@@ -39,6 +39,11 @@ export default function LeadRoutingPage() {
   )
   const [fallbackSalesRepId, setFallbackSalesRepId] = useState<string | null>(null)
   const [sourceRows, setSourceRows] = useState<SourceRow[]>([])
+  /** Pilot wedge (optional JSON); see `PilotInboundConfigV1Schema`. */
+  const [pilotSlaMinutes, setPilotSlaMinutes] = useState('')
+  const [pilotGuaranteeTask, setPilotGuaranteeTask] = useState(false)
+  const [pilotFollowUpTitle, setPilotFollowUpTitle] = useState('')
+  const [rrPoolRows, setRrPoolRows] = useState<{ repId: string }[]>([])
 
   const load = useCallback(async () => {
     if (!tenantId) return
@@ -93,6 +98,21 @@ export default function LeadRoutingPage() {
       setPrimaryStrategy(cfg.primaryStrategy)
       setFallbackSalesRepId(fb)
       setSourceRows(rows)
+      const p = cfg.pilotInbound
+      if (p) {
+        setPilotSlaMinutes(
+          typeof p.firstResponseSlaMinutes === 'number' ? String(p.firstResponseSlaMinutes) : ''
+        )
+        setPilotGuaranteeTask(Boolean(p.guaranteeFirstFollowUpTask))
+        setPilotFollowUpTitle(typeof p.firstFollowUpTitle === 'string' ? p.firstFollowUpTitle : '')
+        const pool = Array.isArray(p.roundRobinPoolSalesRepIds) ? p.roundRobinPoolSalesRepIds : []
+        setRrPoolRows(pool.map((id) => ({ repId: id })))
+      } else {
+        setPilotSlaMinutes('')
+        setPilotGuaranteeTask(false)
+        setPilotFollowUpTitle('')
+        setRrPoolRows([])
+      }
     } catch {
       setError('Failed to load lead routing (network or unexpected error).')
     } finally {
@@ -113,12 +133,35 @@ export default function LeadRoutingPage() {
       const k = row.key.trim().toLowerCase()
       if (k && row.salesRepId) sourceChannelToSalesRepId[k] = row.salesRepId
     }
+    const poolIds = rrPoolRows.map((r) => r.repId).filter(Boolean)
+    if (primaryStrategy === 'round_robin' && poolIds.length === 0) {
+      setError('Round robin needs at least one rep in the pool (add rows below).')
+      setSaving(false)
+      return
+    }
+    const pilotHasSignal =
+      primaryStrategy === 'round_robin' ||
+      pilotSlaMinutes.trim() !== '' ||
+      pilotGuaranteeTask ||
+      pilotFollowUpTitle.trim() !== '' ||
+      poolIds.length > 0
+    const slaParsed =
+      pilotSlaMinutes.trim() === '' ? NaN : parseInt(pilotSlaMinutes.trim(), 10)
+    const pilotInbound: LeadRoutingConfigV1['pilotInbound'] | undefined = pilotHasSignal
+      ? {
+          ...(Number.isFinite(slaParsed) && slaParsed > 0 ? { firstResponseSlaMinutes: slaParsed } : {}),
+          ...(poolIds.length > 0 ? { roundRobinPoolSalesRepIds: poolIds } : {}),
+          guaranteeFirstFollowUpTask: pilotGuaranteeTask,
+          ...(pilotFollowUpTitle.trim() !== '' ? { firstFollowUpTitle: pilotFollowUpTitle.trim() } : {}),
+        }
+      : undefined
     const body: LeadRoutingConfigV1 = {
       version: 1,
       enabled,
       primaryStrategy,
       fallbackSalesRepId: fallbackSalesRepId || null,
       sourceChannelToSalesRepId,
+      ...(pilotInbound !== undefined ? { pilotInbound } : {}),
     }
     try {
       const res = await fetch(
@@ -167,8 +210,8 @@ export default function LeadRoutingPage() {
           <h1 className="text-xl font-semibold tracking-tight">Lead routing</h1>
           <p className="text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
             When enabled, unassigned inbound leads use this order: same-account sibling owner →
-            source-channel rules → territory match → smart workload allocation → fallback rep. Existing
-            owners and explicit assignment from the API are always kept.
+            source-channel rules → primary strategy (territory, smart, combined, or explicit round robin
+            pool) → fallback rep. Existing owners and explicit assignment from the API are always kept.
           </p>
         </header>
 
@@ -222,8 +265,15 @@ export default function LeadRoutingPage() {
                   </SelectItem>
                   <SelectItem value="territory">Territory only</SelectItem>
                   <SelectItem value="smart">Smart allocation only</SelectItem>
+                  <SelectItem value="round_robin">Round robin (pilot pool)</SelectItem>
                 </SelectContent>
               </Select>
+              {primaryStrategy === 'round_robin' ? (
+                <p className="text-xs text-slate-600 dark:text-slate-400 max-w-xl">
+                  Add reps below in rotation order. Pilot uses a simple modulo cursor (upgrade to DB-backed
+                  state for strict fairness under concurrent writes).
+                </p>
+              ) : null}
             </div>
 
             <div className="space-y-2">
@@ -315,6 +365,106 @@ export default function LeadRoutingPage() {
                 >
                   <Plus className="h-4 w-4" aria-hidden />
                   Add source rule
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-slate-200/80 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-900/40">
+              <div>
+                <Label className="text-sm font-medium">Pilot inbound (optional)</Label>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  Calendar SLA minutes, first follow-up task flag/title, and round-robin pool. Inbound
+                  orchestration applies SLA + decision + task on each successful create/merge (skipped for
+                  bulk paths that disable execution logs).
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor="pilot-sla" className="text-xs text-slate-600 dark:text-slate-400">
+                    First response SLA (minutes)
+                  </Label>
+                  <Input
+                    id="pilot-sla"
+                    type="number"
+                    min={1}
+                    max={10080}
+                    placeholder="e.g. 120"
+                    value={pilotSlaMinutes}
+                    onChange={(e) => setPilotSlaMinutes(e.target.value)}
+                    disabled={saving}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="pilot-title" className="text-xs text-slate-600 dark:text-slate-400">
+                    First follow-up task title
+                  </Label>
+                  <Input
+                    id="pilot-title"
+                    placeholder="Follow up: inbound lead"
+                    value={pilotFollowUpTitle}
+                    onChange={(e) => setPilotFollowUpTitle(e.target.value)}
+                    disabled={saving}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-4 rounded-lg border border-slate-200/60 px-3 py-2 dark:border-slate-800">
+                <Label htmlFor="pilot-guarantee" className="text-sm">
+                  Guarantee first follow-up task (orchestration)
+                </Label>
+                <Switch
+                  id="pilot-guarantee"
+                  checked={pilotGuaranteeTask}
+                  onCheckedChange={setPilotGuaranteeTask}
+                  disabled={saving}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Round-robin pool (order = rotation)</Label>
+                {rrPoolRows.map((row, idx) => (
+                  <div key={idx} className="flex flex-wrap items-end gap-2">
+                    <Select
+                      value={row.repId || '__pick__'}
+                      onValueChange={(v) => {
+                        const next = [...rrPoolRows]
+                        next[idx] = { repId: v === '__pick__' ? '' : v }
+                        setRrPoolRows(next)
+                      }}
+                      disabled={saving}
+                    >
+                      <SelectTrigger className="min-w-[220px] flex-1">
+                        <SelectValue placeholder="Sales rep" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__pick__">Select rep…</SelectItem>
+                        {salesReps.map((r) => (
+                          <SelectItem key={r.id} value={r.id}>
+                            {r.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      title="Remove"
+                      disabled={saving}
+                      onClick={() => setRrPoolRows(rrPoolRows.filter((_, i) => i !== idx))}
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  disabled={saving}
+                  onClick={() => setRrPoolRows([...rrPoolRows, { repId: '' }])}
+                >
+                  <Plus className="h-4 w-4" aria-hidden />
+                  Add rep to pool
                 </Button>
               </div>
             </div>

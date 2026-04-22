@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { multiLayerCache } from '@/lib/cache/multi-layer'
 import { processInboundLead } from '@/lib/crm/inbound-orchestration'
 import { resolveTenantFromParam } from '@/lib/tenant/resolve-tenant'
+import { resolveCrmRequestTenantId } from '@/lib/crm/resolve-crm-request-tenant'
 import { findIdempotentRequest, markIdempotentRequest } from '@/lib/ai-native/m0-service'
 import { dbOverloadResponse, isTransientDbOverloadError } from '@/lib/api/db-overload'
 
@@ -56,31 +57,29 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Check CRM module license and resolve tenant (match deals API: use request tenant when user has access)
+    // Check CRM module license and resolve tenant (shared helper: fast path when ?tenantId= matches JWT)
     const { userId, tenantId: jwtTenantId } = await requireModuleAccess(request, 'crm')
     const searchParams = request.nextUrl.searchParams
-    const requestTenantId = searchParams.get('tenantId') || undefined
-    let tenantId = jwtTenantId
-    if (requestTenantId) {
-      const user = await prismaRead.user.findUnique({
-        where: { id: userId },
-        select: { tenantId: true, email: true },
-      }).catch(() => null)
-      const userTenantId = user?.tenantId ?? null
-      const hasAccess = jwtTenantId === requestTenantId || userTenantId === requestTenantId
-      const allowDemoTenantOverride = process.env.NEXT_PUBLIC_CRM_ALLOW_DEMO_SEED === '1'
-      const isDemoTenantRequest =
-        allowDemoTenantOverride &&
-        user?.email === 'admin@demo.com' &&
-        (await prismaRead.tenant.findUnique({
-          where: { id: requestTenantId },
-          select: { name: true },
-        }).then((t) => t?.name?.toLowerCase().includes('demo') ?? false).catch(() => false))
-      if (hasAccess || isDemoTenantRequest) tenantId = requestTenantId
-    }
+    const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
 
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    // Default page size: 100 rows. Max page size: PAYAID_CONTACTS_PAGE_MAX (default 2000), ceiling 5000.
+    const DEFAULT_CONTACTS_LIMIT = 100
+    const rawLimit = parseInt(
+      searchParams.get('limit') || String(DEFAULT_CONTACTS_LIMIT),
+      10
+    )
+    const CONTACTS_PAGE_MAX = Math.min(
+      parseInt(process.env.PAYAID_CONTACTS_PAGE_MAX || '2000', 10) || 2000,
+      5000
+    )
+    const limit = Math.min(
+      Math.max(
+        Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : DEFAULT_CONTACTS_LIMIT,
+        1
+      ),
+      CONTACTS_PAGE_MAX
+    )
     const type = searchParams.get('type')
     const stage = searchParams.get('stage') // New: stage filter (prospect, contact, customer)
     const status = searchParams.get('status')
@@ -291,6 +290,11 @@ export async function GET(request: NextRequest) {
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }
+
+    // Return a stable 503 contract for transient DB pool/connection overloads.
+    if (isTransientDbOverloadError(error)) {
+      return dbOverloadResponse('Contacts')
+    }
     
     console.error('Get contacts error:', error)
     
@@ -462,11 +466,93 @@ export async function POST(request: NextRequest) {
     }
 
     const stage = validated.stage || (validated.type === 'lead' ? 'prospect' : validated.type === 'customer' ? 'customer' : 'contact')
+    const normalizedEmail = validated.email?.trim().toLowerCase()
+    const normalizedPhone = validated.phone?.trim()
+
+    // Return all duplicate keys at once so users can fix email + phone in one attempt.
+    if (normalizedEmail || normalizedPhone) {
+      const duplicateOrFilters: Array<Record<string, unknown>> = []
+      if (normalizedEmail) {
+        duplicateOrFilters.push({
+          email: {
+            equals: normalizedEmail,
+            mode: 'insensitive',
+          },
+        })
+      }
+      if (normalizedPhone) {
+        duplicateOrFilters.push({
+          phone: {
+            equals: normalizedPhone,
+          },
+        })
+      }
+
+      const duplicateCandidates = await prismaRead.contact.findMany({
+        where: {
+          tenantId,
+          OR: duplicateOrFilters,
+        },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+        },
+        take: 5,
+      })
+
+      const emailMatch =
+        normalizedEmail
+          ? duplicateCandidates.find(
+              (candidate) =>
+                typeof candidate.email === 'string' &&
+                candidate.email.trim().toLowerCase() === normalizedEmail
+            )
+          : null
+      const phoneMatch =
+        normalizedPhone
+          ? duplicateCandidates.find(
+              (candidate) =>
+                typeof candidate.phone === 'string' &&
+                candidate.phone.trim() === normalizedPhone
+            )
+          : null
+
+      if (emailMatch || phoneMatch) {
+        const conflictFields: Array<'email' | 'phone'> = []
+        if (emailMatch) conflictFields.push('email')
+        if (phoneMatch) conflictFields.push('phone')
+
+        const duplicateMessage =
+          conflictFields.length === 2
+            ? 'A contact with this email and phone number already exists.'
+            : conflictFields[0] === 'email'
+              ? 'A contact with this email already exists.'
+              : 'A contact with this phone number already exists.'
+
+        return NextResponse.json(
+          {
+            error: duplicateMessage,
+            code: 'DUPLICATE_CONTACT_FIELDS',
+            conflictFields,
+            existingId: emailMatch?.id || phoneMatch?.id,
+            existingIds: {
+              email: emailMatch?.id || null,
+              phone: phoneMatch?.id || null,
+            },
+          },
+          { status: 409 }
+        )
+      }
+    }
 
     const inbound = await processInboundLead({
       tenantId,
       actorUserId: userId,
       dedupePolicy: 'reject_duplicate',
+      idempotencyFingerprint: idempotencyKey
+        ? `${tenantId}:api_contacts:${idempotencyKey}`
+        : undefined,
       source: {
         sourceChannel: 'crm_manual',
         sourceSubchannel: 'api_contacts',

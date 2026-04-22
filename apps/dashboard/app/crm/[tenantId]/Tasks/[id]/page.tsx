@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useDeleteTask, useTask, useUpdateTask } from '@/lib/hooks/use-api'
+import { getAuthHeaders, useDeleteTask, useTask, useUpdateTask } from '@/lib/hooks/use-api'
 import { useQuery } from '@tanstack/react-query'
-import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -32,7 +31,6 @@ export default function CRMTaskDetailPage() {
   const { data: task, isLoading, isError } = useTask(id, tenantId || undefined)
   const deleteTask = useDeleteTask()
   const updateTask = useUpdateTask()
-  const { token } = useAuthStore()
   const { toast, ToastContainer: PageToastContainer } = useToast()
   const [saveSuccess, setSaveSuccess] = useState('')
 
@@ -44,18 +42,19 @@ export default function CRMTaskDetailPage() {
   const [assignedToId, setAssignedToId] = useState('')
   const [saveError, setSaveError] = useState('')
 
-  const { data: employeesData } = useQuery({
-    queryKey: ['employees-for-task-edit', tenantId],
+  const { data: usersData } = useQuery({
+    queryKey: ['crm-users-for-task-edit', tenantId],
     queryFn: async () => {
-      const res = await fetch('/api/hr/employees?limit=500', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      const qs = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''
+      const res = await fetch(`/api/crm/users${qs}`, {
+        headers: getAuthHeaders(),
       })
-      if (!res.ok) return { employees: [] }
-      return res.json().catch(() => ({ employees: [] }))
+      if (!res.ok) return { users: [] }
+      return res.json().catch(() => ({ users: [] }))
     },
-    enabled: !!token,
+    enabled: !!tenantId,
   })
-  const assignableEmployees = (employeesData?.employees || []).filter((e: any) => e.userId)
+  const assignableUsers = usersData?.users || []
 
   useEffect(() => {
     if (!task) return
@@ -279,11 +278,10 @@ export default function CRMTaskDetailPage() {
                 onChange={(e) => setAssignedToId(e.target.value)}
                 disabled={updateTask.isPending}
               >
-                <option value="">— Unassigned (assign to me) —</option>
-                {assignableEmployees.map((emp: any) => (
-                  <option key={emp.userId} value={emp.userId}>
-                    {emp.firstName} {emp.lastName}
-                    {emp.designation?.name ? ` · ${emp.designation.name}` : ''}
+                <option value="">— Unassigned (auto-assign to me if available) —</option>
+                {assignableUsers.map((user: any) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name || user.email || user.id}
                   </option>
                 ))}
               </select>

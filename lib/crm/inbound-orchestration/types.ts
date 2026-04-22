@@ -70,10 +70,16 @@ export interface ProcessInboundLeadInput {
   mergeExistingFields?: InboundMergeExistingFields
   /** When true, sets `Contact.lastContactedAt` on create and merge (e.g. public forms). */
   touchLastContactedAt?: boolean
-  /** When true, skips writing to `InboundOrchestrationLog` (bulk jobs, tests). */
+  /** When true, skips writing to `InboundOrchestrationLog` (bulk jobs, tests). Does not skip pilot durable artifacts; use `skipPilotLoopArtifacts` for that. */
   skipExecutionLogWrite?: boolean
   /** When true, skips CRMConfig-based auto-assignment (bulk import, marketing CSV). */
   skipLeadRouting?: boolean
+  /**
+   * Stable key for public ingress (e.g. `Idempotency-Key` header). Same tenant + fingerprint → same contact without re-running side effects.
+   */
+  idempotencyFingerprint?: string | null
+  /** When true, skips pilot artifacts (routing decision, SLA stamp, guaranteed task, idempotency record). */
+  skipPilotLoopArtifacts?: boolean
 }
 
 export interface ProcessInboundLeadError {
@@ -99,7 +105,7 @@ export interface ProcessInboundLeadResult {
     leadScore: number
   }
   created: boolean
-  dedupeAction: 'created' | 'merged' | 'rejected_duplicate' | 'unchanged'
+  dedupeAction: 'created' | 'merged' | 'rejected_duplicate' | 'unchanged' | 'idempotent_replay'
   executionLog: InboundExecutionLogEntry[]
   error?: ProcessInboundLeadError
 }

@@ -256,7 +256,7 @@ Be friendly, concise, and helpful. If you don't know the answer, politely ask fo
           await prisma.chatbotConversation.update({
             where: { id: conversation.id },
             data: {
-              contactId: contact.id,
+              contactId,
               qualified: true,
             },
           })
@@ -278,7 +278,7 @@ Be friendly, concise, and helpful. If you don't know the answer, politely ask fo
                 value: 0, // Unknown value initially
                 probability: 20, // Low initial probability
                 stage: 'lead',
-                contactId: contact.id,
+                contactId,
               },
             })
 

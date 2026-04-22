@@ -397,6 +397,8 @@ export function NewsSidebar() {
   }
 
   // Fetch news items with category filter
+  const isDev = process.env.NODE_ENV !== 'production'
+
   const { data, isLoading, error: fetchError } = useQuery<NewsResponse>({
     queryKey: ['news', token, selectedCategory],
     queryFn: async () => {
@@ -445,8 +447,10 @@ export function NewsSidebar() {
       
       return apiData
     },
-    enabled: !!token,
-    refetchInterval: getRefetchInterval(), // Dynamic refetch interval
+    // In local dev, only fetch when sidebar is explicitly opened.
+    enabled: !!token && (!isDev || isOpen),
+    refetchInterval: isDev ? false : getRefetchInterval(), // Dynamic refetch interval
+    refetchOnWindowFocus: false,
     retry: false, // Don't retry on 503 errors
   })
 

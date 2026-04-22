@@ -22,9 +22,9 @@ export default function FeatureNotFound() {
               View features
             </Button>
           </Link>
-          <Link href="/register">
+          <Link href="/#industry-selector">
             <Button variant="outline" className="w-full sm:w-auto">
-              Start free trial
+              Choose industry & start
             </Button>
           </Link>
         </div>

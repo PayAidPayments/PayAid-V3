@@ -62,7 +62,7 @@ export default function CRMAccountsPage() {
             <p className="mt-2 text-gray-600">Manage your customer accounts</p>
           </div>
           <div className="flex items-center gap-2">
-            <Link href={`/crm/${tenantId}/Contacts/new`}>
+            <Link href={`/crm/${tenantId}/Contacts/New`}>
               <Button className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">New Account</Button>
             </Link>
           </div>
@@ -77,7 +77,7 @@ export default function CRMAccountsPage() {
             {accounts.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-600 mb-4">No accounts found</p>
-                <Link href={`/crm/${tenantId}/Contacts/new`}>
+                <Link href={`/crm/${tenantId}/Contacts/New`}>
                   <Button>Create Your First Account</Button>
                 </Link>
               </div>

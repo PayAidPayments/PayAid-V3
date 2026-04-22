@@ -8,6 +8,7 @@ import { getTimePeriodBounds, type TimePeriod } from '@/lib/utils/crm-filters'
 import { z } from 'zod'
 import { dbOverloadResponse, isTransientDbOverloadError } from '@/lib/api/db-overload'
 import { processInboundLead } from '@/lib/crm/inbound-orchestration'
+import { resolveCrmRequestTenantId } from '@/lib/crm/resolve-crm-request-tenant'
 
 function isValidTimePeriod(t: string | null): t is TimePeriod {
   return t === 'month' || t === 'quarter' || t === 'financial-year' || t === 'year'
@@ -68,31 +69,15 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const requestTenantId = searchParams.get('tenantId') || undefined
 
-    // Prefer the tenant from the URL (page context) so /crm/[tenantId]/Deals always shows that tenant's deals.
-    let tenantId = jwtTenantId
-    const user = await prismaRead.user.findUnique({
-      where: { id: userId },
-      select: { tenantId: true, email: true },
-    }).catch(() => null)
-    const userTenantId = user?.tenantId ?? null
-    const hasAccess = requestTenantId && (jwtTenantId === requestTenantId || userTenantId === requestTenantId)
-    // Demo fallback: when viewing Demo Business tenant as admin@demo.com, always use requested tenant so demos never show empty
-    const allowDemoTenantOverride = process.env.NEXT_PUBLIC_CRM_ALLOW_DEMO_SEED === '1'
-    const isDemoTenantRequest =
-      allowDemoTenantOverride &&
-      requestTenantId &&
-      user?.email === 'admin@demo.com' &&
-      (await prismaRead.tenant.findUnique({
-        where: { id: requestTenantId },
-        select: { name: true },
-      }).then((t) => t?.name?.toLowerCase().includes('demo') ?? false).catch(() => false))
-    if (requestTenantId && (hasAccess || isDemoTenantRequest)) {
-      tenantId = requestTenantId
-      if (jwtTenantId !== requestTenantId) {
-        console.log('[DEALS_API] Using requested tenantId:', tenantId, isDemoTenantRequest ? '(demo fallback)' : '(user has access)')
-      }
+    const tenantId = await resolveCrmRequestTenantId(request, jwtTenantId, userId)
+    if (requestTenantId && tenantId === requestTenantId && jwtTenantId !== requestTenantId) {
+      console.log(
+        '[DEALS_API] Using requested tenantId:',
+        tenantId,
+        '(cross-tenant CRM context)'
+      )
     }
-    console.log('[DEALS_API] Request received for tenantId:', tenantId, 'jwtTenantId:', jwtTenantId, 'requestTenantId:', requestTenantId, 'userTenantId:', userTenantId)
+    console.log('[DEALS_API] Request received for tenantId:', tenantId, 'jwtTenantId:', jwtTenantId, 'requestTenantId:', requestTenantId ?? 'none')
 
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
@@ -348,7 +333,11 @@ export async function GET(request: NextRequest) {
           }),
           prismaRead.deal.count({ where }),
         ])
-        return [Array.isArray(found) ? found : [], typeof count === 'number' ? count : 0, []] as const
+        return [Array.isArray(found) ? found : [], typeof count === 'number' ? count : 0, []] as [
+          any[],
+          number,
+          any[],
+        ]
       }
 
       const [found, count, summary] = await Promise.all([
@@ -374,8 +363,8 @@ export async function GET(request: NextRequest) {
       return [
         Array.isArray(found) ? found : [],
         typeof count === 'number' ? count : 0,
-        Array.isArray(summary) ? summary : [],
-      ] as const
+        Array.isArray(summary) ? [...summary] : [],
+      ] as [any[], number, any[]]
     }
 
     let periodStats: {

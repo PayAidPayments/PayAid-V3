@@ -73,6 +73,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
+import { isModuleListedForTenantLicense } from '@/lib/tenant/module-license-filter'
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Users,
@@ -199,7 +200,9 @@ export function ModuleSwitcher() {
       return a.name.localeCompare(b.name)
     })
 
-    return modules
+    const tenantId = tenant?.id && typeof tenant.id === 'string' ? tenant.id : undefined
+    const licensedModules = tenant?.licensedModules ?? []
+    return modules.filter((m) => isModuleListedForTenantLicense(m.id, tenantId, licensedModules))
   }, [tenant])
 
   // Detect current module from pathname
