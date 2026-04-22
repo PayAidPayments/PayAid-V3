@@ -162,7 +162,19 @@ export async function proxy(request: NextRequest) {
 
 function safeDecodeToken(token: string) {
   try {
-    return verifyToken(token)
+    // Edge-safe decode path for routing decisions.
+    // Signature verification happens in Node handlers/layouts where required.
+    const [, payloadPart] = token.split('.')
+    if (!payloadPart) return null
+
+    const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=')
+    const json =
+      typeof atob === 'function'
+        ? atob(padded)
+        : Buffer.from(padded, 'base64').toString('utf-8')
+
+    return JSON.parse(json)
   } catch {
     return null
   }
