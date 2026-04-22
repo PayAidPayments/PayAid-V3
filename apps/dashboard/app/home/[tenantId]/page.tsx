@@ -11,6 +11,7 @@ import { useCallback, useEffect, useLayoutEffect, useState, useRef } from 'react
 import { useAuthStore } from '@/lib/stores/auth'
 import { useParams, useRouter } from 'next/navigation'
 import { PAYAID_MODULES } from '@/lib/config/payaid-modules.config'
+import { getAuthFromStorage } from '../lib/auth-storage'
 
 interface HomeSummaryKPIs {
   openDeals: number
@@ -28,24 +29,6 @@ interface HomeSummary {
   kpis: HomeSummaryKPIs
   moduleSummaries?: Record<string, string>
   degraded?: boolean
-}
-
-function getAuthFromStorage() {
-  let token: string | null = null;
-  let tenant: { id?: string } | null = null;
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem('auth-storage');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        token = parsed.state?.token ?? null;
-        tenant = parsed.state?.tenant ?? null;
-      }
-    } catch {
-      // ignore
-    }
-  }
-  return { token, tenant };
 }
 
 function buildBriefingFallback(kpis: HomeSummaryKPIs): string[] {
@@ -77,14 +60,18 @@ export default function TenantHomePage() {
   const params = useParams()
   const router = useRouter()
   const { tenant, token } = useAuthStore()
-  const tenantId = params.tenantId as string
+  const tenantParam = params.tenantId as string
   const didRedirect = useRef(false)
+  const storageAuth = typeof window !== 'undefined' ? getAuthFromStorage() : { token: null, tenant: null }
+  const authTenantId = tenant?.id ?? storageAuth.tenant?.id ?? null
+  const authTenantSlug = tenant?.slug ?? storageAuth.tenant?.slug ?? null
 
   // Start with hasCheckedAuth true when storage already has matching auth (e.g. right after login)
   const [hasCheckedAuth, setHasCheckedAuth] = useState(() => {
     if (typeof window === 'undefined') return false
     const { token: t, tenant: tn } = getAuthFromStorage()
-    return !!(tenantId && t && tn?.id && tn.id === tenantId)
+    if (!tenantParam || !t || !tn?.id) return false
+    return tenantParam === tn.id || (!!tn.slug && tenantParam === tn.slug)
   })
 
   useEffect(() => {
@@ -94,7 +81,7 @@ export default function TenantHomePage() {
 
   // Auth check: useLayoutEffect so it runs before paint when possible
   useLayoutEffect(() => {
-    if (!tenantId) return
+    if (!tenantParam) return
 
     const pendingAuthTimeouts: ReturnType<typeof globalThis.setTimeout>[] = []
     const deferHasCheckedAuth = () => {
@@ -106,22 +93,34 @@ export default function TenantHomePage() {
       const currentState = useAuthStore.getState()
       const finalIsAuthenticated = currentState.isAuthenticated || !!tokenFromStorage
       const finalTenant = currentState.tenant ?? tenantFromStorage
+      const finalTenantPublicId = finalTenant?.slug || finalTenant?.id
+      const paramMatchesFinalTenant =
+        !!finalTenant &&
+        (tenantParam === finalTenant.id || (!!finalTenant.slug && tenantParam === finalTenant.slug))
 
-      if (finalIsAuthenticated && finalTenant?.id && tenantId !== finalTenant.id) {
+      if (finalIsAuthenticated && finalTenant?.id && !paramMatchesFinalTenant) {
         if (!didRedirect.current) {
           didRedirect.current = true
-          router.replace(`/home/${finalTenant.id}`)
+          router.replace(`/home/${finalTenantPublicId}`)
         }
         return
       }
-      if (finalIsAuthenticated && finalTenant?.id && !tenantId) {
+      if (finalIsAuthenticated && finalTenant?.id && !tenantParam) {
         if (!didRedirect.current) {
           didRedirect.current = true
-          router.replace(`/home/${finalTenant.id}`)
+          router.replace(`/home/${finalTenantPublicId}`)
         }
         return
       }
-      if (finalIsAuthenticated && finalTenant?.id && tenantId === finalTenant.id) {
+      if (finalIsAuthenticated && finalTenant?.id && paramMatchesFinalTenant) {
+        // Canonicalize ID routes to slug routes for personalized tenant URLs.
+        if (finalTenant.slug && tenantParam === finalTenant.id) {
+          if (!didRedirect.current) {
+            didRedirect.current = true
+            router.replace(`/home/${finalTenant.slug}`)
+          }
+          return
+        }
         deferHasCheckedAuth()
         return
       }
@@ -143,36 +142,37 @@ export default function TenantHomePage() {
     return () => {
       for (const id of pendingAuthTimeouts) globalThis.clearTimeout(id)
     }
-  }, [tenantId, router])
+  }, [tenantParam, router])
 
   // Fallback: if URL has tenantId and we have matching auth in storage, show page after a short delay
   useEffect(() => {
-    if (!tenantId || hasCheckedAuth) return
+    if (!tenantParam || hasCheckedAuth) return
     const t = setTimeout(() => {
       const { tenant: tenantFromStorage } = getAuthFromStorage()
-      const storedId = tenantFromStorage?.id ?? useAuthStore.getState().tenant?.id
-      if (storedId === tenantId) {
+      const storedTenant = tenantFromStorage ?? useAuthStore.getState().tenant
+      if (
+        storedTenant?.id &&
+        (storedTenant.id === tenantParam || (!!storedTenant.slug && storedTenant.slug === tenantParam))
+      ) {
         setHasCheckedAuth(true)
       }
     }, 350)
     return () => clearTimeout(t)
-  }, [tenantId, hasCheckedAuth])
+  }, [tenantParam, hasCheckedAuth])
 
-  // Use tenant id from auth (store or storage) so we always request the logged-in tenant's data
-  const authTenantId =
-    tenant?.id ??
-    (typeof window !== 'undefined' ? getAuthFromStorage().tenant?.id : null) ??
-    tenantId
+  // Internal id for API/data calls, public id for route canonicalization.
+  const dataTenantId = authTenantId ?? tenantParam
+  const tenantId = dataTenantId
 
   const fetchSummary = useCallback(() => {
     const authToken = useAuthStore.getState().token ?? (typeof window !== 'undefined' ? getAuthFromStorage().token : null)
-    if (!authTenantId || !authToken) {
+    if (!dataTenantId || !authToken) {
       setSummaryLoading(false)
       return
     }
     setSummaryLoading(true)
     setSummaryError(false)
-    fetch(`/api/home/summary?tenantId=${encodeURIComponent(authTenantId)}`, {
+    fetch(`/api/home/summary?tenantId=${encodeURIComponent(dataTenantId)}`, {
       headers: { Authorization: `Bearer ${authToken}` },
     })
       .then((res) => {
@@ -187,7 +187,7 @@ export default function TenantHomePage() {
       })
       .catch(() => setSummaryError(true))
       .finally(() => setSummaryLoading(false))
-  }, [authTenantId])
+  }, [dataTenantId])
 
   useEffect(() => {
     if (!hasCheckedAuth) return
@@ -202,16 +202,16 @@ export default function TenantHomePage() {
     if (!hasCheckedAuth || summary != null || summaryLoading) return
     const t = setTimeout(() => {
       const { token: t2, tenant: tn } = getAuthFromStorage()
-      if (t2 && tn?.id && (tenantId === tn.id || tenantId === tenant?.id)) {
+      if (t2 && tn?.id && (tenantParam === tn.id || (!!tn.slug && tenantParam === tn.slug) || tenantParam === tenant?.id)) {
         fetchSummary()
       }
     }, 600)
     return () => clearTimeout(t)
-  }, [hasCheckedAuth, summary, summaryLoading, tenantId, tenant?.id, fetchSummary])
+  }, [hasCheckedAuth, summary, summaryLoading, tenantParam, tenant?.id, fetchSummary])
 
   useEffect(() => {
     const id = globalThis.setTimeout(() => {
-      if (!authTenantId || !hasCheckedAuth) {
+      if (!dataTenantId || !hasCheckedAuth) {
         setBriefingLoading(false)
         return
       }
@@ -221,7 +221,7 @@ export default function TenantHomePage() {
         return
       }
       setBriefingLoading(true)
-      fetch(`/api/home/briefing?tenantId=${encodeURIComponent(authTenantId)}`, {
+      fetch(`/api/home/briefing?tenantId=${encodeURIComponent(dataTenantId)}`, {
         headers: { Authorization: `Bearer ${authToken}` },
       })
         .then((res) => (res.ok ? res.json() : null))
@@ -232,7 +232,7 @@ export default function TenantHomePage() {
         .finally(() => setBriefingLoading(false))
     }, 0)
     return () => globalThis.clearTimeout(id)
-  }, [authTenantId, hasCheckedAuth])
+  }, [dataTenantId, hasCheckedAuth])
 
   if (!mounted || !hasCheckedAuth) {
     return (
@@ -258,7 +258,7 @@ export default function TenantHomePage() {
         {/* Hero row: 3 fixed metric cards (show loading, then 0 or values; never blank) */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Link
-            href={`/crm/${tenantId}/Deals`}
+            href={`/crm/${dataTenantId}/Deals`}
             className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-5 py-4 hover:shadow-md hover:-translate-y-px transition-all duration-150 h-28 flex flex-col justify-center"
           >
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Today&apos;s overview</p>
@@ -278,7 +278,7 @@ export default function TenantHomePage() {
             </p>
           </Link>
           <Link
-            href={`/finance/${tenantId}/Invoices`}
+            href={`/finance/${dataTenantId}/Invoices`}
             className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-5 py-4 hover:shadow-md hover:-translate-y-px transition-all duration-150 h-28 flex flex-col justify-center"
           >
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">This month</p>
@@ -296,7 +296,7 @@ export default function TenantHomePage() {
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Receivables</p>
           </Link>
           <Link
-            href={`/hr/${tenantId}/Employees`}
+            href={`/hr/${dataTenantId}/Employees`}
             className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-5 py-4 hover:shadow-md hover:-translate-y-px transition-all duration-150 h-28 flex flex-col justify-center"
           >
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Team activity</p>

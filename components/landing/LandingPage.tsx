@@ -1,10 +1,16 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import type { ComponentType } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { motion, useInView } from './motion-lite'
-import { getAllIndustries, getRecommendedModules } from '@/lib/industries/config'
+import { getAllIndustries } from '@/lib/industries/config'
+import {
+  getSignupDefaultModuleIds,
+  tierFromTeamSizeBracket,
+  type TeamSizeBracket,
+} from '@/lib/onboarding/signup-recommendations'
 import { MODULE_PRICING, getBestPricing } from '@/lib/pricing/config'
 import { modules } from '@/lib/modules.config'
 import { getModuleMarketingHref } from '@/lib/moduleMarketing'
@@ -83,6 +89,100 @@ function StatCounter({ value, suffix = '' }: { value: number; suffix?: string })
   )
 }
 
+type SignupModuleCardModel = {
+  id: string
+  name: string
+  description: string
+  icon: ComponentType<{ className?: string }>
+}
+
+function SignupModulePickCard({
+  module,
+  isSelected,
+  selectedTier,
+  onToggle,
+}: {
+  module: SignupModuleCardModel
+  isSelected: boolean
+  selectedTier: 'starter' | 'professional'
+  onToggle: (id: string) => void
+}) {
+  const isAIStudio = module.id === 'ai-studio'
+  const modulePricing = MODULE_PRICING[module.id]
+  const monthlyPrice = modulePricing
+    ? selectedTier === 'starter'
+      ? modulePricing.starter
+      : modulePricing.professional
+    : 0
+  const annualPrice = modulePricing && monthlyPrice > 0 ? Math.round(monthlyPrice * 12 * 0.8) : 0
+  const IconComponent = module.icon
+
+  return (
+    <Card
+      className={`cursor-pointer transition-all hover:shadow-lg ${
+        isSelected ? 'border-2 border-[#53328A] bg-purple-50' : 'border border-gray-200'
+      } ${isAIStudio ? 'bg-gradient-to-br from-purple-50 to-yellow-50' : ''}`}
+      onClick={() => !isAIStudio && onToggle(module.id)}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="mt-1" onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={isSelected}
+              disabled={isAIStudio}
+              onCheckedChange={(checked) => {
+                if (isAIStudio) return
+                const shouldSelect = Boolean(checked)
+                if (shouldSelect !== isSelected) {
+                  onToggle(module.id)
+                }
+              }}
+            />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                {IconComponent && <IconComponent className="h-5 w-5 text-[#53328A]" />}
+              </div>
+              <h4 className="font-semibold text-lg text-gray-900">
+                {module.name}
+                {isAIStudio && (
+                  <span className="ml-2 text-sm text-[#53328A] font-bold">(Always FREE)</span>
+                )}
+              </h4>
+            </div>
+            <p className="text-sm mb-2 text-gray-600">{module.description}</p>
+            {modulePricing && (
+              <div className="text-sm">
+                {monthlyPrice === 0 ? (
+                  <span className="text-[#53328A] font-bold">FREE</span>
+                ) : (
+                  <div className="flex flex-col">
+                    <div className="font-semibold text-gray-900">
+                      ₹{monthlyPrice.toLocaleString()}/month
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Annual: ₹{annualPrice.toLocaleString()}/year
+                    </div>
+                    <div className="text-xs text-gray-400 line-through mt-0.5">
+                      ₹{Math.round(monthlyPrice * 12).toLocaleString()}/year
+                    </div>
+                    {selectedTier === 'starter' && (
+                      <div className="text-xs text-[#53328A] font-semibold mt-1">
+                        ⚠️ Up to 5 users per module
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function LandingPage() {
   const router = useRouter()
   const onboardingHref = '/#industry-selector'
@@ -100,7 +200,22 @@ export default function LandingPage() {
   const [isTyping, setIsTyping] = useState(false)
   const [hasUserInteracted, setHasUserInteracted] = useState(false)
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false)
+  const [teamSizeBracket, setTeamSizeBracket] = useState<TeamSizeBracket>('1-5')
+  const [recommendedBundleIds, setRecommendedBundleIds] = useState<string[]>([])
+  const [showOptionalModules, setShowOptionalModules] = useState(false)
   const industries = getAllIndustries()
+
+  const activeSelectableModuleIdSet = useMemo(
+    () =>
+      new Set(
+        modules.filter((m) => m.category !== 'industry' && m.status === 'active').map((m) => m.id)
+      ),
+    []
+  )
+
+  useEffect(() => {
+    setSelectedTier(tierFromTeamSizeBracket(teamSizeBracket))
+  }, [teamSizeBracket])
 
 
   // AI response data with corrected terminology
@@ -338,35 +453,48 @@ export default function LandingPage() {
   // Deprecated modules to exclude
   const deprecatedModules = ['invoicing', 'accounting']
 
-  // Initialize selected modules when industry is selected
+  // Initialize selected modules when industry is selected (guided bundle, not full industry coreModules list)
   useEffect(() => {
-    if (selectedIndustry) {
-      const recommendedModules = getRecommendedModules(selectedIndustry)
-      const allRecommended = [
-        ...recommendedModules.coreModules,
-        ...recommendedModules.industryPacks,
-      ]
-      // Filter out deprecated modules
-      const filteredRecommended = allRecommended.filter(
-        moduleId => !deprecatedModules.includes(moduleId)
-      )
-      // Always include ai-studio
-      const modulesToSelect = filteredRecommended.includes('ai-studio') 
-        ? filteredRecommended 
-        : [...filteredRecommended, 'ai-studio']
-      setSelectedModules(modulesToSelect)
-      setShowModuleSelection(true)
-      // Scroll to module selection
-      setTimeout(() => {
-        document.getElementById('module-selection')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 100)
-    }
-  }, [selectedIndustry])
+    if (!selectedIndustry) return
+
+    const recommended = getSignupDefaultModuleIds(selectedIndustry, activeSelectableModuleIdSet).filter(
+      (moduleId) => !deprecatedModules.includes(moduleId)
+    )
+    setRecommendedBundleIds(recommended)
+
+    const modulesToSelect = recommended.includes('ai-studio')
+      ? [...recommended]
+      : [...recommended, 'ai-studio']
+    setSelectedModules([...new Set(modulesToSelect)])
+    setShowModuleSelection(true)
+    setShowOptionalModules(false)
+
+    setTimeout(() => {
+      document.getElementById('module-selection')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }, [selectedIndustry, activeSelectableModuleIdSet])
+
+  const recommendedDisplayIds =
+    selectedIndustry && recommendedBundleIds.length > 0
+      ? recommendedBundleIds.includes('ai-studio')
+        ? [...recommendedBundleIds]
+        : [...recommendedBundleIds, 'ai-studio']
+      : []
+
+  const recommendedModuleCards = recommendedDisplayIds
+    .map((id) => allAvailableModules.find((m) => m.id === id))
+    .filter((m): m is SignupModuleCardModel => Boolean(m))
+
+  const optionalModuleCards = allAvailableModules.filter(
+    (m) => !deprecatedModules.includes(m.id) && !recommendedDisplayIds.includes(m.id)
+  )
 
   const handleIndustrySelect = (industryId: string) => {
     setSelectedIndustry(industryId)
     setShowModuleSelection(false)
     setSelectedModules([])
+    setRecommendedBundleIds([])
+    setShowOptionalModules(false)
   }
 
   const handleModuleToggle = (moduleId: string) => {
@@ -898,159 +1026,106 @@ export default function LandingPage() {
             <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg p-6 mb-8 text-center shadow-lg">
               <div className="flex items-center justify-center gap-3 mb-2">
                 <CheckCircle2 className="h-6 w-6" />
-                <h3 className="text-2xl font-bold">Start with ALL Modules FREE for 1 Month</h3>
+                <h3 className="text-2xl font-bold">1 month free trial — full platform access</h3>
               </div>
               <p className="text-green-50 text-lg">
-                No credit card required • Cancel anytime • Modify modules during trial
+                No credit card required • We suggest a focused starter bundle; add or remove any module before you continue
               </p>
             </div>
 
-            {/* Tier Selection */}
+            {/* Team size → recommended package (Starter vs Professional by user count) */}
             <div className="mb-8">
-              <Label className="text-base font-semibold mb-4 block text-gray-900">
-                Choose Your Plan
+              <Label className="text-base font-semibold mb-2 block text-gray-900">
+                How many people will use PayAid?
               </Label>
-              <div className="mb-4">
-                <Label className="text-sm font-semibold text-gray-700 mb-3 block">
-                  Select Plan Type:
-                </Label>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setSelectedTier('starter')}
-                    className={`flex-1 p-4 rounded-lg border-2 transition-all ${
-                      selectedTier === 'starter'
-                        ? 'border-[#53328A] bg-purple-50'
-                        : 'border-gray-200'
-                    }`}
-                  >
-                    <div className="font-semibold text-lg mb-1 text-gray-900">Starter</div>
-                    <div className="text-sm text-gray-600">Up to 5 users per module</div>
-                    <div className="text-xs text-gray-500 mt-1">₹1,999/month per module</div>
-                  </button>
-                  <button
-                    onClick={() => setSelectedTier('professional')}
-                    className={`flex-1 p-4 rounded-lg border-2 transition-all ${
-                      selectedTier === 'professional'
-                        ? 'border-[#53328A] bg-purple-50'
-                        : 'border-gray-200'
-                    }`}
-                  >
-                    <div className="font-semibold text-lg mb-1 text-gray-900">
-                      Professional <span className="text-sm text-[#F5C700]">⭐</span>
-                    </div>
-                    <div className="text-sm text-gray-600">Unlimited users</div>
-                    <div className="text-xs text-gray-500 mt-1">₹3,999/month per module</div>
-                  </button>
-                </div>
-                <p className="text-sm text-gray-500 mt-3">
-                  <strong>Note:</strong> All plans are billed annually with 20% discount. Prices shown are monthly equivalent.
-                </p>
+              <p className="text-sm text-gray-600 mb-4">
+                Your <strong>recommended</strong> paid package after trial is based on team size (not industry). You can still change modules anytime during trial.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  type="button"
+                  onClick={() => setTeamSizeBracket('1-5')}
+                  className={`flex-1 p-4 rounded-lg border-2 text-left transition-all ${
+                    teamSizeBracket === '1-5'
+                      ? 'border-[#53328A] bg-purple-50'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-semibold text-lg text-gray-900">Starter</div>
+                  <div className="text-sm text-gray-600">1–5 people · up to 5 users per module</div>
+                  <div className="text-xs text-gray-500 mt-2">₹1,999/month per module (monthly equivalent)</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTeamSizeBracket('6-plus')}
+                  className={`flex-1 p-4 rounded-lg border-2 text-left transition-all ${
+                    teamSizeBracket === '6-plus'
+                      ? 'border-[#53328A] bg-purple-50'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-semibold text-lg text-gray-900">
+                    Professional <span className="text-sm text-[#F5C700]">⭐</span>
+                  </div>
+                  <div className="text-sm text-gray-600">6+ people · larger teams</div>
+                  <div className="text-xs text-gray-500 mt-2">₹3,999/month per module (monthly equivalent)</div>
+                </button>
               </div>
+              <p className="text-sm text-gray-500 mt-3">
+                <strong>Note:</strong> Billed annually with 20% discount after trial. This choice only affects the pricing preview below — your trial still includes the modules you select.
+              </p>
             </div>
 
-            {/* Recommended Modules */}
+            {/* Recommended + optional modules */}
             <div className="mb-8">
-              <h3 className="text-2xl font-bold mb-4 text-gray-900">
-                Recommended Modules for Your Industry
-              </h3>
+              <h3 className="text-2xl font-bold mb-2 text-gray-900">Recommended modules for your industry</h3>
               <p className="text-gray-600 mb-2">
-                Based on your industry selection, we recommend these modules. You can customize your selection.
+                We start from a small <strong>core business backbone</strong> (CRM, finance, projects, analytics, automation), then add a few modules that usually fit your industry. Everything stays editable — trial activation is the goal, not restriction.
               </p>
               <p className="text-sm text-gray-500 mb-6">
-                <strong>Starter Plan:</strong> ₹1,999/month per module (billed annually with 20% discount) - <strong>Up to 5 users per module</strong><br/>
-                <strong>Professional Plan:</strong> ₹3,999/month per module (billed annually with 20% discount) - Unlimited users and advanced features
+                <strong>Starter:</strong> ₹1,999/month per module (annual billing, 20% discount) — up to 5 users per module.
+                <br />
+                <strong>Professional:</strong> ₹3,999/month per module — for teams larger than 5.
               </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {allAvailableModules
-                  .filter(module => !deprecatedModules.includes(module.id))
-                  .map((module) => {
-                    const isSelected = selectedModules.includes(module.id)
-                    const isAIStudio = module.id === 'ai-studio'
-                    const modulePricing = MODULE_PRICING[module.id]
-                    // Annual pricing: monthly price × 12 × 0.8 (20% discount)
-                    const monthlyPrice = modulePricing 
-                      ? selectedTier === 'starter' 
-                        ? modulePricing.starter 
-                        : modulePricing.professional
-                      : 0
-                    const annualPrice = modulePricing && monthlyPrice > 0
-                      ? Math.round(monthlyPrice * 12 * 0.8) // 20% discount on annual
-                      : 0
-                    const IconComponent = module.icon // This is now a React component
-                        
-                    return (
-                      <Card
-                        key={module.id}
-                        className={`cursor-pointer transition-all hover:shadow-lg ${
-                          isSelected 
-                            ? 'border-2 border-[#53328A] bg-purple-50' 
-                            : 'border border-gray-200'
-                        } ${isAIStudio ? 'bg-gradient-to-br from-purple-50 to-yellow-50' : ''}`}
-                        onClick={() => !isAIStudio && handleModuleToggle(module.id)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div
-                              className="mt-1"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Checkbox
-                                checked={isSelected}
-                                disabled={isAIStudio}
-                                onCheckedChange={(checked) => {
-                                  if (isAIStudio) return
-                                  const shouldSelect = Boolean(checked)
-                                  if (shouldSelect !== isSelected) {
-                                    handleModuleToggle(module.id)
-                                  }
-                                }}
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                                  {IconComponent && <IconComponent className="h-5 w-5 text-[#53328A]" />}
-                                </div>
-                                <h4 className="font-semibold text-lg text-gray-900">
-                                  {module.name}
-                                  {isAIStudio && <span className="ml-2 text-sm text-[#53328A] font-bold">(Always FREE)</span>}
-                                </h4>
-                              </div>
-                              <p className="text-sm mb-2 text-gray-600">
-                                {module.description}
-                              </p>
-                              {modulePricing && (
-                                <div className="text-sm">
-                                  {monthlyPrice === 0 ? (
-                                    <span className="text-[#53328A] font-bold">FREE</span>
-                                  ) : (
-                                    <div className="flex flex-col">
-                                      <div className="font-semibold text-gray-900">
-                                        ₹{monthlyPrice.toLocaleString()}/month
-                                      </div>
-                                      <div className="text-xs text-gray-500 mt-1">
-                                        Annual: ₹{annualPrice.toLocaleString()}/year
-                                      </div>
-                                      <div className="text-xs text-gray-400 line-through mt-0.5">
-                                        ₹{Math.round(monthlyPrice * 12).toLocaleString()}/year
-                                      </div>
-                                      {selectedTier === 'starter' && (
-                                        <div className="text-xs text-[#53328A] font-semibold mt-1">
-                                          ⚠️ Up to 5 users per module
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
+
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Starter bundle (pre-selected)</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                {recommendedModuleCards.map((module) => (
+                  <SignupModulePickCard
+                    key={module.id}
+                    module={module}
+                    isSelected={selectedModules.includes(module.id)}
+                    selectedTier={selectedTier}
+                    onToggle={handleModuleToggle}
+                  />
+                ))}
               </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <h4 className="text-lg font-semibold text-gray-900">More modules (optional)</h4>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="self-start sm:self-auto"
+                  onClick={() => setShowOptionalModules((v) => !v)}
+                >
+                  {showOptionalModules ? 'Hide' : 'Show'} additional modules ({optionalModuleCards.length})
+                </Button>
+              </div>
+              {showOptionalModules && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {optionalModuleCards.map((module) => (
+                    <SignupModulePickCard
+                      key={module.id}
+                      module={module}
+                      isSelected={selectedModules.includes(module.id)}
+                      selectedTier={selectedTier}
+                      onToggle={handleModuleToggle}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Pricing Summary */}

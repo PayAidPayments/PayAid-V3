@@ -62,6 +62,7 @@ export default function LoginPage() {
     try {
       const loginResult = await login(email, password)
       const tenant = loginResult.tenant
+      const tenantPublicId = tenant?.slug || tenant?.id
       if (tenant?.id) {
         const crmHomeHref = `/crm/${tenant.id}/Home/`
         router.prefetch(crmHomeHref)
@@ -94,12 +95,12 @@ export default function LoginPage() {
         } else if (redirectUrl === '/hr' || redirectUrl.startsWith('/hr')) {
           finalUrl = tenant?.id ? `/hr/${tenant.id}/Home/` : '/home'
         } else if (redirectUrl === '/dashboard' || redirectUrl.startsWith('/dashboard')) {
-          finalUrl = tenant?.id ? `/home/${tenant.id}` : '/home'
+          finalUrl = tenantPublicId ? `/home/${tenantPublicId}` : '/home'
         }
         router.push(finalUrl)
       } else {
-        if (tenant?.id && typeof tenant.id === 'string' && tenant.id.trim().length > 0) {
-          const homeHref = `/home/${tenant.id}`
+        if (tenantPublicId && typeof tenantPublicId === 'string' && tenantPublicId.trim().length > 0) {
+          const homeHref = `/home/${tenantPublicId}`
           router.push(homeHref)
         } else {
           router.push('/home')

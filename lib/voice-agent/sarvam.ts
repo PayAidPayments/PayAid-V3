@@ -154,8 +154,54 @@ const SARVAM_SPEAKERS = new Set([
   'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham', 'rupali',
 ])
 
+/**
+ * Canonical app voice ids -> deterministic Sarvam speaker ids.
+ * This keeps UI labels (Male/Female + tone) aligned with actual heard voice.
+ */
+const APP_VOICE_TO_SARVAM_SPEAKER: Record<string, string> = {
+  // Male options
+  'arjun-formal': 'abhilash',
+  'arjun-calm': 'rahul',
+  'arjun-warm': 'aditya',
+  'rahul-formal': 'rahul',
+
+  // Female options
+  'divya-formal': 'vidya',
+  'divya-calm': 'anushka',
+  'divya-warm': 'manisha',
+  'priya-calm': 'priya',
+  'priya-warm': 'priya',
+  'priya-formal': 'priya',
+}
+
+const MALE_STYLE_DEFAULTS: Record<string, string> = {
+  formal: 'abhilash',
+  calm: 'rahul',
+  warm: 'aditya',
+}
+
+const FEMALE_STYLE_DEFAULTS: Record<string, string> = {
+  formal: 'vidya',
+  calm: 'anushka',
+  warm: 'manisha',
+}
+
 function toSarvamSpeaker(voiceId?: string): string {
   const raw = (voiceId || 'priya').toLowerCase().trim()
+  const mapped = APP_VOICE_TO_SARVAM_SPEAKER[raw]
+  if (mapped && SARVAM_SPEAKERS.has(mapped)) return mapped
+
+  // Heuristic support for ids like male-formal / female-calm / custom-male-warm
+  const style = raw.includes('formal') ? 'formal' : raw.includes('warm') ? 'warm' : raw.includes('calm') ? 'calm' : null
+  if (style && raw.includes('male')) {
+    const speaker = MALE_STYLE_DEFAULTS[style]
+    if (speaker && SARVAM_SPEAKERS.has(speaker)) return speaker
+  }
+  if (style && raw.includes('female')) {
+    const speaker = FEMALE_STYLE_DEFAULTS[style]
+    if (speaker && SARVAM_SPEAKERS.has(speaker)) return speaker
+  }
+
   if (SARVAM_SPEAKERS.has(raw)) return raw
   const base = raw.split(/[-_]/)[0]
   if (base && SARVAM_SPEAKERS.has(base)) return base

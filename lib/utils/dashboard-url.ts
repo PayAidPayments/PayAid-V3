@@ -4,6 +4,7 @@
  */
 
 import { useAuthStore } from '@/lib/stores/auth'
+import { getRedirectForDashboardPath } from '@/lib/dashboard-redirects'
 
 /**
  * Get tenant ID from auth store (client-side only)
@@ -37,11 +38,14 @@ export function getDashboardUrl(path: string): string {
     // Fallback to path without tenantId (middleware will add it)
     return `/dashboard${path.startsWith('/') ? path : '/' + path}`
   }
-  
-  // Remove leading /dashboard if present
+
+  // Remove leading /dashboard if present.
   const cleanPath = path.replace(/^\/dashboard\/?/, '')
-  
-  return `/dashboard/${tenantId}${cleanPath ? '/' + cleanPath : ''}`
+  const dashboardPath = `/dashboard${cleanPath ? '/' + cleanPath : ''}`
+  const decoupledPath = getRedirectForDashboardPath(dashboardPath, tenantId)
+
+  // Prefer direct decoupled routes to avoid extra client-side redirect hop.
+  return decoupledPath ?? `/dashboard/${tenantId}${cleanPath ? '/' + cleanPath : ''}`
 }
 
 /**
@@ -55,8 +59,12 @@ export function useDashboardUrl(path: string): string {
   if (!tenantId) {
     return `/dashboard${path.startsWith('/') ? path : '/' + path}`
   }
-  
+
   const cleanPath = path.replace(/^\/dashboard\/?/, '')
-  return `/dashboard/${tenantId}${cleanPath ? '/' + cleanPath : ''}`
+  const dashboardPath = `/dashboard${cleanPath ? '/' + cleanPath : ''}`
+  const decoupledPath = getRedirectForDashboardPath(dashboardPath, tenantId)
+
+  // Prefer direct decoupled routes to avoid extra client-side redirect hop.
+  return decoupledPath ?? `/dashboard/${tenantId}${cleanPath ? '/' + cleanPath : ''}`
 }
 

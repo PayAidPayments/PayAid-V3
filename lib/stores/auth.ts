@@ -12,6 +12,7 @@ interface User {
 
 interface Tenant {
   id: string
+  slug?: string | null
   name: string
   subdomain: string | null
   plan: string
@@ -206,6 +207,7 @@ export const useAuthStore = create<AuthState>()(
           
           const tenantData = data.tenant ? {
             ...data.tenant,
+            slug: data.tenant?.slug ?? null,
             licensedModules: data.tenant?.licensedModules || [],
             subscriptionTier: data.tenant?.subscriptionTier || 'free',
           } : null
@@ -477,6 +479,7 @@ export const useAuthStore = create<AuthState>()(
             },
             tenant: tenantFromDb ? {
               id: tenantFromDb.id, // Always use database tenant ID (source of truth)
+              slug: tenantFromDb.slug ?? null,
               name: tenantFromDb.name,
               subdomain: tenantFromDb.subdomain,
               plan: tenantFromDb.plan,

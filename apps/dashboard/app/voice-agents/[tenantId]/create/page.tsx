@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ArrowLeft, ArrowRight, Mic, Volume2, Loader2, CheckCircle2 } from 'lucide-react'
 import { PageLoading } from '@/components/ui/loading'
+import { DEFAULT_VOICE_ID, VOICE_OPTIONS } from '@/lib/voice-agent/voice-options'
 
 const PURPOSES = [
   { value: 'collections', label: 'Collections' },
@@ -29,16 +30,7 @@ const LANGUAGES = [
   { code: 'mr', label: 'Marathi', preview: 'Namaskar' },
 ]
 
-const VOICES = [
-  { id: 'arjun-formal', label: 'Male Formal' },
-  { id: 'arjun-calm', label: 'Male Calm' },
-  { id: 'arjun-warm', label: 'Male Warm' },
-  { id: 'divya-formal', label: 'Female Formal' },
-  { id: 'divya-calm', label: 'Female Calm' },
-  { id: 'divya-warm', label: 'Female Warm' },
-  { id: 'priya-calm', label: 'Priya (Calm)' },
-  { id: 'rahul-formal', label: 'Rahul (Formal)' },
-]
+const DEFAULT_PREVIEW_TEXT = 'Namaste'
 
 const DEFAULT_GREETINGS: Record<string, string> = {
   collections: 'Namaste! PayAid collections team bol raha hun. Aapka payment reminder dena tha. Kya aap ab baat karna chahenge?',
@@ -82,14 +74,16 @@ export default function CreateVoiceAgentWizardPage() {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [previewPlaying, setPreviewPlaying] = useState<string | null>(null)
+  const [previewError, setPreviewError] = useState<string | null>(null)
   const [createdAgentId, setCreatedAgentId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const previewWarmupDoneRef = useRef(false)
 
   const [basics, setBasics] = useState({
     name: '',
     purpose: 'collections',
     language: 'hi',
-    voiceId: 'arjun-formal',
+    voiceId: DEFAULT_VOICE_ID,
     greeting: DEFAULT_GREETINGS.collections,
   })
   const [objections, setObjections] = useState({
@@ -125,6 +119,27 @@ export default function CreateVoiceAgentWizardPage() {
     return () => { mounted = false }
   }, [token, isAuthenticated, fetchUser, router])
 
+  // Warm route/auth path once so first preview click is snappier.
+  useEffect(() => {
+    if (checkingAuth || previewWarmupDoneRef.current || typeof window === 'undefined') return
+    const authToken = getToken(token)
+    if (!authToken) return
+
+    previewWarmupDoneRef.current = true
+    const url = new URL('/api/voice/preview', window.location.origin)
+    url.searchParams.set('text', DEFAULT_PREVIEW_TEXT)
+    url.searchParams.set('lang', 'hi')
+    url.searchParams.set('voiceId', DEFAULT_VOICE_ID)
+
+    void fetch(url.toString(), {
+      method: 'HEAD',
+      cache: 'no-store',
+      headers: { Authorization: `Bearer ${authToken}` },
+    }).catch(() => {
+      // Best-effort optimization only.
+    })
+  }, [checkingAuth, token])
+
   const playPreview = async (type: 'language' | 'voice', value?: string) => {
     const authToken = getToken(token)
     if (!authToken) return
@@ -134,13 +149,14 @@ export default function CreateVoiceAgentWizardPage() {
     const lang = type === 'language' ? (value ?? basics.language) : basics.language
     const voiceId = type === 'voice' ? (value ?? basics.voiceId) : basics.voiceId
     setPreviewPlaying(`${type}-${value ?? 'current'}`)
+    setPreviewError(null)
     try {
       const url = new URL('/api/voice/preview', window.location.origin)
       url.searchParams.set('text', text)
       url.searchParams.set('lang', lang)
       url.searchParams.set('voiceId', voiceId)
       const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${authToken}` } })
-      if (!res.ok) throw new Error('Preview failed')
+      if (!res.ok) throw new Error('Voice preview service unavailable')
       const blob = await res.blob()
       const audioUrl = URL.createObjectURL(blob)
       if (audioRef.current) {
@@ -160,6 +176,7 @@ export default function CreateVoiceAgentWizardPage() {
         }
       }
     } catch {
+      setPreviewError('Voice preview is unavailable right now. Please check TTS service connectivity.')
       setPreviewPlaying(null)
     }
   }
@@ -310,7 +327,7 @@ export default function CreateVoiceAgentWizardPage() {
                     onChange={(e) => setBasics({ ...basics, voiceId: e.target.value })}
                     className="flex h-11 flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:ring-2 focus:ring-[#7C3AED]"
                   >
-                    {VOICES.map((v) => (
+                    {VOICE_OPTIONS.map((v) => (
                       <option key={v.id} value={v.id}>{v.label}</option>
                     ))}
                   </select>
@@ -331,6 +348,11 @@ export default function CreateVoiceAgentWizardPage() {
                   </Button>
                 </div>
               </div>
+              {previewError && (
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  {previewError}
+                </p>
+              )}
               <div className="space-y-2">
                 <Label>Greeting Script *</Label>
                 <Textarea

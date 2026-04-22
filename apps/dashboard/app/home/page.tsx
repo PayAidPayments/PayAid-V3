@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/auth';
 import { PageLoading } from '@/components/ui/loading';
+import { getAuthFromStorage } from './lib/auth-storage';
 
 /**
  * Root /home page - redirects to /home/[tenantId] if authenticated
@@ -11,7 +11,6 @@ import { PageLoading } from '@/components/ui/loading';
  * Reads from localStorage so redirect works before Zustand rehydration.
  */
 export default function HomePage() {
-  const router = useRouter();
   const didRedirect = useRef(false);
 
   useEffect(() => {
@@ -19,28 +18,15 @@ export default function HomePage() {
     didRedirect.current = true;
 
     const run = () => {
-      let tokenFromStorage: string | null = null;
-      let tenantFromStorage: { id?: string } | null = null;
-      if (typeof window !== 'undefined') {
-        try {
-          const stored = localStorage.getItem('auth-storage');
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            tokenFromStorage = parsed.state?.token ?? null;
-            tenantFromStorage = parsed.state?.tenant ?? null;
-          }
-        } catch {
-          // ignore
-        }
-      }
+      const { token: tokenFromStorage, tenant: tenantFromStorage } = getAuthFromStorage();
 
       const currentState = useAuthStore.getState();
       const isAuth = currentState.isAuthenticated || !!tokenFromStorage;
       const resolvedTenant = currentState.tenant ?? tenantFromStorage;
-      const tenantId = resolvedTenant?.id;
+      const tenantPublicId = resolvedTenant?.slug || resolvedTenant?.id;
 
-      if (isAuth && tenantId) {
-        window.location.replace(`/home/${tenantId}`);
+      if (isAuth && tenantPublicId) {
+        window.location.replace(`/home/${tenantPublicId}`);
         return;
       }
       if (isAuth && !tenantId) {
@@ -51,7 +37,7 @@ export default function HomePage() {
     };
 
     run();
-  }, [router]);
+  }, []);
 
   return <PageLoading message="Loading..." fullScreen={true} />;
 }

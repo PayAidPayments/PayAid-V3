@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { PageLoading } from '@/components/ui/loading'
+import { DEFAULT_VOICE_ID, VOICE_OPTIONS } from '@/lib/voice-agent/voice-options'
 
 const PURPOSES = [
   { value: 'collections', label: 'Collections' },
@@ -28,14 +29,7 @@ const FALLBACK_LANGUAGES = [
   { code: 'kn', label: 'Kannada' },
   { code: 'mr', label: 'Marathi' },
 ]
-const FALLBACK_SPEAKERS = [
-  { id: 'divya-calm', label: 'Divya (Female, Calm)' },
-  { id: 'arjun-formal', label: 'Arjun (Male, Formal)' },
-  { id: 'priya-warm', label: 'Priya (Female, Warm)' },
-  { id: 'arjun-calm', label: 'Arjun (Male, Calm)' },
-  { id: 'divya-warm', label: 'Divya (Warm)' },
-  { id: 'default-calm', label: 'Default (Calm)' },
-]
+const FALLBACK_SPEAKERS = VOICE_OPTIONS
 
 function buildSystemPrompt(
   name: string,
@@ -77,7 +71,7 @@ export default function NewVoiceAgentPage() {
     name: '',
     purpose: 'collections',
     language: 'hi',
-    voiceId: 'arjun-formal',
+    voiceId: DEFAULT_VOICE_ID,
     voiceTone: 'formal',
     greeting: 'Namaste! PayAid se bol raha hun. Aapko payment reminder dena tha. Kya aap ab baat karna chahenge?',
   })

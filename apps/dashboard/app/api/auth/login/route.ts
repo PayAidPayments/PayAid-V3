@@ -1,10 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import net from 'node:net'
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 })
+
+function extractDbHostPort(databaseUrl: string): { host: string; port: number } | null {
+  try {
+    const parsed = new URL(databaseUrl)
+    const host = parsed.hostname
+    const port = parsed.port ? Number(parsed.port) : 5432
+    if (!host || Number.isNaN(port)) return null
+    return { host, port }
+  } catch {
+    // Handle unescaped credentials (for example password containing "@")
+    const atIndex = databaseUrl.lastIndexOf('@')
+    if (atIndex < 0) return null
+    const rest = databaseUrl.slice(atIndex + 1)
+    const slashIndex = rest.indexOf('/')
+    const hostPort = slashIndex >= 0 ? rest.slice(0, slashIndex) : rest
+    const [host, portStr] = hostPort.split(':')
+    const port = portStr ? Number(portStr) : 5432
+    if (!host || Number.isNaN(port)) return null
+    return { host, port }
+  }
+}
+
+async function canReachDbSocket(databaseUrl: string, timeoutMs = 1500): Promise<boolean> {
+  const target = extractDbHostPort(databaseUrl)
+  if (!target) return true
+
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ host: target.host, port: target.port })
+    const done = (ok: boolean) => {
+      socket.removeAllListeners()
+      socket.destroy()
+      resolve(ok)
+    }
+    socket.setTimeout(timeoutMs)
+    socket.once('connect', () => done(true))
+    socket.once('timeout', () => done(false))
+    socket.once('error', () => done(false))
+  })
+}
 
 // Handle GET requests (for health checks or direct access)
 export async function GET() {
@@ -142,6 +182,21 @@ async function handleLogin(request: NextRequest) {
         }
       )
     }
+
+    const canReachDb = await canReachDbSocket(process.env.DATABASE_URL)
+    if (!canReachDb) {
+      console.error('[LOGIN] Database socket precheck failed')
+      return NextResponse.json(
+        {
+          error: 'Database unavailable',
+          message: 'Database is currently unreachable. Please try again in a moment.',
+        },
+        {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    }
     
       // Use prismaWithRetry with minimal retry settings for login (critical path)
       // Login is a critical operation - allow bypassing circuit breaker if needed
@@ -158,6 +213,7 @@ async function handleLogin(request: NextRequest) {
             tenant: {
               select: {
                 id: true,
+                slug: true,
                 name: true,
                 subdomain: true,
                 plan: true,
@@ -396,6 +452,7 @@ async function handleLogin(request: NextRequest) {
       },
       tenant: user.tenant ? {
         id: user.tenant.id,
+        slug: user.tenant.slug,
         name: user.tenant.name,
         subdomain: user.tenant.subdomain,
         plan: user.tenant.plan,

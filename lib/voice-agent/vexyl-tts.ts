@@ -81,10 +81,16 @@ function getBaseUrl(): string {
   return (url || 'http://localhost:8080').replace(/\/$/, '')
 }
 
-/** Optional path (default /tts). Use e.g. /api/tts or /v1/tts if your VEXYL gateway uses a different path. */
-function getTtsPath(): string {
-  const p = process.env.VEXYL_TTS_PATH || '/tts'
-  return p.startsWith('/') ? p : `/${p}`
+function getCandidateTtsPaths(): string[] {
+  const explicitPath = process.env.VEXYL_TTS_PATH?.trim()
+  if (explicitPath) {
+    return [explicitPath.startsWith('/') ? explicitPath : `/${explicitPath}`]
+  }
+
+  // Common VEXYL variants:
+  // - standalone tts image: /tts
+  // - voice gateway: /api/tts
+  return ['/tts', '/api/tts']
 }
 
 function getApiKey(): string | undefined {
@@ -157,32 +163,59 @@ export async function synthesizeWithVexyl(
     body.sample_rate = options.sampleRate
   }
 
-  const path = getTtsPath()
-  const url = `${baseUrl}${path}`
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...getAuthHeaders(apiKey),
   }
 
-  let response: Response
-  try {
-    response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    })
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    const cause = err instanceof Error && (err as Error & { cause?: Error }).cause?.message
-    const hint = cause?.includes('ECONNREFUSED') || msg.includes('fetch failed')
-      ? ' Is the gateway running? Try: Invoke-WebRequest -Uri "' + baseUrl + '/health" -UseBasicParsing. If the Voice Gateway does not expose POST ' + path + ', set VEXYL_TTS_PATH to the correct path or use Sarvam/Coqui for demo TTS.'
-      : ''
-    throw new Error(`VEXYL TTS unreachable (${cause || msg})${hint}`)
+  const candidatePaths = getCandidateTtsPaths()
+  let response: Response | null = null
+  let lastNetworkError: string | null = null
+  const pathErrors: string[] = []
+
+  for (const path of candidatePaths) {
+    const url = `${baseUrl}${path}`
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      const cause = err instanceof Error && (err as Error & { cause?: Error }).cause?.message
+      lastNetworkError = cause || msg
+      continue
+    }
+
+    if (response.ok) {
+      break
+    }
+
+    const errText = await response.text()
+    pathErrors.push(`${path} -> ${response.status}`)
+
+    // If this path is missing, continue trying next candidate.
+    if (response.status === 404) {
+      response = null
+      continue
+    }
+
+    // Non-404 response likely means path is valid but request/auth failed; surface immediately.
+    throw new Error(`VEXYL TTS failed (${response.status}) on ${path}: ${errText}`)
   }
 
-  if (!response.ok) {
-    const errText = await response.text()
-    throw new Error(`VEXYL TTS failed (${response.status}): ${errText}`)
+  if (!response) {
+    if (lastNetworkError) {
+      throw new Error(
+        `VEXYL TTS unreachable (${lastNetworkError}). Is the gateway running at ${baseUrl}?`
+      )
+    }
+    throw new Error(
+      `VEXYL TTS endpoint not found on ${baseUrl}. Tried: ${candidatePaths.join(', ')}${
+        pathErrors.length ? ` (${pathErrors.join('; ')})` : ''
+      }. Set VEXYL_TTS_PATH in .env to your server's TTS route.`
+    )
   }
 
   const contentType = response.headers.get('content-type') || ''

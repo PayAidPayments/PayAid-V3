@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ArrowLeft, Save, ExternalLink, Headphones } from 'lucide-react'
+import { DEFAULT_VOICE_ID, isKnownVoiceId, VOICE_OPTIONS } from '@/lib/voice-agent/voice-options'
 
 const PURPOSES = [
   { value: 'collections', label: 'Collections' },
@@ -77,7 +78,7 @@ export default function VoiceAgentStudioPage() {
     name: '',
     purpose: 'collections',
     language: 'hi',
-    voiceId: 'arjun-formal',
+    voiceId: DEFAULT_VOICE_ID,
     voiceTone: 'formal',
     greeting: '',
     phoneNumber: '',
@@ -290,11 +291,25 @@ export default function VoiceAgentStudioPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Voice</Label>
-                  <Input
+                  <select
                     value={basics.voiceId}
                     onChange={(e) => setBasics({ ...basics, voiceId: e.target.value })}
-                    placeholder="e.g. arjun-formal"
-                  />
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {VOICE_OPTIONS.map((voice) => (
+                      <option key={voice.id} value={voice.id}>
+                        {voice.label}
+                      </option>
+                    ))}
+                    {!isKnownVoiceId(basics.voiceId) && (
+                      <option value={basics.voiceId}>
+                        {basics.voiceId} (Custom)
+                      </option>
+                    )}
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Speaker names match real backend voices.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label>Greeting Script</Label>
