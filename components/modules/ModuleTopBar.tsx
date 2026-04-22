@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils/cn'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Settings, LogOut, User, ChevronDown, Newspaper, MoreVertical } from 'lucide-react'
+import { Settings, LogOut, User, ChevronDown, Newspaper, MoreVertical, AlertTriangle, CreditCard } from 'lucide-react'
 import { NotificationBell } from '@/components/NotificationBell'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { GlobalSearch } from '@/components/layout/GlobalSearch'
@@ -37,6 +37,9 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [newsUnreadCount, setNewsUnreadCount] = useState(0)
+  const [trialBillingStatus, setTrialBillingStatus] = useState<string>('active')
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null)
+  const [isTrialActive, setIsTrialActive] = useState<boolean>(false)
   const profileMenuButtonRef = useRef<HTMLButtonElement>(null)
   const moreMenuRef = useRef<HTMLDivElement>(null)
   const moreMenuButtonRef = useRef<HTMLButtonElement>(null)
@@ -129,6 +132,48 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
       router.push('/industry-intelligence')
     }
   }
+
+  useEffect(() => {
+    if (!token || !tenant?.id) return
+
+    const fetchTrialStatus = async () => {
+      try {
+        const response = await fetch('/api/billing/trial-status', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        if (!response.ok) return
+        const payload = await response.json()
+        setTrialBillingStatus(payload.billingStatus || 'active')
+        setTrialDaysLeft(typeof payload.daysLeft === 'number' ? payload.daysLeft : null)
+        setIsTrialActive(Boolean(payload.isTrialActive))
+      } catch {
+        // Non-blocking signal only.
+      }
+    }
+
+    fetchTrialStatus()
+    const id = window.setInterval(fetchTrialStatus, 60_000)
+    return () => window.clearInterval(id)
+  }, [token, tenant?.id])
+
+  useEffect(() => {
+    if (trialBillingStatus !== 'payment_required' || !tenant?.id) return
+    const billingPath = `/finance/${tenant.id}/Billing`
+    const isAllowedPath =
+      pathname?.startsWith(billingPath) ||
+      pathname?.startsWith('/dashboard/billing') ||
+      pathname?.startsWith('/checkout') ||
+      pathname?.startsWith('/settings')
+    if (!isAllowedPath) {
+      router.replace(billingPath)
+    }
+  }, [trialBillingStatus, tenant?.id, pathname, router])
+
+  const showTrialBanner =
+    trialBillingStatus === 'payment_required' ||
+    (trialBillingStatus === 'trialing' && isTrialActive && typeof trialDaysLeft === 'number' && trialDaysLeft <= 5)
 
   const warmCrmRouteData = (href: string) => {
     if (!token) return
@@ -417,6 +462,40 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
           </div>
         </div>
       </div>
+
+      {showTrialBanner && (
+        <div
+          className={cn(
+            'border-t px-4 sm:px-6 lg:px-12 xl:px-20 py-2 text-xs sm:text-sm',
+            trialBillingStatus === 'payment_required'
+              ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200'
+              : 'border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-200'
+          )}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              {trialBillingStatus === 'payment_required' ? (
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+              ) : (
+                <CreditCard className="h-4 w-4 shrink-0" />
+              )}
+              <span>
+                {trialBillingStatus === 'payment_required'
+                  ? 'Your trial has ended. Upgrade now to continue using PayAid modules.'
+                  : `Your trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'}. Complete billing to avoid interruption.`}
+              </span>
+            </div>
+            {tenant?.id && (
+              <Link
+                href={`/finance/${tenant.id}/Billing`}
+                className="font-semibold underline underline-offset-2 whitespace-nowrap"
+              >
+                Upgrade now
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Mobile / Tablet: single "Menu" dropdown instead of horizontal scroll */}
       <div className="md:hidden border-t border-gray-200 dark:border-gray-700 px-4 py-2">

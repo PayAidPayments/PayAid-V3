@@ -48,6 +48,25 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next()
     }
 
+    const token = getTokenFromRequest(request)
+    const decodedToken = token ? safeDecodeToken(token) : null
+    const tenantId = decodedToken?.tenantId || decodedToken?.tenant_id || ''
+    const tenantBillingPath = tenantId ? `/finance/${tenantId}/Billing` : '/dashboard/billing'
+    const isSubscriptionPath =
+      pathname === tenantBillingPath ||
+      pathname === '/dashboard/billing' ||
+      pathname.startsWith('/checkout') ||
+      pathname.startsWith('/finance') ||
+      pathname.startsWith('/settings')
+
+    // Hard guard: if trial expired and payment is required, keep users on billing/checkout paths.
+    if (decodedToken?.billingStatus === 'payment_required' && !isSubscriptionPath) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = tenantBillingPath
+      redirectUrl.search = ''
+      return NextResponse.redirect(redirectUrl)
+    }
+
     // Allow /home routes to pass through - client-side handles auth
     if (pathname.startsWith('/home')) {
       return NextResponse.next()
@@ -80,8 +99,6 @@ export async function proxy(request: NextRequest) {
         }
 
         // For routes with tenantId (e.g., /crm/[tenantId]/Home), check access
-        const token = getTokenFromRequest(request)
-
         // For tenant module routes, allow through - client-side will handle auth
         // This prevents redirect loops and allows E2E/unauthenticated requests to load the page (200)
         const tenantModuleAllowThrough = [
@@ -140,6 +157,14 @@ export async function proxy(request: NextRequest) {
 
     // Return a response to prevent proxy failure
     return NextResponse.next()
+  }
+}
+
+function safeDecodeToken(token: string) {
+  try {
+    return verifyToken(token)
+  } catch {
+    return null
   }
 }
 
