@@ -575,11 +575,11 @@ export default function LandingPage() {
                   Start Free Trial
                 </Link>
                 <Link 
-                  href="#dashboard-showcase"
+                  href="#try-it-now"
                   className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 border-2 border-[#53328A] text-[#53328A] hover:bg-purple-50 transition-colors cursor-pointer relative z-10"
-                  onClick={(e) => handleAnchorClick(e, 'dashboard-showcase')}
+                  onClick={(e) => handleAnchorClick(e, 'try-it-now')}
                 >
-                  Watch Demo →
+                  Try Demo →
                 </Link>
               </div>
             </div>
@@ -591,7 +591,7 @@ export default function LandingPage() {
           </div>
 
           {/* Try It Now - Right after Hero */}
-          <div className="mt-16 bg-white rounded-2xl p-8 border-2 border-purple-200 shadow-lg">
+          <div id="try-it-now" className="mt-16 bg-white rounded-2xl p-8 border-2 border-purple-200 shadow-lg">
             <div className="grid md:grid-cols-2 gap-8 items-start">
               <div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Try It Now</h3>
