@@ -27,7 +27,17 @@ export interface VoiceAgentConfig {
   language: string
   voiceId?: string
   voiceTone?: string
+  conversationStyle?: 'casual' | 'neutral' | 'professional'
   knowledgeBaseEnabled: boolean
+}
+
+function resolveConversationStyle(workflow: unknown): 'casual' | 'neutral' | 'professional' {
+  if (!workflow || typeof workflow !== 'object') return 'neutral'
+  const raw = (workflow as { conversationStyle?: unknown }).conversationStyle
+  if (raw === 'casual' || raw === 'neutral' || raw === 'professional') {
+    return raw
+  }
+  return 'neutral'
 }
 
 export class VoiceAgentOrchestrator {
@@ -177,6 +187,7 @@ export class VoiceAgentOrchestrator {
         language: true,
         voiceId: true,
         voiceTone: true,
+        workflow: true,
         knowledgeBase: true,
       },
     })
@@ -189,6 +200,7 @@ export class VoiceAgentOrchestrator {
       language: agent.language,
       voiceId: agent.voiceId || undefined,
       voiceTone: agent.voiceTone ?? undefined,
+      conversationStyle: resolveConversationStyle(agent.workflow),
       knowledgeBaseEnabled: agent.knowledgeBase !== null,
     }
   }
@@ -216,7 +228,16 @@ export class VoiceAgentOrchestrator {
 
     const languageInstruction = languagePrompts[language] || languagePrompts['en']
 
+    const styleInstruction: Record<'casual' | 'neutral' | 'professional', string> = {
+      casual: 'Keep wording casual and everyday, like a normal friendly person talking.',
+      neutral: 'Keep wording balanced, clear, and natural in day-to-day speech.',
+      professional: 'Keep wording professional but still modern, simple, and conversational.',
+    }
+
+    const conversationStyle = agent.conversationStyle ?? 'neutral'
     let prompt = `${agent.systemPrompt}\n\n${languageInstruction}`
+    prompt += `\nConversation style: ${conversationStyle}. ${styleInstruction[conversationStyle]}`
+    prompt += '\nUse everyday modern conversational wording. Avoid archaic, poetic, or overly formal vocabulary.'
 
     if (context) {
       prompt += `\n\nRelevant Context:\n${context}\n\nUse this context to provide accurate information.`

@@ -6,6 +6,15 @@ import { isSarvamConfigured, sarvamTts } from '@/lib/voice-agent/sarvam'
 const MAX_PREVIEW_TEXT_LENGTH = 220
 const DEFAULT_PREVIEW_TEXT = 'नमस्ते! यह एक नमूना आवाज़ संदेश है।'
 
+function inferVoiceToneFromId(voiceId?: string): 'calm' | 'warm' | 'formal' | undefined {
+  if (!voiceId) return undefined
+  const normalized = voiceId.toLowerCase()
+  if (normalized.includes('warm')) return 'warm'
+  if (normalized.includes('calm')) return 'calm'
+  if (normalized.includes('formal')) return 'formal'
+  return undefined
+}
+
 async function requirePreviewAuth(request: NextRequest) {
   const user = await authenticateRequest(request)
   if (!user) {
@@ -70,7 +79,8 @@ export async function GET(request: NextRequest) {
       }
     } else {
       try {
-        audio = await synthesizeSpeech(text, lang, voiceId, 1.0, { gatewayToken })
+        const voiceTone = inferVoiceToneFromId(voiceId)
+        audio = await synthesizeSpeech(text, lang, voiceId, 1.0, { gatewayToken, voiceTone })
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Preview failed'
         throw new Error(`Voice preview backend is unavailable: ${msg}`)

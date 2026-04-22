@@ -21,6 +21,12 @@ const PURPOSES = [
   { value: 'surveys', label: 'Customer Survey' },
 ] as const
 
+const CONVERSATION_STYLES = [
+  { value: 'casual', label: 'Casual (everyday, friendly)' },
+  { value: 'neutral', label: 'Neutral (clear, balanced)' },
+  { value: 'professional', label: 'Professional (business-friendly)' },
+] as const
+
 const LANGUAGES = [
   { code: 'hi', label: 'Hindi', preview: 'नमस्ते! यह एक नमूना आवाज़ है। कृपया बताइए, क्या मेरी आवाज़ साफ़ सुनाई दे रही है?' },
   { code: 'en', label: 'English', preview: 'Hello! This is a sample voice line. Please tell me if my voice sounds clear and natural.' },
@@ -34,34 +40,34 @@ const DEFAULT_PREVIEW_TEXT = 'नमस्ते! यह एक नमूना 
 
 const VOICE_STYLE_PREVIEW_TEXT: Record<string, Record<'formal' | 'calm' | 'warm', string>> = {
   hi: {
-    formal: 'नमस्ते। कृपया इस संदेश को ध्यान से सुनिए। मैं जानकारी स्पष्ट और व्यवस्थित रूप से साझा कर रहा हूँ।',
-    calm: 'नमस्ते, चिंता मत कीजिए। मैं बात धीरे-धीरे और सरल तरीके से समझाता हूँ।',
-    warm: 'नमस्ते जी! आपसे बात करके अच्छा लगा। मैं दोस्ताना अंदाज़ में आपकी मदद के लिए यहाँ हूँ।',
+    formal: 'नमस्ते, मैं बात साफ़ और सीधे तरीके से रखूंगा ताकि आपको सब आसानी से समझ आए।',
+    calm: 'नमस्ते, टेंशन मत लीजिए। मैं आराम से और आसान भाषा में समझाता हूँ।',
+    warm: 'नमस्ते! आपसे बात करके अच्छा लगा, चलिए दोस्ताना तरीके से बात करते हैं।',
   },
   en: {
-    formal: 'Hello. Please listen carefully to this message. I will share the details in a clear and structured manner.',
-    calm: 'Hello, no worries. I will explain everything slowly and simply so it is easy to follow.',
-    warm: 'Hello! Great to speak with you. I am here to help in a friendly and supportive way.',
+    formal: 'Hello, I will keep this clear and straight so everything is easy to understand.',
+    calm: 'Hello, no stress. I will explain this slowly and simply.',
+    warm: 'Hello! Great to talk with you, let us keep this easy and friendly.',
   },
   ta: {
-    formal: 'வணக்கம். தயவுசெய்து இந்த செய்தியை கவனமாக கேளுங்கள். தகவலை தெளிவாகவும் ஒழுங்காகவும் பகிர்கிறேன்.',
-    calm: 'வணக்கம், கவலைப்பட வேண்டாம். நான் மெதுவாகவும் எளிதாகவும் அனைத்தையும் விளக்குகிறேன்.',
-    warm: 'வணக்கம்! உங்களுடன் பேசுவது மகிழ்ச்சி. நட்பான முறையில் உதவ நான் தயாராக இருக்கிறேன்.',
+    formal: 'வணக்கம், விஷயத்தை தெளிவாகவும் நேராகவும் சொல்கிறேன், எளிதாக புரியும்.',
+    calm: 'வணக்கம், கவலை வேண்டாம். மெதுவாக எளிய வார்த்தைகளில் சொல்லுகிறேன்.',
+    warm: 'வணக்கம்! உங்களுடன் பேச சந்தோஷம், நட்பாகப் பேசிக்கலாம்.',
   },
   te: {
-    formal: 'నమస్కారం. దయచేసి ఈ సందేశాన్ని శ్రద్ధగా వినండి. సమాచారాన్ని స్పష్టంగా మరియు క్రమబద్ధంగా చెబుతున్నాను.',
-    calm: 'నమస్కారం, ఆందోళన అవసరం లేదు. నేను నెమ్మదిగా మరియు సులభంగా ప్రతిదీ వివరిస్తాను.',
-    warm: 'నమస్కారం! మీతో మాట్లాడటం ఆనందంగా ఉంది. స్నేహపూర్వకంగా సహాయం చేయడానికి నేను సిద్ధంగా ఉన్నాను.',
+    formal: 'నమస్కారం, విషయం క్లియర్‌గా మరియు సూటిగా చెబుతాను, సులభంగా అర్థమవుతుంది.',
+    calm: 'నమస్కారం, టెన్షన్ అవసరం లేదు. నెమ్మదిగా సులభంగా వివరించాను.',
+    warm: 'నమస్కారం! మీతో మాట్లాడటం ఆనందంగా ఉంది, మనం ఫ్రెండ్లీగా మాట్లాడుకుందాం.',
   },
   kn: {
-    formal: 'ನಮಸ್ಕಾರ. ದಯವಿಟ್ಟು ಈ ಸಂದೇಶವನ್ನು ಗಮನದಿಂದ ಕೇಳಿ. ಮಾಹಿತಿಯನ್ನು ಸ್ಪಷ್ಟವಾಗಿ ಮತ್ತು ಸರಿಯಾಗಿ ಹಂಚಿಕೊಳ್ಳುತ್ತೇನೆ.',
-    calm: 'ನಮಸ್ಕಾರ, ಚಿಂತೆ ಬೇಡ. ನಾನು ನಿಧಾನವಾಗಿ ಮತ್ತು ಸರಳವಾಗಿ ಎಲ್ಲವನ್ನೂ ವಿವರಿಸುತ್ತೇನೆ.',
-    warm: 'ನಮಸ್ಕಾರ! ನಿಮ್ಮೊಂದಿಗೆ ಮಾತನಾಡುವುದು ಸಂತೋಷ. ಸ್ನೇಹಪೂರ್ಣವಾಗಿ ಸಹಾಯ ಮಾಡಲು ನಾನು ಇಲ್ಲಿದ್ದೇನೆ.',
+    formal: 'ನಮಸ್ಕಾರ, ವಿಷಯವನ್ನು ಸ್ಪಷ್ಟವಾಗಿ ಮತ್ತು ಸರಳವಾಗಿ ಹೇಳುತ್ತೇನೆ, ನಿಮಗೆ ಸುಲಭವಾಗಿ ಅರ್ಥವಾಗುತ್ತದೆ.',
+    calm: 'ನಮಸ್ಕಾರ, ಚಿಂತೆ ಬೇಡ. ನಿಧಾನವಾಗಿ ಸರಳ ಪದಗಳಲ್ಲಿ ವಿವರಿಸುತ್ತೇನೆ.',
+    warm: 'ನಮಸ್ಕಾರ! ನಿಮ್ಮ ಜೊತೆಗೆ ಮಾತನಾಡೋದಕ್ಕೆ ಸಂತೋಷ, ಸ್ನೇಹದಿಂದ ಮಾತಾಡೋಣ.',
   },
   mr: {
-    formal: 'नमस्कार. कृपया हा संदेश लक्षपूर्वक ऐका. मी माहिती स्पष्ट आणि नीटनेटक्या पद्धतीने सांगत आहे.',
-    calm: 'नमस्कार, काळजी करू नका. मी सर्व गोष्टी हळू आणि सोप्या भाषेत समजावून सांगतो.',
-    warm: 'नमस्कार! तुमच्याशी बोलून आनंद झाला. मैत्रीपूर्ण पद्धतीने मदत करण्यासाठी मी येथे आहे.',
+    formal: 'नमस्कार, मी मुद्दा स्पष्ट आणि सरळ भाषेत सांगतो, म्हणजे लगेच समजेल.',
+    calm: 'नमस्कार, काळजी करू नका. मी हळू आणि सोप्या भाषेत समजावतो.',
+    warm: 'नमस्कार! तुमच्याशी बोलून छान वाटलं, आपण अगदी मैत्रीपूर्ण पद्धतीने बोलूया.',
   },
 }
 
@@ -89,6 +95,7 @@ function buildSystemPrompt(
   name: string,
   purpose: string,
   greeting: string,
+  conversationStyle: string,
   objections: { noMoney: string; wrongNumber: string; talkToBoss: string },
   crm: { logActivity: boolean; autoCreateDeal: boolean; whatsappFollowUp: boolean; transferToHuman: boolean }
 ): string {
@@ -100,6 +107,7 @@ function buildSystemPrompt(
   prompt += `- "Wrong number": ${objections.wrongNumber}\n`
   prompt += `- "Talk to boss": ${objections.talkToBoss}\n\n`
   prompt += `CRM: Log activity=${crm.logActivity}, Create deal if interested=${crm.autoCreateDeal}, WhatsApp follow-up=${crm.whatsappFollowUp}.\n\n`
+  prompt += `Conversation style: ${conversationStyle}.\n`
   prompt += `Be polite, professional, confirm understanding. Keep responses concise and natural for voice.`
   return prompt
 }
@@ -123,6 +131,7 @@ export default function CreateVoiceAgentWizardPage() {
     purpose: 'collections',
     language: 'hi',
     voiceId: DEFAULT_VOICE_ID,
+    conversationStyle: 'neutral',
     greeting: DEFAULT_GREETINGS.collections,
   })
   const [objections, setObjections] = useState({
@@ -242,10 +251,18 @@ export default function CreateVoiceAgentWizardPage() {
     }
     setLoading(true)
     try {
-      const systemPrompt = buildSystemPrompt(basics.name, basics.purpose, basics.greeting, objections, crm)
+      const systemPrompt = buildSystemPrompt(
+        basics.name,
+        basics.purpose,
+        basics.greeting,
+        basics.conversationStyle,
+        objections,
+        crm
+      )
       const workflow = {
         purpose: basics.purpose,
         greeting: basics.greeting,
+        conversationStyle: basics.conversationStyle,
         script: {},
         objections,
         crm,
@@ -400,6 +417,18 @@ export default function CreateVoiceAgentWizardPage() {
                     )}
                   </Button>
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Conversation Style *</Label>
+                <select
+                  value={basics.conversationStyle}
+                  onChange={(e) => setBasics({ ...basics, conversationStyle: e.target.value })}
+                  className="flex h-11 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:ring-2 focus:ring-[#7C3AED]"
+                >
+                  {CONVERSATION_STYLES.map((style) => (
+                    <option key={style.value} value={style.value}>{style.label}</option>
+                  ))}
+                </select>
               </div>
               {previewError && (
                 <p className="text-xs text-amber-700 dark:text-amber-300">

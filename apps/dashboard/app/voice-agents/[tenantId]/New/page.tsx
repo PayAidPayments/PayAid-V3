@@ -21,6 +21,12 @@ const PURPOSES = [
   { value: 'surveys', label: 'Surveys' },
 ]
 
+const CONVERSATION_STYLES = [
+  { value: 'casual', label: 'Casual (everyday, friendly)' },
+  { value: 'neutral', label: 'Neutral (clear, balanced)' },
+  { value: 'professional', label: 'Professional (business-friendly)' },
+] as const
+
 const FALLBACK_LANGUAGES = [
   { code: 'en', label: 'English' },
   { code: 'hi', label: 'Hindi' },
@@ -35,6 +41,7 @@ function buildSystemPrompt(
   name: string,
   purpose: string,
   greeting: string,
+  conversationStyle: string,
   script: Record<string, string>,
   objections: { noMoney: string; wrongNumber: string; talkToBoss: string }
 ): string {
@@ -45,6 +52,7 @@ function buildSystemPrompt(
   if (objections.noMoney.trim()) prompt += `- "No money": ${objections.noMoney}\n`
   if (objections.wrongNumber.trim()) prompt += `- "Wrong number": ${objections.wrongNumber}\n`
   if (objections.talkToBoss.trim()) prompt += `- "Talk to boss": ${objections.talkToBoss}\n`
+  prompt += `\nConversation style: ${conversationStyle}.`
   prompt += `\nKeep responses concise and natural for voice. Be polite and professional.`
   const scriptKeys = Object.keys(script).filter((k) => script[k]?.trim())
   if (scriptKeys.length) {
@@ -73,6 +81,7 @@ export default function NewVoiceAgentPage() {
     language: 'hi',
     voiceId: DEFAULT_VOICE_ID,
     voiceTone: 'formal',
+    conversationStyle: 'neutral',
     greeting: 'Namaste! PayAid se bol raha hun. Aapko payment reminder dena tha. Kya aap ab baat karna chahenge?',
   })
   const [script, setScript] = useState<Record<string, string>>({
@@ -166,10 +175,18 @@ export default function NewVoiceAgentPage() {
     }
     setLoading(true)
     try {
-      const systemPrompt = buildSystemPrompt(basics.name, basics.purpose, basics.greeting, script, objections)
+      const systemPrompt = buildSystemPrompt(
+        basics.name,
+        basics.purpose,
+        basics.greeting,
+        basics.conversationStyle,
+        script,
+        objections
+      )
       const workflow = {
         purpose: basics.purpose,
         greeting: basics.greeting,
+        conversationStyle: basics.conversationStyle,
         script,
         objections,
         crm,
@@ -272,6 +289,18 @@ export default function NewVoiceAgentPage() {
                   >
                     {ttsOptions.speakers.map((s) => (
                       <option key={s.id} value={s.id}>{s.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Conversation Style *</Label>
+                  <select
+                    value={basics.conversationStyle}
+                    onChange={(e) => setBasics({ ...basics, conversationStyle: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {CONVERSATION_STYLES.map((style) => (
+                      <option key={style.value} value={style.value}>{style.label}</option>
                     ))}
                   </select>
                 </div>

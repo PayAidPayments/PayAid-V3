@@ -56,6 +56,16 @@ function voiceToneToStyle(voiceTone?: string | null): VexylVoiceStyle | undefine
   return undefined
 }
 
+/** Infer style directly from canonical voice id (e.g. arjun-formal). */
+function voiceIdToStyle(voiceId?: string): VexylVoiceStyle | undefined {
+  if (!voiceId) return undefined
+  const id = voiceId.toLowerCase()
+  if (id.includes('calm')) return 'calm'
+  if (id.includes('warm')) return 'warm'
+  if (id.includes('formal')) return 'formal'
+  return undefined
+}
+
 /**
  * Synthesize speech from text with automatic provider selection
  *
@@ -72,7 +82,10 @@ export async function synthesizeSpeech(
   speed: number = 1.0,
   options?: TTSOptions
 ): Promise<Buffer> {
-  const voiceStyle = options?.voiceStyle ?? voiceToneToStyle((options as { voiceTone?: string })?.voiceTone)
+  const voiceStyle =
+    options?.voiceStyle ??
+    voiceToneToStyle((options as { voiceTone?: string })?.voiceTone) ??
+    voiceIdToStyle(voiceId)
 
   // Coqui TTS Docker when configured: no API keys, no 401s, try first
   if (isCoquiDockerConfigured()) {
@@ -93,7 +106,7 @@ export async function synthesizeSpeech(
       return await synthesizeWithVexyl(text, {
         language,
         speaker: voiceId || 'divya-calm',
-        voiceStyle: voiceStyle || 'calm',
+        voiceStyle,
         format: 'wav',
       })
     } catch (error) {

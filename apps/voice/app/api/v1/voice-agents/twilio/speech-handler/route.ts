@@ -27,11 +27,32 @@ MUST handle objections professionally:
 ALWAYS: Polite, professional; concise for voice.
 `
 
-function buildSystemPrompt(agent: { systemPrompt: string; language: string; voiceTone?: string | null }, context: string): string {
+function resolveConversationStyle(workflow: unknown): 'casual' | 'neutral' | 'professional' {
+  if (!workflow || typeof workflow !== 'object') return 'neutral'
+  const raw = (workflow as { conversationStyle?: unknown }).conversationStyle
+  if (raw === 'casual' || raw === 'neutral' || raw === 'professional') {
+    return raw
+  }
+  return 'neutral'
+}
+
+function buildSystemPrompt(
+  agent: { systemPrompt: string; language: string; voiceTone?: string | null; workflow?: unknown },
+  context: string
+): string {
+  const conversationStyle = resolveConversationStyle(agent.workflow)
+  const styleInstruction: Record<'casual' | 'neutral' | 'professional', string> = {
+    casual: 'Use casual everyday wording, like a normal friendly conversation.',
+    neutral: 'Use clear, balanced day-to-day wording.',
+    professional: 'Use professional but modern and simple wording.',
+  }
+
   let prompt = agent.systemPrompt + '\n\n' + OBJECTION_HANDLING
   if (agent.voiceTone) prompt += `\nTone: ${agent.voiceTone}.`
+  prompt += `\nConversation style: ${conversationStyle}. ${styleInstruction[conversationStyle]}`
   if (context) prompt += `\nRelevant context:\n${context}`
   prompt += '\nKeep responses concise and natural for voice.'
+  prompt += '\nUse everyday modern speech. Avoid archaic, bookish, or overly formal wording.'
   return prompt
 }
 

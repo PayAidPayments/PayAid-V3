@@ -27,9 +27,16 @@ const PURPOSES = [
   { value: 'surveys', label: 'Surveys' },
 ]
 
+const CONVERSATION_STYLES = [
+  { value: 'casual', label: 'Casual (everyday, friendly)' },
+  { value: 'neutral', label: 'Neutral (clear, balanced)' },
+  { value: 'professional', label: 'Professional (business-friendly)' },
+] as const
+
 type WorkflowTab = {
   purpose?: string
   greeting?: string
+  conversationStyle?: string
   script?: Record<string, string>
   objections?: { noMoney?: string; wrongNumber?: string; talkToBoss?: string }
   crm?: { autoCreateDeal?: boolean; logActivity?: boolean; whatsappFollowUp?: boolean }
@@ -44,6 +51,7 @@ function buildSystemPrompt(
   name: string,
   purpose: string,
   greeting: string,
+  conversationStyle: string,
   script: Record<string, string>,
   objections: { noMoney: string; wrongNumber: string; talkToBoss: string }
 ): string {
@@ -54,6 +62,7 @@ function buildSystemPrompt(
   if (objections.noMoney?.trim()) prompt += `- "No money": ${objections.noMoney}\n`
   if (objections.wrongNumber?.trim()) prompt += `- "Wrong number": ${objections.wrongNumber}\n`
   if (objections.talkToBoss?.trim()) prompt += `- "Talk to boss": ${objections.talkToBoss}\n`
+  prompt += `\nConversation style: ${conversationStyle}.`
   prompt += `\nKeep responses concise and natural for voice. Be polite and professional.`
   const scriptKeys = Object.keys(script || {}).filter((k) => (script as Record<string, string>)[k]?.trim())
   if (scriptKeys.length) {
@@ -80,6 +89,7 @@ export default function VoiceAgentStudioPage() {
     language: 'hi',
     voiceId: DEFAULT_VOICE_ID,
     voiceTone: 'formal',
+    conversationStyle: 'neutral',
     greeting: '',
     phoneNumber: '',
   })
@@ -132,6 +142,7 @@ export default function VoiceAgentStudioPage() {
       language: agent.language || 'hi',
       voiceId: agent.voiceId || 'arjun-formal',
       voiceTone: agent.voiceTone || 'formal',
+      conversationStyle: (hasTabWorkflow && w?.conversationStyle) ? w.conversationStyle : prev.conversationStyle,
       purpose: (hasTabWorkflow && w?.purpose) ? w.purpose : prev.purpose,
       greeting: (hasTabWorkflow && w?.greeting) ? w.greeting : (agent.systemPrompt?.match(/Greeting \/ opening:\s*([^\n]+)/)?.[1]?.trim() || prev.greeting),
       phoneNumber: (agent as { phoneNumber?: string }).phoneNumber ?? '',
@@ -163,10 +174,18 @@ export default function VoiceAgentStudioPage() {
     if (!token) return
     setSaving(true)
     try {
-      const systemPrompt = buildSystemPrompt(basics.name, basics.purpose, basics.greeting, script, objections)
+      const systemPrompt = buildSystemPrompt(
+        basics.name,
+        basics.purpose,
+        basics.greeting,
+        basics.conversationStyle,
+        script,
+        objections
+      )
       const workflow: WorkflowTab = {
         purpose: basics.purpose,
         greeting: basics.greeting,
+        conversationStyle: basics.conversationStyle,
         script,
         objections,
         crm,
@@ -319,6 +338,18 @@ export default function VoiceAgentStudioPage() {
                     placeholder="Namaste! PayAid se..."
                     rows={4}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label>Conversation Style</Label>
+                  <select
+                    value={basics.conversationStyle}
+                    onChange={(e) => setBasics({ ...basics, conversationStyle: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {CONVERSATION_STYLES.map((style) => (
+                      <option key={style.value} value={style.value}>{style.label}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <Label>Twilio number (E.164)</Label>
