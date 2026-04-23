@@ -4,6 +4,8 @@
 **Status:** ✅ **Accepted**  
 **Decision Makers:** Product + Engineering Team
 
+**Cost conversion note:** INR estimates in this document use **USD 1 ≈ ₹83** (rounded, Apr 2026).
+
 ---
 
 ## Context

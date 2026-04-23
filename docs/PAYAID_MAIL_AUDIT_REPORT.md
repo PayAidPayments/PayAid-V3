@@ -4,6 +4,8 @@
 **Auditor:** AI Architecture Agent  
 **Purpose:** Comprehensive audit of email architecture in PayAid V3 repository
 
+**Cost conversion note:** INR estimates in this document use **USD 1 ≈ ₹83** (rounded, Apr 2026).
+
 ---
 
 ## Executive Summary

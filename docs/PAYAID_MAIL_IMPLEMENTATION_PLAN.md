@@ -4,6 +4,8 @@
 **Date:** April 23, 2026  
 **Status:** 🔵 **Ready for Implementation**
 
+**Cost conversion note:** INR estimates in this document use **USD 1 ≈ ₹83** (rounded, Apr 2026).
+
 ---
 
 ## Executive Summary

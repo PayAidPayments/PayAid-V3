@@ -3,6 +3,8 @@
 **Last Updated:** April 23, 2026  
 **Status:** 🔵 Complete and Ready for Implementation
 
+**Cost conversion note:** INR estimates in this documentation set use **USD 1 ≈ ₹83** (rounded, Apr 2026).
+
 ---
 
 ## Overview

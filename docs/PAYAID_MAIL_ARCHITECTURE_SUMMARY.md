@@ -3,6 +3,8 @@
 **Quick Reference Guide**  
 **Date:** April 23, 2026
 
+**Cost conversion note:** INR estimates in this document use **USD 1 ≈ ₹83** (rounded, Apr 2026).
+
 ---
 
 ## Current State
