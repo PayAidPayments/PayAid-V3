@@ -43,8 +43,8 @@ export default function VoiceAgentTranscriptsPage() {
   const [q, setQ] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  const [language, setLanguage] = useState('')
-  const [sentiment, setSentiment] = useState('')
+  const [language, setLanguage] = useState('any')
+  const [sentiment, setSentiment] = useState('any')
   const [rows, setRows] = useState<TranscriptRow[]>([])
   const [loading, setLoading] = useState(false)
   const [searchTrigger, setSearchTrigger] = useState(0)
@@ -59,8 +59,8 @@ export default function VoiceAgentTranscriptsPage() {
       if (q) sp.set('q', q)
       if (startDate) sp.set('startDate', startDate)
       if (endDate) sp.set('endDate', endDate)
-      if (language) sp.set('language', language)
-      if (sentiment) sp.set('sentiment', sentiment)
+      if (language !== 'any') sp.set('language', language)
+      if (sentiment !== 'any') sp.set('sentiment', sentiment)
       sp.set('limit', '100')
       const res = await fetch(`/api/v1/voice-agents/transcripts?${sp}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -173,7 +173,7 @@ export default function VoiceAgentTranscriptsPage() {
                   <SelectValue placeholder="Any" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any</SelectItem>
+                  <SelectItem value="any">Any</SelectItem>
                   <SelectItem value="hi">Hindi</SelectItem>
                   <SelectItem value="en">English</SelectItem>
                   <SelectItem value="ta">Tamil</SelectItem>
@@ -188,7 +188,7 @@ export default function VoiceAgentTranscriptsPage() {
                   <SelectValue placeholder="Any" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any</SelectItem>
+                  <SelectItem value="any">Any</SelectItem>
                   <SelectItem value="positive">Positive</SelectItem>
                   <SelectItem value="neutral">Neutral</SelectItem>
                   <SelectItem value="negative">Negative</SelectItem>
