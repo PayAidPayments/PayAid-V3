@@ -128,6 +128,47 @@ const VOICE_EMOTION_TELECALLER = `
 VOICE PERFORMANCE: You are a live tele-caller, not reading a script. Write 1–2 short sentences that sound *spoken*: natural reactions (surprise, concern, warmth, relief) using words and light punctuation—never stage directions or bracketed emotions. Match the customer's energy: if they are upset, acknowledge first; if they share good news, sound pleased. Avoid robotic listing, repeated stock phrases every turn, or flat tone. Stay professional: empathetic, not theatrical rage.
 `
 
+function extractUrlCandidate(text: string): string | null {
+  const normalized = text
+    .replace(/\s*\.\s*/g, '.')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const m = normalized.match(/\b(?:https?:\/\/)?(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?\b/i)
+  return m?.[0] || null
+}
+
+function deriveConversationFacts(
+  history: Array<{ role: 'user' | 'assistant'; content: string }>,
+  transcript: string
+): { hasWebsite: boolean; websiteUrl?: string; websiteCorrectionRequested: boolean } {
+  const all = [...history, { role: 'user' as const, content: transcript }]
+  const joined = all.map((m) => m.content.toLowerCase()).join('\n')
+
+  const hasWebsite =
+    /\b(we have a website|have a website|website|site|web app|app)\b/i.test(joined) ||
+    all.some((m) => !!extractUrlCandidate(m.content))
+
+  const correctionRequested =
+    /\b(incorrect|wrong|you got it wrong|not correct|no,|i said|that's not|that is not)\b/i.test(
+      transcript.toLowerCase()
+    )
+
+  let websiteUrl: string | undefined
+  for (let i = all.length - 1; i >= 0; i--) {
+    const candidate = extractUrlCandidate(all[i].content)
+    if (candidate) {
+      websiteUrl = candidate
+      break
+    }
+  }
+
+  return {
+    hasWebsite,
+    websiteUrl,
+    websiteCorrectionRequested: correctionRequested,
+  }
+}
+
 function buildSystemPrompt(
   agent: { systemPrompt: string; language: string; voiceTone?: string | null; name?: string | null },
   language: string,
@@ -282,9 +323,19 @@ export async function POST(request: NextRequest) {
       // ignore
     }
 
+    // Keep enough context to avoid asking repeated discovery questions.
+    const recentHistory = conversationHistory.slice(-8)
+    const facts = deriveConversationFacts(recentHistory, transcript)
+    if (facts.hasWebsite) {
+      context += `\nKnown call facts: customer already confirmed they have a website${
+        facts.websiteUrl ? ` (${facts.websiteUrl})` : ''
+      }. Do NOT ask whether they have a website/app again unless the customer explicitly says earlier details are wrong.`
+    }
+    if (facts.websiteCorrectionRequested) {
+      context += `\nCustomer says previously captured website details are incorrect. Enter correction mode: ask one concise clarification question, confirm the corrected URL back once, then continue.`
+    }
+
     const systemPrompt = buildSystemPrompt(agent, agent.language, context)
-    // Enough turns for tele-sales to avoid repeating questions; Groq stays fast with modest context
-    const recentHistory = conversationHistory.slice(-6)
     const history = [...recentHistory, { role: 'user' as const, content: transcript }]
 
     let responseText: string
@@ -305,7 +356,7 @@ export async function POST(request: NextRequest) {
         const groq = getGroqClient()
         const messages = [
           { role: 'system' as const, content: systemPrompt },
-          ...history.slice(-8).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+          ...history.slice(-10).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
         ]
         console.time('voice-llm')
         const res = await groq.chat(messages, {

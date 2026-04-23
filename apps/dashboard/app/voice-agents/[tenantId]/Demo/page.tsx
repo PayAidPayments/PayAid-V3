@@ -1463,7 +1463,7 @@ If still not working, check the browser console (F12) for detailed error message
         silenceTimeoutRef.current = null
         setMicSpeechState('idle')
         setWebSpeechListening(false)
-      }, 4000)
+      }, 2500)
     }
     rec.onend = handleEnd
     rec.onerror = handleError
@@ -1550,10 +1550,15 @@ If still not working, check the browser console (F12) for detailed error message
     }
   }
 
-  const startWebSpeechDemo = () => {
+  const startWebSpeechDemo = (options?: { interruptReply?: boolean }) => {
+    const interruptReply = options?.interruptReply === true
     if (!agentId || !token || !agent) return
-    if (micSpeechState !== 'idle') return
+    if (micSpeechState !== 'idle' && !interruptReply) return
     stopAssistantAudio()
+    if (interruptReply && micSpeechState === 'processing') {
+      setWebSpeechLoading(false)
+      setMicSpeechState('idle')
+    }
     const rec = speechRecognitionRef.current
     if (!rec) {
       alert('Web Speech API is not supported in this browser. Try Chrome or Edge.')
@@ -1571,7 +1576,11 @@ If still not working, check the browser console (F12) for detailed error message
         : '').trim()
       if (transcript) processSpeechResult(transcript)
     }
-    rec.start()
+    try {
+      rec.start()
+    } catch {
+      // Some browsers throw if start is called too quickly after stop/abort.
+    }
   }
 
   const stopWebSpeechDemo = () => {
@@ -1935,8 +1944,13 @@ If still not working, check the browser console (F12) for detailed error message
                 <Button
                   size="lg"
                   variant={micSpeechState === 'listening' ? 'default' : 'secondary'}
-                  disabled={micSpeechState === 'processing'}
-                  onClick={micSpeechState === 'listening' ? stopWebSpeechDemo : () => startWebSpeechDemo()}
+                  onClick={
+                    micSpeechState === 'listening'
+                      ? stopWebSpeechDemo
+                      : micSpeechState === 'processing'
+                        ? () => startWebSpeechDemo({ interruptReply: true })
+                        : () => startWebSpeechDemo()
+                  }
                   className={`rounded-full h-24 w-24 p-0 transition-all ${
                     micSpeechState === 'idle' ? 'animate-pulse' : ''
                   } ${micSpeechState === 'listening' ? 'bg-green-600 hover:bg-green-700' : ''} ${
@@ -1944,7 +1958,7 @@ If still not working, check the browser console (F12) for detailed error message
                   }`}
                   title={
                     micSpeechState === 'processing'
-                      ? 'Agent replying…'
+                      ? 'Agent replying… click to interrupt and speak'
                       : micSpeechState === 'listening'
                         ? 'Listening… — click to stop'
                         : 'Click to talk'
@@ -2000,10 +2014,16 @@ If still not working, check the browser console (F12) for detailed error message
             <Button
               size="lg"
               variant={micSpeechState === 'listening' ? 'destructive' : 'default'}
-              disabled={micSpeechState === 'processing' || liveConversationActive}
-              onClick={micSpeechState === 'listening' ? stopWebSpeechDemo : startWebSpeechDemo}
+              disabled={liveConversationActive}
+              onClick={
+                micSpeechState === 'listening'
+                  ? stopWebSpeechDemo
+                  : micSpeechState === 'processing'
+                    ? () => startWebSpeechDemo({ interruptReply: true })
+                    : startWebSpeechDemo
+              }
               className={`rounded-full h-16 w-16 p-0 ${micSpeechState === 'listening' ? 'bg-green-600 hover:bg-green-700' : ''} ${micSpeechState === 'processing' ? 'bg-blue-600' : ''}`}
-              title={micSpeechState === 'processing' ? 'Getting response...' : micSpeechState === 'listening' ? 'Stop listening' : 'Click and speak'}
+              title={micSpeechState === 'processing' ? 'Interrupt reply and speak' : micSpeechState === 'listening' ? 'Stop listening' : 'Click and speak'}
             >
               {micSpeechState === 'processing' ? (
                 <Loader2 className="h-8 w-8 animate-spin" />
