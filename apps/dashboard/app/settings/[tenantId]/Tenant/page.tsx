@@ -22,6 +22,8 @@ export default function TenantSettingsPage() {
   const queryClient = useQueryClient()
   const [formData, setFormData] = useState({
     name: '',
+    industry: '',
+    industrySubType: '',
     gstin: '',
     address: '',
     city: '',
@@ -32,6 +34,12 @@ export default function TenantSettingsPage() {
     email: '',
     website: '',
     logo: '',
+    productsServices: '',
+    targetCustomers: '',
+    cityRegion: '',
+    brandTone: '',
+    coreOfferings: '',
+    whatsappNumber: '',
   })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -51,7 +59,7 @@ export default function TenantSettingsPage() {
   })
 
   const updateTenant = useMutation({
-    mutationFn: async (data: Record<string, string>) => {
+    mutationFn: async (data: Record<string, unknown>) => {
       const response = await fetch('/api/settings/tenant', {
         method: 'PATCH',
         headers: getAuthHeaders(),
@@ -76,6 +84,8 @@ export default function TenantSettingsPage() {
       const timeoutId = globalThis.setTimeout(() => {
         setFormData({
           name: tenant.name || '',
+          industry: tenant.industry || '',
+          industrySubType: tenant.industrySubType || '',
           gstin: tenant.gstin || '',
           address: tenant.address || '',
           city: tenant.city || '',
@@ -86,6 +96,12 @@ export default function TenantSettingsPage() {
           email: tenant.email || '',
           website: tenant.website || '',
           logo: tenant.logo || '',
+          productsServices: tenant.businessProfile?.productsServices || '',
+          targetCustomers: tenant.businessProfile?.targetCustomers || '',
+          cityRegion: tenant.businessProfile?.cityRegion || '',
+          brandTone: tenant.businessProfile?.brandTone || '',
+          coreOfferings: tenant.businessProfile?.coreOfferings || '',
+          whatsappNumber: tenant.businessProfile?.whatsappNumber || '',
         })
       }, 0)
       return () => globalThis.clearTimeout(timeoutId)
@@ -121,13 +137,36 @@ export default function TenantSettingsPage() {
     setError('')
     setSuccess('')
     try {
-      await updateTenant.mutateAsync(formData)
+      const payload = {
+        name: formData.name,
+        industry: formData.industry,
+        industrySubType: formData.industrySubType,
+        gstin: formData.gstin,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        postalCode: formData.postalCode,
+        country: formData.country,
+        phone: formData.phone,
+        email: formData.email,
+        website: formData.website,
+        logo: formData.logo,
+        businessProfile: {
+          productsServices: formData.productsServices,
+          targetCustomers: formData.targetCustomers,
+          cityRegion: formData.cityRegion,
+          brandTone: formData.brandTone,
+          coreOfferings: formData.coreOfferings,
+          whatsappNumber: formData.whatsappNumber,
+        },
+      }
+      await updateTenant.mutateAsync(payload)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update settings')
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
@@ -235,6 +274,14 @@ export default function TenantSettingsPage() {
                 <Input id="name" name="name" value={formData.name} onChange={handleChange} required disabled={updateTenant.isPending} />
               </div>
               <div className="space-y-2">
+                <label htmlFor="industry" className="text-sm font-medium text-slate-700 dark:text-slate-300">Industry</label>
+                <Input id="industry" name="industry" value={formData.industry} onChange={handleChange} placeholder="Retail, Manufacturing, Services, etc." disabled={updateTenant.isPending} />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="industrySubType" className="text-sm font-medium text-slate-700 dark:text-slate-300">Business Type</label>
+                <Input id="industrySubType" name="industrySubType" value={formData.industrySubType} onChange={handleChange} placeholder="Distributor, Salon, Clinic, etc." disabled={updateTenant.isPending} />
+              </div>
+              <div className="space-y-2">
                 <label htmlFor="gstin" className="text-sm font-medium text-slate-700 dark:text-slate-300">GSTIN</label>
                 <Input id="gstin" name="gstin" value={formData.gstin} onChange={handleChange} placeholder="15-digit GSTIN" maxLength={15} disabled={updateTenant.isPending} />
               </div>
@@ -253,6 +300,30 @@ export default function TenantSettingsPage() {
               <div className="space-y-2">
                 <label htmlFor="logo" className="text-sm font-medium text-slate-700 dark:text-slate-300">Logo URL</label>
                 <Input id="logo" name="logo" type="url" value={formData.logo} onChange={handleChange} disabled={updateTenant.isPending} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label htmlFor="productsServices" className="text-sm font-medium text-slate-700 dark:text-slate-300">What do you sell? (products/services)</label>
+                <textarea id="productsServices" name="productsServices" value={formData.productsServices} onChange={handleChange} rows={3} className="flex w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100" placeholder="Example: GST filing services, salon packages, custom furniture, etc." disabled={updateTenant.isPending} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label htmlFor="coreOfferings" className="text-sm font-medium text-slate-700 dark:text-slate-300">Core offerings</label>
+                <textarea id="coreOfferings" name="coreOfferings" value={formData.coreOfferings} onChange={handleChange} rows={2} className="flex w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100" placeholder="Top 3-5 offerings you want AI to prioritize" disabled={updateTenant.isPending} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label htmlFor="targetCustomers" className="text-sm font-medium text-slate-700 dark:text-slate-300">Target customers</label>
+                <textarea id="targetCustomers" name="targetCustomers" value={formData.targetCustomers} onChange={handleChange} rows={2} className="flex w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100" placeholder="Example: local SMB owners, urban families, students, etc." disabled={updateTenant.isPending} />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="cityRegion" className="text-sm font-medium text-slate-700 dark:text-slate-300">City/region focus</label>
+                <Input id="cityRegion" name="cityRegion" value={formData.cityRegion} onChange={handleChange} placeholder="Hyderabad, Telangana" disabled={updateTenant.isPending} />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="whatsappNumber" className="text-sm font-medium text-slate-700 dark:text-slate-300">WhatsApp number</label>
+                <Input id="whatsappNumber" name="whatsappNumber" value={formData.whatsappNumber} onChange={handleChange} placeholder="+91..." disabled={updateTenant.isPending} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label htmlFor="brandTone" className="text-sm font-medium text-slate-700 dark:text-slate-300">Brand tone/style</label>
+                <Input id="brandTone" name="brandTone" value={formData.brandTone} onChange={handleChange} placeholder="Professional, friendly, premium, etc." disabled={updateTenant.isPending} />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <label htmlFor="address" className="text-sm font-medium text-slate-700 dark:text-slate-300">Address</label>

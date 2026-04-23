@@ -8,6 +8,7 @@ import { RefreshCw, TrendingUp, AlertTriangle, DollarSign, Activity, Shield } fr
 import { ChurnRiskBadge } from './ChurnRiskBadge'
 import { HealthScoreVisualization } from './HealthScoreVisualization'
 import { LTVDisplay } from './LTVDisplay'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface CustomerInsightsProps {
   contactId: string
@@ -15,6 +16,7 @@ interface CustomerInsightsProps {
 }
 
 export function CustomerInsights({ contactId, tenantId }: CustomerInsightsProps) {
+  const { term } = useTerms()
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['customer-insights', contactId],
     queryFn: async () => {
@@ -54,8 +56,8 @@ export function CustomerInsights({ contactId, tenantId }: CustomerInsightsProps)
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Customer Insights</CardTitle>
-              <CardDescription>AI-powered customer analytics</CardDescription>
+              <CardTitle>{`${term('customer')} Insights`}</CardTitle>
+              <CardDescription>{`AI-powered ${term('customer').toLowerCase()} analytics`}</CardDescription>
             </div>
             <Button
               variant="outline"

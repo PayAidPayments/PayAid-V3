@@ -16,6 +16,29 @@ const MODULE_LICENSE_ALIASES: Record<string, string> = {
   'logo-generator': 'ai-studio',
   'knowledge-rag': 'ai-studio',
   'voice-agents': 'ai-studio',
+  // Automation and workflow surfaces
+  workflow: 'projects',
+  'workflow-automation': 'projects',
+  // Support-facing surfaces
+  support: 'communication',
+  'help-center': 'communication',
+  // Documents/contract surfaces
+  contracts: 'projects',
+  // Analytics extensions
+  'industry-intelligence': 'analytics',
+  // Scheduling routed through CRM
+  appointments: 'crm',
+  // Workforce extensions
+  compliance: 'hr',
+  lms: 'hr',
+  // Workspace tools are secondary and require a core license
+  productivity: 'projects',
+  spreadsheet: 'projects',
+  docs: 'projects',
+  drive: 'projects',
+  slides: 'projects',
+  meet: 'projects',
+  pdf: 'projects',
 }
 
 function normalizeModuleId(moduleId: string | null | undefined): string {
@@ -28,6 +51,28 @@ function toLicensedModuleSet(licensedModules: readonly string[] | null | undefin
 
 function resolveRequiredLicense(moduleId: string): string {
   return MODULE_LICENSE_ALIASES[moduleId] ?? moduleId
+}
+
+/**
+ * Public helper for APIs/UI that need canonical license module id
+ * from a surface-level module id.
+ */
+export function resolveLicenseModuleId(moduleId: string | null | undefined): string {
+  return resolveRequiredLicense(normalizeModuleId(moduleId))
+}
+
+/**
+ * Normalize module selections to canonical license ids and drop unknown ids.
+ */
+export function normalizeSelectedModuleIds(moduleIds: readonly string[] | null | undefined): string[] {
+  const out = new Set<string>()
+  for (const moduleId of moduleIds ?? []) {
+    const canonical = resolveLicenseModuleId(moduleId)
+    if (ALL_LICENSE_MODULE_ID_SET.has(canonical)) {
+      out.add(canonical)
+    }
+  }
+  return Array.from(out)
 }
 
 /**

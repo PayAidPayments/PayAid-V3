@@ -6,12 +6,23 @@ const root = process.cwd()
 const outDir = path.join(root, 'docs', 'evidence', 'release-gates')
 
 const gates = [
+  { id: 'canonical-contract', command: ['npm', 'run', 'check:canonical-module-api-contract'] },
+  { id: 'canonical-post-cutover', command: ['npm', 'run', 'check:canonical-module-api-post-cutover'] },
+  {
+    id: 'canonical-readiness-verdict',
+    command: ['npm', 'run', 'check:canonical-module-api-readiness-verdict'],
+  },
   { id: 'm0', command: ['npm', 'run', 'test:m0'] },
   { id: 'm2', command: ['npm', 'run', 'test:m2:smoke', '--', '--runInBand'] },
   { id: 'm3', command: ['npm', 'run', 'test:m3:smoke', '--', '--runInBand'] },
 ]
 
-const include = new Set((process.env.RELEASE_GATES || 'm0,m2,m3').split(',').map((x) => x.trim()).filter(Boolean))
+const include = new Set(
+  (process.env.RELEASE_GATES || 'canonical-contract,canonical-post-cutover,m0,m2,m3')
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean)
+)
 const selected = gates.filter((g) => include.has(g.id))
 
 if (selected.length === 0) {

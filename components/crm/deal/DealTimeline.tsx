@@ -19,6 +19,7 @@ import {
   Send,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 export type TimelineEventType =
   | 'deal_created'
@@ -56,6 +57,7 @@ interface DealTimelineProps {
 }
 
 export function DealTimeline({ dealId, tenantId, deal }: DealTimelineProps) {
+  const { term } = useTerms()
   const [events, setEvents] = useState<TimelineEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const { token } = useAuthStore()
@@ -75,7 +77,7 @@ export function DealTimeline({ dealId, tenantId, deal }: DealTimelineProps) {
           {
             id: 'deal-created',
             type: 'deal_created',
-            title: 'Deal created',
+            title: `${term('deal')} created`,
             createdAt: deal.createdAt,
             metadata: {},
           },
@@ -85,7 +87,7 @@ export function DealTimeline({ dealId, tenantId, deal }: DealTimelineProps) {
           base.push({
             id: 'deal-won',
             type: 'deal_won',
-            title: 'Deal won',
+            title: `${term('deal')} won`,
             description: deal.wonReason || undefined,
             createdAt: deal.actualCloseDate,
             metadata: {},
@@ -94,7 +96,7 @@ export function DealTimeline({ dealId, tenantId, deal }: DealTimelineProps) {
           base.push({
             id: 'deal-lost',
             type: 'deal_lost',
-            title: 'Deal lost',
+            title: `${term('deal')} lost`,
             description: deal.lostReason || undefined,
             createdAt: deal.actualCloseDate,
             metadata: {},
@@ -243,7 +245,7 @@ export function DealTimeline({ dealId, tenantId, deal }: DealTimelineProps) {
   if (isLoading) {
     return (
       <div className="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100 mb-4">Deal timeline</h2>
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100 mb-4">{`${term('deal')} timeline`}</h2>
         <div className="animate-pulse space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-14 rounded-lg bg-slate-100 dark:bg-gray-700" />
@@ -256,7 +258,7 @@ export function DealTimeline({ dealId, tenantId, deal }: DealTimelineProps) {
   if (events.length === 0) {
     return (
       <div className="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100 mb-4">Deal timeline</h2>
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100 mb-4">{`${term('deal')} timeline`}</h2>
         <p className="text-sm text-slate-500 dark:text-gray-400">No events yet.</p>
       </div>
     )
@@ -264,7 +266,7 @@ export function DealTimeline({ dealId, tenantId, deal }: DealTimelineProps) {
 
   return (
     <div className="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
-      <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100 mb-4">Deal timeline</h2>
+      <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100 mb-4">{`${term('deal')} timeline`}</h2>
       <ul className="space-y-0">
         {events.map((evt, idx) => (
           <li key={evt.id} className="relative flex gap-3 pb-4 last:pb-0">

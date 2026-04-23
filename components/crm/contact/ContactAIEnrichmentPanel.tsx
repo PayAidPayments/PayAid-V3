@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Sparkles, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/lib/stores/auth'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface ContactAIEnrichmentPanelProps {
   contact: any
@@ -16,6 +17,7 @@ export const ContactAIEnrichmentPanel: React.FC<ContactAIEnrichmentPanelProps> =
   tenantId,
   onEnriched,
 }) => {
+  const { term } = useTerms()
   const [isEnriching, setIsEnriching] = useState(false)
   const [suggestions, setSuggestions] = useState<any>(null)
   const [enrichmentStatus, setEnrichmentStatus] = useState<'basic' | 'enriched' | 'failed'>('basic')
@@ -49,12 +51,12 @@ export const ContactAIEnrichmentPanel: React.FC<ContactAIEnrichmentPanelProps> =
       } else {
         const error = await response.json()
         setEnrichmentStatus('failed')
-        alert(error.error || 'Failed to enrich contact')
+        alert(error.error || `Failed to enrich ${term('contact').toLowerCase()}`)
       }
     } catch (error) {
       console.error('Enrichment error:', error)
       setEnrichmentStatus('failed')
-      alert('Failed to enrich contact. Please try again.')
+      alert(`Failed to enrich ${term('contact').toLowerCase()}. Please try again.`)
     } finally {
       setIsEnriching(false)
     }
@@ -105,7 +107,7 @@ export const ContactAIEnrichmentPanel: React.FC<ContactAIEnrichmentPanelProps> =
       <div>
         <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">AI Enrichment</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">
-          Use AI to complete missing fields from public sources (LinkedIn, company website, etc.).
+          {`Use AI to complete missing ${term('contact').toLowerCase()} fields from public sources (LinkedIn, company website, etc.).`}
         </p>
       </div>
 
@@ -129,7 +131,7 @@ export const ContactAIEnrichmentPanel: React.FC<ContactAIEnrichmentPanelProps> =
         className="w-full rounded-lg bg-indigo-600 text-white text-xs font-semibold py-2 hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         <Sparkles className="w-3 h-3" />
-        {isEnriching ? 'Enriching...' : 'Enrich Contact with AI'}
+        {isEnriching ? 'Enriching...' : `Enrich ${term('contact')} with AI`}
       </button>
 
       {/* Suggestions */}
@@ -141,7 +143,7 @@ export const ContactAIEnrichmentPanel: React.FC<ContactAIEnrichmentPanelProps> =
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-slate-700 dark:text-gray-300 capitalize">
-                    {field.replace(/([A-Z])/g, ' $1').trim()}
+                    {field.split(/(?=[A-Z])/).join(' ').trim()}
                   </p>
                   <p className="text-xs text-slate-600 dark:text-gray-400 mt-0.5 truncate">
                     {String(value)}

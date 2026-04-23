@@ -3,6 +3,7 @@ import { verifyToken } from '@/lib/auth/jwt'
 import { hasModuleAccess, getModule } from '@/lib/modules/moduleRegistry'
 import { prisma } from '@/lib/db/prisma'
 import { getAccessibleRoutes } from '@/lib/modules/moduleRegistry'
+import { isModuleListedForTenantLicense } from '@/lib/tenant/module-license-filter'
 
 /**
  * POST /api/modules/switch
@@ -52,8 +53,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify module is enabled for tenant
-    if (!tenant.licensedModules?.includes(moduleId)) {
+    // Verify module is enabled for tenant (includes alias-based module surfaces)
+    if (!isModuleListedForTenantLicense(moduleId, tenant.id, tenant.licensedModules ?? [])) {
       return NextResponse.json(
         { error: 'Module not enabled for this tenant' },
         { status: 403 }

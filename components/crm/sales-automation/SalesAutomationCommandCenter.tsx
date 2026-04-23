@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
 import { usePageAIExtraStore } from '@/lib/stores/page-ai-extra'
+import { useTerms } from '@/lib/terminology/use-terms'
 import { StatCard } from '@/components/ui/StatCard'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -86,6 +87,7 @@ export function SalesAutomationCommandCenter() {
   const params = useParams()
   const tenantId = (params?.tenantId as string) || ''
   const { token } = useAuthStore()
+  const { term, pluralTerm } = useTerms()
   const setPageAiExtra = usePageAIExtraStore((s) => s.setExtra)
 
   const [loading, setLoading] = useState(true)
@@ -211,7 +213,7 @@ export function SalesAutomationCommandCenter() {
       {
         id: 'nba-1',
         title: 'Approve WhatsApp template batch',
-        detail: `${kpis?.pendingReviews ?? 0} pending reviews across AI decisions and high-score prospects.`,
+        detail: `${kpis?.pendingReviews ?? 0} pending reviews across AI decisions and high-score ${pluralTerm('lead').toLowerCase()}.`,
         action: 'tab' as const,
         tabTarget: 'execution' as TabId,
       },
@@ -225,12 +227,12 @@ export function SalesAutomationCommandCenter() {
       {
         id: 'nba-3',
         title: 'Triage high-intent queue',
-        detail: `${prospectQueueRows.filter((r) => r.intentScore >= 70).length} prospects over 70 score in queue.`,
+        detail: `${prospectQueueRows.filter((r) => r.intentScore >= 70).length} ${pluralTerm('lead').toLowerCase()} over 70 score in queue.`,
         action: 'tab' as const,
         tabTarget: 'queue' as TabId,
       },
     ],
-    [automations, prospectQueueRows, tenantId, kpis?.pendingReviews]
+    [automations, prospectQueueRows, tenantId, kpis?.pendingReviews, pluralTerm]
   )
 
   if (loading) {
@@ -275,7 +277,7 @@ export function SalesAutomationCommandCenter() {
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/crm/${tenantId}/Leads`}>Import / enroll</Link>
+            <Link href={`/crm/${tenantId}/Leads`}>{`Import / enroll ${pluralTerm('lead').toLowerCase()}`}</Link>
           </Button>
           <Button variant="outline" size="sm" onClick={() => setSheetSequence(true)} title="Opens sequence builder">
             Create sequence
@@ -364,7 +366,7 @@ export function SalesAutomationCommandCenter() {
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
         <StatCard title="Active automations" value={k.activeAutomations} icon={<Zap />} />
         <StatCard
-          title="Leads enrolled"
+          title={`${pluralTerm('lead')} enrolled`}
           value={k.leadsEnrolled}
           subtitle={`Today · ${k.leadsEnrolledInPeriod} in selected window`}
           icon={<Layers3 />}
@@ -392,7 +394,7 @@ export function SalesAutomationCommandCenter() {
                     ['sequences', 'Sequences'],
                     ['workflows', 'Workflows'],
                     ['signals', 'Signals'],
-                    ['queue', 'Prospect queue'],
+                    ['queue', `${term('lead')} queue`],
                     ['execution', 'Execution log'],
                     ['analytics', 'Analytics'],
                     ['templates', 'Templates'],
@@ -493,7 +495,7 @@ export function SalesAutomationCommandCenter() {
                 </Card>
                 <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm" id="prospect-queue">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-semibold">Prospect queue preview</CardTitle>
+                    <CardTitle className="text-sm font-semibold">{`${term('lead')} queue preview`}</CardTitle>
                     <CardDescription className="text-xs">Triage-ready rows with recommended next step</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0 space-y-2">
@@ -507,7 +509,7 @@ export function SalesAutomationCommandCenter() {
                       </div>
                     ))}
                     {prospectQueueRows.length === 0 && (
-                      <p className="text-sm text-slate-500">No prospects in queue. Pull from Leads or Signals.</p>
+                      <p className="text-sm text-slate-500">{`No ${pluralTerm('lead').toLowerCase()} in queue. Pull from ${pluralTerm('lead')} or Signals.`}</p>
                     )}
                   </CardContent>
                 </Card>
@@ -641,7 +643,7 @@ export function SalesAutomationCommandCenter() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Signal</TableHead>
-                          <TableHead>Account / lead</TableHead>
+                          <TableHead>{`${term('account')} / ${term('lead').toLowerCase()}`}</TableHead>
                           <TableHead>Severity</TableHead>
                           <TableHead>Suggested</TableHead>
                           <TableHead className="text-right">Quick</TableHead>
@@ -685,7 +687,7 @@ export function SalesAutomationCommandCenter() {
             <TabsContent value="queue" className="mt-4">
               <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold">Prospect queue</CardTitle>
+                  <CardTitle className="text-sm font-semibold">{`${term('lead')} queue`}</CardTitle>
                   <CardDescription className="text-xs">
                     Operational triage — enroll, assign, pause, or exclude without leaving the row.
                   </CardDescription>
@@ -763,7 +765,7 @@ export function SalesAutomationCommandCenter() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Time</TableHead>
-                          <TableHead>Prospect</TableHead>
+                          <TableHead>{term('lead')}</TableHead>
                           <TableHead>Automation</TableHead>
                           <TableHead>Action</TableHead>
                           <TableHead>Channel</TableHead>

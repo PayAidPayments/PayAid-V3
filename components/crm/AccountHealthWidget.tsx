@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Activity, TrendingUp, TrendingDown, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface AccountHealthData {
   score: number
@@ -31,6 +32,7 @@ interface AccountHealthWidgetProps {
 }
 
 export function AccountHealthWidget({ accountId, tenantId, compact = false }: AccountHealthWidgetProps) {
+  const { term } = useTerms()
   const [health, setHealth] = useState<AccountHealthData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -111,7 +113,7 @@ export function AccountHealthWidget({ accountId, tenantId, compact = false }: Ac
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium">Account Health</CardTitle>
+            <CardTitle className="text-sm font-medium">{`${term('account')} Health`}</CardTitle>
             <Badge className={getRiskColor(health.riskLevel)}>
               {getRiskIcon(health.riskLevel)}
               <span className="ml-1">{health.score}/100</span>
@@ -139,8 +141,8 @@ export function AccountHealthWidget({ accountId, tenantId, compact = false }: Ac
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Account Health</CardTitle>
-            <CardDescription>Overall health score and risk assessment</CardDescription>
+            <CardTitle>{`${term('account')} Health`}</CardTitle>
+            <CardDescription>{`Overall ${term('account').toLowerCase()} health score and risk assessment`}</CardDescription>
           </div>
           <Badge className={getRiskColor(health.riskLevel)}>
             {getRiskIcon(health.riskLevel)}
@@ -234,7 +236,7 @@ export function AccountHealthWidget({ accountId, tenantId, compact = false }: Ac
         )}
 
         <Button onClick={fetchHealth} variant="outline" size="sm" className="w-full">
-          Refresh Health Score
+          {`Refresh ${term('account')} Health Score`}
         </Button>
       </CardContent>
     </Card>

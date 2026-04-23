@@ -11,8 +11,10 @@ import {
 } from '@/components/ui/table'
 import type { OutreachCampaign } from './types'
 import { campaignToSequenceRow } from './buildWorkspaceModel'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 export function SalesAutomationAnalyticsTab({ campaigns }: { campaigns: OutreachCampaign[] }) {
+  const { term, pluralTerm } = useTerms()
   const rows = campaigns.map(campaignToSequenceRow)
   const byChannel = ['Email', 'Call', 'WhatsApp', 'LinkedIn'].map((ch, idx) => ({
     channel: ch,
@@ -27,7 +29,7 @@ export function SalesAutomationAnalyticsTab({ campaigns }: { campaigns: Outreach
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold">Sequence performance</CardTitle>
           <CardDescription className="text-xs">
-            Reply-to-meeting proxy and funnel health by active automations
+            {`Reply-to-meeting proxy and ${term('pipeline').toLowerCase()} health by active automations`}
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
@@ -35,7 +37,7 @@ export function SalesAutomationAnalyticsTab({ campaigns }: { campaigns: Outreach
             <TableHeader>
               <TableRow>
                 <TableHead>Sequence</TableHead>
-                <TableHead className="text-right">Enrolled</TableHead>
+                <TableHead className="text-right">{`${pluralTerm('lead')} enrolled`}</TableHead>
                 <TableHead className="text-right">Reply %</TableHead>
                 <TableHead className="text-right">Meeting %</TableHead>
                 <TableHead className="text-right">Conv %</TableHead>

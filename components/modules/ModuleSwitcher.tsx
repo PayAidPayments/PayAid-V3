@@ -585,10 +585,10 @@ export function ModuleSwitcher() {
             <div className="space-y-2">
               <div className="px-2">
                 <div className="font-semibold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Top 6
+                  {getTierDisplayName('tier1-top6')}
                 </div>
                 <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                  Daily-use business tools
+                  {getTierDescription('tier1-top6')}
                 </div>
               </div>
               <div className="space-y-1">

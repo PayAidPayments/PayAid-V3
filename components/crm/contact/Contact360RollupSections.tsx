@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { getAuthHeaders } from '@/lib/hooks/use-api'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 function num(v: unknown): number {
   if (v == null) return 0
@@ -49,6 +50,7 @@ interface Props {
 }
 
 export function Contact360RollupSections({ c360, tenantId, contactId, onAfterMerge }: Props) {
+  const { term, pluralTerm } = useTerms()
   const [mergingDupId, setMergingDupId] = useState<string | null>(null)
   const [mergeError, setMergeError] = useState<string | null>(null)
   const [mergeSuccessWarnings, setMergeSuccessWarnings] = useState<string[] | null>(null)
@@ -56,7 +58,7 @@ export function Contact360RollupSections({ c360, tenantId, contactId, onAfterMer
 
   async function mergeDuplicateIntoCurrent(duplicateId: string, duplicateName: string) {
     const ok = window.confirm(
-      `Merge "${duplicateName}" into this contact? The duplicate will be removed after moving deals, orders, messages, and other links to this record. This cannot be undone.`
+      `Merge "${duplicateName}" into this ${term('contact').toLowerCase()}? The duplicate will be removed after moving ${pluralTerm('deal').toLowerCase()}, orders, messages, and other links to this record. This cannot be undone.`
     )
     if (!ok) return
     setMergeError(null)
@@ -159,7 +161,7 @@ export function Contact360RollupSections({ c360, tenantId, contactId, onAfterMer
                     <span>{p.proposalNumber}</span>
                     <span className="capitalize">{p.status}</span>
                     <span>{formatINRForDisplay(p.total || 0)}</span>
-                    {p.contactId !== contactId ? <span className="text-slate-400">Related contact</span> : null}
+                    {p.contactId !== contactId ? <span className="text-slate-400">{`Related ${term('contact').toLowerCase()}`}</span> : null}
                   </div>
                 </Link>
               </li>
@@ -443,7 +445,7 @@ export function Contact360RollupSections({ c360, tenantId, contactId, onAfterMer
 
       {insight && (
         <div className="border-t border-slate-100 dark:border-gray-700 pt-4" data-testid="crm-contact-360-insights">
-          <SectionTitle icon={Lightbulb}>Customer insights</SectionTitle>
+          <SectionTitle icon={Lightbulb}>{`${term('customer')} insights`}</SectionTitle>
           <div className="rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/80 dark:bg-gray-900/40 px-3 py-3 text-xs space-y-2 text-slate-700 dark:text-gray-200">
             <div className="flex flex-wrap gap-x-4 gap-y-1">
               <span>Health {Math.round(insight.healthScore ?? 0)}/100</span>
@@ -469,9 +471,9 @@ export function Contact360RollupSections({ c360, tenantId, contactId, onAfterMer
 
       {dupes.length > 0 && (
         <div className="border-t border-slate-100 dark:border-gray-700 pt-4" data-testid="crm-contact-360-duplicates">
-          <SectionTitle icon={UserX}>Possible duplicates</SectionTitle>
+          <SectionTitle icon={UserX}>{`Possible duplicate ${pluralTerm('contact').toLowerCase()}`}</SectionTitle>
           <p className="text-xs text-slate-500 dark:text-gray-400 mb-2">
-            Same email, phone, or GSTIN as another contact — review before merging.
+            {`Same email, phone, or GSTIN as another ${term('contact').toLowerCase()} — review before merging.`}
           </p>
           {mergeError ? (
             <p className="text-xs text-red-600 dark:text-red-400 mb-2" role="alert">
@@ -525,13 +527,13 @@ export function Contact360RollupSections({ c360, tenantId, contactId, onAfterMer
                 </div>
                 <button
                   type="button"
-                  title={mergingDupId === d.id ? 'Merging…' : 'Merge duplicate into this contact'}
+                  title={mergingDupId === d.id ? 'Merging…' : `Merge duplicate into this ${term('contact').toLowerCase()}`}
                   disabled={mergingDupId !== null}
                   data-testid={`crm-contact-360-merge-dup-${d.id}`}
                   onClick={() => mergeDuplicateIntoCurrent(d.id, d.name)}
                   className="text-xs shrink-0 rounded-md border border-slate-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {mergingDupId === d.id ? 'Merging…' : 'Merge into this contact'}
+                  {mergingDupId === d.id ? 'Merging…' : `Merge into this ${term('contact').toLowerCase()}`}
                 </button>
               </li>
             ))}

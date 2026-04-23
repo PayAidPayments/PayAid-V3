@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { useDeals } from '@/lib/hooks/use-api'
 import { PageLoading } from '@/components/ui/loading'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 const STAGE_ORDER = ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost'] as const
 
@@ -27,6 +28,7 @@ type DealRow = {
 }
 
 export function DealsKanban({ tenantId }: { tenantId: string }) {
+  const { term, pluralTerm } = useTerms()
   const { data, isLoading, error } = useDeals({ tenantId, limit: 500 })
 
   const columns = useMemo(() => {
@@ -59,7 +61,7 @@ export function DealsKanban({ tenantId }: { tenantId: string }) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-red-600 dark:text-red-400">
-          Could not load deals for the board.
+          {`Could not load ${pluralTerm('deal').toLowerCase()} for the board.`}
         </CardContent>
       </Card>
     )
@@ -69,7 +71,7 @@ export function DealsKanban({ tenantId }: { tenantId: string }) {
     return (
       <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800">
         <CardContent className="py-12 text-center text-slate-600 dark:text-slate-400">
-          No deals yet. Create a deal to populate the pipeline board.
+          {`No ${pluralTerm('deal').toLowerCase()} yet. Create a ${term('deal').toLowerCase()} to populate the ${term('pipeline').toLowerCase()} board.`}
         </CardContent>
       </Card>
     )
@@ -82,7 +84,7 @@ export function DealsKanban({ tenantId }: { tenantId: string }) {
           <Card className="h-full border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
             <CardHeader className="py-3">
               <CardTitle className="text-sm font-semibold">
-                {STAGE_LABELS[stage] ?? stage} ({deals.length})
+                {stage === 'lead' ? term('lead') : STAGE_LABELS[stage] ?? stage} ({deals.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 pt-0">
@@ -93,7 +95,7 @@ export function DealsKanban({ tenantId }: { tenantId: string }) {
                   className="block rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/40 p-3 hover:shadow-md hover:-translate-y-px transition-all"
                 >
                   <p className="font-medium text-slate-900 dark:text-slate-100 truncate">
-                    {deal.name || 'Untitled deal'}
+                    {deal.name || `Untitled ${term('deal').toLowerCase()}`}
                   </p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
                     ₹{Number(deal.value ?? 0).toLocaleString('en-IN')}

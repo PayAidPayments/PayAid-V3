@@ -16,6 +16,36 @@ function inferPlanTypeFromModules(moduleIds: string[]): 'single' | 'multi' | 'su
   return moduleIds.length === 1 ? 'single' : 'multi'
 }
 
+function normalizeSignupSelection(
+  moduleIds: string[],
+  requestedPlanType: string | null
+): { selectedModules: string[]; planType: 'single' | 'multi' | 'suite' } {
+  const selectedModules = [...new Set(moduleIds.map((moduleId) => moduleId.trim()).filter(Boolean))]
+  if (selectedModules.length === 0) {
+    return { selectedModules: [], planType: 'suite' }
+  }
+
+  const inferred = inferPlanTypeFromModules(selectedModules)
+  const normalizedRequested =
+    requestedPlanType === 'single' || requestedPlanType === 'multi' || requestedPlanType === 'suite'
+      ? requestedPlanType
+      : null
+
+  if (!normalizedRequested || normalizedRequested === 'suite') {
+    return { selectedModules, planType: inferred }
+  }
+
+  if (normalizedRequested === 'single' && selectedModules.length > 1) {
+    return { selectedModules, planType: 'multi' }
+  }
+
+  if (normalizedRequested === 'multi' && selectedModules.length === 1) {
+    return { selectedModules, planType: 'single' }
+  }
+
+  return { selectedModules, planType: normalizedRequested }
+}
+
 export default function RegisterPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -41,19 +71,13 @@ export default function RegisterPage() {
 
     try {
       const modulesParam = searchParams.get('modules')
-      const selectedModules = modulesParam
-        ? modulesParam.split(',').map((moduleId) => moduleId.trim()).filter(Boolean)
-        : []
-      const filteredSelectedModules = [...new Set(selectedModules)]
-      const planTypeParam = searchParams.get('planType')
-      const planType = planTypeParam === 'single' || planTypeParam === 'multi' || planTypeParam === 'suite'
-        ? planTypeParam
-        : inferPlanTypeFromModules(filteredSelectedModules)
+      const parsedModules = modulesParam ? modulesParam.split(',') : []
+      const normalizedSelection = normalizeSignupSelection(parsedModules, searchParams.get('planType'))
 
       await register({
         ...formData,
-        planType,
-        selectedModules: filteredSelectedModules,
+        planType: normalizedSelection.planType,
+        selectedModules: normalizedSelection.selectedModules,
       })
       router.push('/home')
     } catch (err) {

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth/jwt'
 import { prisma } from '@/lib/db/prisma'
-import { getModule, getAllModules } from '@/lib/modules/moduleRegistry'
+import { ALL_LICENSE_MODULE_IDS, ALL_LICENSE_MODULE_ID_SET } from '@/lib/modules/catalog'
+import { resolveLicenseModuleId } from '@/lib/tenant/module-license-filter'
+import { getCanonicalLicenseModules } from '@/lib/taxonomy/license-module-catalog'
 
 /**
  * GET /api/admin/tenants/[tenantId]/modules
@@ -54,21 +56,22 @@ export async function GET(
       )
     }
 
-    const allModules = getAllModules()
     const enabledModules = tenant.licensedModules || []
 
     return NextResponse.json({
       tenant_id: tenant.id,
       tenant_name: tenant.name,
       enabled_modules: enabledModules,
-      available_modules: allModules.map(m => ({
-        id: m.id,
-        name: m.name,
-        description: m.description,
-        category: m.category,
-        enabled: enabledModules.includes(m.id),
-        enabled_by_default: m.enabled_by_default,
-      })),
+      available_modules: getCanonicalLicenseModules().map((def) => {
+        return {
+          id: def.id,
+          name: def.name,
+          description: def.description,
+          category: def.category,
+          enabled: enabledModules.includes(def.id),
+          enabled_by_default: def.id === 'crm' || def.id === 'finance',
+        }
+      }),
       subscription_tier: tenant.subscriptionTier,
     })
   } catch (error) {
@@ -127,8 +130,9 @@ export async function PUT(
       )
     }
 
-    // Validate module exists
-    if (!getModule(moduleId)) {
+    const normalizedModuleId = resolveLicenseModuleId(moduleId)
+    // Validate module exists in canonical license catalog
+    if (!ALL_LICENSE_MODULE_ID_SET.has(normalizedModuleId)) {
       return NextResponse.json(
         { error: 'Invalid module' },
         { status: 400 }
@@ -154,8 +158,8 @@ export async function PUT(
     // Update enabled modules
     const currentModules = tenant.licensedModules || []
     const updatedModules = enabled
-      ? [...new Set([...currentModules, moduleId])]
-      : currentModules.filter(m => m !== moduleId)
+      ? [...new Set([...currentModules, normalizedModuleId])]
+      : currentModules.filter(m => m !== normalizedModuleId)
 
     const updated = await prisma.tenant.update({
       where: { id: tenantId },

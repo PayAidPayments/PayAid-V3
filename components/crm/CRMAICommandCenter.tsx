@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Sparkles, Zap, ChevronRight, Bot } from 'lucide-react'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 export interface CRMAICommandCenterStats {
   dealsCreatedThisMonth?: number
@@ -23,6 +24,7 @@ interface CRMAICommandCenterProps {
 }
 
 export function CRMAICommandCenter({ tenantId, stats, userName }: CRMAICommandCenterProps) {
+  const { term, pluralTerm } = useTerms()
   const monthLabel = useMemo(() => {
     return new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
   }, [])
@@ -41,23 +43,23 @@ export function CRMAICommandCenter({ tenantId, stats, userName }: CRMAICommandCe
     }
     if (dealsClosing > 0) {
       actions.push({
-        text: `Review ${dealsClosing} deal${dealsClosing !== 1 ? 's' : ''} closing this month`,
+        text: `Review ${dealsClosing} ${dealsClosing !== 1 ? pluralTerm('deal').toLowerCase() : term('deal').toLowerCase()} closing this month`,
         href: `/crm/${tenantId}/Deals`,
       })
     }
     if (totalLeads > 0 && actions.length < 3) {
       actions.push({
-        text: `Follow up on ${totalLeads} prospect${totalLeads !== 1 ? 's' : ''}`,
+        text: `Follow up on ${totalLeads} ${totalLeads !== 1 ? pluralTerm('lead').toLowerCase() : term('lead').toLowerCase()}`,
         href: `/crm/${tenantId}/Leads`,
       })
     }
     if (actions.length === 0) {
-      actions.push({ text: 'Add new prospects', href: `/crm/${tenantId}/Leads/New` })
-      actions.push({ text: 'View pipeline', href: `/crm/${tenantId}/Deals` })
+      actions.push({ text: `Add new ${pluralTerm('lead').toLowerCase()}`, href: `/crm/${tenantId}/Leads/New` })
+      actions.push({ text: `View ${term('pipeline').toLowerCase()}`, href: `/crm/${tenantId}/Deals` })
       actions.push({ text: 'Create tasks', href: `/crm/${tenantId}/Tasks/new` })
     }
     return actions.slice(0, 3)
-  }, [tenantId, stats])
+  }, [tenantId, stats, term, pluralTerm])
 
   const revenueThisMonth = stats?.revenueThisMonth ?? 0
   const pipelineTotal = (stats?.pipelineByStage || []).reduce((s, p) => s + (p?.count || 0), 0)
@@ -113,11 +115,11 @@ export function CRMAICommandCenter({ tenantId, stats, userName }: CRMAICommandCe
 
         <div className="space-y-2 pt-4 border-t border-indigo-100 dark:border-indigo-900">
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Pipeline & revenue</span>
+            <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{`${term('pipeline')} & revenue`}</span>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400 min-w-0">
             <span className="break-words min-w-0">Revenue this month: {formatINRForDisplay(revenueThisMonth)}</span>
-            <span className="break-words min-w-0 flex-shrink-0">Deals in pipeline: {pipelineTotal}</span>
+            <span className="break-words min-w-0 flex-shrink-0">{`${pluralTerm('deal')} in ${term('pipeline').toLowerCase()}: ${pipelineTotal}`}</span>
           </div>
         </div>
       </CardContent>

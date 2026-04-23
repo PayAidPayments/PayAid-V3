@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { TrendingUp, TrendingDown, Clock, Target, Lightbulb } from 'lucide-react'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface ScoreComponents {
   engagement?: {
@@ -64,6 +65,7 @@ interface LeadScoreCardProps {
 }
 
 export function LeadScoreCard({ contactId, showPredictions = true }: LeadScoreCardProps) {
+  const { term, pluralTerm } = useTerms()
   const { data: scoreData, isLoading, refetch } = useQuery<LeadScoreData>({
     queryKey: ['lead-score', contactId],
     queryFn: async () => {
@@ -95,9 +97,9 @@ export function LeadScoreCard({ contactId, showPredictions = true }: LeadScoreCa
   }
 
   const getScoreLabel = (score: number) => {
-    if (score >= 90) return 'Hot Lead'
-    if (score >= 75) return 'Warm Lead'
-    if (score >= 50) return 'Cold Lead'
+    if (score >= 90) return `Hot ${term('lead')}`
+    if (score >= 75) return `Warm ${term('lead')}`
+    if (score >= 50) return `Cold ${term('lead')}`
     return 'Unqualified'
   }
 
@@ -105,7 +107,7 @@ export function LeadScoreCard({ contactId, showPredictions = true }: LeadScoreCa
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Lead Score</CardTitle>
+          <CardTitle>{`${term('lead')} Score`}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4 text-gray-500">Loading...</div>
@@ -119,8 +121,8 @@ export function LeadScoreCard({ contactId, showPredictions = true }: LeadScoreCa
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Lead Score</CardTitle>
-            <CardDescription>AI-powered lead qualification score</CardDescription>
+            <CardTitle>{`${term('lead')} Score`}</CardTitle>
+            <CardDescription>{`AI-powered ${term('lead').toLowerCase()} qualification score`}</CardDescription>
           </div>
           <Badge className={getScoreColor(score)}>
             {getScoreLabel(score)}
@@ -185,7 +187,7 @@ export function LeadScoreCard({ contactId, showPredictions = true }: LeadScoreCa
                   <span className="text-lg font-bold text-blue-600">{prediction.likelihoodToClose}%</span>
                 </div>
                 <div className="text-xs text-blue-700">
-                  Based on {prediction.similarLeadsClosed} similar leads
+                  {`Based on ${prediction.similarLeadsClosed} similar ${pluralTerm('lead').toLowerCase()}`}
                 </div>
               </div>
 
@@ -199,7 +201,7 @@ export function LeadScoreCard({ contactId, showPredictions = true }: LeadScoreCa
                     <span className="text-lg font-bold text-purple-600">{prediction.avgDaysToClose} days</span>
                   </div>
                   <div className="text-xs text-purple-700">
-                    Average time to close for similar leads
+                    {`Average time to close for similar ${pluralTerm('lead').toLowerCase()}`}
                   </div>
                 </div>
               )}

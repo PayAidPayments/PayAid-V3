@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface RevenueForecastData {
   timeSeriesForecast: {
@@ -40,6 +41,7 @@ interface RevenueForecastData {
 }
 
 export function RevenueForecast() {
+  const { term, pluralTerm } = useTerms()
   const {
     data,
     isLoading,
@@ -55,7 +57,7 @@ export function RevenueForecast() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>90-Day Revenue Forecast</CardTitle>
+          <CardTitle>{`90-Day ${term('deal')} Revenue Forecast`}</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-48">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -68,7 +70,7 @@ export function RevenueForecast() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>90-Day Revenue Forecast</CardTitle>
+          <CardTitle>{`90-Day ${term('deal')} Revenue Forecast`}</CardTitle>
         </CardHeader>
         <CardContent className="text-red-500 text-sm">
           <AlertCircle className="inline-block h-4 w-4 mr-1" /> Failed to load forecast.
@@ -82,7 +84,7 @@ export function RevenueForecast() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">90-Day Revenue Forecast</CardTitle>
+        <CardTitle className="text-sm font-medium">{`90-Day ${term('deal')} Revenue Forecast`}</CardTitle>
         <TrendingUp className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
@@ -144,14 +146,14 @@ export function RevenueForecast() {
 
         <Separator className="my-4" />
 
-        {/* Deal Breakdown Summary */}
+        {/* Deal breakdown summary */}
         <div>
-          <p className="text-sm font-medium mb-2">Deal-Based Forecast</p>
+          <p className="text-sm font-medium mb-2">{`${term('deal')}-Based Forecast`}</p>
           <p className="text-sm text-muted-foreground">
             Total Expected Value: ₹{(dealBasedForecast.totalExpectedValue / 100000).toFixed(1)}L
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Based on {dealBasedForecast.totalExpectedValue > 0 ? 'active deals' : 'no active deals'}
+            {`Based on ${dealBasedForecast.totalExpectedValue > 0 ? `active ${pluralTerm('deal').toLowerCase()}` : `no active ${pluralTerm('deal').toLowerCase()}`}`}
           </p>
         </div>
       </CardContent>

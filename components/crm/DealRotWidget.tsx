@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, TrendingDown, Clock } from 'lucide-react'
 import Link from 'next/link'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface RottingDeal {
   id: string
@@ -30,6 +31,7 @@ interface DealRotData {
 }
 
 export function DealRotWidget() {
+  const { term, pluralTerm } = useTerms()
   const { data, isLoading, error, refetch } = useQuery<{ data: DealRotData }>({
     queryKey: ['deal-rot'],
     queryFn: async () => {
@@ -48,7 +50,7 @@ export function DealRotWidget() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Deal Rot Detection</CardTitle>
+          <CardTitle>{`${term('deal')} Rot Detection`}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4 text-gray-500">Loading...</div>
@@ -61,11 +63,11 @@ export function DealRotWidget() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Deal Rot Detection</CardTitle>
+          <CardTitle>{`${term('deal')} Rot Detection`}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4 text-red-500">
-            Error loading rotting deals
+            {`Error loading rotting ${pluralTerm('deal').toLowerCase()}`}
           </div>
         </CardContent>
       </Card>
@@ -78,13 +80,13 @@ export function DealRotWidget() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingDown className="h-5 w-5 text-green-600" />
-            Deal Rot Detection
+            {`${term('deal')} Rot Detection`}
           </CardTitle>
-          <CardDescription>No rotting deals detected</CardDescription>
+          <CardDescription>{`No rotting ${pluralTerm('deal').toLowerCase()} detected`}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4 text-gray-500">
-            All deals are active and moving forward! 🎉
+            {`All ${pluralTerm('deal').toLowerCase()} are active and moving forward! 🎉`}
           </div>
         </CardContent>
       </Card>
@@ -98,10 +100,10 @@ export function DealRotWidget() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-yellow-600" />
-              Deal Rot Detection
+              {`${term('deal')} Rot Detection`}
             </CardTitle>
             <CardDescription>
-              {totalCount} deal{totalCount !== 1 ? 's' : ''} need attention
+              {`${totalCount} ${totalCount !== 1 ? pluralTerm('deal').toLowerCase() : term('deal').toLowerCase()} need attention`}
             </CardDescription>
           </div>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
@@ -140,7 +142,7 @@ export function DealRotWidget() {
                       <div className="font-medium text-gray-900">{deal.name}</div>
                       <div className="text-sm text-gray-600 mt-1">
                         {deal.contactName && (
-                          <span className="mr-2">Contact: {deal.contactName}</span>
+                          <span className="mr-2">{`${term('contact')}: ${deal.contactName}`}</span>
                         )}
                         <span className="capitalize">{deal.stage}</span>
                         {' • '}
@@ -169,7 +171,7 @@ export function DealRotWidget() {
             <div className="pt-2 border-t">
               <Link href="/dashboard/deals?filter=rotting">
                 <Button variant="outline" className="w-full">
-                  View All {totalCount} Rotting Deals
+                  {`View All ${totalCount} Rotting ${pluralTerm('deal')}`}
                 </Button>
               </Link>
             </div>

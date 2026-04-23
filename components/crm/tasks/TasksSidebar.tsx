@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Clock, AlertCircle, CheckCircle2, Star } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface TasksSidebarProps {
   openCount: number
@@ -24,6 +25,7 @@ export function TasksSidebar({
   recentActivity = [],
   className,
 }: TasksSidebarProps) {
+  const { pluralTerm } = useTerms()
   const quickFilters = [
     { key: 'today', label: 'Today', icon: Clock },
     { key: 'overdue', label: 'Overdue', icon: AlertCircle },
@@ -40,7 +42,7 @@ export function TasksSidebar({
     >
       <Card className="bg-card/50 border border-border">
         <CardHeader className="pb-2">
-          <h3 className="text-sm font-semibold text-foreground">My Tasks Summary</h3>
+          <h3 className="text-sm font-semibold text-foreground">{`My ${pluralTerm('task')} Summary`}</h3>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <div className="flex justify-between">

@@ -17,6 +17,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
+import { useTerms } from '@/lib/terminology/use-terms'
 import {
   Dialog,
   DialogContent,
@@ -43,11 +44,12 @@ export function QuickActionsPanel({ tenantId }: QuickActionsPanelProps) {
   const [showDialog, setShowDialog] = useState<string | null>(null)
   const router = useRouter()
   const { user } = useAuthStore()
+  const { term, pluralTerm } = useTerms()
 
   const quickActions: QuickAction[] = [
     {
       id: 'contact',
-      label: 'New Contact',
+      label: `New ${term('contact')}`,
       icon: <UserPlus className="w-5 h-5" />,
       color: 'bg-blue-500 hover:bg-blue-600',
       shortcut: 'Ctrl+N',
@@ -55,7 +57,7 @@ export function QuickActionsPanel({ tenantId }: QuickActionsPanelProps) {
     },
     {
       id: 'deal',
-      label: 'New Deal',
+      label: `New ${term('deal')}`,
       icon: <Handshake className="w-5 h-5" />,
       color: 'bg-green-500 hover:bg-green-600',
       shortcut: 'Ctrl+D',
@@ -271,7 +273,7 @@ export function QuickActionsPanel({ tenantId }: QuickActionsPanelProps) {
           <DialogHeader>
             <DialogTitle>Send Email</DialogTitle>
             <DialogDescription>
-              Compose and send an email to contacts
+              {`Compose and send an email to ${pluralTerm('contact').toLowerCase()}`}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -296,7 +298,7 @@ export function QuickActionsPanel({ tenantId }: QuickActionsPanelProps) {
           <DialogHeader>
             <DialogTitle>Log Call</DialogTitle>
             <DialogDescription>
-              Log a call activity with a contact
+              {`Log a call activity with a ${term('contact').toLowerCase()}`}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">

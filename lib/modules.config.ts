@@ -46,8 +46,8 @@ export const modules: ModuleConfig[] = [
   },
   {
     id: "finance",
-    name: "Finance & Accounting",
-    description: "Complete financial management - Invoicing, accounting, expenses, purchase orders, GST reports, and payments",
+    name: "Finance",
+    description: "Invoices, accounting ledger, GST, collections, expenses, purchase orders, and payments",
     icon: "IndianRupee",
     url: "/finance", // Will redirect to /finance/[tenantId]/Home/ after login
     status: "active",
@@ -56,8 +56,8 @@ export const modules: ModuleConfig[] = [
   },
   {
     id: "projects",
-    name: "Projects",
-    description: "Project management, tasks, time tracking, and Gantt charts",
+    name: "Projects & Service",
+    description: "Project planning, service delivery, tasks, time tracking, and Gantt scheduling",
     icon: "Briefcase",
     url: "/projects", // Will redirect to /projects/[tenantId]/Home/ after login
     status: "active",
@@ -66,8 +66,8 @@ export const modules: ModuleConfig[] = [
   },
   {
     id: "hr",
-    name: "HR",
-    description: "Employee management, payroll, leave, and attendance",
+    name: "HR & Workforce",
+    description: "Employee records, payroll, attendance, leave, and workforce operations",
     icon: "Briefcase",
     url: "/hr", // Will redirect to /hr/[tenantId]/Home/ after login
     status: "active",
@@ -76,8 +76,8 @@ export const modules: ModuleConfig[] = [
   },
   {
     id: "communication",
-    name: "Communication",
-    description: "Email, chat, SMS, and WhatsApp integration",
+    name: "Communications Infrastructure",
+    description: "Shared email, chat, SMS, and WhatsApp infrastructure for sales, marketing, and support",
     icon: "MessageSquare",
     url: "/communication", // Communication module
     status: "active",
@@ -96,8 +96,8 @@ export const modules: ModuleConfig[] = [
   },
   {
     id: "ai-studio",
-    name: "AI Studio",
-    description: "AI Co-founder, Chat, Insights, Websites, Logos, Knowledge, and Agent Marketplace in one place",
+    name: "AI Workspace",
+    description: "AI assistant, advisors, insights, voice, knowledge, and brand/content tools in one workspace",
     icon: "Sparkles",
     url: "/ai-studio",
     status: "active",
@@ -106,7 +106,7 @@ export const modules: ModuleConfig[] = [
   },
   {
     id: "ai-cofounder",
-    name: "AI Co-founder",
+    name: "AI Advisors",
     description: "Business AI assistant with 9 specialist agents for finance, sales, marketing, HR, and more",
     icon: "Sparkles",
     url: "/ai-cofounder", // Decoupled architecture: /ai-cofounder/[tenantId]/Home
@@ -116,7 +116,7 @@ export const modules: ModuleConfig[] = [
   },
   {
     id: "ai-chat",
-    name: "AI Chat",
+    name: "AI Assistant",
     description: "General-purpose conversational AI assistant for questions, explanations, and creative tasks",
     icon: "MessageSquare",
     url: "/ai-chat", // Decoupled architecture: /ai-chat/[tenantId]/Home
@@ -156,7 +156,7 @@ export const modules: ModuleConfig[] = [
   },
   {
     id: "knowledge-rag",
-    name: "Knowledge & RAG AI",
+    name: "Knowledge Assistant",
     description: "Document Q&A with RAG, source citations, audit trails, and multi-document search",
     icon: "BookOpen",
     url: "/knowledge-rag", // Decoupled architecture: /knowledge-rag/[tenantId]/Home
@@ -216,7 +216,7 @@ export const modules: ModuleConfig[] = [
   },
   {
     id: "workflow",
-    name: "Workflow Automation",
+    name: "Automation",
     description: "Visual workflow builder, automation, and task orchestration",
     icon: "GitBranch",
     url: "/dashboard/workflows",
@@ -236,7 +236,7 @@ export const modules: ModuleConfig[] = [
   },
   {
     id: "contracts",
-    name: "Contract Management",
+    name: "Documents & Contracts",
     description: "Contract templates, e-signatures, version control, and renewal tracking",
     icon: "FileText",
     url: "/dashboard/contracts",
@@ -248,7 +248,7 @@ export const modules: ModuleConfig[] = [
   // Productivity (top-level module: PayAid Sheets, Docs, Slides, Drive, Meet, PDF via tabs)
   {
     id: "productivity",
-    name: "Productivity",
+    name: "Workspace Tools",
     description: "PayAid Sheets, Docs, Slides, Drive, Meet, and PDF tools in one place",
     icon: "LayoutGrid",
     url: "/productivity",
@@ -401,8 +401,8 @@ export const modules: ModuleConfig[] = [
   },
   {
     id: "lms",
-    name: "Learning Management System",
-    description: "Course management, employee training, certifications, and progress tracking",
+    name: "Training",
+    description: "Internal training, certifications, onboarding learning paths, and progress tracking",
     icon: "GraduationCap",
     url: "/dashboard/lms/courses",
     status: "active",

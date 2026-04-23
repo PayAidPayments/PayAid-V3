@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/lib/stores/auth'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface Command {
   id: string
@@ -42,22 +43,23 @@ export function CommandPalette({ tenantId, isOpen, onClose }: CommandPaletteProp
   const [selectedIndex, setSelectedIndex] = useState(0)
   const router = useRouter()
   const { user } = useAuthStore()
+  const { term, pluralTerm } = useTerms()
   const inputRef = useRef<HTMLInputElement>(null)
 
   const commands: Command[] = [
     // Navigation
     {
       id: 'contacts',
-      label: 'Go to Contacts',
-      description: 'View all contacts',
+      label: `Go to ${pluralTerm('contact')}`,
+      description: `View all ${pluralTerm('contact').toLowerCase()}`,
       icon: <Users className="w-4 h-4" />,
       category: 'Navigation',
       action: () => router.push(`/crm/${tenantId}/AllPeople`),
     },
     {
       id: 'deals',
-      label: 'Go to Deals',
-      description: 'View all deals',
+      label: `Go to ${pluralTerm('deal')}`,
+      description: `View all ${pluralTerm('deal').toLowerCase()}`,
       icon: <Briefcase className="w-4 h-4" />,
       category: 'Navigation',
       action: () => router.push(`/crm/${tenantId}/Deals`),
@@ -89,8 +91,8 @@ export function CommandPalette({ tenantId, isOpen, onClose }: CommandPaletteProp
     // Actions
     {
       id: 'new-contact',
-      label: 'New Contact',
-      description: 'Create a new contact',
+      label: `New ${term('contact')}`,
+      description: `Create a new ${term('contact').toLowerCase()}`,
       icon: <UserPlus className="w-4 h-4" />,
       category: 'Actions',
       shortcut: 'Ctrl+N',
@@ -98,8 +100,8 @@ export function CommandPalette({ tenantId, isOpen, onClose }: CommandPaletteProp
     },
     {
       id: 'new-deal',
-      label: 'New Deal',
-      description: 'Create a new deal',
+      label: `New ${term('deal')}`,
+      description: `Create a new ${term('deal').toLowerCase()}`,
       icon: <Handshake className="w-4 h-4" />,
       category: 'Actions',
       shortcut: 'Ctrl+D',

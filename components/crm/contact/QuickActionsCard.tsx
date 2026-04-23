@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Briefcase, FileText, Mail, MessageSquare, Phone, CheckCircle, FileCode } from 'lucide-react'
 import { TemplatePickerModal } from './TemplatePickerModal'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface QuickActionsCardProps {
   tenantId: string
@@ -24,6 +25,7 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
   contact,
   dealId = null,
 }) => {
+  const { term } = useTerms()
   const [templateModal, setTemplateModal] = useState<'email' | 'whatsapp' | null>(null)
   const hasEmail = !!contact?.email?.trim()
   const hasPhone = !!contact?.phone?.trim()
@@ -37,13 +39,13 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
         <Link href={`/crm/${tenantId}/Deals/new?contactId=${contactId}`}>
           <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
             <Briefcase className="w-3 h-3 mr-2" />
-            Create Deal
+            {`Create ${term('deal')}`}
           </Button>
         </Link>
         <Link href={`/crm/${tenantId}/Tasks/new?contactId=${contactId}`}>
           <Button variant="outline" size="sm" className="w-full justify-start dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
             <CheckCircle className="w-3 h-3 mr-2" />
-            Create Task
+            {`Create ${term('task')}`}
           </Button>
         </Link>
         {hasEmail ? (

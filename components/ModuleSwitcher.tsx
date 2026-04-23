@@ -156,7 +156,7 @@ export function ModuleSwitcher({ currentModule }: { currentModule?: string }) {
       {open && (
         <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 py-2 z-50 max-h-[80vh] overflow-y-auto">
           <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase">
-            Primary
+              Business Suites
           </div>
           {primaryModulesVisible.map((mod) => {
             const Icon = getIcon(mod.icon)
@@ -185,12 +185,12 @@ export function ModuleSwitcher({ currentModule }: { currentModule?: string }) {
               className="w-full flex items-center gap-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             >
               <LayoutGrid className="w-4 h-4 text-gray-500 dark:text-slate-400" />
-              <span className="font-medium text-gray-900 dark:text-slate-100">More Apps</span>
+              <span className="font-medium text-gray-900 dark:text-slate-100">Capabilities &amp; Tools</span>
               <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
             </button>
             {moreOpen && (
               <div className="pl-7 pt-1 space-y-3">
-                {(['ai', 'communication', 'productivity', 'intelligence', 'operations', 'support'] as const).map(
+                {(['growth', 'ai', 'communication', 'productivity', 'intelligence', 'operations', 'support'] as const).map(
                   (group) => {
                     const mods = secondaryByGroup[group]
                     if (!mods.length) return null

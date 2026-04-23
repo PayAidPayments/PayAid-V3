@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/api/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { TrendingUp, TrendingDown, DollarSign, Clock, Target } from 'lucide-react'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface TemplateMetrics {
   templateId: string
@@ -23,6 +24,7 @@ interface PerformanceData {
 }
 
 export function TemplateAnalytics() {
+  const { term, pluralTerm } = useTerms()
   const { data, isLoading } = useQuery<{ performance: PerformanceData }>({
     queryKey: ['template-analytics'],
     queryFn: async () => {
@@ -57,7 +59,7 @@ export function TemplateAnalytics() {
         </CardHeader>
         <CardContent>
           <div className="text-center py-4 text-gray-500">
-            Apply an industry template to see analytics
+            {`Apply an industry template to see ${pluralTerm('deal').toLowerCase()} analytics`}
           </div>
         </CardContent>
       </Card>
@@ -78,7 +80,7 @@ export function TemplateAnalytics() {
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-center gap-2 mb-1">
                 <Target className="h-4 w-4 text-blue-600" />
-                <span className="text-sm text-blue-800 font-medium">Total Deals</span>
+                <span className="text-sm text-blue-800 font-medium">{`Total ${pluralTerm('deal')}`}</span>
               </div>
               <div className="text-2xl font-bold text-blue-900">{metrics.totalDeals}</div>
             </div>
@@ -96,7 +98,7 @@ export function TemplateAnalytics() {
             <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
               <div className="flex items-center gap-2 mb-1">
                 <DollarSign className="h-4 w-4 text-purple-600" />
-                <span className="text-sm text-purple-800 font-medium">Avg Deal Value</span>
+                <span className="text-sm text-purple-800 font-medium">{`Avg ${term('deal')} Value`}</span>
               </div>
               <div className="text-2xl font-bold text-purple-900">
                 ₹{metrics.averageDealValue.toLocaleString('en-IN')}
@@ -116,10 +118,10 @@ export function TemplateAnalytics() {
         </CardContent>
       </Card>
 
-      {/* Deals by Stage */}
+      {/* Deal distribution by stage */}
       <Card>
         <CardHeader>
-          <CardTitle>Deals by Stage</CardTitle>
+          <CardTitle>{`${pluralTerm('deal')} by Stage`}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">

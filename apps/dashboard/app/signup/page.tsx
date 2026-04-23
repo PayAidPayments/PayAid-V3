@@ -17,6 +17,16 @@ function inferPlanTypeFromModules(moduleIds: string[]): 'single' | 'multi' | 'su
   return moduleIds.length === 1 ? 'single' : 'multi'
 }
 
+function normalizeSignupSelection(
+  moduleIds: string[]
+): { selectedModules: string[]; planType: 'single' | 'multi' | 'suite' } {
+  const selectedModules = [...new Set(moduleIds.map((moduleId) => moduleId.trim()).filter(Boolean))]
+  return {
+    selectedModules,
+    planType: inferPlanTypeFromModules(selectedModules),
+  }
+}
+
 function SignupForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -63,14 +73,13 @@ function SignupForm() {
       const selectedModules = selectedModulesParam
         ? selectedModulesParam.split(',').map((moduleId) => moduleId.trim()).filter(Boolean)
         : []
-      const filteredSelectedModules = [...new Set(selectedModules)]
-      const planType = inferPlanTypeFromModules(filteredSelectedModules)
+      const normalizedSelection = normalizeSignupSelection(selectedModules)
 
       // Register the user
       await register({
         ...formData,
-        planType,
-        selectedModules: filteredSelectedModules,
+        planType: normalizedSelection.planType,
+        selectedModules: normalizedSelection.selectedModules,
       })
       
       // Get token from store after registration
@@ -112,7 +121,11 @@ function SignupForm() {
                 
                 if (aiResponse.ok) {
                   const aiData = await aiResponse.json()
-                  modulesToEnable = aiData.coreModules || modulesToEnable
+                  const aiRecommended =
+                    aiData?.canonical?.suites && Array.isArray(aiData.canonical.suites)
+                      ? aiData.canonical.suites
+                      : modulesToEnable
+                  modulesToEnable = aiRecommended
                 }
               }
 

@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface TimelineItem {
   id: string
@@ -34,6 +35,7 @@ interface CommunicationTimelineProps {
 }
 
 export function CommunicationTimeline({ contactId, dealId, tenantId, items = [] }: CommunicationTimelineProps) {
+  const { pluralTerm } = useTerms()
   const [filter, setFilter] = useState<string>('all')
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
 
@@ -149,7 +151,7 @@ export function CommunicationTimeline({ contactId, dealId, tenantId, items = [] 
           onClick={() => setFilter('task')}
         >
           <CheckCircle className="w-4 h-4 mr-1" />
-          Tasks
+          {pluralTerm('task')}
         </Button>
       </div>
 

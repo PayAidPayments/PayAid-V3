@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAuthHeaders } from '@/lib/hooks/use-api'
 import { Activity, AlertTriangle, CheckCircle2, TrendingDown } from 'lucide-react'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 type RiskFactor = {
   key: string
@@ -46,6 +47,7 @@ function HealthIcon({ label }: { label: string }) {
 }
 
 export function DealHealthCard({ dealId, tenantId }: { dealId: string; tenantId: string }) {
+  const { term } = useTerms()
   const { data, isLoading, isError } = useQuery<DealHealth | null>({
     queryKey: ['deal-health', dealId, tenantId],
     queryFn: async () => {
@@ -66,7 +68,7 @@ export function DealHealthCard({ dealId, tenantId }: { dealId: string; tenantId:
       <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm dark:text-gray-100 flex items-center gap-2">
-            <Activity className="w-4 h-4" /> Deal Health
+            <Activity className="w-4 h-4" /> {`${term('deal')} Health`}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -88,7 +90,7 @@ export function DealHealthCard({ dealId, tenantId }: { dealId: string; tenantId:
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-2 text-slate-800 dark:text-gray-100">
           <HealthIcon label={data.health_label} />
-          Deal Health Score
+          {`${term('deal')} Health Score`}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">

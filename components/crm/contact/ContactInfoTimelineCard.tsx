@@ -9,6 +9,7 @@ import { Contact360RollupSections } from './Contact360RollupSections'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { useUpdateContact } from '@/lib/hooks/use-api'
 import { Button } from '@/components/ui/button'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface ContactInfoTimelineCardProps {
   contact: any
@@ -40,6 +41,7 @@ export const ContactInfoTimelineCard: React.FC<ContactInfoTimelineCardProps> = (
   timelineFilter = 'all',
   onRefetchContact,
 }) => {
+  const { term, pluralTerm } = useTerms()
   const updateContact = useUpdateContact()
   const [internalDraft, setInternalDraft] = useState(contact?.internalNotes ?? '')
 
@@ -91,7 +93,7 @@ export const ContactInfoTimelineCard: React.FC<ContactInfoTimelineCardProps> = (
       data-testid="crm-contact-360"
     >
       <div>
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100 mb-3">Contact Profile</h2>
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100 mb-3">{`${term('contact')} Profile`}</h2>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <div className="text-xs uppercase text-slate-500 dark:text-gray-400 mb-1">Email</div>
@@ -137,7 +139,7 @@ export const ContactInfoTimelineCard: React.FC<ContactInfoTimelineCardProps> = (
           )}
           {accountRecord && (
             <div className="col-span-2">
-              <div className="text-xs uppercase text-slate-500 dark:text-gray-400 mb-1">Linked account</div>
+              <div className="text-xs uppercase text-slate-500 dark:text-gray-400 mb-1">{`Linked ${term('account').toLowerCase()}`}</div>
               <div className="text-slate-800 dark:text-gray-200 flex items-center gap-1.5 flex-wrap">
                 <Building2 className="w-3 h-3 shrink-0" />
                 <Link
@@ -219,7 +221,7 @@ export const ContactInfoTimelineCard: React.FC<ContactInfoTimelineCardProps> = (
             href={`/crm/${tenantId}/Tasks/new`}
             className="text-indigo-600 dark:text-indigo-400 hover:underline"
           >
-            Add task
+            {`Add ${term('task').toLowerCase()}`}
           </Link>
         </div>
 
@@ -236,7 +238,7 @@ export const ContactInfoTimelineCard: React.FC<ContactInfoTimelineCardProps> = (
               <span className="text-emerald-700 dark:text-emerald-300 font-medium">Likely to buy</span>
             ) : null}
             {(contact.leadScore ?? 0) > 0 ? (
-              <span>Lead score {Math.round(contact.leadScore)}</span>
+              <span>{`${term('lead')} score ${Math.round(contact.leadScore)}`}</span>
             ) : null}
             {numPredicted(contact.predictedRevenue) > 0 ? (
               <span>Predicted {formatINRForDisplay(numPredicted(contact.predictedRevenue))}</span>
@@ -268,7 +270,7 @@ export const ContactInfoTimelineCard: React.FC<ContactInfoTimelineCardProps> = (
         <div className="border-t border-slate-100 dark:border-gray-700 pt-4">
           <div className="flex items-center gap-2 mb-3">
             <Users className="w-4 h-4 text-slate-500" />
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">Related contacts</h2>
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">{`Related ${pluralTerm('contact').toLowerCase()}`}</h2>
           </div>
           <ul className="space-y-2">
             {related.map((row: any) => (
@@ -292,7 +294,7 @@ export const ContactInfoTimelineCard: React.FC<ContactInfoTimelineCardProps> = (
         <div className="border-t border-slate-100 dark:border-gray-700 pt-4">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">Deals</h2>
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">{pluralTerm('deal')}</h2>
               {c360 != null ? (
                 <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
                   This contact and related people ({deals.length} shown)
@@ -305,7 +307,7 @@ export const ContactInfoTimelineCard: React.FC<ContactInfoTimelineCardProps> = (
                 data-testid="crm-contact-360-view-deals"
                 className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline shrink-0"
               >
-                View in Deals
+                {`View in ${pluralTerm('deal')}`}
               </Link>
             )}
           </div>
@@ -343,14 +345,14 @@ export const ContactInfoTimelineCard: React.FC<ContactInfoTimelineCardProps> = (
             ))}
             {activeDeals.length === 0 && deals.length > 0 && (
               <div className="text-xs text-slate-500 dark:text-gray-400">
-                {deals.length} deal{deals.length !== 1 ? 's' : ''} (all closed)
+                {`${deals.length} ${deals.length !== 1 ? pluralTerm('deal').toLowerCase() : term('deal').toLowerCase()} (all closed)`}
               </div>
             )}
           </div>
           {totalPipelineValue > 0 && (
             <div className="mt-2 pt-2 border-t border-slate-100 dark:border-gray-700">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500 dark:text-gray-400">Open pipeline (shown)</span>
+                <span className="text-slate-500 dark:text-gray-400">{`Open ${term('pipeline').toLowerCase()} (shown)`}</span>
                 <span className="font-semibold text-slate-900 dark:text-gray-100">
                   {formatINRForDisplay(totalPipelineValue)}
                 </span>

@@ -4,6 +4,7 @@ import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Brain, Sparkles, ShieldAlert, TrendingUp } from 'lucide-react'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface ContactIntelligenceCardProps {
   contact: any
@@ -18,8 +19,15 @@ export const ContactIntelligenceCard: React.FC<ContactIntelligenceCardProps> = (
   onRescore,
   isRescoring = false,
 }) => {
+  const { term } = useTerms()
   const score = Number(contact?.leadScore ?? 0)
-  const stage = contact?.stage || (contact?.type === 'lead' ? 'prospect' : contact?.type === 'customer' ? 'customer' : 'contact')
+  const stage =
+    contact?.stage ||
+    (contact?.type === 'lead'
+      ? term('lead').toLowerCase()
+      : contact?.type === 'customer'
+        ? term('customer').toLowerCase()
+        : term('contact').toLowerCase())
   const health = contact?.churnRisk ? 'At risk' : score >= 70 ? 'Strong' : score >= 40 ? 'Moderate' : 'Needs attention'
   const riskCue = contact?.churnRisk
     ? 'Churn risk detected. Prioritize a check-in and value recap.'
@@ -36,7 +44,7 @@ export const ContactIntelligenceCard: React.FC<ContactIntelligenceCardProps> = (
         <div>
           <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100 flex items-center gap-2">
             <Brain className="w-4 h-4 text-indigo-500" />
-            Contact Intelligence
+            {`${term('contact')} Intelligence`}
           </h2>
           <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
             Lifecycle, fit, and risk cues in one view
@@ -51,7 +59,7 @@ export const ContactIntelligenceCard: React.FC<ContactIntelligenceCardProps> = (
           <div className="mt-1 font-semibold text-slate-900 dark:text-gray-100">{score || '-'}{score ? '/100' : ''}</div>
         </div>
         <div className="rounded-lg border border-slate-200 dark:border-gray-700 p-2.5">
-          <div className="text-xs text-slate-500 dark:text-gray-400">Contact health</div>
+          <div className="text-xs text-slate-500 dark:text-gray-400">{`${term('contact')} health`}</div>
           <div className="mt-1 font-semibold text-slate-900 dark:text-gray-100">{health}</div>
         </div>
       </div>
@@ -63,7 +71,7 @@ export const ContactIntelligenceCard: React.FC<ContactIntelligenceCardProps> = (
         </div>
         <div className="flex items-start gap-2">
           <TrendingUp className="w-3.5 h-3.5 mt-0.5 text-emerald-500" />
-          <span>Recommended next step: create a follow-up task or send a personalized outreach.</span>
+          <span>{`Recommended next step: create a follow-up ${term('task').toLowerCase()} or send a personalized outreach.`}</span>
         </div>
       </div>
 

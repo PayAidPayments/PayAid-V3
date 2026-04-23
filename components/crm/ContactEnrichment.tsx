@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { GlassCard } from '@/components/modules/GlassCard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface EnrichmentData {
   socialProfiles?: {
@@ -39,6 +40,7 @@ interface ContactEnrichmentProps {
 }
 
 export function ContactEnrichment({ contactId, tenantId, currentData, onEnrich }: ContactEnrichmentProps) {
+  const { term } = useTerms()
   const [enriching, setEnriching] = useState(false)
   const [enrichmentData, setEnrichmentData] = useState<EnrichmentData | null>(null)
 
@@ -67,10 +69,10 @@ export function ContactEnrichment({ contactId, tenantId, currentData, onEnrich }
           <div>
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-yellow-500" />
-              Contact Enrichment
+              {`${term('contact')} Enrichment`}
             </CardTitle>
             <CardDescription>
-              Automatically enrich contact data from public sources
+              {`Automatically enrich ${term('contact').toLowerCase()} data from public sources`}
             </CardDescription>
           </div>
           <Button
@@ -165,7 +167,7 @@ export function ContactEnrichment({ contactId, tenantId, currentData, onEnrich }
         ) : (
           <div className="text-center py-8 text-gray-500">
             <Sparkles className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-            <p className="text-sm">Click "Enrich Now" to fetch additional contact information</p>
+            <p className="text-sm">{`Click "Enrich Now" to fetch additional ${term('contact').toLowerCase()} information`}</p>
           </div>
         )}
       </CardContent>

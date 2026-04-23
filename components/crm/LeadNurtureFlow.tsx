@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, RefreshCw, MessageCircle, Target } from 'lucide-react'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 const INDIAN_CURRENCY = '₹'
 
@@ -31,6 +32,7 @@ interface LeadNurtureFlowProps {
 }
 
 export function LeadNurtureFlow({ contactId, tenantId, useGroq = true }: LeadNurtureFlowProps) {
+  const { term } = useTerms()
   const queryClient = useQueryClient()
   const [rescoreWithGroq, setRescoreWithGroq] = useState(false)
 
@@ -83,7 +85,7 @@ export function LeadNurtureFlow({ contactId, tenantId, useGroq = true }: LeadNur
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
-            Nurture flow
+            {`${term('lead')} nurture flow`}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -103,9 +105,9 @@ export function LeadNurtureFlow({ contactId, tenantId, useGroq = true }: LeadNur
           <div>
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
-              Nurture flow
+              {`${term('lead')} nurture flow`}
             </CardTitle>
-            <CardDescription>AI-recommended next step and predicted revenue (India SMB)</CardDescription>
+            <CardDescription>{`AI-recommended next step and predicted ${term('deal').toLowerCase()} revenue (India SMB)`}</CardDescription>
           </div>
           {stage && (
             <Badge variant={stageBadgeVariant(stage)}>
@@ -132,7 +134,7 @@ export function LeadNurtureFlow({ contactId, tenantId, useGroq = true }: LeadNur
         )}
         {score != null && (
           <p className="text-xs text-muted-foreground">
-            Lead score: {Math.round(score)}/100
+            {`${term('lead')} score: ${Math.round(score)}/100`}
           </p>
         )}
         <Button

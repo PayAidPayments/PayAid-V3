@@ -18,6 +18,7 @@ import {
   Briefcase,
   XCircle
 } from 'lucide-react'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface RowActionsMenuProps {
   entityType: 'prospect' | 'contact' | 'customer' | 'deal'
@@ -56,6 +57,15 @@ export const RowActionsMenu: React.FC<RowActionsMenuProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const { term } = useTerms()
+
+  const entityLabel = entityType === 'deal'
+    ? term('deal').toLowerCase()
+    : entityType === 'customer'
+      ? term('customer').toLowerCase()
+      : entityType === 'contact'
+        ? term('contact').toLowerCase()
+        : term('lead').toLowerCase()
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -164,7 +174,7 @@ export const RowActionsMenu: React.FC<RowActionsMenuProps> = ({
                 className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
               >
                 <CheckCircle className="w-4 h-4 mr-3" />
-                Convert to Contact
+                {`Convert to ${term('contact')}`}
               </button>
             )}
 
@@ -177,7 +187,7 @@ export const RowActionsMenu: React.FC<RowActionsMenuProps> = ({
                 className="w-full flex items-center px-4 py-2 text-sm text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors text-left"
               >
                 <XCircle className="w-4 h-4 mr-3" />
-                Disqualify lead
+                {`Disqualify ${term('lead').toLowerCase()}`}
               </button>
             )}
 
@@ -190,7 +200,7 @@ export const RowActionsMenu: React.FC<RowActionsMenuProps> = ({
                 className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
               >
                 <Briefcase className="w-4 h-4 mr-3" />
-                Create Deal
+                {`Create ${term('deal')}`}
               </button>
             )}
 
@@ -281,7 +291,7 @@ export const RowActionsMenu: React.FC<RowActionsMenuProps> = ({
             {onDelete && (
               <button
                 onClick={() => {
-                  if (confirm('Are you sure you want to delete this record?')) {
+                  if (confirm(`Are you sure you want to delete this ${entityLabel}?`)) {
                     onDelete()
                   }
                   setIsOpen(false)

@@ -111,35 +111,35 @@ export default function PricingLandingPage() {
   const faqs = [
     {
       q: "What's included in the free trial?",
-      a: "Full access for 14 days. Every feature. Every module. Same as paying customers. No credit card required. If you upgrade during trial, trial days credit toward first month.",
+      a: "You get full access for 14 days. No credit card required. If you upgrade during trial, we adjust billing fairly.",
     },
     {
       q: "Can I switch between industries?",
-      a: "YES. This is unique to our platform. Same account, just switch industry config. All customer data stays. Switch anytime.",
+      a: "Yes. You can switch industry configuration in the same account. Your core data stays with your workspace.",
     },
     {
       q: "How long does setup take?",
-      a: "5 minutes to get started. Industry config included. Optional: Paid onboarding (₹15k, 8 hours setup).",
+      a: "Most teams can start in about 5 minutes. Industry setup is included. Optional paid onboarding is also available.",
     },
     {
       q: "What happens if I add more team members?",
-      a: "Starter tier: Up to 5 users included. Professional tier: Unlimited users at no extra cost. You only pay per module, not per user.",
+      a: "Starter includes up to 5 users. Professional supports unlimited users. Pricing is module-based, not per user.",
     },
     {
       q: "How much can I save with annual billing?",
-      a: "20% discount on all modules with annual billing. For example, a module priced at ₹1,999/month costs ₹19,190/year (save ₹3,998/year). Professional tier modules at ₹3,999/month cost ₹38,390/year (save ₹7,998/year).",
+      a: "Annual billing gives a 20% discount across modules. You can see exact yearly pricing on each plan card.",
     },
     {
       q: "Do you have a money-back guarantee?",
-      a: "Yes. 30-day money-back guarantee. Try it. If not right, we refund fully. No questions asked.",
+      a: "Yes. We offer a 30-day money-back guarantee.",
     },
     {
       q: "What if I want to cancel?",
-      a: "No problem. Monthly: Cancels end of month. Annual: Pro-rated refund for unused time. No penalties.",
+      a: "You can cancel anytime. Our team will guide you on billing timelines based on your plan.",
     },
     {
       q: "Is my data secure?",
-      a: "Bank-level encryption. SOC 2 Type II compliant. ISO 27001 certified. Data in India (no US servers).",
+      a: "Your data is protected with strong security controls and encryption. Contact us for detailed compliance information.",
     },
   ]
 
@@ -1160,7 +1160,7 @@ export default function PricingLandingPage() {
             <li><Link href="/about">About</Link></li>
             <li><Link href="/contact">Contact</Link></li>
           </ul>
-          <Link href="/#industry-selector" className="cta-header">Choose Industry &amp; Start</Link>
+          <Link href="/?onboarding=true#industry-selector" className="cta-header">Choose Industry &amp; Start</Link>
           <button className="menu-toggle">☰</button>
         </nav>
         {/* Mobile Menu */}
@@ -1171,7 +1171,7 @@ export default function PricingLandingPage() {
             <li><Link href="/pricing">Pricing</Link></li>
             <li><Link href="/about">About</Link></li>
             <li><Link href="/contact">Contact</Link></li>
-            <li><Link href="/#industry-selector" className="cta-header">Choose Industry &amp; Start</Link></li>
+            <li><Link href="/?onboarding=true#industry-selector" className="cta-header">Choose Industry &amp; Start</Link></li>
           </ul>
         </div>
       </header>
@@ -1182,7 +1182,7 @@ export default function PricingLandingPage() {
           Transparent Pricing That <span className="hero-highlight">Scales With You</span>
         </h1>
         <p>
-          Pay only for what you need. Start with one module at ₹1,999/month (Starter) or ₹3,999/month (Professional). Add more modules as you grow. Annual billing saves you 20%.
+          Pay for the modules you use. Start small, expand as you grow, and save 20% with annual billing.
         </p>
 
         {/* Billing Info */}
@@ -1335,7 +1335,7 @@ export default function PricingLandingPage() {
                 <li>Email support (Mon-Sat, 09:30 AM - 06:30 PM IST)</li>
                 <li>Add more modules: ₹1,999/module/month</li>
               </ul>
-              <Link href="/#industry-selector" className="cta-button cta-secondary">Choose Industry &amp; Start</Link>
+              <Link href="/?onboarding=true#industry-selector" className="cta-button cta-secondary">Choose Industry &amp; Start</Link>
             </div>
 
             {/* Professional Tier */}
@@ -1366,7 +1366,7 @@ export default function PricingLandingPage() {
                 <li>Add more modules: ₹3,999/module/month</li>
                 <li>29+ modules available</li>
               </ul>
-              <Link href="/#industry-selector" className="cta-button cta-primary">Choose Industry &amp; Start</Link>
+              <Link href="/?onboarding=true#industry-selector" className="cta-button cta-primary">Choose Industry &amp; Start</Link>
             </div>
 
             {/* Enterprise Tier */}
@@ -1495,9 +1495,9 @@ export default function PricingLandingPage() {
       {/* Final CTA */}
       <section className="final-cta">
         <h2>Ready to Transform Your Business?</h2>
-        <p>Take the platform for a test drive and discover how this powerful program can help your business increase revenue, save time and save money.</p>
+        <p>Start your trial and see how PayAid can simplify daily operations for your team.</p>
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '2rem' }}>
-          <Link href="/#industry-selector" className="cta-button-large">Choose Industry &amp; Start</Link>
+          <Link href="/?onboarding=true#industry-selector" className="cta-button-large">Choose Industry &amp; Start</Link>
         </div>
         <p style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: 0.9 }}>No credit card required to start trial.</p>
       </section>

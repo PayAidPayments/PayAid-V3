@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, Check } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface StagePromotionButtonProps {
   contactId: string
@@ -14,6 +15,7 @@ interface StagePromotionButtonProps {
 export function StagePromotionButton({ contactId, currentStage, onPromoted }: StagePromotionButtonProps) {
   const [isPromoting, setIsPromoting] = useState(false)
   const { token } = useAuthStore()
+  const { term } = useTerms()
 
   const getNextStage = (): 'contact' | 'customer' | null => {
     if (currentStage === 'prospect') return 'contact'
@@ -27,7 +29,7 @@ export function StagePromotionButton({ contactId, currentStage, onPromoted }: St
     return (
       <span className="text-sm text-gray-500 flex items-center gap-1">
         <Check className="w-4 h-4" />
-        Customer
+        {term('customer')}
       </span>
     )
   }
@@ -68,8 +70,8 @@ export function StagePromotionButton({ contactId, currentStage, onPromoted }: St
   }
 
   const getButtonText = () => {
-    if (nextStage === 'contact') return 'Promote to Contact'
-    if (nextStage === 'customer') return 'Promote to Customer'
+    if (nextStage === 'contact') return `Promote to ${term('contact')}`
+    if (nextStage === 'customer') return `Promote to ${term('customer')}`
     return 'Promote'
   }
 

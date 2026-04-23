@@ -58,7 +58,7 @@ export default function ModuleCard({ module, isLicensed = false }: ModuleCardPro
   const IconComponent = module.icon ? iconMap[module.icon as keyof typeof iconMap] : null
   const isEmojiIcon = Boolean(module.icon && !IconComponent && !/^[A-Za-z0-9_-]+$/.test(module.icon))
   const learnMoreHref = getModuleMarketingHref(module.moduleId)
-  const startTrialHref = `/signup?planType=single&modules=${encodeURIComponent(module.moduleId)}`
+  const startTrialHref = `/?onboarding=true&source=app-store-module&planType=single&tier=${selectedTier}&modules=${encodeURIComponent(module.moduleId)}`
 
   return (
     <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200">

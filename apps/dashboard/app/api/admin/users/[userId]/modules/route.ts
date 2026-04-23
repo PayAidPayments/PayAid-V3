@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantAdmin } from '@/lib/middleware/requireTenantAdmin'
 import { prisma } from '@/lib/db/prisma'
+import { buildCanonicalModuleAccessMap, normalizeRequestedModuleAccess } from '@/lib/tenant/user-module-access'
 
 export async function GET(
   request: NextRequest,
@@ -46,9 +47,6 @@ export async function GET(
       },
     })
 
-    // Aggregate module access from all roles
-    const moduleAccess: Record<string, boolean> = {}
-    
     // Get tenant's licensed modules
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
@@ -63,11 +61,27 @@ export async function GET(
     // and the user has a role (or is admin/owner)
     const hasAdminRole = user.role === 'admin' || user.role === 'owner'
     
-    // TODO: Implement proper module access checking based on ModuleAccess table
-    // For now, return licensed modules as accessible for admin/owner, empty for others
-    licensedModules.forEach((module) => {
-      moduleAccess[module] = hasAdminRole || userRoles.length > 0
-    })
+    // Collapse module access from all assigned roles into canonical module ids.
+    const grantedCanonical = new Set<string>()
+    for (const userRole of userRoles) {
+      for (const access of userRole.role.moduleAccess) {
+        if (
+          access.canView ||
+          access.canCreate ||
+          access.canEdit ||
+          access.canDelete ||
+          access.canAdmin
+        ) {
+          grantedCanonical.add(access.moduleName)
+        }
+      }
+    }
+
+    const moduleAccess = buildCanonicalModuleAccessMap(
+      licensedModules,
+      grantedCanonical,
+      hasAdminRole
+    )
 
     return NextResponse.json({ data: moduleAccess })
   } catch (e) {
@@ -108,6 +122,15 @@ export async function PUT(
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    // Get tenant licensed modules to enforce canonical module ownership.
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { licensedModules: true },
+    })
+    const licensedModules = (tenant?.licensedModules as string[]) || []
+
+    const grantedCanonical = normalizeRequestedModuleAccess(modules, licensedModules)
+
     // Get or create a role for this user's module access
     // For simplicity, we'll create a custom role per user for module access
     // In production, you'd want a more sophisticated approach
@@ -143,57 +166,27 @@ export async function PUT(
       })
     }
 
-    // Update module access for this role
-    const moduleEntries = Object.entries(modules) as [string, boolean][]
-    
-    for (const [moduleName, hasAccess] of moduleEntries) {
-      if (hasAccess) {
-        // Check if module access already exists
-        const existing = await prisma.moduleAccess.findUnique({
-          where: {
-            tenantId_roleId_moduleName: {
-              tenantId,
-              roleId: role.id,
-              moduleName,
-            },
-          },
-        })
+    // Rewrite this custom role's module access in canonical form.
+    await prisma.moduleAccess.deleteMany({
+      where: {
+        tenantId,
+        roleId: role.id,
+      },
+    })
 
-        // Upsert module access
-        await prisma.moduleAccess.upsert({
-          where: {
-            tenantId_roleId_moduleName: {
-              tenantId,
-              roleId: role.id,
-              moduleName,
-            },
-          },
-          create: {
-            tenantId,
-            roleId: role.id,
-            moduleName,
-            canView: true,
-            canCreate: true,
-            canEdit: true,
-            canDelete: false,
-            canAdmin: false,
-          },
-          update: {
-            canView: true,
-            canCreate: true,
-            canEdit: true,
-          },
-        })
-      } else {
-        // Remove module access
-        await prisma.moduleAccess.deleteMany({
-          where: {
-            tenantId,
-            roleId: role.id,
-            moduleName,
-          },
-        })
-      }
+    if (grantedCanonical.size > 0) {
+      await prisma.moduleAccess.createMany({
+        data: Array.from(grantedCanonical).map((moduleName) => ({
+          tenantId,
+          roleId: role!.id,
+          moduleName,
+          canView: true,
+          canCreate: true,
+          canEdit: true,
+          canDelete: false,
+          canAdmin: false,
+        })),
+      })
     }
 
     return NextResponse.json({

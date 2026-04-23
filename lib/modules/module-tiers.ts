@@ -28,10 +28,16 @@ export interface TieredModule extends ModuleConfig {
 export const TIER_1_MODULES: string[] = [
   'home',
   'crm',
+  'marketing',
   'finance',
+  'inventory',
+  'projects',
   'hr',
-  'sales',
-  'marketing'
+  'support',
+  'contracts',
+  'analytics',
+  'workflow',
+  'ai-studio',
 ]
 
 /**
@@ -39,17 +45,13 @@ export const TIER_1_MODULES: string[] = [
  * Business operations and workflow management
  */
 export const TIER_2_MODULES: string[] = [
-  'projects',
-  'inventory',
-  'analytics',
+  'sales',
   'communication',
-  'workflow',
   'appointments',
   'industry-intelligence',
   'help-center',
-  'contracts',
   'compliance',
-  'lms'
+  'lms',
 ]
 
 /**
@@ -131,12 +133,12 @@ export function getModuleTier(moduleId: string): ModuleTier {
  */
 export function getTierDisplayName(tier: ModuleTier): string {
   const names: Record<ModuleTier, string> = {
-    'tier1-top6': 'Top 6',
-    'tier2-operational': 'Operational Tools',
-    'tier3-ai-intelligence': 'AI Intelligence',
-    'tier4-productivity': 'Productivity Suite',
-    'tier5-specialized': 'Specialized Tools',
-    'tier6-creative': 'Creative Utilities'
+    'tier1-top6': 'Core Business Suites',
+    'tier2-operational': 'Business Suites and Capabilities',
+    'tier3-ai-intelligence': 'AI Workspace Features',
+    'tier4-productivity': 'Workspace Tools',
+    'tier5-specialized': 'Industry Solutions',
+    'tier6-creative': 'AI Creative Tools',
   }
   return names[tier]
 }
@@ -146,12 +148,12 @@ export function getTierDisplayName(tier: ModuleTier): string {
  */
 export function getTierDescription(tier: ModuleTier): string {
   const descriptions: Record<ModuleTier, string> = {
-    'tier1-top6': 'Daily-use business tools',
-    'tier2-operational': 'Business operations and workflow',
-    'tier3-ai-intelligence': 'AI-powered tools and automation',
-    'tier4-productivity': 'Office productivity tools',
-    'tier5-specialized': 'Industry-specific tools',
-    'tier6-creative': 'Creative and design tools'
+    'tier1-top6': 'Primary operating system suites',
+    'tier2-operational': 'Support, analytics, docs, and automation',
+    'tier3-ai-intelligence': 'Advisors, assistant, insights, and voice',
+    'tier4-productivity': 'Secondary collaboration tools',
+    'tier5-specialized': 'Vertical overlays and configurations',
+    'tier6-creative': 'Website and brand generation tools',
   }
   return descriptions[tier]
 }

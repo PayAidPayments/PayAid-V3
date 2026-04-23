@@ -6,6 +6,7 @@ import { StageBadge } from '@/components/crm/StageBadge'
 import { LeadScoringBadge } from '@/components/LeadScoringBadge'
 import { format } from 'date-fns'
 import { Briefcase, User, Building2, DollarSign } from 'lucide-react'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface ContactInfoSectionProps {
   contact: any
@@ -13,6 +14,7 @@ interface ContactInfoSectionProps {
 }
 
 export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({ contact, tenantId }) => {
+  const { term, pluralTerm } = useTerms()
   const contactStage = contact?.stage || (contact?.type === 'lead' ? 'prospect' : contact?.type === 'customer' ? 'customer' : 'contact')
   
   // Calculate deals summary
@@ -26,7 +28,7 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({ contact,
       {/* Contact Profile */}
       <div>
         <h2 className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-          Contact Profile
+          {`${term('contact')} Profile`}
         </h2>
         <div className="space-y-3 text-sm">
           <div>
@@ -83,7 +85,7 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({ contact,
           </div>
           {(contactStage === 'prospect' || contact.type === 'lead') && contact.leadScore !== undefined && contact.leadScore !== null && (
             <div>
-              <div className="text-xs uppercase text-slate-500 dark:text-gray-400 mb-1">Lead Score</div>
+              <div className="text-xs uppercase text-slate-500 dark:text-gray-400 mb-1">{`${term('lead')} Score`}</div>
               <LeadScoringBadge score={contact.leadScore} />
             </div>
           )}
@@ -93,7 +95,7 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({ contact,
       {/* Account & Owner */}
       <div className="border-t border-slate-100 dark:border-gray-700 pt-4">
         <h2 className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-          Account & Owner
+          {`${term('account')} & Owner`}
         </h2>
         <div className="space-y-3 text-sm">
           {contact.company && (
@@ -126,18 +128,18 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({ contact,
       {deals.length > 0 && (
         <div className="border-t border-slate-100 dark:border-gray-700 pt-4">
           <h2 className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-            Deals & Value
+            {`${pluralTerm('deal')} & Value`}
           </h2>
           <div className="space-y-3 text-sm">
             <div>
-              <div className="text-xs uppercase text-slate-500 dark:text-gray-400 mb-1">Active Deals</div>
+              <div className="text-xs uppercase text-slate-500 dark:text-gray-400 mb-1">{`Active ${pluralTerm('deal')}`}</div>
               <div className="text-slate-700 dark:text-gray-300 flex items-center gap-1">
                 <Briefcase className="w-3 h-3" />
-                {activeDeals.length} deal{activeDeals.length !== 1 ? 's' : ''}
+                {`${activeDeals.length} ${activeDeals.length !== 1 ? pluralTerm('deal').toLowerCase() : term('deal').toLowerCase()}`}
               </div>
             </div>
             <div>
-              <div className="text-xs uppercase text-slate-500 dark:text-gray-400 mb-1">Pipeline Value</div>
+              <div className="text-xs uppercase text-slate-500 dark:text-gray-400 mb-1">{`${term('pipeline')} Value`}</div>
               <div className="text-slate-700 dark:text-gray-300 flex items-center gap-1">
                 <DollarSign className="w-3 h-3" />
                 ₹{totalPipelineValue.toLocaleString('en-IN')}

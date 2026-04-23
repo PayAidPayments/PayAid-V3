@@ -429,6 +429,11 @@ export class DuplicateDetectorService {
         ...(warnings.length > 0 ? { warnings } : {}),
         ...(notices.length > 0 ? { notices } : {}),
       }
+    }, {
+      // Merge touches many relational tables and can exceed Prisma's default
+      // interactive transaction timeout in production-like environments.
+      maxWait: 10_000,
+      timeout: 60_000,
     })
   }
 }

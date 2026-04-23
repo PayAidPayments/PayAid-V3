@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface BulkOperationsProps {
   selectedItems: string[]
@@ -31,12 +32,30 @@ export function BulkOperations({
   onBulkEmail,
   onClearSelection,
 }: BulkOperationsProps) {
+  const { term, pluralTerm } = useTerms()
   const [showUpdateDialog, setShowUpdateDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [updates, setUpdates] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(false)
 
   if (selectedItems.length === 0) return null
+
+  const singularItemLabel =
+    itemType === 'deal'
+      ? term('deal')
+      : itemType === 'task'
+        ? term('task')
+        : itemType === 'lead'
+          ? term('lead')
+          : term('contact')
+  const pluralItemLabel =
+    itemType === 'deal'
+      ? pluralTerm('deal')
+      : itemType === 'task'
+        ? pluralTerm('task')
+        : itemType === 'lead'
+          ? pluralTerm('lead')
+          : pluralTerm('contact')
 
   const handleBulkUpdate = async () => {
     if (!onBulkUpdate || Object.keys(updates).length === 0) return
@@ -164,9 +183,9 @@ export function BulkOperations({
       <Dialog open={showUpdateDialog} onOpenChange={setShowUpdateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Bulk Update {itemType}s</DialogTitle>
+            <DialogTitle>{`Bulk Update ${pluralItemLabel}`}</DialogTitle>
             <DialogDescription>
-              Update {selectedItems.length} selected {itemType}s
+              {`Update ${selectedItems.length} selected ${pluralItemLabel.toLowerCase()}`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -180,7 +199,7 @@ export function BulkOperations({
                     className="w-full mt-1 px-3 py-2 border rounded-lg"
                   >
                     <option value="">No change</option>
-                    <option value="lead">Lead</option>
+                    <option value="lead">{term('lead')}</option>
                     <option value="qualified">Qualified</option>
                     <option value="proposal">Proposal</option>
                     <option value="negotiation">Negotiation</option>
@@ -214,7 +233,7 @@ export function BulkOperations({
                     <option value="">No change</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
-                    <option value="prospect">Prospect</option>
+                    <option value="prospect">{term('lead')}</option>
                   </select>
                 </div>
                 <div>
@@ -225,8 +244,8 @@ export function BulkOperations({
                     className="w-full mt-1 px-3 py-2 border rounded-lg"
                   >
                     <option value="">No change</option>
-                    <option value="customer">Customer</option>
-                    <option value="lead">Lead</option>
+                    <option value="customer">{term('customer')}</option>
+                    <option value="lead">{term('lead')}</option>
                     <option value="partner">Partner</option>
                     <option value="vendor">Vendor</option>
                   </select>
@@ -280,9 +299,9 @@ export function BulkOperations({
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete {itemType}s</DialogTitle>
+            <DialogTitle>{`Delete ${pluralItemLabel}`}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete {selectedItems.length} {itemType}(s)? This action cannot be undone.
+              {`Are you sure you want to delete ${selectedItems.length} ${selectedItems.length === 1 ? singularItemLabel.toLowerCase() : pluralItemLabel.toLowerCase()}? This action cannot be undone.`}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">

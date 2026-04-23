@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { CheckCircle2, Calendar, User, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 export interface TaskCardTask {
   id: string
@@ -47,8 +48,8 @@ export function TaskCard({
   isDragging,
   className,
 }: TaskCardProps) {
-  const clientName = task.contact?.name ?? '—'
-  const assigneeName = task.assignedTo?.name ?? 'Unassigned'
+  const { term } = useTerms()
+  const clientName = task.contact?.name ?? `No ${term('contact').toLowerCase()}`
   const due = task.dueDate ? new Date(task.dueDate) : null
   const isOverdue = due && isPast(due) && task.status !== 'completed' && task.status !== 'cancelled'
 

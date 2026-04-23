@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Search, User, Briefcase, CheckSquare, Mail, Phone, FileText, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/lib/stores/auth'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface SearchResult {
   id: string
@@ -28,7 +29,14 @@ export function UniversalSearch({ tenantId, isOpen, onClose }: UniversalSearchPr
   const [selectedIndex, setSelectedIndex] = useState(0)
   const router = useRouter()
   const { token } = useAuthStore()
+  const { term, pluralTerm } = useTerms()
   const inputRef = useRef<HTMLInputElement>(null)
+  const getResultTypeLabel = (type: SearchResult['type']) => {
+    if (type === 'contact') return term('contact')
+    if (type === 'deal') return term('deal')
+    if (type === 'task') return term('task')
+    return type
+  }
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -153,7 +161,7 @@ export function UniversalSearch({ tenantId, isOpen, onClose }: UniversalSearchPr
                 setQuery(e.target.value)
                 setSelectedIndex(0)
               }}
-              placeholder="Search contacts, deals, tasks..."
+              placeholder={`Search ${pluralTerm('contact').toLowerCase()}, ${pluralTerm('deal').toLowerCase()}, ${pluralTerm('task').toLowerCase()}...`}
               className="flex-1 bg-transparent border-0 outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400"
             />
             {query && (
@@ -194,7 +202,7 @@ export function UniversalSearch({ tenantId, isOpen, onClose }: UniversalSearchPr
                         </div>
                       )}
                     </div>
-                    <div className="text-xs text-gray-400 uppercase">{result.type}</div>
+                    <div className="text-xs text-gray-400 uppercase">{getResultTypeLabel(result.type)}</div>
                   </button>
                 ))}
               </div>

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/lib/stores/auth'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface Activity {
   id: string
@@ -56,6 +57,7 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({
   activeFilter,
   showControls = true,
 }) => {
+  const { term, pluralTerm } = useTerms()
   const [interactions, setInteractions] = useState<any[]>([])
   const [deals, setDeals] = useState<any[]>([])
   const [filter, setFilter] = useState<ActivityFilter>('all')
@@ -194,7 +196,7 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({
     const dealActivities: Activity[] = deals.map((d: any) => ({
       id: d.id,
       type: 'deal',
-      title: `Deal: ${d.name}`,
+      title: `${term('deal')}: ${d.name}`,
       description: `₹${d.value?.toLocaleString('en-IN') || '0'} • ${d.stage}`,
       createdAt: d.createdAt,
       metadata: d,
@@ -202,7 +204,7 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({
     const merged = [...interactionActivities, ...taskActivities, ...noteActivities, ...dealActivities]
     merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     return merged
-  }, [interactions, tasks, notes, deals])
+  }, [interactions, tasks, notes, deals, term])
 
   const filteredActivities = useMemo(
     () => (filter === 'all' ? allActivities : allActivities.filter((a) => a.type === filter)),
@@ -273,15 +275,15 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({
     { key: 'whatsapp', label: 'WhatsApp' },
     { key: 'meeting', label: 'Meetings' },
     { key: 'note', label: 'Notes' },
-    { key: 'task', label: 'Tasks' },
-    { key: 'deal', label: 'Deals' },
+    { key: 'task', label: pluralTerm('task') },
+    { key: 'deal', label: pluralTerm('deal') },
   ]
 
   return (
     <div className="flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">Activity Timeline</h2>
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">{`${term('contact')} Activity Timeline`}</h2>
         {showControls && <div className="flex items-center gap-2">
           {/* Filter Pills */}
           <div className="flex items-center gap-1 flex-wrap">
@@ -335,7 +337,7 @@ export const ContactTimeline: React.FC<ContactTimelineProps> = ({
                     onClick={() => setShowAddMenu(false)}
                   >
                     <CheckCircle className="w-4 h-4 mr-3" />
-                    Create Task
+                    {`Create ${term('task')}`}
                   </Link>
                   <Link
                     href={`/crm/${tenantId}/Tasks/new?contactId=${contactId}&type=meeting`}

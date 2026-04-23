@@ -12,20 +12,35 @@ interface Module {
   id: string
   name: string
   description: string
-  icon: string
-  category: 'base' | 'industry' | 'recommended'
+  category: 'suite' | 'feature' | 'capability'
   isActive: boolean
   isRecommended?: boolean
+}
+
+const MODULE_ICONS: Record<string, string> = {
+  crm: '👥',
+  sales: '💼',
+  marketing: '📢',
+  finance: '💰',
+  hr: '👔',
+  communication: '💬',
+  'ai-studio': '✨',
+  analytics: '📈',
+  projects: '📁',
+  inventory: '📦',
 }
 
 export default function ModulesPage() {
   const [viewMode, setViewMode] = useState<'recommended' | 'all'>('recommended')
 
   const { data, isLoading, refetch } = useQuery<{
-    recommended: Module[]
-    all: Module[]
-    base: Module[]
-    industry: Module[]
+    canonical: {
+      recommended: Module[]
+      all: Module[]
+      suites: Module[]
+      features: Module[]
+      capabilities: Module[]
+    }
   }>({
     queryKey: ['modules'],
     queryFn: async () => {
@@ -57,10 +72,10 @@ export default function ModulesPage() {
     return <PageLoading message="Loading modules..." fullScreen={false} />
   }
 
-  const recommended = data?.recommended || []
-  const allModules = data?.all || []
-  const baseModules = data?.base || []
-  const industryModules = data?.industry || []
+  const recommended = data?.canonical?.recommended || []
+  const allModules = data?.canonical?.all || []
+  const suiteModules = data?.canonical?.suites || []
+  const capabilityModules = data?.canonical?.capabilities || []
 
   const displayModules = viewMode === 'recommended' ? recommended : allModules
 
@@ -116,15 +131,15 @@ export default function ModulesPage() {
       {/* All Modules Section */}
       {viewMode === 'all' && (
         <div className="space-y-6">
-          {/* Base Modules */}
-          {baseModules.length > 0 && (
+          {/* Core Suites */}
+          {suiteModules.length > 0 && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Base Modules</h2>
+              <h2 className="text-xl font-semibold mb-4">Core Suites</h2>
               <p className="text-sm text-gray-600 mb-4">
-                Core modules included with every plan
+                Core suites available in your tenant catalog
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {baseModules.map((module) => (
+                {suiteModules.map((module) => (
                   <ModuleCard
                     key={module.id}
                     module={module}
@@ -138,15 +153,15 @@ export default function ModulesPage() {
             </div>
           )}
 
-          {/* Industry Packs */}
-          {industryModules.length > 0 && (
+          {/* Capabilities */}
+          {capabilityModules.length > 0 && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Industry Packs</h2>
+              <h2 className="text-xl font-semibold mb-4">Capabilities</h2>
               <p className="text-sm text-gray-600 mb-4">
-                Specialized modules for specific industries
+                Supporting capabilities and add-ons
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {industryModules.map((module) => (
+                {capabilityModules.map((module) => (
                   <ModuleCard
                     key={module.id}
                     module={module}
@@ -187,7 +202,7 @@ function ModuleCard({
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">{module.icon}</span>
+            <span className="text-3xl">{MODULE_ICONS[module.id] || '📦'}</span>
             <div>
               <CardTitle className="text-lg">{module.name}</CardTitle>
               {module.isRecommended && (
@@ -198,7 +213,7 @@ function ModuleCard({
               )}
             </div>
           </div>
-          {module.category !== 'base' && (
+          {module.category !== 'suite' && (
             <Button
               variant={module.isActive ? 'default' : 'outline'}
               size="sm"
@@ -219,9 +234,9 @@ function ModuleCard({
       </CardHeader>
       <CardContent>
         <CardDescription>{module.description}</CardDescription>
-        {module.category === 'base' && (
+        {module.category === 'suite' && (
           <Badge variant="outline" className="mt-2">
-            Always included
+            Core suite
           </Badge>
         )}
       </CardContent>

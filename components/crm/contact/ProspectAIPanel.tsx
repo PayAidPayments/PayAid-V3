@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Sparkles, TrendingUp, Target, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface ProspectAIPanelProps {
   contact: any
@@ -10,6 +11,7 @@ interface ProspectAIPanelProps {
 }
 
 export const ProspectAIPanel: React.FC<ProspectAIPanelProps> = ({ contact, tenantId }) => {
+  const { term } = useTerms()
   const [fitScore, setFitScore] = useState<number | null>(null)
   const [fitExplanation, setFitExplanation] = useState<string>('')
   const [suggestedSteps, setSuggestedSteps] = useState<string[]>([])
@@ -54,7 +56,7 @@ export const ProspectAIPanel: React.FC<ProspectAIPanelProps> = ({ contact, tenan
           // Fallback: calculate basic fit score from lead score
           if (contact.leadScore !== undefined && contact.leadScore !== null) {
             setFitScore(contact.leadScore)
-            setFitExplanation('Fit score based on lead scoring algorithm')
+            setFitExplanation(`Fit score based on ${term('lead').toLowerCase()} scoring algorithm`)
             setSuggestedSteps([
               contact.leadScore > 70 ? 'Schedule discovery call' : 'Send qualification email',
               contact.leadScore > 50 ? 'Move to next stage' : 'Continue nurturing',
@@ -66,7 +68,7 @@ export const ProspectAIPanel: React.FC<ProspectAIPanelProps> = ({ contact, tenan
         // Fallback
         if (contact.leadScore !== undefined && contact.leadScore !== null) {
           setFitScore(contact.leadScore)
-          setFitExplanation('Fit score based on lead scoring')
+          setFitExplanation(`Fit score based on ${term('lead').toLowerCase()} scoring`)
         }
       } finally {
         setIsLoading(false)
@@ -93,9 +95,9 @@ export const ProspectAIPanel: React.FC<ProspectAIPanelProps> = ({ contact, tenan
   return (
     <div className="space-y-3">
       <div>
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">AI Prospect Fit</h2>
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">{`AI ${term('lead')} Fit`}</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">
-          AI analysis of how well this prospect matches your ideal customer profile (ICP).
+          {`AI analysis of how well this ${term('lead').toLowerCase()} matches your ideal ${term('customer').toLowerCase()} profile (ICP).`}
         </p>
       </div>
 
@@ -139,7 +141,7 @@ export const ProspectAIPanel: React.FC<ProspectAIPanelProps> = ({ contact, tenan
         </button>
         <button className="w-full text-left px-2 py-1.5 text-xs text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-gray-700 rounded transition-colors flex items-center gap-2">
           <AlertCircle className="w-3 h-3" />
-          Disqualify prospect
+          {`Disqualify ${term('lead').toLowerCase()}`}
         </button>
       </div>
     </div>

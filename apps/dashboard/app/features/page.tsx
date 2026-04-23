@@ -4,19 +4,52 @@ import Link from 'next/link'
 import { modules } from '@/lib/modules.config'
 import { MODULE_PRICING } from '@/lib/pricing/config'
 import { useState } from 'react'
+import { TOP_LEVEL_BUSINESS_SUITES } from '@/lib/taxonomy/business-os-taxonomy'
+
+const PUBLIC_SUITE_MODULE_IDS = new Set([
+  'crm',
+  'sales',
+  'marketing',
+  'finance',
+  'inventory',
+  'projects',
+  'hr',
+  'help-center',
+  'contracts',
+  'analytics',
+  'workflow',
+  'ai-studio',
+])
 
 export default function FeaturesPage() {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [selectedFamily, setSelectedFamily] = useState<string>('all')
   const [selectedTier, setSelectedTier] = useState<'starter' | 'professional'>('starter')
 
   // Filter out industry modules (they're not modules, they're industry packages)
   const industryIds = ['restaurant', 'retail', 'service', 'ecommerce', 'manufacturing', 'field-service', 'asset-management', 'professional-services', 'healthcare']
-  const availableModules = modules.filter(m => !industryIds.includes(m.id))
+  const availableModules = modules.filter(
+    (m) => !industryIds.includes(m.id) && PUBLIC_SUITE_MODULE_IDS.has(m.id)
+  )
 
-  const categories = ['all', 'core', 'productivity', 'ai']
-  const filteredModules = selectedCategory === 'all' 
-    ? availableModules 
-    : availableModules.filter(m => m.category === selectedCategory)
+  const families = ['all', 'sales', 'marketing', 'finance', 'operations', 'people', 'ai-automation']
+  const getFamily = (moduleId: string): string => {
+    if (['crm', 'sales'].includes(moduleId)) return 'sales'
+    if (['marketing', 'website-builder'].includes(moduleId)) return 'marketing'
+    if (moduleId === 'finance') return 'finance'
+    if (moduleId === 'help-center') return 'operations'
+    if (moduleId === 'contracts') return 'operations'
+    if (['hr', 'lms'].includes(moduleId)) return 'people'
+    if (
+      ['ai-studio', 'workflow', 'analytics'].includes(moduleId)
+    ) {
+      return 'ai-automation'
+    }
+    return 'operations'
+  }
+  const filteredModules =
+    selectedFamily === 'all'
+      ? availableModules
+      : availableModules.filter((m) => getFamily(m.id) === selectedFamily)
 
   const getModulePrice = (moduleId: string) => {
     const pricing = MODULE_PRICING[moduleId]
@@ -54,11 +87,11 @@ export default function FeaturesPage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
         <h1 className="text-5xl font-bold text-gray-900 mb-4">
           <span className="bg-gradient-to-r from-[#53328A] to-[#F5C700] bg-clip-text text-transparent">
-            29+ Powerful Modules
+            {TOP_LEVEL_BUSINESS_SUITES.length} Business Suites
           </span>
         </h1>
         <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-          Everything you need to run your business. Pay only for what you use. Start with one module, add more as you grow.
+          PayAid is a Business Operating System for SMBs. Run sales, marketing, finance, operations, people, and AI automation in one platform.
         </p>
 
         {/* Tier Toggle */}
@@ -85,17 +118,19 @@ export default function FeaturesPage() {
 
         {/* Category Filter */}
         <div className="flex flex-wrap justify-center gap-3 mb-12">
-          {categories.map((category) => (
+          {families.map((family) => (
             <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
+              key={family}
+              onClick={() => setSelectedFamily(family)}
               className={`px-6 py-2 rounded-lg font-medium transition ${
-                selectedCategory === category
+                selectedFamily === family
                   ? 'bg-[#53328A] text-white'
                   : 'bg-white text-gray-700 border border-gray-300 hover:border-[#53328A]'
               }`}
             >
-              {category.charAt(0).toUpperCase() + category.slice(1)}
+              {family === 'ai-automation'
+                ? 'AI & Automation'
+                : family.charAt(0).toUpperCase() + family.slice(1)}
             </button>
           ))}
         </div>

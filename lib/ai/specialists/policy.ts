@@ -3,6 +3,9 @@ import { SpecialistPolicyInput, SpecialistPolicyResult } from './types'
 
 function includesModuleOrWildcard(userModules: string[], module: string): boolean {
   if (userModules.length === 0) return true
+  if (module === 'general') {
+    return userModules.includes('general') || userModules.includes('ai-studio') || userModules.includes('all')
+  }
   return userModules.includes(module) || userModules.includes('all')
 }
 
@@ -21,7 +24,7 @@ export function evaluateSpecialistPolicy(input: SpecialistPolicyInput): Speciali
   if (!specialist.modules.includes(normalizedModule)) {
     return {
       allowed: false,
-      reason: `${specialist.name} is not available in module ${normalizedModule}`,
+      reason: `${specialist.name} is not available in this workspace context`,
       specialist,
     }
   }
@@ -29,7 +32,7 @@ export function evaluateSpecialistPolicy(input: SpecialistPolicyInput): Speciali
   if (!includesModuleOrWildcard(input.userModules, normalizedModule)) {
     return {
       allowed: false,
-      reason: `Module ${normalizedModule} is not subscribed for this tenant`,
+      reason: 'AI Chat is not enabled for this workspace. Please activate AI Studio from Modules.',
       specialist,
     }
   }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { formatINR } from '@/lib/currency'
 import type { Contact } from '@/types/base-modules'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface ContactListProps {
   organizationId: string
@@ -14,6 +15,7 @@ export function ContactList({ organizationId }: ContactListProps) {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
+  const { term, pluralTerm } = useTerms()
   const pageSize = 20
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export function ContactList({ organizationId }: ContactListProps) {
   }
 
   async function deleteContact(contactId: string) {
-    if (!confirm('Are you sure you want to delete this contact?')) return
+    if (!confirm(`Are you sure you want to delete this ${term('contact').toLowerCase()}?`)) return
 
     try {
       const response = await fetch(`/api/crm/contacts/${contactId}`, {
@@ -51,19 +53,19 @@ export function ContactList({ organizationId }: ContactListProps) {
         fetchContacts()
       }
     } catch (error) {
-      console.error('Failed to delete contact:', error)
+      console.error(`Failed to delete ${term('contact').toLowerCase()}:`, error)
     }
   }
 
   if (loading) {
-    return <div className="p-4">Loading contacts...</div>
+    return <div className="p-4">{`Loading ${pluralTerm('contact').toLowerCase()}...`}</div>
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Contacts</h2>
-        <Button onClick={() => {/* Open create modal */}}>Add Contact</Button>
+        <h2 className="text-2xl font-bold">{pluralTerm('contact')}</h2>
+        <Button onClick={() => {/* Open create modal */}}>{`Add ${term('contact')}`}</Button>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow">

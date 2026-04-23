@@ -25,9 +25,9 @@ const features: Feature[] = [
 ]
 
 const tiers = [
-  { id: 'starter', name: 'Starter', price: '₹1,999', popular: false, href: '/signup?planType=multi&modules=crm,finance' },
-  { id: 'professional', name: 'Professional', price: '₹3,999', popular: true, href: '/signup?planType=multi&modules=crm,finance,hr,communication,inventory' },
-  { id: 'complete', name: 'Complete', price: 'Custom', popular: false, href: '/signup?planType=suite' },
+  { id: 'starter', name: 'Starter', price: '₹1,999', popular: false, href: '/?onboarding=true&source=compare-plans&tier=starter&planType=multi&modules=crm,finance' },
+  { id: 'professional', name: 'Professional', price: '₹3,999', popular: true, href: '/?onboarding=true&source=compare-plans&tier=professional&planType=multi&modules=crm,finance,hr,communication,inventory' },
+  { id: 'complete', name: 'Complete', price: 'Custom', popular: false, href: '/?onboarding=true&source=compare-plans&planType=suite' },
   { id: 'enterprise', name: 'Enterprise', price: 'Custom', popular: false, href: '/contact' },
 ]
 

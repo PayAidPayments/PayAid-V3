@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Target, CheckCircle, Mail, MessageSquare } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface NurtureData {
   nurture_action?: string
@@ -39,6 +40,7 @@ function formatWhatsAppPhone(phone: string | null | undefined): string {
 }
 
 export function NextBestActionCard({ contactId, tenantId, contact, onOpenMoreActions }: NextBestActionCardProps) {
+  const { term } = useTerms()
   const isProspect = contact?.type === 'lead'
   const lastContacted = contact?.lastContactedAt ? new Date(contact.lastContactedAt) : null
   const now = new Date()
@@ -67,7 +69,10 @@ export function NextBestActionCard({ contactId, tenantId, contact, onOpenMoreAct
   const suggestion =
     noTouchTooLong && daysSinceTouch !== null
       ? `No touch in ${daysSinceTouch} days – send a follow-up`
-      : nurtureAction || (isProspect ? 'Reach out to move this lead forward' : 'Schedule a check-in with this contact')
+      : nurtureAction ||
+        (isProspect
+          ? `Reach out to move this ${term('lead').toLowerCase()} forward`
+          : `Schedule a check-in with this ${term('contact').toLowerCase()}`)
 
   return (
     <Card data-testid="next-best-action-card" className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
@@ -83,7 +88,7 @@ export function NextBestActionCard({ contactId, tenantId, contact, onOpenMoreAct
           <Link href={`/crm/${tenantId}/Tasks/new?contactId=${contactId}`}>
             <Button size="sm" variant="outline" className="gap-1.5 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
               <CheckCircle className="w-3.5 h-3.5" />
-              Create task
+              {`Create ${term('task').toLowerCase()}`}
             </Button>
           </Link>
           {hasEmail && (
@@ -112,7 +117,7 @@ export function NextBestActionCard({ contactId, tenantId, contact, onOpenMoreAct
         </button>
         {lastContacted && (
           <p className="text-xs text-slate-500 dark:text-gray-400">
-            Last contact: {formatDistanceToNow(lastContacted, { addSuffix: true })}
+            {`Last ${term('contact').toLowerCase()}: ${formatDistanceToNow(lastContacted, { addSuffix: true })}`}
           </p>
         )}
       </CardContent>

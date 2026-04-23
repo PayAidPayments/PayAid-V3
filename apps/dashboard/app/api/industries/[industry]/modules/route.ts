@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess } from '@/lib/middleware/auth'
 import { getRecommendedModulesForIndustry, autoConfigureIndustryModules } from '@/lib/industries/module-config'
 import { loadIndustryTemplates } from '@/lib/industries/templates'
+import { normalizeSelectedModuleIds } from '@/lib/tenant/module-license-filter'
+import { shouldIncludeLegacyModuleFields } from '@/lib/taxonomy/canonical-api-mode'
 
 /**
  * GET /api/industries/[industry]/modules
@@ -13,6 +15,7 @@ export async function GET(
   { params }: { params: Promise<{ industry: string }> }
 ) {
   try {
+    const includeLegacy = shouldIncludeLegacyModuleFields()
     const resolvedParams = await params
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
@@ -20,7 +23,19 @@ export async function GET(
 
     return NextResponse.json({
       industry: resolvedParams.industry,
-      ...recommendations,
+      canonical: recommendations.canonical,
+      suites: recommendations.suites,
+      capabilities: recommendations.capabilities,
+      optionalSuites: recommendations.optionalSuites,
+      ...(includeLegacy
+        ? {
+            compatibility: recommendations.compatibility,
+            // Deprecated aliases retained for backward compatibility.
+            coreModules: recommendations.coreModules,
+            industryPacks: recommendations.industryPacks,
+            optionalModules: recommendations.optionalModules,
+          }
+        : {}),
     })
   } catch (error) {
     console.error('Get industry modules error:', error)
@@ -40,6 +55,7 @@ export async function POST(
   { params }: { params: Promise<{ industry: string }> }
 ) {
   try {
+    const includeLegacy = shouldIncludeLegacyModuleFields()
     const resolvedParams = await params
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
@@ -51,9 +67,9 @@ export async function POST(
     // If selectedModules is provided, use only those modules
     if (selectedModules && Array.isArray(selectedModules) && selectedModules.length > 0) {
       // Ensure ai-studio is always included
-      const modulesToEnable = selectedModules.includes('ai-studio')
-        ? selectedModules
-        : [...selectedModules, 'ai-studio']
+      const modulesToEnable = normalizeSelectedModuleIds(
+        selectedModules.includes('ai-studio') ? selectedModules : [...selectedModules, 'ai-studio']
+      )
 
       // Enable only selected modules
       const enabledModules = []
@@ -100,8 +116,21 @@ export async function POST(
 
       return NextResponse.json({
         success: true,
-        enabledModules: modulesToEnable,
-        enabledPacks: [],
+        canonical: {
+          enabledModules: modulesToEnable,
+          enabledPacks: [],
+        },
+        ...(includeLegacy
+          ? {
+              compatibility: {
+                deprecated: true,
+                enabledModules: modulesToEnable,
+                enabledPacks: [],
+              },
+              enabledModules: modulesToEnable,
+              enabledPacks: [],
+            }
+          : {}),
         templatesLoaded: templateResult.loaded,
       })
     }
@@ -123,7 +152,20 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      ...result,
+      canonical: {
+        enabledModules: result.enabledModules,
+        enabledPacks: result.enabledPacks,
+      },
+      ...(includeLegacy
+        ? {
+            compatibility: {
+              deprecated: true,
+              enabledModules: result.enabledModules,
+              enabledPacks: result.enabledPacks,
+            },
+            ...result,
+          }
+        : {}),
       templatesLoaded: templateResult.loaded,
     })
   } catch (error) {

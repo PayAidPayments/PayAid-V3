@@ -13,6 +13,7 @@
 export type ModuleTier = 'primary' | 'secondary' | 'ai'
 
 export type SecondaryGroup =
+  | 'growth'
   | 'ai'
   | 'communication'
   | 'productivity'
@@ -47,19 +48,20 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
   },
   {
     id: 'crm',
-    label: 'CRM',
-    description: 'Customer relationships & pipeline',
+    label: 'CRM & Sales',
+    description: 'Leads, pipeline, pages, and revenue workflows',
     basePath: '/crm',
     tier: 'primary',
     icon: 'Users',
   },
   {
     id: 'sales',
-    label: 'Sales',
-    description: 'Landing pages, checkout & orders',
+    label: 'Sales Pages',
+    description: 'Funnels, landing pages, and checkout',
     basePath: '/sales',
-    tier: 'primary',
+    tier: 'secondary',
     icon: 'ShoppingCart',
+    secondaryGroup: 'growth',
   },
   {
     id: 'marketing',
@@ -79,32 +81,32 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
   },
   {
     id: 'hr',
-    label: 'HR',
-    description: 'People, payroll & compliance',
+    label: 'HR & Workforce',
+    description: 'Employees, payroll, attendance, and training',
     basePath: '/hr',
     tier: 'primary',
     icon: 'UserCog',
   },
   {
     id: 'projects',
-    label: 'Projects',
-    description: 'Work tracking, Gantt & time',
+    label: 'Projects & Service',
+    description: 'Project delivery, service jobs, and time tracking',
     basePath: '/projects',
     tier: 'primary',
     icon: 'FolderKanban',
   },
   {
     id: 'inventory',
-    label: 'Inventory',
-    description: 'Products, stock & warehouses',
+    label: 'Operations',
+    description: 'Inventory, suppliers, fulfillment, and assets',
     basePath: '/inventory',
     tier: 'primary',
     icon: 'Package',
   },
   {
     id: 'ai-studio',
-    label: 'AI',
-    description: 'AI Co-founder, Chat, Insights & more',
+    label: 'AI Workspace',
+    description: 'AI assistant, advisors, insights, voice, and knowledge tools',
     basePath: '/ai-studio',
     tier: 'primary',
     icon: 'Sparkles',
@@ -114,7 +116,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
   // AI group (also available as primary "AI" tile above)
   {
     id: 'ai-cofounder',
-    label: 'AI Co-founder',
+    label: 'AI Advisors',
     description: 'Business AI with specialist agents',
     basePath: '/ai-cofounder',
     tier: 'secondary',
@@ -123,7 +125,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
   },
   {
     id: 'ai-chat',
-    label: 'AI Chat',
+    label: 'AI Assistant',
     description: 'Conversational AI assistant',
     basePath: '/ai-chat',
     tier: 'secondary',
@@ -159,7 +161,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
   },
   {
     id: 'knowledge-rag',
-    label: 'Knowledge & RAG',
+    label: 'Knowledge Assistant',
     description: 'Document Q&A with RAG',
     basePath: '/knowledge-rag',
     tier: 'secondary',
@@ -178,8 +180,8 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
   // Communication
   {
     id: 'communication',
-    label: 'Communication',
-    description: 'Email, WhatsApp, SMS',
+    label: 'Communications Infrastructure',
+    description: 'Shared messaging channels for campaigns, sales, and support',
     basePath: '/communication',
     tier: 'secondary',
     icon: 'MessageSquare',
@@ -188,8 +190,8 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
   // Productivity
   {
     id: 'productivity',
-    label: 'Productivity',
-    description: 'Sheets, Docs, Drive, Meet, PDF',
+    label: 'Workspace Tools',
+    description: 'Sheets, Docs, Drive, Slides, Meet, and PDF tools',
     basePath: '/productivity',
     tier: 'secondary',
     icon: 'LayoutGrid',
@@ -253,7 +255,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
   {
     id: 'industry-intelligence',
     label: 'Industry Intelligence',
-    description: 'News & market trends',
+    description: 'Market context inside analytics',
     basePath: '/industry-intelligence',
     tier: 'secondary',
     icon: 'TrendingUp',
@@ -264,28 +266,25 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     label: 'Analytics',
     description: 'Reports & dashboards',
     basePath: '/analytics',
-    tier: 'secondary',
+    tier: 'primary',
     icon: 'BarChart3',
-    secondaryGroup: 'intelligence',
   },
   // Operations
   {
     id: 'workflow-automation',
-    label: 'Workflow Automation',
+    label: 'Automation',
     description: 'Automation & orchestration',
     basePath: '/workflow-automation',
-    tier: 'secondary',
+    tier: 'primary',
     icon: 'GitBranch',
-    secondaryGroup: 'operations',
   },
   {
     id: 'contracts',
-    label: 'Contracts',
-    description: 'Contract management',
+    label: 'Documents & Contracts',
+    description: 'Contracts, templates, and renewals',
     basePath: '/contracts',
-    tier: 'secondary',
+    tier: 'primary',
     icon: 'FileText',
-    secondaryGroup: 'operations',
   },
   {
     id: 'compliance',
@@ -340,9 +339,8 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     label: 'Support',
     description: 'Tickets & chat',
     basePath: '/support',
-    tier: 'secondary',
+    tier: 'primary',
     icon: 'Headphones',
-    secondaryGroup: 'support',
   },
   {
     id: 'help-center',
@@ -356,12 +354,13 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
 ]
 
 const SECONDARY_GROUP_LABELS: Record<SecondaryGroup, string> = {
-  ai: 'AI',
-  communication: 'Communication',
-  productivity: 'Productivity',
-  intelligence: 'Intelligence',
-  operations: 'Operations',
-  support: 'Support',
+  growth: 'CRM & Sales Features',
+  ai: 'AI Workspace Tools',
+  communication: 'Platform Capabilities',
+  productivity: 'Workspace Tools',
+  intelligence: 'Analytics Extensions',
+  operations: 'Platform Operations',
+  support: 'Support Extensions',
 }
 
 export function getPrimaryModules(): PayAidModuleConfig[] {
@@ -375,6 +374,7 @@ export function getSecondaryModules(): PayAidModuleConfig[] {
 export function getSecondaryModulesByGroup(): Record<SecondaryGroup, PayAidModuleConfig[]> {
   const groups = {} as Record<SecondaryGroup, PayAidModuleConfig[]>
   const groupOrder: SecondaryGroup[] = [
+    'growth',
     'ai',
     'communication',
     'productivity',

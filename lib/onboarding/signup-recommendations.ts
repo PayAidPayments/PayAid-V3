@@ -12,13 +12,14 @@ export function tierFromTeamSizeBracket(bracket: TeamSizeBracket): 'starter' | '
   return bracket === '1-5' ? 'starter' : 'professional'
 }
 
-/** Backbone modules (non–industry-specific) shown first for every industry. */
+/** Backbone modules (non-industry-specific) shown first for every industry. */
 const SIGNUP_BACKBONE: readonly string[] = [
   'crm',
   'finance',
+  'inventory',
   'projects',
   'analytics',
-  'workflow',
+  'sales',
 ]
 
 /**
@@ -26,27 +27,27 @@ const SIGNUP_BACKBONE: readonly string[] = [
  * Ordered by importance; merged after backbone up to maxPick.
  */
 const INDUSTRY_OVERLAYS: Record<string, readonly string[]> = {
-  restaurant: ['inventory', 'appointments', 'communication', 'marketing', 'sales'],
-  retail: ['inventory', 'sales', 'marketing', 'communication'],
-  manufacturing: ['inventory', 'contracts', 'communication', 'hr'],
-  healthcare: ['appointments', 'hr', 'communication', 'compliance'],
-  education: ['lms', 'appointments', 'communication', 'marketing'],
-  'real-estate': ['contracts', 'communication', 'sales', 'marketing'],
-  freelancer: ['sales', 'productivity', 'communication', 'marketing'],
-  'service-business': ['appointments', 'communication', 'marketing', 'sales'],
-  ecommerce: ['inventory', 'sales', 'marketing', 'communication'],
-  'professional-services': ['contracts', 'productivity', 'communication', 'compliance'],
-  logistics: ['inventory', 'communication', 'projects', 'contracts'],
-  agriculture: ['inventory', 'communication', 'marketing', 'sales'],
-  construction: ['inventory', 'contracts', 'communication', 'hr'],
-  beauty: ['appointments', 'marketing', 'communication', 'sales'],
-  automotive: ['inventory', 'appointments', 'communication', 'sales'],
-  hospitality: ['appointments', 'hr', 'communication', 'marketing'],
-  legal: ['contracts', 'productivity', 'compliance', 'communication'],
-  'financial-services': ['compliance', 'contracts', 'communication', 'projects'],
-  events: ['appointments', 'marketing', 'communication', 'projects'],
-  wholesale: ['inventory', 'sales', 'communication', 'contracts'],
-  others: ['productivity', 'communication', 'contracts', 'marketing'],
+  restaurant: ['marketing', 'hr', 'communication'],
+  retail: ['marketing', 'communication', 'hr'],
+  manufacturing: ['hr', 'communication'],
+  healthcare: ['hr', 'communication', 'marketing'],
+  education: ['hr', 'marketing', 'communication'],
+  'real-estate': ['marketing', 'communication'],
+  freelancer: ['marketing', 'communication'],
+  'service-business': ['marketing', 'communication', 'hr'],
+  ecommerce: ['marketing', 'communication'],
+  'professional-services': ['marketing', 'communication', 'hr'],
+  logistics: ['communication', 'hr'],
+  agriculture: ['marketing', 'communication'],
+  construction: ['hr', 'communication'],
+  beauty: ['marketing', 'communication'],
+  automotive: ['communication', 'marketing'],
+  hospitality: ['hr', 'marketing', 'communication'],
+  legal: ['communication', 'marketing'],
+  'financial-services': ['communication', 'marketing'],
+  events: ['marketing', 'communication', 'hr'],
+  wholesale: ['communication', 'marketing'],
+  others: ['marketing', 'communication', 'hr'],
 }
 
 const DEFAULT_OVERLAY = INDUSTRY_OVERLAYS.others

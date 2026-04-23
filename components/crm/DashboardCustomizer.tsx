@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { GripVertical, X, Plus, BarChart3, TrendingUp, Users, Briefcase, Calendar, FileText } from 'lucide-react'
 import { motion, Reorder } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface Widget {
   id: string
@@ -29,15 +30,19 @@ interface DashboardCustomizerProps {
 }
 
 export function DashboardCustomizer({ tenantId, widgets, onWidgetsChange, onSave }: DashboardCustomizerProps) {
+  const { term, pluralTerm } = useTerms()
   const [isOpen, setIsOpen] = useState(false)
-  const [availableWidgets] = useState<Widget[]>([
-    { id: 'revenue', type: 'revenue', title: 'Revenue Chart', icon: <TrendingUp className="w-5 h-5" />, size: 'medium', enabled: true },
-    { id: 'deals', type: 'deals', title: 'Deals Pipeline', icon: <Briefcase className="w-5 h-5" />, size: 'medium', enabled: true },
-    { id: 'contacts', type: 'contacts', title: 'Recent Contacts', icon: <Users className="w-5 h-5" />, size: 'small', enabled: true },
-    { id: 'tasks', type: 'tasks', title: 'Upcoming Tasks', icon: <Calendar className="w-5 h-5" />, size: 'small', enabled: true },
-    { id: 'pipeline', type: 'pipeline', title: 'Pipeline Chart', icon: <BarChart3 className="w-5 h-5" />, size: 'large', enabled: true },
-    { id: 'activity', type: 'activity', title: 'Activity Feed', icon: <FileText className="w-5 h-5" />, size: 'medium', enabled: false },
-  ])
+  const availableWidgets = useMemo<Widget[]>(
+    () => [
+      { id: 'revenue', type: 'revenue', title: 'Revenue Chart', icon: <TrendingUp className="w-5 h-5" />, size: 'medium', enabled: true },
+      { id: 'deals', type: 'deals', title: `${pluralTerm('deal')} ${term('pipeline')}`, icon: <Briefcase className="w-5 h-5" />, size: 'medium', enabled: true },
+      { id: 'contacts', type: 'contacts', title: `Recent ${pluralTerm('contact')}`, icon: <Users className="w-5 h-5" />, size: 'small', enabled: true },
+      { id: 'tasks', type: 'tasks', title: `Upcoming ${pluralTerm('task')}`, icon: <Calendar className="w-5 h-5" />, size: 'small', enabled: true },
+      { id: 'pipeline', type: 'pipeline', title: `${term('pipeline')} Chart`, icon: <BarChart3 className="w-5 h-5" />, size: 'large', enabled: true },
+      { id: 'activity', type: 'activity', title: 'Activity Feed', icon: <FileText className="w-5 h-5" />, size: 'medium', enabled: false },
+    ],
+    [term, pluralTerm]
+  )
 
   const toggleWidget = (widgetId: string) => {
     const updated = widgets.map(w => 

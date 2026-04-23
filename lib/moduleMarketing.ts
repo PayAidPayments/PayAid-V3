@@ -52,7 +52,7 @@ export const MODULE_MARKETING: ModuleLandingConfig[] = [
   },
   {
     slug: 'hr',
-    name: 'HR',
+    name: 'HR & Workforce',
     tagline: 'People, payroll, attendance, and compliance.',
     description: 'From onboarding to payroll runs — built for distributed and retail teams.',
     heroBenefits: ['Employee records & documents', 'Payroll cycles & payslips', 'Attendance and leave'],
@@ -88,8 +88,17 @@ export const MODULE_MARKETING: ModuleLandingConfig[] = [
     defaultSelectedModules: ['inventory'],
   },
   {
+    slug: 'operations',
+    name: 'Operations',
+    tagline: 'Inventory, suppliers, fulfillment, and assets.',
+    description: 'Run day-to-day operational execution with stock, suppliers, and workflow visibility.',
+    heroBenefits: ['Inventory and stock visibility', 'Supplier and fulfillment coordination', 'Operational controls'],
+    defaultPlanType: 'multi',
+    defaultSelectedModules: ['inventory', 'projects', 'finance'],
+  },
+  {
     slug: 'projects',
-    name: 'Projects',
+    name: 'Projects & Service',
     tagline: 'Deliver work on time with tasks and timelines.',
     description: 'Projects, tasks, and collaboration without a separate PM tool.',
     heroBenefits: ['Task boards & milestones', 'Time and delivery tracking', 'Cross-team visibility'],
@@ -98,12 +107,48 @@ export const MODULE_MARKETING: ModuleLandingConfig[] = [
   },
   {
     slug: 'ai-studio',
-    name: 'AI Studio',
+    name: 'AI Workspace',
     tagline: 'Co-founder, chat, insights, and creative AI.',
     description: 'Specialist agents for finance, HR, marketing, and day-to-day decisions.',
     heroBenefits: ['Multi-agent co-founder', 'Chat and insights', 'Brand-safe creative helpers'],
     defaultPlanType: 'single',
     defaultSelectedModules: ['ai-studio'],
+  },
+  {
+    slug: 'support',
+    name: 'Support',
+    tagline: 'Tickets, help center, and service continuity.',
+    description: 'Manage customer issues with clear ownership, SLA-aware workflows, and shared context.',
+    heroBenefits: ['Ticket-oriented operations', 'Help center and self-service', 'Service history visibility'],
+    defaultPlanType: 'multi',
+    defaultSelectedModules: ['communication', 'crm'],
+  },
+  {
+    slug: 'documents-contracts',
+    name: 'Documents & Contracts',
+    tagline: 'Agreements, templates, and controlled document workflows.',
+    description: 'Keep business documents structured with contract visibility and renewal readiness.',
+    heroBenefits: ['Contract lifecycle workflows', 'Template-driven documentation', 'Audit-friendly records'],
+    defaultPlanType: 'multi',
+    defaultSelectedModules: ['crm', 'communication'],
+  },
+  {
+    slug: 'automation',
+    name: 'Automation',
+    tagline: 'Workflow rules and cross-team orchestration.',
+    description: 'Automate repetitive business processes with explicit ownership and execution tracking.',
+    heroBenefits: ['Rule-driven process automation', 'Cross-module orchestration', 'Execution logs and controls'],
+    defaultPlanType: 'multi',
+    defaultSelectedModules: ['projects', 'communication'],
+  },
+  {
+    slug: 'ai-workspace',
+    name: 'AI Workspace',
+    tagline: 'Assistant, advisors, insights, and voice in one suite.',
+    description: 'Use AI across sales, finance, support, and operations from a single workspace.',
+    heroBenefits: ['AI assistant and advisors', 'Knowledge and voice tooling', 'Action-oriented AI workflows'],
+    defaultPlanType: 'multi',
+    defaultSelectedModules: ['ai-studio', 'communication'],
   },
   {
     slug: 'analytics',
@@ -169,7 +214,7 @@ export const MODULE_MARKETING: ModuleLandingConfig[] = [
     defaultSelectedModules: ['crm', 'sales', 'marketing', 'finance'],
   },
   {
-    slug: 'operations',
+    slug: 'operations-bundle',
     name: 'Operations bundle',
     tagline: 'Projects, inventory, and HR.',
     description: 'For teams that deliver physical or service work at scale.',
@@ -304,17 +349,64 @@ export function getModuleBySlug(slug: string | null | undefined): ModuleLandingC
 /** Query string for `/register` from a landing config (modules are catalog-filtered). */
 export function buildRegisterHref(config: ModuleLandingConfig): string {
   const p = new URLSearchParams()
+  p.set('onboarding', 'true')
+  p.set('source', 'module-landing')
   p.set('planType', config.defaultPlanType)
   if (config.defaultPlanType !== 'suite') {
     const cleaned = filterToCatalogModules([...config.defaultSelectedModules])
     if (cleaned.length) p.set('modules', cleaned.join(','))
   }
-  p.set('from', 'module')
-  return `/register?${p.toString()}`
+  return `/?${p.toString()}#industry-selector`
 }
 
 export function getModuleMarketingSlugs(): string[] {
   return MODULE_MARKETING.map((m) => m.slug)
+}
+
+export const PRIMARY_SUITE_MARKETING_SLUGS = [
+  'crm',
+  'sales',
+  'marketing',
+  'finance',
+  'operations',
+  'projects',
+  'hr',
+  'support',
+  'documents-contracts',
+  'analytics',
+  'automation',
+  'ai-workspace',
+] as const
+
+export const INDUSTRY_SOLUTION_MARKETING_SLUGS = [
+  'retail',
+  'manufacturing',
+  'services',
+  'ecommerce',
+] as const
+
+export const STARTER_BUNDLE_MARKETING_SLUGS = [
+  'starter',
+  'growth',
+  'operations-bundle',
+  'founder',
+] as const
+
+export function getPrimarySuiteMarketingModules(): ModuleLandingConfig[] {
+  const allowed = new Set(PRIMARY_SUITE_MARKETING_SLUGS)
+  return MODULE_MARKETING.filter((m) => allowed.has(m.slug as (typeof PRIMARY_SUITE_MARKETING_SLUGS)[number]))
+}
+
+export function getIndustrySolutionMarketingModules(): ModuleLandingConfig[] {
+  const allowed = new Set(INDUSTRY_SOLUTION_MARKETING_SLUGS)
+  return MODULE_MARKETING.filter(
+    (m) => allowed.has(m.slug as (typeof INDUSTRY_SOLUTION_MARKETING_SLUGS)[number])
+  )
+}
+
+export function getStarterBundleMarketingModules(): ModuleLandingConfig[] {
+  const allowed = new Set(STARTER_BUNDLE_MARKETING_SLUGS)
+  return MODULE_MARKETING.filter((m) => allowed.has(m.slug as (typeof STARTER_BUNDLE_MARKETING_SLUGS)[number]))
 }
 
 /**
@@ -328,23 +420,25 @@ const MODULE_CONFIG_ID_TO_MARKETING_SLUG: Record<string, string> = {
   finance: 'finance',
   projects: 'projects',
   hr: 'hr',
-  communication: 'communication',
+  communication: 'support',
   marketplace: 'suite',
-  'ai-studio': 'ai-studio',
-  'ai-cofounder': 'ai-studio',
-  'ai-chat': 'ai-studio',
-  'ai-insights': 'insights',
-  'website-builder': 'founder',
-  'logo-generator': 'social',
-  'knowledge-rag': 'documents',
-  'voice-agents': 'voice-ai',
+  'ai-studio': 'ai-workspace',
+  'ai-cofounder': 'ai-workspace',
+  'ai-chat': 'ai-workspace',
+  'ai-insights': 'ai-workspace',
+  'website-builder': 'marketing',
+  'logo-generator': 'ai-workspace',
+  'knowledge-rag': 'ai-workspace',
+  'voice-agents': 'ai-workspace',
   analytics: 'analytics',
-  'industry-intelligence': 'insights',
+  'industry-intelligence': 'analytics',
   appointments: 'services',
-  inventory: 'inventory',
-  workflow: 'workflow',
-  'help-center': 'suite',
-  contracts: 'services',
+  inventory: 'operations',
+  workflow: 'automation',
+  'workflow-automation': 'automation',
+  support: 'support',
+  'help-center': 'support',
+  contracts: 'documents-contracts',
   productivity: 'founder',
   spreadsheet: 'founder',
   docs: 'documents',

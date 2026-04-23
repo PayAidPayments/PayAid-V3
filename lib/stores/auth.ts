@@ -15,6 +15,7 @@ interface Tenant {
   slug?: string | null
   name: string
   subdomain: string | null
+  industry?: string | null
   plan: string
   // NEW: Module licensing (Phase 1)
   licensedModules?: string[]
@@ -208,6 +209,7 @@ export const useAuthStore = create<AuthState>()(
           const tenantData = data.tenant ? {
             ...data.tenant,
             slug: data.tenant?.slug ?? null,
+            industry: data.tenant?.industry ?? null,
             licensedModules: data.tenant?.licensedModules || [],
             subscriptionTier: data.tenant?.subscriptionTier || 'free',
           } : null
@@ -482,6 +484,7 @@ export const useAuthStore = create<AuthState>()(
               slug: tenantFromDb.slug ?? null,
               name: tenantFromDb.name,
               subdomain: tenantFromDb.subdomain,
+              industry: tenantFromDb.industry ?? null,
               plan: tenantFromDb.plan,
               licensedModules: tenantFromDb.licensedModules || [],
               subscriptionTier: tenantFromDb.subscriptionTier || 'free',

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { GlassCard } from '@/components/modules/GlassCard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useTerms } from '@/lib/terminology/use-terms'
 import {
   Dialog,
   DialogContent,
@@ -30,12 +31,13 @@ interface WorkflowAutomationPanelProps {
 }
 
 export function WorkflowAutomationPanel({ tenantId }: WorkflowAutomationPanelProps) {
+  const { term, pluralTerm } = useTerms()
   const [automations, setAutomations] = useState<Automation[]>([
     {
       id: '1',
-      name: 'Auto-assign Lead',
-      description: 'Automatically assign new leads to available sales reps',
-      trigger: 'New lead created',
+      name: `Auto-assign ${term('lead')}`,
+      description: `Automatically assign new ${pluralTerm('lead').toLowerCase()} to available sales reps`,
+      trigger: `New ${term('lead').toLowerCase()} created`,
       actions: ['Assign to round-robin', 'Send welcome email'],
       status: 'active',
       executions: 145,
@@ -53,9 +55,9 @@ export function WorkflowAutomationPanel({ tenantId }: WorkflowAutomationPanelPro
     },
     {
       id: '3',
-      name: 'Deal Stage Update',
-      description: 'Update deal probability when stage changes',
-      trigger: 'Deal stage changed',
+      name: `${term('deal')} Stage Update`,
+      description: `Update ${term('deal').toLowerCase()} probability when stage changes`,
+      trigger: `${term('deal')} stage changed`,
       actions: ['Update probability', 'Notify owner'],
       status: 'paused',
       executions: 67,
@@ -79,7 +81,7 @@ export function WorkflowAutomationPanel({ tenantId }: WorkflowAutomationPanelPro
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-lg font-semibold">Workflow Automations</CardTitle>
-              <CardDescription>Automate repetitive tasks and workflows</CardDescription>
+              <CardDescription>{`Automate repetitive ${pluralTerm('task').toLowerCase()} and workflows`}</CardDescription>
             </div>
             <Button onClick={() => setShowCreateDialog(true)}>
               <Plus className="w-4 h-4 mr-2" />
@@ -177,9 +179,9 @@ export function WorkflowAutomationPanel({ tenantId }: WorkflowAutomationPanelPro
               Automation builder will be implemented here. This will allow users to:
             </p>
             <ul className="list-disc list-inside mt-2 text-sm text-gray-500 space-y-1">
-              <li>Select triggers (e.g., "New lead created", "Invoice overdue")</li>
+              <li>{`Select triggers (e.g., "New ${term('lead').toLowerCase()} created", "Invoice overdue")`}</li>
               <li>Define conditions (optional)</li>
-              <li>Choose actions (e.g., "Send email", "Create task", "Update field")</li>
+              <li>{`Choose actions (e.g., "Send email", "Create ${term('task').toLowerCase()}", "Update field")`}</li>
               <li>Test and activate the automation</li>
             </ul>
           </div>

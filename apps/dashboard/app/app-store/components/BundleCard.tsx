@@ -33,7 +33,7 @@ const moduleIcons: Record<string, string> = {
 }
 
 export default function BundleCard({ bundle }: BundleCardProps) {
-  const signupHref = `/signup?planType=multi&modules=${encodeURIComponent(bundle.modules.join(','))}`
+  const signupHref = `/?onboarding=true&source=app-store-bundle&bundle=${encodeURIComponent(bundle.id)}&planType=multi&tier=starter&modules=${encodeURIComponent(bundle.modules.join(','))}`
 
   return (
     <div className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border-2 ${
@@ -99,7 +99,7 @@ export default function BundleCard({ bundle }: BundleCardProps) {
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
         } block text-center`}
       >
-        Get This Bundle
+        Save with this bundle
       </Link>
     </div>
   )

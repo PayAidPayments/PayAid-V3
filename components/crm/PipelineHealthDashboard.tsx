@@ -7,6 +7,7 @@ import { Loader2, Activity, AlertTriangle, TrendingUp, CheckCircle } from 'lucid
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface PipelineHealthData {
   projectedCloseRate: number
@@ -24,6 +25,7 @@ interface PipelineHealthData {
 }
 
 export function PipelineHealthDashboard() {
+  const { term, pluralTerm } = useTerms()
   const {
     data,
     isLoading,
@@ -39,7 +41,7 @@ export function PipelineHealthDashboard() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Pipeline Health</CardTitle>
+          <CardTitle>{`${term('pipeline')} Health`}</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-48">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -52,10 +54,10 @@ export function PipelineHealthDashboard() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Pipeline Health</CardTitle>
+          <CardTitle>{`${term('pipeline')} Health`}</CardTitle>
         </CardHeader>
         <CardContent className="text-red-500 text-sm">
-          <AlertTriangle className="inline-block h-4 w-4 mr-1" /> Failed to load pipeline health.
+          <AlertTriangle className="inline-block h-4 w-4 mr-1" /> {`Failed to load ${term('pipeline').toLowerCase()} health.`}
         </CardContent>
       </Card>
     )
@@ -78,7 +80,7 @@ export function PipelineHealthDashboard() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Pipeline Health</CardTitle>
+        <CardTitle className="text-sm font-medium">{`${term('pipeline')} Health`}</CardTitle>
         <Activity className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
@@ -124,11 +126,11 @@ export function PipelineHealthDashboard() {
             <div className="flex items-center mb-2">
               <AlertTriangle className="h-4 w-4 mr-2 text-orange-600" />
               <span className="text-sm font-semibold text-orange-600">
-                {health.stuckDeals.count} Deal{health.stuckDeals.count > 1 ? 's' : ''} Stuck
+                {`${health.stuckDeals.count} ${health.stuckDeals.count > 1 ? pluralTerm('deal') : term('deal')} Stuck`}
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Deals with no activity for &gt;14 days
+              {`${pluralTerm('deal')} with no activity for >14 days`}
             </p>
             {health.stuckDeals.deals.length > 0 && (
               <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
@@ -148,11 +150,11 @@ export function PipelineHealthDashboard() {
             <div className="flex items-center mb-2">
               <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
               <span className="text-sm font-semibold text-green-600">
-                {health.readyToMove.count} Deal{health.readyToMove.count > 1 ? 's' : ''} Ready to Move
+                {`${health.readyToMove.count} ${health.readyToMove.count > 1 ? pluralTerm('deal') : term('deal')} Ready to Move`}
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Deals ready to advance to next stage
+              {`${pluralTerm('deal')} ready to advance to next stage`}
             </p>
           </div>
         )}

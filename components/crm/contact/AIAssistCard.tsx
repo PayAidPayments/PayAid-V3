@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/lib/stores/auth'
 import { TemplatePickerModal } from './TemplatePickerModal'
 import { CopyAction, COPY_ACTION_PRESETS } from '@/components/ui/copy-action'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface AIAssistCardProps {
   contact: any
@@ -15,6 +16,7 @@ interface AIAssistCardProps {
 }
 
 export const AIAssistCard: React.FC<AIAssistCardProps> = ({ contact, tenantId, onEnriched, dealId = null }) => {
+  const { term } = useTerms()
   const [intent, setIntent] = useState('')
   const [generatedMessage, setGeneratedMessage] = useState<string | null>(null)
   const [messageType, setMessageType] = useState<'email' | 'whatsapp' | null>(null)
@@ -47,14 +49,14 @@ export const AIAssistCard: React.FC<AIAssistCardProps> = ({ contact, tenantId, o
 
       if (response.ok) {
         if (onEnriched) onEnriched()
-        alert('Contact enriched successfully!')
+        alert(`${term('contact')} enriched successfully!`)
       } else {
         const error = await response.json()
-        alert(error.error || 'Failed to enrich contact')
+        alert(error.error || `Failed to enrich ${term('contact').toLowerCase()}`)
       }
     } catch (error) {
       console.error('Enrichment error:', error)
-      alert('Failed to enrich contact. Please try again.')
+      alert(`Failed to enrich ${term('contact').toLowerCase()}. Please try again.`)
     } finally {
       setIsEnriching(false)
     }
@@ -124,7 +126,7 @@ export const AIAssistCard: React.FC<AIAssistCardProps> = ({ contact, tenantId, o
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm p-4 space-y-3">
       <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">AI Assist</h2>
       
-      {/* Enrich Contact */}
+      {/* Enrich contact */}
       <div className="space-y-2">
         <button
           onClick={handleEnrich}
@@ -132,7 +134,7 @@ export const AIAssistCard: React.FC<AIAssistCardProps> = ({ contact, tenantId, o
           className="w-full rounded-lg bg-indigo-600 text-white text-xs font-semibold py-2 hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           <Sparkles className="w-3 h-3" />
-          {isEnriching ? 'Enriching...' : 'Enrich Contact'}
+          {isEnriching ? 'Enriching...' : `Enrich ${term('contact')}`}
         </button>
         <p className="text-xs text-slate-500 dark:text-gray-400">
           Find LinkedIn, website, fill missing fields

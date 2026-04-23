@@ -6,6 +6,7 @@ import { motion, Reorder } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface PipelineStage {
   id: string
@@ -29,6 +30,7 @@ export function DealPipelineCustomizer({
   onSave,
 }: DealPipelineCustomizerProps) {
   const [editingStage, setEditingStage] = useState<string | null>(null)
+  const { term } = useTerms()
 
   const addStage = () => {
     const newStage: PipelineStage = {
@@ -53,7 +55,7 @@ export function DealPipelineCustomizer({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Pipeline Stages</h3>
+        <h3 className="text-lg font-semibold">{`${term('pipeline')} Stages`}</h3>
         <Button onClick={addStage} size="sm">
           <Plus className="w-4 h-4 mr-2" />
           Add Stage
@@ -139,7 +141,7 @@ export function DealPipelineCustomizer({
       </Reorder.Group>
 
       <Button onClick={() => onSave(stages)} className="w-full">
-        Save Pipeline Configuration
+        {`Save ${term('pipeline')} Configuration`}
       </Button>
     </div>
   )

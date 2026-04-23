@@ -5,16 +5,16 @@ import Link from 'next/link'
 export default function AboutPage() {
   const highlights = [
     {
-      title: 'Bharat-first product',
-      text: 'GST-ready workflows, Indian payment context, aur local business operations ke liye design.',
+      title: 'Built for Indian businesses',
+      text: 'GST-ready workflows, local payment context, and practical tools for day-to-day operations.',
     },
     {
       title: 'One platform, many modules',
-      text: 'CRM, Finance, HR, Inventory, Marketing, AI - sab ek jagah, single login ke saath.',
+      text: 'CRM, Finance, HR, Inventory, Marketing, and AI in one workspace with one login.',
     },
     {
       title: 'Fast onboarding',
-      text: 'Pehle industry choose karo, phir modules select karo, aur trial start karo in a few minutes.',
+      text: 'Choose your industry, pick modules, and start your trial in minutes.',
     },
   ]
 
@@ -28,7 +28,7 @@ export default function AboutPage() {
               <span>PayAid V3</span>
             </Link>
             <Link 
-              href="/#industry-selector" 
+              href="/?onboarding=true#industry-selector" 
               className="px-4 py-2 rounded-lg font-medium text-white transition-colors"
               style={{ backgroundColor: '#53328A' }}
             >
@@ -42,10 +42,10 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: '#53328A' }}>
-              About PayAid / Hamari Kahani
+              About PayAid
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Indian businesses ke liye simple, practical aur AI-powered business operating system.
+              A simple business operating system for Indian SMBs.
             </p>
           </div>
         </div>
@@ -55,10 +55,10 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold mb-6 text-center" style={{ color: '#53328A' }}>
-              Vision / Drishti
+              Vision
             </h2>
             <p className="text-xl text-gray-700 text-center leading-relaxed">
-              Har Indian business ko digital growth ke liye right tools dena - without complexity.
+              Help every Indian business grow with digital tools that are easy to use.
             </p>
             <div className="mt-8 text-center">
               <span className="text-2xl font-bold" style={{ color: '#F5C700' }}>#YourPaymentPartner</span>
@@ -71,10 +71,10 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold mb-6 text-center" style={{ color: '#53328A' }}>
-              Mission / Lakshya
+              Mission
             </h2>
             <p className="text-xl text-gray-700 text-center leading-relaxed">
-              Payments + operations + AI ko ek hi platform mein laakar business owners ka time aur cost bachana.
+              Bring payments, operations, and AI into one platform that saves time and cost.
             </p>
           </div>
         </div>
@@ -104,14 +104,14 @@ export default function AboutPage() {
             Ready to start?
           </h2>
           <p className="text-xl text-purple-100 mb-8">
-            Industry choose karo, modules select karo, aur free trial start karo.
+            Choose your industry, select modules, and start your free trial.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
-              href="/#industry-selector"
+              href="/?onboarding=true#industry-selector"
               className="px-8 py-3 rounded-lg font-medium text-purple-900 bg-yellow-400 hover:bg-yellow-300 transition-colors"
             >
-              Choose Industry & Modules
+              Choose Industry & Start
             </Link>
             <Link 
               href="/contact"

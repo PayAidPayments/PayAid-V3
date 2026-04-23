@@ -18,13 +18,14 @@ import { getAuthHeaders } from '@/lib/hooks/use-api'
 import { Card, CardContent } from '@/components/ui/card'
 import { LeadScoringBadge } from '@/components/LeadScoringBadge'
 import { StageBadge } from '@/components/crm/StageBadge'
+import { useTerms } from '@/lib/terminology/use-terms'
 import { format } from 'date-fns'
 import { GripVertical, Loader2 } from 'lucide-react'
 
 const STAGES = [
-  { id: 'prospect', label: 'Prospect', color: 'bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800' },
-  { id: 'contact', label: 'Contact', color: 'bg-purple-100 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800' },
-  { id: 'customer', label: 'Customer', color: 'bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800' },
+  { id: 'prospect', labelKey: 'lead', color: 'bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800' },
+  { id: 'contact', labelKey: 'contact', color: 'bg-purple-100 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800' },
+  { id: 'customer', labelKey: 'customer', color: 'bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800' },
 ] as const
 
 type StageId = (typeof STAGES)[number]['id']
@@ -123,6 +124,7 @@ interface LeadsKanbanProps {
 }
 
 export function LeadsKanban({ tenantId }: LeadsKanbanProps) {
+  const { term } = useTerms()
   const queryClient = useQueryClient()
   const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -206,6 +208,7 @@ export function LeadsKanban({ tenantId }: LeadsKanbanProps) {
           <KanbanColumn
             key={stage.id}
             stage={stage}
+            label={term(stage.labelKey)}
             leads={contactsByStage[stage.id]}
             tenantId={tenantId}
           />
@@ -225,10 +228,12 @@ export function LeadsKanban({ tenantId }: LeadsKanbanProps) {
 
 function KanbanColumn({
   stage,
+  label,
   leads,
   tenantId,
 }: {
   stage: (typeof STAGES)[number]
+  label: string
   leads: Array<{ id: string; name: string; company?: string | null; stage?: string | null; leadScore?: number | null; lastContactedAt?: string | null; createdAt?: string }>
   tenantId: string
 }) {
@@ -239,7 +244,7 @@ function KanbanColumn({
       className={`rounded-xl border-2 border-dashed ${stage.color} p-3 min-h-[320px] transition-colors ${isOver ? 'ring-2 ring-indigo-400' : ''}`}
     >
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-slate-800 dark:text-gray-200">{stage.label}</h3>
+        <h3 className="font-semibold text-slate-800 dark:text-gray-200">{label}</h3>
         <span className="text-sm text-slate-500 dark:text-gray-400">{leads.length}</span>
       </div>
       <div className="space-y-2">

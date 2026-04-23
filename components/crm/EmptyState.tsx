@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Plus, FileText, Users, Briefcase, CheckSquare } from 'lucide-react'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface EmptyStateProps {
   type: 'contacts' | 'deals' | 'tasks' | 'invoices' | 'generic'
@@ -23,21 +24,23 @@ export function EmptyState({
   onAction,
   icon,
 }: EmptyStateProps) {
+  const { term, pluralTerm } = useTerms()
+
   const getDefaultConfig = () => {
     switch (type) {
       case 'contacts':
         return {
-          title: 'No contacts yet',
-          description: 'Start building your contact database by adding your first contact.',
-          actionLabel: 'Add Contact',
+          title: `No ${pluralTerm('contact').toLowerCase()} yet`,
+          description: `Start building your ${term('contact').toLowerCase()} database by adding your first ${term('contact').toLowerCase()}.`,
+          actionLabel: `Add ${term('contact')}`,
           actionHref: '/crm/[tenantId]/contacts-new',
           icon: <Users className="w-16 h-16 text-gray-300" />,
         }
       case 'deals':
         return {
-          title: 'No deals in pipeline',
-          description: 'Create your first deal to start tracking sales opportunities.',
-          actionLabel: 'Create Deal',
+          title: `No ${pluralTerm('deal').toLowerCase()} in ${term('pipeline').toLowerCase()}`,
+          description: `Create your first ${term('deal').toLowerCase()} to start tracking sales opportunities.`,
+          actionLabel: `Create ${term('deal')}`,
           actionHref: '/crm/[tenantId]/Deals/New',
           icon: <Briefcase className="w-16 h-16 text-gray-300" />,
         }

@@ -19,6 +19,7 @@ import {
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 import { GlassCard } from '@/components/modules/GlassCard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface AdvancedAnalyticsProps {
   tenantId: string
@@ -27,6 +28,7 @@ interface AdvancedAnalyticsProps {
 
 export function AdvancedAnalytics({ tenantId, stats }: AdvancedAnalyticsProps) {
   const [forecastPeriod, setForecastPeriod] = useState<'30' | '60' | '90'>('30')
+  const { term, pluralTerm } = useTerms()
 
   // Revenue Forecast Data (mock - should come from API)
   const forecastData = [
@@ -40,7 +42,7 @@ export function AdvancedAnalytics({ tenantId, stats }: AdvancedAnalyticsProps) {
 
   // Conversion Funnel Data
   const funnelData = [
-    { stage: 'Leads', count: 1000, value: 0 },
+    { stage: pluralTerm('lead'), count: 1000, value: 0 },
     { stage: 'Qualified', count: 600, value: 0 },
     { stage: 'Proposal', count: 300, value: 0 },
     { stage: 'Negotiation', count: 150, value: 0 },
@@ -119,7 +121,7 @@ export function AdvancedAnalytics({ tenantId, stats }: AdvancedAnalyticsProps) {
       <GlassCard>
         <CardHeader>
           <CardTitle className="text-lg font-semibold">Sales Conversion Funnel</CardTitle>
-          <CardDescription>Lead to deal conversion rates by stage</CardDescription>
+          <CardDescription>{`${term('lead')} to ${term('deal').toLowerCase()} conversion rates by stage`}</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -139,7 +141,7 @@ export function AdvancedAnalytics({ tenantId, stats }: AdvancedAnalyticsProps) {
       <GlassCard>
         <CardHeader>
           <CardTitle className="text-lg font-semibold">Win/Loss Analysis</CardTitle>
-          <CardDescription>Deals won vs lost by reason</CardDescription>
+          <CardDescription>{`${pluralTerm('deal')} won vs lost by reason`}</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -160,7 +162,7 @@ export function AdvancedAnalytics({ tenantId, stats }: AdvancedAnalyticsProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <GlassCard>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Average Deal Cycle</CardTitle>
+            <CardTitle className="text-sm font-medium">{`Average ${term('deal')} Cycle`}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-purple-600">42 days</div>
@@ -184,7 +186,7 @@ export function AdvancedAnalytics({ tenantId, stats }: AdvancedAnalyticsProps) {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-success">7.5%</div>
-            <p className="text-sm text-gray-500 mt-1">Leads to Won</p>
+            <p className="text-sm text-gray-500 mt-1">{`${pluralTerm('lead')} to Won`}</p>
           </CardContent>
         </GlassCard>
       </div>

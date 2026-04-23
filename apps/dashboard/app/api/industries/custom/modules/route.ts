@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess } from '@/lib/middleware/auth'
+import { normalizeSelectedModuleIds } from '@/lib/tenant/module-license-filter'
+import { shouldIncludeLegacyModuleFields } from '@/lib/taxonomy/canonical-api-mode'
 
 /**
  * POST /api/industries/custom/modules
@@ -8,6 +10,7 @@ import { requireModuleAccess } from '@/lib/middleware/auth'
  */
 export async function POST(request: NextRequest) {
   try {
+    const includeLegacy = shouldIncludeLegacyModuleFields()
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const body = await request.json()
     const { industryName, coreModules, industryFeatures } = body
@@ -20,9 +23,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure ai-studio is always included
-    const modulesToEnable = coreModules.includes('ai-studio')
-      ? coreModules
-      : [...coreModules, 'ai-studio']
+    const modulesToEnable = normalizeSelectedModuleIds(
+      coreModules.includes('ai-studio') ? coreModules : [...coreModules, 'ai-studio']
+    )
 
     // Enable modules via ModuleLicense
     for (const moduleId of modulesToEnable) {
@@ -85,8 +88,21 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      enabledModules: modulesToEnable,
-      enabledFeatures: industryFeatures || [],
+      canonical: {
+        enabledModules: modulesToEnable,
+        enabledFeatures: industryFeatures || [],
+      },
+      ...(includeLegacy
+        ? {
+            compatibility: {
+              deprecated: true,
+              enabledModules: modulesToEnable,
+              enabledFeatures: industryFeatures || [],
+            },
+            enabledModules: modulesToEnable,
+            enabledFeatures: industryFeatures || [],
+          }
+        : {}),
       industryName,
     })
   } catch (error) {

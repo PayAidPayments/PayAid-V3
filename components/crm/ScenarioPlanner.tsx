@@ -17,6 +17,7 @@ import { Loader2, TrendingUp, TrendingDown, Calculator, AlertCircle } from 'luci
 import { useToast } from '@/components/ui/use-toast'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface ScenarioResult {
   scenarioType: string
@@ -44,6 +45,7 @@ interface ScenarioResult {
 
 export function ScenarioPlanner() {
   const { toast } = useToast()
+  const { term, pluralTerm } = useTerms()
   const [scenarioType, setScenarioType] = useState<string>('close-deals')
   const [dealIds, setDealIds] = useState<string>('')
   const [contactIds, setContactIds] = useState<string>('')
@@ -94,22 +96,22 @@ export function ScenarioPlanner() {
       <CardHeader>
         <CardTitle className="flex items-center">
           <Calculator className="h-5 w-5 mr-2" />
-          Scenario Planner (What-If Analysis)
+          {`${term('deal')} Scenario Planner (What-If Analysis)`}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           {/* Scenario Type Selection */}
           <div>
-            <Label htmlFor="scenario-type">Scenario Type</Label>
+            <Label htmlFor="scenario-type">{`${term('deal')} scenario type`}</Label>
             <CustomSelect value={scenarioType} onValueChange={setScenarioType} placeholder="Select scenario">
               <CustomSelectTrigger id="scenario-type">
               </CustomSelectTrigger>
               <CustomSelectContent>
-                <CustomSelectItem value="close-deals">Close Specific Deals</CustomSelectItem>
-                <CustomSelectItem value="lose-customers">Lose Specific Customers</CustomSelectItem>
-                <CustomSelectItem value="upsell-customers">Upsell Specific Customers</CustomSelectItem>
-                <CustomSelectItem value="improve-closure-rate">Improve Closure Rate</CustomSelectItem>
+                <CustomSelectItem value="close-deals">{`Close specific ${pluralTerm('deal')}`}</CustomSelectItem>
+                <CustomSelectItem value="lose-customers">{`Lose specific ${pluralTerm('customer')}`}</CustomSelectItem>
+                <CustomSelectItem value="upsell-customers">{`Upsell specific ${pluralTerm('customer')}`}</CustomSelectItem>
+                <CustomSelectItem value="improve-closure-rate">{`Improve ${term('deal').toLowerCase()} closure rate`}</CustomSelectItem>
               </CustomSelectContent>
             </CustomSelect>
           </div>
@@ -117,24 +119,24 @@ export function ScenarioPlanner() {
           {/* Parameters based on scenario type */}
           {scenarioType === 'close-deals' && (
             <div>
-              <Label htmlFor="deal-ids">Deal IDs (comma-separated)</Label>
+              <Label htmlFor="deal-ids">{`${term('deal')} IDs (comma-separated)`}</Label>
               <Input
                 id="deal-ids"
                 value={dealIds}
                 onChange={(e) => setDealIds(e.target.value)}
-                placeholder="deal-id-1, deal-id-2, deal-id-3"
+                placeholder={`${term('deal').toLowerCase()}-id-1, ${term('deal').toLowerCase()}-id-2`}
               />
             </div>
           )}
 
           {(scenarioType === 'lose-customers' || scenarioType === 'upsell-customers') && (
             <div>
-              <Label htmlFor="contact-ids">Contact IDs (comma-separated)</Label>
+              <Label htmlFor="contact-ids">{`${term('contact')} IDs (comma-separated)`}</Label>
               <Input
                 id="contact-ids"
                 value={contactIds}
                 onChange={(e) => setContactIds(e.target.value)}
-                placeholder="contact-id-1, contact-id-2"
+                placeholder={`${term('contact').toLowerCase()}-id-1, ${term('contact').toLowerCase()}-id-2`}
               />
             </div>
           )}
@@ -183,7 +185,7 @@ export function ScenarioPlanner() {
                     <p className="text-sm text-muted-foreground mb-2">Current State</p>
                     <p className="text-2xl font-bold">₹{(result.currentState.revenue / 100000).toFixed(1)}L</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {result.currentState.customerCount} customers, {result.currentState.dealCount} deals
+                      {`${result.currentState.customerCount} ${pluralTerm('customer').toLowerCase()}, ${result.currentState.dealCount} ${pluralTerm('deal').toLowerCase()}`}
                     </p>
                   </div>
                   <div className="p-4 border rounded-md">
@@ -192,7 +194,7 @@ export function ScenarioPlanner() {
                       ₹{(result.projectedState.revenue / 100000).toFixed(1)}L
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {result.projectedState.customerCount} customers, {result.projectedState.dealCount} deals
+                      {`${result.projectedState.customerCount} ${pluralTerm('customer').toLowerCase()}, ${result.projectedState.dealCount} ${pluralTerm('deal').toLowerCase()}`}
                     </p>
                   </div>
                 </div>

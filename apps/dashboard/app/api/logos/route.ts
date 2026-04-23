@@ -127,35 +127,30 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Generate logo error:', error)
-    
-    // Extract detailed error message
-    let errorMessage = 'Failed to generate logo'
-    let hint = ''
-    let details = ''
-    
+
+    const diagnosticsId = `logo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    console.error(`Logo generation diagnostics id=${diagnosticsId}`)
+
+    let hint = 'Please try again in a moment.'
     if (error instanceof Error) {
-      errorMessage = error.message || errorMessage
-      details = error.stack || ''
-      
-      // Check for common error patterns
       if (error.message.includes('Hugging Face') || error.message.includes('HUGGINGFACE')) {
-        hint = 'Hugging Face API may not be configured. Check your HUGGINGFACE_API_KEY in .env file.'
+        hint = 'Image provider is not configured yet for this workspace.'
       } else if (error.message.includes('Google AI Studio') || error.message.includes('google')) {
-        hint = 'Google AI Studio may not be configured. Set up your API key in Settings > AI Integrations.'
+        hint = 'Image provider is not configured yet for this workspace.'
       } else if (error.message.includes('Unauthorized') || error.message.includes('401')) {
-        hint = 'Authentication failed. Please try logging out and back in.'
+        hint = 'Your session expired. Please sign in again and retry.'
       } else if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
-        hint = 'Request timed out. The image generation service may be slow. Please try again.'
+        hint = 'Image generation took too long. Please retry.'
       } else if (error.message.includes('network') || error.message.includes('fetch')) {
-        hint = 'Network error. Please check your internet connection.'
+        hint = 'Network issue detected while generating your logo.'
       }
     }
-    
+
     return NextResponse.json(
-      { 
-        error: errorMessage,
+      {
+        error: 'Unable to generate logo right now.',
         hint,
-        details: details || (error instanceof Error ? error.message : String(error)),
+        diagnosticsId,
       },
       { status: 500 }
     )

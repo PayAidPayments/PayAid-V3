@@ -4,7 +4,9 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
-import { getIndustryConfig, getAllIndustries } from './config'
+import { getIndustryConfig } from './config'
+import { ALL_LICENSE_MODULE_IDS } from '@/lib/modules/catalog'
+import { normalizeSelectedModuleIds, resolveLicenseModuleId } from '@/lib/tenant/module-license-filter'
 
 export interface ModuleConfig {
   moduleId: string
@@ -108,21 +110,27 @@ export async function autoConfigureIndustryModules(
     }
   }
 
-  // Always include base modules (2026 Revised Standards)
-  // Marketing & AI Content is now BASE, not premium
-  const BASE_MODULES = [
-    'crm',                    // Customer/client relationship foundation
-    'finance',                // Accounting, invoicing, GST compliance
-    'communication',          // WhatsApp, email, SMS across all sectors
-    'analytics',              // Data-driven decision-making
-    'marketing',              // Marketing & AI Content - NOW BASE (2026 standard)
-    'productivity',           // Basic task, project, and workflow management
+  // Always include foundation suites in canonical licensed-module form.
+  const BASE_FOUNDATION_MODULES = [
+    'crm',
+    'finance',
+    'marketing',
+    'inventory',
+    'projects',
+    'hr',
+    'communication',
+    'analytics',
+    'ai-studio',
   ]
-  BASE_MODULES.forEach(m => allCoreModules.add(m))
+  BASE_FOUNDATION_MODULES.forEach((m) => allCoreModules.add(m))
+
+  // Normalize to canonical licensed module ids only.
+  const normalizedCoreModules = normalizeSelectedModuleIds(Array.from(allCoreModules))
+  const normalizedIndustryPacks = normalizeSelectedModuleIds(Array.from(allIndustryPacks))
 
   // Enable modules via ModuleLicense
   const moduleLicenses = []
-  for (const moduleId of Array.from(allCoreModules)) {
+  for (const moduleId of normalizedCoreModules) {
     const license = await prisma.moduleLicense.upsert({
       where: {
         tenantId_moduleId: {
@@ -144,7 +152,7 @@ export async function autoConfigureIndustryModules(
   }
 
   // Enable industry packs
-  for (const packId of Array.from(allIndustryPacks)) {
+  for (const packId of normalizedIndustryPacks) {
     await prisma.moduleLicense.upsert({
       where: {
         tenantId_moduleId: {
@@ -192,7 +200,7 @@ export async function autoConfigureIndustryModules(
       industrySettings: {
         industries,
         enabledModules: Array.from(allCoreModules),
-        enabledIndustryPacks: Array.from(allIndustryPacks),
+          enabledIndustryPacks: normalizedIndustryPacks,
         enabledFeatures: Array.from(allFeatures),
         configuredAt: new Date().toISOString(),
       } as any,
@@ -200,8 +208,8 @@ export async function autoConfigureIndustryModules(
   })
 
   return {
-    enabledModules: Array.from(allCoreModules),
-    enabledPacks: Array.from(allIndustryPacks),
+    enabledModules: normalizedCoreModules,
+    enabledPacks: normalizedIndustryPacks,
   }
 }
 
@@ -209,29 +217,66 @@ export async function autoConfigureIndustryModules(
  * Get recommended modules for an industry
  */
 export function getRecommendedModulesForIndustry(industryId: string): {
+  suites: string[]
+  capabilities: string[]
+  optionalSuites: string[]
+  canonical: {
+    suites: string[]
+    capabilities: string[]
+    optionalSuites: string[]
+  }
+  compatibility: {
+    deprecated: true
+    coreModules: string[]
+    industryPacks: string[]
+    optionalModules: string[]
+  }
   coreModules: string[]
   industryPacks: string[]
   optionalModules: string[]
 } {
   const config = getIndustryConfig(industryId)
   if (!config) {
+    const fallbackSuites = normalizeSelectedModuleIds(['crm', 'finance', 'ai-studio'])
+    const optionalSuites = ALL_LICENSE_MODULE_IDS.filter((id) => !fallbackSuites.includes(id))
     return {
-      coreModules: ['crm', 'finance'],
+      suites: fallbackSuites,
+      capabilities: [],
+      optionalSuites,
+      canonical: { suites: fallbackSuites, capabilities: [], optionalSuites },
+      compatibility: {
+        deprecated: true,
+        coreModules: fallbackSuites,
+        industryPacks: [],
+        optionalModules: optionalSuites,
+      },
+      coreModules: fallbackSuites,
       industryPacks: [],
-      optionalModules: [],
+      optionalModules: optionalSuites,
     }
   }
 
-  // Optional modules are all modules not in core
-  const allModules = getAllIndustries().flatMap(i => i.coreModules)
-  const optionalModules = Array.from(new Set(allModules)).filter(
-    m => !config.coreModules.includes(m)
+  const suites = normalizeSelectedModuleIds(config.coreModules)
+  const capabilities = normalizeSelectedModuleIds(config.industryPacks)
+  const optionalSuites = ALL_LICENSE_MODULE_IDS.filter(
+    (m) => !suites.includes(m) && !capabilities.includes(m)
   )
 
   return {
-    coreModules: config.coreModules,
-    industryPacks: config.industryPacks,
-    optionalModules,
+    suites,
+    capabilities,
+    optionalSuites,
+    canonical: { suites, capabilities, optionalSuites },
+    compatibility: {
+      deprecated: true,
+      coreModules: suites,
+      industryPacks: capabilities,
+      optionalModules: optionalSuites,
+    },
+    // Deprecated aliases retained for compatibility.
+    coreModules: suites,
+    industryPacks: capabilities,
+    optionalModules: optionalSuites,
   }
 }
 
@@ -239,11 +284,12 @@ export function getRecommendedModulesForIndustry(industryId: string): {
  * Check if a module is enabled for a tenant
  */
 export async function isModuleEnabled(tenantId: string, moduleId: string): Promise<boolean> {
+  const canonicalModuleId = resolveLicenseModuleId(moduleId)
   const license = await prisma.moduleLicense.findUnique({
     where: {
       tenantId_moduleId: {
         tenantId,
-        moduleId,
+        moduleId: canonicalModuleId,
       },
     },
   })
@@ -255,11 +301,12 @@ export async function isModuleEnabled(tenantId: string, moduleId: string): Promi
  * Enable a module for a tenant
  */
 export async function enableModule(tenantId: string, moduleId: string): Promise<void> {
+  const canonicalModuleId = resolveLicenseModuleId(moduleId)
   await prisma.moduleLicense.upsert({
     where: {
       tenantId_moduleId: {
         tenantId,
-        moduleId,
+        moduleId: canonicalModuleId,
       },
     },
     update: {
@@ -267,7 +314,7 @@ export async function enableModule(tenantId: string, moduleId: string): Promise<
     },
     create: {
       tenantId,
-      moduleId,
+      moduleId: canonicalModuleId,
       isActive: true,
       activatedAt: new Date(),
     },
@@ -278,10 +325,11 @@ export async function enableModule(tenantId: string, moduleId: string): Promise<
  * Disable a module for a tenant
  */
 export async function disableModule(tenantId: string, moduleId: string): Promise<void> {
+  const canonicalModuleId = resolveLicenseModuleId(moduleId)
   await prisma.moduleLicense.updateMany({
     where: {
       tenantId,
-      moduleId,
+      moduleId: canonicalModuleId,
     },
     data: {
       isActive: false,

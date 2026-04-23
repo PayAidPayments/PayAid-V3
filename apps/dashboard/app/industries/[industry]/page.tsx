@@ -98,12 +98,15 @@ export default function IndustryLandingPage() {
               Everything You Need to Run Your {industry.name} Business
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-              {recommendedModules.coreModules?.map((moduleId: string) => {
+              {(recommendedModules?.canonical?.suites || recommendedModules?.suites || []).map(
+                (moduleId: string) => {
                 const moduleIcons: Record<string, any> = {
                   crm: Users,
                   finance: DollarSign,
                   inventory: Package,
                   sales: DollarSign,
+                  communication: Users,
+                  projects: Package,
                   'ai-studio': Sparkles,
                 }
                 const Icon = moduleIcons[moduleId] || Package
@@ -112,6 +115,8 @@ export default function IndustryLandingPage() {
                   finance: 'Finance & Accounting',
                   inventory: 'Inventory',
                   sales: 'Sales',
+                  communication: 'Support & Communication',
+                  projects: 'Projects & Service',
                   'ai-studio': 'AI Studio',
                 }
 
@@ -132,7 +137,8 @@ export default function IndustryLandingPage() {
                     </CardContent>
                   </Card>
                 )
-              })}
+                }
+              )}
             </div>
           </div>
         )}

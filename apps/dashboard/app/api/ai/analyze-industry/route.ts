@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getGroqClient } from '@/lib/ai/groq'
 import { getOllamaClient } from '@/lib/ai/ollama'
 import { getHuggingFaceClient } from '@/lib/ai/huggingface'
+import { normalizeSelectedModuleIds } from '@/lib/tenant/module-license-filter'
+import { shouldIncludeLegacyModuleFields } from '@/lib/taxonomy/canonical-api-mode'
 
 /**
  * POST /api/ai/analyze-industry
@@ -9,6 +11,7 @@ import { getHuggingFaceClient } from '@/lib/ai/huggingface'
  */
 export async function POST(request: NextRequest) {
   try {
+    const includeLegacy = shouldIncludeLegacyModuleFields()
     const body = await request.json()
     const { industryName, description } = body
 
@@ -22,7 +25,7 @@ export async function POST(request: NextRequest) {
     // Build AI prompt for industry analysis
     const systemPrompt = `You are an expert business consultant analyzing industries to recommend software modules. 
 Based on market research and industry best practices, analyze the provided industry and recommend:
-1. Core modules needed (from: crm, finance, inventory, sales, marketing, hr, projects, communication, analytics, productivity)
+1. Core modules needed (from: crm, finance, inventory, sales, marketing, hr, projects, communication, analytics, ai-studio)
 2. Industry-specific features
 3. Key business processes
 
@@ -76,11 +79,18 @@ Based on market research, what modules and features would this industry need?`
         } catch (hfError) {
           console.error('[AI] All AI services failed:', hfError)
           // Fallback to default recommendations
+          const fallbackModules = normalizeSelectedModuleIds(['crm', 'finance', 'ai-studio'])
           return NextResponse.json({
-            coreModules: ['crm', 'finance', 'ai-studio'],
             industryFeatures: ['general_business_management'],
             description: 'Standard business modules recommended for this industry',
             keyProcesses: ['customer_management', 'financial_tracking'],
+            canonical: { suites: fallbackModules },
+            ...(includeLegacy
+              ? {
+                  compatibility: { deprecated: true, coreModules: fallbackModules },
+                  coreModules: fallbackModules,
+                }
+              : {}),
             fallback: true,
           })
         }
@@ -109,14 +119,31 @@ Based on market research, what modules and features would this industry need?`
       }
     }
 
-    // Ensure ai-studio is always included
-    if (!parsedResponse.coreModules.includes('ai-studio')) {
-      parsedResponse.coreModules.push('ai-studio')
+    const rawCore = Array.isArray(parsedResponse.coreModules) ? parsedResponse.coreModules : []
+    const normalizedCoreModules = normalizeSelectedModuleIds(
+      rawCore.includes('ai-studio') ? rawCore : [...rawCore, 'ai-studio']
+    )
+    const { coreModules: _legacyCoreModules, ...parsedResponseWithoutLegacyCore } = parsedResponse
+
+    const normalizedResponse = {
+      ...parsedResponseWithoutLegacyCore,
+      canonical: {
+        suites: normalizedCoreModules,
+      },
+      ...(includeLegacy
+        ? {
+            compatibility: {
+              deprecated: true as const,
+              coreModules: normalizedCoreModules,
+            },
+            coreModules: normalizedCoreModules,
+          }
+        : {}),
     }
 
     return NextResponse.json({
       industryName,
-      ...parsedResponse,
+      ...normalizedResponse,
       aiService: usedService,
     })
   } catch (error: any) {
@@ -126,7 +153,7 @@ Based on market research, what modules and features would this industry need?`
         error: 'Failed to analyze industry',
         details: error.message,
         fallback: {
-          coreModules: ['crm', 'finance', 'ai-studio'],
+          coreModules: normalizeSelectedModuleIds(['crm', 'finance', 'ai-studio']),
           industryFeatures: ['general_business_management'],
         }
       },

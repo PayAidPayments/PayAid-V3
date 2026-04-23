@@ -200,6 +200,27 @@ export async function POST(request: NextRequest) {
       businessContext = 'Business context unavailable. Please try again.'
     }
 
+    const businessProfileMissing = businessContext.includes('BUSINESS_PROFILE_MISSING: true')
+    const asksForBusinessAdvice = /(industry|business|market|customer|proposal|post|pitch|plan|strategy|campaign|brand|offering|product|service|logo)/i.test(
+      validated.message
+    )
+    if (businessProfileMissing && asksForBusinessAdvice) {
+      return jsonWithTiming({
+        message:
+          "I need a little business context before I can give useful advice. Please share: your industry, what you sell (products/services), target customers, city/region, and preferred brand tone.",
+        service: 'context-analyzer',
+        cached: false,
+        needsClarification: true,
+        suggestedQuestions: [
+          'Which industry are you in?',
+          'What products or services do you sell?',
+          'Who are your target customers?',
+          'Which city/region do you primarily serve?',
+          'What tone should I use for your brand communication?',
+        ],
+      })
+    }
+
     // Analyze if we have enough context to provide an accurate response
     const contextAnalysis = analyzePromptContext(validated.message, {
       hasBusinessData: businessContext.length > 100,
@@ -712,6 +733,10 @@ async function getBusinessContext(tenantId: string, userMessage?: string): Promi
       where: { id: tenantId },
       select: {
         name: true,
+        industry: true,
+        industrySubType: true,
+        industrySettings: true,
+        onboardingData: true,
         gstin: true,
         address: true,
         city: true,
@@ -946,6 +971,32 @@ async function getBusinessContext(tenantId: string, userMessage?: string): Promi
     const relevantDeal = contactBundle.deal
     const totalRevenue = Number(revenueAgg?._sum?.total || 0)
     const pendingInvoiceAmount = pendingInvoices.reduce((sum, i) => sum + Number(i.total || 0), 0)
+    const rawIndustrySettings =
+      tenant?.industrySettings && typeof tenant.industrySettings === 'object'
+        ? (tenant.industrySettings as Record<string, unknown>)
+        : {}
+    const rawBusinessProfile =
+      rawIndustrySettings.businessProfile && typeof rawIndustrySettings.businessProfile === 'object'
+        ? (rawIndustrySettings.businessProfile as Record<string, unknown>)
+        : {}
+    const businessProfile = {
+      productsServices: typeof rawBusinessProfile.productsServices === 'string' ? rawBusinessProfile.productsServices : '',
+      targetCustomers: typeof rawBusinessProfile.targetCustomers === 'string' ? rawBusinessProfile.targetCustomers : '',
+      cityRegion: typeof rawBusinessProfile.cityRegion === 'string' ? rawBusinessProfile.cityRegion : '',
+      brandTone: typeof rawBusinessProfile.brandTone === 'string' ? rawBusinessProfile.brandTone : '',
+      coreOfferings: typeof rawBusinessProfile.coreOfferings === 'string' ? rawBusinessProfile.coreOfferings : '',
+      whatsappNumber: typeof rawBusinessProfile.whatsappNumber === 'string' ? rawBusinessProfile.whatsappNumber : '',
+    }
+    const hasBusinessProfile = Boolean(
+      tenant?.industry ||
+        tenant?.industrySubType ||
+        businessProfile.productsServices ||
+        businessProfile.coreOfferings ||
+        businessProfile.targetCustomers ||
+        businessProfile.cityRegion ||
+        businessProfile.brandTone
+    )
+    const businessProfileMissing = !hasBusinessProfile && relevantProducts.length === 0
 
     // Build context string
     let context = `=== BUSINESS DATA ===
@@ -954,11 +1005,23 @@ IMPORTANT: Use ONLY this data to answer questions. Do NOT give generic responses
 YOUR BUSINESS (${tenant?.name || 'Business'}):
 ${tenant ? `
 - Business Name: ${tenant.name}
+- Industry: ${tenant.industry || 'Not set'}
+- Business Type: ${tenant.industrySubType || 'Not set'}
 - Address: ${tenant.address || 'N/A'}, ${tenant.city || 'N/A'}, ${tenant.state || 'N/A'} ${tenant.postalCode || ''}
 - Contact: ${tenant.phone || 'N/A'} | ${tenant.email || 'N/A'}
 - Website: ${tenant.website || 'N/A'}
 - GSTIN: ${tenant.gstin || 'N/A'}
 ` : '- Business information not available'}
+
+BUSINESS PROFILE:
+- Products/Services: ${businessProfile.productsServices || 'Not set'}
+- Core Offerings: ${businessProfile.coreOfferings || 'Not set'}
+- Target Customers: ${businessProfile.targetCustomers || 'Not set'}
+- City/Region Focus: ${businessProfile.cityRegion || 'Not set'}
+- Brand Tone: ${businessProfile.brandTone || 'Not set'}
+- WhatsApp Number: ${businessProfile.whatsappNumber || 'Not set'}
+
+BUSINESS_PROFILE_MISSING: ${businessProfileMissing ? 'true' : 'false'}
 
 SUMMARY:
 - Total Contacts: ${contactsCount}

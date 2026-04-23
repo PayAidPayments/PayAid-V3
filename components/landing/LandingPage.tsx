@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import type { ComponentType } from 'react'
 import dynamic from 'next/dynamic'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, useInView } from './motion-lite'
 import { getAllIndustries } from '@/lib/industries/config'
 import {
@@ -185,7 +185,8 @@ function SignupModulePickCard({
 
 export default function LandingPage() {
   const router = useRouter()
-  const onboardingHref = '/#industry-selector'
+  const searchParams = useSearchParams()
+  const onboardingHref = '/?onboarding=true#industry-selector'
   const demoVideoUrl = process.env.NEXT_PUBLIC_EXPLAINER_VIDEO_URL || ''
   const [selectedIndustry, setSelectedIndustry] = useState<string>('')
   const [selectedModules, setSelectedModules] = useState<string[]>([])
@@ -216,6 +217,41 @@ export default function LandingPage() {
   useEffect(() => {
     setSelectedTier(tierFromTeamSizeBracket(teamSizeBracket))
   }, [teamSizeBracket])
+
+  useEffect(() => {
+    const requestedTier = searchParams.get('tier')
+    if (requestedTier === 'starter' || requestedTier === 'professional') {
+      setSelectedTier(requestedTier)
+    }
+
+    const requestedModulesParam = searchParams.get('modules')
+    if (requestedModulesParam) {
+      const requestedModules = requestedModulesParam
+        .split(',')
+        .map((moduleId) => moduleId.trim())
+        .filter((moduleId) => activeSelectableModuleIdSet.has(moduleId))
+
+      if (requestedModules.length > 0) {
+        const ensuredWithAiStudio = requestedModules.includes('ai-studio')
+          ? requestedModules
+          : [...requestedModules, 'ai-studio']
+        setSelectedModules([...new Set(ensuredWithAiStudio)])
+        setShowModuleSelection(true)
+        setShowOptionalModules(false)
+
+        setTimeout(() => {
+          document.getElementById('module-selection')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 100)
+        return
+      }
+    }
+
+    if (searchParams.get('onboarding') === 'true') {
+      setTimeout(() => {
+        document.getElementById('industry-selector')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    }
+  }, [searchParams, activeSelectableModuleIdSet])
 
 
   // AI response data with corrected terminology
@@ -581,23 +617,23 @@ export default function LandingPage() {
                     <div>
                       <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Core Modules</h4>
                       <ul className="space-y-2">
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>CRM Management</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Invoicing & Billing</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Inventory Tracking</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Payment Processing</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>HR & Payroll</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Accounting & GST</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>CRM & Sales</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Marketing</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Finance</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Operations</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Projects & Service</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>HR & Workforce</Link></li>
                       </ul>
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">Advanced Features</h4>
+                      <h4 className="text-xs font-bold text-[#53328A] uppercase tracking-wide mb-3">AI, Analytics & Automation</h4>
                       <ul className="space-y-2">
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Analytics & Reports</Link></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>AI Co-founder</Link></li>
-                        <li><a href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>Third-party Integrations</a></li>
-                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Mobile Applications</Link></li>
-                        <li><a href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>API Access</a></li>
-                        <li><a href="/security" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>Enterprise Security</a></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>AI Workspace</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Analytics</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Automation</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Support</Link></li>
+                        <li><Link href="#features" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => handleAnchorClick(e, 'features')}>Documents & Contracts</Link></li>
+                        <li><a href="/app-store" className="text-sm text-gray-600 hover:text-[#53328A] transition-colors block" onClick={(e) => { e.stopPropagation(); }}>App Store & Integrations</a></li>
                       </ul>
                     </div>
                   </div>
@@ -696,7 +732,7 @@ export default function LandingPage() {
                 Built for India
               </h1>
               <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto lg:mx-0">
-                Everything your business needs in one powerful platform. Manage CRM, Invoicing, Inventory, HR, Payments, Accounting, and more. 
+                Everything your business needs in one platform. Run CRM & Sales, Marketing, Finance, Operations, Projects & Service, HR & Workforce, and AI Workspace.
                 Built specifically for Indian SMBs.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12 relative z-10">
@@ -709,11 +745,9 @@ export default function LandingPage() {
                 <button
                   type="button"
                   className="inline-flex items-center justify-center rounded-md text-lg font-medium h-11 px-8 py-6 border-2 border-[#53328A] text-[#53328A] hover:bg-purple-50 transition-colors cursor-pointer relative z-10"
-                  onClick={() => {
-                    document.getElementById('try-it-now')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                  }}
+                  onClick={() => setIsDemoModalOpen(true)}
                 >
-                  Try Demo →
+                  Watch Demo
                 </button>
               </div>
             </div>

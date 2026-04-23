@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Check, Building2, ShoppingBag, Users } from 'lucide-react'
+import { useTerms } from '@/lib/terminology/use-terms'
 
 interface Template {
   id: string
@@ -32,6 +33,7 @@ interface PreviewData {
 }
 
 export function TemplateSelector() {
+  const { term, pluralTerm } = useTerms()
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
   const [showPreview, setShowPreview] = useState(false)
 
@@ -130,7 +132,7 @@ export function TemplateSelector() {
         <CardHeader>
           <CardTitle>Select Industry Template</CardTitle>
           <CardDescription>
-            Choose a pre-configured pipeline template optimized for your industry
+            {`Choose a pre-configured ${term('pipeline').toLowerCase()} template optimized for your industry`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -185,7 +187,7 @@ export function TemplateSelector() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-600">Existing Deals</div>
+                <div className="text-sm text-gray-600">{`Existing ${pluralTerm('deal')}`}</div>
                 <div className="text-2xl font-bold">{previewData.preview.existingDeals}</div>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg">
@@ -199,7 +201,7 @@ export function TemplateSelector() {
             </div>
 
             <div>
-              <h4 className="font-semibold mb-2">Pipeline Stages</h4>
+              <h4 className="font-semibold mb-2">{`${term('pipeline')} Stages`}</h4>
               <div className="space-y-2">
                 {previewData.preview.template.stages.map((stage, index) => (
                   <div key={stage.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
@@ -237,7 +239,7 @@ export function TemplateSelector() {
               <Button
                 onClick={() => {
                   if (selectedTemplate) {
-                    if (confirm('Are you sure you want to apply this template? This will update your pipeline stages and create custom fields.')) {
+                    if (confirm(`Are you sure you want to apply this template? This will update your ${term('pipeline').toLowerCase()} stages and create custom fields.`)) {
                       applyMutation.mutate(selectedTemplate)
                     }
                   }

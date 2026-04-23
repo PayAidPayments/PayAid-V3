@@ -74,6 +74,7 @@ import {
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { isModuleListedForTenantLicense } from '@/lib/tenant/module-license-filter'
+import { MODULE_SURFACE_OWNERSHIP } from '@/lib/taxonomy/business-os-taxonomy'
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Users,
@@ -135,6 +136,16 @@ export function ModuleSwitcher() {
   const { enabledModules: registryModules, currentModule: contextModule, setCurrentModule, isLoading } = useModule()
   const { tenant } = useAuthStore()
   const [open, setOpen] = useState(false)
+
+  const classifySurface = (moduleId: string): 'suite' | 'platform' | 'workspace' | 'ai-feature' | 'feature' => {
+    const ownership = MODULE_SURFACE_OWNERSHIP[moduleId]
+    if (!ownership) return 'feature'
+    if (ownership.surface === 'suite') return 'suite'
+    if (ownership.surface === 'platform-capability') return 'platform'
+    if (ownership.surface === 'workspace-tool') return 'workspace'
+    if (ownership.surface === 'feature' && ownership.suite === 'ai-workspace') return 'ai-feature'
+    return 'feature'
+  }
 
   // Combine modules from registry and config
   const allAvailableModules = useMemo(() => {
@@ -255,23 +266,18 @@ export function ModuleSwitcher() {
         <div className="mt-6 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
           {(() => {
             const homeModules = allAvailableModules.filter(m => m.id === 'home')
-            const coreModules = allAvailableModules.filter(m => {
-              const c = moduleConfigs.find(cfg => cfg.id === m.id)
-              return c?.category === 'core'
-            })
-            const productivityModules = allAvailableModules.filter(m => {
-              const c = moduleConfigs.find(cfg => cfg.id === m.id)
-              return c?.category === 'productivity'
-            })
-            const aiModules = allAvailableModules.filter(m => {
-              const c = moduleConfigs.find(cfg => cfg.id === m.id)
-              return c?.category === 'ai'
-            })
+            const suiteModules = allAvailableModules.filter((m) => classifySurface(m.id) === 'suite')
+            const platformModules = allAvailableModules.filter((m) => classifySurface(m.id) === 'platform')
+            const aiFeatureModules = allAvailableModules.filter((m) => classifySurface(m.id) === 'ai-feature')
+            const workspaceModules = allAvailableModules.filter((m) => classifySurface(m.id) === 'workspace')
+            const featureModules = allAvailableModules.filter((m) => classifySurface(m.id) === 'feature')
             const sections: { title: string; modules: typeof allAvailableModules }[] = [
               { title: 'Home', modules: homeModules },
-              { title: 'Core Business', modules: coreModules },
-              { title: 'Productivity Suite', modules: productivityModules },
-              { title: 'AI Services', modules: aiModules },
+              { title: 'Business Suites', modules: suiteModules },
+              { title: 'Platform Capabilities', modules: platformModules },
+              { title: 'AI Workspace Tools', modules: aiFeatureModules },
+              { title: 'Workspace Tools', modules: workspaceModules },
+              { title: 'Other Features', modules: featureModules },
             ]
             return sections.map(({ title, modules: sectionModules }) => {
               if (sectionModules.length === 0) return null
