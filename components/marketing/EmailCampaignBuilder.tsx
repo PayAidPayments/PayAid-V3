@@ -22,6 +22,12 @@ interface Segment {
   contactCount: number
 }
 
+interface SenderAccount {
+  id: string
+  email: string
+  displayName?: string | null
+}
+
 interface EmailCampaignBuilderProps {
   tenantId: string
   onSave?: (campaign: any) => void
@@ -36,6 +42,8 @@ export function EmailCampaignBuilder({ tenantId, onSave, onCancel }: EmailCampai
     htmlContent: '',
     recipientSegments: [] as string[],
     scheduledFor: null as Date | null,
+    senderAccountId: '',
+    senderDomain: '',
     enableABTest: false,
     abTestVariants: [] as Array<{ subject: string; content: string }>,
   })
@@ -46,6 +54,15 @@ export function EmailCampaignBuilder({ tenantId, onSave, onCancel }: EmailCampai
     queryFn: async () => {
       const response = await fetch(`/api/crm/segments?tenantId=${tenantId}`)
       if (!response.ok) throw new Error('Failed to fetch segments')
+      return response.json()
+    },
+  })
+
+  const { data: senderAccountsData } = useQuery<{ success?: boolean; data?: { accounts: SenderAccount[] } }>({
+    queryKey: ['email-sender-accounts', tenantId],
+    queryFn: async () => {
+      const response = await fetch('/api/email/accounts')
+      if (!response.ok) throw new Error('Failed to fetch sender accounts')
       return response.json()
     },
   })
@@ -70,6 +87,7 @@ export function EmailCampaignBuilder({ tenantId, onSave, onCancel }: EmailCampai
   })
 
   const segments = segmentsData?.segments || []
+  const senderAccounts = senderAccountsData?.data?.accounts || []
 
   const handleNext = () => {
     if (step < 4) setStep(step + 1)
@@ -86,6 +104,8 @@ export function EmailCampaignBuilder({ tenantId, onSave, onCancel }: EmailCampai
       htmlContent: campaignData.htmlContent,
       recipientSegments: campaignData.recipientSegments,
       scheduledFor: campaignData.scheduledFor?.toISOString(),
+      senderAccountId: campaignData.senderAccountId || undefined,
+      senderDomain: campaignData.senderDomain || undefined,
     })
   }
 
@@ -262,6 +282,31 @@ export function EmailCampaignBuilder({ tenantId, onSave, onCancel }: EmailCampai
                   className="rounded"
                 />
                 <Label htmlFor="abTest">Enable A/B Testing</Label>
+              </div>
+              <div>
+                <Label htmlFor="sender-account">Preferred Sender Account (Optional)</Label>
+                <select
+                  id="sender-account"
+                  value={campaignData.senderAccountId}
+                  onChange={(e) => setCampaignData({ ...campaignData, senderAccountId: e.target.value })}
+                  className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm"
+                >
+                  <option value="">Auto select sender</option>
+                  {senderAccounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.displayName ? `${account.displayName} (${account.email})` : account.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="sender-domain">Preferred Sender Domain (Optional)</Label>
+                <Input
+                  id="sender-domain"
+                  value={campaignData.senderDomain}
+                  onChange={(e) => setCampaignData({ ...campaignData, senderDomain: e.target.value.trim() })}
+                  placeholder="example.com"
+                />
               </div>
             </CardContent>
           </Card>

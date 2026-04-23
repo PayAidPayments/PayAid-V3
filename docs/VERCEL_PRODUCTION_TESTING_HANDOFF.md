@@ -2,7 +2,7 @@
 
 **Owner:** QA / Employee Tester  
 **Audience:** Business + Product + Engineering  
-**Last updated:** 2026-04-09  
+**Last updated:** 2026-04-23  
 **Purpose:** Provide one complete, practical guide for validating what is currently live on the Vercel-hosted app, and identifying what is still broken or missing.
 
 ---
@@ -190,6 +190,35 @@ Expected:
 - Actions do not leak secrets
 - Failures are actionable and non-crashing
 - Test buttons disable in-flight and prevent double submits
+
+## Step 4.1 - Marketing email campaign reliability checks
+
+In Marketing > Campaign detail (email campaign), validate:
+
+- Queue progress card updates for pending/processing/sent/failed/dead-letter counts
+- Failed/dead-letter job table renders recipient, attempts, error, updated time
+- Sender policy can be updated (preferred sender account/domain) and saved
+- Single-row retry works with:
+  - default policy sender
+  - explicit row sender override
+- Batch retry works with:
+  - Retry All Failed
+  - Retry Selected with mixed per-row sender overrides
+- Last retry panel supports:
+  - persisted diagnostics after refresh
+  - `Copy Summary` for bug reports
+  - clear action for reset
+
+Expected:
+
+- Retries enqueue successfully without page crash
+- Invalid sender override is rejected with clear error
+- Selected retries only affect selected rows
+- Queue progress and failed-job list reflect requeued jobs within polling window
+- Retry diagnostics include concrete job IDs for retried/skipped/non-retriable rows (visible in panel and copied summary)
+- Single-row retry also updates the same diagnostics panel/copy payload (scope = single) for parity with batch retries
+- Retry diagnostics include a `retryOperationId` for each retry action so QA can correlate UI events with backend audit/log records
+- Retry History table shows recent retry audit events (time, action type, operation ID, counts, actor) and should align with the latest panel summary
 
 ## Step 5 - Revenue and analytics validation
 

@@ -13,6 +13,7 @@ import { highPriorityQueue, mediumPriorityQueue, lowPriorityQueue } from '@/lib/
 import { warmTenantCache } from '@/lib/cache/warmer'
 import { getSendGridClient } from '@/lib/email/sendgrid'
 import { prisma } from '@/lib/db/prisma'
+import { setupEmailWorkflowProcessors } from '@/lib/jobs/email-processors'
 
 /**
  * Email Job Processor
@@ -132,6 +133,7 @@ export function setupSyncProcessor() {
  */
 export function initializeJobProcessors() {
   try {
+    setupEmailWorkflowProcessors()
     setupEmailProcessor()
     setupSMSProcessor()
     setupCacheWarmingProcessor()

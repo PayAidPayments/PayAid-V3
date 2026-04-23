@@ -17,6 +17,19 @@ interface EmailCampaign {
   }
 }
 
+interface CampaignQueueProgress {
+  total: number
+  pending: number
+  processing: number
+  sent: number
+  failed: number
+  deadLetter?: number
+  completed: number
+  completionPercent: number
+  isComplete: boolean
+  topFailureReasons?: Array<{ reason: string | null; count: number }>
+}
+
 interface EmailCampaignListProps {
   organizationId: string
 }
@@ -28,6 +41,7 @@ export function EmailCampaignList({ organizationId }: EmailCampaignListProps) {
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [progressByCampaignId, setProgressByCampaignId] = useState<Record<string, CampaignQueueProgress>>({})
   const pageSize = 20
 
   useEffect(() => {
@@ -59,6 +73,58 @@ export function EmailCampaignList({ organizationId }: EmailCampaignListProps) {
     }
     fetchCampaigns()
   }, [organizationId, page, pageSize])
+
+  useEffect(() => {
+    if (campaigns.length === 0) {
+      setProgressByCampaignId({})
+      return
+    }
+
+    const targetCampaigns = campaigns.filter((campaign) =>
+      ['scheduled', 'sending', 'failed'].includes(campaign.status)
+    )
+    if (targetCampaigns.length === 0) {
+      return
+    }
+
+    let cancelled = false
+
+    const fetchProgress = async () => {
+      const entries = await Promise.all(
+        targetCampaigns.map(async (campaign) => {
+          try {
+            const response = await fetch(`/api/marketing/email-campaigns/${campaign.id}/progress`)
+            if (!response.ok) return null
+            const data = await response.json()
+            if (!data.success || !data.data?.queue) return null
+            return [campaign.id, data.data.queue as CampaignQueueProgress] as const
+          } catch {
+            return null
+          }
+        })
+      )
+
+      if (cancelled) return
+      const mapped = entries
+        .filter((entry): entry is readonly [string, CampaignQueueProgress] => entry !== null)
+        .reduce(
+          (acc, [campaignId, queue]) => {
+            acc[campaignId] = queue
+            return acc
+          },
+          {} as Record<string, CampaignQueueProgress>
+        )
+      setProgressByCampaignId((current) => ({ ...current, ...mapped }))
+    }
+
+    fetchProgress()
+    const intervalId = window.setInterval(fetchProgress, 10000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+    }
+  }, [campaigns])
 
   if (loading) {
     return <div className="p-4">Loading campaigns...</div>
@@ -102,11 +168,15 @@ export function EmailCampaignList({ organizationId }: EmailCampaignListProps) {
               <th className="p-4 text-left">Recipients</th>
               <th className="p-4 text-left">Open Rate</th>
               <th className="p-4 text-left">Click Rate</th>
+              <th className="p-4 text-left">Progress</th>
               <th className="p-4 text-left">Status</th>
             </tr>
           </thead>
           <tbody>
-            {campaigns.map((campaign) => (
+            {campaigns.map((campaign) => {
+              const progress = progressByCampaignId[campaign.id]
+              const topFailure = progress?.topFailureReasons?.[0]?.reason
+              return (
               <tr key={campaign.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td className="p-4 font-medium">{campaign.name}</td>
                 <td className="p-4">{campaign.subject}</td>
@@ -122,12 +192,29 @@ export function EmailCampaignList({ organizationId }: EmailCampaignListProps) {
                     : '-'}
                 </td>
                 <td className="p-4">
+                  {progress ? (
+                    <div className="text-sm">
+                      <div>{progress.completionPercent.toFixed(1)}%</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {progress.completed}/{progress.total}
+                      </div>
+                      {topFailure && (
+                        <div className="text-xs text-red-600 dark:text-red-400 truncate max-w-[240px]">
+                          {topFailure}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    '-'
+                  )}
+                </td>
+                <td className="p-4">
                   <span className={`px-2 py-1 rounded text-sm ${getStatusColor(campaign.status)}`}>
                     {campaign.status}
                   </span>
                 </td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
         )}

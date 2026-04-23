@@ -4,7 +4,7 @@
  */
 
 import { initializeJobProcessors } from './processors'
-import { startCacheWarmingScheduler } from './scheduler'
+import { startCacheWarmingScheduler, startEmailCampaignScheduler } from './scheduler'
 import { getRedisConfig, validateEnv } from '@/lib/config/env'
 
 let isInitialized = false
@@ -37,6 +37,7 @@ export function initializeBackgroundJobs() {
     
     // Start cache warming scheduler
     startCacheWarmingScheduler()
+    startEmailCampaignScheduler()
     
     isInitialized = true
     console.log('✅ Background jobs initialized')

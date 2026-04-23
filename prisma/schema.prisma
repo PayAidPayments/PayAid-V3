@@ -4881,6 +4881,119 @@ model EmailAutoResponder {
   @@index([accountId, isEnabled])
 }
 
+model EmailSendJob {
+  id             String   @id @default(cuid())
+  tenantId       String
+  accountId      String?
+  fromEmail      String
+  toEmails       String[]
+  ccEmails       String[]
+  bccEmails      String[]
+  subject        String
+  htmlBody       String?
+  textBody       String?
+  replyTo        String?
+  campaignId     String?
+  contactId      String?
+  dealId         String?
+  status         String   @default("pending") // pending | processing | sent | failed
+  attempts       Int      @default(0)
+  maxRetries     Int      @default(3)
+  error          String?
+  scheduledFor   DateTime?
+  sentAt         DateTime?
+  trackingId     String?
+  eventType      String?  // send | reply | campaign
+  metadata       Json?
+  createdByUserId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([accountId, status])
+  @@index([campaignId])
+  @@index([contactId])
+  @@index([scheduledFor])
+  @@index([createdAt])
+}
+
+model EmailTrackingEvent {
+  id          String   @id @default(cuid())
+  tenantId    String
+  trackingId  String
+  messageId   String?
+  contactId   String?
+  campaignId  String?
+  eventType   String   // open | click | bounce | complaint | unsubscribe
+  eventData   Json?
+  ipAddress   String?
+  userAgent   String?
+  referer     String?
+  occurredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([trackingId])
+  @@index([messageId])
+  @@index([campaignId, eventType])
+  @@index([contactId, eventType])
+  @@index([occurredAt])
+}
+
+model EmailSyncCheckpoint {
+  id            String   @id @default(cuid())
+  accountId     String
+  provider      String
+  lastSyncAt    DateTime @default(now())
+  lastMessageId String?
+  syncToken     String?
+  syncCursor    Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([accountId])
+  @@index([provider])
+  @@index([lastSyncAt])
+}
+
+model EmailDeliverabilityLog {
+  id             String   @id @default(cuid())
+  tenantId       String
+  sendingDomain  String
+  reportDate     DateTime
+  sentCount      Int      @default(0)
+  deliveredCount Int      @default(0)
+  bouncedCount   Int      @default(0)
+  complaintCount Int      @default(0)
+  openCount      Int      @default(0)
+  clickCount     Int      @default(0)
+  bounceRate     Decimal? @db.Decimal(6, 3)
+  complaintRate  Decimal? @db.Decimal(6, 3)
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([tenantId, sendingDomain, reportDate])
+  @@index([tenantId])
+  @@index([sendingDomain])
+  @@index([reportDate])
+}
+
+model EmailCampaignSenderPolicy {
+  id              String   @id @default(cuid())
+  tenantId        String
+  campaignId      String
+  senderAccountId String?
+  senderDomain    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([campaignId])
+  @@index([tenantId])
+  @@index([senderAccountId])
+}
+
 model ChatWorkspace {
   id            String             @id @default(cuid())
   tenantId      String             @unique

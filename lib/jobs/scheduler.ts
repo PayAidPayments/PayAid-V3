@@ -9,6 +9,7 @@
 
 import { lowPriorityQueue } from '@/lib/queue/bull'
 import { prisma } from '@/lib/db/prisma'
+import { addEmailCampaignDispatchJob } from '@/lib/queue/email-queue'
 
 /**
  * Schedule cache warming for all active tenants
@@ -60,6 +61,57 @@ export function startCacheWarmingScheduler() {
   }, 60 * 60 * 1000) // 1 hour
 
   console.log('✅ Cache warming scheduler started (runs every hour)')
+}
+
+/**
+ * Schedule due email campaigns for dispatch.
+ * Runs every minute and enqueues campaigns with status=scheduled and scheduledFor<=now.
+ */
+export async function scheduleDueEmailCampaigns() {
+  try {
+    const now = new Date()
+    const dueCampaigns = await prisma.campaign.findMany({
+      where: {
+        type: 'email',
+        status: 'scheduled',
+        scheduledFor: {
+          lte: now,
+        },
+      },
+      select: {
+        id: true,
+        tenantId: true,
+      },
+      take: 200,
+    })
+
+    for (const campaign of dueCampaigns) {
+      await addEmailCampaignDispatchJob(
+        {
+          campaignId: campaign.id,
+          tenantId: campaign.tenantId,
+          batchSize: 1000,
+        },
+        {
+          jobId: `email-campaign-release-${campaign.id}`,
+          removeOnComplete: true,
+        }
+      )
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.warn('[Scheduler] Email campaign release unavailable:', msg)
+  }
+}
+
+export function startEmailCampaignScheduler() {
+  scheduleDueEmailCampaigns()
+
+  setInterval(() => {
+    scheduleDueEmailCampaigns()
+  }, 60 * 1000)
+
+  console.log('✅ Email campaign scheduler started (runs every minute)')
 }
 
 /**
