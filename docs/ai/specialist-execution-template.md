@@ -23,6 +23,20 @@ Use this routing exactly as written:
 4. No-404 QA Specialist (required for any new route/button/page)
 5. Code Review Specialist (required before shipping)
 
+## 2A) Project skill overlay (select as needed)
+
+After Product Strategist (and Platform Architect where required), apply one or more project skills from `docs/ai/agents/`:
+
+1. `repo-audit-implementation-verification`
+2. `pilot-release-gate-go-no-go`
+3. `smoke-test-source-path-verification`
+4. `prisma-migration-discipline`
+5. `tenant-scope-multi-tenant-guardrails`
+
+Selection rule:
+- Choose only skills directly tied to ticket scope.
+- For each selected skill, generate an evidence artifact path and capture pass/fail.
+
 ## 3) Copy-paste invocation prompts
 
 Use these prompts in order and paste outputs under "Evidence".
@@ -82,11 +96,20 @@ Fill this in for each specialist run.
 - Decision: pass / needs follow-up
 - Follow-up actions:
 
+For each selected project skill, add:
+
+- Skill:
+- Trigger reason:
+- Output artifact path:
+- Result: pass / fail / unverified
+- Blockers or follow-ups:
+
 ## 5) Ship gate (all must be Yes)
 
 - Product acceptance criteria satisfied:
 - Platform impact validated (or N/A):
 - Domain specialist checks complete:
+- Selected project skill checks complete:
 - No-404 QA pass:
 - Code review findings resolved or accepted:
 - Checklist/doc updates done:

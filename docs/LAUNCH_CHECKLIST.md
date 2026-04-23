@@ -102,8 +102,8 @@
 - [x] Eng: support-facing merge/duplicate error reference published (`docs/CRM_GA_SOLO_T04_SUPPORT_MERGE_ERRORS.md`) to satisfy Ticket 04 support doc criterion.
 - [ ] Eng: any remaining merge/data edge cases from Product (e.g. GSTIN-only tenants, bulk merge) — track in ticket pack.
 - [x] QA: signed-in **runbook** for duplicate/merge API scenarios (`docs/CRM_GA_SOLO_T04_QA_RUNBOOK.md`) — execute and record Pass/Fail when you run it.
-- [ ] QA: run that runbook signed-in and record results (table at bottom of runbook or findings doc). **2026-04-21 partial:** A2 (duplicate email reject) and A4 (duplicate phone reject) passed; remaining Day 4 rows pending.
-- [ ] Product: sign off merge UX and failure messaging.
+- [x] QA: run that runbook signed-in and record results (table at bottom of runbook or findings doc). **2026-04-21 partial:** A2 (duplicate email reject) and A4 (duplicate phone reject) passed; remaining Day 4 rows pending. **2026-04-22:** hosted runtime execution captured in `docs/evidence/closure/2026-04-22-crm-day4-runtime-checks.md` with A/B/C pass set plus D1/D2/D4/D5 pass; blockers were D3 (`SKIPPED_NO_DUPLICATE_PAIR`) and D6 (`500` bypass merge runtime error), plus Product signoff. **2026-04-23:** post-fix local rerun `docs/evidence/closure/2026-04-23-crm-day4-runtime-checks-local-postfix.md` confirms D6 pass (`200`); D3 now has formal N/A-candidate evidence in `docs/evidence/closure/2026-04-23-crm-day4-runtime-checks-local-na-candidate.md` per runbook criteria; Product signoff recorded in runbook.
+- [x] Product: sign off merge UX and failure messaging. **2026-04-23:** approval recorded in `docs/CRM_GA_SOLO_T04_QA_RUNBOOK.md` (owner/date/decision captured; D3 accepted as N/A per eligibility rule).
 
 #### Day 5 - RBAC and audit coverage
 - [x] Eng: RBAC/audit discovery map published (`docs/CRM_GA_SOLO_T05_PREP_RBAC_AUDIT.md`) with CRM Core mutation coverage and Day 5 enforcement order.
@@ -116,8 +116,8 @@
 - [x] Eng: Day 5 scoped settings/export role-gate pass completed (bulk/delete/export/settings writes now on explicit helper policy).
 - [x] Eng: audit-log coverage expanded on Day 5 high-risk mutations (tasks bulk-complete/delete, contact delete, contact/lead mass-transfer, lead mass-delete/mass-update) using `logCrmAudit`.
 - [x] Eng: audit verification runbook published for Day 5 scoped mutations (`docs/CRM_GA_SOLO_T05_AUDIT_VERIFICATION_RUNBOOK.md`).
-- [ ] QA: run role matrix (admin/manager/rep/read-only).
-- [ ] Eng + QA: verify audit events for all GA mutations.
+- [ ] QA: run role matrix (admin/manager/rep/read-only). **2026-04-23:** execution runbook restored/available at `docs/CRM_GA_SOLO_T05_ROLE_MATRIX_RUNBOOK.md`; runtime attempt logged in `docs/evidence/closure/2026-04-23-crm-day5-rbac-audit-runtime-checks.md` (RBAC unit test pass, signed-in 4-role matrix still pending stable runtime).
+- [ ] Eng + QA: verify audit events for all GA mutations. **2026-04-23:** execution runbook restored/available at `docs/CRM_GA_SOLO_T05_AUDIT_VERIFICATION_RUNBOOK.md`; runtime attempt logged in `docs/evidence/closure/2026-04-23-crm-day5-rbac-audit-runtime-checks.md` with audit gate blocker artifacts (`docs/evidence/release-gates/2026-04-23T09-47-14-301Z-crm-audit-gate.json`, `docs/evidence/release-gates/2026-04-23T09-52-59-193Z-crm-audit-gate.json`).
 
 #### Day 6 - Performance and scale validation
 - [x] Eng: performance/scale prep map published (`docs/CRM_GA_SOLO_T06_PREP_PERF_SCALE.md`) with hotspot and measurement plan.
@@ -302,8 +302,8 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 - [x] 2) Day 2 Product signoff: complete `docs/CRM_GA_DAY2_PRODUCT_PARITY_ONEPAGER.md` and mark Day 2 Product row. **2026-04-20:** finalized as **Accept for GA track**.
 - [x] 3) Day 3 QA execution: run `docs/CRM_GA_SOLO_T03_QA_RUNBOOK.md` and mark Day 3 QA row. **2026-04-20 closure:** basic create pass, with-contact+due create pass, detail/edit/save pass, complete/delete pass, tenant context pass.
 - [x] 4) Day 3 Product signoff: complete `docs/CRM_GA_SOLO_T03_PRODUCT_UAT_ONEPAGER.md` and mark Day 3 Product row. **2026-04-20 closure:** decision finalized to **Approved for GA track increment**.
-- [ ] 5) Day 4 closure: execute `docs/CRM_GA_SOLO_T04_QA_RUNBOOK.md`, record Product merge UX signoff, then close remaining Day 4 rows. **2026-04-20 update:** automation started (`npm run test:crm:merge-key`, `npm run test:crm:merge-guard` pass; evidence `docs/evidence/closure/2026-04-20T22-15-00-000Z-crm-day4-merge-guard-tests.md`), manual API checks A-C + D endpoint verification still pending.
-- [ ] 6) Day 5 closure: execute `docs/CRM_GA_SOLO_T05_ROLE_MATRIX_RUNBOOK.md` + `docs/CRM_GA_SOLO_T05_AUDIT_VERIFICATION_RUNBOOK.md`, then close Day 5 rows.
+- [x] 5) Day 4 closure: execute `docs/CRM_GA_SOLO_T04_QA_RUNBOOK.md`, record Product merge UX signoff, then close remaining Day 4 rows. **2026-04-20 update:** automation started (`npm run test:crm:merge-key`, `npm run test:crm:merge-guard` pass; evidence `docs/evidence/closure/2026-04-20T22-15-00-000Z-crm-day4-merge-guard-tests.md`). **2026-04-22 update:** hosted runtime artifact `docs/evidence/closure/2026-04-22-crm-day4-runtime-checks.md` completed A1-A4, B1-B3, C1, D1, D2, D4, D5; open blockers narrowed to D3 no duplicate pair path, D6 bypass merge runtime `500`, and Product merge UX signoff. **2026-04-23 update:** local post-fix rerun `docs/evidence/closure/2026-04-23-crm-day4-runtime-checks-local-postfix.md` confirms D6 pass (`200`), D3 accepted as N/A via `docs/evidence/closure/2026-04-23-crm-day4-runtime-checks-local-na-candidate.md` + runbook eligibility criteria, and Product signoff recorded in runbook.
+- [ ] 6) Day 5 closure: execute `docs/CRM_GA_SOLO_T05_ROLE_MATRIX_RUNBOOK.md` + `docs/CRM_GA_SOLO_T05_AUDIT_VERIFICATION_RUNBOOK.md`, then close Day 5 rows. **2026-04-23 update:** missing Day 5 runbook references were restored and a unified evidence worksheet was staged at `docs/evidence/closure/2026-04-23-crm-day5-rbac-audit-runtime-checks.md`; first execution pass completed (`npm run test:crm:rbac` pass) but signed-in role/audit runtime remains blocked by CRM audit gate instability/timeouts. **Stabilization retry:** patched `tests/e2e/crm-audit/crm-audit.spec.ts` for 360 recovery, reran gate with 20-minute timeout window, and still failed at `360 Customer View` (`docs/evidence/release-gates/2026-04-23T10-26-16-754Z-crm-audit-gate.json`).
 - [ ] 7) Day 6 closure: execute `docs/CRM_GA_SOLO_T06_PERF_QA_RUNBOOK.md`, fill Day 6 evidence tables, then close Day 6 rows.
 - [ ] 8) Day 7 closure: execute `docs/CRM_GA_SOLO_T07_CI_GATE_RUNBOOK.md`, fill Day 7 evidence tables, then close Day 7 rows.
 - [ ] 9) Day 8 closure: execute `docs/CRM_GA_SOLO_T08_SUPPORT_SOP_RUNBOOK.md`, fill Day 8 evidence tables, then close Day 8 rows.
@@ -327,8 +327,8 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 | Day 2 Product | Completed | None | Phani | `docs/CRM_GA_DAY2_PRODUCT_PARITY_ONEPAGER.md` finalized 2026-04-20 with decision **Accept for GA track** |
 | Day 3 QA | Completed | None | Phani | `npm run test:e2e:crm-day3-qa` + `docs/CRM_GA_SOLO_T03_QA_RUNBOOK.md` |
 | Day 3 Product | Completed | None | Phani | `docs/CRM_GA_SOLO_T03_PRODUCT_UAT_ONEPAGER.md` finalized as **Approved for GA track increment** |
-| Day 4 close | Partial | Manual API checks + Product merge UX signoff | Phani | Automation pass captured; complete `docs/CRM_GA_SOLO_T04_QA_RUNBOOK.md` A-C + D endpoint checks |
-| Day 5 close | Pending | QA runtime evidence | Phani | Run role matrix + audit verification |
+| Day 4 close | Completed | None | Phani | Day 4 runbook complete with Product signoff; D3 accepted as N/A per rule, D6 pass captured in local post-fix artifact |
+| Day 5 close | In Progress | Runtime instability during signed-in audit flow | Phani | Re-run Day 5 role matrix + audit verification after stabilizing local/hosted runtime; see Day 5 evidence + release-gate artifacts |
 | Day 6 close | Pending | Perf execution | Phani | Run perf runbook and fill tables |
 | Day 7 close | Pending | CI execution | Phani | Finalize suite and fill CI evidence |
 | Day 8 close | Pending | UX/SOP execution | Phani | Run UX/support runbook and fill tables |
@@ -353,6 +353,18 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 - [ ] RBAC is enforced on sensitive CRM actions.
 - [ ] Tenant isolation is validated on all CRM Core routes.
 - [ ] Audit logs exist for every CRM Core mutation and export.
+- [ ] **Supabase DB security gate passed (mandatory)**:
+  - [ ] Run `prisma/migrations/harden_supabase_public_access.sql` on target DB.
+  - [ ] Run `prisma/migrations/fix_rls_enabled_no_policy_targeted.sql` if Advisor reports `rls_enabled_no_policy`.
+  - [ ] Run `prisma/migrations/verify_supabase_public_hardening.sql` and confirm:
+    - [ ] zero public tables without RLS,
+    - [ ] zero sensitive tables with `anon/authenticated` grants,
+    - [ ] zero missing policies on targeted RLS tables.
+  - [ ] Supabase Security Advisor shows **no ERROR / WARNING / INFO** findings.
+  - [ ] Archive evidence to `docs/evidence/security/supabase/YYYY-MM-DD/`:
+    - [ ] SQL execution transcript (or copied SQL + success result),
+    - [ ] verification query output,
+    - [ ] Security Advisor screenshot/export after pass.
 
 ### 3) Quality gates
 - [ ] Critical E2E suite is 100% green in CI.
@@ -589,6 +601,21 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 - [x] Use `docs/CRM_GA_SOLO_T10_REHEARSAL_GO_NO_GO_RUNBOOK.md` for Day 10 rehearsal/go-no-go evidence capture.
 - [x] Use `docs/CRM_GA_SOLO_T11_PREP_DECISION_RISK_SIGNOFF.md` for launch decision/risk-signoff planning.
 - [x] Use `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` for final decision record and signoff evidence.
+- [x] Use `docs/CANONICAL_MODULE_API_CUTOVER_RUNBOOK.md` for `CANONICAL_MODULE_API_ONLY` rollout, verification, and rollback.
+- [x] Use `docs/CANONICAL_MODULE_API_CUTOVER_EXECUTION_WORKSHEET.md` to execute staging validation, capture production approval fields, and track 24h post-enable monitoring.
+- [x] Use `docs/CANONICAL_MODULE_API_STAGING_RUNTIME_EVIDENCE_SHEET.md` to capture API-by-API staging runtime expected vs actual contract results in one pass.
+- [x] Optionally run `npm run check:canonical-staging-runtime` as a pre-pass for staging endpoint contract validation (requires staging base URL + auth token env vars).
+- [x] Use `docs/CANONICAL_STAGING_ENV_TEMPLATE.md` and `npm run run:canonical-staging-evidence-pipeline` for one-command staging check + evidence autofill.
+- [x] Use `npm run get:canonical-staging-token` (with login env vars) when a staging bearer token is not readily available.
+- [x] Use `docs/CANONICAL_MODULE_API_CONSUMER_READINESS_CHECKLIST.md` to confirm each consumer surface is canonical-ready before flag enablement.
+- [x] Run `npm run check:canonical-module-api-contract` to generate canonical API contract evidence artifacts in `docs/evidence/closure/` before and after flag cutover.
+- [x] Run `npm run check:canonical-module-api-post-cutover` to fail fast if legacy fields leak outside `includeLegacy` guarded response blocks.
+- [x] Run `npm run check:canonical-module-api-response-snapshots` to capture legacy vs canonical-only response snapshots as explicit evidence artifacts.
+- [x] Run `npm run check:canonical-module-api-consumer-usage` to assert frontend consumers avoid legacy fields and reference canonical response fields.
+- [x] Run `npm run check:canonical-module-api-readiness-verdict` for one consolidated readiness verdict artifact (contract + post-cutover guard + checklist state).
+- [x] Run `npm run release:gate:canonical-contract` (or default `release:gate:smoke`, which now includes it) to enforce canonical contract checks in release-gate automation.
+- [x] Run `npm run release:gate:canonical-post-cutover` (or default `release:gate:smoke`) to enforce post-cutover leakage guard in release automation.
+- [x] Run `npm run release:gate:canonical-readiness-verdict` for release-gate-level consolidated readiness enforcement.
 - [x] Use `docs/CRM_SPEED_BASELINE_RUNBOOK.md` for repeatable daily speed evidence capture.
 - [x] Use `docs/CRM_GA_DAILY_STANDUP_TEMPLATE.md` for 15-minute daily execution and speed sync.
 - [x] Use `docs/CRM_GA_WEEKLY_REVIEW_TEMPLATE.md` for Week 1 closeout and final readiness review.
@@ -610,6 +637,9 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 - [ ] Load testing completed (1000+ contacts, 500+ deals)
 - [ ] Performance benchmarks met
 - [ ] Security audit passed
+- [ ] Supabase Security Advisor clean (`no ERROR/WARNING/INFO`)
+- [ ] Supabase hardening verification SQL executed and archived
+- [ ] Supabase security evidence archived at `docs/evidence/security/supabase/YYYY-MM-DD/`
 - [ ] GDPR compliance verified
 - [ ] Database backups configured
 - [ ] Monitoring and alerts setup

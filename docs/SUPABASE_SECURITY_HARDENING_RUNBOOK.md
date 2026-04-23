@@ -11,6 +11,7 @@ This runbook closes high-priority Supabase Security Advisor findings:
 - `prisma/migrations/verify_supabase_public_hardening.sql`
 - `prisma/migrations/allowlist_supabase_api_tables.sql`
 - `prisma/migrations/fix_rls_enabled_no_policy.sql`
+- `prisma/migrations/fix_rls_enabled_no_policy_targeted.sql`
 
 ## Safe rollout sequence
 
@@ -26,6 +27,7 @@ This runbook closes high-priority Supabase Security Advisor findings:
      - Sensitive tables have service-role policies.
 4. **Close no-policy lint info**
    - If Security Advisor reports `rls_enabled_no_policy`, run `fix_rls_enabled_no_policy.sql`.
+   - If a few specific tables still remain flagged, run `fix_rls_enabled_no_policy_targeted.sql`.
    - Re-run verification + Security Advisor.
 5. **Re-scan**
    - Re-run Security Advisor and confirm findings are cleared.
