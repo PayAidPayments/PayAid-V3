@@ -1,6 +1,6 @@
 'use client'
 
-import { CollaborativeCofounder } from '@/components/CollaborativeCofounder'
+import { CollaborativeCofounder } from '../../../../../components/CollaborativeCofounder'
 import { ModuleTopBar } from '@/components/modules/ModuleTopBar'
 import { useAuthStore } from '@/lib/stores/auth'
 import { redirect } from 'next/navigation'

@@ -272,4 +272,37 @@ async function main() {
       'Role-matrix auth evaluation uses authorization outcome only: admin/manager expect non-403; rep/read_only expect 403 CRM_ROLE_FORBIDDEN.',
   }
 
-  const outDir = path.join(process.cwd(), 'docs', 'evidence', 'clos
+  const outDir = path.join(process.cwd(), 'docs', 'evidence', 'closure')
+  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true })
+  const outPath = path.join(outDir, `${nowStamp()}-crm-day5-role-matrix-automation.json`)
+  fs.writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
+
+  console.log(
+    JSON.stringify(
+      {
+        ok: summary.fail === 0,
+        outPath: outPath.replaceAll('\\', '/'),
+        pass: summary.pass,
+        fail: summary.fail,
+      },
+      null,
+      2
+    )
+  )
+
+  if (summary.fail > 0) process.exit(2)
+}
+
+main().catch((error) => {
+  console.error(
+    JSON.stringify(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      null,
+      2
+    )
+  )
+  process.exit(1)
+})

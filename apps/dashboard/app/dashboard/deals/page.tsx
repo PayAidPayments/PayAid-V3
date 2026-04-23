@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { ModuleGate } from '@/components/modules/ModuleGate'
-import { BackToApps } from '@/components/BackToApps'
+import { BackToApps } from '../../../../../components/BackToApps'
 
 const stages = [
   { id: 'lead', name: 'Lead', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200' },

@@ -2,7 +2,7 @@
 
 import { ModuleTopBar } from '@/components/modules/ModuleTopBar'
 import { AIDecisionDashboard } from '@/components/AIDecisionDashboard'
-import { ApprovalQueue } from '@/components/ApprovalQueue'
+import { ApprovalQueue } from '../../../../../components/ApprovalQueue'
 import { useAuthStore } from '@/lib/stores/auth'
 import { redirect } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'

@@ -1,6 +1,6 @@
 'use client'
 
-import { ComplianceDashboard } from '@/components/ComplianceDashboard'
+import { ComplianceDashboard } from '../../../../../components/ComplianceDashboard'
 
 export default function CompliancePage() {
   return (

@@ -43,6 +43,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Contact.assignedToId references SalesRep.id, so resolve the user's SalesRep row first.
+    const salesRep = await prisma.salesRep.findFirst({
+      where: {
+        userId: validated.assignToUserId,
+        tenantId,
+      },
+    })
+
+    if (!salesRep) {
+      return NextResponse.json(
+        {
+          error:
+            'Target user does not have a SalesRep record. Please ensure the user is set up as a sales representative.',
+        },
+        { status: 400 }
+      )
+    }
+
     // Verify all contacts belong to this tenant
     const contacts = await prisma.contact.findMany({
       where: {
@@ -58,14 +76,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update all contacts to assign them to the target user
+    // Update all contacts to assign them to the resolved SalesRep.
     const result = await prisma.contact.updateMany({
       where: {
         id: { in: validated.contactIds },
         tenantId,
       },
       data: {
-        assignedToId: validated.assignToUserId,
+        assignedToId: salesRep.id,
       },
     })
     await logCrmAudit({

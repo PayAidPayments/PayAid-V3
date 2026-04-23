@@ -13,7 +13,7 @@ import ContactImportDialog from '@/components/contacts/contact-import-dialog'
 import { useQueryClient } from '@tanstack/react-query'
 import { LeadScoringBadge } from '@/components/LeadScoringBadge'
 import { ModuleGate } from '@/components/modules/ModuleGate'
-import { BackToApps } from '@/components/BackToApps'
+import { BackToApps } from '../../../../../components/BackToApps'
 
 function ContactsPageContent() {
   const [page, setPage] = useState(1)
