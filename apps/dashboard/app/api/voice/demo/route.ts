@@ -111,6 +111,23 @@ const HINDI_WARMTH = `
 HINDI DELIVERY (mandatory when speaking Hindi): Sound gentle, caring, and respectful—like a helpful colleague, never cold or like an interrogation. Soften questions with brief acknowledgments first ("Achha ji…", "Theek hai…"). If the user apologizes, asks you to repeat, or seems unsure, respond with reassurance first ("Bilkul, koi baat nahi ji…", "Zaroor, main dohraati hoon…") before continuing. Avoid blunt yes/no stacks; add one human beat between questions. Never sound irritated, rushed, or dismissive—your voice should feel sympathetic even when you must ask for business details.
 `
 
+const POLITENESS_TELUGU = `
+TONE (Telugu): మర్యాదగా, సహజంగా మాట్లాడండి. "మీరు", "దయచేసి", "ధన్యవాదాలు" వాడండి. ఎప్పుడూ తిడవద్దు లేదా శుష్కంగా ఉండవద్దు.
+`
+
+const EMPATHY_TELUGU = `
+SOUND HUMAN (Telugu): నిజమైన కాల్ లాగా—చదవకండి. ఒక వాక్యంలో ఒక సహజ ప్రతిస్పందన (అవునా?, అర్థమైంది, ఓహ్) చేర్చండి. కస్టమర్ కోపంగా లేదా కన్‌ఫ్యూజ్‌గా ఉంటే మొదట సమాధానం ఇవ్వండి, తర్వాతే వివరాలు అడగండి. పదే పదే ఒకే ప్రశ్న వేదంలా అడగకండి—సంభాషణ మార్చండి.
+`
+
+const TELUGU_WARMTH = `
+TELUGU DELIVERY: మృదువుగా, సహాయకంగా ఉండండి—ఇంటర్వ్యూ లా కాదు. ప్రశ్నకు ముందు చిన్న అంగీకారం ("సరే అండి…", "అవును…"). హిందీ లేదా ఇంగ్లీష్ ఫిల్లర్లు వేసి తెలుగును కలుపకండి unless the user mixes languages.
+`
+
+/** TTS reads text literally—prosody comes from wording; bulbul:v3 also uses temperature for variety. */
+const VOICE_EMOTION_TELECALLER = `
+VOICE PERFORMANCE: You are a live tele-caller, not reading a script. Write 1–2 short sentences that sound *spoken*: natural reactions (surprise, concern, warmth, relief) using words and light punctuation—never stage directions or bracketed emotions. Match the customer's energy: if they are upset, acknowledge first; if they share good news, sound pleased. Avoid robotic listing, repeated stock phrases every turn, or flat tone. Stay professional: empathetic, not theatrical rage.
+`
+
 function buildSystemPrompt(
   agent: { systemPrompt: string; language: string; voiceTone?: string | null; name?: string | null },
   language: string,
@@ -134,6 +151,7 @@ function buildSystemPrompt(
   const isEnglish =
     langName === 'English' || (language != null && language.toLowerCase().startsWith('en'))
   const isHindi = langName === 'Hindi' || (language != null && language.toLowerCase().startsWith('hi'))
+  const isTelugu = langName === 'Telugu' || (language != null && language.toLowerCase().startsWith('te'))
 
   const responseLanguageRule = `
 RESPONSE LANGUAGE: Speak only in ${langName} unless (1) the user explicitly asks you to use another language, or (2) the user's last message is clearly in another language (e.g. full sentence in Hindi/Tamil). Do not switch language on your own; stay in ${langName} until the user requests or clearly uses another language. One language per reply; never mix.
@@ -150,11 +168,19 @@ RESPONSE LANGUAGE: Speak only in ${langName} unless (1) the user explicitly asks
     prompt += POLITENESS_ENGLISH
     prompt += EMPATHY_ENGLISH
     prompt += ENGLISH_NO_HINGLISH
+  } else if (isTelugu) {
+    prompt += POLITENESS_TELUGU
+    prompt += EMPATHY_TELUGU
+    prompt += TELUGU_WARMTH
+    prompt += VOICE_EMOTION_TELECALLER
   } else {
     prompt += POLITENESS_HINDI
     prompt += EMPATHY_HINDI
     if (isHindi) {
       prompt += HINDI_WARMTH
+    }
+    if (isTeleSales) {
+      prompt += VOICE_EMOTION_TELECALLER
     }
   }
   prompt += `\n\nCRITICAL - OUTPUT ONLY WHAT THE CUSTOMER HEARS: Reply with only the exact words the customer should hear (1-2 short sentences). Do not output your reasoning, drafts, alternatives, or meta-commentary. No "Attempt 1", "The response will be:", "Let's add...", bullet analysis, or internal notes. If you think of multiple phrasings, output only one final reply.`
@@ -166,13 +192,16 @@ RESPONSE LANGUAGE: Speak only in ${langName} unless (1) the user explicitly asks
 }
 
 // LLM/TTS timeouts: long English or Hindi replies + Sarvam need >6s TTS; short caps caused AbortError ("This operation was aborted").
-const LLM_TIMEOUT_MS = 8000
-const TTS_TIMEOUT_MS = 18_000
-const SARVAM_LLM_MS = 10_000
-const SARVAM_TTS_MS = 22_000
-const DEMO_OVERALL_MS = 38_000 // Must exceed worst-case LLM + TTS; client fetch 32s may need bump in RealTimeVoiceDemo if this grows
-const VOICE_MAX_TOKENS = 90
-const VOICE_TEMPERATURE = 0.4
+const LLM_TIMEOUT_MS = 5500
+const TTS_TIMEOUT_MS = 9000
+const SARVAM_LLM_MS = 6500
+const SARVAM_TTS_MS = 11_000
+const DEMO_OVERALL_MS = 19_000 // Keep turn latency realistic; fail fast instead of long dead-air waits
+const VOICE_MAX_TOKENS = 60
+const VOICE_TEMPERATURE = 0.45
+/** bulbul:v3: slightly higher = more natural prosody (less “flat”); tune 0.65–0.85 */
+const SARVAM_TTS_TEMPERATURE = 0.78
+const SARVAM_TTS_PACE = 1.05
 
 function demoTimeoutResponse() {
   return NextResponse.json({
@@ -244,7 +273,7 @@ export async function POST(request: NextRequest) {
     try {
       const kbResults = await Promise.race([
         searchKnowledgeBase(agentId, transcript, 3),
-        new Promise<null>((r) => setTimeout(() => r(null), 1500)),
+        new Promise<null>((r) => setTimeout(() => r(null), 600)),
       ]).then((r) => (Array.isArray(r) ? r : null))
       if (kbResults?.length) {
         context = kbResults.map((r) => r.content).join('\n\n')
@@ -255,7 +284,7 @@ export async function POST(request: NextRequest) {
 
     const systemPrompt = buildSystemPrompt(agent, agent.language, context)
     // Enough turns for tele-sales to avoid repeating questions; Groq stays fast with modest context
-    const recentHistory = conversationHistory.slice(-10)
+    const recentHistory = conversationHistory.slice(-6)
     const history = [...recentHistory, { role: 'user' as const, content: transcript }]
 
     let responseText: string
@@ -276,7 +305,7 @@ export async function POST(request: NextRequest) {
         const groq = getGroqClient()
         const messages = [
           { role: 'system' as const, content: systemPrompt },
-          ...history.slice(-12).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+          ...history.slice(-8).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
         ]
         console.time('voice-llm')
         const res = await groq.chat(messages, {
@@ -340,9 +369,11 @@ export async function POST(request: NextRequest) {
             const ttsBuf = await Promise.race([
               sarvamTts(responseText, agent.language, {
                 speaker: agent.voiceId || 'priya',
-                sampleRate: 24000,
+                sampleRate: 16000,
                 signal: sarvamTtsAbort.signal,
                 outputCodec: 'mp3',
+                temperature: SARVAM_TTS_TEMPERATURE,
+                pace: SARVAM_TTS_PACE,
               }),
               new Promise<never>((_, rej) => setTimeout(() => rej(new Error('Sarvam TTS timeout')), SARVAM_TTS_MS)),
             ]).catch((e) => {
@@ -371,9 +402,11 @@ export async function POST(request: NextRequest) {
           const ttsBuf = await Promise.race([
             sarvamTts(responseText, agent.language, {
               speaker: agent.voiceId || 'priya',
-              sampleRate: 24000,
+              sampleRate: 16000,
               signal: sarvamTtsAbort.signal,
               outputCodec: 'mp3',
+              temperature: SARVAM_TTS_TEMPERATURE,
+              pace: SARVAM_TTS_PACE,
             }),
             new Promise<never>((_, rej) => setTimeout(() => rej(new Error('Sarvam TTS timeout')), SARVAM_TTS_MS)),
           ]).catch((e) => {

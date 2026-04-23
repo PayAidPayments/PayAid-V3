@@ -281,7 +281,7 @@ export function RealTimeVoiceDemo({
           pendingFinalRef.current = ''
           finalDebounceRef.current = null
           if (toSend && processSpeechRef.current) processSpeechRef.current(toSend)
-        }, 900)
+        }, 450)
       } else {
         lastInterimRef.current = interim
         setInterimText(interim)
@@ -303,7 +303,7 @@ export function RealTimeVoiceDemo({
           pendingFinalRef.current = ''
           finalDebounceRef.current = null
           if (toSend && processSpeechRef.current) processSpeechRef.current(toSend)
-        }, 400)
+        }, 200)
       }
       restartListening()
     }

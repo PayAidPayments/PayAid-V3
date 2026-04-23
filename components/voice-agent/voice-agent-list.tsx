@@ -124,7 +124,7 @@ export function VoiceAgentList({ agents, loading, onRefresh }: VoiceAgentListPro
                     Calls
                   </Button>
                 </Link>
-                <Link href={`/voice-agents/${tenantId}/Settings?agentId=${agent.id}`}>
+                <Link href={`/voice-agents/${tenantId}/studio?agentId=${agent.id}`} prefetch={false}>
                   <Button variant="outline" size="sm">
                     <Settings className="h-4 w-4" />
                   </Button>

@@ -213,6 +213,22 @@ const LANGUAGE_FEMALE_STYLE_DEFAULTS: Record<string, Record<VoiceStyle, string>>
   mr: { formal: 'shreya', calm: 'niharika', warm: 'rupali' },
 }
 
+/**
+ * VEXYL-style character + style → one Bulbul speaker, **same in every language**.
+ * (Previously we picked different speakers per `language` for Telugu vs Hindi, so the
+ * agent sounded like a different person mid-call when code-mixed or when STT toggled language.)
+ * Matches UI names in `voice-options.ts` (e.g. arjun-calm = Rahul, arjun-warm = Aditya).
+ */
+const VEXYL_CHARACTER_SARVAM: Record<string, Record<VoiceStyle, string>> = {
+  arjun: { formal: 'ashutosh', calm: 'rahul', warm: 'aditya' },
+  divya: { formal: 'ritu', calm: 'neha', warm: 'kavya' },
+  priya: { formal: 'priya', calm: 'priya', warm: 'priya' },
+  rahul: { formal: 'rahul', calm: 'rahul', warm: 'aditya' },
+  vikram: { formal: 'ratan', calm: 'varun', warm: 'mohit' },
+  anita: { formal: 'ishita', calm: 'tanya', warm: 'pooja' },
+  default: { formal: 'shubh', calm: 'soham', warm: 'rupali' },
+}
+
 function normalizeLanguage(language?: string): string {
   const raw = (language || 'hi').toLowerCase().trim()
   if (raw.includes('-')) return raw.split('-')[0]
@@ -240,12 +256,26 @@ function resolveLanguageStyleSpeaker(language: string, style: VoiceStyle): strin
 function toSarvamSpeaker(voiceId?: string, language?: string): string {
   const raw = (voiceId || 'priya-formal').toLowerCase().trim()
   const lang = normalizeLanguage(language)
-
-  if (SARVAM_SPEAKERS.has(raw)) return raw
-  const base = raw.split(/[-_]/)[0]
-  if (base && SARVAM_SPEAKERS.has(base)) return base
-
   const style = getStyle(raw)
+  const parts = raw.split(/[-_]/)
+  const character = parts[0] || raw
+
+  // Exact Bulbul name (e.g. "priya", "rahul")
+  if (SARVAM_SPEAKERS.has(raw)) return raw
+
+  // Composite VEXYL id: "priya-calm", "arjun-warm" — never collapse to the first token
+  // (e.g. "rahul-warm" must become aditya, not "rahul").
+  if (parts.length >= 2) {
+    const byCharacter = VEXYL_CHARACTER_SARVAM[character]
+    if (byCharacter) {
+      const speaker = byCharacter[style] ?? byCharacter.formal
+      if (speaker && SARVAM_SPEAKERS.has(speaker)) return speaker
+    }
+  }
+
+  // Single token that is a known Bulbul speaker
+  if (parts.length === 1 && character && SARVAM_SPEAKERS.has(character)) return character
+
   const gender = getGender(raw)
 
   if (gender === 'male') {
@@ -260,8 +290,8 @@ function toSarvamSpeaker(voiceId?: string, language?: string): string {
   const languageSpeaker = resolveLanguageStyleSpeaker(lang, style)
   if (languageSpeaker && SARVAM_SPEAKERS.has(languageSpeaker)) return languageSpeaker
 
-  // Last-resort native-ish fallback for Hindi.
-  return 'priya'
+  const def = VEXYL_CHARACTER_SARVAM.default[style] ?? 'priya'
+  return def && SARVAM_SPEAKERS.has(def) ? def : 'priya'
 }
 
 /**
@@ -271,7 +301,16 @@ function toSarvamSpeaker(voiceId?: string, language?: string): string {
 export async function sarvamTts(
   text: string,
   language: string,
-  options?: { speaker?: string; sampleRate?: number; signal?: AbortSignal; outputCodec?: 'wav' | 'mp3' }
+  options?: {
+    speaker?: string
+    sampleRate?: number
+    signal?: AbortSignal
+    outputCodec?: 'wav' | 'mp3'
+    /** bulbul:v3: 0.5–2.0, default 1.0 */
+    pace?: number
+    /** bulbul:v3: higher = more expressive/varied prosody (typical 0.5–0.9 for calls) */
+    temperature?: number
+  }
 ): Promise<Buffer> {
   const apiKey = getApiKey()
   if (!apiKey) throw new Error('SARVAM_API_KEY not set')
@@ -280,6 +319,19 @@ export async function sarvamTts(
   const speaker = toSarvamSpeaker(options?.speaker, language)
   const speechSampleRate = options?.sampleRate ?? 24000
   const codec = options?.outputCodec ?? 'wav'
+  const pace = options?.pace
+  const temperature = options?.temperature
+
+  const body: Record<string, unknown> = {
+    text,
+    target_language_code: targetLanguageCode,
+    model: 'bulbul:v3',
+    speaker,
+    speech_sample_rate: speechSampleRate,
+    output_audio_codec: codec,
+  }
+  if (pace != null) body.pace = pace
+  if (temperature != null) body.temperature = temperature
 
   const res = await fetch(SARVAM_TTS_URL, {
     method: 'POST',
@@ -287,14 +339,7 @@ export async function sarvamTts(
       'Content-Type': 'application/json',
       'api-subscription-key': apiKey,
     },
-    body: JSON.stringify({
-      text,
-      target_language_code: targetLanguageCode,
-      model: 'bulbul:v3',
-      speaker,
-      speech_sample_rate: speechSampleRate,
-      output_audio_codec: codec,
-    }),
+    body: JSON.stringify(body),
     signal: options?.signal,
   })
 

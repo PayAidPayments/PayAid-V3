@@ -67,11 +67,32 @@ export default function VoiceAgentDemoPage() {
   const microphoneStreamRef = useRef<MediaStream | null>(null) // Store the microphone stream
   const speechRecognitionRef = useRef<{ start: () => void; stop: () => void; abort: () => void; lang: string; continuous: boolean; interimResults: boolean } | null>(null)
   const messagesRef = useRef<Message[]>([])
+  const stopAssistantAudio = () => {
+    if (!audioRef.current) return
+    try {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+      audioRef.current.onended = null
+      audioRef.current.onerror = null
+      audioRef.current.src = ''
+    } catch {
+      // ignore
+    }
+  }
+  function queueNextLiveTurn() {
+    if (!liveConversationActiveRef.current) return
+    if (nextLiveTurnTimeoutRef.current) clearTimeout(nextLiveTurnTimeoutRef.current)
+    nextLiveTurnTimeoutRef.current = setTimeout(() => {
+      nextLiveTurnTimeoutRef.current = null
+      if (liveConversationActiveRef.current) startWebSpeechDemo()
+    }, 140)
+  }
 
   const [webSpeechListening, setWebSpeechListening] = useState(false)
   const [webSpeechLoading, setWebSpeechLoading] = useState(false)
   const [liveConversationActive, setLiveConversationActive] = useState(false)
   const liveConversationActiveRef = useRef(false)
+  const nextLiveTurnTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   // Mic state machine: idle → listening → processing → idle (no auto-restart, stops battery drain)
   const [micSpeechState, setMicSpeechState] = useState<'idle' | 'listening' | 'processing'>('idle')
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -368,24 +389,16 @@ export default function VoiceAgentDemoPage() {
       }
     }
     
-    // Run check with a delay to not block page load
+    // Run one lightweight check after mount; rely on permission.onchange instead of polling.
     const timeoutId = setTimeout(() => {
       if (mounted) {
         checkMicrophonePermission()
       }
-    }, 500)
-    
-    // Re-check permission every 5 seconds (in case user changes it in browser settings)
-    const interval = setInterval(() => {
-      if (mounted) {
-        checkMicrophonePermission()
-      }
-    }, 5000)
-    
+    }, 200)
+
     return () => {
       mounted = false
       clearTimeout(timeoutId)
-      clearInterval(interval)
     }
   }, [])
 
@@ -1441,6 +1454,8 @@ If still not working, check the browser console (F12) for detailed error message
     }
 
     rec.onstart = () => {
+      // Barge-in: user started speaking, so stop assistant playback immediately.
+      stopAssistantAudio()
       setWebSpeechListening(true)
       setMicSpeechState('listening')
       if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current)
@@ -1462,12 +1477,18 @@ If still not working, check the browser console (F12) for detailed error message
 
   const processSpeechResult = async (transcript: string) => {
     if (!agentId || !token || !transcript.trim()) return
+    stopAssistantAudio()
     setMicSpeechState('processing')
     setWebSpeechLoading(true)
     setMessages((prev) => [...prev, { role: 'user', content: transcript, timestamp: new Date() }])
     try {
-      const previousMessages = messagesRef.current.slice(-9)
+      const previousMessages = messagesRef.current.slice(-6)
       const conversationHistory = previousMessages.map((m) => ({ role: m.role, content: m.content }))
+      const controller = new AbortController()
+      const timeoutId = setTimeout(
+        () => controller.abort(new DOMException('Voice demo turn timed out', 'AbortError')),
+        20_000
+      )
       const res = await fetch('/api/voice/demo', {
         method: 'POST',
         headers: {
@@ -1476,12 +1497,15 @@ If still not working, check the browser console (F12) for detailed error message
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ agentId, transcript: transcript.trim(), conversationHistory }),
+        signal: controller.signal,
       })
+      clearTimeout(timeoutId)
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${(err as { error?: string }).error || res.statusText}`, timestamp: new Date() }])
         setWebSpeechLoading(false)
         setMicSpeechState('idle')
+        queueNextLiveTurn()
         return
       }
       const data = await res.json().catch(() => null)
@@ -1489,29 +1513,47 @@ If still not working, check the browser console (F12) for detailed error message
       setMessages((prev) => [...prev, { role: 'assistant', content: responseText, timestamp: new Date() }])
       if (data?.audio) {
         const binary = Uint8Array.from(atob(data.audio), (c) => c.charCodeAt(0))
-        const blob = new Blob([binary], { type: 'audio/wav' })
+        const format = data?.audioFormat === 'mp3' ? 'audio/mpeg' : 'audio/wav'
+        const blob = new Blob([binary], { type: format })
         const url = URL.createObjectURL(blob)
-        const audioEl = new Audio(url)
-        await audioEl.play()
-        audioEl.onended = () => {
+        if (audioRef.current) {
+          audioRef.current.src = url
+          audioRef.current.onended = () => {
+            URL.revokeObjectURL(url)
+            setWebSpeechLoading(false)
+            setMicSpeechState('idle')
+            queueNextLiveTurn()
+          }
+          audioRef.current.onerror = () => {
+            URL.revokeObjectURL(url)
+            setWebSpeechLoading(false)
+            setMicSpeechState('idle')
+            queueNextLiveTurn()
+          }
+          await audioRef.current.play()
+        } else {
           URL.revokeObjectURL(url)
           setWebSpeechLoading(false)
           setMicSpeechState('idle')
+          queueNextLiveTurn()
         }
       } else {
         setWebSpeechLoading(false)
         setMicSpeechState('idle')
+        queueNextLiveTurn()
       }
     } catch (err) {
       setMessages((prev) => [...prev, { role: 'assistant', content: `Failed: ${err instanceof Error ? err.message : 'Unknown error'}`, timestamp: new Date() }])
       setWebSpeechLoading(false)
       setMicSpeechState('idle')
+      queueNextLiveTurn()
     }
   }
 
   const startWebSpeechDemo = () => {
     if (!agentId || !token || !agent) return
     if (micSpeechState !== 'idle') return
+    stopAssistantAudio()
     const rec = speechRecognitionRef.current
     if (!rec) {
       alert('Web Speech API is not supported in this browser. Try Chrome or Edge.')
@@ -1533,6 +1575,10 @@ If still not working, check the browser console (F12) for detailed error message
   }
 
   const stopWebSpeechDemo = () => {
+    if (nextLiveTurnTimeoutRef.current) {
+      clearTimeout(nextLiveTurnTimeoutRef.current)
+      nextLiveTurnTimeoutRef.current = null
+    }
     if (silenceTimeoutRef.current) {
       clearTimeout(silenceTimeoutRef.current)
       silenceTimeoutRef.current = null
@@ -1550,7 +1596,7 @@ If still not working, check the browser console (F12) for detailed error message
 
   const startLiveConversation = () => {
     setLiveConversationActive(true)
-    setTimeout(() => startWebSpeechDemo(), 300)
+    setTimeout(() => startWebSpeechDemo(), 100)
   }
 
   const endLiveConversation = () => {

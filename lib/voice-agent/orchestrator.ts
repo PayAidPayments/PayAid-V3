@@ -228,6 +228,11 @@ export class VoiceAgentOrchestrator {
 
     const languageInstruction = languagePrompts[language] || languagePrompts['en']
 
+    const voicePerformanceHint =
+      language === 'te'
+        ? ' Sound like a real tele-caller: natural, empathetic wording in Telugu—not a flat read-aloud; brief reactions where appropriate.'
+        : ''
+
     const styleInstruction: Record<'casual' | 'neutral' | 'professional', string> = {
       casual: 'Keep wording casual and everyday, like a normal friendly person talking.',
       neutral: 'Keep wording balanced, clear, and natural in day-to-day speech.',
@@ -235,7 +240,7 @@ export class VoiceAgentOrchestrator {
     }
 
     const conversationStyle = agent.conversationStyle ?? 'neutral'
-    let prompt = `${agent.systemPrompt}\n\n${languageInstruction}`
+    let prompt = `${agent.systemPrompt}\n\n${languageInstruction}${voicePerformanceHint}`
     prompt += `\nConversation style: ${conversationStyle}. ${styleInstruction[conversationStyle]}`
     prompt += '\nUse everyday modern conversational wording. Avoid archaic, poetic, or overly formal vocabulary.'
 
