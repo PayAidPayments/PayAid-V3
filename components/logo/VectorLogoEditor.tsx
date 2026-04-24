@@ -219,6 +219,17 @@ export function VectorLogoEditor({
     setExportOptions(EXPORT_PACK_PRESETS[preset])
   }
 
+  const resetExportPreferences = () => {
+    setSelectedExportPreset('full')
+    setExportOptions(EXPORT_PACK_PRESETS.full)
+    try {
+      localStorage.removeItem(EXPORT_OPTIONS_STORAGE_KEY)
+      localStorage.removeItem(EXPORT_PRESET_STORAGE_KEY)
+    } catch {
+      // no-op
+    }
+  }
+
   const generatePreview = async () => {
     setLoading(true)
     try {
@@ -778,6 +789,9 @@ export function VectorLogoEditor({
                     </Button>
                     <Button type="button" variant="outline" size="sm" onClick={() => applyExportPreset('icon')}>
                       Icon Only
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={resetExportPreferences}>
+                      Reset
                     </Button>
                   </div>
                   <p className="text-xs text-slate-500">Selected assets: {selectedExportCount}</p>
