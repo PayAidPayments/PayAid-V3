@@ -113,6 +113,8 @@ export function VectorLogoEditor({
   const [favoriteConceptIds, setFavoriteConceptIds] = useState<string[]>([])
   const [selectedConceptId, setSelectedConceptId] = useState<string | null>(null)
   const [previewMode, setPreviewMode] = useState<'canvas' | 'card' | 'header'>('canvas')
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+  const [compareConceptIds, setCompareConceptIds] = useState<string[]>([])
 
   // Load available fonts
   useEffect(() => {
@@ -288,6 +290,24 @@ export function VectorLogoEditor({
     }
   }
 
+  const handleExportPack = async () => {
+    try {
+      const baseName = config.text.replace(/\s+/g, '-').toLowerCase() || 'logo'
+      handleDownloadSVG()
+      await new Promise((r) => setTimeout(r, 120))
+      await handleDownloadPNG()
+      await new Promise((r) => setTimeout(r, 120))
+      await handleDownloadIconPNG()
+
+      const cardSvg = createSimpleSVGPreview({ ...config, fontSize: Math.max(28, config.fontSize * 0.5) })
+      const headerSvg = createSimpleSVGPreview({ ...config, fontSize: Math.max(24, config.fontSize * 0.45) })
+      await downloadSvgAsPng(cardSvg, `${baseName}-mockup-card.png`, 1200, 600)
+      await downloadSvgAsPng(headerSvg, `${baseName}-mockup-header.png`, 1400, 360)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export pack')
+    }
+  }
+
   const addKeyword = () => {
     const trimmed = keywordInput.trim().toLowerCase()
     if (!trimmed) return
@@ -300,6 +320,10 @@ export function VectorLogoEditor({
   }
 
   const activeTemplate = getIndustryTemplate(industry, keywords)
+  const visibleConcepts = showFavoritesOnly
+    ? concepts.filter((c) => favoriteConceptIds.includes(c.id))
+    : concepts
+  const compareConcepts = concepts.filter((c) => compareConceptIds.includes(c.id)).slice(0, 2)
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
@@ -600,6 +624,10 @@ export function VectorLogoEditor({
               <Download className="w-4 h-4 mr-2" />
               Download Icon (Favicon PNG)
             </Button>
+            <Button variant="outline" onClick={handleExportPack} disabled={!previewSvg}>
+              <Download className="w-4 h-4 mr-2" />
+              Export Brand Pack
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -651,8 +679,21 @@ export function VectorLogoEditor({
                     Favorites: {favoriteConceptIds.length} shortlisted concept{favoriteConceptIds.length === 1 ? '' : 's'}
                   </div>
                 )}
+                <div className="mb-2 flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={showFavoritesOnly ? 'default' : 'outline'}
+                    onClick={() => setShowFavoritesOnly((v) => !v)}
+                  >
+                    {showFavoritesOnly ? 'Showing Favorites' : 'Show Favorites Only'}
+                  </Button>
+                  <span className="text-xs text-slate-500">
+                    Compare: select up to 2 concepts
+                  </span>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
-                  {concepts.map((concept) => (
+                  {visibleConcepts.map((concept) => (
                     <button
                       key={concept.id}
                       type="button"
@@ -670,25 +711,62 @@ export function VectorLogoEditor({
                       />
                       <div className="mt-1 flex items-center justify-between gap-2">
                         <p className="text-xs font-medium text-slate-700">{concept.label}</p>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setFavoriteConceptIds((prev) =>
-                              prev.includes(concept.id)
-                                ? prev.filter((id) => id !== concept.id)
-                                : [...prev, concept.id]
-                            )
-                          }}
-                          className={`rounded p-1 ${favoriteConceptIds.includes(concept.id) ? 'text-rose-600' : 'text-slate-400 hover:text-rose-500'}`}
-                          title="Shortlist concept"
-                        >
-                          <Heart className={`w-3.5 h-3.5 ${favoriteConceptIds.includes(concept.id) ? 'fill-current' : ''}`} />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setFavoriteConceptIds((prev) =>
+                                prev.includes(concept.id)
+                                  ? prev.filter((id) => id !== concept.id)
+                                  : [...prev, concept.id]
+                              )
+                            }}
+                            className={`rounded p-1 ${favoriteConceptIds.includes(concept.id) ? 'text-rose-600' : 'text-slate-400 hover:text-rose-500'}`}
+                            title="Shortlist concept"
+                          >
+                            <Heart className={`w-3.5 h-3.5 ${favoriteConceptIds.includes(concept.id) ? 'fill-current' : ''}`} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setCompareConceptIds((prev) => {
+                                if (prev.includes(concept.id)) return prev.filter((id) => id !== concept.id)
+                                if (prev.length >= 2) return [prev[1], concept.id]
+                                return [...prev, concept.id]
+                              })
+                            }}
+                            className={`rounded px-1.5 py-0.5 text-[10px] border ${
+                              compareConceptIds.includes(concept.id)
+                                ? 'border-indigo-500 text-indigo-700 bg-indigo-50'
+                                : 'border-slate-300 text-slate-500 bg-white'
+                            }`}
+                            title="Toggle compare"
+                          >
+                            CMP
+                          </button>
+                        </div>
                       </div>
                     </button>
                   ))}
                 </div>
+                {compareConcepts.length === 2 && (
+                  <div className="mt-3 rounded-md border border-indigo-200 bg-indigo-50 p-2">
+                    <p className="text-xs font-semibold text-indigo-900 mb-2">Concept Compare</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {compareConcepts.map((concept) => (
+                        <div key={`compare-${concept.id}`} className="rounded border border-indigo-100 bg-white p-2">
+                          <div
+                            className="h-20 w-full overflow-hidden rounded border border-slate-100"
+                            dangerouslySetInnerHTML={{ __html: createSimpleSVGPreview({ ...config, ...concept.config, fontSize: 28 }) }}
+                          />
+                          <p className="mt-1 text-[11px] text-slate-700">{concept.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             <div className="rounded-lg border bg-white p-3">
@@ -929,4 +1007,32 @@ function createIconOnlySVG(config: LogoConfig): string {
       ${iconMarkup}
     </svg>
   `
+}
+
+async function downloadSvgAsPng(svg: string, fileName: string, width: number, height: number): Promise<void> {
+  const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' })
+  const svgUrl = URL.createObjectURL(svgBlob)
+  const img = new Image()
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve()
+    img.onerror = () => reject(new Error(`Unable to render ${fileName}`))
+    img.src = svgUrl
+  })
+
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Unable to initialize export canvas')
+  ctx.clearRect(0, 0, width, height)
+  ctx.drawImage(img, 0, 0, width, height)
+  const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
+  if (!pngBlob) throw new Error(`Unable to export ${fileName}`)
+  const pngUrl = URL.createObjectURL(pngBlob)
+  const a = document.createElement('a')
+  a.href = pngUrl
+  a.download = fileName
+  a.click()
+  URL.revokeObjectURL(svgUrl)
+  URL.revokeObjectURL(pngUrl)
 }
