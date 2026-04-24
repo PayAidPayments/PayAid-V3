@@ -10,7 +10,11 @@ export async function generateImage(params: {
   token?: string
 }): Promise<{ url: string }> {
   // Use existing image generation endpoint
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000'
+  // Prefer explicit app URL, then Vercel runtime URL in production.
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
