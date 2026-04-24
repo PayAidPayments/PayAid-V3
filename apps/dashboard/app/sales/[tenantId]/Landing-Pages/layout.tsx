@@ -13,7 +13,7 @@ export default function SalesLandingPagesLayout({
 
   const topBarItems = [
     { name: 'Home', href: `/sales/${tenantId}/Home` },
-    { name: 'Landing Pages', href: `/sales/${tenantId}/Landing-Pages` },
+    { name: 'Sales Pages', href: `/sales/${tenantId}/Sales-Pages` },
     { name: 'Checkout Pages', href: `/sales/${tenantId}/Checkout-Pages` },
     { name: 'Orders', href: `/sales/${tenantId}/Orders` },
   ]

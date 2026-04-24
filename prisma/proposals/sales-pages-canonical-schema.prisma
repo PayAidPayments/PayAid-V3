@@ -1,0 +1,193 @@
+// Sales Pages canonical schema proposal (draft only).
+// This file is not included in Prisma generation yet.
+// Merge model blocks into `prisma/schema.prisma` during implementation phase.
+
+model SalesPage {
+  id             String   @id @default(cuid())
+  tenantId       String
+  name           String
+  slug           String
+  type           String   // lead_capture | offer | appointment_booking | proposal_acceptance | payment_cta | event_registration | gated_download
+  goal           String?  // form_submit | booking | payment | whatsapp | call | download
+  status         String   @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED
+  templateId     String?
+  ownerUserId    String?
+  businessUnitId String?
+  publishAt      DateTime?
+  unpublishAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  versions       SalesPageVersion[]
+  forms          SalesForm[]
+  goals          SalesPageGoal[]
+  events         SalesPageEvent[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, type])
+}
+
+model SalesPageVersion {
+  id                   String   @id @default(cuid())
+  salesPageId          String
+  versionNumber        Int
+  schemaJson           Json
+  publishedSnapshotJson Json?
+  createdBy            String?
+  createdAt            DateTime @default(now())
+
+  salesPage            SalesPage @relation(fields: [salesPageId], references: [id], onDelete: Cascade)
+  blocks               SalesPageBlock[]
+
+  @@unique([salesPageId, versionNumber])
+  @@index([salesPageId])
+}
+
+model SalesPageTemplate {
+  id                    String   @id @default(cuid())
+  tenantId              String?
+  name                  String
+  category              String
+  previewImage          String?
+  schemaJson            Json
+  recommendedIndustries Json?
+  defaultGoal           String?
+  isSystem              Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([category])
+}
+
+model SalesPageBlock {
+  id                  String   @id @default(cuid())
+  salesPageVersionId  String
+  blockType           String
+  orderIndex          Int
+  propsJson           Json
+  visibilityRulesJson Json?
+
+  salesPageVersion    SalesPageVersion @relation(fields: [salesPageVersionId], references: [id], onDelete: Cascade)
+
+  @@index([salesPageVersionId])
+  @@index([salesPageVersionId, orderIndex])
+}
+
+model SalesForm {
+  id                   String   @id @default(cuid())
+  salesPageId          String
+  name                 String
+  successMode          String   @default("inline") // inline | thank_you_page | redirect | modal
+  duplicateRule        String?
+  consentRequired      Boolean  @default(false)
+  spamProtectionConfig Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  salesPage            SalesPage @relation(fields: [salesPageId], references: [id], onDelete: Cascade)
+  fields               SalesFormField[]
+  submissions          SalesSubmission[]
+
+  @@index([salesPageId])
+}
+
+model SalesFormField {
+  id                  String   @id @default(cuid())
+  salesFormId         String
+  fieldKey            String
+  label               String
+  fieldType           String
+  required            Boolean  @default(false)
+  placeholder         String?
+  optionsJson         Json?
+  defaultValue        String?
+  hidden              Boolean  @default(false)
+  validationRulesJson Json?
+  crmTargetField      String?
+  orderIndex          Int
+
+  salesForm           SalesForm @relation(fields: [salesFormId], references: [id], onDelete: Cascade)
+
+  @@index([salesFormId])
+  @@index([salesFormId, orderIndex])
+}
+
+model SalesSubmission {
+  id                    String   @id @default(cuid())
+  salesPageId           String
+  salesFormId           String?
+  visitorId             String?
+  submittedAt           DateTime @default(now())
+  status                String   @default("received")
+  payloadJson           Json
+  normalizedPayloadJson Json?
+  attributionJson       Json?
+  crmSyncStatus         String   @default("pending")
+  crmEntityType         String?
+  crmEntityId           String?
+  assignedUserId        String?
+  leadScoreDelta        Int?
+  automationRunId       String?
+
+  salesPage             SalesPage @relation(fields: [salesPageId], references: [id], onDelete: Cascade)
+  salesForm             SalesForm? @relation(fields: [salesFormId], references: [id], onDelete: SetNull)
+
+  @@index([salesPageId])
+  @@index([salesFormId])
+  @@index([submittedAt])
+  @@index([status])
+  @@index([crmSyncStatus])
+}
+
+model SalesPageEvent {
+  id           String   @id @default(cuid())
+  salesPageId  String
+  visitorId    String?
+  sessionId    String?
+  eventType    String
+  occurredAt   DateTime @default(now())
+  metadataJson Json?
+
+  salesPage    SalesPage @relation(fields: [salesPageId], references: [id], onDelete: Cascade)
+
+  @@index([salesPageId])
+  @@index([eventType])
+  @@index([occurredAt])
+}
+
+model SalesPageAttribution {
+  id              String   @id @default(cuid())
+  submissionId    String?
+  source          String?
+  medium          String?
+  campaign        String?
+  content         String?
+  term            String?
+  referrer        String?
+  adPlatform      String?
+  adId            String?
+  keyword         String?
+  landingPageUrl  String?
+  createdAt       DateTime @default(now())
+
+  @@index([submissionId])
+  @@index([campaign])
+  @@index([source, medium])
+}
+
+model SalesPageGoal {
+  id          String   @id @default(cuid())
+  salesPageId String
+  goalType    String
+  configJson  Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  salesPage   SalesPage @relation(fields: [salesPageId], references: [id], onDelete: Cascade)
+
+  @@index([salesPageId])
+  @@index([goalType])
+}

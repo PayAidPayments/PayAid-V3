@@ -15,6 +15,8 @@
     "check:canonical-module-api-response-snapshots": "node scripts/check-canonical-module-api-response-snapshots.mjs",
     "check:canonical-module-api-consumer-usage": "node scripts/check-canonical-module-api-consumer-usage.mjs",
     "check:canonical-module-api-readiness-verdict": "node scripts/check-canonical-module-api-readiness-verdict.mjs",
+    "migrate:sales-pages:dry-run": "node scripts/migrations/migrate-landing-pages-to-sales-pages.mjs",
+    "migrate:website-builder:dry-run": "node scripts/migrations/migrate-landing-pages-to-website-builder.mjs",
     "check:canonical-staging-runtime": "node scripts/run-canonical-staging-runtime-checks.mjs",
     "apply:canonical-staging-runtime-artifact": "node scripts/apply-canonical-staging-runtime-artifact.mjs",
     "run:canonical-staging-evidence-pipeline": "node scripts/run-canonical-staging-evidence-pipeline.mjs",
@@ -96,6 +98,7 @@
     "start:free-stack": "powershell -ExecutionPolicy Bypass -File scripts/start-free-stack.ps1",
     "test": "jest --passWithNoTests",
     "test:crm:tasks-filters": "node node_modules/jest/bin/jest.js --config jest.crm-closure.config.js --runInBand --watchAll=false --runTestsByPath lib/crm/__tests__/tasks-list-where.test.ts",
+    "test:sales:proxy-canonical": "node node_modules/jest/bin/jest.js --runInBand --watchAll=false --runTestsByPath apps/dashboard/__tests__/proxy.test.ts",
     "test:crm:merge-key": "node node_modules/jest/bin/jest.js --config jest.crm-closure.config.js --runInBand --watchAll=false --runTestsByPath lib/crm/__tests__/contact-merge-key.test.ts",
     "test:crm:merge-guard": "node node_modules/jest/bin/jest.js --config jest.crm-closure.config.js --runInBand --watchAll=false --runTestsByPath lib/crm/__tests__/contact-merge-guard.test.ts",
     "test:crm:rbac": "node node_modules/jest/bin/jest.js --config jest.crm-closure.config.js --runInBand --watchAll=false --runTestsByPath lib/crm/__tests__/rbac.test.ts",
@@ -192,7 +195,7 @@
     "deploy:crm": "vercel --prod --cwd apps/crm",
     "deploy:hr": "vercel --prod --cwd apps/hr",
     "deploy:voice": "vercel --prod --cwd apps/voice",
-    "deploy:dashboard": "vercel --prod --cwd apps/dashboard"
+    "deploy:dashboard": "vercel --prod --yes --archive=tgz"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.958.0",
@@ -251,6 +254,7 @@
     "isomorphic-dompurify": "^2.35.0",
     "jose": "^6.1.3",
     "jsonwebtoken": "^9.0.2",
+    "jszip": "^3.10.1",
     "langchain": "^1.2.11",
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.562.0",

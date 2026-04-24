@@ -32,12 +32,14 @@ export default function NewLandingPagePage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const response = await apiRequest('/api/sales/landing-pages', {
+      const response = await apiRequest('/api/sales-pages', {
         method: 'POST',
         timeoutMs: 25000,
         body: JSON.stringify({
-          ...data,
-          contentJson: {},
+          name: data.name,
+          slug: data.slug,
+          pageType: 'lead_capture',
+          goalType: 'form_submit',
           metaTitle: data.metaTitle || undefined,
           metaDescription: data.metaDescription || undefined,
         }),
@@ -49,7 +51,7 @@ export default function NewLandingPagePage() {
       return response.json()
     },
     onSuccess: (data) => {
-      router.push(`/sales/${tenantId}/Landing-Pages/${data.id}`)
+      router.push(`/sales/${tenantId}/Sales-Pages/${data.id}`)
     },
     onError: (err: Error) => {
       setError(withRetryGuidance(err.message))
@@ -100,7 +102,7 @@ export default function NewLandingPagePage() {
             <h2 className="text-lg font-semibold text-gray-900">Sales</h2>
             <nav className="flex items-center gap-4 text-sm">
               <Link href={`/sales/${tenantId}/Home/`} className="text-gray-600 hover:text-gray-900 transition-colors">Home</Link>
-              <Link href={`/sales/${tenantId}/Landing-Pages`} className="text-green-600 font-medium border-b-2 border-green-600 pb-2">Landing Pages</Link>
+              <Link href={`/sales/${tenantId}/Sales-Pages`} className="text-green-600 font-medium border-b-2 border-green-600 pb-2">Sales Pages</Link>
               <Link href={`/sales/${tenantId}/Checkout-Pages`} className="text-gray-600 hover:text-gray-900 transition-colors">Checkout Pages</Link>
               <Link href={`/sales/${tenantId}/Orders`} className="text-gray-600 hover:text-gray-900 transition-colors">Orders</Link>
             </nav>
@@ -171,7 +173,7 @@ export default function NewLandingPagePage() {
             <h1 className="text-3xl font-bold text-gray-900">Create Landing Page</h1>
             <p className="mt-2 text-gray-600">Create a new landing page for lead generation</p>
           </div>
-          <Link href={`/sales/${tenantId}/Landing-Pages`}>
+          <Link href={`/sales/${tenantId}/Sales-Pages`}>
             <Button variant="outline">Back</Button>
           </Link>
         </div>
@@ -258,7 +260,7 @@ export default function NewLandingPagePage() {
               </div>
 
               <div className="flex justify-end gap-4">
-                <Link href={`/sales/${tenantId}/Landing-Pages`}>
+                <Link href={`/sales/${tenantId}/Sales-Pages`}>
                   <Button type="button" variant="outline">
                     Cancel
                   </Button>

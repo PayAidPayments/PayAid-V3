@@ -48,7 +48,7 @@ export default function SalesLandingPageDetailPage() {
   const { data: page, refetch } = useQuery<LandingPage>({
     queryKey: ['sales-landing-page', id],
     queryFn: async () => {
-      const response = await fetch(`/api/sales/landing-pages/${id}`, {
+      const response = await fetch(`/api/sales-pages/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -68,7 +68,7 @@ export default function SalesLandingPageDetailPage() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const response = await fetch(`/api/sales/landing-pages/${id}`, {
+      const response = await fetch(`/api/sales-pages/${id}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -139,7 +139,7 @@ export default function SalesLandingPageDetailPage() {
             <h2 className="text-lg font-semibold text-gray-900">Sales</h2>
             <nav className="flex items-center gap-4 text-sm">
               <Link href={`/sales/${tenantId}/Home/`} className="text-gray-600 hover:text-gray-900 transition-colors">Home</Link>
-              <Link href={`/sales/${tenantId}/Landing-Pages`} className="text-green-600 font-medium border-b-2 border-green-600 pb-2">Landing Pages</Link>
+              <Link href={`/sales/${tenantId}/Sales-Pages`} className="text-green-600 font-medium border-b-2 border-green-600 pb-2">Sales Pages</Link>
               <Link href={`/sales/${tenantId}/Checkout-Pages`} className="text-gray-600 hover:text-gray-900 transition-colors">Checkout Pages</Link>
               <Link href={`/sales/${tenantId}/Orders`} className="text-gray-600 hover:text-gray-900 transition-colors">Orders</Link>
             </nav>
@@ -216,7 +216,7 @@ export default function SalesLandingPageDetailPage() {
                 <Button onClick={() => setIsEditing(true)} variant="outline">
                   Edit
                 </Button>
-                <Link href={`/sales/${tenantId}/Landing-Pages`}>
+                <Link href={`/sales/${tenantId}/Sales-Pages`}>
                   <Button variant="outline">Back</Button>
                 </Link>
               </>

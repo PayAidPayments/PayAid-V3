@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -16,6 +16,7 @@ interface LandingPage {
   name: string
   slug: string
   status: string
+  pageType?: string
   views: number
   conversions: number
   conversionRate?: number
@@ -27,58 +28,48 @@ export default function SalesLandingPagesPage() {
   const router = useRouter()
   const tenantId = params?.tenantId as string
   const { token } = useAuthStore()
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'>('ALL')
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'lead_capture' | 'offer' | 'appointment_booking'>(
+    'ALL'
+  )
   // Profile menu handled by ModuleTopBar in layout
 
   const { data, isLoading, refetch } = useQuery<{ pages: LandingPage[] }>({
-    queryKey: ['sales-landing-pages', tenantId],
+    queryKey: ['sales-pages', tenantId, statusFilter, typeFilter],
     queryFn: async () => {
-      const response = await fetch(`/api/sales/landing-pages`, {
+      const params = new URLSearchParams()
+      if (statusFilter !== 'ALL') params.set('status', statusFilter)
+      if (typeFilter !== 'ALL') params.set('pageType', typeFilter)
+
+      const response = await fetch(`/api/sales-pages?${params.toString()}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       })
-      if (!response.ok) {
-        // If no data, return sample data for demonstration
-        return {
-          pages: [
-            {
-              id: 'sample-1',
-              name: 'Summer Sale Landing Page',
-              slug: 'summer-sale-2024',
-              status: 'PUBLISHED',
-              views: 15234,
-              conversions: 342,
-              conversionRate: 2.24,
-              createdAt: new Date().toISOString(),
-            },
-            {
-              id: 'sample-2',
-              name: 'Product Launch Page',
-              slug: 'product-launch',
-              status: 'PUBLISHED',
-              views: 8934,
-              conversions: 189,
-              conversionRate: 2.12,
-              createdAt: new Date().toISOString(),
-            },
-            {
-              id: 'sample-3',
-              name: 'Webinar Registration',
-              slug: 'webinar-registration',
-              status: 'DRAFT',
-              views: 0,
-              conversions: 0,
-              conversionRate: 0,
-              createdAt: new Date().toISOString(),
-            },
-          ]
-        }
-      }
+      if (!response.ok) throw new Error('Failed to fetch sales pages')
       return response.json()
     },
+    enabled: Boolean(token),
   })
 
   const pages = data?.pages || []
+  const publishMutation = useMutation({
+    mutationFn: async ({ id, publish }: { id: string; publish: boolean }) => {
+      const response = await fetch(`/api/sales-pages/${id}/${publish ? 'publish' : 'unpublish'}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (!response.ok) throw new Error(`Failed to ${publish ? 'publish' : 'unpublish'} page`)
+      return response.json()
+    },
+    onSuccess: () => refetch(),
+  })
+  const busyPageId = useMemo(
+    () => (publishMutation.isPending ? (publishMutation.variables?.id ?? null) : null),
+    [publishMutation.isPending, publishMutation.variables]
+  )
 
   // Profile menu and logout handled by ModuleTopBar in layout
 
@@ -91,7 +82,7 @@ export default function SalesLandingPagesPage() {
             <h2 className="text-lg font-semibold text-gray-900">Sales</h2>
             <nav className="flex items-center gap-4 text-sm">
               <Link href={`/sales/${tenantId}/Home/`} className="text-gray-600 hover:text-gray-900 transition-colors">Home</Link>
-              <Link href={`/sales/${tenantId}/Landing-Pages`} className="text-green-600 font-medium border-b-2 border-green-600 pb-2">Landing Pages</Link>
+              <Link href={`/sales/${tenantId}/Sales-Pages`} className="text-green-600 font-medium border-b-2 border-green-600 pb-2">Sales Pages</Link>
               <Link href={`/sales/${tenantId}/Checkout-Pages`} className="text-gray-600 hover:text-gray-900 transition-colors">Checkout Pages</Link>
               <Link href={`/sales/${tenantId}/Orders`} className="text-gray-600 hover:text-gray-900 transition-colors">Orders</Link>
             </nav>
@@ -116,9 +107,33 @@ export default function SalesLandingPagesPage() {
             <h1 className="text-3xl font-bold text-gray-900">Landing Pages</h1>
             <p className="mt-2 text-gray-600">Create high-converting landing pages with A/B testing</p>
           </div>
-          <Link href={`/sales/${tenantId}/Landing-Pages/new`}>
-            <Button>Create Landing Page</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+              className="h-9 rounded-md border border-gray-300 px-2 text-sm"
+              aria-label="Filter by status"
+            >
+              <option value="ALL">All statuses</option>
+              <option value="DRAFT">Draft</option>
+              <option value="PUBLISHED">Published</option>
+              <option value="ARCHIVED">Archived</option>
+            </select>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
+              className="h-9 rounded-md border border-gray-300 px-2 text-sm"
+              aria-label="Filter by page type"
+            >
+              <option value="ALL">All types</option>
+              <option value="lead_capture">Lead Capture</option>
+              <option value="offer">Offer</option>
+              <option value="appointment_booking">Booking</option>
+            </select>
+            <Link href={`/sales/${tenantId}/Sales-Pages/new`}>
+              <Button>Create Landing Page</Button>
+            </Link>
+          </div>
         </div>
 
         {isLoading ? (
@@ -127,8 +142,8 @@ export default function SalesLandingPagesPage() {
           <Card>
             <CardContent className="py-12">
               <div className="text-center">
-                <p className="text-gray-500 mb-4">No landing pages found</p>
-                <Link href={`/sales/${tenantId}/Landing-Pages/new`}>
+                <p className="text-gray-500 mb-4">No sales pages found</p>
+                <Link href={`/sales/${tenantId}/Sales-Pages/new`}>
                   <Button>Create Your First Landing Page</Button>
                 </Link>
               </div>
@@ -171,7 +186,19 @@ export default function SalesLandingPagesPage() {
                       </div>
                     )}
                   </div>
-                  <Link href={`/sales/${tenantId}/Landing-Pages/${page.id}`}>
+                  <div className="flex gap-2 mb-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={busyPageId === page.id}
+                      onClick={() =>
+                        publishMutation.mutate({ id: page.id, publish: page.status !== 'PUBLISHED' })
+                      }
+                    >
+                      {page.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
+                    </Button>
+                  </div>
+                  <Link href={`/sales/${tenantId}/Sales-Pages/${page.id}`}>
                     <Button variant="outline" size="sm" className="w-full">
                       Edit Page
                     </Button>

@@ -175,11 +175,11 @@ export default function SalesDashboardPage() {
       color: 'gold' as const,
     },
     {
-      label: 'Landing Pages',
+      label: 'Sales Pages',
       value: stats?.landingPages || 0,
       icon: <FileText className="w-5 h-5" />,
       color: 'info' as const,
-      href: `/sales/${tenantId}/Landing-Pages`,
+      href: `/sales/${tenantId}/Sales-Pages`,
     },
     {
       label: 'Checkout Pages',
@@ -407,10 +407,10 @@ export default function SalesDashboardPage() {
               <CardDescription>Get started with Sales</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Link href={`/sales/${tenantId}/Landing-Pages/new`}>
+              <Link href={`/sales/${tenantId}/Sales-Pages/new`}>
                 <Button variant="outline" className="w-full justify-start h-12">
                   <FileText className="mr-2 h-4 w-4" />
-                  Create Landing Page
+                  Create Sales Page
                 </Button>
               </Link>
               <Link href={`/sales/${tenantId}/Checkout-Pages/new`}>

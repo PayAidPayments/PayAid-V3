@@ -91,7 +91,7 @@ export default function SalesCheckoutPagesPage() {
             <h2 className="text-lg font-semibold text-gray-900">Sales</h2>
             <nav className="flex items-center gap-4 text-sm">
               <Link href={`/sales/${tenantId}/Home/`} className="text-gray-600 hover:text-gray-900 transition-colors">Home</Link>
-              <Link href={`/sales/${tenantId}/Landing-Pages`} className="text-gray-600 hover:text-gray-900 transition-colors">Landing Pages</Link>
+              <Link href={`/sales/${tenantId}/Sales-Pages`} className="text-gray-600 hover:text-gray-900 transition-colors">Sales Pages</Link>
               <Link href={`/sales/${tenantId}/Checkout-Pages`} className="text-green-600 font-medium border-b-2 border-green-600 pb-2">Checkout Pages</Link>
               <Link href={`/sales/${tenantId}/Orders`} className="text-gray-600 hover:text-gray-900 transition-colors">Orders</Link>
             </nav>

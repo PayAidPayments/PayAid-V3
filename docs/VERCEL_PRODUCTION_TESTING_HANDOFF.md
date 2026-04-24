@@ -2,7 +2,7 @@
 
 **Owner:** QA / Employee Tester  
 **Audience:** Business + Product + Engineering  
-**Last updated:** 2026-04-23  
+**Last updated:** 2026-04-24  
 **Purpose:** Provide one complete, practical guide for validating what is currently live on the Vercel-hosted app, and identifying what is still broken or missing.
 
 ---
@@ -108,6 +108,7 @@ On each major module (CRM, Finance, HR, Inventory, Marketing, Settings):
 - Confirm no blank/white dead screens
 - Confirm AI assistant entry point is visible on page
 - Confirm module route switches do not throw 500/404
+- Use canonical Settings routes (`/dashboard/settings` or `/settings/integrations`) instead of `/settings`
 
 Pass if all major modules load without blocking errors.
 
@@ -143,6 +144,11 @@ Expected:
 1. Create quote
 2. Approve quote
 3. Convert to invoice
+
+API mapping note (to avoid false negatives):
+
+- Use `/api/v1/quotes` and quote subroutes (`approve`, `convert-invoice`) for CPQ flows
+- Do not use `/api/v1/cpq/quotes` (non-canonical path)
 
 Expected:
 
@@ -190,6 +196,10 @@ Expected:
 - Actions do not leak secrets
 - Failures are actionable and non-crashing
 - Test buttons disable in-flight and prevent double submits
+- For social, verify YouTube appears in provider list and supports connect/test/disconnect (refresh may be not-implemented depending on token type)
+- For YouTube refresh attempts, verify API returns a clear `not implemented` response with reconnect guidance (instead of generic failure text)
+- Validate social provider health badges render expected states (`Healthy`, `Expiring soon`, `Expired`, `Missing scope`) and that YouTube `Missing scope` guidance is visible when upload scope is absent
+- Backward compatibility check: legacy YouTube tokens stored under provider key `google` should still appear/manage as YouTube in settings actions (test/disconnect/refresh)
 
 ## Step 4.1 - Marketing email campaign reliability checks
 
@@ -219,6 +229,174 @@ Expected:
 - Single-row retry also updates the same diagnostics panel/copy payload (scope = single) for parity with batch retries
 - Retry diagnostics include a `retryOperationId` for each retry action so QA can correlate UI events with backend audit/log records
 - Retry History table shows recent retry audit events (time, action type, operation ID, counts, actor) and should align with the latest panel summary
+
+## Step 4.2 - Marketing canonical route verification (IA consistency)
+
+Before running Marketing UI checks, use canonical routes only:
+
+- Compose: `/marketing/[tenantId]/Studio`
+- History: `/marketing/[tenantId]/History`
+- Channels: `/marketing/[tenantId]/Social-Media`
+
+If testing starts from older bookmarks (for example `social`, `channels`, `studio-builder`, or `Create-Post` links), confirm they redirect into canonical routes and continue testing on canonical URLs after redirect.
+
+Reference map: `docs/MARKETING_ROUTE_CANONICAL_MAP.md`
+
+## Step 4.3 - Marketing social retry verification (History)
+
+In Marketing > History (`/marketing/[tenantId]/History`), validate social retry flow:
+
+- Filter social rows to `FAILED` and trigger `Retry` on one failed row
+- Confirm row status moves toward `SCHEDULED` after refresh
+- Confirm success banner appears with re-queue confirmation
+- Confirm `Recent retries` chips show post ID + retry time + actor label
+- Click a retry chip and confirm it opens Compose audit view with auto-loaded dispatch audit for that post
+
+## Step 4.4 - Marketing History filters, pagination, and export verification
+
+In Marketing > History social table:
+
+- Validate filters: `channel`, `status`, `from`, `to` return expected rows
+- Validate quick ranges: `Today`, `Last 7 days`, `Last 30 days`
+- Validate URL persistence: refresh page and confirm filter/page context is preserved from query params
+- Validate sorting: switch between `Created (newest first)` and `Created (oldest first)` and verify row order changes accordingly
+- Validate result summary: `Showing X-Y of Z matched posts` updates with filters/page changes
+- Validate `Copy share link`: pasted URL should reopen same filter/sort/page context
+- Validate page clamping: if a shared URL has an out-of-range page after filter changes, History should auto-adjust to the last valid page
+- Validate empty-state messaging: distinguish between `no data yet` and `no results for current filters`
+- Validate pagination: `Rows per page` (10/20/50), `Previous`, `Next`, and page counter
+- Validate bulk retry in History social table:
+  - select multiple `FAILED` rows (or `Select all failed on page`)
+  - run `Retry selected`
+  - confirm success banner includes queued/skipped counts and rows move toward `SCHEDULED`
+- Validate filtered bulk retry in History social table:
+  - apply channel/date filters (status can remain `ALL`)
+  - run `Retry all failed (filtered)`
+  - confirm up to the capped filtered set is queued and success banner shows queued/skipped counts
+- Validate failure analytics panel in History:
+  - confirm `Top failure reasons` renders counts for selected window (`7d`/`30d`)
+  - confirm category chips and top raw reasons update when switching window
+  - confirm `channel` filter scope is reflected in analytics totals/chips
+- Validate `Clear filters` resets to default state and repopulates rows
+- Validate exports:
+  - `Export page CSV` contains exactly current visible page rows and starts with `meta` rows (exportedAt, filters, sort, page, pageSize)
+  - `Export filtered CSV` downloads full filtered dataset (up to configured cap), matches active filters, follows active sort order, and includes `meta` rows (exportedAt, filters, sort, maxRows, exportedRows)
+
+## Step 4.5 - Marketing YouTube connector runtime verification
+
+In Marketing > Compose:
+
+- Verify `Channel readiness` strip appears when selected social channels have blockers/warnings.
+- Verify `Fix in channel settings` opens `/settings/[tenantId]/Integrations/Social` and `Open channels hub` opens `/marketing/[tenantId]/Social-Media`.
+- Select `YouTube` channel and attach a valid video asset
+- Trigger launch/schedule and confirm preflight allows submission when token + scope are valid
+- Confirm worker outcome transitions from `SCHEDULED` to `SENT` for successful uploads
+- Confirm History row has YouTube channel + status updates and `Open audit` works
+- Validate negative paths:
+  - missing connection returns actionable `YOUTUBE: account is not connected`
+  - expired token returns actionable reconnect guidance
+  - missing upload scope returns `youtube.upload` guidance
+  - non-video/absent video asset is rejected before dispatch
+
+Expected runtime markers (for pass/fail logging):
+
+- **Settings test API**
+  - `POST /api/settings/social/test?provider=youtube`
+  - Expect: `200` with `{ ok: true, provider: "youtube" }` for valid token.
+- **Create social post API**
+  - `POST /api/social/posts` with YouTube in `channels` and at least one video `mediaIdsByChannel.YOUTUBE`.
+  - Expect success: `201` with `created[]` item for `channel: "YOUTUBE"`.
+  - Expect validation/preflight failures: `400` with actionable `details[]` (connection/scope/token/video requirements).
+- **Worker dispatch state**
+  - MarketingPost should progress: `SCHEDULED -> SENT` on success.
+  - On failure: `SCHEDULED -> FAILED` with error guidance in metadata.
+- **Dispatch metadata**
+  - On success, `marketingPost.metadata.youtubeDispatch` should include:
+    - `videoId`
+    - `videoUrl` (`https://www.youtube.com/watch?v=<videoId>`)
+    - `postedAt`
+- **History + audit**
+  - History row for YouTube post should show final status.
+  - `Open audit` should resolve related outcomes and surface YouTube dispatch metadata.
+
+## Step 4.6 - Brand Kit logo generator + export bundle verification
+
+Use this flow to validate the newly shipped Logo Generator + Brand Kit management path:
+
+1. Open `AI Studio > Logos` (`/ai-studio/[tenantId]/Logos`).
+2. Create a vector logo using the **Vector Editor** tab.
+3. Confirm options while creating:
+   - `Save to Brand Kit Library`
+   - `Set as Workspace Logo`
+4. Save logo and confirm success.
+5. Open `Settings > Tenant` and verify:
+   - Logo appears under **Brand Kit Logos**
+   - If selected, it is set as workspace primary logo
+6. In Brand Kit Logos section, validate:
+   - Search/filter works
+   - Sort modes (`Newest`, `Oldest`, `Primary first`, `Name A-Z`)
+   - View modes (`List`, `Grid`)
+   - Primary badge visibility
+7. Validate logo actions:
+   - `Set Primary` updates primary state
+   - Single delete asks for confirmation and blocks deleting primary
+8. Validate bulk actions:
+   - Select/unselect visible
+   - Clear selection
+   - Bulk delete skips/blocks primary logos safely
+9. Validate exports:
+   - `Download Selected (N)` triggers browser downloads
+   - `Export Bundle (.zip)` downloads one ZIP
+   - `Export all filtered` mode exports all visible rows
+   - `Exclude primary logo` removes primary from ZIP payload
+   - Export preview text updates count and exclusion impact
+   - Export button disables when effective export count is zero
+
+Expected:
+
+- No 500s on logo create/save/list/set-primary/delete/export routes.
+- Primary logo safety guardrails always prevent accidental primary deletion.
+- ZIP export returns downloadable archive with expected file set.
+- Workspace logo (`tenant.logo`) remains in sync with selected primary brand kit logo.
+
+### Step 4.6 QA sign-off gate (Ready for QA)
+
+Mark the Logo + Brand Kit rollout **Ready for QA pass** only when all conditions below are true in the same tenant session:
+
+- **Functional pass**
+  - Vector logo save succeeds with and without `Set as Workspace Logo`.
+  - Saved logo appears in Brand Kit list and primary marker state is correct.
+  - `Set Primary` updates workspace logo and list state immediately after refresh.
+  - Single/bulk delete protections block primary-logo deletion paths.
+  - ZIP export succeeds for both selected mode and filtered mode.
+- **Guardrail pass**
+  - `Exclude primary logo` removes primary from effective export candidates.
+  - Export action is disabled when effective export count is zero.
+  - Inline blocked-export message is visible and understandable.
+- **Evidence required in bug log / QA notes**
+  - One screenshot of Vector Editor save success.
+  - One screenshot of Brand Kit list with primary badge.
+  - One screenshot of zero-export guard state (disabled button + reason).
+  - One downloaded ZIP artifact name with file count note.
+
+## Step 4.7 - Sales canonical route verification (IA consistency)
+
+Before running Sales UI checks, use canonical routes only:
+
+- Home: `/sales/[tenantId]/Home`
+- Sales Pages: `/sales/[tenantId]/Sales-Pages`
+- Checkout Pages: `/sales/[tenantId]/Checkout-Pages`
+- Orders: `/sales/[tenantId]/Orders`
+
+If testing starts from old Sales bookmarks (for example `Landing-Pages`, `Landing-Pages/new`, or `Landing-Pages/[id]`), confirm they redirect into canonical `Sales-Pages` routes and continue testing on canonical URLs after redirect.
+
+Reference map: `docs/SALES_ROUTE_CANONICAL_MAP.md`
+
+### Step 4 Authenticated QA Evidence Template
+
+For copy/paste execution capture across Step 4.1-4.5, use:
+
+- `docs/evidence/closure/2026-04-24-marketing-step4-authenticated-qa-template.md`
 
 ## Step 5 - Revenue and analytics validation
 
@@ -317,7 +495,70 @@ Treat these as first checks before escalating as code bugs.
 
 ---
 
-## 9) Final handoff output expected from employee
+## 9) QA execution report template (copy/paste)
+
+Use this template when submitting QA results for this run:
+
+```text
+QA Execution Report - Vercel Production
+Date:
+Tester:
+Vercel URL:
+Tenant:
+Role:
+
+Release recommendation:
+- [ ] Go
+- [ ] Conditional Go
+- [ ] No-Go
+
+Scope completed:
+- Step 1 (Core workflow): PASS / PARTIAL / FAIL / NOT AVAILABLE
+- Step 2 (CRM + CPQ): PASS / PARTIAL / FAIL / NOT AVAILABLE
+- Step 3 (SDR + Marketplace): PASS / PARTIAL / FAIL / NOT AVAILABLE
+- Step 4.1 (Marketing queue/retry): PASS / PARTIAL / FAIL / NOT AVAILABLE
+- Step 4.2 (Marketing canonical routes): PASS / PARTIAL / FAIL / NOT AVAILABLE
+- Step 4.3 (Social retry in History): PASS / PARTIAL / FAIL / NOT AVAILABLE
+- Step 4.4 (History filters/pagination/exports): PASS / PARTIAL / FAIL / NOT AVAILABLE
+- Step 4.5 (YouTube connector runtime): PASS / PARTIAL / FAIL / NOT AVAILABLE
+- Step 4.6 (Brand Kit logos + export): PASS / PARTIAL / FAIL / NOT AVAILABLE
+- Step 4.7 (Sales canonical routes): PASS / PARTIAL / FAIL / NOT AVAILABLE
+- Step 5 (Revenue + analytics): PASS / PARTIAL / FAIL / NOT AVAILABLE
+- Step 6 (HR + Inventory): PASS / PARTIAL / FAIL / NOT AVAILABLE
+
+Step 4.6 sign-off evidence:
+- Vector save success screenshot: [link/path]
+- Brand Kit list with primary badge screenshot: [link/path]
+- Zero-export guard screenshot (disabled + reason): [link/path]
+- ZIP artifact checked (name + file count): [text]
+
+Top failures by severity (up to 10):
+1.
+2.
+3.
+
+API/runtime notes:
+- Any 500s observed: Yes/No
+- If yes, route(s):
+- Retry operation IDs captured (if applicable):
+- Mismatch-risk checks performed first: Yes/No
+
+Items verified definitely live + stable:
+-
+-
+-
+
+Open blockers for release:
+-
+-
+
+Additional comments:
+-
+```
+
+---
+
+## 10) Final handoff output expected from employee
 
 After testing, employee should submit:
 

@@ -8,6 +8,15 @@ const DASHBOARD_PATH = '/dashboard'
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Canonical Sales Pages route enforcement (server-side).
+  if (pathname.includes('/Landing-Pages')) {
+    const canonicalPath = pathname.replace('/Landing-Pages', '/Sales-Pages')
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = canonicalPath
+    return NextResponse.redirect(redirectUrl)
+  }
+
   const token = getTokenFromRequest(request)
   const decodedToken = token ? safeDecodeToken(token) : null
   const tenantId = decodedToken?.tenantId || decodedToken?.tenant_id || ''
