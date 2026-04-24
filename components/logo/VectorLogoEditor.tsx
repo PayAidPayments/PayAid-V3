@@ -25,6 +25,12 @@ interface FontInfo {
   category?: string
 }
 
+type ConceptPreset = {
+  id: string
+  label: string
+  config: Partial<LogoConfig>
+}
+
 export function VectorLogoEditor({
   tenantId: _tenantId,
   businessName = '',
@@ -54,6 +60,7 @@ export function VectorLogoEditor({
   const [saveToBrandKit, setSaveToBrandKit] = useState(true)
   const [setAsBrandLogo, setSetAsBrandLogo] = useState(true)
   const [pngSize, setPngSize] = useState<512 | 1024 | 2048>(1024)
+  const [concepts, setConcepts] = useState<ConceptPreset[]>([])
 
   // Load available fonts
   useEffect(() => {
@@ -72,6 +79,15 @@ export function VectorLogoEditor({
       generatePreview()
     }
   }, [config])
+
+  useEffect(() => {
+    if (!config.text.trim()) {
+      setConcepts([])
+      return
+    }
+    const generated = buildConceptPresets(config)
+    setConcepts(generated)
+  }, [config.text, config.color, config.iconColor, config.fontFamily, config.fontSize])
 
   const generatePreview = async () => {
     setLoading(true)
@@ -182,6 +198,39 @@ export function VectorLogoEditor({
       URL.revokeObjectURL(pngUrl)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to download PNG')
+    }
+  }
+
+  const handleDownloadIconPNG = async () => {
+    try {
+      const iconSvg = createIconOnlySVG(config)
+      const svgBlob = new Blob([iconSvg], { type: 'image/svg+xml;charset=utf-8' })
+      const svgUrl = URL.createObjectURL(svgBlob)
+      const img = new Image()
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve()
+        img.onerror = () => reject(new Error('Unable to render icon as PNG'))
+        img.src = svgUrl
+      })
+
+      const canvas = document.createElement('canvas')
+      canvas.width = 512
+      canvas.height = 512
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Unable to initialize canvas for icon export')
+      ctx.clearRect(0, 0, 512, 512)
+      ctx.drawImage(img, 0, 0, 512, 512)
+      const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
+      if (!pngBlob) throw new Error('Unable to export icon PNG')
+      const pngUrl = URL.createObjectURL(pngBlob)
+      const a = document.createElement('a')
+      a.href = pngUrl
+      a.download = `${config.text.replace(/\s+/g, '-').toLowerCase()}-icon-512.png`
+      a.click()
+      URL.revokeObjectURL(svgUrl)
+      URL.revokeObjectURL(pngUrl)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to download icon PNG')
     }
   }
 
@@ -422,6 +471,10 @@ export function VectorLogoEditor({
                 Download PNG
               </Button>
             </div>
+            <Button variant="outline" onClick={handleDownloadIconPNG} disabled={!config.text.trim()}>
+              <Download className="w-4 h-4 mr-2" />
+              Download Icon (Favicon PNG)
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -432,7 +485,29 @@ export function VectorLogoEditor({
           <CardHeader>
             <CardTitle>Live Preview</CardTitle>
           </CardHeader>
-          <CardContent className="flex items-center justify-center min-h-[500px] bg-gray-50">
+          <CardContent className="space-y-4 min-h-[500px] bg-gray-50">
+            {concepts.length > 0 && (
+              <div className="rounded-lg border bg-white p-3">
+                <p className="text-sm font-semibold text-slate-900 mb-2">Generated Concepts</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+                  {concepts.map((concept) => (
+                    <button
+                      key={concept.id}
+                      type="button"
+                      onClick={() => setConfig((prev) => ({ ...prev, ...concept.config }))}
+                      className="rounded-md border border-slate-200 bg-slate-50 hover:bg-slate-100 p-2 text-left transition-colors"
+                    >
+                      <div
+                        className="h-16 w-full bg-white rounded border border-slate-100 overflow-hidden"
+                        dangerouslySetInnerHTML={{ __html: createSimpleSVGPreview({ ...config, ...concept.config, fontSize: 26 }) }}
+                      />
+                      <p className="mt-1 text-xs font-medium text-slate-700">{concept.label}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex items-center justify-center min-h-[360px]">
             {loading ? (
               <div className="text-center">
                 <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2" />
@@ -449,11 +524,37 @@ export function VectorLogoEditor({
                 <p>Enter a business name to see preview</p>
               </div>
             )}
+            </div>
           </CardContent>
         </Card>
       </div>
     </div>
   )
+}
+
+function buildConceptPresets(base: LogoConfig): ConceptPreset[] {
+  const palette = [base.color, '#4F46E5', '#0F766E', '#B45309', '#BE185D', '#111827']
+  const fonts = [base.fontFamily, 'Montserrat', 'Poppins', 'Merriweather', 'Playfair Display', 'Raleway']
+  const iconStyles: Array<NonNullable<LogoConfig['iconStyle']>> = ['circle-monogram', 'diamond', 'spark']
+
+  return Array.from({ length: 8 }).map((_, index) => {
+    const color = palette[index % palette.length]
+    const iconColor = palette[(index + 1) % palette.length]
+    const font = fonts[index % fonts.length]
+    const iconStyle = iconStyles[index % iconStyles.length]
+    const align: 'left' | 'center' | 'right' = index % 3 === 0 ? 'left' : index % 3 === 1 ? 'center' : 'right'
+    return {
+      id: `concept-${index + 1}`,
+      label: `Concept ${index + 1}`,
+      config: {
+        color,
+        iconColor,
+        fontFamily: font,
+        iconStyle,
+        layout: { ...(base.layout || { offsetX: 0, offsetY: 0, rotation: 0, align: 'center' }), align },
+      },
+    }
+  })
 }
 
 /**
@@ -523,6 +624,32 @@ function createSimpleSVGPreview(config: LogoConfig): string {
       >
         ${safeText}
       </text>
+    </svg>
+  `
+}
+
+function createIconOnlySVG(config: LogoConfig): string {
+  const width = 512
+  const height = 512
+  const iconStyle = config.iconStyle || 'circle-monogram'
+  const iconColor = config.iconColor || config.color
+  const monogram = ((config.text || '?').trim().charAt(0).toUpperCase() || '?')
+
+  const iconMarkup =
+    iconStyle === 'diamond'
+      ? `<polygon points="256,88 424,256 256,424 88,256" fill="${iconColor}" opacity="0.14" />
+         <polygon points="256,118 394,256 256,394 118,256" fill="none" stroke="${iconColor}" stroke-width="20" />`
+      : iconStyle === 'spark'
+      ? `<path d="M256 78 L292 210 L434 256 L292 302 L256 434 L220 302 L78 256 L220 210 Z" fill="${iconColor}" opacity="0.14" />
+         <path d="M256 120 L284 224 L392 256 L284 288 L256 392 L228 288 L120 256 L228 224 Z" fill="none" stroke="${iconColor}" stroke-width="20" />`
+      : `<circle cx="256" cy="256" r="170" fill="${iconColor}" opacity="0.14" />
+         <circle cx="256" cy="256" r="146" fill="none" stroke="${iconColor}" stroke-width="20" />
+         <text x="256" y="266" text-anchor="middle" dominant-baseline="middle" fill="${iconColor}" style="font-family: '${config.fontFamily}', sans-serif; font-size: 176px; font-weight: 700;">${monogram}</text>`
+
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+      <rect width="${width}" height="${height}" fill="white" />
+      ${iconMarkup}
     </svg>
   `
 }
