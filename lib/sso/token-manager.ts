@@ -115,7 +115,7 @@ export function getModuleUrl(moduleId: string, tenantId?: string): string {
     'ai-cofounder': process.env.NEXT_PUBLIC_AI_COFOUNDER_URL || '/ai-studio',
     'ai-chat': process.env.NEXT_PUBLIC_AI_CHAT_URL || '/ai-studio',
     'ai-insights': process.env.NEXT_PUBLIC_AI_INSIGHTS_URL || '/ai-studio',
-    'website-builder': process.env.NEXT_PUBLIC_WEBSITE_BUILDER_URL || '/ai-studio',
+    'website-builder': process.env.NEXT_PUBLIC_WEBSITE_BUILDER_URL || '/website-builder',
     'logo-generator': process.env.NEXT_PUBLIC_LOGO_GENERATOR_URL || '/ai-studio',
     'knowledge-rag': process.env.NEXT_PUBLIC_KNOWLEDGE_RAG_URL || '/ai-studio',
   }

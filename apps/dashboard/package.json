@@ -18,7 +18,19 @@
     "@payaid/social": "file:../../packages/social",
     "next": "^16.1.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "lucide-react": "^0.562.0",
+    "papaparse": "^5.5.3",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^1.1.4",
+    "pdfkit": "^0.17.2",
+    "razorpay": "^2.9.2",
+    "recharts": "^3.6.0",
+    "tailwind-merge": "^2.4.0",
+    "twilio": "^5.11.2",
+    "ua-parser-js": "^2.0.7",
+    "xlsx": "^0.18.5",
+    "x-data-spreadsheet": "^1.1.9"
   },
   "devDependencies": {
     "dotenv": "^17.2.3",

@@ -3,7 +3,7 @@
 import { useAuthStore } from '@/lib/stores/auth'
 import { NotificationBell } from '@/components/NotificationBell'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { ModuleSwitcher } from '@/components/modules/ModuleSwitcher'
+import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 import { Newspaper, User, Settings, LogOut, ChevronDown } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'

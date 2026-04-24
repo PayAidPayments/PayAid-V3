@@ -1,0 +1,484 @@
+{
+  "startedAt": "2026-04-23T11:50:18.653Z",
+  "finishedAt": "2026-04-23T11:59:28.642Z",
+  "baseUrl": "http://127.0.0.1:3000",
+  "tenantId": "cmjptk2mw0000aocw31u48n64",
+  "setup": {
+    "admin": {
+      "createStatus": 500,
+      "resetStatus": 200
+    },
+    "manager": {
+      "createStatus": 500,
+      "resetStatus": 200
+    },
+    "rep": {
+      "createStatus": 500,
+      "resetStatus": 200
+    },
+    "readonly": {
+      "createStatus": 500,
+      "resetStatus": 200
+    }
+  },
+  "users": {
+    "admin": {
+      "email": "day5.admin@demobusiness.com",
+      "role": "admin"
+    },
+    "manager": {
+      "email": "day5.manager@demobusiness.com",
+      "role": "manager"
+    },
+    "rep": {
+      "email": "day5.rep@demobusiness.com",
+      "role": "rep"
+    },
+    "readonly": {
+      "email": "day5.readonly@demobusiness.com",
+      "role": "read_only"
+    }
+  },
+  "matrix": [
+    {
+      "id": "R1",
+      "checks": {
+        "admin": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for bulk task complete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "manager": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for bulk task complete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for bulk task complete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        },
+        "readonly": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for bulk task complete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        }
+      }
+    },
+    {
+      "id": "R2",
+      "checks": {
+        "admin": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for bulk contact archive. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "manager": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for bulk contact archive. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for bulk contact archive. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        },
+        "readonly": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for bulk contact archive. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        }
+      }
+    },
+    {
+      "id": "R3",
+      "checks": {
+        "admin": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for contact delete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "manager": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for contact delete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for contact delete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        },
+        "readonly": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for contact delete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        }
+      }
+    },
+    {
+      "id": "R4",
+      "checks": {
+        "admin": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for deal delete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "manager": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for deal delete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for deal delete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        },
+        "readonly": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for deal delete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        }
+      }
+    },
+    {
+      "id": "R5",
+      "checks": {
+        "admin": {
+          "status": 405,
+          "code": "",
+          "bodyExcerpt": "",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 405,
+          "code": "",
+          "bodyExcerpt": "",
+          "evaluation": "Pass"
+        },
+        "rep": {
+          "status": 405,
+          "code": "",
+          "bodyExcerpt": "",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 405,
+          "code": "",
+          "bodyExcerpt": "",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R6",
+      "checks": {
+        "admin": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for contact mass transfer. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "manager": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for contact mass transfer. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for contact mass transfer. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        },
+        "readonly": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for contact mass transfer. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        }
+      }
+    },
+    {
+      "id": "R7",
+      "checks": {
+        "admin": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for lead mass transfer. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "manager": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for lead mass transfer. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for lead mass transfer. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        },
+        "readonly": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for lead mass transfer. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        }
+      }
+    },
+    {
+      "id": "R8",
+      "checks": {
+        "admin": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for lead mass delete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "manager": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for lead mass delete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for lead mass delete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        },
+        "readonly": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for lead mass delete. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        }
+      }
+    },
+    {
+      "id": "R9",
+      "checks": {
+        "admin": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for lead mass update. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "manager": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for lead mass update. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for lead mass update. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        },
+        "readonly": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for lead mass update. Required role: admin or manager.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        }
+      }
+    },
+    {
+      "id": "R10",
+      "checks": {
+        "admin": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"success\":false,\"error\":\"Insufficient role for score threshold write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "manager": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"success\":false,\"error\":\"Insufficient role for score threshold write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"success\":false,\"error\":\"Insufficient role for score threshold write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        },
+        "readonly": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"success\":false,\"error\":\"Insufficient role for score threshold write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        }
+      }
+    },
+    {
+      "id": "R11",
+      "checks": {
+        "admin": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"success\":false,\"error\":\"Insufficient role for scoring rule write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "manager": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"success\":false,\"error\":\"Insufficient role for scoring rule write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"success\":false,\"error\":\"Insufficient role for scoring rule write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        },
+        "readonly": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"success\":false,\"error\":\"Insufficient role for scoring rule write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        }
+      }
+    },
+    {
+      "id": "R12",
+      "checks": {
+        "admin": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"success\":false,\"error\":\"Insufficient role for scoring rule write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "manager": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"success\":false,\"error\":\"Insufficient role for scoring rule write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"success\":false,\"error\":\"Insufficient role for scoring rule write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        },
+        "readonly": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"success\":false,\"error\":\"Insufficient role for scoring rule write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        }
+      }
+    },
+    {
+      "id": "R13",
+      "checks": {
+        "admin": {
+          "status": 403,
+          "code": "",
+          "bodyExcerpt": "{\"success\":false,\"statusCode\":403,\"error\":{\"code\":\"CRM_ROLE_FORBIDDEN\",\"message\":\"Insufficient role for pipeline write. Required role: admin.\"}}",
+          "evaluation": "Fail"
+        },
+        "manager": {
+          "status": 403,
+          "code": "",
+          "bodyExcerpt": "{\"success\":false,\"statusCode\":403,\"error\":{\"code\":\"CRM_ROLE_FORBIDDEN\",\"message\":\"Insufficient role for pipeline write. Required role: admin.\"}}",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 403,
+          "code": "",
+          "bodyExcerpt": "{\"success\":false,\"statusCode\":403,\"error\":{\"code\":\"CRM_ROLE_FORBIDDEN\",\"message\":\"Insufficient role for pipeline write. Required role: admin.\"}}",
+          "evaluation": "Pass"
+        },
+        "readonly": {
+          "status": 403,
+          "code": "",
+          "bodyExcerpt": "{\"success\":false,\"statusCode\":403,\"error\":{\"code\":\"CRM_ROLE_FORBIDDEN\",\"message\":\"Insufficient role for pipeline write. Required role: admin.\"}}",
+          "evaluation": "Pass"
+        }
+      }
+    },
+    {
+      "id": "R14",
+      "checks": {
+        "admin": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for custom pipeline write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "manager": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for custom pipeline write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for custom pipeline write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        },
+        "readonly": {
+          "status": 403,
+          "code": "CRM_ROLE_FORBIDDEN",
+          "bodyExcerpt": "{\"error\":\"Insufficient role for custom pipeline write. Required role: admin.\",\"code\":\"CRM_ROLE_FORBIDDEN\"}",
+          "evaluation": "Pass"
+        }
+      }
+    },
+    {
+      "id": "R15",
+      "checks": {
+        "admin": {
+          "status": 400,
+          "code": "",
+          "bodyExcerpt": "{\"error\":\"Validation error\",\"details\":[{\"code\":\"invalid_type\",\"expected\":\"string\",\"received\":\"undefined\",\"path\":[\"module\"],\"message\":\"Required\"},{\"code\":\"invalid_type\",\"expected\":\"",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 400,
+          "code": "",
+          "bodyExcerpt": "{\"error\":\"Validation error\",\"details\":[{\"code\":\"invalid_type\",\"expected\":\"string\",\"received\":\"undefined\",\"path\":[\"module\"],\"message\":\"Required\"},{\"code\":\"invalid_type\",\"expected\":\"",
+          "evaluation": "Pass"
+        },
+        "rep": {
+          "status": 400,
+          "code": "",
+          "bodyExcerpt": "{\"error\":\"Validation error\",\"details\":[{\"code\":\"invalid_type\",\"expected\":\"string\",\"received\":\"undefined\",\"path\":[\"module\"],\"message\":\"Required\"},{\"code\":\"invalid_type\",\"expected\":\"",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 400,
+          "code": "",
+          "bodyExcerpt": "{\"error\":\"Validation error\",\"details\":[{\"code\":\"invalid_type\",\"expected\":\"string\",\"received\":\"undefined\",\"path\":[\"module\"],\"message\":\"Required\"},{\"code\":\"invalid_type\",\"expected\":\"",
+          "evaluation": "Fail"
+        }
+      }
+    }
+  ],
+  "summary": {
+    "pass": 30,
+    "fail": 30
+  },
+  "note": "Role-matrix auth evaluation uses authorization outcome only: admin/manager expect non-403; rep/read_only expect 403 CRM_ROLE_FORBIDDEN."
+}

@@ -527,7 +527,7 @@ export default function CampaignDetailPage() {
       <div className="p-6 text-center">
         <p className="text-gray-600 dark:text-gray-400 mb-4">Campaign not found</p>
         <Link href={`/marketing/${tenantId}/Campaigns`}>
-          <Button className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">Back to Campaigns</Button>
+          <Button className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">Back to History</Button>
         </Link>
       </div>
     )

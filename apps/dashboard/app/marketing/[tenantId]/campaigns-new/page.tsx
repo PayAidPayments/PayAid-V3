@@ -6,5 +6,5 @@ export default async function CampaignsPageNewRedirect({
   params: Promise<{ tenantId: string }>
 }) {
   const { tenantId } = await params
-  redirect(`/marketing/${tenantId}/Campaigns`)
+  redirect(`/marketing/${tenantId}/History`)
 }

@@ -232,10 +232,15 @@ Expected:
 
 ## Step 4.1.a - Email runtime readiness precheck (required before 4.1 sign-off)
 
-Before marking Step 4.1 PASS, run the runtime precheck and attach the generated evidence:
+Before marking Step 4.1 PASS, run the consolidated precheck and attach the generated evidence:
 
 - Command:
-  - `npm run verify:email-prod-readiness`
+  - `npm run verify:email-go-live-gated-precheck`
+- Preferred behavior:
+  - Runs `check:email-precheck-env` first and skips heavy checks if env is not ready.
+- Under the hood it runs:
+  - `npm run check:email-precheck-env`
+  - `npm run verify:email-go-live-precheck` (only when env preflight passes)
 - Local fallback:
   - `npm run verify:email-prod-readiness:local`
 
@@ -252,7 +257,13 @@ Expected:
 
 Evidence:
 
-- Attach generated markdown artifact from `docs/evidence/email/*-email-prod-readiness.md` to QA notes.
+- Attach generated markdown artifact from `docs/evidence/email/*-email-go-live-precheck.md` to QA notes.
+- Attach referenced readiness artifact from `docs/evidence/email/*-email-prod-readiness.md`.
+
+If blocked:
+
+- Record blocker details in QA run notes using:
+  - `docs/evidence/email/EMAIL_PRECHECK_BLOCKER_TRIAGE.md`
 
 ## Step 4.2 - Marketing canonical route verification (IA consistency)
 
@@ -442,6 +453,10 @@ Reference map: `docs/SALES_ROUTE_CANONICAL_MAP.md`
 
 In Website Builder (`/website-builder/[tenantId]/Home` and `/website-builder/[tenantId]/Sites/[id]`), validate:
 
+- Module discoverability:
+  - Open top-bar module switcher from a non-Website Builder module.
+  - Confirm `Website Builder` entry is visible in `Capabilities & Tools` / secondary apps.
+  - Click `Website Builder` and confirm navigation lands on `/website-builder/[tenantId]/Home` (or redirects there through `/website-builder` entry route).
 - Home list + filters:
   - `status` and `goal` filters load without crash.
   - Refresh button reloads list and preserves expected results.
@@ -481,11 +496,27 @@ Expected API/runtime markers (for pass/fail logging):
 - `POST /api/website/ai/generate-draft`
   - Expect `200` with `draft.pagePlan[]` in response.
 
+### Step 4.8 Automation Quickstart
+
+Use this order for deterministic evidence generation:
+
+1. Export env (or use token helper):
+   - `npm run get:website-builder-step4-8-token`
+2. Run full gate pack:
+   - `npm run run:website-builder-ready-to-commit-pack`
+3. Verify outputs:
+   - `docs/evidence/closure/*-website-builder-step4-8-runtime-checks.json`
+   - `docs/evidence/closure/*-website-builder-step4-8-runtime-checks.md`
+   - `docs/evidence/closure/*-website-builder-ready-to-commit-check.json`
+   - `docs/evidence/closure/*-website-builder-ready-to-commit-check.md`
+   - Updated template: `docs/evidence/closure/2026-04-24-website-builder-step4-8-runtime-qa-template.md`
+
 ### Step 4.8 QA Evidence Template
 
 For copy/paste execution capture, use:
 
 - `docs/evidence/closure/2026-04-24-website-builder-step4-8-runtime-qa-template.md`
+- `docs/evidence/closure/2026-04-24-website-builder-step4-8-evidence-index.md`
 
 For API marker automation (env-driven), run:
 
@@ -505,6 +536,10 @@ Required env for automation script:
 
 - `WEBSITE_BUILDER_BASE_URL`
 - `WEBSITE_BUILDER_AUTH_TOKEN`
+
+Token helper (optional):
+
+- `npm run get:website-builder-step4-8-token`
 
 Script output:
 
@@ -532,6 +567,7 @@ Mark Website Builder Step 4.8 **Ready for QA pass** only when all conditions bel
     - pageTree patch returns `normalizedPageTree: true`
     - invalid pageTree patch returns `400` with `details[]`
 - **Evidence required in bug log / QA notes**
+  - One screenshot of module switcher showing `Website Builder` entry before navigation.
   - One screenshot of Home list with created Website Builder site card.
   - One screenshot of Site detail page after metadata save.
   - One screenshot of populated page-tree editor after Apply Draft.
@@ -551,6 +587,21 @@ Before commit/push for production, use:
 - `docs/MARKETING_READY_TO_COMMIT_CHECKLIST.md`
 
 This checklist enforces Marketing-only commit scope and explicit non-Marketing exclusions.
+
+### Website Builder Commit Gate (after Step 4.8 signoff)
+
+Before commit/push for Website Builder changes, use:
+
+- `docs/WEBSITE_BUILDER_READY_TO_COMMIT_CHECKLIST.md`
+- `npm run check:website-builder-ready-to-commit` (optional preflight)
+- `npm run run:website-builder-ready-to-commit-pack` (runtime evidence + preflight)
+
+Preflight output artifacts:
+
+- `docs/evidence/closure/*-website-builder-ready-to-commit-check.json`
+- `docs/evidence/closure/*-website-builder-ready-to-commit-check.md`
+
+This checklist enforces Step 4.8 evidence, API/UI guardrails, and docs alignment before release commits.
 
 ## Step 5 - Revenue and analytics validation
 
@@ -610,9 +661,10 @@ Run in this order:
 3. SDR run state machine + audit trail
 4. Marketplace list/install/configure
 5. Integration settings suite (SMTP/OAuth/WAHA/Telephony/Social)
-6. Admin feature flags and impersonation
-7. Revenue analytics endpoints and UI
-8. HR + Inventory smoke routes
+6. Website Builder Step 4.8 runtime + commit gate pack
+7. Admin feature flags and impersonation
+8. Revenue analytics endpoints and UI
+9. HR + Inventory smoke routes
 
 If time is limited, complete at least top 4 before sign-off.
 
@@ -693,6 +745,10 @@ Step 4.8 sign-off evidence:
 - Populated page-tree editor after Apply Draft screenshot: [link/path]
 - Validation guardrail screenshot (duplicate or empty page): [link/path]
 - API payload capture with normalizedPageTree=true: [link/path/text]
+- Runtime check artifact (json): [link/path]
+- Runtime check artifact (md): [link/path]
+- Ready-to-commit preflight artifact (json): [link/path]
+- Ready-to-commit preflight artifact (md): [link/path]
 
 Top failures by severity (up to 10):
 1.
@@ -727,5 +783,8 @@ After testing, employee should submit:
 1. Completed pass/fail matrix (all sections in this doc)
 2. Top 10 failures by severity
 3. Screenshots/evidence bundle
-4. Final recommendation: Go / Conditional Go / No-Go
-5. List of it
+4. Website Builder Step 4.8 automation artifacts (`runtime-checks` + `ready-to-commit-check`)
+5. Final recommendation: Go / Conditional Go / No-Go
+6. List of items verified as definitely live and stable on Vercel
+
+This output is what engineering should use to create the production fix queue.

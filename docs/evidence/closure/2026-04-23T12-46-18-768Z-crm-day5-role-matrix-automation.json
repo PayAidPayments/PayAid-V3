@@ -1,0 +1,492 @@
+{
+  "startedAt": "2026-04-23T12:32:04.759Z",
+  "finishedAt": "2026-04-23T12:46:18.751Z",
+  "baseUrl": "http://127.0.0.1:3000",
+  "tenantId": "cmjptk2mw0000aocw31u48n64",
+  "setup": {
+    "admin": {
+      "createStatus": 0,
+      "createError": "This operation was aborted",
+      "resetStatus": 0,
+      "resetError": "This operation was aborted"
+    },
+    "manager": {
+      "createStatus": 0,
+      "createError": "This operation was aborted",
+      "resetStatus": 0,
+      "resetError": "This operation was aborted"
+    },
+    "rep": {
+      "createStatus": 0,
+      "createError": "This operation was aborted",
+      "resetStatus": 0,
+      "resetError": "This operation was aborted"
+    },
+    "readonly": {
+      "createStatus": 0,
+      "createError": "This operation was aborted",
+      "resetStatus": 200,
+      "resetError": null
+    }
+  },
+  "users": {
+    "admin": {
+      "email": "day5.admin@demobusiness.com",
+      "role": "admin"
+    },
+    "manager": {
+      "email": "day5.manager@demobusiness.com",
+      "role": "manager"
+    },
+    "rep": {
+      "email": "day5.rep@demobusiness.com",
+      "role": "rep"
+    },
+    "readonly": {
+      "email": "day5.readonly@demobusiness.com",
+      "role": "read_only"
+    }
+  },
+  "matrix": [
+    {
+      "id": "R1",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "This operation was aborted",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R2",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R3",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R4",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R5",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R6",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R7",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R8",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R9",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R10",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R11",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R12",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R13",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R14",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    },
+    {
+      "id": "R15",
+      "checks": {
+        "admin": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Pass"
+        },
+        "manager": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "rep": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        },
+        "readonly": {
+          "status": 0,
+          "code": "REQUEST_ERROR",
+          "bodyExcerpt": "fetch failed",
+          "evaluation": "Fail"
+        }
+      }
+    }
+  ],
+  "summary": {
+    "pass": 24,
+    "fail": 36
+  },
+  "note": "Role-matrix auth evaluation uses authorization outcome only: admin/manager expect non-403; rep/read_only expect 403 CRM_ROLE_FORBIDDEN."
+}

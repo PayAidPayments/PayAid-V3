@@ -38,13 +38,13 @@ export async function GET(request: NextRequest) {
 
     const service = new LinkedInService(linkedInConfig)
     const state = `${tenantId}:${userId}`
-    // Add offline_access to request refresh token support where available.
+    // Request posting scope so connected tokens can publish from Studio.
     const authUrl = `https://www.linkedin.com/oauth/v2/authorization?${new URLSearchParams({
       response_type: 'code',
       client_id: linkedInConfig.clientId,
       redirect_uri: linkedInConfig.redirectUri,
       state,
-      scope: 'r_liteprofile r_emailaddress offline_access',
+      scope: 'r_liteprofile r_emailaddress w_member_social offline_access',
     })}`
 
     await writeIntegrationAudit({

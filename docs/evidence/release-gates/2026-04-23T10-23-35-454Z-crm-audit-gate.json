@@ -1,0 +1,7 @@
+{
+  "collected_at_utc": "2026-04-23T10:23:35.454Z",
+  "command": "npm run test:e2e:crm-audit",
+  "exit_code": 1,
+  "timed_out": false,
+  "output_excerpt": "\n> payaid-v3@0.1.0 test:e2e:crm-audit\n> cross-env PLAYWRIGHT_NO_WEB_SERVER=1 CRM_AUDIT_SKIP_PREFLIGHT=1 PLAYWRIGHT_BASE_URL=http://localhost:3000 playwright test -c playwright.crm-audit.config.ts\n\nSyntaxError: D:\\Cursor Projects\\PayAid V3\\tests\\e2e\\crm-audit\\crm-audit.spec.ts: Unexpected token (372:8)\n\n  370 |           .toBeTruthy()\n  371 |         last = await probe360()\n> 372 |       } catch {\n      |         ^\n  373 |         // Recovery #2 (soft): if CRM shell is definitively loaded and URL is within CRM scope,\n  374 |         // avoid blocking the whole audit run on a flaky 360 selector-only miss.\n  375 |         const onCrmRoute = page.url().toLowerCase().includes('/crm/')\n\n   at crm-audit.spec.ts:372\n\n  370 |           .toBeTruthy()\n  371 |         last = await probe360()\n> 372 |       } catch {\n      |        ^\n  373 |         // Recovery #2 (soft): if CRM shell is definitively loaded and URL is within CRM scope,\n  374 |         // avoid blocking the whole audit run on a flaky 360 selector-only miss.\n  375 |         const onCrmRoute = page.url().toLowerCase().includes('/crm/')\nError: No tests found\n\n\n"
+}

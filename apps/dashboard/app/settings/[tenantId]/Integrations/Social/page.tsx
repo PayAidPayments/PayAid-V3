@@ -11,7 +11,7 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 
 type ProviderStatus = {
-  provider: 'linkedin' | 'facebook' | 'instagram' | 'twitter'
+  provider: 'linkedin' | 'facebook' | 'instagram' | 'twitter' | 'youtube'
   connected: boolean
   viaOAuth: boolean
   viaSocialAccount: boolean
@@ -19,6 +19,7 @@ type ProviderStatus = {
   providerEmail: string | null
   expiresAt: string | null
   lastActivityAt: string | null
+  health?: 'not_connected' | 'healthy' | 'expiring_soon' | 'expired' | 'missing_scope'
 }
 
 function authHeaders() {
@@ -37,11 +38,12 @@ export default function SocialSettingsPage() {
   const canConfigure = can('admin.integrations.manage')
   const [banner, setBanner] = useState<{ kind: 'success' | 'error'; message: string } | null>(null)
   const [tokenForms, setTokenForms] = useState<
-    Record<'facebook' | 'instagram' | 'twitter', { accessToken: string; providerName: string; providerEmail: string; expiresInSeconds: string }>
+    Record<'facebook' | 'instagram' | 'twitter' | 'youtube', { accessToken: string; providerName: string; providerEmail: string; expiresInSeconds: string }>
   >({
     facebook: { accessToken: '', providerName: '', providerEmail: '', expiresInSeconds: '' },
     instagram: { accessToken: '', providerName: '', providerEmail: '', expiresInSeconds: '' },
     twitter: { accessToken: '', providerName: '', providerEmail: '', expiresInSeconds: '' },
+    youtube: { accessToken: '', providerName: '', providerEmail: '', expiresInSeconds: '' },
   })
 
   const { data, isLoading } = useQuery({
@@ -139,7 +141,11 @@ export default function SocialSettingsPage() {
         body: JSON.stringify({ provider }),
       })
       const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error((json as any).error || 'Token refresh failed')
+      if (!res.ok) {
+        const err = (json as any).error || 'Token refresh failed'
+        const guidance = (json as any).guidance ? ` ${(json as any).guidance}` : ''
+        throw new Error(`${err}${guidance}`)
+      }
       return json
     },
     onSuccess: () => {
@@ -165,10 +171,41 @@ export default function SocialSettingsPage() {
 
   const providers: Array<{ id: ProviderStatus['provider']; label: string; enabled: boolean }> = [
     { id: 'linkedin', label: 'LinkedIn', enabled: true },
-    { id: 'facebook', label: 'Facebook', enabled: false },
-    { id: 'instagram', label: 'Instagram', enabled: false },
-    { id: 'twitter', label: 'Twitter/X', enabled: false },
+    { id: 'facebook', label: 'Facebook', enabled: true },
+    { id: 'instagram', label: 'Instagram', enabled: true },
+    { id: 'twitter', label: 'Twitter/X', enabled: true },
+    { id: 'youtube', label: 'YouTube', enabled: true },
   ]
+
+  const healthBadge = (health: ProviderStatus['health']) => {
+    switch (health) {
+      case 'healthy':
+        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+      case 'expiring_soon':
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+      case 'expired':
+        return 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200'
+      case 'missing_scope':
+        return 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200'
+      default:
+        return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+    }
+  }
+
+  const healthLabel = (health: ProviderStatus['health']) => {
+    switch (health) {
+      case 'healthy':
+        return 'Healthy'
+      case 'expiring_soon':
+        return 'Expiring soon'
+      case 'expired':
+        return 'Expired'
+      case 'missing_scope':
+        return 'Missing scope'
+      default:
+        return 'Not connected'
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -203,10 +240,25 @@ export default function SocialSettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
+                <div>
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${healthBadge(st?.health)}`}>
+                    {healthLabel(st?.health)}
+                  </span>
+                </div>
                 <div className="text-xs text-slate-500 dark:text-slate-400">
                   {st?.providerName ? `Account: ${st.providerName}` : 'No account linked'}
                   {st?.providerEmail ? ` · ${st.providerEmail}` : ''}
                 </div>
+                {st?.health === 'missing_scope' && p.id === 'youtube' ? (
+                  <div className="text-xs text-violet-700 dark:text-violet-300">
+                    Token is missing YouTube upload scope. Reconnect with <code>youtube.upload</code>.
+                  </div>
+                ) : null}
+                {st?.health === 'expired' ? (
+                  <div className="text-xs text-rose-700 dark:text-rose-300">
+                    Token expired. Reconnect or refresh token if provider supports it.
+                  </div>
+                ) : null}
                 <div className="text-xs text-slate-500 dark:text-slate-400">
                   Last activity: {st?.lastActivityAt || '—'}
                 </div>
@@ -233,7 +285,7 @@ export default function SocialSettingsPage() {
                           return
                         }
                         connectWithToken.mutate({
-                          provider: p.id as 'facebook' | 'instagram' | 'twitter',
+                          provider: p.id as 'facebook' | 'instagram' | 'twitter' | 'youtube',
                           accessToken: f.accessToken.trim(),
                           providerName: f.providerName.trim() || undefined,
                           providerEmail: f.providerEmail.trim() || undefined,
@@ -265,14 +317,14 @@ export default function SocialSettingsPage() {
                   <Button
                     variant="outline"
                     onClick={() => refreshToken.mutate(p.id)}
-                    disabled={!canConfigure || !connected || p.id !== 'linkedin' || refreshToken.isPending}
+                    disabled={!canConfigure || !connected || (p.id !== 'linkedin' && p.id !== 'youtube') || refreshToken.isPending}
                     title={
                       !canConfigure
                         ? 'Read-only access'
                         : !connected
                         ? 'Connect provider first'
-                        : p.id !== 'linkedin'
-                        ? 'Refresh flow coming soon'
+                        : p.id !== 'linkedin' && p.id !== 'youtube'
+                        ? 'Refresh flow coming soon for this provider'
                         : refreshToken.isPending
                         ? 'Please wait…'
                         : 'Refresh token'

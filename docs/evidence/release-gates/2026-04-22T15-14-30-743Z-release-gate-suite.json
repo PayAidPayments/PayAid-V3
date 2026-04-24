@@ -1,0 +1,16 @@
+{
+  "collected_at_utc": "2026-04-22T15:14:30.743Z",
+  "selected_gates": [
+    "canonical-post-cutover"
+  ],
+  "all_pass": false,
+  "results": [
+    {
+      "gate": "canonical-post-cutover",
+      "command": "npm run check:canonical-module-api-post-cutover",
+      "exit_code": 1,
+      "duration_ms": 4513,
+      "output_excerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-post-cutover\n> node scripts/check-canonical-module-api-post-cutover.mjs\n\n{\n  \"overallOk\": false,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-22T15-14-34-860Z-canonical-module-api-post-cutover-guard.json\",\n  \"mdPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-22T15-14-34-860Z-canonical-module-api-post-cutover-guard.md\"\n}\n\n"
+    }
+  ]
+}

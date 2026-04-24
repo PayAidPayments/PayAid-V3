@@ -1,0 +1,16 @@
+{
+  "collected_at_utc": "2026-04-23T07:47:13.294Z",
+  "selected_gates": [
+    "canonical-readiness-verdict"
+  ],
+  "all_pass": false,
+  "results": [
+    {
+      "gate": "canonical-readiness-verdict",
+      "command": "npm run check:canonical-module-api-readiness-verdict",
+      "exit_code": 1,
+      "duration_ms": 10272,
+      "output_excerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-readiness-verdict\n> node scripts/check-canonical-module-api-readiness-verdict.mjs\n\n{\n  \"overallOk\": false,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-23T07-47-20-181Z-canonical-module-api-readiness-verdict.json\",\n  \"mdPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-23T07-47-20-181Z-canonical-module-api-readiness-verdict.md\",\n  \"unchecked\": 25\n}\n\n"
+    }
+  ]
+}

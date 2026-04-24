@@ -1,0 +1,118 @@
+{
+  "startedAt": "2026-04-23T13:07:34.719Z",
+  "finishedAt": "2026-04-23T13:09:08.428Z",
+  "baseUrl": "https://payaid-v3.vercel.app",
+  "tenantId": "cmjptk2mw0000aocw31u48n64",
+  "users": {
+    "admin": {
+      "email": "businessadmin@demobusiness.com",
+      "userId": "cmlrq4rmu000412b1yg3g7b2l"
+    },
+    "sales": {
+      "email": "rohan.kapoor@demobusiness.com",
+      "userId": "cmnt3kqn800blqmw1mpy7ixyr"
+    }
+  },
+  "tempContacts": {
+    "c1": "cmobhybnh000by2wlo6jielqx",
+    "c2": "cmobhyp8p000ly2wloseg1hsj",
+    "c3": "cmobhz2m7000vy2wlr6uqqgsv",
+    "c4": "cmobhzfz90015y2wl0yvydl12"
+  },
+  "calls": [
+    {
+      "id": "A1",
+      "method": "POST",
+      "path": "/api/tasks/bulk-complete",
+      "status": 200,
+      "bodyExcerpt": "{\"success\":true,\"count\":0}"
+    },
+    {
+      "id": "A2",
+      "method": "POST",
+      "path": "/api/crm/contacts/bulk-delete",
+      "status": 200,
+      "bodyExcerpt": "{\"success\":true,\"archived\":1,\"contactIds\":[\"cmobhybnh000by2wlo6jielqx\"]}"
+    },
+    {
+      "id": "A3",
+      "method": "DELETE",
+      "path": "/api/contacts/cmobhzfz90015y2wl0yvydl12?tenantId=cmjptk2mw0000aocw31u48n64",
+      "status": 200,
+      "bodyExcerpt": "{\"success\":true}"
+    },
+    {
+      "id": "A4",
+      "method": "POST",
+      "path": "/api/crm/contacts/mass-transfer",
+      "status": 500,
+      "bodyExcerpt": "{\"error\":\"Failed to transfer contacts\",\"message\":\"\\nInvalid `prisma.contact.updateMany()` invocation:\\n\\n\\nForeign key constraint violated: `Contact_assignedToId_fkey (index)`\"}"
+    },
+    {
+      "id": "A5",
+      "method": "POST",
+      "path": "/api/crm/leads/mass-transfer",
+      "status": 200,
+      "bodyExcerpt": "{\"success\":true,\"message\":\"Successfully transferred 1 lead(s) to Rohan Kapoor\",\"transferred\":1}"
+    },
+    {
+      "id": "A6",
+      "method": "POST",
+      "path": "/api/crm/leads/mass-delete",
+      "status": 200,
+      "bodyExcerpt": "{\"success\":true,\"message\":\"Successfully deleted 1 lead(s)\",\"deleted\":1}"
+    },
+    {
+      "id": "A7",
+      "method": "POST",
+      "path": "/api/crm/leads/mass-update",
+      "status": 200,
+      "bodyExcerpt": "{\"success\":true,\"message\":\"Successfully updated 1 lead(s)\",\"updated\":1}"
+    }
+  ],
+  "auditLogFetch": {
+    "status": 200,
+    "logCount": 71
+  },
+  "auditChecks": [
+    {
+      "id": "A1",
+      "found": true,
+      "pattern": "/Bulk completed/i"
+    },
+    {
+      "id": "A2",
+      "found": true,
+      "pattern": "/Bulk archived/i"
+    },
+    {
+      "id": "A3",
+      "found": true,
+      "pattern": "/Contact deleted/i"
+    },
+    {
+      "id": "A4",
+      "found": false,
+      "pattern": "/Mass transferred .*contact/i"
+    },
+    {
+      "id": "A5",
+      "found": true,
+      "pattern": "/Mass transferred .*lead/i"
+    },
+    {
+      "id": "A6",
+      "found": true,
+      "pattern": "/Mass deleted .*lead/i"
+    },
+    {
+      "id": "A7",
+      "found": true,
+      "pattern": "/Mass updated .*lead/i"
+    }
+  ],
+  "summary": {
+    "pass": 6,
+    "fail": 1
+  }
+}

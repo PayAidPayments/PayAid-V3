@@ -60,3 +60,10 @@
   - screenshots/videos for UI assertions
   - API responses for YouTube and retry paths
   - final pass/fail matrix update in the handoff doc.
+
+## Deployment Note
+
+- Marketing release commit pushed to `origin/main`: `aef0cd45`
+- Push timestamp (local session): 2026-04-24
+- Post-push action pending: complete authenticated Step 4.1-4.5 + 4.5b evidence in:
+  - `docs/evidence/closure/2026-04-24-marketing-step4-authenticated-qa-template.md`

@@ -117,7 +117,7 @@
 - [x] Eng: audit-log coverage expanded on Day 5 high-risk mutations (tasks bulk-complete/delete, contact delete, contact/lead mass-transfer, lead mass-delete/mass-update) using `logCrmAudit`.
 - [x] Eng: audit verification runbook published for Day 5 scoped mutations (`docs/CRM_GA_SOLO_T05_AUDIT_VERIFICATION_RUNBOOK.md`).
 - [x] QA: run role matrix (admin/manager/rep/read-only). **2026-04-23:** hosted execution completed via `scripts/run-day5-role-matrix-checks.mjs` with role setup + full R1-R15 pass (`docs/evidence/closure/2026-04-23T13-06-22-219Z-crm-day5-role-matrix-automation.json`), synced into `docs/evidence/closure/2026-04-23-crm-day5-rbac-audit-runtime-checks.md`.
-- [ ] Eng + QA: verify audit events for all GA mutations. **2026-04-23:** hosted A1-A7 automation run logged (`docs/evidence/closure/2026-04-23T13-12-01-757Z-crm-day5-audit-verification-automation.json`) with 6/7 pass; remaining blocker A4 (`/api/crm/contacts/mass-transfer` FK `500`) has local code fix in `apps/dashboard/app/api/crm/contacts/mass-transfer/route.ts` pending deploy+rereun.
+- [ ] Eng + QA: verify audit events for all GA mutations. **2026-04-23:** hosted A1-A7 automation run logged (`docs/evidence/closure/2026-04-23T13-12-01-757Z-crm-day5-audit-verification-automation.json`) with 6/7 pass; remaining blocker A4 (`/api/crm/contacts/mass-transfer` FK `500`) has local code fix in `apps/dashboard/app/api/crm/contacts/mass-transfer/route.ts` pending a production deployment that is currently stuck in Vercel `Queued`.
 
 #### Day 6 - Performance and scale validation
 - [x] Eng: performance/scale prep map published (`docs/CRM_GA_SOLO_T06_PREP_PERF_SCALE.md`) with hotspot and measurement plan.
@@ -328,7 +328,7 @@ Use with `docs/CRM_GA_SOLO_T11_DECISION_RECORD_RUNBOOK.md` and paste final signo
 | Day 3 QA | Completed | None | Phani | `npm run test:e2e:crm-day3-qa` + `docs/CRM_GA_SOLO_T03_QA_RUNBOOK.md` |
 | Day 3 Product | Completed | None | Phani | `docs/CRM_GA_SOLO_T03_PRODUCT_UAT_ONEPAGER.md` finalized as **Approved for GA track increment** |
 | Day 4 close | Completed | None | Phani | Day 4 runbook complete with Product signoff; D3 accepted as N/A per rule, D6 pass captured in local post-fix artifact |
-| Day 5 close | In Progress | A4 contact mass-transfer audit path fails on hosted (`500` FK) | Phani | Deploy contact mass-transfer SalesRep-ID fix, rerun hosted A4 audit check, then close Queue #6 |
+| Day 5 close | In Progress | A4 contact mass-transfer audit path fails on hosted (`500` FK); root-project deploy is currently stuck in Vercel `Queued` | Phani | Use root deploy path (`npm run deploy:dashboard`), wait for Ready status, rerun hosted A4 audit check, then close Queue #6 |
 | Day 6 close | Pending | Perf execution | Phani | Run perf runbook and fill tables |
 | Day 7 close | Pending | CI execution | Phani | Finalize suite and fill CI evidence |
 | Day 8 close | Pending | UX/SOP execution | Phani | Run UX/support runbook and fill tables |

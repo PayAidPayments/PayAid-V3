@@ -14,6 +14,9 @@ export async function GET(request: NextRequest) {
     const { tenantId } = await requireModuleAccess(request, 'marketing')
     const periodStart = startOfLastNDays(30)
     const socialActivity = (prisma as any).socialActivityEvent
+    const canReadSocialActivity = Boolean(
+      socialActivity && typeof socialActivity.findMany === 'function'
+    )
 
     const [accounts, recentPosts, liveStream] = await Promise.all([
       prisma.socialMediaAccount.findMany({
@@ -49,13 +52,15 @@ export async function GET(request: NextRequest) {
           account: { select: { id: true, accountName: true, platform: true } },
         },
       }),
-      socialActivity
-        .findMany({
-          where: { tenantId },
-          orderBy: { eventAt: 'desc' },
-          take: 30,
-        })
-        .catch(() => []),
+      canReadSocialActivity
+        ? socialActivity
+            .findMany({
+              where: { tenantId },
+              orderBy: { eventAt: 'desc' },
+              take: 30,
+            })
+            .catch(() => [])
+        : Promise.resolve([]),
     ])
 
     const posts30d = await prisma.socialPost.findMany({

@@ -1,0 +1,11 @@
+{
+  "check": "canonical-staging-runtime-checks",
+  "timestamp": "2026-04-23T09:45:20.877Z",
+  "baseUrl": "[missing]",
+  "mode": "blocked",
+  "blockedReasons": [
+    "CANONICAL_STAGING_BASE_URL is missing",
+    "CANONICAL_STAGING_AUTH_TOKEN is missing"
+  ],
+  "checks": []
+}

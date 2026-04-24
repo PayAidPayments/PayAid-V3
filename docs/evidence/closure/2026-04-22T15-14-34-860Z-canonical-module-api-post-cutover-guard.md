@@ -1,0 +1,237 @@
+# Canonical module API post-cutover guard
+
+- Timestamp: 2026-04-22T15:14:34.860Z
+- Overall: fail
+- JSON artifact: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-22T15-14-34-860Z-canonical-module-api-post-cutover-guard.json`
+
+## File results
+
+- FAIL `apps/dashboard/app/api/modules/route.ts`
+  - token `compatibility:`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `base:`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `industry:`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `compatibility:`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `base:`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `industry:`: total=undefined, guarded=undefined, unguarded=undefined
+- FAIL `apps/dashboard/app/api/industries/[industry]/modules/route.ts`
+  - token `compatibility:`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `coreModules:`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `industryPacks:`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `optionalModules:`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `compatibility:`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `compatibility:`: total=undefined, guarded=undefined, unguarded=undefined
+- FAIL `apps/dashboard/app/api/industries/custom/modules/route.ts`
+  - token `compatibility:`: total=undefined, guarded=undefined, unguarded=undefined
+- FAIL `apps/dashboard/app/api/ai/analyze-industry/route.ts`
+  - token `coreModules: fallbackModules`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `compatibility:`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `coreModules: fallbackModules`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `compatibility:`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `coreModules: normalizedCoreModules`: total=undefined, guarded=undefined, unguarded=undefined
+  - token `coreModules: normalizedCoreModules`: total=undefined, guarded=undefined, unguarded=undefined
+
+## Raw payload
+
+```json
+{
+  "check": "canonical-module-api-post-cutover-guard",
+  "timestamp": "2026-04-22T15:14:34.860Z",
+  "overallOk": false,
+  "files": [
+    {
+      "id": "api-modules-route",
+      "file": "apps/dashboard/app/api/modules/route.ts",
+      "ok": false,
+      "failures": [
+        {
+          "token": "compatibility:",
+          "line": 81,
+          "text": "compatibility: { deprecated: true, mode: 'legacy-fields-included' as const },"
+        },
+        {
+          "token": "base:",
+          "line": 85,
+          "text": "base: suiteModules,"
+        },
+        {
+          "token": "industry:",
+          "line": 86,
+          "text": "industry: [],"
+        },
+        {
+          "token": "compatibility:",
+          "line": 101,
+          "text": "compatibility: { deprecated: true, mode: 'legacy-fields-included' as const },"
+        },
+        {
+          "token": "base:",
+          "line": 104,
+          "text": "base: [],"
+        },
+        {
+          "token": "industry:",
+          "line": 105,
+          "text": "industry: [],"
+        }
+      ],
+      "tokenStats": [
+        {
+          "token": "base:",
+          "totalOccurrences": 2,
+          "guardedOccurrences": 0
+        },
+        {
+          "token": "industry:",
+          "totalOccurrences": 2,
+          "guardedOccurrences": 0
+        },
+        {
+          "token": "compatibility:",
+          "totalOccurrences": 2,
+          "guardedOccurrences": 0
+        }
+      ],
+      "anchorCount": 2
+    },
+    {
+      "id": "api-industry-route",
+      "file": "apps/dashboard/app/api/industries/[industry]/modules/route.ts",
+      "ok": false,
+      "failures": [
+        {
+          "token": "compatibility:",
+          "line": 32,
+          "text": "compatibility: recommendations.compatibility,"
+        },
+        {
+          "token": "coreModules:",
+          "line": 34,
+          "text": "coreModules: recommendations.coreModules,"
+        },
+        {
+          "token": "industryPacks:",
+          "line": 35,
+          "text": "industryPacks: recommendations.industryPacks,"
+        },
+        {
+          "token": "optionalModules:",
+          "line": 36,
+          "text": "optionalModules: recommendations.optionalModules,"
+        },
+        {
+          "token": "compatibility:",
+          "line": 125,
+          "text": "compatibility: {"
+        },
+        {
+          "token": "compatibility:",
+          "line": 161,
+          "text": "compatibility: {"
+        }
+      ],
+      "tokenStats": [
+        {
+          "token": "coreModules:",
+          "totalOccurrences": 1,
+          "guardedOccurrences": 0
+        },
+        {
+          "token": "industryPacks:",
+          "totalOccurrences": 1,
+          "guardedOccurrences": 0
+        },
+        {
+          "token": "optionalModules:",
+          "totalOccurrences": 1,
+          "guardedOccurrences": 0
+        },
+        {
+          "token": "compatibility:",
+          "totalOccurrences": 3,
+          "guardedOccurrences": 0
+        }
+      ],
+      "anchorCount": 1
+    },
+    {
+      "id": "api-industry-custom-route",
+      "file": "apps/dashboard/app/api/industries/custom/modules/route.ts",
+      "ok": false,
+      "failures": [
+        {
+          "token": "compatibility:",
+          "line": 97,
+          "text": "compatibility: {"
+        }
+      ],
+      "tokenStats": [
+        {
+          "token": "compatibility:",
+          "totalOccurrences": 1,
+          "guardedOccurrences": 0
+        }
+      ],
+      "anchorCount": 1
+    },
+    {
+      "id": "api-ai-analyze-industry-route",
+      "file": "apps/dashboard/app/api/ai/analyze-industry/route.ts",
+      "ok": false,
+      "failures": [
+        {
+          "token": "coreModules: fallbackModules",
+          "line": 90,
+          "text": "compatibility: { deprecated: true, coreModules: fallbackModules },"
+        },
+        {
+          "token": "compatibility:",
+          "line": 90,
+          "text": "compatibility: { deprecated: true, coreModules: fallbackModules },"
+        },
+        {
+          "token": "coreModules: fallbackModules",
+          "line": 91,
+          "text": "coreModules: fallbackModules,"
+        },
+        {
+          "token": "compatibility:",
+          "line": 135,
+          "text": "compatibility: {"
+        },
+        {
+          "token": "coreModules: normalizedCoreModules",
+          "line": 137,
+          "text": "coreModules: normalizedCoreModules,"
+        },
+        {
+          "token": "coreModules: normalizedCoreModules",
+          "line": 139,
+          "text": "coreModules: normalizedCoreModules,"
+        }
+      ],
+      "tokenStats": [
+        {
+          "token": "coreModules: fallbackModules",
+          "totalOccurrences": 2,
+          "guardedOccurrences": 0
+        },
+        {
+          "token": "coreModules: normalizedCoreModules",
+          "totalOccurrences": 2,
+          "guardedOccurrences": 0
+        },
+        {
+          "token": "compatibility:",
+          "totalOccurrences": 2,
+          "guardedOccurrences": 0
+        }
+      ],
+      "anchorCount": 1
+    }
+  ],
+  "notes": [
+    "Fails if legacy tokens appear outside includeLegacy-gated windows.",
+    "Use as post-cutover regression guard for CANONICAL_MODULE_API_ONLY=1 readiness."
+  ]
+}
+```

@@ -20,9 +20,9 @@ export default function MarketingEmailPage() {
             <h2 className="text-lg font-semibold text-gray-900">Marketing</h2>
             <nav className="flex items-center gap-4 text-sm">
               <Link href={`/marketing/${tenantId}/Home/`} className="text-gray-600 hover:text-gray-900 transition-colors">Home</Link>
-              <Link href={`/marketing/${tenantId}/Campaigns`} className="text-gray-600 hover:text-gray-900 transition-colors">Campaigns</Link>
+              <Link href={`/marketing/${tenantId}/History`} className="text-gray-600 hover:text-gray-900 transition-colors">History</Link>
               <Link href={`/marketing/${tenantId}/Email`} className="text-purple-600 font-medium border-b-2 border-purple-600 pb-2">Email</Link>
-              <Link href={`/marketing/${tenantId}/Social-Media`} className="text-gray-600 hover:text-gray-900 transition-colors">Social Media</Link>
+              <Link href={`/marketing/${tenantId}/Social-Media`} className="text-gray-600 hover:text-gray-900 transition-colors">Channels</Link>
               <Link href={`/marketing/${tenantId}/WhatsApp`} className="text-gray-600 hover:text-gray-900 transition-colors">WhatsApp</Link>
               <Link href={`/marketing/${tenantId}/Analytics`} className="text-gray-600 hover:text-gray-900 transition-colors">Analytics</Link>
               <Link href={`/marketing/${tenantId}/Segments`} className="text-gray-600 hover:text-gray-900 transition-colors">Segments</Link>

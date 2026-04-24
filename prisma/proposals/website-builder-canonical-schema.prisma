@@ -1,0 +1,194 @@
+// Website Builder canonical schema proposal (draft only).
+// This file is not included in Prisma generation yet.
+// Merge model blocks into `prisma/schema.prisma` during implementation phase.
+
+model WebsiteSite {
+  id                String   @id @default(cuid())
+  tenantId          String
+  name              String
+  slug              String
+  status            String   @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED
+  primaryGoal       String?  // lead_generation | appointment_booking | local_presence | campaign_microsite | service_showcase
+  businessProfileId String?
+  brandKitId        String?
+  domainId          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  pages             WebsitePage[]
+  forms             WebsiteForm[]
+  submissions       WebsiteSubmission[]
+  events            WebsiteEvent[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model WebsitePage {
+  id           String   @id @default(cuid())
+  websiteSiteId String
+  name         String
+  slug         String
+  pageType     String   // home | about | services | contact | faq | testimonials | pricing | book_now | custom
+  status       String   @default("DRAFT")
+  navLabel     String?
+  navVisible   Boolean  @default(true)
+  isHomepage   Boolean  @default(false)
+  seoMetaJson  Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  site         WebsiteSite @relation(fields: [websiteSiteId], references: [id], onDelete: Cascade)
+  versions     WebsitePageVersion[]
+
+  @@unique([websiteSiteId, slug])
+  @@index([websiteSiteId])
+}
+
+model WebsitePageVersion {
+  id                    String   @id @default(cuid())
+  websitePageId         String
+  versionNumber         Int
+  schemaJson            Json
+  publishedSnapshotJson Json?
+  createdBy             String?
+  createdAt             DateTime @default(now())
+
+  page                  WebsitePage @relation(fields: [websitePageId], references: [id], onDelete: Cascade)
+  blocks                WebsiteBlock[]
+
+  @@unique([websitePageId, versionNumber])
+  @@index([websitePageId])
+}
+
+model WebsiteBlock {
+  id                  String   @id @default(cuid())
+  websitePageVersionId String
+  blockType           String
+  orderIndex          Int
+  propsJson           Json
+  responsiveRulesJson Json?
+  visibilityRulesJson Json?
+
+  version             WebsitePageVersion @relation(fields: [websitePageVersionId], references: [id], onDelete: Cascade)
+
+  @@index([websitePageVersionId])
+  @@index([websitePageVersionId, orderIndex])
+}
+
+model WebsiteBrandKit {
+  id             String   @id @default(cuid())
+  tenantId       String
+  logoAssetId    String?
+  faviconAssetId String?
+  primaryColor   String?
+  secondaryColor String?
+  accentColor    String?
+  headingFont    String?
+  bodyFont       String?
+  buttonStyle    String?
+  brandTone      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model WebsiteForm {
+  id               String   @id @default(cuid())
+  websiteSiteId    String
+  websitePageId    String?
+  name             String
+  formType         String   // contact | callback | quote | booking | custom
+  successMode      String   @default("inline")
+  consentRequired  Boolean  @default(false)
+  duplicateRule    String?
+  routingConfigJson Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  site             WebsiteSite @relation(fields: [websiteSiteId], references: [id], onDelete: Cascade)
+  fields           WebsiteFormField[]
+  submissions      WebsiteSubmission[]
+
+  @@index([websiteSiteId])
+  @@index([websitePageId])
+}
+
+model WebsiteFormField {
+  id                  String   @id @default(cuid())
+  websiteFormId       String
+  fieldKey            String
+  label               String
+  fieldType           String
+  required            Boolean  @default(false)
+  hidden              Boolean  @default(false)
+  orderIndex          Int
+  validationRulesJson Json?
+  crmTargetField      String?
+
+  form                WebsiteForm @relation(fields: [websiteFormId], references: [id], onDelete: Cascade)
+
+  @@index([websiteFormId])
+  @@index([websiteFormId, orderIndex])
+}
+
+model WebsiteSubmission {
+  id                    String   @id @default(cuid())
+  websiteSiteId         String
+  websitePageId         String?
+  websiteFormId         String?
+  submittedAt           DateTime @default(now())
+  status                String   @default("received")
+  payloadJson           Json
+  normalizedPayloadJson Json?
+  attributionJson       Json?
+  crmSyncStatus         String   @default("pending")
+  crmEntityType         String?
+  crmEntityId           String?
+  assignedUserId        String?
+  scoreDelta            Int?
+  automationRunId       String?
+
+  site                  WebsiteSite @relation(fields: [websiteSiteId], references: [id], onDelete: Cascade)
+  form                  WebsiteForm? @relation(fields: [websiteFormId], references: [id], onDelete: SetNull)
+
+  @@index([websiteSiteId])
+  @@index([websitePageId])
+  @@index([websiteFormId])
+  @@index([submittedAt])
+  @@index([crmSyncStatus])
+}
+
+model WebsiteDomain {
+  id                 String   @id @default(cuid())
+  websiteSiteId      String   @unique
+  domain             String?
+  subdomain          String?
+  verificationStatus String   @default("pending")
+  sslStatus          String   @default("pending")
+  isPrimary          Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([domain])
+  @@index([subdomain])
+}
+
+model WebsiteEvent {
+  id            String   @id @default(cuid())
+  websiteSiteId String
+  websitePageId String?
+  visitorId     String?
+  sessionId     String?
+  eventType     String
+  occurredAt    DateTime @default(now())
+  metadataJson  Json?
+
+  site          WebsiteSite @relation(fields: [websiteSiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteSiteId])
+  @@index([eventType])
+  @@index([occurredAt])
+}
