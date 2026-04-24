@@ -3294,7 +3294,12 @@ model Logo {
   industry     String?
   style        String?
   colors       Json?
-  prompt       String
+  
+  // Logo type: VECTOR (editable, client-side) or AI_IMAGE (legacy)
+  logoType     LogoType        @default(VECTOR)
+  
+  // AI-specific fields (optional for VECTOR type)
+  prompt       String?
   modelUsed    String?
   status       String          @default("GENERATING")
   createdAt    DateTime        @default(now())
@@ -3304,19 +3309,45 @@ model Logo {
 
   @@index([tenantId])
   @@index([tenantId, status])
+  @@index([tenantId, logoType])
+}
+
+enum LogoType {
+  VECTOR
+  AI_IMAGE
 }
 
 model LogoVariation {
   id              String   @id @default(cuid())
   logoId          String
+  
+  // Common fields (both VECTOR and AI_IMAGE)
   imageUrl        String
   thumbnailUrl    String?
+  isSelected      Boolean  @default(false)
+  
+  // Legacy AI fields (kept for backward compatibility)
   colors          Json?
   fonts           Json?
   iconStyle       String?
   exportedFormats Json?
-  isSelected      Boolean  @default(false)
+  
+  // NEW: Vector-specific fields
+  svgData         String?  @db.Text  // Full SVG with embedded fonts + CSS animations
+  fontFamily      String?
+  fontSize        Int?
+  textColor       String?
+  gradient        Json?    // { type: 'linear' | 'radial', colors: string[], angle?: number }
+  shadow          Json?    // { x: number, y: number, blur: number, color: string }
+  outline         Json?    // { width: number, color: string }
+  animation       String?  // 'none' | 'pulse' | 'bounce' | 'glitch' | 'rotate'
+  background      Json?    // { type: 'color' | 'pattern' | 'transparent', value: string }
+  layout          Json?    // { align: 'left' | 'center' | 'right', offsetX: number, offsetY: number, rotation: number }
+  layoutConfig    Json?    // Full editor state for re-editing
+  size            Int?     // 512 | 1024 | 2048 (for PNG exports)
+  
   createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   tenantId        String
   logo            Logo     @relation(fields: [logoId], references: [id], onDelete: Cascade)
   tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,10 +44,33 @@ export default function TenantSettingsPage() {
   })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [brandKitSearch, setBrandKitSearch] = useState('')
+  const [brandKitSort, setBrandKitSort] = useState<'newest' | 'oldest' | 'primary' | 'name'>('newest')
+  const [brandKitView, setBrandKitView] = useState<'list' | 'grid'>('list')
+  const [selectedBrandKitLogoIds, setSelectedBrandKitLogoIds] = useState<string[]>([])
+  const [exportAllFiltered, setExportAllFiltered] = useState(false)
+  const [excludePrimaryFromExport, setExcludePrimaryFromExport] = useState(false)
   const [branding, setBranding] = useState({
     brandColor: '#0f172a',
     useBrandColor: true,
     showLogoInHeader: true,
+  })
+
+  const { data: brandKitLogosData, isLoading: brandKitLogosLoading } = useQuery({
+    queryKey: ['brand-kit-logos'],
+    queryFn: async () => {
+      const response = await fetch('/api/brand-kit/logos', { headers: getAuthHeaders() })
+      if (!response.ok) throw new Error('Failed to fetch brand kit logos')
+      return response.json() as Promise<{
+        logos: Array<{
+          id: string
+          fileName: string
+          fileUrl: string
+          createdAt: string
+          isPrimary: boolean
+        }>
+      }>
+    },
   })
 
   const { data: tenant, isLoading } = useQuery({
@@ -78,6 +102,236 @@ export default function TenantSettingsPage() {
       setTimeout(() => setSuccess(''), 3000)
     },
   })
+
+  const setPrimaryBrandKitLogo = useMutation({
+    mutationFn: async (mediaLibraryId: string) => {
+      const response = await fetch('/api/brand-kit/logos', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ mediaLibraryId }),
+      })
+      if (!response.ok) {
+        const err = await response.json()
+        throw new Error(err.error || 'Failed to set primary logo')
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['brand-kit-logos'] })
+      queryClient.invalidateQueries({ queryKey: ['tenant-settings'] })
+      setSuccess('Primary brand logo updated!')
+      setError('')
+      setTimeout(() => setSuccess(''), 3000)
+    },
+  })
+
+  const deleteBrandKitLogo = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/media-library/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      })
+      if (!response.ok) {
+        const err = await response.json()
+        throw new Error(err.error || 'Failed to delete brand kit logo')
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['brand-kit-logos'] })
+      setSuccess('Brand kit logo removed')
+      setError('')
+      setTimeout(() => setSuccess(''), 3000)
+    },
+  })
+
+  const bulkDeleteBrandKitLogos = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const responses = await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/media-library/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+          })
+        )
+      )
+
+      const failed = responses.filter((r) => !r.ok).length
+      if (failed > 0) {
+        throw new Error(`${failed} logo(s) could not be deleted`)
+      }
+      return { deleted: ids.length }
+    },
+    onSuccess: ({ deleted }) => {
+      queryClient.invalidateQueries({ queryKey: ['brand-kit-logos'] })
+      setSelectedBrandKitLogoIds([])
+      setSuccess(`${deleted} brand kit logo(s) removed`)
+      setError('')
+      setTimeout(() => setSuccess(''), 3000)
+    },
+  })
+
+  const handleDeleteBrandKitLogo = (logo: { id: string; isPrimary: boolean }) => {
+    if (logo.isPrimary) {
+      setError('Cannot delete the current primary logo. Set another logo as primary first.')
+      setSuccess('')
+      return
+    }
+
+    const shouldDelete = window.confirm('Delete this Brand Kit logo? This action cannot be undone.')
+    if (!shouldDelete) return
+    deleteBrandKitLogo.mutate(logo.id)
+  }
+
+  const filteredBrandKitLogos = (brandKitLogosData?.logos || [])
+    .filter((logo) => {
+      const query = brandKitSearch.trim().toLowerCase()
+      if (!query) return true
+      return (
+        logo.fileName.toLowerCase().includes(query) ||
+        logo.fileUrl.toLowerCase().includes(query)
+      )
+    })
+    .sort((a, b) => {
+      if (brandKitSort === 'newest') {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }
+      if (brandKitSort === 'oldest') {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      }
+      if (brandKitSort === 'name') {
+        return a.fileName.localeCompare(b.fileName)
+      }
+      // primary: primary first, then newest
+      if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    })
+
+  const selectedVisibleCount = filteredBrandKitLogos.filter((logo) => selectedBrandKitLogoIds.includes(logo.id)).length
+  const allVisibleSelected = filteredBrandKitLogos.length > 0 && selectedVisibleCount === filteredBrandKitLogos.length
+  const primaryVisibleCount = filteredBrandKitLogos.filter((logo) => logo.isPrimary).length
+  const candidateExportIds = exportAllFiltered
+    ? filteredBrandKitLogos.map((logo) => logo.id)
+    : selectedBrandKitLogoIds
+  const selectedExportLogos = filteredBrandKitLogos.filter((logo) => candidateExportIds.includes(logo.id))
+  const selectedPrimaryCount = selectedExportLogos.filter((logo) => logo.isPrimary).length
+  const effectiveExportCount = Math.max(0, selectedExportLogos.length - (excludePrimaryFromExport ? selectedPrimaryCount : 0))
+
+  const toggleSelectLogo = (id: string) => {
+    setSelectedBrandKitLogoIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const toggleSelectAllVisible = () => {
+    if (allVisibleSelected) {
+      const visibleIds = new Set(filteredBrandKitLogos.map((logo) => logo.id))
+      setSelectedBrandKitLogoIds((prev) => prev.filter((id) => !visibleIds.has(id)))
+      return
+    }
+    const merged = new Set([...selectedBrandKitLogoIds, ...filteredBrandKitLogos.map((logo) => logo.id)])
+    setSelectedBrandKitLogoIds(Array.from(merged))
+  }
+
+  const clearSelectedLogos = () => {
+    setSelectedBrandKitLogoIds([])
+  }
+
+  const handleDownloadSelectedLogos = () => {
+    if (selectedBrandKitLogoIds.length === 0) return
+    const selectedLogos = filteredBrandKitLogos.filter((logo) => selectedBrandKitLogoIds.includes(logo.id))
+    if (selectedLogos.length === 0) {
+      setError('No selected logos are visible for download.')
+      setSuccess('')
+      return
+    }
+
+    // Browser-safe fallback: trigger one download per selected item.
+    // Some browsers may limit many auto-downloads; users can retry with smaller batches.
+    selectedLogos.forEach((logo, idx) => {
+      window.setTimeout(() => {
+        const a = document.createElement('a')
+        a.href = logo.fileUrl
+        a.download = logo.fileName || `brand-kit-logo-${logo.id}.svg`
+        a.rel = 'noopener noreferrer'
+        a.click()
+      }, idx * 120)
+    })
+
+    setSuccess(`Started download for ${selectedLogos.length} selected logo(s).`)
+    setError('')
+    setTimeout(() => setSuccess(''), 3000)
+  }
+
+  const handleExportBundle = async () => {
+    const idsToExport = exportAllFiltered
+      ? filteredBrandKitLogos.map((logo) => logo.id)
+      : selectedBrandKitLogoIds
+    if (idsToExport.length === 0) return
+    try {
+      const response = await fetch('/api/brand-kit/logos/export', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          mediaLibraryIds: idsToExport,
+          excludePrimary: excludePrimaryFromExport,
+        }),
+      })
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err.error || 'Failed to export bundle')
+      }
+
+      const blob = await response.blob()
+      const contentDisposition = response.headers.get('Content-Disposition') || ''
+      const match = /filename="([^"]+)"/i.exec(contentDisposition)
+      const filename = match?.[1] || `brand-kit-logos-${Date.now()}.zip`
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.click()
+      window.URL.revokeObjectURL(url)
+      setSuccess(
+        exportAllFiltered
+          ? `Exported bundle for ${idsToExport.length} filtered logo(s)${excludePrimaryFromExport ? ' (excluding primary).' : '.'}`
+          : `Exported bundle for ${idsToExport.length} selected logo(s)${excludePrimaryFromExport ? ' (excluding primary).' : '.'}`
+      )
+      setError('')
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export bundle')
+      setSuccess('')
+    }
+  }
+
+  const handleBulkDeleteSelectedLogos = () => {
+    if (selectedBrandKitLogoIds.length === 0) return
+    const selectedLogos = filteredBrandKitLogos.filter((logo) => selectedBrandKitLogoIds.includes(logo.id))
+    const primarySelected = selectedLogos.filter((logo) => logo.isPrimary)
+    const deletable = selectedLogos.filter((logo) => !logo.isPrimary).map((logo) => logo.id)
+
+    if (primarySelected.length > 0 && deletable.length === 0) {
+      setError('Cannot delete selected logos because they are primary. Set another logo as primary first.')
+      setSuccess('')
+      return
+    }
+
+    const message =
+      primarySelected.length > 0
+        ? `Delete ${deletable.length} selected logo(s)? ${primarySelected.length} primary logo(s) will be skipped.`
+        : `Delete ${deletable.length} selected logo(s)? This action cannot be undone.`
+
+    const shouldDelete = window.confirm(message)
+    if (!shouldDelete) return
+
+    if (deletable.length > 0) {
+      bulkDeleteBrandKitLogos.mutate(deletable)
+    } else {
+      setError('No deletable logos selected.')
+      setSuccess('')
+    }
+  }
 
   useEffect(() => {
     if (tenant) {
@@ -256,6 +510,275 @@ export default function TenantSettingsPage() {
           <div className="text-xs text-slate-500 dark:text-slate-400">
             Branding preferences are saved locally per browser for now.
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader>
+          <CardTitle className="text-slate-900 dark:text-slate-100">Brand Kit Logos</CardTitle>
+          <CardDescription>
+            Reusable logo assets saved from the Logo Generator.{' '}
+            {tenant?.id ? (
+              <Link href={`/ai-studio/${tenant.id}/Logos`} className="text-violet-600 hover:underline font-medium">
+                Open Logo Generator
+              </Link>
+            ) : null}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div className="md:col-span-2">
+                <Input
+                  value={brandKitSearch}
+                  onChange={(e) => setBrandKitSearch(e.target.value)}
+                  placeholder="Search logos by file name..."
+                />
+              </div>
+              <select
+                value={brandKitSort}
+                onChange={(e) => setBrandKitSort(e.target.value as 'newest' | 'oldest' | 'primary' | 'name')}
+                className="h-10 w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+                aria-label="Sort brand kit logos"
+              >
+                <option value="newest">Sort: Newest</option>
+                <option value="oldest">Sort: Oldest</option>
+                <option value="primary">Sort: Primary first</option>
+                <option value="name">Sort: Name A-Z</option>
+              </select>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <p className="text-xs text-slate-500">
+                {filteredBrandKitLogos.length} of {(brandKitLogosData?.logos || []).length} logos
+              </p>
+              <div className="inline-flex rounded-md border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setBrandKitView('list')}
+                  className={`px-2.5 py-1 text-xs ${
+                    brandKitView === 'list'
+                      ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200'
+                      : 'bg-white text-slate-600 dark:bg-slate-900 dark:text-slate-300'
+                  }`}
+                >
+                  List
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBrandKitView('grid')}
+                  className={`px-2.5 py-1 text-xs border-l border-slate-200 dark:border-slate-700 ${
+                    brandKitView === 'grid'
+                      ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200'
+                      : 'bg-white text-slate-600 dark:bg-slate-900 dark:text-slate-300'
+                  }`}
+                >
+                  Grid
+                </button>
+              </div>
+            </div>
+            {filteredBrandKitLogos.length > 0 ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={toggleSelectAllVisible}>
+                  {allVisibleSelected ? 'Unselect Visible' : 'Select Visible'}
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={clearSelectedLogos} disabled={selectedBrandKitLogoIds.length === 0}>
+                  Clear Selection
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={selectedBrandKitLogoIds.length === 0}
+                  onClick={handleDownloadSelectedLogos}
+                >
+                  Download Selected ({selectedBrandKitLogoIds.length})
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={
+                    (exportAllFiltered
+                      ? filteredBrandKitLogos.length === 0
+                      : selectedBrandKitLogoIds.length === 0) || effectiveExportCount === 0
+                  }
+                  onClick={handleExportBundle}
+                >
+                  {exportAllFiltered
+                    ? `Export Filtered (${filteredBrandKitLogos.length})`
+                    : 'Export Bundle (.zip)'}
+                </Button>
+                <label className="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 ml-1">
+                  <input
+                    type="checkbox"
+                    checked={exportAllFiltered}
+                    onChange={(e) => setExportAllFiltered(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300"
+                  />
+                  Export all filtered
+                </label>
+                <label className="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 ml-1">
+                  <input
+                    type="checkbox"
+                    checked={excludePrimaryFromExport}
+                    onChange={(e) => setExcludePrimaryFromExport(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300"
+                  />
+                  Exclude primary logo
+                </label>
+                <div className="w-full text-xs text-slate-500 mt-1">
+                  Export preview: {effectiveExportCount} logo(s)
+                  {excludePrimaryFromExport
+                    ? ` (${selectedPrimaryCount} primary logo(s) excluded from ${selectedExportLogos.length} candidate logo(s))`
+                    : ` from ${selectedExportLogos.length} candidate logo(s)`}
+                  {exportAllFiltered ? `, using filtered set (${filteredBrandKitLogos.length} visible)` : `, using selected set (${selectedBrandKitLogoIds.length} selected)`}
+                  {primaryVisibleCount > 0 ? ` · ${primaryVisibleCount} primary visible` : ''}
+                </div>
+                {effectiveExportCount === 0 ? (
+                  <div className="w-full text-xs text-amber-600 dark:text-amber-400">
+                    Nothing to export: all candidate logos are excluded (typically due to primary-exclusion settings) or no valid candidates are selected.
+                  </div>
+                ) : null}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={selectedBrandKitLogoIds.length === 0 || bulkDeleteBrandKitLogos.isPending}
+                  onClick={handleBulkDeleteSelectedLogos}
+                >
+                  {bulkDeleteBrandKitLogos.isPending ? 'Deleting...' : `Delete Selected (${selectedBrandKitLogoIds.length})`}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+
+          {brandKitLogosLoading ? (
+            <div className="text-sm text-slate-500">Loading brand kit logos...</div>
+          ) : !brandKitLogosData?.logos?.length ? (
+            <div className="space-y-3">
+              <div className="text-sm text-slate-500">
+                No Brand Kit logos yet. Create one in AI Studio {'>'} Logo Generator with "Save to Brand Kit Library" enabled.
+              </div>
+              {tenant?.id ? (
+                <Link href={`/ai-studio/${tenant.id}/Logos`}>
+                  <Button type="button" size="sm">
+                    Create Logo Now
+                  </Button>
+                </Link>
+              ) : null}
+            </div>
+          ) : filteredBrandKitLogos.length === 0 ? (
+            <div className="text-sm text-slate-500">
+              No logos match “{brandKitSearch}”. Try a different search term.
+            </div>
+          ) : brandKitView === 'list' ? (
+            <div className="space-y-3">
+              {filteredBrandKitLogos.map((logo) => (
+                <div
+                  key={logo.id}
+                  className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={selectedBrandKitLogoIds.includes(logo.id)}
+                      onChange={() => toggleSelectLogo(logo.id)}
+                      className="h-4 w-4 rounded border-slate-300"
+                      aria-label={`Select ${logo.fileName}`}
+                    />
+                    <div className="h-12 w-12 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={logo.fileUrl} alt={logo.fileName} className="h-full w-full object-contain" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{logo.fileName}</p>
+                      <p className="text-xs text-slate-500 flex items-center gap-2">
+                        {new Date(logo.createdAt).toLocaleString()}
+                        {logo.isPrimary ? (
+                          <span className="inline-flex items-center rounded-full bg-violet-100 text-violet-700 px-2 py-0.5 text-[10px] font-semibold dark:bg-violet-900/40 dark:text-violet-200">
+                            Primary
+                          </span>
+                        ) : null}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      variant={logo.isPrimary ? 'default' : 'outline'}
+                      size="sm"
+                      disabled={logo.isPrimary || setPrimaryBrandKitLogo.isPending}
+                      onClick={() => setPrimaryBrandKitLogo.mutate(logo.id)}
+                    >
+                      {logo.isPrimary ? 'Primary' : 'Set Primary'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={deleteBrandKitLogo.isPending || logo.isPrimary}
+                      onClick={() => handleDeleteBrandKitLogo(logo)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredBrandKitLogos.map((logo) => (
+                <div
+                  key={logo.id}
+                  className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 bg-white dark:bg-slate-900"
+                >
+                  <div className="mb-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedBrandKitLogoIds.includes(logo.id)}
+                      onChange={() => toggleSelectLogo(logo.id)}
+                      className="h-4 w-4 rounded border-slate-300"
+                      aria-label={`Select ${logo.fileName}`}
+                    />
+                  </div>
+                  <div className="aspect-square rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden mb-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={logo.fileUrl} alt={logo.fileName} className="h-full w-full object-contain" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{logo.fileName}</p>
+                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-2">
+                    {new Date(logo.createdAt).toLocaleDateString()}
+                    {logo.isPrimary ? (
+                      <span className="inline-flex items-center rounded-full bg-violet-100 text-violet-700 px-2 py-0.5 text-[10px] font-semibold dark:bg-violet-900/40 dark:text-violet-200">
+                        Primary
+                      </span>
+                    ) : null}
+                  </p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant={logo.isPrimary ? 'default' : 'outline'}
+                      size="sm"
+                      className="flex-1"
+                      disabled={logo.isPrimary || setPrimaryBrandKitLogo.isPending}
+                      onClick={() => setPrimaryBrandKitLogo.mutate(logo.id)}
+                    >
+                      {logo.isPrimary ? 'Primary' : 'Set Primary'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={deleteBrandKitLogo.isPending || logo.isPrimary}
+                      onClick={() => handleDeleteBrandKitLogo(logo)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

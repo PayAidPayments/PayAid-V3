@@ -302,8 +302,9 @@ model Logo {
   style        String?  // modern, traditional, playful, elegant, minimal, bold
   colors       Json?    // Array of hex colors
   
-  // Generation
-  prompt       String   // AI prompt used
+  // Type and generation
+  logoType     LogoType @default(VECTOR) // VECTOR (editable) or AI_IMAGE (legacy)
+  prompt       String?  // AI prompt used
   modelUsed    String?  // dall-e, stable-diffusion, etc.
   
   // Status
@@ -316,6 +317,12 @@ model Logo {
   
   @@index([tenantId])
   @@index([tenantId, status])
+  @@index([tenantId, logoType])
+}
+
+enum LogoType {
+  VECTOR
+  AI_IMAGE
 }
 
 model LogoVariation {
@@ -334,10 +341,23 @@ model LogoVariation {
   
   // Export
   exportedFormats Json? // {png: url, svg: url, pdf: url}
+  svgData         String? // Inline SVG payload (for editable vector logos)
+  fontFamily      String?
+  fontSize        Int?
+  textColor       String?
+  gradient        Json?
+  shadow          Json?
+  outline         Json?
+  animation       String?
+  background      Json?
+  layout          Json?
+  layoutConfig    Json?
+  size            Int?
   
   isSelected Boolean  @default(false) // Selected as primary logo
   
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   
   tenantId    String
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)

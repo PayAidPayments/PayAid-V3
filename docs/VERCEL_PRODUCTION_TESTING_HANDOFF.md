@@ -230,6 +230,30 @@ Expected:
 - Retry diagnostics include a `retryOperationId` for each retry action so QA can correlate UI events with backend audit/log records
 - Retry History table shows recent retry audit events (time, action type, operation ID, counts, actor) and should align with the latest panel summary
 
+## Step 4.1.a - Email runtime readiness precheck (required before 4.1 sign-off)
+
+Before marking Step 4.1 PASS, run the runtime precheck and attach the generated evidence:
+
+- Command:
+  - `npm run verify:email-prod-readiness`
+- Local fallback:
+  - `npm run verify:email-prod-readiness:local`
+
+Expected:
+
+- Redis TCP reachable via `REDIS_URL`
+- Database reachable via `DATABASE_URL`
+- Required email tables present:
+  - `EmailSendJob`
+  - `EmailTrackingEvent`
+  - `EmailSyncCheckpoint`
+  - `EmailDeliverabilityLog`
+  - `EmailCampaignSenderPolicy`
+
+Evidence:
+
+- Attach generated markdown artifact from `docs/evidence/email/*-email-prod-readiness.md` to QA notes.
+
 ## Step 4.2 - Marketing canonical route verification (IA consistency)
 
 Before running Marketing UI checks, use canonical routes only:
@@ -319,6 +343,28 @@ Expected runtime markers (for pass/fail logging):
   - History row for YouTube post should show final status.
   - `Open audit` should resolve related outcomes and surface YouTube dispatch metadata.
 
+### Step 4.5b - Marketing X/Twitter media runtime verification
+
+In Marketing > Compose / Schedule:
+
+- Validate positive paths:
+  - X post with image-only media succeeds.
+  - X post with exactly one video succeeds.
+- Validate guardrails:
+  - mixed image + video on one X post is rejected with actionable error.
+  - more than one video on one X post is rejected with actionable error.
+  - unsupported media types are rejected with actionable error.
+
+Expected runtime markers:
+
+- **Create social post API**
+  - `POST /api/social/posts` with `TWITTER` in `channels`.
+  - Expect validation guardrails for mixed-media / multi-video / unsupported media.
+- **Worker dispatch metadata**
+  - On success, `marketingPost.metadata.twitterDispatch.mediaMode` should be `image` or `video`.
+- **History + audit**
+  - X row reaches `SENT` on success or `FAILED` with actionable message.
+
 ## Step 4.6 - Brand Kit logo generator + export bundle verification
 
 Use this flow to validate the newly shipped Logo Generator + Brand Kit management path:
@@ -397,6 +443,14 @@ Reference map: `docs/SALES_ROUTE_CANONICAL_MAP.md`
 For copy/paste execution capture across Step 4.1-4.5, use:
 
 - `docs/evidence/closure/2026-04-24-marketing-step4-authenticated-qa-template.md`
+
+### Marketing Commit Gate (after Step 4 signoff)
+
+Before commit/push for production, use:
+
+- `docs/MARKETING_READY_TO_COMMIT_CHECKLIST.md`
+
+This checklist enforces Marketing-only commit scope and explicit non-Marketing exclusions.
 
 ## Step 5 - Revenue and analytics validation
 
