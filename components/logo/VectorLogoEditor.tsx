@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Sparkles, Download, Save, Type, Heart, RotateCcw } from 'lucide-react'
+import { Sparkles, Download, Save, Type, Heart, RotateCcw, SlidersHorizontal } from 'lucide-react'
 import type { LogoConfig } from '@/lib/logo/vector-engine'
 
 interface VectorLogoEditorProps {
@@ -29,6 +29,15 @@ type ConceptPreset = {
   id: string
   label: string
   config: Partial<LogoConfig>
+}
+
+type ExportPackOptions = {
+  includeLogoSvg: boolean
+  includeLogoPng: boolean
+  includeIconSvg: boolean
+  includeIconPng: boolean
+  includeCardMockup: boolean
+  includeHeaderMockup: boolean
 }
 
 type IndustryTemplate = {
@@ -115,6 +124,15 @@ export function VectorLogoEditor({
   const [previewMode, setPreviewMode] = useState<'canvas' | 'card' | 'header'>('canvas')
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [compareConceptIds, setCompareConceptIds] = useState<string[]>([])
+  const [showExportOptions, setShowExportOptions] = useState(false)
+  const [exportOptions, setExportOptions] = useState<ExportPackOptions>({
+    includeLogoSvg: true,
+    includeLogoPng: true,
+    includeIconSvg: true,
+    includeIconPng: true,
+    includeCardMockup: true,
+    includeHeaderMockup: true,
+  })
 
   // Load available fonts
   useEffect(() => {
@@ -295,40 +313,58 @@ export function VectorLogoEditor({
       const baseName = config.text.replace(/\s+/g, '-').toLowerCase() || 'logo'
       const files: ZipInputFile[] = []
 
-      files.push({
-        name: `${baseName}-logo.svg`,
-        data: textEncoder.encode(previewSvg),
-      })
+      if (exportOptions.includeLogoSvg) {
+        files.push({
+          name: `${baseName}-logo.svg`,
+          data: textEncoder.encode(previewSvg),
+        })
+      }
 
-      const logoPngBlob = await renderSvgToPngBlob(previewSvg, pngSize, pngSize)
-      files.push({
-        name: `${baseName}-logo-${pngSize}.png`,
-        data: new Uint8Array(await logoPngBlob.arrayBuffer()),
-      })
+      if (exportOptions.includeLogoPng) {
+        const logoPngBlob = await renderSvgToPngBlob(previewSvg, pngSize, pngSize)
+        files.push({
+          name: `${baseName}-logo-${pngSize}.png`,
+          data: new Uint8Array(await logoPngBlob.arrayBuffer()),
+        })
+      }
 
       const iconSvg = createIconOnlySVG(config)
-      files.push({
-        name: `${baseName}-icon.svg`,
-        data: textEncoder.encode(iconSvg),
-      })
-      const iconPngBlob = await renderSvgToPngBlob(iconSvg, 512, 512)
-      files.push({
-        name: `${baseName}-icon-512.png`,
-        data: new Uint8Array(await iconPngBlob.arrayBuffer()),
-      })
+      if (exportOptions.includeIconSvg) {
+        files.push({
+          name: `${baseName}-icon.svg`,
+          data: textEncoder.encode(iconSvg),
+        })
+      }
+      if (exportOptions.includeIconPng) {
+        const iconPngBlob = await renderSvgToPngBlob(iconSvg, 512, 512)
+        files.push({
+          name: `${baseName}-icon-512.png`,
+          data: new Uint8Array(await iconPngBlob.arrayBuffer()),
+        })
+      }
 
-      const cardSvg = createSimpleSVGPreview({ ...config, fontSize: Math.max(28, config.fontSize * 0.5) })
-      const headerSvg = createSimpleSVGPreview({ ...config, fontSize: Math.max(24, config.fontSize * 0.45) })
-      const cardPngBlob = await renderSvgToPngBlob(cardSvg, 1200, 600)
-      const headerPngBlob = await renderSvgToPngBlob(headerSvg, 1400, 360)
-      files.push({
-        name: `${baseName}-mockup-card.png`,
-        data: new Uint8Array(await cardPngBlob.arrayBuffer()),
-      })
-      files.push({
-        name: `${baseName}-mockup-header.png`,
-        data: new Uint8Array(await headerPngBlob.arrayBuffer()),
-      })
+      if (exportOptions.includeCardMockup) {
+        const cardSvg = createSimpleSVGPreview({ ...config, fontSize: Math.max(28, config.fontSize * 0.5) })
+        const cardPngBlob = await renderSvgToPngBlob(cardSvg, 1200, 600)
+        files.push({
+          name: `${baseName}-mockup-card.png`,
+          data: new Uint8Array(await cardPngBlob.arrayBuffer()),
+        })
+      }
+
+      if (exportOptions.includeHeaderMockup) {
+        const headerSvg = createSimpleSVGPreview({ ...config, fontSize: Math.max(24, config.fontSize * 0.45) })
+        const headerPngBlob = await renderSvgToPngBlob(headerSvg, 1400, 360)
+        files.push({
+          name: `${baseName}-mockup-header.png`,
+          data: new Uint8Array(await headerPngBlob.arrayBuffer()),
+        })
+      }
+
+      if (files.length === 0) {
+        setError('Select at least one asset in Export options')
+        return
+      }
 
       const zipBytes = createZip(files)
       const zipBlob = new Blob([zipBytes], { type: 'application/zip' })
@@ -659,6 +695,57 @@ export function VectorLogoEditor({
               <Download className="w-4 h-4 mr-2" />
               Download Icon (Favicon PNG)
             </Button>
+
+            <div className="rounded-md border border-slate-200 p-3">
+              <button
+                type="button"
+                className="w-full flex items-center justify-between text-sm font-medium text-slate-800"
+                onClick={() => setShowExportOptions((v) => !v)}
+              >
+                <span className="flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4" />
+                  Export Pack Options
+                </span>
+                <span className="text-xs text-slate-500">{showExportOptions ? 'Hide' : 'Show'}</span>
+              </button>
+              {showExportOptions && (
+                <div className="mt-3 space-y-2">
+                  <div className="grid grid-cols-1 gap-2">
+                    <ToggleRow
+                      label="Logo SVG"
+                      checked={exportOptions.includeLogoSvg}
+                      onChange={(checked) => setExportOptions((prev) => ({ ...prev, includeLogoSvg: checked }))}
+                    />
+                    <ToggleRow
+                      label={`Logo PNG (${pngSize}px)`}
+                      checked={exportOptions.includeLogoPng}
+                      onChange={(checked) => setExportOptions((prev) => ({ ...prev, includeLogoPng: checked }))}
+                    />
+                    <ToggleRow
+                      label="Icon SVG"
+                      checked={exportOptions.includeIconSvg}
+                      onChange={(checked) => setExportOptions((prev) => ({ ...prev, includeIconSvg: checked }))}
+                    />
+                    <ToggleRow
+                      label="Icon PNG (512px)"
+                      checked={exportOptions.includeIconPng}
+                      onChange={(checked) => setExportOptions((prev) => ({ ...prev, includeIconPng: checked }))}
+                    />
+                    <ToggleRow
+                      label="Business Card Mockup PNG"
+                      checked={exportOptions.includeCardMockup}
+                      onChange={(checked) => setExportOptions((prev) => ({ ...prev, includeCardMockup: checked }))}
+                    />
+                    <ToggleRow
+                      label="Website Header Mockup PNG"
+                      checked={exportOptions.includeHeaderMockup}
+                      onChange={(checked) => setExportOptions((prev) => ({ ...prev, includeHeaderMockup: checked }))}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <Button variant="outline" onClick={handleExportPack} disabled={!previewSvg}>
               <Download className="w-4 h-4 mr-2" />
               Export Brand Pack (ZIP)
@@ -872,6 +959,23 @@ export function VectorLogoEditor({
           </CardContent>
         </Card>
       </div>
+    </div>
+  )
+}
+
+function ToggleRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string
+  checked: boolean
+  onChange: (checked: boolean) => void
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-md border border-slate-200 px-2 py-1.5">
+      <span className="text-xs text-slate-700">{label}</span>
+      <Switch checked={checked} onCheckedChange={onChange} />
     </div>
   )
 }
