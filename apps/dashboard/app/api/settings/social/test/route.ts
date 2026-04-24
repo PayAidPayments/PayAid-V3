@@ -6,9 +6,14 @@ import { decrypt } from '@/lib/encryption'
 import { assertIntegrationPermission, toPermissionDeniedResponse } from '@/lib/integrations/permissions'
 import { writeIntegrationAudit } from '@/lib/integrations/audit'
 import { captureIntegrationError, enforceIntegrationRateLimit } from '@/lib/integrations/security'
+import {
+  getSocialProviderAliases,
+  normalizeSocialProviderAlias,
+  SOCIAL_SETTINGS_PROVIDER_IDS_WITH_ALIASES,
+} from '@/lib/integrations/social-provider-aliases'
 
 const querySchema = z.object({
-  provider: z.enum(['linkedin', 'facebook', 'instagram', 'twitter']),
+  provider: z.enum(SOCIAL_SETTINGS_PROVIDER_IDS_WITH_ALIASES),
 })
 
 async function testLinkedIn(token: string) {
@@ -36,6 +41,14 @@ async function testTwitter(token: string) {
   if (!res.ok) throw new Error(`Twitter/X API check failed (HTTP ${res.status})`)
 }
 
+async function testYouTube(token: string) {
+  const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=id&mine=true', {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store' as any,
+  })
+  if (!res.ok) throw new Error(`YouTube API check failed (HTTP ${res.status})`)
+}
+
 export async function POST(request: NextRequest) {
   const limited = enforceIntegrationRateLimit(request, {
     key: 'integration:social:test',
@@ -54,19 +67,22 @@ export async function POST(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const { provider } = querySchema.parse({ provider: searchParams.get('provider') || '' })
-
+    const providerKey = normalizeSocialProviderAlias(provider)
+    const providerAliases = getSocialProviderAliases(provider)
     const integration = await prisma.oAuthIntegration.findFirst({
-      where: { tenantId: user.tenantId, provider, isActive: true },
+      where: { tenantId: user.tenantId, provider: { in: providerAliases }, isActive: true },
+      orderBy: { updatedAt: 'desc' },
     })
     if (!integration?.accessToken) {
-      return NextResponse.json({ error: `${provider} is not connected` }, { status: 400 })
+      return NextResponse.json({ error: `${providerKey} is not connected` }, { status: 400 })
     }
 
     const token = decrypt(integration.accessToken)
 
-    if (provider === 'linkedin') await testLinkedIn(token)
-    if (provider === 'facebook' || provider === 'instagram') await testMeta(token, provider)
-    if (provider === 'twitter') await testTwitter(token)
+    if (providerKey === 'linkedin') await testLinkedIn(token)
+    if (providerKey === 'facebook' || providerKey === 'instagram') await testMeta(token, providerKey)
+    if (providerKey === 'twitter') await testTwitter(token)
+    if (providerKey === 'youtube') await testYouTube(token)
 
     await prisma.oAuthIntegration.update({
       where: { id: integration.id },
@@ -77,12 +93,12 @@ export async function POST(request: NextRequest) {
       tenantId: user.tenantId,
       userId: user.userId,
       entityType: 'integration_social',
-      entityId: `${user.tenantId}:${provider}`,
+      entityId: `${user.tenantId}:${providerKey}`,
       action: 'social_connection_test_passed',
-      after: { provider, ok: true },
+      after: { provider: providerKey, ok: true },
     })
 
-    return NextResponse.json({ ok: true, provider })
+    return NextResponse.json({ ok: true, provider: providerKey })
   } catch (error) {
     const permissionDenied = toPermissionDeniedResponse(error)
     if (permissionDenied) return NextResponse.json(permissionDenied.json, { status: permissionDenied.status })

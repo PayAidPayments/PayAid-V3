@@ -19,11 +19,11 @@ export function getMarketingTopBarItems(tenantId: string): MarketingTopBarItem[]
   const base = `/marketing/${tenantId}`
   return [
     { name: 'Home', href: `${base}/Home` },
-    { name: 'Studio', href: `${base}/Studio` },
-    { name: 'Campaigns', href: `${base}/Campaigns` },
+    { name: 'Compose', href: `${base}/Studio` },
+    { name: 'History', href: `${base}/History` },
     { name: 'Sequences', href: `${base}/Sequences` },
     { name: 'Ads', href: `${base}/Ads` },
-    { name: 'Social', href: `${base}/Social-Media` },
+    { name: 'Channels', href: `${base}/Social-Media` },
     { name: 'Creative Studio', href: `${base}/Creative-Studio` },
     { name: 'Segments', href: `${base}/Segments` },
     { name: 'Analytics', href: `${base}/Analytics` },

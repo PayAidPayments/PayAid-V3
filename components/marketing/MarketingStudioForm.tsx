@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { saveStudioDraftToLibrary } from '@/lib/marketing/studio-actions'
 import { useAuthStore } from '@/lib/stores/auth'
 
@@ -91,6 +92,190 @@ type SavedEmailTemplate = {
   subject: string
   htmlContent: string
   textContent?: string | null
+}
+
+type DispatchAuditResponse = {
+  marketingPost: {
+    id: string
+    channel: string
+    status: string
+    createdAt: string
+    updatedAt: string
+    metadata?: Record<string, unknown> | null
+  }
+  channelPlatform: string | null
+  relatedSocialPosts: Array<{
+    id: string
+    platform: string
+    status: string
+    platformPostId: string | null
+    errorMessage: string | null
+    createdAt: string
+    publishedAt: string | null
+  }>
+  notes?: string[]
+}
+
+type SocialPostListResponse = {
+  posts: Array<{
+    id: string
+    channel: string
+    status: string
+    createdAt: string
+    updatedAt: string
+    scheduledFor: string | null
+  }>
+}
+
+type SocialSettingsProviderStatus = {
+  provider: string
+  connected: boolean
+  health: 'not_connected' | 'healthy' | 'expiring_soon' | 'expired' | 'missing_scope'
+  providerName?: string | null
+  expiresAt?: string | null
+}
+
+type SocialSettingsResponse = {
+  providers?: SocialSettingsProviderStatus[]
+  error?: string
+}
+
+type ChannelReadinessIssue = {
+  channel: ChannelId
+  severity: 'error' | 'warning'
+  reason: string
+  fixHint: string
+}
+
+const CHANNEL_TO_SOCIAL_PROVIDER: Partial<Record<ChannelId, string>> = {
+  facebook: 'facebook',
+  instagram: 'instagram',
+  linkedin: 'linkedin',
+  youtube: 'youtube',
+}
+
+function statusBadgeClass(statusRaw: string): string {
+  const status = String(statusRaw || '').toUpperCase()
+  if (status === 'SENT' || status === 'PUBLISHED') {
+    return 'border-emerald-200 text-emerald-700 bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:bg-emerald-950/40'
+  }
+  if (status === 'FAILED') {
+    return 'border-rose-200 text-rose-700 bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:bg-rose-950/40'
+  }
+  if (status === 'SCHEDULED') {
+    return 'border-amber-200 text-amber-700 bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:bg-amber-950/40'
+  }
+  return 'border-slate-200 text-slate-700 bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:bg-slate-900'
+}
+
+type ComplianceIssue = {
+  channel: ChannelId
+  severity: 'error' | 'warning'
+  message: string
+}
+
+const CHANNEL_TEXT_LIMITS: Partial<Record<ChannelId, number>> = {
+  sms: 160,
+  whatsapp: 4096,
+  instagram: 2200,
+  linkedin: 3000,
+  youtube: 5000,
+  email: 10000,
+}
+
+const CHANNEL_IMAGE_RULES: Partial<
+  Record<
+    ChannelId,
+    { minWidth: number; minHeight: number; maxWidth: number; maxHeight: number; hint: string }
+  >
+> = {
+  instagram: {
+    minWidth: 320,
+    minHeight: 320,
+    maxWidth: 4096,
+    maxHeight: 4096,
+    hint: 'Instagram supports square/portrait images; keep high-resolution but under 4096px.',
+  },
+  facebook: {
+    minWidth: 200,
+    minHeight: 200,
+    maxWidth: 8192,
+    maxHeight: 8192,
+    hint: 'Facebook images should be at least 200x200 and reasonably sized.',
+  },
+  linkedin: {
+    minWidth: 552,
+    minHeight: 276,
+    maxWidth: 7680,
+    maxHeight: 4320,
+    hint: 'LinkedIn works best with wide images around 1200x627.',
+  },
+  email: {
+    minWidth: 320,
+    minHeight: 180,
+    maxWidth: 3000,
+    maxHeight: 3000,
+    hint: 'Email images should be optimized for inbox clients and load speed.',
+  },
+}
+
+function buildComplianceIssues(params: {
+  channels: ChannelId[]
+  copyByChannel: Record<string, ChannelCopy>
+  generatedImage?: { width?: number; height?: number } | null
+  hasVideo: boolean
+}): ComplianceIssue[] {
+  const { channels, copyByChannel, generatedImage, hasVideo } = params
+  const issues: ComplianceIssue[] = []
+
+  for (const channel of channels) {
+    const text = (copyByChannel[channel]?.body || '').trim()
+    const maxLen = CHANNEL_TEXT_LIMITS[channel]
+    if (maxLen && text.length > maxLen) {
+      issues.push({
+        channel,
+        severity: 'error',
+        message: `${channelLabel(channel)} copy is ${text.length} chars (max ${maxLen}). Shorten before posting.`,
+      })
+    }
+
+    if (channel === 'sms' && text.length > 140) {
+      issues.push({
+        channel,
+        severity: 'warning',
+        message:
+          'SMS is near/over single-message size; carriers may split into multiple messages.',
+      })
+    }
+
+    if (channel === 'youtube' && !hasVideo) {
+      issues.push({
+        channel,
+        severity: 'error',
+        message:
+          'YouTube requires a video asset. Generate/upload a video or remove YouTube from selected channels.',
+      })
+    }
+
+    const imageRule = CHANNEL_IMAGE_RULES[channel]
+    if (
+      imageRule &&
+      generatedImage?.width &&
+      generatedImage?.height &&
+      (generatedImage.width < imageRule.minWidth ||
+        generatedImage.height < imageRule.minHeight ||
+        generatedImage.width > imageRule.maxWidth ||
+        generatedImage.height > imageRule.maxHeight)
+    ) {
+      issues.push({
+        channel,
+        severity: 'error',
+        message: `${channelLabel(channel)} image ${generatedImage.width}x${generatedImage.height} is outside supported range (${imageRule.minWidth}x${imageRule.minHeight} to ${imageRule.maxWidth}x${imageRule.maxHeight}). ${imageRule.hint}`,
+      })
+    }
+  }
+
+  return issues
 }
 
 function channelLabel(channelId: string) {
@@ -265,7 +450,10 @@ function SocialPostPreview({
           ].join(' ')}
           aria-hidden="true"
         >
-          {initials || 'PA'}
+          {initials ||
+            (brandName.replace(/\s+/g, '').length >= 1
+              ? brandName.replace(/\s+/g, '').slice(0, 2).toUpperCase()
+              : '?')}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -466,12 +654,15 @@ export function MarketingStudioForm({
   brandName,
   socialBranding,
   socialAccounts,
+  initialAuditPostId,
 }: {
   tenantId: string
   brandName?: string
   socialBranding?: Record<string, string>
   socialAccounts?: Array<{ id: string; platform: string; accountName: string }>
+  initialAuditPostId?: string
 }) {
+  const router = useRouter()
   const { token } = useAuthStore()
   const resolveAuthToken = useCallback((): string | null => {
     if (token) return token
@@ -539,6 +730,16 @@ export function MarketingStudioForm({
   const [loadingImage, setLoadingImage] = useState(false)
   const [loadingVideo, setLoadingVideo] = useState(false)
   const [loadingSubject, setLoadingSubject] = useState(false)
+  const [auditPostId, setAuditPostId] = useState(initialAuditPostId ?? '')
+  const [auditLoading, setAuditLoading] = useState(false)
+  const [auditLoadingLatest, setAuditLoadingLatest] = useState(false)
+  const [auditRecentLoading, setAuditRecentLoading] = useState(false)
+  const [auditRecentPosts, setAuditRecentPosts] = useState<SocialPostListResponse['posts']>([])
+  const [auditError, setAuditError] = useState<string | null>(null)
+  const [auditResult, setAuditResult] = useState<DispatchAuditResponse | null>(null)
+  const [socialProviderStatus, setSocialProviderStatus] = useState<Record<string, SocialSettingsProviderStatus>>({})
+  const [socialReadinessError, setSocialReadinessError] = useState<string | null>(null)
+  const lastAutoLoadedAuditIdRef = useRef<string>('')
   // Local dev can be slow during first compile/hot reload, so keep a higher client timeout.
   const API_TIMEOUT_MS = 90_000
   /** Must be > server IMAGE_WORKER_FETCH_TIMEOUT_MS (default 900s) so the browser does not abort first. */
@@ -569,6 +770,76 @@ export function MarketingStudioForm({
   }, [socialAccounts])
 
   const [previewAccountIdByPlatform, setPreviewAccountIdByPlatform] = useState<Record<string, string>>({})
+
+  /** Loaded when `brandName` prop is missing — matches route `tenantId` to id, slug, or subdomain. */
+  const [tenantDisplayName, setTenantDisplayName] = useState<string | null>(null)
+
+  useEffect(() => {
+    setTenantDisplayName(null)
+    const auth = resolveAuthToken()
+    if (!auth || !tenantId?.trim()) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${auth}`, 'Content-Type': 'application/json' },
+        })
+        if (!res.ok || cancelled) return
+        const me = (await res.json()) as {
+          tenant?: { id: string; name: string; slug?: string | null; subdomain?: string | null } | null
+        }
+        const tn = me.tenant
+        if (!tn?.name?.trim()) return
+        const route = tenantId.trim()
+        const norm = (s: string | null | undefined) => (s ?? '').trim().toLowerCase()
+        const matches =
+          tn.id === route ||
+          norm(tn.slug) === norm(route) ||
+          norm(tn.subdomain) === norm(route)
+        if (matches && !cancelled) setTenantDisplayName(tn.name.trim())
+      } catch {
+        /* ignore */
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [tenantId, resolveAuthToken])
+
+  useEffect(() => {
+    const auth = resolveAuthToken()
+    if (!auth) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        setSocialReadinessError(null)
+        const res = await fetch('/api/settings/social', {
+          headers: { Authorization: `Bearer ${auth}`, 'Content-Type': 'application/json' },
+        })
+        const data = (await res.json().catch(() => ({}))) as SocialSettingsResponse
+        if (!res.ok) {
+          if (!cancelled) setSocialReadinessError(data.error || 'Could not load connector readiness.')
+          return
+        }
+        if (cancelled) return
+        const map: Record<string, SocialSettingsProviderStatus> = {}
+        for (const row of data.providers || []) {
+          map[String(row.provider || '').toLowerCase()] = row
+        }
+        setSocialProviderStatus(map)
+      } catch {
+        if (!cancelled) setSocialReadinessError('Could not load connector readiness.')
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [channels, resolveAuthToken])
+
+  const defaultPreviewBusinessName = useMemo(
+    () => (brandName?.trim() || tenantDisplayName?.trim() || 'Your business'),
+    [brandName, tenantDisplayName]
+  )
 
   const getPreviewAccountName = useCallback(
     (platform: string): string | null => {
@@ -1107,6 +1378,64 @@ export function MarketingStudioForm({
   const ctaLabelClean = (ctaLabel || '').trim()
   const ctaLabelError =
     !ctaLabelClean ? 'CTA button text is required' : ctaLabelClean.length > 32 ? 'Keep CTA under 32 characters' : null
+  const complianceIssues = useMemo(
+    () =>
+      buildComplianceIssues({
+        channels: channels as ChannelId[],
+        copyByChannel,
+        generatedImage: generatedImages[0] ?? null,
+        hasVideo: Boolean(videoJob?.result?.url),
+      }),
+    [channels, copyByChannel, generatedImages, videoJob?.result?.url]
+  )
+  const complianceErrors = useMemo(
+    () => complianceIssues.filter((i) => i.severity === 'error'),
+    [complianceIssues]
+  )
+  const readinessIssues = useMemo<ChannelReadinessIssue[]>(() => {
+    const issues: ChannelReadinessIssue[] = []
+    for (const selectedChannel of channels as ChannelId[]) {
+      const provider = CHANNEL_TO_SOCIAL_PROVIDER[selectedChannel]
+      if (!provider) continue
+      const status = socialProviderStatus[provider]
+      if (!status || !status.connected || status.health === 'not_connected') {
+        issues.push({
+          channel: selectedChannel,
+          severity: 'error',
+          reason: `${channelLabel(selectedChannel)} account is not connected.`,
+          fixHint: 'Connect this channel in Channel settings.',
+        })
+        continue
+      }
+      if (status.health === 'expired') {
+        issues.push({
+          channel: selectedChannel,
+          severity: 'error',
+          reason: `${channelLabel(selectedChannel)} token is expired.`,
+          fixHint: 'Reconnect in Channel settings.',
+        })
+      } else if (status.health === 'missing_scope') {
+        issues.push({
+          channel: selectedChannel,
+          severity: 'error',
+          reason: `${channelLabel(selectedChannel)} is missing required publish scope.`,
+          fixHint: 'Reconnect and grant required scopes in Channel settings.',
+        })
+      } else if (status.health === 'expiring_soon') {
+        issues.push({
+          channel: selectedChannel,
+          severity: 'warning',
+          reason: `${channelLabel(selectedChannel)} token expires soon.`,
+          fixHint: 'Refresh/reconnect in Channel settings to avoid failures.',
+        })
+      }
+    }
+    return issues
+  }, [channels, socialProviderStatus])
+  const readinessErrors = useMemo(
+    () => readinessIssues.filter((issue) => issue.severity === 'error'),
+    [readinessIssues]
+  )
 
   const loadEmailTemplates = useCallback(async () => {
     if (!resolveAuthToken()) return
@@ -1121,6 +1450,114 @@ export function MarketingStudioForm({
       setLoadingTemplates(false)
     }
   }, [getHeaders, resolveAuthToken])
+
+  const fetchDispatchAuditById = useCallback(
+    async (id: string) => {
+      if (!requireSignedIn()) return
+      const trimmed = id.trim()
+      if (!trimmed) return
+      const res = await fetch(`/api/social/posts/${encodeURIComponent(trimmed)}/dispatch-audit`, {
+        headers: getHeaders(),
+      })
+      const data = (await res.json().catch(() => ({}))) as DispatchAuditResponse & {
+        error?: string
+      }
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to load dispatch audit')
+      }
+      setAuditResult(data)
+    },
+    [getHeaders, requireSignedIn]
+  )
+
+  const handleFetchDispatchAudit = useCallback(async () => {
+    const id = auditPostId.trim()
+    if (!id) {
+      setAuditError('Enter a MarketingPost ID first.')
+      setAuditResult(null)
+      return
+    }
+    setAuditLoading(true)
+    setAuditError(null)
+    setAuditResult(null)
+    try {
+      await fetchDispatchAuditById(id)
+    } catch {
+      setAuditError('Failed to load dispatch audit (network).')
+    } finally {
+      setAuditLoading(false)
+    }
+  }, [auditPostId, fetchDispatchAuditById])
+
+  const handleLoadLatestDispatchAudit = useCallback(async () => {
+    if (!requireSignedIn()) return
+    setAuditLoadingLatest(true)
+    setAuditError(null)
+    setAuditResult(null)
+    try {
+      const res = await fetch('/api/social/posts?limit=1', { headers: getHeaders() })
+      const data = (await res.json().catch(() => ({}))) as SocialPostListResponse & {
+        error?: string
+      }
+      if (!res.ok) {
+        setAuditError(data.error || 'Failed to load latest social posts')
+        return
+      }
+      const latestId = data.posts?.[0]?.id
+      if (!latestId) {
+        setAuditError('No social posts found yet. Launch/schedule first, then retry.')
+        return
+      }
+      setAuditPostId(latestId)
+      await fetchDispatchAuditById(latestId)
+    } catch {
+      setAuditError('Failed to load latest social posts.')
+    } finally {
+      setAuditLoadingLatest(false)
+    }
+  }, [fetchDispatchAuditById, getHeaders, requireSignedIn])
+
+  const handleLoadRecentDispatchPosts = useCallback(async () => {
+    if (!requireSignedIn()) return
+    setAuditRecentLoading(true)
+    setAuditError(null)
+    try {
+      const res = await fetch('/api/social/posts?limit=5', { headers: getHeaders() })
+      const data = (await res.json().catch(() => ({}))) as SocialPostListResponse & {
+        error?: string
+      }
+      if (!res.ok) {
+        setAuditError(data.error || 'Failed to load recent social posts')
+        setAuditRecentPosts([])
+        return
+      }
+      setAuditRecentPosts(data.posts || [])
+    } catch {
+      setAuditError('Failed to load recent social posts.')
+      setAuditRecentPosts([])
+    } finally {
+      setAuditRecentLoading(false)
+    }
+  }, [getHeaders, requireSignedIn])
+
+  useEffect(() => {
+    const id = (initialAuditPostId || '').trim()
+    if (!id || id === lastAutoLoadedAuditIdRef.current) return
+    lastAutoLoadedAuditIdRef.current = id
+    setAuditPostId(id)
+    setAuditLoading(true)
+    setAuditError(null)
+    setAuditResult(null)
+    void (async () => {
+      try {
+        await fetchDispatchAuditById(id)
+      } catch {
+        setAuditError('Failed to auto-load dispatch audit.')
+      } finally {
+        setAuditLoading(false)
+      }
+    })()
+  }, [initialAuditPostId, fetchDispatchAuditById])
 
   const saveCurrentEmailAsTemplate = useCallback(async () => {
     if (!resolveAuthToken()) {
@@ -1781,24 +2218,178 @@ export function MarketingStudioForm({
           >
             {pending ? 'Saving…' : 'Save to Library'}
           </button>
-          <Link
-            href={`/marketing/${tenantId}/Campaigns/New`}
+          <button
+            type="button"
+            onClick={() => {
+              if (complianceErrors.length > 0) {
+                setMessage('Fix compliance errors in previews before continuing to campaign.')
+                return
+              }
+              router.push(`/marketing/${tenantId}/Campaigns/New`)
+            }}
             className="inline-flex items-center rounded-xl border border-slate-300 dark:border-slate-600 px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800"
+            title={
+              complianceErrors.length > 0
+                ? 'Fix preview compliance errors first'
+                : 'Use this draft in a campaign'
+            }
           >
             Use in campaign
-          </Link>
-          <Link
-            href={`/marketing/${tenantId}/Social-Media/Schedule`}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (complianceErrors.length > 0 || readinessErrors.length > 0) {
+                setMessage('Fix readiness/compliance blockers before scheduling social posts.')
+                return
+              }
+              router.push(`/marketing/${tenantId}/Social-Media/Schedule`)
+            }}
             className="inline-flex items-center rounded-xl border border-slate-300 dark:border-slate-600 px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800"
+            title={
+              complianceErrors.length > 0 || readinessErrors.length > 0
+                ? 'Fix readiness/compliance blockers first'
+                : 'Schedule social post'
+            }
           >
             Schedule social
-          </Link>
+          </button>
         </div>
         {message && (
           <p className="text-sm text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-950/50">
             {message}
           </p>
         )}
+
+        <div className="rounded-xl border border-slate-200/80 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-950/40 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase text-slate-600 dark:text-slate-300">
+              Dispatch audit
+            </p>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              Verify queued post outcomes
+            </span>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              value={auditPostId}
+              onChange={(e) => setAuditPostId(e.target.value)}
+              placeholder="MarketingPost ID (e.g. cm...)"
+              className="h-9 flex-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => void handleFetchDispatchAudit()}
+              disabled={auditLoading}
+              className="h-9 rounded-lg border border-slate-300 dark:border-slate-600 px-3 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+            >
+              {auditLoading ? 'Loading…' : 'Fetch audit'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleLoadLatestDispatchAudit()}
+              disabled={auditLoadingLatest}
+              className="h-9 rounded-lg border border-slate-300 dark:border-slate-600 px-3 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+              title="Auto-load latest MarketingPost ID and fetch audit"
+            >
+              {auditLoadingLatest ? 'Loading latest…' : 'Load latest'}
+            </button>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              type="button"
+              onClick={() => void handleLoadRecentDispatchPosts()}
+              disabled={auditRecentLoading}
+              className="h-9 rounded-lg border border-slate-300 dark:border-slate-600 px-3 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+              title="Load recent MarketingPost IDs"
+            >
+              {auditRecentLoading ? 'Loading recent…' : 'Load recent 5'}
+            </button>
+            <select
+              className="h-9 flex-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-sm"
+              value={auditPostId}
+              onChange={(e) => {
+                const id = e.target.value
+                setAuditPostId(id)
+                if (id) void handleFetchDispatchAudit()
+              }}
+            >
+              <option value="">Recent posts (pick one)</option>
+              {auditRecentPosts.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.channel} | {p.status} | {new Date(p.createdAt).toLocaleString()}
+                </option>
+              ))}
+            </select>
+          </div>
+          {auditRecentPosts.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {auditRecentPosts.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    setAuditPostId(p.id)
+                    void handleFetchDispatchAudit()
+                  }}
+                  className="inline-flex items-center gap-1"
+                  title={p.id}
+                >
+                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                    {p.channel}
+                  </span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full border ${statusBadgeClass(
+                      p.status
+                    )}`}
+                  >
+                    {p.status}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {auditError ? (
+            <p className="text-xs text-rose-700 dark:text-rose-300">{auditError}</p>
+          ) : null}
+          {auditResult ? (
+            <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-2 space-y-1.5">
+              <p className="text-xs text-slate-700 dark:text-slate-200">
+                Post <span className="font-mono">{auditResult.marketingPost.id}</span> -{' '}
+                <span className="font-semibold">{auditResult.marketingPost.channel}</span> -{' '}
+                <span
+                  className={`inline-flex items-center px-1.5 py-0.5 rounded-full border text-[10px] font-semibold ${statusBadgeClass(
+                    auditResult.marketingPost.status
+                  )}`}
+                >
+                  {auditResult.marketingPost.status}
+                </span>
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Platform: {auditResult.channelPlatform || 'n/a'} | Related outcomes:{' '}
+                {auditResult.relatedSocialPosts.length}
+              </p>
+              {auditResult.relatedSocialPosts.length > 0 ? (
+                <div className="space-y-1">
+                  {auditResult.relatedSocialPosts.slice(0, 5).map((row) => (
+                    <p key={row.id} className="text-xs text-slate-600 dark:text-slate-300">
+                      {row.platform} -{' '}
+                      <span
+                        className={`inline-flex items-center px-1.5 py-0.5 rounded-full border text-[10px] font-semibold ${statusBadgeClass(
+                          row.status
+                        )}`}
+                      >
+                        {row.status}
+                      </span>
+                      {row.platformPostId ? ` - ${row.platformPostId}` : ''}
+                      {row.errorMessage ? ` - ${row.errorMessage}` : ''}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-5 space-y-3">
@@ -1875,12 +2466,81 @@ export function MarketingStudioForm({
         )}
 
         <div className="space-y-2">
+          {(readinessIssues.length > 0 || socialReadinessError) && (
+            <div className="rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50/80 dark:bg-sky-950/30 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase text-sky-800 dark:text-sky-300">
+                  Channel readiness
+                </p>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href={`/settings/${tenantId}/Integrations/Social`}
+                    className="text-xs font-medium text-sky-700 dark:text-sky-300 hover:underline"
+                  >
+                    Fix in channel settings
+                  </Link>
+                  <Link
+                    href={`/marketing/${tenantId}/Social-Media`}
+                    className="text-xs font-medium text-sky-700 dark:text-sky-300 hover:underline"
+                  >
+                    Open channels hub
+                  </Link>
+                </div>
+              </div>
+              {socialReadinessError ? (
+                <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+                  Could not verify connector health live. You can still review settings before scheduling.
+                </p>
+              ) : null}
+              {readinessIssues.length > 0 ? (
+                <div className="mt-2 space-y-1.5">
+                  {readinessIssues.map((issue, idx) => (
+                    <p
+                      key={`${issue.channel}-readiness-${idx}`}
+                      className={
+                        issue.severity === 'error'
+                          ? 'text-xs text-rose-700 dark:text-rose-300'
+                          : 'text-xs text-amber-700 dark:text-amber-300'
+                      }
+                    >
+                      {issue.severity === 'error' ? 'Blocker:' : 'Heads-up:'} {issue.reason} {issue.fixHint}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-xs text-sky-700 dark:text-sky-300">
+                  All selected social channels are currently ready to publish.
+                </p>
+              )}
+            </div>
+          )}
+          {complianceIssues.length > 0 && (
+            <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/30 p-3">
+              <p className="text-xs font-semibold uppercase text-amber-800 dark:text-amber-300 mb-2">
+                Channel compliance checks
+              </p>
+              <div className="space-y-1.5">
+                {complianceIssues.map((issue, idx) => (
+                  <p
+                    key={`${issue.channel}-${idx}`}
+                    className={
+                      issue.severity === 'error'
+                        ? 'text-xs text-rose-700 dark:text-rose-300'
+                        : 'text-xs text-amber-700 dark:text-amber-300'
+                    }
+                  >
+                    {issue.severity === 'error' ? 'Error:' : 'Warning:'} {issue.message}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
           {channels.map((c) => {
             const label = channelLabel(c)
             const copy = copyByChannel[c]
             const primaryImg = generatedImages[0]?.url
             const effectiveBrand =
-              getPreviewAccountName(c) || socialBranding?.[c] || brandName || (c === 'instagram' ? 'yourbrand' : 'PayAid')
+              getPreviewAccountName(c) || socialBranding?.[c] || defaultPreviewBusinessName
             const hasUsablePrimaryLink = Boolean(primaryLink.trim()) && isValidHttpUrl(primaryLink)
             const resolvedBody = ensureChannelBodyHasPrimaryLink(
               resolveLinkTokens(copy?.body ?? '', hasUsablePrimaryLink ? primaryLink : ''),

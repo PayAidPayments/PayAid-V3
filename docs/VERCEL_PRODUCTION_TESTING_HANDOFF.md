@@ -438,6 +438,106 @@ If testing starts from old Sales bookmarks (for example `Landing-Pages`, `Landin
 
 Reference map: `docs/SALES_ROUTE_CANONICAL_MAP.md`
 
+## Step 4.8 - Website Builder MVP runtime verification
+
+In Website Builder (`/website-builder/[tenantId]/Home` and `/website-builder/[tenantId]/Sites/[id]`), validate:
+
+- Home list + filters:
+  - `status` and `goal` filters load without crash.
+  - Refresh button reloads list and preserves expected results.
+- Create flow:
+  - Create site with valid `name`, `slug`, and `goal`.
+  - Confirm new card appears in Home list and `Open Site` navigates to detail page.
+- Site detail edit:
+  - Update metadata (name/slug/status/goal/meta fields) and save.
+  - Confirm saved values are visible after refresh.
+- AI draft + apply flow:
+  - Run `Generate Draft` and confirm success state.
+  - Run `Apply Draft to Pages` and confirm page-tree rows appear.
+- Page-tree editor:
+  - Rename page title/slug/type, reorder with Up/Down, delete one row, add one row.
+  - Save page tree and confirm success status appears.
+  - Confirm `Last page-tree save` timestamp is visible.
+  - Confirm `Unsaved page-tree changes` badge appears on edit and clears after save.
+- Guardrails:
+  - Try saving with an empty title -> blocked with inline validation.
+  - Try saving with duplicate slugs (case-insensitive) -> blocked with inline validation.
+  - Try saving with zero pages -> blocked with inline validation.
+
+Expected API/runtime markers (for pass/fail logging):
+
+- `GET /api/website/sites`
+  - Expect `200` and `sites[]` payload for authorized tenant.
+- `POST /api/website/sites`
+  - Expect `201` on valid payload.
+  - Expect `400` with validation details on invalid payload.
+- `GET /api/website/sites/:id`
+  - Expect `200` with site metadata + compatibility mode.
+- `PATCH /api/website/sites/:id` (metadata-only)
+  - Expect `200` and `normalizedPageTree: false`.
+- `PATCH /api/website/sites/:id` (with `pageTree`)
+  - Expect `200` and `normalizedPageTree: true`.
+  - Invalid page-tree payload should return `400` with `details[]` messages.
+- `POST /api/website/ai/generate-draft`
+  - Expect `200` with `draft.pagePlan[]` in response.
+
+### Step 4.8 QA Evidence Template
+
+For copy/paste execution capture, use:
+
+- `docs/evidence/closure/2026-04-24-website-builder-step4-8-runtime-qa-template.md`
+
+For API marker automation (env-driven), run:
+
+- `npm run check:website-builder-step4-8-runtime`
+- `npm run apply:website-builder-step4-8-runtime-artifact`
+- `npm run run:website-builder-step4-8-evidence-pipeline`
+
+Runbook:
+
+- `docs/WEBSITE_BUILDER_STEP4_8_RUNTIME_RUNBOOK.md`
+
+Env template:
+
+- `docs/WEBSITE_BUILDER_STEP4_8_ENV_TEMPLATE.md`
+
+Required env for automation script:
+
+- `WEBSITE_BUILDER_BASE_URL`
+- `WEBSITE_BUILDER_AUTH_TOKEN`
+
+Script output:
+
+- `docs/evidence/closure/*-website-builder-step4-8-runtime-checks.json`
+- `docs/evidence/closure/*-website-builder-step4-8-runtime-checks.md`
+- Updated evidence template:
+  - `docs/evidence/closure/2026-04-24-website-builder-step4-8-runtime-qa-template.md`
+
+### Step 4.8 QA sign-off gate (Ready for QA)
+
+Mark Website Builder Step 4.8 **Ready for QA pass** only when all conditions below are true in the same tenant session:
+
+- **Functional pass**
+  - Site create flow succeeds from Home and new site appears in list.
+  - Site detail metadata edits persist after refresh.
+  - `Generate Draft` and `Apply Draft to Pages` both complete and page tree populates.
+  - Page-tree editor supports rename/reorder/add/delete and save without crashes.
+  - Success status and timestamp indicators render after save/apply actions.
+- **Guardrail pass**
+  - Empty-title page-tree save is blocked with inline validation.
+  - Duplicate-slug (case-insensitive) save is blocked with inline validation.
+  - Zero-page save is blocked with inline validation.
+  - API parity observed:
+    - metadata-only patch returns `normalizedPageTree: false`
+    - pageTree patch returns `normalizedPageTree: true`
+    - invalid pageTree patch returns `400` with `details[]`
+- **Evidence required in bug log / QA notes**
+  - One screenshot of Home list with created Website Builder site card.
+  - One screenshot of Site detail page after metadata save.
+  - One screenshot of populated page-tree editor after Apply Draft.
+  - One screenshot showing validation guardrail error (duplicate or empty page).
+  - One API payload capture showing `normalizedPageTree: true` on pageTree save.
+
 ### Step 4 Authenticated QA Evidence Template
 
 For copy/paste execution capture across Step 4.1-4.5, use:
@@ -577,6 +677,7 @@ Scope completed:
 - Step 4.5 (YouTube connector runtime): PASS / PARTIAL / FAIL / NOT AVAILABLE
 - Step 4.6 (Brand Kit logos + export): PASS / PARTIAL / FAIL / NOT AVAILABLE
 - Step 4.7 (Sales canonical routes): PASS / PARTIAL / FAIL / NOT AVAILABLE
+- Step 4.8 (Website Builder MVP runtime): PASS / PARTIAL / FAIL / NOT AVAILABLE
 - Step 5 (Revenue + analytics): PASS / PARTIAL / FAIL / NOT AVAILABLE
 - Step 6 (HR + Inventory): PASS / PARTIAL / FAIL / NOT AVAILABLE
 
@@ -585,6 +686,13 @@ Step 4.6 sign-off evidence:
 - Brand Kit list with primary badge screenshot: [link/path]
 - Zero-export guard screenshot (disabled + reason): [link/path]
 - ZIP artifact checked (name + file count): [text]
+
+Step 4.8 sign-off evidence:
+- Home list with created site card screenshot: [link/path]
+- Site detail after metadata save screenshot: [link/path]
+- Populated page-tree editor after Apply Draft screenshot: [link/path]
+- Validation guardrail screenshot (duplicate or empty page): [link/path]
+- API payload capture with normalizedPageTree=true: [link/path/text]
 
 Top failures by severity (up to 10):
 1.
@@ -620,6 +728,4 @@ After testing, employee should submit:
 2. Top 10 failures by severity
 3. Screenshots/evidence bundle
 4. Final recommendation: Go / Conditional Go / No-Go
-5. List of items verified as definitely live and stable on Vercel
-
-This output is what engineering should use to create the production fix queue.
+5. List of it

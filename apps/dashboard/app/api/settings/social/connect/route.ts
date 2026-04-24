@@ -5,9 +5,13 @@ import { encrypt } from '@/lib/encryption'
 import { z } from 'zod'
 import { assertIntegrationPermission, toPermissionDeniedResponse } from '@/lib/integrations/permissions'
 import { writeIntegrationAudit } from '@/lib/integrations/audit'
+import {
+  normalizeSocialProviderAlias,
+  SOCIAL_SETTINGS_PROVIDER_IDS_WITH_ALIASES,
+} from '@/lib/integrations/social-provider-aliases'
 
 const bodySchema = z.object({
-  provider: z.enum(['linkedin', 'facebook', 'instagram', 'twitter']),
+  provider: z.enum(SOCIAL_SETTINGS_PROVIDER_IDS_WITH_ALIASES),
   accessToken: z.string().min(10),
   refreshToken: z.string().min(10).optional(),
   expiresInSeconds: z.number().int().positive().max(60 * 60 * 24 * 365).optional(),
@@ -26,11 +30,12 @@ export async function POST(request: NextRequest) {
     const body = bodySchema.parse(await request.json())
     const expiresAt = body.expiresInSeconds ? new Date(Date.now() + body.expiresInSeconds * 1000) : null
 
+    const providerKey = normalizeSocialProviderAlias(body.provider)
     const saved = await prisma.oAuthIntegration.upsert({
-      where: { tenantId_provider: { tenantId: user.tenantId, provider: body.provider } },
+      where: { tenantId_provider: { tenantId: user.tenantId, provider: providerKey } },
       create: {
         tenantId: user.tenantId,
-        provider: body.provider,
+        provider: providerKey,
         accessToken: encrypt(body.accessToken),
         refreshToken: body.refreshToken ? encrypt(body.refreshToken) : null,
         expiresAt,
@@ -61,10 +66,10 @@ export async function POST(request: NextRequest) {
       tenantId: user.tenantId,
       userId: user.userId,
       entityType: 'integration_social',
-      entityId: `${user.tenantId}:${saved.provider}`,
+      entityId: `${user.tenantId}:${providerKey}`,
       action: 'social_provider_connected_manual_token',
       after: {
-        provider: saved.provider,
+        provider: providerKey,
         expiresAt: saved.expiresAt?.toISOString() ?? null,
         providerName: saved.providerName ?? null,
         providerEmail: saved.providerEmail ?? null,
@@ -73,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      provider: saved.provider,
+      provider: providerKey,
       updatedAt: saved.updatedAt?.toISOString?.() ?? null,
       expiresAt: saved.expiresAt?.toISOString?.() ?? null,
     })

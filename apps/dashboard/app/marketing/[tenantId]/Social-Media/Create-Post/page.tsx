@@ -13,7 +13,7 @@ export default function CreatePostRedirectPage() {
   const tenantId = params?.tenantId as string
 
   useEffect(() => {
-    if (tenantId) router.replace(`/marketing/${tenantId}/Studio`)
+    if (tenantId) router.replace(`/marketing/${tenantId}/Studio?legacyRedirect=1`)
   }, [tenantId, router])
 
   return <p className="p-4 text-slate-500">Redirecting to Studio…</p>

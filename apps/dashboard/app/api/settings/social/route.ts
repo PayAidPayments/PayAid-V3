@@ -2,6 +2,30 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { assertIntegrationPermission, toPermissionDeniedResponse } from '@/lib/integrations/permissions'
+import {
+  normalizeSocialProviderAlias,
+  SOCIAL_SETTINGS_PROVIDER_IDS,
+  SOCIAL_SETTINGS_PROVIDER_IDS_WITH_ALIASES,
+} from '@/lib/integrations/social-provider-aliases'
+
+function deriveHealth(row: {
+  isActive: boolean
+  expiresAt: Date | null
+  provider: string
+  scope?: string | null
+}): 'not_connected' | 'healthy' | 'expiring_soon' | 'expired' | 'missing_scope' {
+  if (!row.isActive) return 'not_connected'
+  const now = Date.now()
+  if (row.expiresAt && row.expiresAt.getTime() <= now) return 'expired'
+  if (row.expiresAt && row.expiresAt.getTime() - now <= 24 * 60 * 60 * 1000) return 'expiring_soon'
+  if (row.provider === 'youtube' || row.provider === 'google') {
+    const scope = String(row.scope || '').toLowerCase()
+    if (scope && !scope.includes('youtube.upload') && !scope.includes('youtube.force-ssl')) {
+      return 'missing_scope'
+    }
+  }
+  return 'healthy'
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     const [oauth, accounts] = await Promise.all([
       prisma.oAuthIntegration.findMany({
-        where: { tenantId: user.tenantId, provider: { in: ['linkedin', 'facebook', 'instagram', 'twitter'] } },
+        where: { tenantId: user.tenantId, provider: { in: SOCIAL_SETTINGS_PROVIDER_IDS_WITH_ALIASES as unknown as string[] } },
         select: {
           provider: true,
           isActive: true,
@@ -19,6 +43,7 @@ export async function GET(request: NextRequest) {
           providerEmail: true,
           lastUsedAt: true,
           expiresAt: true,
+          scope: true,
           updatedAt: true,
         },
       }),
@@ -35,7 +60,7 @@ export async function GET(request: NextRequest) {
     ])
 
     const byProvider = new Map<string, any>()
-    for (const p of ['linkedin', 'facebook', 'instagram', 'twitter']) {
+    for (const p of SOCIAL_SETTINGS_PROVIDER_IDS) {
       byProvider.set(p, {
         provider: p,
         connected: false,
@@ -45,18 +70,26 @@ export async function GET(request: NextRequest) {
         providerEmail: null,
         expiresAt: null,
         lastActivityAt: null,
+        health: 'not_connected',
       })
     }
 
     for (const row of oauth) {
-      const item = byProvider.get(row.provider) || { provider: row.provider }
+      const providerKey = normalizeSocialProviderAlias(row.provider)
+      const item = byProvider.get(providerKey) || { provider: providerKey }
       item.connected = Boolean(row.isActive)
       item.viaOAuth = true
       item.providerName = row.providerName || null
       item.providerEmail = row.providerEmail || null
       item.expiresAt = row.expiresAt?.toISOString?.() ?? null
       item.lastActivityAt = (row.lastUsedAt || row.updatedAt)?.toISOString?.() ?? null
-      byProvider.set(row.provider, item)
+      item.health = deriveHealth({
+        isActive: Boolean(row.isActive),
+        expiresAt: row.expiresAt || null,
+        provider: providerKey,
+        scope: row.scope || null,
+      })
+      byProvider.set(providerKey, item)
     }
 
     for (const row of accounts) {

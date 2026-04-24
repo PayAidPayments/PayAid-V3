@@ -5,9 +5,14 @@ import { decrypt, encrypt } from '@/lib/encryption'
 import { z } from 'zod'
 import { assertIntegrationPermission, toPermissionDeniedResponse } from '@/lib/integrations/permissions'
 import { writeIntegrationAudit } from '@/lib/integrations/audit'
+import {
+  getSocialProviderAliases,
+  normalizeSocialProviderAlias,
+  SOCIAL_SETTINGS_PROVIDER_IDS_WITH_ALIASES,
+} from '@/lib/integrations/social-provider-aliases'
 
 const bodySchema = z.object({
-  provider: z.enum(['linkedin', 'facebook', 'instagram', 'twitter']),
+  provider: z.enum(SOCIAL_SETTINGS_PROVIDER_IDS_WITH_ALIASES),
 })
 
 async function refreshLinkedIn(integration: any) {
@@ -94,17 +99,31 @@ export async function POST(request: NextRequest) {
     await assertIntegrationPermission(request, 'configure')
 
     const { provider } = bodySchema.parse(await request.json())
+    const providerAliases = getSocialProviderAliases(provider)
+    const providerKey = normalizeSocialProviderAlias(provider)
     const integration = await prisma.oAuthIntegration.findFirst({
-      where: { tenantId: user.tenantId, provider, isActive: true },
+      where: { tenantId: user.tenantId, provider: { in: providerAliases }, isActive: true },
+      orderBy: { updatedAt: 'desc' },
     })
     if (!integration) {
-      return NextResponse.json({ error: `${provider} is not connected` }, { status: 400 })
+      return NextResponse.json({ error: `${providerKey} is not connected` }, { status: 400 })
     }
 
     let updateData: any
     if (provider === 'linkedin') updateData = await refreshLinkedIn(integration)
     else if (provider === 'facebook' || provider === 'instagram') updateData = await refreshMeta(integration, provider)
-    else return NextResponse.json({ error: `Refresh flow for ${provider} is not implemented yet.` }, { status: 501 })
+    else
+      return NextResponse.json(
+        {
+          error: `Refresh flow for ${providerKey} is not implemented yet.`,
+          guidance:
+            providerKey === 'youtube'
+              ? 'Reconnect YouTube from Social Settings to issue a fresh token with youtube.upload scope.'
+              : 'Reconnect this provider from Social Settings to refresh credentials.',
+          code: 'SOCIAL_REFRESH_NOT_IMPLEMENTED',
+        },
+        { status: 501 }
+      )
 
     const updated = await prisma.oAuthIntegration.update({
       where: { id: integration.id },
@@ -116,17 +135,17 @@ export async function POST(request: NextRequest) {
       tenantId: user.tenantId,
       userId: user.userId,
       entityType: 'integration_social',
-      entityId: `${user.tenantId}:${updated.provider}`,
+      entityId: `${user.tenantId}:${providerKey}`,
       action: 'social_token_refreshed',
       after: {
-        provider: updated.provider,
+        provider: providerKey,
         expiresAt: updated.expiresAt?.toISOString?.() ?? null,
       },
     })
 
     return NextResponse.json({
       ok: true,
-      provider: updated.provider,
+      provider: providerKey,
       expiresAt: updated.expiresAt?.toISOString?.() ?? null,
       updatedAt: updated.updatedAt?.toISOString?.() ?? null,
     })

@@ -363,14 +363,24 @@ export default function MarketingDashboardPage(props: {
             <Zap className="h-4 w-4" />
             One-Click Actions
           </span>
-          <Link href={`/marketing/${tenantId}/Campaigns`}>
+          <Link href={`/marketing/${tenantId}/History`}>
             <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 gap-2">
-              <Plus className="h-4 w-4" /> New Campaign
+              <Plus className="h-4 w-4" /> Open History
             </Button>
           </Link>
-          <Link href={`/marketing/${tenantId}/Campaigns`}>
+          <Link href={`/marketing/${tenantId}/Studio`}>
+            <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 gap-2">
+              <Sparkles className="h-4 w-4" /> Open Compose
+            </Button>
+          </Link>
+          <Link href={`/marketing/${tenantId}/History`}>
             <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 gap-2">
               <MessageCircle className="h-4 w-4" /> WhatsApp Blast
+            </Button>
+          </Link>
+          <Link href={`/marketing/${tenantId}/Social-Media`}>
+            <Button variant="outline" size="sm" className="h-9 border-slate-300 dark:border-slate-700 gap-2">
+              <Target className="h-4 w-4" /> Channel Health
             </Button>
           </Link>
           <Link href={`/marketing/${tenantId}/Creative-Studio`}>
