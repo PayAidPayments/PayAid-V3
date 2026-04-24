@@ -40,7 +40,9 @@ type ExportPackOptions = {
   includeHeaderMockup: boolean
 }
 
-const EXPORT_PACK_PRESETS: Record<'full' | 'digital' | 'icon', ExportPackOptions> = {
+type ExportPackPresetId = 'full' | 'digital' | 'icon' | 'custom'
+
+const EXPORT_PACK_PRESETS: Record<Exclude<ExportPackPresetId, 'custom'>, ExportPackOptions> = {
   full: {
     includeLogoSvg: true,
     includeLogoPng: true,
@@ -66,6 +68,9 @@ const EXPORT_PACK_PRESETS: Record<'full' | 'digital' | 'icon', ExportPackOptions
     includeHeaderMockup: false,
   },
 }
+
+const EXPORT_OPTIONS_STORAGE_KEY = 'payaid.logo.export-options.v1'
+const EXPORT_PRESET_STORAGE_KEY = 'payaid.logo.export-preset.v1'
 
 type IndustryTemplate = {
   id: string
@@ -152,6 +157,7 @@ export function VectorLogoEditor({
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [compareConceptIds, setCompareConceptIds] = useState<string[]>([])
   const [showExportOptions, setShowExportOptions] = useState(false)
+  const [selectedExportPreset, setSelectedExportPreset] = useState<ExportPackPresetId>('full')
   const [exportOptions, setExportOptions] = useState<ExportPackOptions>(EXPORT_PACK_PRESETS.full)
 
   // Load available fonts
@@ -180,6 +186,38 @@ export function VectorLogoEditor({
     const generated = buildConceptPresets(config, industry, keywords, conceptCount, conceptPage)
     setConcepts(generated)
   }, [config.text, config.color, config.iconColor, config.fontFamily, config.fontSize, industry, keywords, conceptCount, conceptPage])
+
+  useEffect(() => {
+    try {
+      const savedPreset = localStorage.getItem(EXPORT_PRESET_STORAGE_KEY)
+      const savedOptions = localStorage.getItem(EXPORT_OPTIONS_STORAGE_KEY)
+      if (savedPreset && (savedPreset === 'full' || savedPreset === 'digital' || savedPreset === 'icon' || savedPreset === 'custom')) {
+        setSelectedExportPreset(savedPreset)
+      }
+      if (savedOptions) {
+        const parsed = JSON.parse(savedOptions)
+        if (isValidExportOptions(parsed)) {
+          setExportOptions(parsed)
+        }
+      }
+    } catch {
+      // no-op; fall back to defaults on malformed local storage
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(EXPORT_OPTIONS_STORAGE_KEY, JSON.stringify(exportOptions))
+      localStorage.setItem(EXPORT_PRESET_STORAGE_KEY, selectedExportPreset)
+    } catch {
+      // no-op; storage can fail in restricted browser modes
+    }
+  }, [exportOptions, selectedExportPreset])
+
+  const applyExportPreset = (preset: Exclude<ExportPackPresetId, 'custom'>) => {
+    setSelectedExportPreset(preset)
+    setExportOptions(EXPORT_PACK_PRESETS[preset])
+  }
 
   const generatePreview = async () => {
     setLoading(true)
@@ -732,47 +770,68 @@ export function VectorLogoEditor({
               {showExportOptions && (
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center gap-2">
-                    <Button type="button" variant="outline" size="sm" onClick={() => setExportOptions(EXPORT_PACK_PRESETS.full)}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => applyExportPreset('full')}>
                       Full Pack
                     </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => setExportOptions(EXPORT_PACK_PRESETS.digital)}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => applyExportPreset('digital')}>
                       Digital
                     </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => setExportOptions(EXPORT_PACK_PRESETS.icon)}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => applyExportPreset('icon')}>
                       Icon Only
                     </Button>
                   </div>
                   <p className="text-xs text-slate-500">Selected assets: {selectedExportCount}</p>
+                  <p className="text-xs text-slate-500">
+                    Active preset: {selectedExportPreset === 'custom' ? 'Custom' : selectedExportPreset === 'full' ? 'Full Pack' : selectedExportPreset === 'digital' ? 'Digital' : 'Icon Only'}
+                  </p>
                   <div className="grid grid-cols-1 gap-2">
                     <ToggleRow
                       label="Logo SVG"
                       checked={exportOptions.includeLogoSvg}
-                      onChange={(checked) => setExportOptions((prev) => ({ ...prev, includeLogoSvg: checked }))}
+                      onChange={(checked) => {
+                        setSelectedExportPreset('custom')
+                        setExportOptions((prev) => ({ ...prev, includeLogoSvg: checked }))
+                      }}
                     />
                     <ToggleRow
                       label={`Logo PNG (${pngSize}px)`}
                       checked={exportOptions.includeLogoPng}
-                      onChange={(checked) => setExportOptions((prev) => ({ ...prev, includeLogoPng: checked }))}
+                      onChange={(checked) => {
+                        setSelectedExportPreset('custom')
+                        setExportOptions((prev) => ({ ...prev, includeLogoPng: checked }))
+                      }}
                     />
                     <ToggleRow
                       label="Icon SVG"
                       checked={exportOptions.includeIconSvg}
-                      onChange={(checked) => setExportOptions((prev) => ({ ...prev, includeIconSvg: checked }))}
+                      onChange={(checked) => {
+                        setSelectedExportPreset('custom')
+                        setExportOptions((prev) => ({ ...prev, includeIconSvg: checked }))
+                      }}
                     />
                     <ToggleRow
                       label="Icon PNG (512px)"
                       checked={exportOptions.includeIconPng}
-                      onChange={(checked) => setExportOptions((prev) => ({ ...prev, includeIconPng: checked }))}
+                      onChange={(checked) => {
+                        setSelectedExportPreset('custom')
+                        setExportOptions((prev) => ({ ...prev, includeIconPng: checked }))
+                      }}
                     />
                     <ToggleRow
                       label="Business Card Mockup PNG"
                       checked={exportOptions.includeCardMockup}
-                      onChange={(checked) => setExportOptions((prev) => ({ ...prev, includeCardMockup: checked }))}
+                      onChange={(checked) => {
+                        setSelectedExportPreset('custom')
+                        setExportOptions((prev) => ({ ...prev, includeCardMockup: checked }))
+                      }}
                     />
                     <ToggleRow
                       label="Website Header Mockup PNG"
                       checked={exportOptions.includeHeaderMockup}
-                      onChange={(checked) => setExportOptions((prev) => ({ ...prev, includeHeaderMockup: checked }))}
+                      onChange={(checked) => {
+                        setSelectedExportPreset('custom')
+                        setExportOptions((prev) => ({ ...prev, includeHeaderMockup: checked }))
+                      }}
                     />
                   </div>
                 </div>
@@ -1010,6 +1069,19 @@ function ToggleRow({
       <span className="text-xs text-slate-700">{label}</span>
       <Switch checked={checked} onCheckedChange={onChange} />
     </div>
+  )
+}
+
+function isValidExportOptions(value: unknown): value is ExportPackOptions {
+  if (!value || typeof value !== 'object') return false
+  const candidate = value as Record<string, unknown>
+  return (
+    typeof candidate.includeLogoSvg === 'boolean' &&
+    typeof candidate.includeLogoPng === 'boolean' &&
+    typeof candidate.includeIconSvg === 'boolean' &&
+    typeof candidate.includeIconPng === 'boolean' &&
+    typeof candidate.includeCardMockup === 'boolean' &&
+    typeof candidate.includeHeaderMockup === 'boolean'
   )
 }
 
