@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { ModuleSwitcher } from './ModuleSwitcher'
+import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 import { cn } from '@/lib/utils/cn'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useEffect, useState, useRef } from 'react'

@@ -15,10 +15,10 @@ export default function LogoGeneratorModulePage() {
       router.push('/login?redirect=/logo-generator')
       return
     }
+    // Avoid bouncing users to Home while auth store is still hydrating tenant.
+    if (!tenant?.id) return
     if (tenant?.id) {
       router.push(`/logo-generator/${tenant.id}/Home/`)
-    } else {
-      router.push('/dashboard')
     }
   }, [isAuthenticated, tenant?.id, isLoading, router])
 
