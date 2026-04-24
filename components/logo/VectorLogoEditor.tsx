@@ -40,6 +40,33 @@ type ExportPackOptions = {
   includeHeaderMockup: boolean
 }
 
+const EXPORT_PACK_PRESETS: Record<'full' | 'digital' | 'icon', ExportPackOptions> = {
+  full: {
+    includeLogoSvg: true,
+    includeLogoPng: true,
+    includeIconSvg: true,
+    includeIconPng: true,
+    includeCardMockup: true,
+    includeHeaderMockup: true,
+  },
+  digital: {
+    includeLogoSvg: true,
+    includeLogoPng: true,
+    includeIconSvg: false,
+    includeIconPng: true,
+    includeCardMockup: false,
+    includeHeaderMockup: true,
+  },
+  icon: {
+    includeLogoSvg: false,
+    includeLogoPng: false,
+    includeIconSvg: true,
+    includeIconPng: true,
+    includeCardMockup: false,
+    includeHeaderMockup: false,
+  },
+}
+
 type IndustryTemplate = {
   id: string
   label: string
@@ -125,14 +152,7 @@ export function VectorLogoEditor({
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [compareConceptIds, setCompareConceptIds] = useState<string[]>([])
   const [showExportOptions, setShowExportOptions] = useState(false)
-  const [exportOptions, setExportOptions] = useState<ExportPackOptions>({
-    includeLogoSvg: true,
-    includeLogoPng: true,
-    includeIconSvg: true,
-    includeIconPng: true,
-    includeCardMockup: true,
-    includeHeaderMockup: true,
-  })
+  const [exportOptions, setExportOptions] = useState<ExportPackOptions>(EXPORT_PACK_PRESETS.full)
 
   // Load available fonts
   useEffect(() => {
@@ -395,6 +415,7 @@ export function VectorLogoEditor({
     ? concepts.filter((c) => favoriteConceptIds.includes(c.id))
     : concepts
   const compareConcepts = concepts.filter((c) => compareConceptIds.includes(c.id)).slice(0, 2)
+  const selectedExportCount = Object.values(exportOptions).filter(Boolean).length
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
@@ -710,6 +731,18 @@ export function VectorLogoEditor({
               </button>
               {showExportOptions && (
                 <div className="mt-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setExportOptions(EXPORT_PACK_PRESETS.full)}>
+                      Full Pack
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setExportOptions(EXPORT_PACK_PRESETS.digital)}>
+                      Digital
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setExportOptions(EXPORT_PACK_PRESETS.icon)}>
+                      Icon Only
+                    </Button>
+                  </div>
+                  <p className="text-xs text-slate-500">Selected assets: {selectedExportCount}</p>
                   <div className="grid grid-cols-1 gap-2">
                     <ToggleRow
                       label="Logo SVG"
@@ -746,9 +779,9 @@ export function VectorLogoEditor({
               )}
             </div>
 
-            <Button variant="outline" onClick={handleExportPack} disabled={!previewSvg}>
+            <Button variant="outline" onClick={handleExportPack} disabled={!previewSvg || selectedExportCount === 0}>
               <Download className="w-4 h-4 mr-2" />
-              Export Brand Pack (ZIP)
+              Export Brand Pack (ZIP {selectedExportCount})
             </Button>
           </CardContent>
         </Card>
