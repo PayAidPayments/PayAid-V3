@@ -107,10 +107,12 @@ export default function LogosPage() {
           <h1 className="text-3xl font-bold text-gray-900">Logo Generator</h1>
           <p className="mt-2 text-gray-600">Create professional vector logos for your business</p>
         </div>
-        <Button onClick={() => setShowGenerator(true)}>
+        {!showGenerator && (
+          <Button onClick={() => setShowGenerator(true)}>
           <Sparkles className="w-4 h-4 mr-2" />
           Create Logo
-        </Button>
+          </Button>
+        )}
       </div>
 
       {showGenerator && (
@@ -220,7 +222,7 @@ export default function LogosPage() {
         </Card>
       )}
 
-      {isLoading ? (
+      {!showGenerator && (isLoading ? (
         <PageLoading message="Loading logos..." fullScreen={false} />
       ) : logos.length === 0 ? (
         <Card>
@@ -253,7 +255,7 @@ export default function LogosPage() {
             </TabsContent>
           )}
         </Tabs>
-      )}
+      ))}
     </div>
   )
 }

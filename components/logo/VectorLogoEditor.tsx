@@ -427,11 +427,21 @@ export function VectorLogoEditor({
 function createSimpleSVGPreview(config: LogoConfig): string {
   const width = 800
   const height = 400
-  const x = config.layout?.align === 'left' ? 50 : config.layout?.align === 'right' ? width - 50 : width / 2
+  const padding = 40
+  const x = config.layout?.align === 'left' ? padding : config.layout?.align === 'right' ? width - padding : width / 2
   const textAnchor = config.layout?.align === 'left' ? 'start' : config.layout?.align === 'right' ? 'end' : 'middle'
+  const safeText = (config.text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+  const encodedFont = encodeURIComponent(config.fontFamily)
+  const textLength = width - padding * 2
 
   return `
     <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=${encodedFont}:wght@400;500;600;700&display=swap');
+      </style>
       ${config.background?.type === 'color' ? `<rect width="${width}" height="${height}" fill="${config.background.value}" />` : ''}
       <text 
         x="${x}" 
@@ -441,8 +451,10 @@ function createSimpleSVGPreview(config: LogoConfig): string {
         fill="${config.color}" 
         text-anchor="${textAnchor}" 
         dominant-baseline="middle"
+        textLength="${textLength}"
+        lengthAdjust="spacingAndGlyphs"
       >
-        ${config.text}
+        ${safeText}
       </text>
     </svg>
   `
