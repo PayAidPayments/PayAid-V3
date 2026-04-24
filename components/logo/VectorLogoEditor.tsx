@@ -293,16 +293,51 @@ export function VectorLogoEditor({
   const handleExportPack = async () => {
     try {
       const baseName = config.text.replace(/\s+/g, '-').toLowerCase() || 'logo'
-      handleDownloadSVG()
-      await new Promise((r) => setTimeout(r, 120))
-      await handleDownloadPNG()
-      await new Promise((r) => setTimeout(r, 120))
-      await handleDownloadIconPNG()
+      const files: ZipInputFile[] = []
+
+      files.push({
+        name: `${baseName}-logo.svg`,
+        data: textEncoder.encode(previewSvg),
+      })
+
+      const logoPngBlob = await renderSvgToPngBlob(previewSvg, pngSize, pngSize)
+      files.push({
+        name: `${baseName}-logo-${pngSize}.png`,
+        data: new Uint8Array(await logoPngBlob.arrayBuffer()),
+      })
+
+      const iconSvg = createIconOnlySVG(config)
+      files.push({
+        name: `${baseName}-icon.svg`,
+        data: textEncoder.encode(iconSvg),
+      })
+      const iconPngBlob = await renderSvgToPngBlob(iconSvg, 512, 512)
+      files.push({
+        name: `${baseName}-icon-512.png`,
+        data: new Uint8Array(await iconPngBlob.arrayBuffer()),
+      })
 
       const cardSvg = createSimpleSVGPreview({ ...config, fontSize: Math.max(28, config.fontSize * 0.5) })
       const headerSvg = createSimpleSVGPreview({ ...config, fontSize: Math.max(24, config.fontSize * 0.45) })
-      await downloadSvgAsPng(cardSvg, `${baseName}-mockup-card.png`, 1200, 600)
-      await downloadSvgAsPng(headerSvg, `${baseName}-mockup-header.png`, 1400, 360)
+      const cardPngBlob = await renderSvgToPngBlob(cardSvg, 1200, 600)
+      const headerPngBlob = await renderSvgToPngBlob(headerSvg, 1400, 360)
+      files.push({
+        name: `${baseName}-mockup-card.png`,
+        data: new Uint8Array(await cardPngBlob.arrayBuffer()),
+      })
+      files.push({
+        name: `${baseName}-mockup-header.png`,
+        data: new Uint8Array(await headerPngBlob.arrayBuffer()),
+      })
+
+      const zipBytes = createZip(files)
+      const zipBlob = new Blob([zipBytes], { type: 'application/zip' })
+      const zipUrl = URL.createObjectURL(zipBlob)
+      const a = document.createElement('a')
+      a.href = zipUrl
+      a.download = `${baseName}-brand-pack.zip`
+      a.click()
+      URL.revokeObjectURL(zipUrl)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to export pack')
     }
@@ -626,7 +661,7 @@ export function VectorLogoEditor({
             </Button>
             <Button variant="outline" onClick={handleExportPack} disabled={!previewSvg}>
               <Download className="w-4 h-4 mr-2" />
-              Export Brand Pack
+              Export Brand Pack (ZIP)
             </Button>
           </CardContent>
         </Card>
@@ -1009,13 +1044,127 @@ function createIconOnlySVG(config: LogoConfig): string {
   `
 }
 
-async function downloadSvgAsPng(svg: string, fileName: string, width: number, height: number): Promise<void> {
+type ZipInputFile = {
+  name: string
+  data: Uint8Array
+}
+
+const textEncoder = new TextEncoder()
+
+const crcTable = (() => {
+  const table = new Uint32Array(256)
+  for (let i = 0; i < 256; i++) {
+    let c = i
+    for (let j = 0; j < 8; j++) {
+      c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1)
+    }
+    table[i] = c >>> 0
+  }
+  return table
+})()
+
+function crc32(data: Uint8Array): number {
+  let crc = 0 ^ -1
+  for (let i = 0; i < data.length; i++) {
+    crc = (crc >>> 8) ^ crcTable[(crc ^ data[i]) & 0xff]
+  }
+  return (crc ^ -1) >>> 0
+}
+
+function toDosDateTime(date: Date): { dosDate: number; dosTime: number } {
+  const year = Math.max(1980, date.getFullYear())
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const hours = date.getHours()
+  const minutes = date.getMinutes()
+  const seconds = Math.floor(date.getSeconds() / 2)
+
+  const dosTime = (hours << 11) | (minutes << 5) | seconds
+  const dosDate = ((year - 1980) << 9) | (month << 5) | day
+  return { dosDate, dosTime }
+}
+
+function createZip(files: ZipInputFile[]): Uint8Array {
+  const localParts: Uint8Array[] = []
+  const centralParts: Uint8Array[] = []
+  let offset = 0
+
+  files.forEach((file) => {
+    const fileNameBytes = textEncoder.encode(file.name)
+    const data = file.data
+    const crc = crc32(data)
+    const { dosDate, dosTime } = toDosDateTime(new Date())
+
+    const localHeader = new Uint8Array(30 + fileNameBytes.length)
+    const localView = new DataView(localHeader.buffer)
+    localView.setUint32(0, 0x04034b50, true)
+    localView.setUint16(4, 20, true)
+    localView.setUint16(6, 0, true)
+    localView.setUint16(8, 0, true)
+    localView.setUint16(10, dosTime, true)
+    localView.setUint16(12, dosDate, true)
+    localView.setUint32(14, crc, true)
+    localView.setUint32(18, data.length, true)
+    localView.setUint32(22, data.length, true)
+    localView.setUint16(26, fileNameBytes.length, true)
+    localView.setUint16(28, 0, true)
+    localHeader.set(fileNameBytes, 30)
+    localParts.push(localHeader, data)
+
+    const centralHeader = new Uint8Array(46 + fileNameBytes.length)
+    const centralView = new DataView(centralHeader.buffer)
+    centralView.setUint32(0, 0x02014b50, true)
+    centralView.setUint16(4, 20, true)
+    centralView.setUint16(6, 20, true)
+    centralView.setUint16(8, 0, true)
+    centralView.setUint16(10, 0, true)
+    centralView.setUint16(12, dosTime, true)
+    centralView.setUint16(14, dosDate, true)
+    centralView.setUint32(16, crc, true)
+    centralView.setUint32(20, data.length, true)
+    centralView.setUint32(24, data.length, true)
+    centralView.setUint16(28, fileNameBytes.length, true)
+    centralView.setUint16(30, 0, true)
+    centralView.setUint16(32, 0, true)
+    centralView.setUint16(34, 0, true)
+    centralView.setUint16(36, 0, true)
+    centralView.setUint32(38, 0, true)
+    centralView.setUint32(42, offset, true)
+    centralHeader.set(fileNameBytes, 46)
+    centralParts.push(centralHeader)
+
+    offset += localHeader.length + data.length
+  })
+
+  const centralSize = centralParts.reduce((sum, part) => sum + part.length, 0)
+  const end = new Uint8Array(22)
+  const endView = new DataView(end.buffer)
+  endView.setUint32(0, 0x06054b50, true)
+  endView.setUint16(4, 0, true)
+  endView.setUint16(6, 0, true)
+  endView.setUint16(8, files.length, true)
+  endView.setUint16(10, files.length, true)
+  endView.setUint32(12, centralSize, true)
+  endView.setUint32(16, offset, true)
+  endView.setUint16(20, 0, true)
+
+  const totalLength = localParts.reduce((sum, part) => sum + part.length, 0) + centralSize + end.length
+  const out = new Uint8Array(totalLength)
+  let ptr = 0
+  ;[...localParts, ...centralParts, end].forEach((part) => {
+    out.set(part, ptr)
+    ptr += part.length
+  })
+  return out
+}
+
+async function renderSvgToPngBlob(svg: string, width: number, height: number): Promise<Blob> {
   const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' })
   const svgUrl = URL.createObjectURL(svgBlob)
   const img = new Image()
   await new Promise<void>((resolve, reject) => {
     img.onload = () => resolve()
-    img.onerror = () => reject(new Error(`Unable to render ${fileName}`))
+    img.onerror = () => reject(new Error('Unable to render SVG into PNG'))
     img.src = svgUrl
   })
 
@@ -1027,12 +1176,7 @@ async function downloadSvgAsPng(svg: string, fileName: string, width: number, he
   ctx.clearRect(0, 0, width, height)
   ctx.drawImage(img, 0, 0, width, height)
   const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
-  if (!pngBlob) throw new Error(`Unable to export ${fileName}`)
-  const pngUrl = URL.createObjectURL(pngBlob)
-  const a = document.createElement('a')
-  a.href = pngUrl
-  a.download = fileName
-  a.click()
+  if (!pngBlob) throw new Error('Unable to export PNG')
   URL.revokeObjectURL(svgUrl)
-  URL.revokeObjectURL(pngUrl)
+  return pngBlob
 }
