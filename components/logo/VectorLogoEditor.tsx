@@ -40,6 +40,11 @@ type ExportPackOptions = {
   includeHeaderMockup: boolean
 }
 
+type LastExportSummary = {
+  timestamp: string
+  assets: string[]
+}
+
 type ExportPackPresetId = 'full' | 'digital' | 'icon' | 'custom'
 
 const EXPORT_PACK_PRESETS: Record<Exclude<ExportPackPresetId, 'custom'>, ExportPackOptions> = {
@@ -159,6 +164,7 @@ export function VectorLogoEditor({
   const [showExportOptions, setShowExportOptions] = useState(false)
   const [selectedExportPreset, setSelectedExportPreset] = useState<ExportPackPresetId>('full')
   const [exportOptions, setExportOptions] = useState<ExportPackOptions>(EXPORT_PACK_PRESETS.full)
+  const [lastExportSummary, setLastExportSummary] = useState<LastExportSummary | null>(null)
 
   // Load available fonts
   useEffect(() => {
@@ -381,8 +387,10 @@ export function VectorLogoEditor({
     try {
       const baseName = config.text.replace(/\s+/g, '-').toLowerCase() || 'logo'
       const files: ZipInputFile[] = []
+      const selectedAssets: string[] = []
 
       if (exportOptions.includeLogoSvg) {
+        selectedAssets.push('Logo SVG')
         files.push({
           name: `${baseName}-logo.svg`,
           data: textEncoder.encode(previewSvg),
@@ -390,6 +398,7 @@ export function VectorLogoEditor({
       }
 
       if (exportOptions.includeLogoPng) {
+        selectedAssets.push(`Logo PNG ${pngSize}px`)
         const logoPngBlob = await renderSvgToPngBlob(previewSvg, pngSize, pngSize)
         files.push({
           name: `${baseName}-logo-${pngSize}.png`,
@@ -399,12 +408,14 @@ export function VectorLogoEditor({
 
       const iconSvg = createIconOnlySVG(config)
       if (exportOptions.includeIconSvg) {
+        selectedAssets.push('Icon SVG')
         files.push({
           name: `${baseName}-icon.svg`,
           data: textEncoder.encode(iconSvg),
         })
       }
       if (exportOptions.includeIconPng) {
+        selectedAssets.push('Icon PNG 512px')
         const iconPngBlob = await renderSvgToPngBlob(iconSvg, 512, 512)
         files.push({
           name: `${baseName}-icon-512.png`,
@@ -413,6 +424,7 @@ export function VectorLogoEditor({
       }
 
       if (exportOptions.includeCardMockup) {
+        selectedAssets.push('Business Card Mockup')
         const cardSvg = createSimpleSVGPreview({ ...config, fontSize: Math.max(28, config.fontSize * 0.5) })
         const cardPngBlob = await renderSvgToPngBlob(cardSvg, 1200, 600)
         files.push({
@@ -422,6 +434,7 @@ export function VectorLogoEditor({
       }
 
       if (exportOptions.includeHeaderMockup) {
+        selectedAssets.push('Website Header Mockup')
         const headerSvg = createSimpleSVGPreview({ ...config, fontSize: Math.max(24, config.fontSize * 0.45) })
         const headerPngBlob = await renderSvgToPngBlob(headerSvg, 1400, 360)
         files.push({
@@ -443,6 +456,10 @@ export function VectorLogoEditor({
       a.download = `${baseName}-brand-pack.zip`
       a.click()
       URL.revokeObjectURL(zipUrl)
+      setLastExportSummary({
+        timestamp: new Date().toISOString(),
+        assets: selectedAssets,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to export pack')
     }
@@ -856,6 +873,12 @@ export function VectorLogoEditor({
               <Download className="w-4 h-4 mr-2" />
               Export Brand Pack (ZIP {selectedExportCount})
             </Button>
+            {lastExportSummary && (
+              <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+                <p className="font-medium">Last export: {new Date(lastExportSummary.timestamp).toLocaleString()}</p>
+                <p className="mt-1 text-emerald-800">{lastExportSummary.assets.join(', ')}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
