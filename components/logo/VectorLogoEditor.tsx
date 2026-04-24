@@ -339,7 +339,7 @@ export function VectorLogoEditor({
             <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2">
               <div>
                 <p className="text-sm font-medium text-slate-900">Set as Workspace Logo</p>
-                <p className="text-xs text-slate-500">Updates Tenant > Workspace branding logo URL</p>
+                <p className="text-xs text-slate-500">Updates Tenant &gt; Workspace branding logo URL</p>
               </div>
               <Switch checked={setAsBrandLogo} onCheckedChange={setSetAsBrandLogo} />
             </div>
