@@ -31,6 +31,50 @@ type ConceptPreset = {
   config: Partial<LogoConfig>
 }
 
+type IndustryTemplate = {
+  id: string
+  label: string
+  iconPriority: Array<NonNullable<LogoConfig['iconStyle']>>
+  fonts: string[]
+  palette: string[]
+  keywords: string[]
+}
+
+const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
+  {
+    id: 'technology',
+    label: 'Technology',
+    iconPriority: ['hex', 'shield', 'spark', 'diamond', 'circle-monogram'],
+    fonts: ['Inter', 'Montserrat', 'Poppins', 'Raleway'],
+    palette: ['#0F172A', '#1D4ED8', '#06B6D4', '#111827', '#4F46E5'],
+    keywords: ['tech', 'software', 'digital', 'ai'],
+  },
+  {
+    id: 'finance',
+    label: 'Finance',
+    iconPriority: ['shield', 'hex', 'diamond', 'circle-monogram', 'spark'],
+    fonts: ['Merriweather', 'Playfair Display', 'Montserrat', 'Inter'],
+    palette: ['#0B3B2E', '#1F2937', '#9A6B16', '#14532D', '#111827'],
+    keywords: ['finance', 'bank', 'wealth', 'capital'],
+  },
+  {
+    id: 'healthcare',
+    label: 'Healthcare',
+    iconPriority: ['shield', 'spark', 'circle-monogram', 'hex', 'diamond'],
+    fonts: ['Nunito', 'Open Sans', 'Inter', 'Poppins'],
+    palette: ['#0F766E', '#0EA5E9', '#16A34A', '#1E293B', '#0891B2'],
+    keywords: ['health', 'medical', 'clinic', 'care'],
+  },
+  {
+    id: 'restaurant',
+    label: 'Restaurant',
+    iconPriority: ['spark', 'diamond', 'circle-monogram', 'shield', 'hex'],
+    fonts: ['Playfair Display', 'Merriweather', 'Lato', 'Poppins'],
+    palette: ['#B45309', '#991B1B', '#7C2D12', '#334155', '#BE185D'],
+    keywords: ['food', 'restaurant', 'cafe', 'kitchen'],
+  },
+]
+
 export function VectorLogoEditor({
   tenantId: _tenantId,
   businessName = '',
@@ -64,6 +108,8 @@ export function VectorLogoEditor({
   const [industry, setIndustry] = useState('')
   const [keywordInput, setKeywordInput] = useState('')
   const [keywords, setKeywords] = useState<string[]>([])
+  const [conceptPage, setConceptPage] = useState(0)
+  const [conceptCount, setConceptCount] = useState(8)
 
   // Load available fonts
   useEffect(() => {
@@ -88,9 +134,9 @@ export function VectorLogoEditor({
       setConcepts([])
       return
     }
-    const generated = buildConceptPresets(config, industry, keywords)
+    const generated = buildConceptPresets(config, industry, keywords, conceptCount, conceptPage)
     setConcepts(generated)
-  }, [config.text, config.color, config.iconColor, config.fontFamily, config.fontSize, industry, keywords])
+  }, [config.text, config.color, config.iconColor, config.fontFamily, config.fontSize, industry, keywords, conceptCount, conceptPage])
 
   const generatePreview = async () => {
     setLoading(true)
@@ -250,6 +296,8 @@ export function VectorLogoEditor({
     setKeywordInput('')
   }
 
+  const activeTemplate = getIndustryTemplate(industry, keywords)
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
       {/* Left Panel: Controls */}
@@ -284,6 +332,15 @@ export function VectorLogoEditor({
                 className="mt-1"
               />
             </div>
+
+            {activeTemplate && (
+              <div className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2">
+                <p className="text-xs font-semibold text-indigo-900">Template Pack: {activeTemplate.label}</p>
+                <p className="text-xs text-indigo-700 mt-1">
+                  Concepts are tuned for this industry pack (icons, fonts, and colors).
+                </p>
+              </div>
+            )}
 
             <div>
               <Label htmlFor="keywords">Keywords</Label>
@@ -553,7 +610,20 @@ export function VectorLogoEditor({
           <CardContent className="space-y-4 min-h-[500px] bg-gray-50">
             {concepts.length > 0 && (
               <div className="rounded-lg border bg-white p-3">
-                <p className="text-sm font-semibold text-slate-900 mb-2">Generated Concepts</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold text-slate-900">Generated Concepts</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setConceptCount(24)
+                      setConceptPage((p) => p + 1)
+                    }}
+                  >
+                    Generate 24 more
+                  </Button>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
                   {concepts.map((concept) => (
                     <button
@@ -597,10 +667,18 @@ export function VectorLogoEditor({
   )
 }
 
-function buildConceptPresets(base: LogoConfig, industry: string, keywords: string[]): ConceptPreset[] {
-  const palette = [base.color, '#4F46E5', '#0F766E', '#B45309', '#BE185D', '#111827']
-  const fonts = [base.fontFamily, 'Montserrat', 'Poppins', 'Merriweather', 'Playfair Display', 'Raleway']
-  const iconStyles: Array<NonNullable<LogoConfig['iconStyle']>> = ['circle-monogram', 'diamond', 'spark', 'shield', 'hex']
+function buildConceptPresets(
+  base: LogoConfig,
+  industry: string,
+  keywords: string[],
+  count = 8,
+  page = 0
+): ConceptPreset[] {
+  const template = getIndustryTemplate(industry, keywords)
+  const palette = template?.palette || [base.color, '#4F46E5', '#0F766E', '#B45309', '#BE185D', '#111827']
+  const fonts = template?.fonts || [base.fontFamily, 'Montserrat', 'Poppins', 'Merriweather', 'Playfair Display', 'Raleway']
+  const iconStyles: Array<NonNullable<LogoConfig['iconStyle']>> =
+    template?.iconPriority || ['circle-monogram', 'diamond', 'spark', 'shield', 'hex']
   const keywordSet = new Set(keywords.map((k) => k.toLowerCase()))
 
   const keywordDrivenIcon =
@@ -614,7 +692,8 @@ function buildConceptPresets(base: LogoConfig, industry: string, keywords: strin
       ? 'diamond'
       : undefined
 
-  return Array.from({ length: 8 }).map((_, index) => {
+  return Array.from({ length: count }).map((_, idx) => {
+    const index = idx + page * count
     const color = palette[index % palette.length]
     const iconColor = palette[(index + 1) % palette.length]
     const font = fonts[index % fonts.length]
@@ -633,6 +712,14 @@ function buildConceptPresets(base: LogoConfig, industry: string, keywords: strin
       },
     }
   })
+}
+
+function getIndustryTemplate(industry: string, keywords: string[]): IndustryTemplate | undefined {
+  const haystack = `${industry} ${keywords.join(' ')}`.toLowerCase()
+  if (!haystack.trim()) return undefined
+  return INDUSTRY_TEMPLATES.find((tpl) =>
+    tpl.keywords.some((k) => haystack.includes(k))
+  )
 }
 
 /**
