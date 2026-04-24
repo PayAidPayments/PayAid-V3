@@ -11,7 +11,7 @@ const vectorLogoSchema = z.object({
   fontFamily: z.string().min(1),
   fontSize: z.number().min(12).max(200),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-  iconStyle: z.enum(['none', 'circle-monogram', 'diamond', 'spark']).optional(),
+  iconStyle: z.enum(['none', 'circle-monogram', 'diamond', 'spark', 'shield', 'hex']).optional(),
   iconColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   gradient: z.object({
     type: z.enum(['linear', 'radial']),

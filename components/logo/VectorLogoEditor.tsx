@@ -61,6 +61,9 @@ export function VectorLogoEditor({
   const [setAsBrandLogo, setSetAsBrandLogo] = useState(true)
   const [pngSize, setPngSize] = useState<512 | 1024 | 2048>(1024)
   const [concepts, setConcepts] = useState<ConceptPreset[]>([])
+  const [industry, setIndustry] = useState('')
+  const [keywordInput, setKeywordInput] = useState('')
+  const [keywords, setKeywords] = useState<string[]>([])
 
   // Load available fonts
   useEffect(() => {
@@ -85,9 +88,9 @@ export function VectorLogoEditor({
       setConcepts([])
       return
     }
-    const generated = buildConceptPresets(config)
+    const generated = buildConceptPresets(config, industry, keywords)
     setConcepts(generated)
-  }, [config.text, config.color, config.iconColor, config.fontFamily, config.fontSize])
+  }, [config.text, config.color, config.iconColor, config.fontFamily, config.fontSize, industry, keywords])
 
   const generatePreview = async () => {
     setLoading(true)
@@ -118,6 +121,8 @@ export function VectorLogoEditor({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessName: config.text,
+          industry: industry || undefined,
+          style: keywords.length ? keywords.join(', ') : undefined,
           fontFamily: config.fontFamily,
           fontSize: config.fontSize,
           color: config.color,
@@ -234,6 +239,17 @@ export function VectorLogoEditor({
     }
   }
 
+  const addKeyword = () => {
+    const trimmed = keywordInput.trim().toLowerCase()
+    if (!trimmed) return
+    if (keywords.includes(trimmed)) {
+      setKeywordInput('')
+      return
+    }
+    setKeywords((prev) => [...prev, trimmed])
+    setKeywordInput('')
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
       {/* Left Panel: Controls */}
@@ -256,6 +272,53 @@ export function VectorLogoEditor({
                 placeholder="Enter business name"
                 className="mt-1"
               />
+            </div>
+
+            <div>
+              <Label htmlFor="industry">Industry (optional)</Label>
+              <Input
+                id="industry"
+                value={industry}
+                onChange={(e) => setIndustry(e.target.value)}
+                placeholder="e.g., technology, healthcare, restaurant"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="keywords">Keywords</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  id="keywords"
+                  value={keywordInput}
+                  onChange={(e) => setKeywordInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addKeyword()
+                    }
+                  }}
+                  placeholder="e.g., minimal, shield, modern"
+                />
+                <Button type="button" variant="outline" onClick={addKeyword}>
+                  Add
+                </Button>
+              </div>
+              {keywords.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {keywords.map((kw) => (
+                    <button
+                      key={kw}
+                      type="button"
+                      onClick={() => setKeywords((prev) => prev.filter((k) => k !== kw))}
+                      className="text-xs rounded-full border border-slate-300 px-2 py-1 bg-slate-50 hover:bg-slate-100"
+                      title="Click to remove"
+                    >
+                      {kw} x
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Font Family */}
@@ -341,6 +404,8 @@ export function VectorLogoEditor({
                   <SelectItem value="circle-monogram">Circle Monogram</SelectItem>
                   <SelectItem value="diamond">Diamond</SelectItem>
                   <SelectItem value="spark">Spark</SelectItem>
+                  <SelectItem value="shield">Shield</SelectItem>
+                  <SelectItem value="hex">Hex</SelectItem>
                   <SelectItem value="none">None (Text Only)</SelectItem>
                 </SelectContent>
               </Select>
@@ -532,20 +597,33 @@ export function VectorLogoEditor({
   )
 }
 
-function buildConceptPresets(base: LogoConfig): ConceptPreset[] {
+function buildConceptPresets(base: LogoConfig, industry: string, keywords: string[]): ConceptPreset[] {
   const palette = [base.color, '#4F46E5', '#0F766E', '#B45309', '#BE185D', '#111827']
   const fonts = [base.fontFamily, 'Montserrat', 'Poppins', 'Merriweather', 'Playfair Display', 'Raleway']
-  const iconStyles: Array<NonNullable<LogoConfig['iconStyle']>> = ['circle-monogram', 'diamond', 'spark']
+  const iconStyles: Array<NonNullable<LogoConfig['iconStyle']>> = ['circle-monogram', 'diamond', 'spark', 'shield', 'hex']
+  const keywordSet = new Set(keywords.map((k) => k.toLowerCase()))
+
+  const keywordDrivenIcon =
+    keywordSet.has('shield') || keywordSet.has('security')
+      ? 'shield'
+      : keywordSet.has('hex') || keywordSet.has('blockchain')
+      ? 'hex'
+      : keywordSet.has('spark') || keywordSet.has('creative')
+      ? 'spark'
+      : keywordSet.has('diamond') || keywordSet.has('luxury')
+      ? 'diamond'
+      : undefined
 
   return Array.from({ length: 8 }).map((_, index) => {
     const color = palette[index % palette.length]
     const iconColor = palette[(index + 1) % palette.length]
     const font = fonts[index % fonts.length]
-    const iconStyle = iconStyles[index % iconStyles.length]
+    const iconStyle = (keywordDrivenIcon || iconStyles[index % iconStyles.length]) as NonNullable<LogoConfig['iconStyle']>
     const align: 'left' | 'center' | 'right' = index % 3 === 0 ? 'left' : index % 3 === 1 ? 'center' : 'right'
+    const tone = industry ? `${industry.slice(0, 12)} ` : ''
     return {
       id: `concept-${index + 1}`,
-      label: `Concept ${index + 1}`,
+      label: `${tone}Concept ${index + 1}`,
       config: {
         color,
         iconColor,
@@ -601,6 +679,16 @@ function createSimpleSVGPreview(config: LogoConfig): string {
                  <polygon points="0,${-iconSize / 2} ${iconSize / 2},0 0,${iconSize / 2} ${-iconSize / 2},0" fill="${iconColor}" opacity="0.15" />
                  <polygon points="0,${-iconSize / 2 + 6} ${iconSize / 2 - 6},0 0,${iconSize / 2 - 6} ${-iconSize / 2 + 6},0" fill="none" stroke="${iconColor}" stroke-width="3" />
                </g>`
+            : config.iconStyle === 'shield'
+            ? `<g transform="translate(${iconCx}, ${height / 2})">
+                 <path d="M0,${-iconSize / 2} L${iconSize * 0.42},${-iconSize * 0.14} L${iconSize * 0.32},${iconSize * 0.3} L0,${iconSize / 2} L${-iconSize * 0.32},${iconSize * 0.3} L${-iconSize * 0.42},${-iconSize * 0.14} Z" fill="${iconColor}" opacity="0.15" />
+                 <path d="M0,${-iconSize / 2 + 5} L${iconSize * 0.33},${-iconSize * 0.1} L${iconSize * 0.25},${iconSize * 0.24} L0,${iconSize / 2 - 6} L${-iconSize * 0.25},${iconSize * 0.24} L${-iconSize * 0.33},${-iconSize * 0.1} Z" fill="none" stroke="${iconColor}" stroke-width="3" />
+               </g>`
+            : config.iconStyle === 'hex'
+            ? `<g transform="translate(${iconCx}, ${height / 2})">
+                 <polygon points="${-iconSize * 0.44},${-iconSize * 0.25} 0,${-iconSize * 0.5} ${iconSize * 0.44},${-iconSize * 0.25} ${iconSize * 0.44},${iconSize * 0.25} 0,${iconSize * 0.5} ${-iconSize * 0.44},${iconSize * 0.25}" fill="${iconColor}" opacity="0.15" />
+                 <polygon points="${-iconSize * 0.36},${-iconSize * 0.21} 0,${-iconSize * 0.42} ${iconSize * 0.36},${-iconSize * 0.21} ${iconSize * 0.36},${iconSize * 0.21} 0,${iconSize * 0.42} ${-iconSize * 0.36},${iconSize * 0.21}" fill="none" stroke="${iconColor}" stroke-width="3" />
+               </g>`
             : config.iconStyle === 'spark'
             ? `<g transform="translate(${iconCx}, ${height / 2})">
                  <path d="M0 -26 L6 -6 L26 0 L6 6 L0 26 L-6 6 L-26 0 L-6 -6 Z" fill="${iconColor}" opacity="0.16" />
@@ -639,6 +727,12 @@ function createIconOnlySVG(config: LogoConfig): string {
     iconStyle === 'diamond'
       ? `<polygon points="256,88 424,256 256,424 88,256" fill="${iconColor}" opacity="0.14" />
          <polygon points="256,118 394,256 256,394 118,256" fill="none" stroke="${iconColor}" stroke-width="20" />`
+      : iconStyle === 'shield'
+      ? `<path d="M256,92 L384,192 L352,330 L256,420 L160,330 L128,192 Z" fill="${iconColor}" opacity="0.14" />
+         <path d="M256,122 L356,198 L330,316 L256,390 L182,316 L156,198 Z" fill="none" stroke="${iconColor}" stroke-width="20" />`
+      : iconStyle === 'hex'
+      ? `<polygon points="128,180 256,106 384,180 384,332 256,406 128,332" fill="${iconColor}" opacity="0.14" />
+         <polygon points="154,194 256,136 358,194 358,318 256,376 154,318" fill="none" stroke="${iconColor}" stroke-width="20" />`
       : iconStyle === 'spark'
       ? `<path d="M256 78 L292 210 L434 256 L292 302 L256 434 L220 302 L78 256 L220 210 Z" fill="${iconColor}" opacity="0.14" />
          <path d="M256 120 L284 224 L392 256 L284 288 L256 392 L228 288 L120 256 L228 224 Z" fill="none" stroke="${iconColor}" stroke-width="20" />`

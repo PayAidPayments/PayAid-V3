@@ -43,7 +43,7 @@ export interface LogoConfig {
   fontFamily: string
   fontSize: number
   color: string
-  iconStyle?: 'none' | 'circle-monogram' | 'diamond' | 'spark'
+  iconStyle?: 'none' | 'circle-monogram' | 'diamond' | 'spark' | 'shield' | 'hex'
   iconColor?: string
   gradient?: LogoGradient
   shadow?: LogoShadow
@@ -243,6 +243,22 @@ export class VectorLogoEngine {
   <g transform="translate(${iconX}, ${iconY})">
     <polygon points="0,${-s} ${s},0 0,${s} ${-s},0" fill="${iconFill}" opacity="0.15" />
     <polygon points="0,${-s + 8} ${s - 8},0 0,${s - 8} ${-s + 8},0" fill="none" stroke="${iconFill}" stroke-width="4" />
+  </g>`
+      }
+      if (selectedIconStyle === 'shield') {
+        const s = Math.round(iconSize / 2)
+        return `
+  <g transform="translate(${iconX}, ${iconY})">
+    <path d="M0,${-s} L${s * 0.8},${-s * 0.25} L${s * 0.62},${s * 0.55} L0,${s} L${-s * 0.62},${s * 0.55} L${-s * 0.8},${-s * 0.25} Z" fill="${iconFill}" opacity="0.15" />
+    <path d="M0,${-s + 8} L${s * 0.65},${-s * 0.2} L${s * 0.5},${s * 0.45} L0,${s - 8} L${-s * 0.5},${s * 0.45} L${-s * 0.65},${-s * 0.2} Z" fill="none" stroke="${iconFill}" stroke-width="4" />
+  </g>`
+      }
+      if (selectedIconStyle === 'hex') {
+        const s = Math.round(iconSize / 2)
+        return `
+  <g transform="translate(${iconX}, ${iconY})">
+    <polygon points="${-s * 0.86},${-s * 0.5} 0,${-s} ${s * 0.86},${-s * 0.5} ${s * 0.86},${s * 0.5} 0,${s} ${-s * 0.86},${s * 0.5}" fill="${iconFill}" opacity="0.15" />
+    <polygon points="${-s * 0.72},${-s * 0.42} 0,${-s * 0.84} ${s * 0.72},${-s * 0.42} ${s * 0.72},${s * 0.42} 0,${s * 0.84} ${-s * 0.72},${s * 0.42}" fill="none" stroke="${iconFill}" stroke-width="4" />
   </g>`
       }
       // spark
