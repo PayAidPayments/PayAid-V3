@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Sparkles, Download, Save, Type } from 'lucide-react'
+import { Sparkles, Download, Save, Type, Heart, RotateCcw } from 'lucide-react'
 import type { LogoConfig } from '@/lib/logo/vector-engine'
 
 interface VectorLogoEditorProps {
@@ -110,6 +110,9 @@ export function VectorLogoEditor({
   const [keywords, setKeywords] = useState<string[]>([])
   const [conceptPage, setConceptPage] = useState(0)
   const [conceptCount, setConceptCount] = useState(8)
+  const [favoriteConceptIds, setFavoriteConceptIds] = useState<string[]>([])
+  const [selectedConceptId, setSelectedConceptId] = useState<string | null>(null)
+  const [previewMode, setPreviewMode] = useState<'canvas' | 'card' | 'header'>('canvas')
 
   // Load available fonts
   useEffect(() => {
@@ -612,36 +615,109 @@ export function VectorLogoEditor({
               <div className="rounded-lg border bg-white p-3">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-semibold text-slate-900">Generated Concepts</p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setConceptCount(24)
-                      setConceptPage((p) => p + 1)
-                    }}
-                  >
-                    Generate 24 more
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={!selectedConceptId}
+                      onClick={() => {
+                        const selected = concepts.find((c) => c.id === selectedConceptId)
+                        if (selected) {
+                          setConfig((prev) => ({ ...prev, ...selected.config }))
+                        }
+                        setConceptCount(24)
+                        setConceptPage((p) => p + 1)
+                      }}
+                    >
+                      <RotateCcw className="w-4 h-4 mr-1" />
+                      Regenerate Similar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setConceptCount(24)
+                        setConceptPage((p) => p + 1)
+                      }}
+                    >
+                      Generate 24 more
+                    </Button>
+                  </div>
                 </div>
+                {favoriteConceptIds.length > 0 && (
+                  <div className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 mb-2 text-xs text-rose-800">
+                    Favorites: {favoriteConceptIds.length} shortlisted concept{favoriteConceptIds.length === 1 ? '' : 's'}
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
                   {concepts.map((concept) => (
                     <button
                       key={concept.id}
                       type="button"
-                      onClick={() => setConfig((prev) => ({ ...prev, ...concept.config }))}
-                      className="rounded-md border border-slate-200 bg-slate-50 hover:bg-slate-100 p-2 text-left transition-colors"
+                      onClick={() => {
+                        setSelectedConceptId(concept.id)
+                        setConfig((prev) => ({ ...prev, ...concept.config }))
+                      }}
+                      className={`rounded-md border bg-slate-50 hover:bg-slate-100 p-2 text-left transition-colors ${
+                        selectedConceptId === concept.id ? 'border-indigo-400 ring-1 ring-indigo-300' : 'border-slate-200'
+                      }`}
                     >
                       <div
                         className="h-16 w-full bg-white rounded border border-slate-100 overflow-hidden"
                         dangerouslySetInnerHTML={{ __html: createSimpleSVGPreview({ ...config, ...concept.config, fontSize: 26 }) }}
                       />
-                      <p className="mt-1 text-xs font-medium text-slate-700">{concept.label}</p>
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <p className="text-xs font-medium text-slate-700">{concept.label}</p>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setFavoriteConceptIds((prev) =>
+                              prev.includes(concept.id)
+                                ? prev.filter((id) => id !== concept.id)
+                                : [...prev, concept.id]
+                            )
+                          }}
+                          className={`rounded p-1 ${favoriteConceptIds.includes(concept.id) ? 'text-rose-600' : 'text-slate-400 hover:text-rose-500'}`}
+                          title="Shortlist concept"
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${favoriteConceptIds.includes(concept.id) ? 'fill-current' : ''}`} />
+                        </button>
+                      </div>
                     </button>
                   ))}
                 </div>
               </div>
             )}
+            <div className="rounded-lg border bg-white p-3">
+              <div className="flex gap-2 mb-3">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={previewMode === 'canvas' ? 'default' : 'outline'}
+                  onClick={() => setPreviewMode('canvas')}
+                >
+                  Logo
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={previewMode === 'card' ? 'default' : 'outline'}
+                  onClick={() => setPreviewMode('card')}
+                >
+                  Business Card
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={previewMode === 'header' ? 'default' : 'outline'}
+                  onClick={() => setPreviewMode('header')}
+                >
+                  Website Header
+                </Button>
+              </div>
             <div className="flex items-center justify-center min-h-[360px]">
             {loading ? (
               <div className="text-center">
@@ -649,16 +725,36 @@ export function VectorLogoEditor({
                 <p className="text-sm text-gray-500">Generating preview...</p>
               </div>
             ) : previewSvg ? (
-              <div
-                className="w-full max-w-lg"
-                dangerouslySetInnerHTML={{ __html: previewSvg }}
-              />
+              previewMode === 'canvas' ? (
+                <div
+                  className="w-full max-w-lg"
+                  dangerouslySetInnerHTML={{ __html: previewSvg }}
+                />
+              ) : previewMode === 'card' ? (
+                <div className="w-full max-w-xl rounded-xl bg-gradient-to-r from-slate-900 to-slate-700 p-5 shadow-lg">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-300 mb-3">Business Card Mockup</p>
+                  <div className="bg-white rounded-lg p-4">
+                    <div className="w-full h-24" dangerouslySetInnerHTML={{ __html: createSimpleSVGPreview({ ...config, fontSize: Math.max(28, config.fontSize * 0.5) }) }} />
+                    <p className="text-xs text-slate-500 mt-2">hello@{config.text.replace(/\s+/g, '').toLowerCase()}.com</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full max-w-2xl rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+                  <div className="h-10 bg-slate-100 border-b border-slate-200 px-4 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-rose-400" />
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  </div>
+                  <div className="h-28 px-4 flex items-center" dangerouslySetInnerHTML={{ __html: createSimpleSVGPreview({ ...config, fontSize: Math.max(24, config.fontSize * 0.45) }) }} />
+                </div>
+              )
             ) : (
               <div className="text-center text-gray-400">
                 <Type className="w-16 h-16 mx-auto mb-4 opacity-50" />
                 <p>Enter a business name to see preview</p>
               </div>
             )}
+            </div>
             </div>
           </CardContent>
         </Card>
