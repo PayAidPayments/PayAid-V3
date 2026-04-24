@@ -1064,7 +1064,26 @@ export default function CampaignDetailPage() {
                       <td className="py-2">
                         {item.action === 'email_campaign_retry_single' ? 'single' : 'batch'}
                       </td>
-                      <td className="py-2 font-mono text-xs">{item.retryOperationId || '-'}</td>
+                      <td className="py-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs">{item.retryOperationId || '-'}</span>
+                          {item.retryOperationId ? (
+                            <CopyAction
+                              textToCopy={item.retryOperationId}
+                              successMessage="Retry operation ID copied to clipboard."
+                              label="Copy"
+                              copiedLabel="Copied"
+                              buttonProps={{
+                                size: 'sm',
+                                variant: 'outline',
+                                className: 'h-6 px-2 text-[11px] dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700',
+                              }}
+                              showFeedback={false}
+                              {...COPY_ACTION_PRESETS.compactSettings}
+                            />
+                          ) : null}
+                        </div>
+                      </td>
                       <td className="py-2">
                         {item.retried}/{item.requested}
                         <span className="text-gray-500 dark:text-gray-400">
