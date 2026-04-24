@@ -11,6 +11,8 @@ const vectorLogoSchema = z.object({
   fontFamily: z.string().min(1),
   fontSize: z.number().min(12).max(200),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  iconStyle: z.enum(['none', 'circle-monogram', 'diamond', 'spark']).optional(),
+  iconColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   gradient: z.object({
     type: z.enum(['linear', 'radial']),
     colors: z.array(z.string()),
@@ -61,6 +63,8 @@ export async function POST(request: NextRequest) {
       fontFamily: validated.fontFamily,
       fontSize: validated.fontSize,
       color: validated.color,
+      iconStyle: validated.iconStyle || 'circle-monogram',
+      iconColor: validated.iconColor || validated.color,
       gradient: validated.gradient,
       shadow: validated.shadow,
       outline: validated.outline,

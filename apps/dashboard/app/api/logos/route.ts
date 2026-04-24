@@ -133,6 +133,9 @@ export async function POST(request: NextRequest) {
 
     let hint = 'Please try again in a moment.'
     if (error instanceof Error) {
+      if (error.message) {
+        hint = error.message
+      }
       if (error.message.includes('Hugging Face') || error.message.includes('HUGGINGFACE')) {
         hint = 'Image provider is not configured yet for this workspace.'
       } else if (error.message.includes('Google AI Studio') || error.message.includes('google')) {

@@ -43,6 +43,8 @@ export interface LogoConfig {
   fontFamily: string
   fontSize: number
   color: string
+  iconStyle?: 'none' | 'circle-monogram' | 'diamond' | 'spark'
+  iconColor?: string
   gradient?: LogoGradient
   shadow?: LogoShadow
   outline?: LogoOutline
@@ -71,6 +73,8 @@ export class VectorLogoEngine {
       fontFamily,
       fontSize,
       color,
+      iconStyle,
+      iconColor,
       gradient,
       shadow,
       outline,
@@ -216,11 +220,46 @@ export class VectorLogoEngine {
   <rect width="${width}" height="${height}" fill="${background.value}" />`
     }
 
+    const selectedIconStyle = iconStyle || 'circle-monogram'
+    const iconFill = iconColor || color
+
+    const renderIcon = () => {
+      if (selectedIconStyle === 'none') return ''
+      const iconSize = Math.max(72, Math.min(140, Math.round(fontSize * 1.4)))
+      const iconX = Math.max(70, x - (selectedIconStyle === 'none' ? 0 : iconSize * 0.9))
+      const iconY = y
+      if (selectedIconStyle === 'circle-monogram') {
+        const monogram = (text || '?').trim().charAt(0).toUpperCase()
+        return `
+  <g transform="translate(${iconX}, ${iconY})">
+    <circle cx="0" cy="0" r="${Math.round(iconSize / 2)}" fill="${iconFill}" opacity="0.15" />
+    <circle cx="0" cy="0" r="${Math.round(iconSize / 2 - 4)}" fill="none" stroke="${iconFill}" stroke-width="4" />
+    <text x="0" y="2" text-anchor="middle" dominant-baseline="middle" fill="${iconFill}" style="font-family: '${fontFamily}'; font-size: ${Math.round(iconSize * 0.42)}px; font-weight: 700;">${monogram}</text>
+  </g>`
+      }
+      if (selectedIconStyle === 'diamond') {
+        const s = Math.round(iconSize / 2)
+        return `
+  <g transform="translate(${iconX}, ${iconY})">
+    <polygon points="0,${-s} ${s},0 0,${s} ${-s},0" fill="${iconFill}" opacity="0.15" />
+    <polygon points="0,${-s + 8} ${s - 8},0 0,${s - 8} ${-s + 8},0" fill="none" stroke="${iconFill}" stroke-width="4" />
+  </g>`
+      }
+      // spark
+      return `
+  <g transform="translate(${iconX}, ${y})">
+    <path d="M0 -42 L10 -10 L42 0 L10 10 L0 42 L-10 10 L-42 0 L-10 -10 Z" fill="${iconFill}" opacity="0.16" />
+    <path d="M0 -32 L8 -8 L32 0 L8 8 L0 32 L-8 8 L-32 0 L-8 -8 Z" fill="none" stroke="${iconFill}" stroke-width="4" />
+  </g>`
+    }
+
     // Build text element
     let textStyle = `font-family: '${fontFamily}'; font-size: ${fontSize}px;`
     let textFill = gradient ? `url(#textGradient)` : color
     let textFilter = shadow ? `filter="url(#textShadow)"` : ''
     let textClass = animation && animation !== 'none' ? `class="animated-text"` : ''
+
+    svg += renderIcon()
 
     svg += `
   <text x="${x}" y="${y}" text-anchor="${textAnchor}" dominant-baseline="middle" style="${textStyle}" fill="${textFill}" ${textFilter} ${textClass}>`

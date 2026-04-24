@@ -38,6 +38,8 @@ export function VectorLogoEditor({
     fontFamily: 'Inter',
     fontSize: 64,
     color: brandColors[0] || '#000000',
+    iconStyle: 'circle-monogram',
+    iconColor: brandColors[0] || '#000000',
     animation: 'none',
     background: { type: 'transparent', value: '' },
     layout: { align: 'center', offsetX: 0, offsetY: 0, rotation: 0 },
@@ -103,6 +105,8 @@ export function VectorLogoEditor({
           fontFamily: config.fontFamily,
           fontSize: config.fontSize,
           color: config.color,
+          iconStyle: config.iconStyle,
+          iconColor: config.iconColor,
           gradient: config.gradient,
           shadow: config.shadow,
           outline: config.outline,
@@ -275,6 +279,38 @@ export function VectorLogoEditor({
               )}
             </div>
 
+            <div>
+              <Label htmlFor="icon-style">Icon</Label>
+              <Select
+                value={config.iconStyle || 'circle-monogram'}
+                onValueChange={(value: any) => setConfig({ ...config, iconStyle: value })}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="circle-monogram">Circle Monogram</SelectItem>
+                  <SelectItem value="diamond">Diamond</SelectItem>
+                  <SelectItem value="spark">Spark</SelectItem>
+                  <SelectItem value="none">None (Text Only)</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  type="color"
+                  value={config.iconColor || config.color}
+                  onChange={(e) => setConfig({ ...config, iconColor: e.target.value })}
+                  className="w-20 h-10"
+                />
+                <Input
+                  value={config.iconColor || config.color}
+                  onChange={(e) => setConfig({ ...config, iconColor: e.target.value })}
+                  placeholder="#000000"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+
             {/* Animation */}
             <div>
               <Label htmlFor="animation">Animation</Label>
@@ -428,14 +464,28 @@ function createSimpleSVGPreview(config: LogoConfig): string {
   const width = 800
   const height = 400
   const padding = 40
-  const x = config.layout?.align === 'left' ? padding : config.layout?.align === 'right' ? width - padding : width / 2
-  const textAnchor = config.layout?.align === 'left' ? 'start' : config.layout?.align === 'right' ? 'end' : 'middle'
+  const hasIcon = (config.iconStyle || 'circle-monogram') !== 'none'
+  const iconSize = Math.max(44, Math.min(84, Math.round(config.fontSize * 0.95)))
+  const iconGap = hasIcon ? 18 : 0
+  const estimatedTextWidth = Math.max(120, Math.round((config.text?.length || 1) * config.fontSize * 0.58))
+  const groupWidth = estimatedTextWidth + (hasIcon ? iconSize + iconGap : 0)
+  const align = config.layout?.align || 'center'
+  const groupLeft =
+    align === 'left'
+      ? padding
+      : align === 'right'
+      ? Math.max(padding, width - padding - groupWidth)
+      : Math.max(padding, Math.round((width - groupWidth) / 2))
+
+  const iconCx = groupLeft + iconSize / 2
+  const textX = groupLeft + (hasIcon ? iconSize + iconGap : 0)
   const safeText = (config.text || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
   const encodedFont = encodeURIComponent(config.fontFamily)
-  const textLength = width - padding * 2
+  const iconColor = config.iconColor || config.color
+  const monogram = safeText.trim().charAt(0).toUpperCase() || '?'
 
   return `
     <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -443,16 +493,33 @@ function createSimpleSVGPreview(config: LogoConfig): string {
         @import url('https://fonts.googleapis.com/css2?family=${encodedFont}:wght@400;500;600;700&display=swap');
       </style>
       ${config.background?.type === 'color' ? `<rect width="${width}" height="${height}" fill="${config.background.value}" />` : ''}
-      <text 
-        x="${x}" 
+      ${
+        hasIcon
+          ? config.iconStyle === 'diamond'
+            ? `<g transform="translate(${iconCx}, ${height / 2})">
+                 <polygon points="0,${-iconSize / 2} ${iconSize / 2},0 0,${iconSize / 2} ${-iconSize / 2},0" fill="${iconColor}" opacity="0.15" />
+                 <polygon points="0,${-iconSize / 2 + 6} ${iconSize / 2 - 6},0 0,${iconSize / 2 - 6} ${-iconSize / 2 + 6},0" fill="none" stroke="${iconColor}" stroke-width="3" />
+               </g>`
+            : config.iconStyle === 'spark'
+            ? `<g transform="translate(${iconCx}, ${height / 2})">
+                 <path d="M0 -26 L6 -6 L26 0 L6 6 L0 26 L-6 6 L-26 0 L-6 -6 Z" fill="${iconColor}" opacity="0.16" />
+                 <path d="M0 -20 L5 -5 L20 0 L5 5 L0 20 L-5 5 L-20 0 L-5 -5 Z" fill="none" stroke="${iconColor}" stroke-width="3" />
+               </g>`
+            : `<g transform="translate(${iconCx}, ${height / 2})">
+                 <circle cx="0" cy="0" r="${iconSize / 2}" fill="${iconColor}" opacity="0.15" />
+                 <circle cx="0" cy="0" r="${iconSize / 2 - 3}" fill="none" stroke="${iconColor}" stroke-width="3" />
+                 <text x="0" y="1" text-anchor="middle" dominant-baseline="middle" fill="${iconColor}" style="font-family: '${config.fontFamily}', sans-serif; font-size: ${Math.round(iconSize * 0.42)}px; font-weight:700;">${monogram}</text>
+               </g>`
+          : ''
+      }
+      <text
+        x="${textX}" 
         y="${height / 2}" 
         font-family="${config.fontFamily}, sans-serif" 
         font-size="${config.fontSize}" 
         fill="${config.color}" 
-        text-anchor="${textAnchor}" 
+        text-anchor="start"
         dominant-baseline="middle"
-        textLength="${textLength}"
-        lengthAdjust="spacingAndGlyphs"
       >
         ${safeText}
       </text>
