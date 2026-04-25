@@ -102,6 +102,68 @@ if (ageMs > maxAgeMs) {
   process.exit(1)
 }
 
+const closurePackJsonPath = String(parsed?.closurePack?.jsonPath || '').trim()
+const closurePackMdPath = String(parsed?.closurePack?.mdPath || '').trim()
+if (!closurePackJsonPath || !closurePackMdPath) {
+  console.error(
+    JSON.stringify(
+      {
+        ok: false,
+        error: 'Marker is missing closure pack artifact paths',
+        markerPath,
+        closurePack: parsed?.closurePack || null,
+        nextSteps: ['Run: npm run run:leads-bulk-retention-health-gate-pipeline'],
+      },
+      null,
+      2,
+    ),
+  )
+  process.exit(1)
+}
+if (!existsSync(closurePackJsonPath) || !existsSync(closurePackMdPath)) {
+  console.error(
+    JSON.stringify(
+      {
+        ok: false,
+        error: 'Closure pack artifact paths in marker do not exist',
+        markerPath,
+        closurePack: {
+          jsonPath: closurePackJsonPath,
+          mdPath: closurePackMdPath,
+          jsonExists: existsSync(closurePackJsonPath),
+          mdExists: existsSync(closurePackMdPath),
+        },
+        nextSteps: ['Run: npm run run:leads-bulk-retention-health-gate-pipeline'],
+      },
+      null,
+      2,
+    ),
+  )
+  process.exit(1)
+}
+try {
+  JSON.parse(readFileSync(closurePackJsonPath, 'utf8'))
+  readFileSync(closurePackMdPath, 'utf8')
+} catch (error) {
+  console.error(
+    JSON.stringify(
+      {
+        ok: false,
+        error: 'Closure pack artifacts exist but are unreadable or invalid',
+        markerPath,
+        closurePack: {
+          jsonPath: closurePackJsonPath,
+          mdPath: closurePackMdPath,
+        },
+        details: error instanceof Error ? error.message : String(error),
+      },
+      null,
+      2,
+    ),
+  )
+  process.exit(1)
+}
+
 console.log(
   JSON.stringify(
     {
@@ -111,6 +173,10 @@ console.log(
       ageHours: Number((ageMs / (60 * 60 * 1000)).toFixed(2)),
       maxAgeHours,
       check: parsed.check || null,
+      closurePack: {
+        jsonPath: closurePackJsonPath,
+        mdPath: closurePackMdPath,
+      },
     },
     null,
     2,

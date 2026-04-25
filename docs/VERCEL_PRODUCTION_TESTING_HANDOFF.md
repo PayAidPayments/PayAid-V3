@@ -536,6 +536,8 @@ Step 4.8 strict env-flag convention:
      - Set `$env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"` before pack run to enforce docs ASCII check in the pack gate.
    - Optional: inspect `flagParserTests` for env-flag parser gate status.
      - Set `$env:WEBSITE_BUILDER_INCLUDE_FLAG_PARSER_TESTS="1"` before pack run to enforce flag parser tests in the pack gate.
+   - Optional: inspect `helperContractCheck` for helper-test output contract gate status.
+     - Set `$env:WEBSITE_BUILDER_INCLUDE_HELPER_CONTRACT_CHECK="1"` before pack run to enforce helper contract validation in the pack gate.
 5. (Optional early signal) Verify evidence-pipeline summary fields:
    - `discoverabilityGate.ok` should be `true`
    - `discoverabilityGate.status` should be `200`
@@ -548,6 +550,8 @@ Step 4.8 strict env-flag convention:
      - Set `$env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"` before pipeline run to enforce docs ASCII check in the pipeline gate.
    - Optional: inspect `flagParserTests` for env-flag parser gate status.
      - Set `$env:WEBSITE_BUILDER_INCLUDE_FLAG_PARSER_TESTS="1"` before pipeline run to enforce flag parser tests in the pipeline gate.
+   - Optional: inspect `helperContractCheck` for helper-test output contract gate status.
+     - Set `$env:WEBSITE_BUILDER_INCLUDE_HELPER_CONTRACT_CHECK="1"` before pipeline run to enforce helper contract validation in the pipeline gate.
 6. (Optional helper-layer guardrail) Run:
    - `npm run test:website-builder-step4-8-helpers`
    - Parse summary fields:

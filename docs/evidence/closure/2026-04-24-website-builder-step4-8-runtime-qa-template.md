@@ -135,7 +135,7 @@ Capture response summary and key fields (status code + critical JSON fields).
 
 ## Automation Summary
 
-- Source artifact: `docs/evidence/closure/2026-04-25T11-41-38-403Z-website-builder-step4-8-runtime-checks.json`
+- Source artifact: `docs/evidence/closure/2026-04-25T11-54-45-585Z-website-builder-step4-8-runtime-checks.json`
 - Mode: blocked
 - Overall: n/a (blocked)
 - Runtime blockers: WEBSITE_BUILDER_BASE_URL is missing ; WEBSITE_BUILDER_AUTH_TOKEN is missing

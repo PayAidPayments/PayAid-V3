@@ -11,6 +11,7 @@ const retentionDays = Number(process.env.LEADS_BULK_RETENTION_ARTIFACT_RETENTION
 const apply = isStrictFlagEnabled(process.env.LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_APPLY)
 const mode = (process.env.LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_MODE || 'delete').toLowerCase()
 const includeMarkers = isStrictFlagEnabled(process.env.LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_INCLUDE_MARKERS)
+const allowMarkerMutation = isStrictFlagEnabled(process.env.LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_ALLOW_MARKER_MUTATION)
 const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000
 
 const timestampedPatterns = [
@@ -91,6 +92,22 @@ try {
 
 const deleted = []
 const archived = []
+if (apply && includeMarkers && !allowMarkerMutation) {
+  console.error(
+    JSON.stringify(
+      {
+        ok: false,
+        error: 'Marker mutation requires explicit approval flag',
+        includeMarkers,
+        apply,
+        requiredEnv: 'LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_ALLOW_MARKER_MUTATION=1',
+      },
+      null,
+      2,
+    ),
+  )
+  process.exit(1)
+}
 if (apply) {
   for (const item of candidates) {
     try {
@@ -130,6 +147,7 @@ console.log(
       apply,
       mode,
       includeMarkers,
+      allowMarkerMutation,
       retentionDays,
       scannedDir: closureDir,
       candidateCount: candidates.length,
@@ -148,6 +166,7 @@ console.log(
             '$env:LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_APPLY="1"',
             '$env:LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_MODE="archive"  # or "delete"',
             '$env:LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_INCLUDE_MARKERS="1"  # optional',
+            '$env:LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_ALLOW_MARKER_MUTATION="1"  # required when includeMarkers=1 + apply',
             'npm run cleanup:leads-bulk-retention-artifacts',
           ],
     },
