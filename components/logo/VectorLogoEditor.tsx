@@ -485,6 +485,40 @@ export function VectorLogoEditor({
     }
   }
 
+  const handleDownloadQaEvidence = () => {
+    if (!lastExportSummary && exportHistory.length === 0) {
+      setError('No export history available for QA evidence')
+      return
+    }
+
+    const now = new Date().toISOString()
+    const entries = (lastExportSummary ? [lastExportSummary, ...exportHistory] : exportHistory).slice(0, 5)
+    const lines = [
+      'PayAid Logo Export QA Evidence',
+      `Generated At: ${new Date(now).toLocaleString()}`,
+      `Business Name: ${config.text || 'N/A'}`,
+      `Export Preset: ${selectedExportPreset}`,
+      `Selected Asset Count: ${selectedExportCount}`,
+      '',
+      'Recent Exports:',
+      ...entries.flatMap((entry, index) => [
+        `${index + 1}. ${new Date(entry.timestamp).toLocaleString()}`,
+        `   Assets: ${entry.assets.join(', ')}`,
+      ]),
+      '',
+      'End of report',
+    ]
+
+    const fileNameBase = (config.text || 'brand').replace(/\s+/g, '-').toLowerCase()
+    const reportBlob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
+    const reportUrl = URL.createObjectURL(reportBlob)
+    const anchor = document.createElement('a')
+    anchor.href = reportUrl
+    anchor.download = `${fileNameBase}-logo-export-qa-evidence.txt`
+    anchor.click()
+    URL.revokeObjectURL(reportUrl)
+  }
+
   const addKeyword = () => {
     const trimmed = keywordInput.trim().toLowerCase()
     if (!trimmed) return
@@ -971,6 +1005,14 @@ export function VectorLogoEditor({
                 </div>
               </div>
             )}
+            <Button
+              variant="outline"
+              onClick={handleDownloadQaEvidence}
+              disabled={!lastExportSummary && exportHistory.length === 0}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export QA Evidence (.txt)
+            </Button>
           </CardContent>
         </Card>
       </div>
