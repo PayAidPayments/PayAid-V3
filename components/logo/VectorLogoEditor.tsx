@@ -600,6 +600,11 @@ export function VectorLogoEditor({
     process.env.NEXT_PUBLIC_ENVIRONMENT ||
     process.env.NODE_ENV ||
     'unknown'
+  const qaRuntimeOrigin =
+    (typeof window !== 'undefined' ? window.location.origin : '') ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    'N/A'
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
@@ -988,9 +993,27 @@ export function VectorLogoEditor({
             </div>
 
             <div className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs text-indigo-900">
-              <p className="font-medium">QA Context Snapshot</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-medium">QA Context Snapshot</p>
+                <CopyAction
+                  textToCopy={() =>
+                    [
+                      `Environment: ${qaEnvironmentTag}`,
+                      `Build Ref: ${qaBuildRef}`,
+                      `Runtime Origin: ${qaRuntimeOrigin}`,
+                      `Diagnostics ID: ${qaDiagnosticsId.trim() || 'N/A'}`,
+                    ].join('\n')
+                  }
+                  successMessage="QA context copied to clipboard."
+                  label="Copy Context Only"
+                  copiedLabel="Copied"
+                  buttonProps={{ variant: 'outline', size: 'sm' }}
+                  showFeedback={false}
+                />
+              </div>
               <p className="mt-1">Env: {qaEnvironmentTag}</p>
               <p>Build: {qaBuildRef}</p>
+              <p>Origin: {qaRuntimeOrigin}</p>
             </div>
 
             <Button variant="outline" onClick={handleExportPack} disabled={!previewSvg || selectedExportCount === 0}>
