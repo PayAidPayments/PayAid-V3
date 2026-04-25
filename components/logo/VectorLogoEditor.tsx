@@ -536,10 +536,22 @@ export function VectorLogoEditor({
       process.env.NEXT_PUBLIC_GIT_COMMIT_SHA ||
       process.env.NEXT_PUBLIC_BUILD_SHA ||
       'N/A'
+    const environmentTag =
+      process.env.NEXT_PUBLIC_APP_ENV ||
+      process.env.NEXT_PUBLIC_ENVIRONMENT ||
+      process.env.NODE_ENV ||
+      'unknown'
+    const runtimeOrigin =
+      (typeof window !== 'undefined' ? window.location.origin : '') ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      'N/A'
     const coreLines = [
       'PayAid Logo Export QA Evidence',
       `Generated At: ${new Date(now).toLocaleString()}`,
       `Build Ref: ${buildRef}`,
+      `Environment: ${environmentTag}`,
+      `Runtime Origin: ${runtimeOrigin}`,
       `Business Name: ${config.text || 'N/A'}`,
       `Diagnostics ID: ${qaDiagnosticsId.trim() || 'N/A'}`,
       `Export Preset: ${selectedExportPreset}`,
