@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CopyAction } from '@/components/ui/copy-action'
 import { Sparkles, Download, Save, Type, Heart, RotateCcw, SlidersHorizontal } from 'lucide-react'
 import type { LogoConfig } from '@/lib/logo/vector-engine'
 
@@ -877,6 +878,21 @@ export function VectorLogoEditor({
               <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
                 <p className="font-medium">Last export: {new Date(lastExportSummary.timestamp).toLocaleString()}</p>
                 <p className="mt-1 text-emerald-800">{lastExportSummary.assets.join(', ')}</p>
+                <div className="mt-2">
+                  <CopyAction
+                    textToCopy={() =>
+                      [
+                        `Last export: ${new Date(lastExportSummary.timestamp).toLocaleString()}`,
+                        `Assets: ${lastExportSummary.assets.join(', ')}`,
+                      ].join('\n')
+                    }
+                    successMessage="Last export summary copied to clipboard."
+                    label="Copy Summary"
+                    copiedLabel="Copied"
+                    buttonProps={{ variant: 'outline', size: 'sm' }}
+                    showFeedback={false}
+                  />
+                </div>
               </div>
             )}
           </CardContent>
