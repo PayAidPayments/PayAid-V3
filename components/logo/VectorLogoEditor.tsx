@@ -518,9 +518,20 @@ export function VectorLogoEditor({
       return
     }
 
+    const fileNameBase = (config.text || 'brand').replace(/\s+/g, '-').toLowerCase()
+    const reportBlob = new Blob([buildQaEvidenceBlock()], { type: 'text/plain;charset=utf-8' })
+    const reportUrl = URL.createObjectURL(reportBlob)
+    const anchor = document.createElement('a')
+    anchor.href = reportUrl
+    anchor.download = `${fileNameBase}-logo-export-qa-evidence.txt`
+    anchor.click()
+    URL.revokeObjectURL(reportUrl)
+  }
+
+  const buildQaEvidenceBlock = () => {
     const now = new Date().toISOString()
     const entries = (lastExportSummary ? [lastExportSummary, ...exportHistory] : exportHistory).slice(0, 5)
-    const lines = [
+    return [
       'PayAid Logo Export QA Evidence',
       `Generated At: ${new Date(now).toLocaleString()}`,
       `Business Name: ${config.text || 'N/A'}`,
@@ -535,16 +546,7 @@ export function VectorLogoEditor({
       ]),
       '',
       'End of report',
-    ]
-
-    const fileNameBase = (config.text || 'brand').replace(/\s+/g, '-').toLowerCase()
-    const reportBlob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
-    const reportUrl = URL.createObjectURL(reportBlob)
-    const anchor = document.createElement('a')
-    anchor.href = reportUrl
-    anchor.download = `${fileNameBase}-logo-export-qa-evidence.txt`
-    anchor.click()
-    URL.revokeObjectURL(reportUrl)
+    ].join('\n')
   }
 
   const addKeyword = () => {
@@ -1062,6 +1064,14 @@ export function VectorLogoEditor({
               <Download className="w-4 h-4 mr-2" />
               Export QA Evidence (.txt)
             </Button>
+            <CopyAction
+              textToCopy={buildQaEvidenceBlock}
+              successMessage="Full QA evidence block copied to clipboard."
+              label="Copy Full QA Block"
+              copiedLabel="Copied"
+              buttonProps={{ variant: 'outline' }}
+              showFeedback={false}
+            />
           </CardContent>
         </Card>
       </div>
