@@ -386,6 +386,8 @@ Use this flow to validate the newly shipped Logo Generator + Brand Kit managemen
    - `Save to Brand Kit Library`
    - `Set as Workspace Logo`
 4. Save logo and confirm success.
+4.1 In Vector Editor, locate **QA Context Snapshot** and hover/focus the info icon.
+   - Confirm tooltip explains `Env`, `Build`, and `Origin` labels.
 5. Open `Settings > Tenant` and verify:
    - Logo appears under **Brand Kit Logos**
    - If selected, it is set as workspace primary logo
@@ -422,6 +424,7 @@ Mark the Logo + Brand Kit rollout **Ready for QA pass** only when all conditions
 
 - **Functional pass**
   - Vector logo save succeeds with and without `Set as Workspace Logo`.
+  - QA Context Snapshot tooltip is visible and helper text matches `Env` / `Build` / `Origin`.
   - Saved logo appears in Brand Kit list and primary marker state is correct.
   - `Set Primary` updates workspace logo and list state immediately after refresh.
   - Single/bulk delete protections block primary-logo deletion paths.
@@ -432,6 +435,7 @@ Mark the Logo + Brand Kit rollout **Ready for QA pass** only when all conditions
   - Inline blocked-export message is visible and understandable.
 - **Evidence required in bug log / QA notes**
   - One screenshot of Vector Editor save success.
+  - One screenshot of QA Context Snapshot tooltip content.
   - One screenshot of Brand Kit list with primary badge.
   - One screenshot of zero-export guard state (disabled button + reason).
   - One downloaded ZIP artifact name with file count note.
@@ -495,6 +499,9 @@ Expected API/runtime markers (for pass/fail logging):
   - Invalid page-tree payload should return `400` with `details[]` messages.
 - `POST /api/website/ai/generate-draft`
   - Expect `200` with `draft.pagePlan[]` in response.
+- Runtime artifact check `G` (QA template discoverability evidence gate)
+  - Expect pass when discoverability fields are filled in Step 4.8 QA template.
+  - If incomplete, expect fail with explicit missing discoverability field list.
 
 ### Step 4.8 Automation Quickstart
 
@@ -502,6 +509,7 @@ Use this order for deterministic evidence generation:
 
 1. Export env (or use token helper):
    - `npm run get:website-builder-step4-8-token`
+   - Optional automation mode: `npm run get:website-builder-step4-8-token -- --json` (returns structured token/error payload for wrappers)
 2. Run full gate pack:
    - `npm run run:website-builder-ready-to-commit-pack`
 3. Verify outputs:
@@ -510,6 +518,29 @@ Use this order for deterministic evidence generation:
    - `docs/evidence/closure/*-website-builder-ready-to-commit-check.json`
    - `docs/evidence/closure/*-website-builder-ready-to-commit-check.md`
    - Updated template: `docs/evidence/closure/2026-04-24-website-builder-step4-8-runtime-qa-template.md`
+4. Verify pack summary fields:
+   - `discoverabilityGate.markerCheck.ok` should be `true`
+   - `discoverabilityGate.evidenceCheck.ok` should be `true`
+   - If `overallOk=false`, check `runtimeBlockers[]` for explicit env/auth blockers.
+   - Use `nextAction` (copy/paste-ready PowerShell env + rerun command; includes token-helper flow when token is missing) before rerun.
+   - Optional: follow `nextActionSteps[]` for structured command-by-command remediation.
+   - Optional: inspect `tokenHelperProbe` for parsed token-helper diagnostics (`code`, `error`, `nextSteps[]`) when auth token is missing.
+   - Optional: inspect `helperTests` for helper-layer gate status.
+     - Set `$env:WEBSITE_BUILDER_INCLUDE_HELPER_TESTS="1"` before pack run to enforce helper tests in the pack gate.
+5. (Optional early signal) Verify evidence-pipeline summary fields:
+   - `discoverabilityGate.ok` should be `true`
+   - `discoverabilityGate.status` should be `200`
+   - If pipeline `overallOk=false`, inspect `runtimeBlockers[]` and use `nextAction` (copy/paste-ready remediation; includes token-helper flow when token is missing).
+   - Optional: use `nextActionSteps[]` as a structured remediation sequence.
+   - Optional: inspect `tokenHelperProbe` for parsed token-helper failure/success hints (`code`, `error`, `nextSteps[]`) when auth token is missing.
+   - Optional: inspect `helperTests` for helper-layer gate status.
+     - Set `$env:WEBSITE_BUILDER_INCLUDE_HELPER_TESTS="1"` before pipeline run to enforce helper tests in the pipeline gate.
+6. (Optional helper-layer guardrail) Run:
+   - `npm run test:website-builder-step4-8-helpers`
+   - Parse summary fields:
+     - `check` (expected `website-builder-step4-8-helper-tests`)
+     - `overallOk`
+     - `steps[]` (`label`, `command`, `ok`, `exitCode`, `elapsedMs`)
 
 ### Step 4.8 QA Evidence Template
 
