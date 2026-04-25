@@ -1060,12 +1060,15 @@ export function VectorLogoEditor({
               <p>Build: {qaBuildRef}</p>
               <p>Origin: {qaRuntimeOrigin}</p>
               {!isQaContextComplete && (
-                <div className="mt-2 flex items-center justify-between rounded border border-amber-200 bg-amber-50 px-2 py-1.5">
-                  <p className="text-[11px] text-amber-800">Don&apos;t ask again this session</p>
-                  <Switch
-                    checked={skipPartialQaConfirmThisSession}
-                    onCheckedChange={setSkipPartialQaConfirmThisSession}
-                  />
+                <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1.5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] text-amber-800">Don&apos;t ask again this session</p>
+                    <Switch
+                      checked={skipPartialQaConfirmThisSession}
+                      onCheckedChange={setSkipPartialQaConfirmThisSession}
+                    />
+                  </div>
+                  <p className="mt-1 text-[10px] text-amber-700">Resets when browser session ends.</p>
                 </div>
               )}
               {!isQaContextComplete && (
