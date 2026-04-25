@@ -79,6 +79,7 @@ const EXPORT_OPTIONS_STORAGE_KEY = 'payaid.logo.export-options.v1'
 const EXPORT_PRESET_STORAGE_KEY = 'payaid.logo.export-preset.v1'
 const EXPORT_HISTORY_STORAGE_KEY = 'payaid.logo.export-history.v1'
 const QA_DIAGNOSTICS_ID_STORAGE_KEY = 'payaid.logo.qa-diagnostics-id.v1'
+const QA_PARTIAL_CONFIRM_BYPASS_SESSION_KEY = 'payaid.logo.qa-partial-confirm-bypass.session.v1'
 
 type IndustryTemplate = {
   id: string
@@ -223,6 +224,10 @@ export function VectorLogoEditor({
       if (savedDiagnosticsId) {
         setQaDiagnosticsId(savedDiagnosticsId)
       }
+      const savedBypass = sessionStorage.getItem(QA_PARTIAL_CONFIRM_BYPASS_SESSION_KEY)
+      if (savedBypass === '1') {
+        setSkipPartialQaConfirmThisSession(true)
+      }
     } catch {
       // no-op; fall back to defaults on malformed local storage
     }
@@ -256,6 +261,18 @@ export function VectorLogoEditor({
       // no-op; storage can fail in restricted browser modes
     }
   }, [qaDiagnosticsId])
+
+  useEffect(() => {
+    try {
+      if (skipPartialQaConfirmThisSession) {
+        sessionStorage.setItem(QA_PARTIAL_CONFIRM_BYPASS_SESSION_KEY, '1')
+      } else {
+        sessionStorage.removeItem(QA_PARTIAL_CONFIRM_BYPASS_SESSION_KEY)
+      }
+    } catch {
+      // no-op; storage can fail in restricted browser modes
+    }
+  }, [skipPartialQaConfirmThisSession])
 
   const applyExportPreset = (preset: Exclude<ExportPackPresetId, 'custom'>) => {
     setSelectedExportPreset(preset)
