@@ -4,6 +4,15 @@ import { spawnSync } from 'node:child_process'
 
 const root = process.cwd()
 const outDir = path.join(root, 'docs', 'evidence', 'release-gates')
+const gateTimeoutMs = Number(process.env.RELEASE_GATE_TIMEOUT_MS || '240000')
+
+function getGateTimeoutMs(gateId) {
+  const envKey = `RELEASE_GATE_TIMEOUT_MS_${gateId.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`
+  const override = process.env[envKey]
+  if (!override) return gateTimeoutMs
+  const parsed = Number(override)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : gateTimeoutMs
+}
 
 const gates = [
   { id: 'canonical-contract', command: ['npm', 'run', 'check:canonical-module-api-contract'] },
@@ -18,7 +27,10 @@ const gates = [
 ]
 
 const include = new Set(
-  (process.env.RELEASE_GATES || 'canonical-contract,canonical-post-cutover,m0,m2,m3')
+  (
+    process.env.RELEASE_GATES ||
+    'canonical-contract,canonical-post-cutover,canonical-readiness-verdict,m0,m2,m3'
+  )
     .split(',')
     .map((x) => x.trim())
     .filter(Boolean)
@@ -42,6 +54,7 @@ let allPass = true
 for (const gate of selected) {
   const gateStart = Date.now()
   const [cmd, ...args] = gate.command
+  const effectiveTimeoutMs = getGateTimeoutMs(gate.id)
   console.log(`[release-gate] Running ${gate.id}: ${cmd} ${args.join(' ')}`)
   const run = spawnSync(cmd, args, {
     cwd: root,
@@ -50,26 +63,31 @@ for (const gate of selected) {
     encoding: 'utf8',
     shell: process.platform === 'win32',
     maxBuffer: 16 * 1024 * 1024,
+    timeout: effectiveTimeoutMs,
   })
   const durationMs = Date.now() - gateStart
   const stdout = run.stdout || ''
   const stderr = run.stderr || ''
   const exitCode = typeof run.status === 'number' ? run.status : 1
+  const timedOut = run.error?.code === 'ETIMEDOUT'
 
   results.push({
     gate: gate.id,
     command: [cmd, ...args].join(' '),
     exit_code: exitCode,
+    timed_out: timedOut,
+    timeout_ms: effectiveTimeoutMs,
     duration_ms: durationMs,
     output_excerpt: (stdout + '\n' + stderr).split('\n').slice(-60).join('\n'),
   })
 
-  if (exitCode !== 0) allPass = false
+  if (exitCode !== 0 || timedOut) allPass = false
 }
 
 const artifact = {
   collected_at_utc: startedAt.toISOString(),
   selected_gates: selected.map((g) => g.id),
+  gate_timeout_ms_default: gateTimeoutMs,
   all_pass: allPass,
   results,
 }

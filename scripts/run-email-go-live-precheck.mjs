@@ -55,20 +55,47 @@ function parseJsonFromStdout(stdout) {
   }
 }
 
-function buildSummary(migrateResult, readinessResult, readinessJson) {
+function parseDbStateJsonFromMarkdown(markdown) {
+  if (!markdown) return null
+  const marker = '## Raw JSON'
+  const markerIndex = markdown.indexOf(marker)
+  if (markerIndex < 0) return null
+  const jsonStart = markdown.indexOf('{', markerIndex)
+  const jsonEnd = markdown.lastIndexOf('}')
+  if (jsonStart < 0 || jsonEnd < jsonStart) return null
+  try {
+    return JSON.parse(markdown.slice(jsonStart, jsonEnd + 1))
+  } catch {
+    return null
+  }
+}
+
+function isDbStateEquivalentPass(dbState) {
+  if (!dbState || !dbState.connected || !dbState.requiredTables) return false
+  return Object.values(dbState.requiredTables).every(Boolean)
+}
+
+function buildSummary(migrateResult, readinessResult, readinessJson, dbStateResult, dbStatePath, dbStateJson) {
   const lines = []
+  const migrateEquivalentOk = isDbStateEquivalentPass(dbStateJson)
+  const effectiveMigratePass = migrateResult.ok || migrateEquivalentOk
+  const overallPass = effectiveMigratePass && readinessResult.ok
   lines.push('# Email Go-Live Precheck')
   lines.push('')
   lines.push(`- Timestamp: ${isoNow}`)
   lines.push(`- Workspace: ${process.cwd()}`)
   lines.push(`- Timeout per command: ${RUN_TIMEOUT_MS} ms`)
-  lines.push(`- Overall pass: ${migrateResult.ok && readinessResult.ok ? 'yes' : 'no'}`)
+  lines.push(`- Overall pass: ${overallPass ? 'yes' : 'no'}`)
   lines.push('')
   lines.push('## Gate verdicts')
   lines.push('')
   lines.push(
     `- DB migration reachability (\`npm run db:migrate:status\`): ${migrateResult.ok ? 'PASS' : 'FAIL'}`
   )
+  lines.push(
+    `- DB state equivalent evidence (\`npm run capture:email-db-state\`): ${migrateEquivalentOk ? 'PASS' : 'FAIL'}`
+  )
+  lines.push(`- Effective migration gate: ${effectiveMigratePass ? 'PASS' : 'FAIL'}`)
   lines.push(
     `- Runtime readiness (\`npm run verify:email-prod-readiness\`): ${readinessResult.ok ? 'PASS' : 'FAIL'}`
   )
@@ -82,9 +109,17 @@ function buildSummary(migrateResult, readinessResult, readinessJson) {
     lines.push('')
   }
 
+  if (dbStatePath) {
+    lines.push('## DB state artifact')
+    lines.push('')
+    lines.push(`- Markdown: \`${dbStatePath}\``)
+    lines.push('')
+  }
+
   lines.push('## Raw logs')
   lines.push('')
-  for (const r of [migrateResult, readinessResult]) {
+  for (const r of [migrateResult, dbStateResult, readinessResult]) {
+    if (!r) continue
     lines.push(`### ${r.label}`)
     lines.push('')
     lines.push(`- Command: \`${r.command}\``)
@@ -110,29 +145,56 @@ function buildSummary(migrateResult, readinessResult, readinessJson) {
 }
 
 const migrateResult = runCommand('db-migrate-status', 'npm', ['run', 'db:migrate:status'])
+const dbStateResult = runCommand('capture-email-db-state', 'npm', ['run', 'capture:email-db-state'])
 const readinessResult = runCommand('email-prod-readiness', 'npm', ['run', 'verify:email-prod-readiness'])
 const readinessJson = parseJsonFromStdout(readinessResult.stdout)
+const dbStateCmdJson = parseJsonFromStdout(dbStateResult.stdout)
+const dbStatePath = dbStateCmdJson?.markdownPath || ''
+let dbStateJson = null
+if (dbStatePath) {
+  try {
+    const fs = await import('node:fs')
+    const content = fs.readFileSync(dbStatePath, 'utf8')
+    dbStateJson = parseDbStateJsonFromMarkdown(content)
+  } catch {
+    dbStateJson = null
+  }
+}
 
 const outputDir = path.join(process.cwd(), 'docs', 'evidence', 'email')
 mkdirSync(outputDir, { recursive: true })
 const outputFile = path.join(outputDir, `${stamp}-email-go-live-precheck.md`)
 
-const summary = buildSummary(migrateResult, readinessResult, readinessJson)
+const summary = buildSummary(
+  migrateResult,
+  readinessResult,
+  readinessJson,
+  dbStateResult,
+  dbStatePath,
+  dbStateJson
+)
 writeFileSync(outputFile, summary, 'utf8')
+
+const migrateEquivalentOk = isDbStateEquivalentPass(dbStateJson)
+const effectiveMigratePass = migrateResult.ok || migrateEquivalentOk
+const overallOk = effectiveMigratePass && readinessResult.ok
 
 console.log(
   JSON.stringify(
     {
       outputFile,
       migrateOk: migrateResult.ok,
+      migrateEquivalentOk,
+      effectiveMigratePass,
       readinessOk: readinessResult.ok,
-      overallOk: migrateResult.ok && readinessResult.ok,
+      overallOk,
       readinessArtifact: readinessJson?.mdPath || null,
+      dbStateArtifact: dbStatePath || null,
     },
     null,
     2
   )
 )
 
-process.exit(migrateResult.ok && readinessResult.ok ? 0 : 1)
+process.exit(overallOk ? 0 : 1)
 

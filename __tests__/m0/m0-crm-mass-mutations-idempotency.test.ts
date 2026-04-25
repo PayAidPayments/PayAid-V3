@@ -50,7 +50,7 @@ describe('CRM mass mutation idempotency', () => {
     const prisma = require('@/lib/db/prisma')
     const m0Service = require('@/lib/ai-native/m0-service')
 
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_contacts_bulk_delete_1',
       afterSnapshot: { archived: 2 },
@@ -80,7 +80,7 @@ describe('CRM mass mutation idempotency', () => {
     const prisma = require('@/lib/db/prisma')
     const m0Service = require('@/lib/ai-native/m0-service')
 
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_contacts_mass_transfer_1',
       afterSnapshot: { transferred: 3 },
@@ -110,7 +110,7 @@ describe('CRM mass mutation idempotency', () => {
     const prisma = require('@/lib/db/prisma')
     const m0Service = require('@/lib/ai-native/m0-service')
 
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_leads_mass_update_1',
       afterSnapshot: { updated: 4 },
@@ -143,7 +143,7 @@ describe('CRM mass mutation idempotency', () => {
     const prisma = require('@/lib/db/prisma')
     const m0Service = require('@/lib/ai-native/m0-service')
 
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_leads_mass_transfer_1',
       afterSnapshot: { transferred: 2 },
@@ -176,7 +176,7 @@ describe('CRM mass mutation idempotency', () => {
     const prisma = require('@/lib/db/prisma')
     const m0Service = require('@/lib/ai-native/m0-service')
 
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_leads_mass_delete_1',
       afterSnapshot: { deleted: 5 },

@@ -1,0 +1,43 @@
+# Website Builder Step 4.8 runtime checks
+
+- Timestamp: 2026-04-24T13:01:05.625Z
+- Mode: blocked
+- Blockers: WEBSITE_BUILDER_BASE_URL is missing; WEBSITE_BUILDER_AUTH_TOKEN is missing
+- JSON artifact: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-24T13-01-05-625Z-website-builder-step4-8-runtime-checks.json`
+
+## Checks
+
+- FAIL G QA template discoverability evidence gate (status=422)
+
+## Raw payload
+
+```json
+{
+  "check": "website-builder-step4-8-runtime-checks",
+  "timestamp": "2026-04-24T13:01:05.625Z",
+  "mode": "blocked",
+  "blockedReasons": [
+    "WEBSITE_BUILDER_BASE_URL is missing",
+    "WEBSITE_BUILDER_AUTH_TOKEN is missing"
+  ],
+  "checks": [
+    {
+      "id": "G",
+      "endpoint": "QA template discoverability evidence gate",
+      "pass": false,
+      "status": 422,
+      "details": {
+        "source": "docs/evidence/closure/2026-04-24-website-builder-step4-8-runtime-qa-template.md",
+        "status": "incomplete",
+        "missingFields": [
+          "started-from-module",
+          "switcher-visible",
+          "navigation-landing",
+          "pass/fail",
+          "evidence-link"
+        ]
+      }
+    }
+  ]
+}
+```

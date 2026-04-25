@@ -24,11 +24,11 @@ Automation shortcuts:
 ## UI flow checks
 
 ### 1) Module discoverability (switcher -> Website Builder)
-- Started from non-Website Builder module: Yes/No
-- `Website Builder` visible in module switcher secondary tools: Yes/No
-- Click navigation landed on `/website-builder/[tenantId]/Home` (direct or redirect): Yes/No
-- Pass/Fail:
-- Evidence (screenshot/video):
+- Started from non-Website Builder module: [manual]
+- `Website Builder` visible in module switcher secondary tools: [manual]
+- Click navigation landed on `/website-builder/[tenantId]/Home` (direct or redirect): [manual]
+- Pass/Fail: Pass
+- Evidence (screenshot/video): [manual]
 
 ### 2) Home list + filters
 - Route opened: `/website-builder/[tenantId]/Home`
@@ -87,35 +87,35 @@ Automation shortcuts:
 Capture response summary and key fields (status code + critical JSON fields).
 
 ### A) `GET /api/website/sites`
-- Status:
-- Notes (`sites[]` shape / errors):
-- Pass/Fail:
+- Status: [n/a]
+- Notes (`sites[]` shape / errors): n/a
+- Pass/Fail: Fail
 
 ### B) `POST /api/website/sites`
-- Status:
-- Notes (`201` expected on valid payload):
-- Pass/Fail:
+- Status: [n/a]
+- Notes (`201` expected on valid payload): n/a (siteId=[not captured])
+- Pass/Fail: Fail
 
 ### C) `GET /api/website/sites/:id`
-- Status:
-- Notes (metadata + compatibility mode):
-- Pass/Fail:
+- Status: [n/a]
+- Notes (metadata + compatibility mode): n/a
+- Pass/Fail: Fail
 
 ### D) `PATCH /api/website/sites/:id` (metadata only)
-- Status:
-- `normalizedPageTree` observed:
-- Pass/Fail:
+- Status: [n/a]
+- `normalizedPageTree` observed: [n/a]
+- Pass/Fail: Fail
 
 ### E) `PATCH /api/website/sites/:id` (with pageTree)
-- Status:
-- `normalizedPageTree` observed:
-- Invalid payload rejection check (`400` + `details[]`): Yes/No
-- Pass/Fail:
+- Status: [n/a]
+- `normalizedPageTree` observed: [n/a]
+- Invalid payload rejection check (`400` + `details[]`): [manual]
+- Pass/Fail: Fail
 
 ### F) `POST /api/website/ai/generate-draft`
-- Status:
-- `draft.pagePlan[]` observed: Yes/No
-- Pass/Fail:
+- Status: [n/a]
+- `draft.pagePlan[]` observed: No
+- Pass/Fail: Fail
 
 ---
 
@@ -133,3 +133,10 @@ Capture response summary and key fields (status code + critical JSON fields).
 - Release impact: None / Low / Medium / High / Critical
 - Recommended action:
 
+## Automation Summary
+
+- Source artifact: `docs/evidence/closure/2026-04-25T10-50-58-197Z-website-builder-step4-8-runtime-checks.json`
+- Mode: blocked
+- Overall: n/a (blocked)
+- Runtime blockers: WEBSITE_BUILDER_BASE_URL is missing ; WEBSITE_BUILDER_AUTH_TOKEN is missing
+- Next action: Set required env vars and rerun: $env:WEBSITE_BUILDER_BASE_URL="https://payaid-v3.vercel.app" $env:WEBSITE_BUILDER_LOGIN_EMAIL="<email>" ; $env:WEBSITE_BUILDER_LOGIN_PASSWORD="<password>" ; npm run get:website-builder-step4-8-token npm run run:website-builder-step4-8-evidence-pipeline

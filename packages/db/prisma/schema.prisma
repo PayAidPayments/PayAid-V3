@@ -132,6 +132,19 @@ model Tenant {
   knowledgeQueries             KnowledgeQuery[]
   landingPages                 LandingPage[]
   leadSources                  LeadSource[]
+  leadBriefs                   LeadBrief[]
+  leadSegments                 LeadSegment[]
+  leadAccounts                 LeadAccount[]
+  leadContacts                 LeadContact[]
+  leadSignals                  LeadSignal[]
+  leadScores                   LeadScore[]
+  leadEnrichmentSnapshots      LeadEnrichmentSnapshot[]
+  leadFieldEvidence            LeadFieldEvidence[]
+  leadConsentProfiles          LeadConsentProfile[]
+  leadActivationJobs           LeadActivationJob[]
+  leadExportJobs               LeadExportJob[]
+  leadProviderUsage            LeadProviderUsage[]
+  leadAuditEvents              LeadAuditEvent[]
   leaveBalances                LeaveBalance[]
   leavePolicies                LeavePolicy[]
   leaveRequests                LeaveRequest[]
@@ -9413,4 +9426,361 @@ model CustomerInsight {
   @@index([tenantId, healthScore])
   @@index([lastCalculatedAt])
   @@map("customer_insights")
+}
+
+model LeadBrief {
+  id               String   @id @default(cuid())
+  tenantId         String
+  name             String
+  description      String?
+  industryFilters  Json
+  geoFilters       Json
+  sizeFilters      Json
+  revenueFilters   Json?
+  personaFilters   Json
+  techFilters      Json?
+  triggerFilters   Json?
+  exclusionFilters Json?
+  scoringProfileId String?
+  createdById      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  segments         LeadSegment[]
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, name])
+}
+
+model LeadSegment {
+  id                   String             @id @default(cuid())
+  tenantId             String
+  briefId              String
+  name                 String
+  status               LeadSegmentStatus  @default(DRAFT)
+  discoveryState       LeadDiscoveryState @default(IDLE)
+  resultCount          Int                @default(0)
+  approvedAccountCount Int                @default(0)
+  approvedContactCount Int                @default(0)
+  lastRunAt            DateTime?
+  nextRefreshAt        DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  tenant               Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  brief                LeadBrief          @relation(fields: [briefId], references: [id], onDelete: Cascade)
+  accounts             LeadAccount[]
+  activationJobs       LeadActivationJob[]
+
+  @@index([tenantId, briefId])
+  @@index([tenantId, status, updatedAt])
+}
+
+model LeadAccount {
+  id                  String            @id @default(cuid())
+  tenantId            String
+  segmentId           String?
+  domain              String?
+  companyName         String
+  normalizedName      String
+  websiteUrl          String?
+  linkedinUrl         String?
+  country             String?
+  region              String?
+  city                String?
+  employeeCount       Int?
+  employeeBand        String?
+  revenueBand         String?
+  industry            String?
+  subIndustry         String?
+  techStack           Json?
+  description         String?
+  fitScore            Int               @default(0)
+  intentScore         Int               @default(0)
+  reachabilityScore   Int               @default(0)
+  conversionPotential Int               @default(0)
+  freshnessScore      Int               @default(0)
+  sourceCoverageScore Int               @default(0)
+  status              LeadAccountStatus @default(DISCOVERED)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  tenant              Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  segment             LeadSegment?      @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  contacts            LeadContact[]
+  signals             LeadSignal[]
+  scores              LeadScore[]
+  snapshots           LeadEnrichmentSnapshot[]
+  fieldEvidence       LeadFieldEvidence[]
+
+  @@index([tenantId, segmentId, conversionPotential])
+  @@index([tenantId, domain])
+  @@index([tenantId, industry, employeeBand])
+  @@index([tenantId, country, region, city])
+  @@index([tenantId, status, updatedAt])
+}
+
+model LeadContact {
+  id                 String                 @id @default(cuid())
+  tenantId           String
+  accountId          String
+  fullName           String
+  normalizedFullName String
+  firstName          String?
+  lastName           String?
+  title              String?
+  seniority          String?
+  department         String?
+  linkedinUrl        String?
+  workEmail          String?
+  emailStatus        LeadVerificationStatus @default(UNKNOWN)
+  emailConfidence    Float?
+  phone              String?
+  phoneStatus        LeadVerificationStatus @default(UNKNOWN)
+  phoneConfidence    Float?
+  personaMatchScore  Int                    @default(0)
+  reachabilityScore  Int                    @default(0)
+  status             LeadContactStatus      @default(RESOLVED)
+  lastVerifiedAt     DateTime?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  tenant             Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  account            LeadAccount            @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  scores             LeadScore[]
+  snapshots          LeadEnrichmentSnapshot[]
+  fieldEvidence      LeadFieldEvidence[]
+  consentProfile     LeadConsentProfile?
+
+  @@index([tenantId, accountId])
+  @@index([tenantId, workEmail])
+  @@index([tenantId, linkedinUrl])
+  @@index([tenantId, status, lastVerifiedAt])
+}
+
+model LeadSignal {
+  id             String       @id @default(cuid())
+  tenantId       String
+  accountId      String?
+  contactId      String?
+  type           String
+  title          String
+  description    String?
+  strength       Int          @default(0)
+  observedAt     DateTime
+  expiresAt      DateTime?
+  sourceProvider String
+  sourceUrl      String?
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  account        LeadAccount? @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  contact        LeadContact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, accountId, observedAt])
+  @@index([tenantId, type, observedAt])
+}
+
+model LeadScore {
+  id                String        @id @default(cuid())
+  tenantId          String
+  accountId         String?
+  contactId         String?
+  scoreType         LeadScoreType
+  fitScore          Int           @default(0)
+  intentScore       Int           @default(0)
+  reachabilityScore Int           @default(0)
+  compositeScore    Int           @default(0)
+  explanation       Json?
+  modelVersion      String?
+  computedAt        DateTime      @default(now())
+  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  account           LeadAccount?  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  contact           LeadContact?  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, scoreType, computedAt])
+  @@index([tenantId, compositeScore])
+}
+
+model LeadEnrichmentSnapshot {
+  id                 String       @id @default(cuid())
+  tenantId           String
+  accountId          String?
+  contactId          String?
+  provider           String
+  operation          String
+  status             String
+  requestFingerprint String
+  rawPayload         Json
+  normalizedPayload  Json?
+  fetchedAt          DateTime     @default(now())
+  expiresAt          DateTime?
+  latencyMs          Int?
+  costUnits          Decimal?     @db.Decimal(12, 4)
+  tenant             Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  account            LeadAccount? @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  contact            LeadContact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, provider, operation, fetchedAt])
+  @@index([tenantId, requestFingerprint])
+}
+
+model LeadFieldEvidence {
+  id                 String                 @id @default(cuid())
+  tenantId           String
+  accountId          String?
+  contactId          String?
+  fieldName          String
+  rawValue           String?
+  normalizedValue    String?
+  provider           String
+  confidence         Float?
+  verificationStatus LeadVerificationStatus @default(UNKNOWN)
+  sourceUrl          String?
+  sourceType         String?
+  legalBasis         String?
+  observedAt         DateTime
+  expiresAt          DateTime?
+  isWinningValue     Boolean                @default(false)
+  createdAt          DateTime               @default(now())
+  tenant             Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  account            LeadAccount?           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  contact            LeadContact?           @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, fieldName, isWinningValue])
+  @@index([tenantId, provider, observedAt])
+}
+
+model LeadConsentProfile {
+  id                String      @id @default(cuid())
+  tenantId          String
+  contactId         String      @unique
+  region            String?
+  legalBasis        String?
+  consentStatus     String?
+  emailAllowed      Boolean     @default(false)
+  callAllowed       Boolean     @default(false)
+  linkedinAllowed   Boolean     @default(false)
+  exportAllowed     Boolean     @default(false)
+  doNotEnrich       Boolean     @default(false)
+  doNotCall         Boolean     @default(false)
+  suppressionReason String?
+  updatedAt         DateTime    @updatedAt
+  createdAt         DateTime    @default(now())
+  tenant            Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact           LeadContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, consentStatus])
+  @@index([tenantId, region, emailAllowed, callAllowed])
+}
+
+model LeadActivationJob {
+  id            String            @id @default(cuid())
+  tenantId      String
+  segmentId     String?
+  initiatedById String
+  destination   String
+  status        LeadJobStatus     @default(PENDING)
+  payload       Json
+  resultSummary Json?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  segment       LeadSegment?      @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status, createdAt])
+}
+
+model LeadExportJob {
+  id            String        @id @default(cuid())
+  tenantId      String
+  initiatedById String
+  status        LeadJobStatus @default(PENDING)
+  exportType    String
+  payload       Json
+  fileUrl       String?
+  resultSummary Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, createdAt])
+}
+
+model LeadProviderUsage {
+  id            String   @id @default(cuid())
+  tenantId      String
+  provider      String
+  operation     String
+  units         Decimal  @db.Decimal(12, 4)
+  estimatedCost Decimal? @db.Decimal(12, 4)
+  latencyMs     Int?
+  success       Boolean  @default(true)
+  recordedAt    DateTime @default(now())
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, provider, recordedAt])
+}
+
+model LeadAuditEvent {
+  id         String   @id @default(cuid())
+  tenantId   String
+  actorId    String?
+  entityType String
+  entityId   String
+  action     String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, entityType, entityId, createdAt])
+}
+
+enum LeadSegmentStatus {
+  DRAFT
+  RUNNING
+  READY
+  ARCHIVED
+}
+
+enum LeadDiscoveryState {
+  IDLE
+  QUEUED
+  DISCOVERING
+  ENRICHING
+  SCORING
+  READY
+  FAILED
+}
+
+enum LeadAccountStatus {
+  DISCOVERED
+  SHORTLISTED
+  APPROVED
+  ACTIVATED
+  ARCHIVED
+}
+
+enum LeadContactStatus {
+  RESOLVED
+  VERIFIED
+  REJECTED
+  ACTIVATED
+  ARCHIVED
+}
+
+enum LeadVerificationStatus {
+  VERIFIED
+  UNVERIFIED
+  LIKELY
+  UNKNOWN
+}
+
+enum LeadScoreType {
+  ACCOUNT
+  CONTACT
+}
+
+enum LeadJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
 }

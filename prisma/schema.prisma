@@ -1788,6 +1788,7 @@ model OAuthIntegration {
   providerUserId String?
   providerEmail  String?
   providerName   String?
+  providerAvatarUrl String?
   isActive       Boolean   @default(true)
   lastUsedAt     DateTime?
   createdAt      DateTime  @default(now())

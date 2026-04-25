@@ -23,6 +23,11 @@ Required env vars:
 - `WEBSITE_BUILDER_BASE_URL`
 - `WEBSITE_BUILDER_AUTH_TOKEN`
 
+Strict env-flag convention (for all optional gates in this runbook):
+
+- Set strict gate flags to `"1"` to enable.
+- Any other value keeps the gate disabled unless the script explicitly documents compatibility with `"true"`.
+
 If token is not already available, use helper command:
 
 ```powershell
@@ -31,6 +36,18 @@ $env:WEBSITE_BUILDER_LOGIN_EMAIL="admin@demo.com"
 $env:WEBSITE_BUILDER_LOGIN_PASSWORD="paste-password"
 npm run get:website-builder-step4-8-token
 ```
+
+JSON output mode for automation:
+
+```powershell
+npm run get:website-builder-step4-8-token -- --json
+```
+
+JSON payload fields:
+
+- `ok`, `code`, `status`, `error`
+- `baseUrl`, `token`, `tenantId`
+- `nextSteps[]`
 
 ---
 
@@ -42,11 +59,39 @@ Run full release gate pack (runtime evidence + ready-to-commit preflight):
 npm run run:website-builder-ready-to-commit-pack
 ```
 
+Pack summary includes discoverability gate rollup:
+
+- `discoverabilityGate.markerCheck` -> discoverability section markers present
+- `discoverabilityGate.evidenceCheck` -> discoverability evidence fields populated
+- `runtimeBlockers[]` -> explicit runtime env/auth blockers when execution is blocked
+- `nextAction` -> copy/paste-ready PowerShell remediation built from `runtimeBlockers[]`
+  - Includes token-helper flow (`npm run get:website-builder-step4-8-token`) when auth token is missing.
+- `nextActionSteps[]` -> structured step-by-step remediation commands
+- `tokenHelperProbe` (optional) with parsed token-helper JSON (`code`, `error`, `nextSteps[]`) when auth token is missing and login env vars are present.
+- `helperTests` (optional) helper-layer gate status:
+  - Enable by setting `WEBSITE_BUILDER_INCLUDE_HELPER_TESTS=1` before running pack.
+- `docsAsciiCheck` (optional) docs parser-safety gate status:
+  - Enable by setting `WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK=1` before running pack.
+
 Or run runtime evidence only:
 
 ```powershell
 npm run run:website-builder-step4-8-evidence-pipeline
 ```
+
+Evidence pipeline summary now includes:
+
+- `discoverabilityGate.ok` / `discoverabilityGate.status`
+- `discoverabilityGate.details` (filled vs missing-field context from runtime check `G`)
+- `runtimeBlockers[]` when runtime execution is blocked
+- `nextAction` copy/paste-ready remediation hint
+  - Includes token-helper flow when auth token is missing.
+- `nextActionSteps[]` for command-by-command execution flow.
+- `tokenHelperProbe` (optional) with parsed token-helper JSON (`code`, `error`, `nextSteps[]`) when auth token is missing and login env vars are present.
+- `helperTests` (optional) helper-layer gate status:
+  - Enable by setting `WEBSITE_BUILDER_INCLUDE_HELPER_TESTS=1` before running pipeline.
+- `docsAsciiCheck` (optional) docs parser-safety gate status:
+  - Enable by setting `WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK=1` before running pipeline.
 
 Run the full pipeline (runtime check + evidence autofill):
 
@@ -60,6 +105,51 @@ Equivalent split commands:
 npm run check:website-builder-step4-8-runtime
 npm run apply:website-builder-step4-8-runtime-artifact
 ```
+
+Optional helper test aggregate (CI-friendly):
+
+```powershell
+npm run test:website-builder-step4-8-helpers
+```
+
+To include helper tests inside pack gating itself:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_HELPER_TESTS="1"
+npm run run:website-builder-ready-to-commit-pack
+```
+
+To include docs ASCII safety inside pack gating itself:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"
+npm run run:website-builder-ready-to-commit-pack
+```
+
+To include helper tests inside pipeline gating itself:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_HELPER_TESTS="1"
+npm run run:website-builder-step4-8-evidence-pipeline
+```
+
+To include docs ASCII safety inside pipeline gating itself:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"
+npm run run:website-builder-step4-8-evidence-pipeline
+```
+
+Expected aggregate helper-test summary fields (for CI parsing):
+
+- `check` (expected value: `website-builder-step4-8-helper-tests`)
+- `overallOk` (`true`/`false`)
+- `steps[]` with per-step:
+  - `label`
+  - `command`
+  - `ok`
+  - `exitCode`
+  - `elapsedMs`
 
 ---
 
@@ -82,6 +172,7 @@ Expected API markers in artifact:
 - D metadata-only patch -> `normalizedPageTree: false`
 - E pageTree patch -> `normalizedPageTree: true`
 - F draft generation -> `draft.pagePlan[]` present
+- G QA-template discoverability evidence gate -> pass (or explicit missing-field list when incomplete)
 
 ---
 
@@ -116,6 +207,30 @@ If script result is `mode=blocked`:
 
 - Validate `POST /api/website/ai/generate-draft` availability and auth.
 - Verify response includes `draft.pagePlan[]`.
+
+### 4.6 Discoverability evidence gate failures (G)
+
+- Open `docs/evidence/closure/2026-04-24-website-builder-step4-8-runtime-qa-template.md`.
+- Fill Section `1) Module discoverability` fields with non-placeholder values.
+- Add evidence path/link for discoverability screenshot/video.
+- Re-run:
+  - `npm run check:website-builder-step4-8-runtime`
+  - `npm run apply:website-builder-step4-8-runtime-artifact`
+
+### 4.7 Helper test gate failures
+
+If `helperTests.ok=false` (pipeline/pack strict mode) or aggregate helper tests fail:
+
+- Run helper aggregate directly:
+  - `npm run test:website-builder-step4-8-helpers`
+- Identify failing helper step from `steps[]`:
+  - `docs-gate` -> inspect `scripts/website-builder-step4-8-docs-gate.mjs` + test fixtures.
+  - `helper-gate` -> verify `WEBSITE_BUILDER_INCLUDE_HELPER_TESTS` is explicitly `1` only when strict mode is intended.
+  - `next-action` -> inspect `scripts/website-builder-step4-8-next-action.mjs` + test fixtures.
+  - `token-probe` -> inspect `scripts/website-builder-step4-8-token-probe.mjs` + test fixtures.
+- Re-run strict mode command after fixes:
+  - `$env:WEBSITE_BUILDER_INCLUDE_HELPER_TESTS="1" ; npm run run:website-builder-step4-8-evidence-pipeline`
+  - `$env:WEBSITE_BUILDER_INCLUDE_HELPER_TESTS="1" ; npm run run:website-builder-ready-to-commit-pack`
 
 ---
 

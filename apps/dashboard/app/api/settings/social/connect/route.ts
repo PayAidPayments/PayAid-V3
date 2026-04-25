@@ -18,6 +18,7 @@ const bodySchema = z.object({
   providerUserId: z.string().optional(),
   providerEmail: z.string().email().optional(),
   providerName: z.string().optional(),
+  providerAvatarUrl: z.string().url().optional(),
   scope: z.string().optional(),
 })
 
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
         providerUserId: body.providerUserId || null,
         providerEmail: body.providerEmail || null,
         providerName: body.providerName || null,
+        providerAvatarUrl: body.providerAvatarUrl || null,
         isActive: true,
         lastUsedAt: new Date(),
       },
@@ -56,10 +58,18 @@ export async function POST(request: NextRequest) {
         providerUserId: body.providerUserId || null,
         providerEmail: body.providerEmail || null,
         providerName: body.providerName || null,
+        providerAvatarUrl: body.providerAvatarUrl || null,
         isActive: true,
         lastUsedAt: new Date(),
       },
-      select: { provider: true, updatedAt: true, expiresAt: true, providerName: true, providerEmail: true },
+      select: {
+        provider: true,
+        updatedAt: true,
+        expiresAt: true,
+        providerName: true,
+        providerEmail: true,
+        providerAvatarUrl: true,
+      },
     })
 
     await writeIntegrationAudit({
@@ -73,6 +83,7 @@ export async function POST(request: NextRequest) {
         expiresAt: saved.expiresAt?.toISOString() ?? null,
         providerName: saved.providerName ?? null,
         providerEmail: saved.providerEmail ?? null,
+        providerAvatarUrl: saved.providerAvatarUrl ?? null,
       },
     })
 

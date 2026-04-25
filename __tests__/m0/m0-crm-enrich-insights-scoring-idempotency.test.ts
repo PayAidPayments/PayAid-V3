@@ -53,7 +53,7 @@ describe('CRM enrich/insights/scoring idempotency', () => {
     const license = require('@/lib/middleware/license')
     const prisma = require('@/lib/db/prisma')
     const m0Service = require('@/lib/ai-native/m0-service')
-    license.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    license.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_contact_enrich_1',
       afterSnapshot: { enriched: true },
@@ -78,7 +78,7 @@ describe('CRM enrich/insights/scoring idempotency', () => {
     const auth = require('@/lib/middleware/auth')
     const insights = require('@/lib/ai/customer-insights')
     const m0Service = require('@/lib/ai-native/m0-service')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_insights_refresh_1',
       afterSnapshot: { refreshed: true },
@@ -105,7 +105,7 @@ describe('CRM enrich/insights/scoring idempotency', () => {
     const auth = require('@/lib/middleware/auth')
     const scoring = require('@/lib/ai/lead-scoring')
     const m0Service = require('@/lib/ai-native/m0-service')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_lead_score_1',
       afterSnapshot: { scored: true },
@@ -130,7 +130,7 @@ describe('CRM enrich/insights/scoring idempotency', () => {
     const auth = require('@/lib/middleware/auth')
     const prisma = require('@/lib/db/prisma')
     const m0Service = require('@/lib/ai-native/m0-service')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_scoring_rule_create_1',
       afterSnapshot: { rule_id: 'rule_1' },

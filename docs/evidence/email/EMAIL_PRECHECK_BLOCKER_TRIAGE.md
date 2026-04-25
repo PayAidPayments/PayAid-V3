@@ -1,13 +1,13 @@
 # Email Precheck Blocker Triage
 
-Use this when `npm run verify:email-go-live-precheck` fails and Step 4.1.a cannot pass.
+Use this when `npm run verify:email-go-live-gated-precheck` fails and Step 4.1.a cannot pass.
 
 ## 1) Capture command evidence
 
 Run:
 
 - `npm run check:email-precheck-env`
-- `npm run verify:email-go-live-precheck`
+- `npm run verify:email-go-live-gated-precheck`
 
 Attach:
 
@@ -59,6 +59,24 @@ Immediate checks:
 
 Proceed to Step 4.1 functional QA only when:
 
-- `npm run verify:email-go-live-precheck` exits `0`
+- `npm run verify:email-go-live-gated-precheck` exits `0`
 - Generated precheck artifact shows both gates `PASS`
+
+## 5) Optional Step 4.1 API smoke assist
+
+Before screenshot-based QA, you can run:
+
+- `npm run check:email-step41-smoke-env`
+- `npm run smoke:email-step41-runtime`
+
+Required env:
+
+- `BASE_URL`
+- `TENANT_ID`
+- `AUTH_TOKEN`
+- `EMAIL_CAMPAIGN_ID`
+
+Optional:
+
+- `EMAIL_RETRY_JOB_ID` (to include a single-retry API call)
 

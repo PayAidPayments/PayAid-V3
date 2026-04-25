@@ -92,6 +92,91 @@ async function refreshMeta(integration: any, provider: 'facebook' | 'instagram')
   }
 }
 
+async function refreshYouTube(integration: any) {
+  const refreshTokenEnc = integration?.refreshToken
+  if (!refreshTokenEnc) {
+    throw new Error('No refresh token available. Reconnect YouTube with offline access.')
+  }
+  const clientId = process.env.GOOGLE_CLIENT_ID || ''
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET || ''
+  if (!clientId || !clientSecret) {
+    throw new Error('YouTube OAuth is not configured on the server.')
+  }
+
+  const refreshToken = decrypt(refreshTokenEnc)
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: clientId,
+      client_secret: clientSecret,
+    }),
+  })
+  const json: any = await response.json().catch(() => ({}))
+  if (!response.ok || !json?.access_token) {
+    throw new Error(json?.error_description || json?.error || `YouTube refresh failed (HTTP ${response.status})`)
+  }
+  const expiresIn = Number(json.expires_in || 0)
+  const expiresAt = expiresIn > 0 ? new Date(Date.now() + expiresIn * 1000) : null
+  return {
+    accessToken: encrypt(json.access_token),
+    refreshToken: integration.refreshToken,
+    expiresAt,
+    tokenType: json.token_type || 'Bearer',
+    scope: json.scope || integration.scope || null,
+    lastUsedAt: new Date(),
+    isActive: true,
+  }
+}
+
+async function refreshTwitter(integration: any) {
+  const refreshTokenEnc = integration?.refreshToken
+  if (!refreshTokenEnc) {
+    throw new Error('No refresh token available. Reconnect X/Twitter with offline access.')
+  }
+
+  const clientId = process.env.TWITTER_CLIENT_ID || process.env.X_CLIENT_ID || ''
+  const clientSecret = process.env.TWITTER_CLIENT_SECRET || process.env.X_CLIENT_SECRET || ''
+  if (!clientId || !clientSecret) {
+    throw new Error('X OAuth is not configured on the server.')
+  }
+
+  const refreshToken = decrypt(refreshTokenEnc)
+  const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
+  const response = await fetch('https://api.x.com/2/oauth2/token', {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${basicAuth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: clientId,
+    }),
+  })
+  const json: any = await response.json().catch(() => ({}))
+  if (!response.ok || !json?.access_token) {
+    throw new Error(json?.error_description || json?.error || `X refresh failed (HTTP ${response.status})`)
+  }
+
+  const expiresIn = Number(json.expires_in || 0)
+  const expiresAt = expiresIn > 0 ? new Date(Date.now() + expiresIn * 1000) : null
+  return {
+    accessToken: encrypt(json.access_token),
+    refreshToken: json.refresh_token ? encrypt(json.refresh_token) : integration.refreshToken,
+    expiresAt,
+    tokenType: json.token_type || 'Bearer',
+    scope: json.scope || integration.scope || null,
+    lastUsedAt: new Date(),
+    isActive: true,
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = await authenticateRequest(request)
@@ -110,8 +195,11 @@ export async function POST(request: NextRequest) {
     }
 
     let updateData: any
-    if (provider === 'linkedin') updateData = await refreshLinkedIn(integration)
-    else if (provider === 'facebook' || provider === 'instagram') updateData = await refreshMeta(integration, provider)
+    if (providerKey === 'linkedin') updateData = await refreshLinkedIn(integration)
+    else if (providerKey === 'facebook' || providerKey === 'instagram')
+      updateData = await refreshMeta(integration, providerKey)
+    else if (providerKey === 'youtube') updateData = await refreshYouTube(integration)
+    else if (providerKey === 'twitter') updateData = await refreshTwitter(integration)
     else
       return NextResponse.json(
         {

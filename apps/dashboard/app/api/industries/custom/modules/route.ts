@@ -13,7 +13,17 @@ export async function POST(request: NextRequest) {
     const includeLegacy = shouldIncludeLegacyModuleFields()
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const body = await request.json()
-    const { industryName, coreModules, industryFeatures } = body
+    const canonicalEnabledModules = Array.isArray(body?.canonical?.enabledModules)
+      ? body.canonical.enabledModules
+      : null
+    const canonicalEnabledFeatures = Array.isArray(body?.canonical?.enabledFeatures)
+      ? body.canonical.enabledFeatures
+      : null
+    const coreModules = Array.isArray(body?.coreModules) ? body.coreModules : canonicalEnabledModules
+    const industryFeatures = Array.isArray(body?.industryFeatures)
+      ? body.industryFeatures
+      : canonicalEnabledFeatures
+    const { industryName } = body
 
     if (!industryName || !coreModules || !Array.isArray(coreModules)) {
       return NextResponse.json(

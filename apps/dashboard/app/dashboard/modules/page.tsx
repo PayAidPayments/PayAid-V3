@@ -34,6 +34,9 @@ export default function ModulesPage() {
   const [viewMode, setViewMode] = useState<'recommended' | 'all'>('recommended')
 
   const { data, isLoading, refetch } = useQuery<{
+    taxonomy?: {
+      topLevelSuites?: string[]
+    }
     canonical: {
       recommended: Module[]
       all: Module[]
@@ -76,6 +79,7 @@ export default function ModulesPage() {
   const allModules = data?.canonical?.all || []
   const suiteModules = data?.canonical?.suites || []
   const capabilityModules = data?.canonical?.capabilities || []
+  const taxonomySuites = data?.taxonomy?.topLevelSuites || []
 
   const displayModules = viewMode === 'recommended' ? recommended : allModules
 
@@ -138,6 +142,11 @@ export default function ModulesPage() {
               <p className="text-sm text-gray-600 mb-4">
                 Core suites available in your tenant catalog
               </p>
+              {taxonomySuites.length > 0 && (
+                <p className="text-xs text-gray-500 mb-3">
+                  Taxonomy suite groups: {taxonomySuites.join(', ')}
+                </p>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {suiteModules.map((module) => (
                   <ModuleCard

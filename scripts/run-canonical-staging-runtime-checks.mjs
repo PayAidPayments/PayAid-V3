@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { isStrictFlagEnabled } from './strict-flag.mjs'
 
 const now = new Date()
 const isoNow = now.toISOString()
@@ -8,7 +9,7 @@ const stamp = isoNow.replace(/[:.]/g, '-')
 const BASE_URL = process.env.CANONICAL_STAGING_BASE_URL || ''
 const AUTH_TOKEN = process.env.CANONICAL_STAGING_AUTH_TOKEN || ''
 const INDUSTRY = process.env.CANONICAL_STAGING_INDUSTRY || 'retail'
-const RUN_MUTATIONS = process.env.CANONICAL_STAGING_RUN_MUTATIONS === '1'
+const RUN_MUTATIONS = isStrictFlagEnabled(process.env.CANONICAL_STAGING_RUN_MUTATIONS)
 
 function headers(withJson = false) {
   const out = {}

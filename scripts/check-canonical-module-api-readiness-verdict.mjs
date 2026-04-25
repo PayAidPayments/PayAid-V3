@@ -7,6 +7,7 @@ const isoNow = now.toISOString()
 const stamp = isoNow.replace(/[:.]/g, '-')
 
 const CHECKLIST_PATH = 'docs/CANONICAL_MODULE_API_CONSUMER_READINESS_CHECKLIST.md'
+const commandTimeoutMsDefault = Number(process.env.CANONICAL_READINESS_COMMAND_TIMEOUT_MS || '120000')
 const COMMANDS = [
   ['canonical-contract', ['run', 'check:canonical-module-api-contract']],
   ['canonical-post-cutover', ['run', 'check:canonical-module-api-post-cutover']],
@@ -15,20 +16,27 @@ const COMMANDS = [
 ]
 
 function runCommand(label, args) {
+  const override = Number(process.env[`CANONICAL_READINESS_COMMAND_TIMEOUT_MS_${label.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`])
+  const timeoutMs = Number.isFinite(override) && override > 0 ? override : commandTimeoutMsDefault
   const started = Date.now()
   const run = spawnSync('npm', args, {
     cwd: process.cwd(),
     env: process.env,
     encoding: 'utf8',
     shell: process.platform === 'win32',
+    timeout: timeoutMs,
+    maxBuffer: 16 * 1024 * 1024,
   })
   const elapsedMs = Date.now() - started
   const exitCode = typeof run.status === 'number' ? run.status : 1
+  const timedOut = run.error?.code === 'ETIMEDOUT'
   return {
     label,
     command: `npm ${args.join(' ')}`,
-    ok: exitCode === 0,
+    ok: exitCode === 0 && !timedOut,
     exitCode,
+    timedOut,
+    timeoutMs,
     elapsedMs,
     outputExcerpt: `${run.stdout || ''}\n${run.stderr || ''}`.split('\n').slice(-40).join('\n'),
   }
@@ -71,6 +79,7 @@ const payload = {
   overallOk,
   commandsOk,
   checklistOk,
+  commandTimeoutMsDefault,
   commandResults,
   checklist,
   notes: [
@@ -97,7 +106,11 @@ md.push('')
 md.push('## Command results')
 md.push('')
 for (const result of commandResults) {
-  md.push(`- ${result.ok ? 'PASS' : 'FAIL'} \`${result.command}\` (${result.elapsedMs}ms)`)
+  md.push(
+    `- ${result.ok ? 'PASS' : 'FAIL'} \`${result.command}\` (${result.elapsedMs}ms, timeout=${result.timeoutMs}ms${
+      result.timedOut ? ', timed out' : ''
+    })`
+  )
 }
 md.push('')
 md.push('## Unchecked checklist items')

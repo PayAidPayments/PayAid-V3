@@ -6,9 +6,36 @@ Canonical reference for Step 4.8 runtime + commit-gate evidence artifacts.
 
 ## Commands
 
+Strict env-flag convention:
+
+- Set optional strict gate flags to `"1"` to enable.
+- Any other value keeps strict mode disabled unless the script explicitly documents compatibility with `"true"`.
+
 Recommended one-command gate:
 
 ```powershell
+npm run run:website-builder-ready-to-commit-pack
+```
+
+If pack summary returns `overallOk=false`, inspect `runtimeBlockers[]` for explicit env/auth blockers.
+
+Use `nextAction` from pack output (copy/paste-ready PowerShell env + rerun command, including token-helper flow when token is missing) before rerun.
+Optional: run `nextActionSteps[]` sequentially for structured remediation.
+Optional: inspect `tokenHelperProbe` (`code`, `error`, `nextSteps[]`) when auth token is missing.
+Optional: inspect `helperTests` (`enabled`, `ok`, `exitCode`, `elapsedMs`) for helper-layer gate status.
+Optional: inspect `docsAsciiCheck` (`enabled`, `ok`, `exitCode`, `elapsedMs`) for docs parser-safety gate status.
+
+To enforce helper tests in pack gating:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_HELPER_TESTS="1"
+npm run run:website-builder-ready-to-commit-pack
+```
+
+To enforce docs ASCII parser-safety in pack gating:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"
 npm run run:website-builder-ready-to-commit-pack
 ```
 
@@ -19,6 +46,48 @@ npm run run:website-builder-step4-8-evidence-pipeline
 npm run check:website-builder-ready-to-commit
 ```
 
+Optional early-signal check from evidence-pipeline summary:
+
+- `discoverabilityGate.ok` should be `true`
+- `discoverabilityGate.status` should be `200`
+- If pipeline `overallOk=false`, inspect `runtimeBlockers[]` and use `nextAction` (copy/paste-ready remediation).
+- Optional: execute `nextActionSteps[]` in order when present.
+- Optional: inspect `tokenHelperProbe` (`code`, `error`, `nextSteps[]`) when auth token is missing.
+- Optional: inspect `helperTests` (`enabled`, `ok`, `exitCode`, `elapsedMs`) for helper-layer gate status.
+- Optional: inspect `docsAsciiCheck` (`enabled`, `ok`, `exitCode`, `elapsedMs`) for docs parser-safety gate status.
+
+To enforce helper tests in pipeline gating:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_HELPER_TESTS="1"
+npm run run:website-builder-step4-8-evidence-pipeline
+```
+
+To enforce docs ASCII parser-safety in pipeline gating:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"
+npm run run:website-builder-step4-8-evidence-pipeline
+```
+
+Optional helper-layer guardrail check:
+
+```powershell
+npm run test:website-builder-step4-8-helpers
+```
+
+Expected helper-test summary fields:
+
+- `check` (expected `website-builder-step4-8-helper-tests`)
+- `overallOk`
+- `steps[]` (`label`, `command`, `ok`, `exitCode`, `elapsedMs`)
+
+Token helper (`npm run get:website-builder-step4-8-token`) behavior:
+
+- Success: prints copy/paste env exports for `WEBSITE_BUILDER_BASE_URL` and `WEBSITE_BUILDER_AUTH_TOKEN`
+- Failure: prints explicit reason plus a `# Next steps` retry block
+- Automation mode: `npm run get:website-builder-step4-8-token -- --json` returns structured payload (`ok`, `code`, `status`, `error`, `baseUrl`, `token`, `tenantId`, `nextSteps[]`)
+
 ---
 
 ## Required artifacts
@@ -27,6 +96,16 @@ Runtime checks:
 
 - `docs/evidence/closure/*-website-builder-step4-8-runtime-checks.json`
 - `docs/evidence/closure/*-website-builder-step4-8-runtime-checks.md`
+
+Expected runtime markers:
+
+- A `GET /api/website/sites` pass
+- B `POST /api/website/sites` pass + `siteId`
+- C `GET /api/website/sites/:id` pass
+- D metadata-only patch shows `normalizedPageTree: false`
+- E pageTree patch shows `normalizedPageTree: true`
+- F draft generation includes `draft.pagePlan[]`
+- G QA-template discoverability evidence gate pass (or explicit missing-field list when incomplete)
 
 Commit preflight:
 

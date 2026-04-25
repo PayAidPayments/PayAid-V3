@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { isStrictFlagEnabled } from './strict-flag.mjs'
 
 const TEST_COMMANDS = [
   ['test:crm:tasks-filters', ['run', 'test:crm:tasks-filters']],
@@ -11,8 +12,8 @@ const TEST_COMMANDS = [
 
 const RUN_TIMEOUT_MS = Number(process.env.CRM_CLOSURE_TEST_TIMEOUT_MS || '120000')
 const NPM_BIN = 'npm'
-const SKIP_TESTS = process.env.CRM_CLOSURE_SKIP_TESTS === '1'
-const SKIP_AUTH = process.env.CRM_CLOSURE_SKIP_AUTH === '1'
+const SKIP_TESTS = isStrictFlagEnabled(process.env.CRM_CLOSURE_SKIP_TESTS)
+const SKIP_AUTH = isStrictFlagEnabled(process.env.CRM_CLOSURE_SKIP_AUTH)
 const now = new Date()
 const isoNow = now.toISOString()
 const stamp = isoNow.replace(/[:.]/g, '-')

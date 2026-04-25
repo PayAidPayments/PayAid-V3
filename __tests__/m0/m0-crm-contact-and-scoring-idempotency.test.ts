@@ -45,7 +45,7 @@ describe('CRM contact and scoring idempotency', () => {
     const auth = require('@/lib/middleware/auth')
     const prisma = require('@/lib/db/prisma')
     const m0Service = require('@/lib/ai-native/m0-service')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_contact_patch_1',
       afterSnapshot: { contact_id: 'c_1' },
@@ -72,7 +72,7 @@ describe('CRM contact and scoring idempotency', () => {
     const auth = require('@/lib/middleware/auth')
     const prisma = require('@/lib/db/prisma')
     const m0Service = require('@/lib/ai-native/m0-service')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_contact_delete_1',
       afterSnapshot: { archived: true },
@@ -97,7 +97,7 @@ describe('CRM contact and scoring idempotency', () => {
     const auth = require('@/lib/middleware/auth')
     const prisma = require('@/lib/db/prisma')
     const m0Service = require('@/lib/ai-native/m0-service')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_rule_patch_1',
       afterSnapshot: { rule_id: 'rule_1' },
@@ -124,7 +124,7 @@ describe('CRM contact and scoring idempotency', () => {
     const auth = require('@/lib/middleware/auth')
     const telephony = require('@/lib/telephony/call-recording')
     const m0Service = require('@/lib/ai-native/m0-service')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_recording_consent_1',
       afterSnapshot: { updated: true },

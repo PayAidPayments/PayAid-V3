@@ -1,12 +1,13 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { isStrictFlagEnabled } from './strict-flag.mjs'
 
 const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3000'
 const OWNER_EMAIL = process.env.CRM_LOGIN_EMAIL || 'admin@demo.com'
 const OWNER_PASSWORD = process.env.CRM_LOGIN_PASSWORD || 'Test@1234'
 const TEST_PASSWORD = process.env.DAY5_TEST_PASSWORD || 'Test@1234'
 const REQUEST_TIMEOUT_MS = Number(process.env.DAY5_REQUEST_TIMEOUT_MS || 120000)
-const SKIP_SETUP = process.env.DAY5_SKIP_SETUP === '1'
+const SKIP_SETUP = isStrictFlagEnabled(process.env.DAY5_SKIP_SETUP)
 
 const TEST_USERS = {
   admin: {

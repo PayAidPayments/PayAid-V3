@@ -31,6 +31,12 @@ jest.mock('@/lib/db/prisma', () => ({
     contact: {
       findFirst: jest.fn(),
     },
+    user: {
+      findFirst: jest.fn(),
+    },
+    task: {
+      create: jest.fn(),
+    },
     $transaction: jest.fn(),
   },
 }))
@@ -120,12 +126,29 @@ describe('CRM lead and proxy hardening', () => {
     expect(prisma.prisma.$transaction).not.toHaveBeenCalled()
   })
 
-  it('forwards x-idempotency-key in task proxy POST', async () => {
-    const authSdk = require('@/packages/auth-sdk/client')
-    authSdk.getSessionToken.mockResolvedValue('token_1')
-    ;(global as any).fetch = jest.fn().mockResolvedValue({
-      status: 201,
-      json: async () => ({ id: 'task_1' }),
+  it('creates task via native CRM tasks route', async () => {
+    const auth = require('@/lib/middleware/auth')
+    const prisma = require('@/lib/db/prisma')
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
+    prisma.prisma.task.create.mockResolvedValue({
+      id: 'task_1',
+      title: 'Call customer',
+      description: null,
+      priority: 'medium',
+      status: 'pending',
+      dueDate: null,
+      completedAt: null,
+      reminderSentAt: null,
+      module: 'crm',
+      recurrenceRule: null,
+      recurrenceEndDate: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      tenantId: 'tn_1',
+      contactId: null,
+      assignedToId: 'usr_1',
+      contact: null,
+      assignedTo: null,
     })
 
     const req = new NextRequest('http://localhost/api/crm/tasks', {
@@ -133,20 +156,14 @@ describe('CRM lead and proxy hardening', () => {
       headers: {
         'content-type': 'application/json',
         'x-idempotency-key': 'dup_task_1',
+        authorization: 'Bearer token',
       },
       body: JSON.stringify({ title: 'Call customer' }),
     })
 
     const res = await createTaskProxy(req)
     expect(res.status).toBe(201)
-    expect((global as any).fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/tasks'),
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          'x-idempotency-key': 'dup_task_1',
-        }),
-      })
-    )
+    expect(prisma.prisma.task.create).toHaveBeenCalled()
   })
 
   it('forwards x-idempotency-key in deal proxy POST', async () => {

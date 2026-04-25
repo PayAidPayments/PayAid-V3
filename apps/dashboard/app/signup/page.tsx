@@ -137,8 +137,10 @@ function SignupForm() {
                 },
                 body: JSON.stringify({
                   industryName: decodeURIComponent(customName),
-                  coreModules: modulesToEnable,
-                  industryFeatures: [],
+                  canonical: {
+                    enabledModules: modulesToEnable,
+                    enabledFeatures: [],
+                  },
                 }),
               })
             }

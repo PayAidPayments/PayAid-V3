@@ -1,0 +1,21 @@
+{
+  "check": "website-builder-step4-8-runtime-checks",
+  "timestamp": "2026-04-25T10:50:58.197Z",
+  "mode": "blocked",
+  "blockedReasons": [
+    "WEBSITE_BUILDER_BASE_URL is missing",
+    "WEBSITE_BUILDER_AUTH_TOKEN is missing"
+  ],
+  "checks": [
+    {
+      "id": "G",
+      "endpoint": "QA template discoverability evidence gate",
+      "pass": true,
+      "status": 200,
+      "details": {
+        "source": "docs/evidence/closure/2026-04-24-website-builder-step4-8-runtime-qa-template.md",
+        "status": "filled"
+      }
+    }
+  ]
+}

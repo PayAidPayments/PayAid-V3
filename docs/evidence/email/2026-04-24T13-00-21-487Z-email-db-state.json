@@ -1,0 +1,56 @@
+{
+  "timestamp": "2026-04-24T13:00:21.487Z",
+  "databaseUrlPresent": true,
+  "connected": true,
+  "dbDetail": "Connected successfully",
+  "migrationTableExists": true,
+  "latestMigrations": [
+    {
+      "migrationName": "20260420150000_inbound_pilot_loop",
+      "finishedAt": "2026-04-19T11:47:14.410Z"
+    },
+    {
+      "migrationName": "20260420130000_idx_task_tenant_priority_due",
+      "finishedAt": "2026-04-19T10:10:32.016Z"
+    },
+    {
+      "migrationName": "20260420120000_idx_deal_tenant_created_desc",
+      "finishedAt": "2026-04-18T16:13:02.548Z"
+    },
+    {
+      "migrationName": "20260419120000_crm_config_lead_routing",
+      "finishedAt": "2026-04-18T12:40:23.067Z"
+    },
+    {
+      "migrationName": "20260418210000_add_workflow_execution_reply_fields",
+      "finishedAt": "2026-04-18T10:05:38.295Z"
+    },
+    {
+      "migrationName": "20260418120000_add_inbound_orchestration_log",
+      "finishedAt": "2026-04-18T08:33:21.939Z"
+    },
+    {
+      "migrationName": "20260418070000_add_outreach_automation",
+      "finishedAt": "2026-04-18T08:33:19.831Z"
+    },
+    {
+      "migrationName": "20260415103000_add_specialist_activity_log",
+      "finishedAt": "2026-04-18T08:33:18.228Z"
+    },
+    {
+      "migrationName": "20260410120000_contact_internal_notes",
+      "finishedAt": "2026-04-15T09:55:26.381Z"
+    },
+    {
+      "migrationName": "20260409003000_add_telephony_webhook_status_columns",
+      "finishedAt": "2026-04-15T09:55:25.492Z"
+    }
+  ],
+  "requiredTables": {
+    "EmailSendJob": true,
+    "EmailTrackingEvent": true,
+    "EmailSyncCheckpoint": true,
+    "EmailDeliverabilityLog": true,
+    "EmailCampaignSenderPolicy": true
+  }
+}

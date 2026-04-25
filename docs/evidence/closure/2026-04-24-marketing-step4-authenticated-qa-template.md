@@ -967,3 +967,87 @@ After filling this block:
 - [ ] retryOperationId parity verified (panel summary vs Retry History row)
 - [ ] Attempt #15 final visual verdict set (`PASS`)
 - [ ] Attempt #15 consolidated release recommendation updated to `Go`
+
+---
+
+## Attempt #16 (Post-deploy Marketing Studio IA + integrations access fix verification - 2026-04-25)
+
+## Run Metadata
+
+- Date: 2026-04-25
+- Tester: AI-assisted verification prep + pending authenticated operator run
+- Environment URL: `https://payaid-v3.vercel.app`
+- Tenant ID: `cmjptk2mw0000aocw31u48n64` (expected)
+- Role/User: owner/admin (required for integration actions)
+- Build/Commit (if known):
+  - `60a448e9` (`feat(marketing): split compose workspace and unblock integrations`)
+  - `aa3e6d56` (`chore(marketing): remove unintended logo editor change from scope`)
+
+## Step 4.2 - Marketing canonical route verification
+
+- Status: `PARTIAL`
+- Notes:
+  - Canonical Compose route remains `/marketing/[tenantId]/Studio`.
+  - Compose workspace route-state introduced:
+    - `/marketing/[tenantId]/Studio?workspace=social`
+    - `/marketing/[tenantId]/Studio?workspace=direct`
+  - Awaiting authenticated browser confirmation for both workspace states.
+- Evidence links/screenshots:
+  - (Attach Compose social/direct screenshots)
+
+## Step 4.5 - Marketing channel settings + social runtime verification
+
+- Status: `PARTIAL`
+- Notes:
+  - RBAC fix shipped: `owner`/`OWNER` now includes `admin.integrations.manage`.
+  - Regression test passed for owner integrations permission.
+  - Awaiting authenticated browser confirmation that Social settings buttons are clickable and actionable.
+- Evidence links/screenshots:
+  - (Attach Settings -> Integrations -> Social action screenshots)
+- API payload snippets:
+  - (Optional: successful `/api/settings/social/test` response capture)
+
+Checklist:
+
+- [ ] Social settings buttons are clickable for owner/admin user
+- [ ] At least one provider `Test` action succeeds
+- [ ] Connect/Update token action opens or completes expected flow
+- [ ] Disconnect action is available only when connected
+- [ ] Refresh token action availability follows provider capability
+
+## Step 4.5b - Marketing Studio generator/workspace runtime verification
+
+- Status: `PARTIAL`
+- Notes:
+  - Image-response parsing fix shipped (`url` or `imageUrl` accepted).
+  - Studio IA split shipped (Social vs Direct workspace).
+  - Independent Text/Image/Video generators shipped.
+  - Targeted regression suite passed:
+    - `__tests__/m0/m0-marketing-studio-workspace-channel-scope.test.ts`
+    - `3/3` tests passed
+- Evidence links/screenshots:
+  - (Attach Social Studio screenshot)
+  - (Attach Direct Studio screenshot)
+  - (Attach image generation success screenshot)
+
+Checklist:
+
+- [ ] Workspace toggle visible and switches between social/direct
+- [ ] Direct workspace shows only Email/SMS/WhatsApp channels
+- [ ] Social workspace shows only Facebook/Instagram/LinkedIn/YouTube channels
+- [ ] Text generation works without requiring video
+- [ ] Image generation succeeds without `No image URL returned` false error
+- [ ] Video controls appear only in Social workspace
+- [ ] YouTube path blocks scheduling until video is present (when YouTube selected)
+- [ ] Publish actions remain separate from generator controls
+
+## Consolidated Verdict
+
+- Release recommendation: `Conditional Go`
+- Blocking defects:
+  - Authenticated browser QA evidence for Attempt #16 checks above is not attached yet.
+- Non-blocking defects:
+  - None known from automated checks/regressions for this attempt.
+- Follow-up tickets/tasks:
+  - Run authenticated UI pass and attach screenshots for all unchecked items.
+  - Update Attempt #16 statuses from `PARTIAL` to `PASS` where applicable.

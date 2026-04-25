@@ -19,6 +19,68 @@ function hasStep48InHandoff() {
   return body.includes('## Step 4.8 - Website Builder MVP runtime verification')
 }
 
+function discoverabilityTemplateCheck() {
+  const templateRel = 'docs/evidence/closure/2026-04-24-website-builder-step4-8-runtime-qa-template.md'
+  const templatePath = path.join(ROOT, templateRel)
+  if (!existsSync(templatePath)) {
+    return { ok: false, detail: `missing template: ${templateRel}` }
+  }
+
+  const body = readFileSync(templatePath, 'utf8')
+  const requiredMarkers = [
+    '### 1) Module discoverability (switcher -> Website Builder)',
+    '- Started from non-Website Builder module:',
+    '- `Website Builder` visible in module switcher secondary tools:',
+    '- Click navigation landed on `/website-builder/[tenantId]/Home` (direct or redirect):',
+  ]
+
+  const missing = requiredMarkers.filter((marker) => !body.includes(marker))
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      detail: `missing discoverability markers: ${missing.join(' | ')}`,
+    }
+  }
+
+  return { ok: true, detail: 'discoverability section present in QA template' }
+}
+
+function discoverabilityEvidenceFilledCheck() {
+  const templateRel = 'docs/evidence/closure/2026-04-24-website-builder-step4-8-runtime-qa-template.md'
+  const templatePath = path.join(ROOT, templateRel)
+  if (!existsSync(templatePath)) {
+    return { ok: false, detail: `missing template: ${templateRel}` }
+  }
+
+  const body = readFileSync(templatePath, 'utf8')
+  const lines = body.split(/\r?\n/)
+
+  function valueFor(prefix) {
+    const line = lines.find((entry) => entry.trim().startsWith(prefix))
+    if (!line) return null
+    return line.slice(line.indexOf(prefix) + prefix.length).trim()
+  }
+
+  const started = valueFor('- Started from non-Website Builder module:')
+  const visible = valueFor('- `Website Builder` visible in module switcher secondary tools:')
+  const landed = valueFor('- Click navigation landed on `/website-builder/[tenantId]/Home` (direct or redirect):')
+  const passFail = valueFor('- Pass/Fail:')
+  const evidence = valueFor('- Evidence (screenshot/video):')
+
+  const problems = []
+  if (!started || started === 'Yes/No') problems.push('started-from-module not filled')
+  if (!visible || visible === 'Yes/No') problems.push('switcher-visible not filled')
+  if (!landed || landed === 'Yes/No') problems.push('navigation-landing not filled')
+  if (!passFail || passFail === 'PASS / FAIL') problems.push('pass/fail not filled')
+  if (!evidence) problems.push('evidence link/path missing')
+
+  if (problems.length > 0) {
+    return { ok: false, detail: `discoverability evidence incomplete: ${problems.join(' | ')}` }
+  }
+
+  return { ok: true, detail: 'discoverability evidence fields populated in QA template' }
+}
+
 const requiredDocs = [
   'docs/WEBSITE_BUILDER_READY_TO_COMMIT_CHECKLIST.md',
   'docs/WEBSITE_BUILDER_STEP4_8_RUNTIME_RUNBOOK.md',
@@ -44,6 +106,14 @@ const checks = [
     id: 'handoff:step4.8',
     ok: hasStep48InHandoff(),
     detail: hasStep48InHandoff() ? 'present' : 'missing step section',
+  },
+  {
+    id: 'template:discoverability',
+    ...discoverabilityTemplateCheck(),
+  },
+  {
+    id: 'template:discoverability-evidence',
+    ...discoverabilityEvidenceFilledCheck(),
   },
   {
     id: 'artifact:runtime-json',

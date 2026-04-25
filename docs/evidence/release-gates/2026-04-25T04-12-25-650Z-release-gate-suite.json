@@ -1,0 +1,54 @@
+{
+  "collected_at_utc": "2026-04-25T04:12:25.650Z",
+  "selected_gates": [
+    "canonical-contract",
+    "canonical-post-cutover",
+    "m0",
+    "m2",
+    "m3"
+  ],
+  "gate_timeout_ms": 180000,
+  "all_pass": false,
+  "results": [
+    {
+      "gate": "canonical-contract",
+      "command": "npm run check:canonical-module-api-contract",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_ms": 55486,
+      "output_excerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-contract\n> node scripts/check-canonical-module-api-contract.mjs\n\n{\n  \"overallOk\": true,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T04-13-18-985Z-canonical-module-api-contract-check.json\",\n  \"mdPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T04-13-18-985Z-canonical-module-api-contract-check.md\"\n}\n\n"
+    },
+    {
+      "gate": "canonical-post-cutover",
+      "command": "npm run check:canonical-module-api-post-cutover",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_ms": 22089,
+      "output_excerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-post-cutover\n> node scripts/check-canonical-module-api-post-cutover.mjs\n\n{\n  \"overallOk\": true,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T04-13-42-402Z-canonical-module-api-post-cutover-guard.json\",\n  \"mdPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T04-13-42-402Z-canonical-module-api-post-cutover-guard.md\"\n}\n\n"
+    },
+    {
+      "gate": "m0",
+      "command": "npm run test:m0",
+      "exit_code": 1,
+      "timed_out": true,
+      "duration_ms": 180049,
+      "output_excerpt": "\n> payaid-v3@0.1.0 test:m0\n> node node_modules/jest/bin/jest.js --config jest.m0.config.js --runInBand\n\n\n"
+    },
+    {
+      "gate": "m2",
+      "command": "npm run test:m2:smoke -- --runInBand",
+      "exit_code": 1,
+      "timed_out": true,
+      "duration_ms": 180061,
+      "output_excerpt": "\n> payaid-v3@0.1.0 test:m2:smoke\n> node node_modules/jest/bin/jest.js --config jest.m2.smoke.config.js --runInBand --runInBand\n\n\n"
+    },
+    {
+      "gate": "m3",
+      "command": "npm run test:m3:smoke -- --runInBand",
+      "exit_code": 1,
+      "timed_out": true,
+      "duration_ms": 180058,
+      "output_excerpt": "\n> payaid-v3@0.1.0 test:m3:smoke\n> node node_modules/jest/bin/jest.js --config jest.m3.smoke.config.js --runInBand --runInBand\n\n\n"
+    }
+  ]
+}

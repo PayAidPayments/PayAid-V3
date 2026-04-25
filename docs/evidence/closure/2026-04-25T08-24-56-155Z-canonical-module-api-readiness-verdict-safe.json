@@ -1,0 +1,19 @@
+{
+  "check": "canonical-module-api-readiness-verdict-safe",
+  "timestamp": "2026-04-25T08:24:56.155Z",
+  "timeoutMs": 120000,
+  "elapsedMs": 120193,
+  "timedOut": true,
+  "exitCode": 1,
+  "overallOk": false,
+  "stdoutTail": [
+    "",
+    "> payaid-v3@0.1.0 check:canonical-module-api-readiness-verdict",
+    "> node scripts/check-canonical-module-api-readiness-verdict.mjs",
+    "",
+    ""
+  ],
+  "stderrTail": [
+    ""
+  ]
+}

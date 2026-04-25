@@ -138,6 +138,7 @@ type SocialSettingsProviderStatus = {
   connected: boolean
   health: 'not_connected' | 'healthy' | 'expiring_soon' | 'expired' | 'missing_scope'
   providerName?: string | null
+  providerAvatarUrl?: string | null
   expiresAt?: string | null
 }
 
@@ -426,6 +427,7 @@ function SocialPostPreview({
   channel,
   body,
   brandName,
+  avatarUrl,
   imageUrl,
   ctaLabel,
   ctaHref,
@@ -433,6 +435,7 @@ function SocialPostPreview({
   channel: 'facebook' | 'linkedin'
   body: string
   brandName: string
+  avatarUrl?: string
   imageUrl?: string
   ctaLabel?: string
   ctaHref?: string
@@ -449,18 +452,27 @@ function SocialPostPreview({
   return (
     <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-950/40 overflow-hidden">
       <div className="px-4 py-3 flex items-start gap-3">
-        <div
-          className={[
-            'h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold',
-            isLinkedIn ? 'bg-sky-600 text-white' : 'bg-blue-600 text-white',
-          ].join(' ')}
-          aria-hidden="true"
-        >
-          {initials ||
-            (brandName.replace(/\s+/g, '').length >= 1
-              ? brandName.replace(/\s+/g, '').slice(0, 2).toUpperCase()
-              : '?')}
-        </div>
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={avatarUrl}
+            alt={`${brandName} avatar`}
+            className="h-10 w-10 rounded-full object-cover border border-slate-200/80 dark:border-slate-700"
+          />
+        ) : (
+          <div
+            className={[
+              'h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold',
+              isLinkedIn ? 'bg-sky-600 text-white' : 'bg-blue-600 text-white',
+            ].join(' ')}
+            aria-hidden="true"
+          >
+            {initials ||
+              (brandName.replace(/\s+/g, '').length >= 1
+                ? brandName.replace(/\s+/g, '').slice(0, 2).toUpperCase()
+                : '?')}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-50 truncate">{brandName}</p>
@@ -588,12 +600,14 @@ function SmsPreview({ brandName, body }: { brandName: string; body: string }) {
 
 function InstagramPreview({
   brandName,
+  avatarUrl,
   body,
   imageUrl,
   ctaLabel,
   ctaHref,
 }: {
   brandName: string
+  avatarUrl?: string
   body: string
   imageUrl?: string
   ctaLabel?: string
@@ -603,7 +617,16 @@ function InstagramPreview({
   return (
     <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-950/40 overflow-hidden">
       <div className="px-4 py-3 flex items-center gap-3">
-        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-fuchsia-500 via-rose-500 to-amber-400" />
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={avatarUrl}
+            alt={`${brandName} avatar`}
+            className="h-9 w-9 rounded-full object-cover border border-slate-200/80 dark:border-slate-700"
+          />
+        ) : (
+          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-fuchsia-500 via-rose-500 to-amber-400" />
+        )}
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-50 truncate">{brandName}</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">Just now</p>
@@ -705,6 +728,9 @@ export function MarketingStudioForm({
   const [savingTemplate, setSavingTemplate] = useState(false)
   const [emailTemplates, setEmailTemplates] = useState<SavedEmailTemplate[]>([])
   const [message, setMessage] = useState<string | null>(null)
+  const [textGeneratorMessage, setTextGeneratorMessage] = useState<string | null>(null)
+  const [imageGeneratorMessage, setImageGeneratorMessage] = useState<string | null>(null)
+  const [videoGeneratorMessage, setVideoGeneratorMessage] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   const [copyByChannel, setCopyByChannel] = useState<Record<string, ChannelCopy>>({})
@@ -860,6 +886,14 @@ export function MarketingStudioForm({
     [connectedByPlatform, previewAccountIdByPlatform]
   )
 
+  const getPreviewAccountAvatar = useCallback(
+    (platform: string): string | null => {
+      const row = socialProviderStatus[platform]
+      return row?.providerAvatarUrl?.trim() || null
+    },
+    [socialProviderStatus]
+  )
+
   const getHeaders = useCallback(
     () => ({
       'Content-Type': 'application/json',
@@ -993,22 +1027,22 @@ export function MarketingStudioForm({
 
   const handleGenerateCopy = useCallback(async () => {
     if (!requireSignedIn()) return
-    setMessage(null)
+    setTextGeneratorMessage(null)
     setLoadingCopy(true)
     try {
       const next = await generateStudioChannelCopy()
       setCopyByChannel(next)
-      setMessage('Text generated — review previews by channel.')
+      setTextGeneratorMessage('Text generated — review previews by channel.')
     } catch (err) {
       const msg = err instanceof Error ? err.message.toLowerCase() : ''
       if (msg.includes('abort')) {
-        setMessage(
+        setTextGeneratorMessage(
           'Text generation timed out. In local dev this often happens during heavy Next.js compile. Retry once after compile settles.'
         )
       } else if (err instanceof Error && err.message && !msg.includes('abort')) {
-        setMessage(err.message)
+        setTextGeneratorMessage(err.message)
       } else {
-        setMessage('Text generation failed (network). Please retry.')
+        setTextGeneratorMessage('Text generation failed (network). Please retry.')
       }
     } finally {
       setLoadingCopy(false)
@@ -1020,10 +1054,10 @@ export function MarketingStudioForm({
     if (!channels.includes('email')) return
     const emailBody = copyByChannel.email?.body?.trim()
     if (!prompt.trim() || !emailBody) {
-      setMessage('Generate email body first, then generate a subject.')
+      setTextGeneratorMessage('Generate email body first, then generate a subject.')
       return
     }
-    setMessage(null)
+    setTextGeneratorMessage(null)
     setLoadingSubject(true)
     try {
       const ac = new AbortController()
@@ -1044,21 +1078,21 @@ export function MarketingStudioForm({
       clearTimeout(timer)
       const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string }
       if (!res.ok) {
-        setMessage(data.error ?? 'Subject generation failed')
+        setTextGeneratorMessage(data.error ?? 'Subject generation failed')
         return
       }
       const subject = (data.text ?? '').trim().replace(/^subject\s*:\s*/i, '').trim()
       if (!subject) {
-        setMessage('No subject returned.')
+        setTextGeneratorMessage('No subject returned.')
         return
       }
       setCopyByChannel((prev) => ({
         ...prev,
         email: { ...(prev.email ?? { body: emailBody }), subject },
       }))
-      setMessage('Subject generated.')
+      setTextGeneratorMessage('Subject generated.')
     } catch {
-      setMessage('Subject generation timed out.')
+      setTextGeneratorMessage('Subject generation timed out.')
     } finally {
       setLoadingSubject(false)
     }
@@ -1073,13 +1107,13 @@ export function MarketingStudioForm({
       const standalone =
         imagePrompt.trim().length >= 3 || imagePurposeNote.trim().length >= 3
       if (!hasCampaignBrief && !standalone) {
-        setMessage(
+        setImageGeneratorMessage(
           'For image-only generation, add a visual description (3+ characters) or placement notes — or fill a campaign brief and select channels for full-studio context.'
         )
         return
       }
       if (brandLogoUrl.trim() && !isValidHttpUrl(brandLogoUrl)) {
-        setMessage('Brand logo URL must be a valid http:// or https:// link (or leave empty).')
+        setImageGeneratorMessage('Brand logo URL must be a valid http:// or https:// link (or leave empty).')
         return
       }
 
@@ -1089,7 +1123,7 @@ export function MarketingStudioForm({
       /** When no channel is selected, default layout hint for aspect (image-only mode). */
       const channelsForLayout = channels.length > 0 ? channels : ['instagram']
 
-      setMessage(null)
+      setImageGeneratorMessage(null)
       setLoadingImage(true)
       let imageTimer: ReturnType<typeof setTimeout> | undefined
       try {
@@ -1167,7 +1201,7 @@ export function MarketingStudioForm({
         }
         if (!res.ok) {
           const hint = data.hint ? ` ${data.hint}` : ''
-          setMessage([data.error ?? 'Image generation failed', hint].filter(Boolean).join(' — '))
+          setImageGeneratorMessage([data.error ?? 'Image generation failed', hint].filter(Boolean).join(' — '))
           setGeneratedImages([])
           setLastImageProvider(null)
           return
@@ -1176,7 +1210,7 @@ export function MarketingStudioForm({
         if (!resolvedUrl) {
           setGeneratedImages([])
           setLastImageProvider(null)
-          setMessage('No image URL returned.')
+          setImageGeneratorMessage('No image URL returned.')
           return
         }
         const img = { id: `img-${Date.now()}`, url: resolvedUrl, width: data.width, height: data.height }
@@ -1188,18 +1222,18 @@ export function MarketingStudioForm({
               ? data.service
               : null
         )
-        setMessage('Image generated — check previews.')
+        setImageGeneratorMessage('Image generated — check previews.')
       } catch (err) {
         const aborted =
           (typeof DOMException !== 'undefined' && err instanceof DOMException && err.name === 'AbortError') ||
           (err instanceof Error && err.name === 'AbortError') ||
           (err instanceof Error && err.message.toLowerCase().includes('abort'))
         if (aborted) {
-          setMessage(
+          setImageGeneratorMessage(
             `Image generation timed out after ${Math.round(IMAGE_API_TIMEOUT_MS / 60_000)} minutes. If you use Hugging Face or a self-hosted worker, retry with a shorter visual description or check your provider status.`
           )
         } else {
-          setMessage('Image generation failed (network).')
+          setImageGeneratorMessage('Image generation failed (network).')
         }
         setGeneratedImages([])
         setLastImageProvider(null)
@@ -1230,32 +1264,33 @@ export function MarketingStudioForm({
   const handleGenerateTextThenImage = useCallback(async () => {
     if (!requireSignedIn()) return
     if (!channels.length || !prompt.trim()) {
-      setMessage('Select channels and add a brief first.')
+      setTextGeneratorMessage('Select channels and add a brief first.')
       return
     }
     if (brandLogoUrl.trim() && !isValidHttpUrl(brandLogoUrl)) {
-      setMessage('Brand logo URL must be valid https or leave empty.')
+      setImageGeneratorMessage('Brand logo URL must be valid https or leave empty.')
       return
     }
     setStudioChainBusy(true)
-    setMessage(null)
+    setTextGeneratorMessage(null)
+    setImageGeneratorMessage(null)
     setLoadingCopy(true)
     let nextCopy: Record<string, ChannelCopy> | null = null
     try {
       try {
         nextCopy = await generateStudioChannelCopy()
         setCopyByChannel(nextCopy)
-        setMessage('Text ready — generating image…')
+        setTextGeneratorMessage('Text ready — generating image…')
       } catch (err) {
         const msg = err instanceof Error ? err.message.toLowerCase() : ''
         if (msg.includes('abort')) {
-          setMessage(
+          setTextGeneratorMessage(
             'Text generation timed out. In local dev this often happens during heavy Next.js compile. Retry once after compile settles.'
           )
         } else if (err instanceof Error) {
-          setMessage(err.message)
+          setTextGeneratorMessage(err.message)
         } else {
-          setMessage('Text generation failed.')
+          setTextGeneratorMessage('Text generation failed.')
         }
         return
       } finally {
@@ -1290,10 +1325,10 @@ export function MarketingStudioForm({
     if (!requireSignedIn()) return
     const firstImage = generatedImages[0]?.url
     if (!firstImage) {
-      setMessage('Generate an image first — video is built from the creative.')
+      setVideoGeneratorMessage('Generate an image first — video is built from the creative.')
       return
     }
-    setMessage(null)
+    setVideoGeneratorMessage(null)
     setVideoLoadError(null)
     setLoadingVideo(true)
     try {
@@ -1325,7 +1360,7 @@ export function MarketingStudioForm({
         error?: string
       }
       if (!res.ok) {
-        setMessage(data.error ?? 'Video generation failed')
+        setVideoGeneratorMessage(data.error ?? 'Video generation failed')
         setVideoJob(null)
         return
       }
@@ -1336,18 +1371,18 @@ export function MarketingStudioForm({
         message: data.message,
       })
       if (data.result?.url) {
-        setMessage(data.message ?? 'Video ready — preview below.')
+        setVideoGeneratorMessage(data.message ?? 'Video ready — preview below.')
       } else if (data.status === 'queued') {
-        setMessage('Video job queued — preview will appear when the worker returns a URL.')
+        setVideoGeneratorMessage('Video job queued — preview will appear when the worker returns a URL.')
       } else if (data.status === 'unconfigured') {
-        setMessage(data.message ?? 'Video generation not configured.')
+        setVideoGeneratorMessage(data.message ?? 'Video generation not configured.')
       } else if (data.status === 'error') {
-        setMessage(data.message ?? 'Video job failed.')
+        setVideoGeneratorMessage(data.message ?? 'Video job failed.')
       } else {
-        setMessage(data.message ?? 'Video requested — check status.')
+        setVideoGeneratorMessage(data.message ?? 'Video requested — check status.')
       }
     } catch {
-      setMessage('Video generation failed (network).')
+      setVideoGeneratorMessage('Video generation failed (network).')
       setVideoJob(null)
     } finally {
       setLoadingVideo(false)
@@ -1864,6 +1899,11 @@ export function MarketingStudioForm({
                     {studioChainBusy || loadingCopy || loadingImage ? 'Working…' : 'Generate text & image'}
                   </button>
                 </div>
+                {textGeneratorMessage ? (
+                  <p className="text-xs text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white/80 dark:bg-slate-950/60">
+                    {textGeneratorMessage}
+                  </p>
+                ) : null}
               </div>
 
               <div className="rounded-lg border border-slate-200/80 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 px-3 py-2 space-y-2">
@@ -2057,6 +2097,11 @@ export function MarketingStudioForm({
                     <span className="font-mono rounded bg-slate-200/80 dark:bg-slate-800 px-1.5 py-0.5">{lastImageProvider}</span>
                   </p>
                 ) : null}
+                {imageGeneratorMessage ? (
+                  <p className="text-xs text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white/80 dark:bg-slate-950/60">
+                    {imageGeneratorMessage}
+                  </p>
+                ) : null}
               </div>
 
               {workspaceMode === 'social' ? (
@@ -2178,6 +2223,11 @@ export function MarketingStudioForm({
                 >
                   {loadingVideo ? 'Generating…' : 'Generate video'}
                 </button>
+                {videoGeneratorMessage ? (
+                  <p className="text-xs text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white/80 dark:bg-slate-950/60">
+                    {videoGeneratorMessage}
+                  </p>
+                ) : null}
               </div>
               ) : null}
             </div>
@@ -2770,6 +2820,7 @@ export function MarketingStudioForm({
                         channel={c}
                         body={resolvedBody || copy?.body || ''}
                         brandName={effectiveBrand}
+                        avatarUrl={getPreviewAccountAvatar(c) || undefined}
                         imageUrl={primaryImg}
                         ctaHref={hasUsablePrimaryLink ? primaryLink.trim() : undefined}
                         ctaLabel={ctaLabelClean || 'Learn more'}
@@ -2777,6 +2828,7 @@ export function MarketingStudioForm({
                     ) : c === 'instagram' ? (
                       <InstagramPreview
                         brandName={effectiveBrand}
+                        avatarUrl={getPreviewAccountAvatar(c) || undefined}
                         body={resolvedBody || copy?.body || ''}
                         imageUrl={primaryImg}
                         ctaHref={hasUsablePrimaryLink ? primaryLink.trim() : undefined}

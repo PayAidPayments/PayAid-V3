@@ -9,6 +9,23 @@ Optional fast preflight command:
 One-command pack (runtime evidence + preflight):
 
 - `npm run run:website-builder-ready-to-commit-pack`
+- Confirm pack summary shows:
+  - `discoverabilityGate.markerCheck.ok: true`
+  - `discoverabilityGate.evidenceCheck.ok: true`
+- If `overallOk=false`, check `runtimeBlockers[]` in pack output for explicit env/auth blockers.
+- Use `nextAction` from pack output as immediate remediation hint before rerun.
+- Optional strict pack mode:
+  - `$env:WEBSITE_BUILDER_INCLUDE_HELPER_TESTS="1"`
+  - `npm run run:website-builder-ready-to-commit-pack`
+  - Verify `helperTests.ok: true` in pack summary.
+- Optional strict docs parser-safety mode:
+  - `$env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"`
+  - `npm run run:website-builder-ready-to-commit-pack`
+  - Verify `docsAsciiCheck.ok: true` in pack summary.
+- Optional helper guardrail check:
+  - `npm run test:website-builder-step4-8-helpers`
+  - If helper checks fail, use runbook triage:
+    - `docs/WEBSITE_BUILDER_STEP4_8_RUNTIME_RUNBOOK.md` -> `4.7 Helper test gate failures`
 
 Preflight artifacts:
 
@@ -29,6 +46,12 @@ Preflight artifacts:
 
 - [ ] Step 4.8 runtime checks executed:
   - `npm run run:website-builder-step4-8-evidence-pipeline`
+  - Optional strict pipeline mode:
+    - `$env:WEBSITE_BUILDER_INCLUDE_HELPER_TESTS="1"`
+    - Verify `helperTests.ok: true` in pipeline summary.
+  - Optional strict pipeline docs parser-safety mode:
+    - `$env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"`
+    - Verify `docsAsciiCheck.ok: true` in pipeline summary.
 - [ ] Runtime artifacts exist:
   - `docs/evidence/closure/*-website-builder-step4-8-runtime-checks.json`
   - `docs/evidence/closure/*-website-builder-step4-8-runtime-checks.md`
@@ -73,4 +96,18 @@ Preflight artifacts:
 ```text
 Website Builder commit readiness:
 - Scope hygiene: PASS/FAIL
-- R
+- Runtime evidence: PASS/FAIL
+- API guardrails: PASS/FAIL
+- UI guardrails: PASS/FAIL
+- Docs alignment: PASS/FAIL
+
+Evidence artifacts:
+- Runtime JSON:
+- Runtime MD:
+- QA template:
+- Discoverability screenshot:
+- Discoverability navigation proof:
+
+Notes / exclusions:
+-
+```

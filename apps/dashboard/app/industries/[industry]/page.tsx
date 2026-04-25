@@ -98,7 +98,7 @@ export default function IndustryLandingPage() {
               Everything You Need to Run Your {industry.name} Business
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-              {(recommendedModules?.canonical?.suites || recommendedModules?.suites || []).map(
+              {(recommendedModules?.canonical?.suites || []).map(
                 (moduleId: string) => {
                 const moduleIcons: Record<string, any> = {
                   crm: Users,

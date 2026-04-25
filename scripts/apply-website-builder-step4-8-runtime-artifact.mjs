@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
+import { buildWebsiteBuilderStep48NextAction } from './website-builder-step4-8-next-action.mjs'
 
 function resolveLatestRuntimeArtifact() {
   const closureDir = path.join(process.cwd(), 'docs', 'evidence', 'closure')
@@ -31,10 +32,25 @@ function stepResult(id) {
   return `${check.pass ? 'pass' : 'fail'} (status=${check.status ?? 'n/a'})`
 }
 
+function discoverabilityFieldStatus(fieldKey) {
+  const missing = checksById.G?.details?.missingFields
+  if (!Array.isArray(missing)) return '[manual]'
+  return missing.includes(fieldKey) ? 'No' : 'Yes'
+}
+
 out = out.replace(/\*\*Date:\*\*.*\n/, `**Date:** ${payload.timestamp || '[timestamp missing]'}\n`)
 out = out.replace(/\*\*Environment URL:\*\*.*\n/, `**Environment URL:** ${payload.baseUrl || '[missing]'}\n`)
 
 const createdSiteId = payload.createdSiteId || checksById.B?.details?.siteId || '[not captured]'
+
+out = out.replace(/### 1\) Module discoverability \(switcher -> Website Builder\)[\s\S]*?### 2\) Home list \+ filters/, `### 1) Module discoverability (switcher -> Website Builder)
+- Started from non-Website Builder module: ${discoverabilityFieldStatus('started-from-module')}
+- \`Website Builder\` visible in module switcher secondary tools: ${discoverabilityFieldStatus('switcher-visible')}
+- Click navigation landed on \`/website-builder/[tenantId]/Home\` (direct or redirect): ${discoverabilityFieldStatus('navigation-landing')}
+- Pass/Fail: ${checksById.G ? (checksById.G.pass ? 'Pass' : 'Fail') : '[manual]'}
+- Evidence (screenshot/video): [manual]
+
+### 2) Home list + filters`)
 
 out = out.replace(/### A\) `GET \/api\/website\/sites`[\s\S]*?### B\) `POST \/api\/website\/sites`/, `### A) \`GET /api/website/sites\`
 - Status: ${checksById.A?.status ?? '[n/a]'}
@@ -82,6 +98,12 @@ out = out.replace(/### F\) `POST \/api\/website\/ai\/generate-draft`[\s\S]*?---/
 ---`)
 
 const summaryHeader = '## Automation Summary'
+const blockedReasons = Array.isArray(payload.blockedReasons) ? payload.blockedReasons : []
+const remediation = buildWebsiteBuilderStep48NextAction({
+  runtimeBlockers: blockedReasons,
+  rerunCommand: 'npm run run:website-builder-step4-8-evidence-pipeline',
+})
+const nextAction = remediation.nextAction || '[none]'
 const summaryBlock = [
   summaryHeader,
   '',
@@ -90,6 +112,8 @@ const summaryBlock = [
   `- Overall: ${
     typeof payload.overallOk === 'boolean' ? (payload.overallOk ? 'pass' : 'fail') : 'n/a (blocked)'
   }`,
+  `- Runtime blockers: ${blockedReasons.length > 0 ? blockedReasons.join(' ; ') : '[none]'}`,
+  `- Next action: ${nextAction}`,
   '',
 ].join('\n')
 

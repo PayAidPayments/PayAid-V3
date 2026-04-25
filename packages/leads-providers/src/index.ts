@@ -1,0 +1,5 @@
+export * from './base/LeadSourceAdapter'
+export * from './registry/providerRegistry'
+export { InternalFallbackProvider } from './adapters/internalFallbackProvider'
+export { ProviderAAdapter } from './adapters/providerA'
+export { ProviderBAdapter } from './adapters/providerB'

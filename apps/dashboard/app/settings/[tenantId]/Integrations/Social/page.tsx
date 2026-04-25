@@ -17,6 +17,7 @@ type ProviderStatus = {
   viaSocialAccount: boolean
   providerName: string | null
   providerEmail: string | null
+  providerAvatarUrl?: string | null
   expiresAt: string | null
   lastActivityAt: string | null
   health?: 'not_connected' | 'healthy' | 'expiring_soon' | 'expired' | 'missing_scope'
@@ -41,8 +42,8 @@ const PROVIDER_GUIDES: Record<ProviderStatus['provider'], ProviderGuide> = {
     docsUrl: 'https://learn.microsoft.com/linkedin/shared/authentication/authentication',
   },
   facebook: {
-    connectMethod: 'Manual token',
-    tokenSource: 'Meta Graph API Explorer or your Facebook app token tools.',
+    connectMethod: 'OAuth (recommended)',
+    tokenSource: 'No manual token needed for normal setup; use Connect/Reconnect button.',
     steps: [
       'Open Graph API Explorer and sign in with the target Facebook account/page role.',
       'Generate a User/Page access token with publish permissions.',
@@ -51,8 +52,8 @@ const PROVIDER_GUIDES: Record<ProviderStatus['provider'], ProviderGuide> = {
     docsUrl: 'https://developers.facebook.com/docs/graph-api/get-started',
   },
   instagram: {
-    connectMethod: 'Manual token',
-    tokenSource: 'Meta Graph API / Instagram Graph API token flow.',
+    connectMethod: 'OAuth (recommended)',
+    tokenSource: 'No manual token needed for normal setup; use Connect/Reconnect button.',
     steps: [
       'Ensure Instagram Business/Creator account is linked to a Facebook Page.',
       'Generate token through Meta developer flow with required Instagram scopes.',
@@ -61,8 +62,8 @@ const PROVIDER_GUIDES: Record<ProviderStatus['provider'], ProviderGuide> = {
     docsUrl: 'https://developers.facebook.com/docs/instagram-platform',
   },
   twitter: {
-    connectMethod: 'Manual token',
-    tokenSource: 'X Developer Portal app credentials and OAuth token flow.',
+    connectMethod: 'OAuth (recommended)',
+    tokenSource: 'No manual token needed for normal setup; use Connect/Reconnect button.',
     steps: [
       'Create/configure an app in X Developer Portal.',
       'Generate an access token with post/write permissions.',
@@ -71,8 +72,8 @@ const PROVIDER_GUIDES: Record<ProviderStatus['provider'], ProviderGuide> = {
     docsUrl: 'https://developer.x.com/en/docs/authentication/oauth-2-0',
   },
   youtube: {
-    connectMethod: 'Manual token or refresh',
-    tokenSource: 'Google OAuth token for YouTube Data API.',
+    connectMethod: 'OAuth (recommended)',
+    tokenSource: 'No manual token needed for normal setup; use Connect/Reconnect button.',
     steps: [
       'Enable YouTube Data API in your Google Cloud project.',
       'Generate OAuth token that includes youtube.upload scope.',
@@ -123,13 +124,13 @@ export default function SocialSettingsPage() {
     return m
   }, [data])
 
-  const connectLinkedIn = useMutation({
-    mutationFn: async () => {
+  const connectOAuth = useMutation({
+    mutationFn: async (provider: ProviderStatus['provider']) => {
       setBanner(null)
-      const res = await fetch('/api/integrations/linkedin/auth', { headers: authHeaders() })
+      const res = await fetch(`/api/integrations/${provider}/auth`, { headers: authHeaders() })
       const json = await res.json().catch(() => ({}))
       if (!res.ok || !(json as any)?.data?.authUrl) {
-        throw new Error((json as any).error || 'Failed to create LinkedIn auth URL')
+        throw new Error((json as any).error || `Failed to create ${provider} auth URL`)
       }
       return (json as any).data.authUrl as string
     },
@@ -286,6 +287,22 @@ export default function SocialSettingsPage() {
           You have read-only access. Integration configuration actions are disabled.
         </div>
       )}
+      <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 px-4 py-3 space-y-2">
+        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Quick connect guidance</p>
+        <ul className="list-disc pl-5 text-xs text-slate-700 dark:text-slate-300 space-y-1">
+          <li><span className="font-medium">One-click OAuth:</span> Click Connect for LinkedIn, YouTube, Facebook, Instagram, or X/Twitter.</li>
+          <li>After you sign in and approve permissions, the channel is connected automatically.</li>
+          <li>Manual token entry remains available as an advanced fallback below each card.</li>
+        </ul>
+        <div className="rounded-lg border border-amber-200/80 dark:border-amber-800/70 bg-amber-50/70 dark:bg-amber-950/20 px-3 py-2">
+          <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">Common token issues</p>
+          <ul className="mt-1 list-disc pl-4 space-y-1 text-xs text-amber-800 dark:text-amber-300">
+            <li><span className="font-medium">Invalid token:</span> re-generate from provider console and paste again.</li>
+            <li><span className="font-medium">Expired token:</span> use Refresh token (if available) or reconnect.</li>
+            <li><span className="font-medium">Missing scope:</span> reconnect and grant publish/upload permissions.</li>
+          </ul>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {providers.map((p) => {
@@ -306,6 +323,16 @@ export default function SocialSettingsPage() {
                   </span>
                 </div>
                 <div className="text-xs text-slate-500 dark:text-slate-400">
+                  {st?.providerAvatarUrl ? (
+                    <span className="inline-flex items-center gap-2 mr-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={st.providerAvatarUrl}
+                        alt={`${p.label} profile`}
+                        className="h-5 w-5 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                      />
+                    </span>
+                  ) : null}
                   {st?.providerName ? `Account: ${st.providerName}` : 'No account linked'}
                   {st?.providerEmail ? ` · ${st.providerEmail}` : ''}
                 </div>
@@ -350,30 +377,15 @@ export default function SocialSettingsPage() {
                     </a>
                   </div>
                 </details>
-                <div className="rounded-lg border border-amber-200/80 dark:border-amber-800/70 bg-amber-50/70 dark:bg-amber-950/20 px-3 py-2">
-                  <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">Common token issues</p>
-                  <ul className="mt-1 list-disc pl-4 space-y-1 text-xs text-amber-800 dark:text-amber-300">
-                    <li>
-                      <span className="font-medium">Invalid token:</span> Re-generate from provider console and paste again.
-                    </li>
-                    <li>
-                      <span className="font-medium">Expired token:</span> Use Refresh token (if available) or reconnect.
-                    </li>
-                    <li>
-                      <span className="font-medium">Missing scope:</span> Reconnect and grant publish/upload permissions.
-                    </li>
-                  </ul>
-                </div>
                 <div className="flex items-center gap-2">
-                  {p.id === 'linkedin' ? (
-                    <Button
-                      onClick={() => connectLinkedIn.mutate()}
-                      disabled={!canConfigure || connectLinkedIn.isPending}
-                      title={!canConfigure ? 'Read-only access' : connectLinkedIn.isPending ? 'Please wait…' : connected ? 'Reconnect LinkedIn' : 'Connect LinkedIn'}
-                    >
-                      {connectLinkedIn.isPending ? 'Please wait…' : connected ? 'Reconnect' : 'Connect'}
-                    </Button>
-                  ) : (
+                  <Button
+                    onClick={() => connectOAuth.mutate(p.id)}
+                    disabled={!canConfigure || connectOAuth.isPending}
+                    title={!canConfigure ? 'Read-only access' : connectOAuth.isPending ? 'Please wait…' : connected ? `Reconnect ${p.label}` : `Connect ${p.label}`}
+                  >
+                    {connectOAuth.isPending ? 'Please wait…' : connected ? 'Reconnect' : 'Connect'}
+                  </Button>
+                  {p.id !== 'linkedin' ? (
                     <Button
                       onClick={() => {
                         const f = tokenForms[p.id]
@@ -399,7 +411,7 @@ export default function SocialSettingsPage() {
                     >
                       {connectWithToken.isPending ? 'Please wait…' : connected ? 'Update token' : 'Connect token'}
                     </Button>
-                  )}
+                  ) : null}
                   <Button
                     variant="outline"
                     onClick={() => testConnection.mutate(p.id)}
@@ -419,13 +431,18 @@ export default function SocialSettingsPage() {
                   <Button
                     variant="outline"
                     onClick={() => refreshToken.mutate(p.id)}
-                    disabled={!canConfigure || !connected || (p.id !== 'linkedin' && p.id !== 'youtube') || refreshToken.isPending}
+                    disabled={
+                      !canConfigure ||
+                      !connected ||
+                      (p.id !== 'linkedin' && p.id !== 'youtube' && p.id !== 'twitter') ||
+                      refreshToken.isPending
+                    }
                     title={
                       !canConfigure
                         ? 'Read-only access'
                         : !connected
                         ? 'Connect provider first'
-                        : p.id !== 'linkedin' && p.id !== 'youtube'
+                        : p.id !== 'linkedin' && p.id !== 'youtube' && p.id !== 'twitter'
                         ? 'Refresh flow coming soon for this provider'
                         : refreshToken.isPending
                         ? 'Please wait…'

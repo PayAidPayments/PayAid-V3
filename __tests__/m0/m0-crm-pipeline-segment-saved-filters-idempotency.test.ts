@@ -50,7 +50,7 @@ describe('CRM pipeline/segment/saved-filter idempotency', () => {
     const auth = require('@/lib/middleware/auth')
     const m0Service = require('@/lib/ai-native/m0-service')
     const prisma = require('@/lib/db/prisma')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_pipeline_1',
       afterSnapshot: { pipeline_id: 'pipeline_existing' },
@@ -81,7 +81,7 @@ describe('CRM pipeline/segment/saved-filter idempotency', () => {
     const auth = require('@/lib/middleware/auth')
     const m0Service = require('@/lib/ai-native/m0-service')
     const prisma = require('@/lib/db/prisma')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_segment_1',
       afterSnapshot: { segment_id: 'segment_existing' },
@@ -112,7 +112,7 @@ describe('CRM pipeline/segment/saved-filter idempotency', () => {
     const auth = require('@/lib/middleware/auth')
     const m0Service = require('@/lib/ai-native/m0-service')
     const prisma = require('@/lib/db/prisma')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     auth.authenticateRequest.mockResolvedValue({ userId: 'usr_1', tenantId: 'tn_1' })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_saved_filter_create_1',
@@ -144,7 +144,7 @@ describe('CRM pipeline/segment/saved-filter idempotency', () => {
     const auth = require('@/lib/middleware/auth')
     const m0Service = require('@/lib/ai-native/m0-service')
     const prisma = require('@/lib/db/prisma')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     auth.authenticateRequest.mockResolvedValue({ userId: 'usr_1', tenantId: 'tn_1' })
     prisma.prisma.savedFilter.findFirst.mockResolvedValue({
       id: 'sf_1',
@@ -180,7 +180,7 @@ describe('CRM pipeline/segment/saved-filter idempotency', () => {
     const auth = require('@/lib/middleware/auth')
     const m0Service = require('@/lib/ai-native/m0-service')
     const prisma = require('@/lib/db/prisma')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     auth.authenticateRequest.mockResolvedValue({ userId: 'usr_1', tenantId: 'tn_1' })
     prisma.prisma.savedFilter.findFirst.mockResolvedValue({
       id: 'sf_1',

@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
 const now = new Date()
@@ -7,6 +7,7 @@ const stamp = isoNow.replace(/[:.]/g, '-')
 
 const BASE_URL = process.env.WEBSITE_BUILDER_BASE_URL || ''
 const AUTH_TOKEN = process.env.WEBSITE_BUILDER_AUTH_TOKEN || ''
+const QA_TEMPLATE_REL = 'docs/evidence/closure/2026-04-24-website-builder-step4-8-runtime-qa-template.md'
 
 function headers(withJson = false) {
   const out = {}
@@ -29,12 +30,65 @@ function normalizeLabel(input) {
     .replace(/^-|-$/g, '')
 }
 
+function discoverabilityEvidenceGate() {
+  const templatePath = path.join(process.cwd(), QA_TEMPLATE_REL)
+  if (!existsSync(templatePath)) {
+    return {
+      pass: false,
+      details: { reason: `missing template: ${QA_TEMPLATE_REL}` },
+    }
+  }
+
+  const body = readFileSync(templatePath, 'utf8')
+  const lines = body.split(/\r?\n/)
+
+  function valueFor(prefix) {
+    const line = lines.find((entry) => entry.trim().startsWith(prefix))
+    if (!line) return null
+    return line.slice(line.indexOf(prefix) + prefix.length).trim()
+  }
+
+  const started = valueFor('- Started from non-Website Builder module:')
+  const visible = valueFor('- `Website Builder` visible in module switcher secondary tools:')
+  const landed = valueFor('- Click navigation landed on `/website-builder/[tenantId]/Home` (direct or redirect):')
+  const passFail = valueFor('- Pass/Fail:')
+  const evidence = valueFor('- Evidence (screenshot/video):')
+
+  const missing = []
+  if (!started || started === 'Yes/No') missing.push('started-from-module')
+  if (!visible || visible === 'Yes/No') missing.push('switcher-visible')
+  if (!landed || landed === 'Yes/No') missing.push('navigation-landing')
+  if (!passFail || passFail === 'PASS / FAIL') missing.push('pass/fail')
+  if (!evidence) missing.push('evidence-link')
+
+  return {
+    pass: missing.length === 0,
+    details:
+      missing.length === 0
+        ? { source: QA_TEMPLATE_REL, status: 'filled' }
+        : { source: QA_TEMPLATE_REL, status: 'incomplete', missingFields: missing },
+  }
+}
+
 async function run() {
+  const discoverabilityGate = discoverabilityEvidenceGate()
   const blockedReasons = []
   if (!BASE_URL) blockedReasons.push('WEBSITE_BUILDER_BASE_URL is missing')
   if (!AUTH_TOKEN) blockedReasons.push('WEBSITE_BUILDER_AUTH_TOKEN is missing')
   if (blockedReasons.length > 0) {
-    return { mode: 'blocked', blockedReasons, checks: [] }
+    return {
+      mode: 'blocked',
+      blockedReasons,
+      checks: [
+        {
+          id: 'G',
+          endpoint: 'QA template discoverability evidence gate',
+          pass: discoverabilityGate.pass,
+          status: discoverabilityGate.pass ? 200 : 422,
+          details: discoverabilityGate.details,
+        },
+      ],
+    }
   }
 
   const checks = []
@@ -143,6 +197,14 @@ async function run() {
         ? generateDraft.body.draft.pagePlan.length
         : null,
     },
+  })
+
+  checks.push({
+    id: 'G',
+    endpoint: 'QA template discoverability evidence gate',
+    pass: discoverabilityGate.pass,
+    status: discoverabilityGate.pass ? 200 : 422,
+    details: discoverabilityGate.details,
   })
 
   const overallOk = checks.every((check) => check.pass)

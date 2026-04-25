@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import { writeFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
+import { isStrictFlagEnabled } from './strict-flag.mjs'
 
 const BASE_URL = (process.env.BASE_URL || 'https://payaid-v3.vercel.app').replace(/\/+$/, '')
 const EMAIL = process.env.CRM_LOGIN_EMAIL || process.env.DAY4_LOGIN_EMAIL || ''
 const PASSWORD = process.env.CRM_LOGIN_PASSWORD || process.env.DAY4_LOGIN_PASSWORD || ''
 const REQUEST_TIMEOUT_MS = Number.parseInt(process.env.DAY4_REQUEST_TIMEOUT_MS || '45000', 10)
-const D3_ALLOW_NA = process.env.DAY4_D3_ALLOW_NA === '1'
+const D3_ALLOW_NA = isStrictFlagEnabled(process.env.DAY4_D3_ALLOW_NA)
 const OUTPUT_PATH =
   process.env.DAY4_OUTPUT_PATH ||
   'docs/evidence/closure/2026-04-22-crm-day4-runtime-checks.md'

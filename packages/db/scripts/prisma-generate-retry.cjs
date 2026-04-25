@@ -5,6 +5,7 @@
 const { spawnSync } = require('child_process')
 const path = require('path')
 const fs = require('fs')
+const { isStrictFlagEnabled } = require('../../../scripts/strict-flag.cjs')
 
 const dbRoot = path.resolve(__dirname, '..')
 const repoRoot = path.resolve(dbRoot, '..', '..')
@@ -12,7 +13,7 @@ const repoRoot = path.resolve(dbRoot, '..', '..')
 const maxAttempts = 4
 const retryDelayMs = parseInt(process.env.PRISMA_GENERATE_RETRY_DELAY_MS || '2000', 10) || 2000
 
-if (process.env.SKIP_PRISMA_GENERATE === '1') {
+if (isStrictFlagEnabled(process.env.SKIP_PRISMA_GENERATE)) {
   console.log('[@payaid/db] SKIP_PRISMA_GENERATE=1 — skipping prisma generate (for dev when client is already valid).\n')
   process.exit(0)
 }

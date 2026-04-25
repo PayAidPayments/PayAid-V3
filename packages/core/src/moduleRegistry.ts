@@ -208,6 +208,25 @@ export const MODULE_REGISTRY: Record<string, ModuleDefinition> = {
     admin_only_routes: [],
     settings_route: '/marketing/settings',
   },
+  leads: {
+    id: 'leads',
+    name: 'Lead Intelligence',
+    description: 'Company-first discovery, enrichment, and activation',
+    icon: 'Target',
+    order: 9.2,
+    enabled_by_default: false,
+    category: 'addon',
+    routes: [
+      { path: '/leads', label: 'Workspace' },
+      { path: '/leads/briefs', label: 'Briefs' },
+      { path: '/leads/segments', label: 'Segments' },
+      { path: '/leads/activation', label: 'Activation' },
+      { path: '/leads/analytics', label: 'Analytics' },
+    ],
+    required_permissions: ['leads:read'],
+    admin_only_routes: ['/leads/settings'],
+    settings_route: '/leads/settings',
+  },
   /** Standalone PayAid Social product (Marketing-only). Entitlement: licensedModules includes "social". */
   social: {
     id: 'social',

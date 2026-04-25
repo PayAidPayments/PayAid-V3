@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { isStrictFlagEnabled } from './strict-flag.mjs'
 
 const baseUrl = process.env.PAYAID_BASE_URL
 const tenantId = process.env.PAYAID_TENANT_ID || ''
@@ -8,7 +9,9 @@ const outDir = process.env.M2_EVIDENCE_DIR || 'docs/evidence/m2-staging-validati
 const callsSampleLimit = Math.min(Number(process.env.M2_CALLS_SAMPLE_LIMIT || 100), 200)
 const auditLimit = Math.min(Number(process.env.M2_AUDIT_LIMIT || 100), 500)
 const fkSampleLimit = Math.min(Number(process.env.M2_FK_SAMPLE_LIMIT || 100), 500)
-const validateCallFk = process.env.M2_VALIDATE_CALL_FK === '1' || process.env.M2_VALIDATE_CALL_FK === 'true'
+const validateCallFk = isStrictFlagEnabled(process.env.M2_VALIDATE_CALL_FK, {
+  allowTrueString: true,
+})
 const requestTimeoutMs = Math.max(Number(process.env.M2_HTTP_TIMEOUT_MS || 45000), 5000)
 const maxRetries = Math.max(Number(process.env.M2_HTTP_RETRIES || 2), 0)
 

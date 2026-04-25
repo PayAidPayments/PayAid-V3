@@ -68,6 +68,13 @@ To operationalize this file on real tickets, use:
 - Use `COPY_ACTION_PRESETS` defaults before adding one-off copy UI behavior.
 - Reference: `docs/ai/copy-ui-pattern-guideline.md`
 
+## Automation Env-Flag Convention
+
+- For strict/optional automation gates, treat env flag value `"1"` as enabled.
+- Treat all other values as disabled unless a script explicitly documents `"true"` compatibility.
+- Use shared parser utility `scripts/strict-flag.mjs` (or `scripts/strict-flag.cjs` for CommonJS scripts) instead of inline string checks.
+- Operator-facing reference: `docs/WEBSITE_BUILDER_STEP4_8_RUNTIME_RUNBOOK.md` (strict env-flag convention note).
+
 See:
 - `docs/ai/payaid-specialist-router.md`
 - `docs/ai/payaid-specialist-permissions.md`

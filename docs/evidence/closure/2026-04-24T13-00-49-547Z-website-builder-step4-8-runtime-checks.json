@@ -1,0 +1,10 @@
+{
+  "check": "website-builder-step4-8-runtime-checks",
+  "timestamp": "2026-04-24T13:00:49.547Z",
+  "mode": "blocked",
+  "blockedReasons": [
+    "WEBSITE_BUILDER_BASE_URL is missing",
+    "WEBSITE_BUILDER_AUTH_TOKEN is missing"
+  ],
+  "checks": []
+}

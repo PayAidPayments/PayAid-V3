@@ -57,7 +57,7 @@ describe('CRM final gap idempotency batch', () => {
     const auth = require('@/lib/middleware/auth')
     const prisma = require('@/lib/db/prisma')
     const m0Service = require('@/lib/ai-native/m0-service')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_threshold_1',
       afterSnapshot: { threshold_id: 'thr_1' },
@@ -83,7 +83,7 @@ describe('CRM final gap idempotency batch', () => {
     const auth = require('@/lib/middleware/auth')
     const prisma = require('@/lib/db/prisma')
     const m0Service = require('@/lib/ai-native/m0-service')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_render_1',
       afterSnapshot: { rendered: true },
@@ -109,7 +109,7 @@ describe('CRM final gap idempotency batch', () => {
     const auth = require('@/lib/middleware/auth')
     const prisma = require('@/lib/db/prisma')
     const m0Service = require('@/lib/ai-native/m0-service')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_enrich_1',
       afterSnapshot: { enriched: true },
@@ -135,7 +135,7 @@ describe('CRM final gap idempotency batch', () => {
     const auth = require('@/lib/middleware/auth')
     const prisma = require('@/lib/db/prisma')
     const m0Service = require('@/lib/ai-native/m0-service')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_promote_1',
       afterSnapshot: { promoted: true },
@@ -162,7 +162,7 @@ describe('CRM final gap idempotency batch', () => {
     const prisma = require('@/lib/db/prisma')
     const meeting = require('@/lib/ai/meeting-intelligence')
     const m0Service = require('@/lib/ai-native/m0-service')
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_meeting_intel_1',
       afterSnapshot: { processed: true },

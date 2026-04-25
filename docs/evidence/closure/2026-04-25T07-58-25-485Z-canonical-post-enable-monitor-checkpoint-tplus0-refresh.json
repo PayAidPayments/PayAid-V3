@@ -1,0 +1,82 @@
+{
+  "check": "canonical-post-enable-monitor-checkpoint",
+  "checkpointLabel": "tplus0-refresh",
+  "timestamp": "2026-04-25T07:58:25.485Z",
+  "baseUrl": "https://payaid-v3.vercel.app",
+  "mode": "executed",
+  "overallOk": true,
+  "checks": [
+    {
+      "id": "UI:/dashboard/modules",
+      "kind": "ui",
+      "status": 200,
+      "pass": true,
+      "overlay": false
+    },
+    {
+      "id": "UI:/industries/retail",
+      "kind": "ui",
+      "status": 200,
+      "pass": true,
+      "overlay": false
+    },
+    {
+      "id": "UI:/signup",
+      "kind": "ui",
+      "status": 200,
+      "pass": true,
+      "overlay": false
+    },
+    {
+      "id": "API:/api/modules",
+      "kind": "api",
+      "status": 200,
+      "pass": true,
+      "keys": [
+        "canonical",
+        "taxonomy"
+      ]
+    },
+    {
+      "id": "API:/api/industries/retail/modules",
+      "kind": "api",
+      "status": 200,
+      "pass": true,
+      "keys": [
+        "canonical",
+        "capabilities",
+        "industry",
+        "optionalSuites",
+        "suites"
+      ]
+    },
+    {
+      "id": "API:/api/industries/custom/modules",
+      "kind": "api",
+      "status": 200,
+      "pass": true,
+      "keys": [
+        "canonical",
+        "industryName",
+        "success"
+      ]
+    },
+    {
+      "id": "API:/api/ai/analyze-industry",
+      "kind": "api",
+      "status": 200,
+      "pass": true,
+      "keys": [
+        "aiService",
+        "canonical",
+        "description",
+        "industryFeatures",
+        "industryName",
+        "keyProcesses"
+      ]
+    }
+  ],
+  "tokenSource": "login",
+  "tokenAvailable": true,
+  "loginStatus": 200
+}

@@ -1,0 +1,84 @@
+# Canonical module API readiness verdict
+
+- Timestamp: 2026-04-25T07:54:33.076Z
+- Overall: fail
+- Commands: pass
+- Checklist: fail (2 unchecked)
+- JSON artifact: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-25T07-54-33-076Z-canonical-module-api-readiness-verdict.json`
+
+## Command results
+
+- PASS `npm run check:canonical-module-api-contract` (499ms)
+- PASS `npm run check:canonical-module-api-post-cutover` (458ms)
+- PASS `npm run check:canonical-module-api-response-snapshots` (437ms)
+- PASS `npm run check:canonical-module-api-consumer-usage` (6688ms)
+
+## Unchecked checklist items
+
+- (15) `npm run check:canonical-module-api-readiness-verdict` passes (commands + checklist consolidated verdict).
+- (57) Post-enable 24-hour monitoring completed with no critical issues.
+
+## Raw payload
+
+```json
+{
+  "check": "canonical-module-api-readiness-verdict",
+  "timestamp": "2026-04-25T07:54:33.076Z",
+  "overallOk": false,
+  "commandsOk": true,
+  "checklistOk": false,
+  "commandResults": [
+    {
+      "label": "canonical-contract",
+      "command": "npm run check:canonical-module-api-contract",
+      "ok": true,
+      "exitCode": 0,
+      "elapsedMs": 499,
+      "outputExcerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-contract\n> node scripts/check-canonical-module-api-contract.mjs\n\n{\n  \"overallOk\": true,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-54-33-487Z-canonical-module-api-contract-check.json\",\n  \"mdPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-54-33-487Z-canonical-module-api-contract-check.md\"\n}\n\n"
+    },
+    {
+      "label": "canonical-post-cutover",
+      "command": "npm run check:canonical-module-api-post-cutover",
+      "ok": true,
+      "exitCode": 0,
+      "elapsedMs": 458,
+      "outputExcerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-post-cutover\n> node scripts/check-canonical-module-api-post-cutover.mjs\n\n{\n  \"overallOk\": true,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-54-33-996Z-canonical-module-api-post-cutover-guard.json\",\n  \"mdPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-54-33-996Z-canonical-module-api-post-cutover-guard.md\"\n}\n\n"
+    },
+    {
+      "label": "canonical-response-snapshots",
+      "command": "npm run check:canonical-module-api-response-snapshots",
+      "ok": true,
+      "exitCode": 0,
+      "elapsedMs": 437,
+      "outputExcerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-response-snapshots\n> node scripts/check-canonical-module-api-response-snapshots.mjs\n\n{\n  \"overallOk\": true,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-54-34-432Z-canonical-module-api-response-snapshots.json\",\n  \"mdPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-54-34-432Z-canonical-module-api-response-snapshots.md\"\n}\n\n"
+    },
+    {
+      "label": "canonical-consumer-usage",
+      "command": "npm run check:canonical-module-api-consumer-usage",
+      "ok": true,
+      "exitCode": 0,
+      "elapsedMs": 6688,
+      "outputExcerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-consumer-usage\n> node scripts/check-canonical-module-api-consumer-usage.mjs\n\n{\n  \"overallOk\": true,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-54-34-878Z-canonical-module-api-consumer-usage.json\",\n  \"mdPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-54-34-878Z-canonical-module-api-consumer-usage.md\",\n  \"consumers\": 3\n}\n\n"
+    }
+  ],
+  "checklist": {
+    "path": "docs/CANONICAL_MODULE_API_CONSUMER_READINESS_CHECKLIST.md",
+    "checkedCount": 23,
+    "uncheckedCount": 2,
+    "uncheckedItems": [
+      {
+        "line": 15,
+        "text": "`npm run check:canonical-module-api-readiness-verdict` passes (commands + checklist consolidated verdict)."
+      },
+      {
+        "line": 57,
+        "text": "Post-enable 24-hour monitoring completed with no critical issues."
+      }
+    ]
+  },
+  "notes": [
+    "Consolidates canonical contract checks + post-cutover guard + checklist status.",
+    "Use as final readiness gate before enabling CANONICAL_MODULE_API_ONLY=1 in production."
+  ]
+}
+```

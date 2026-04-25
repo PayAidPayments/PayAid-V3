@@ -57,7 +57,7 @@ describe('CRM config mutation idempotency', () => {
     const m0Service = require('@/lib/ai-native/m0-service')
     const migration = require('@/lib/crm/template-migration')
 
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_template_apply_1',
       afterSnapshot: { applied: true },
@@ -88,7 +88,7 @@ describe('CRM config mutation idempotency', () => {
     const m0Service = require('@/lib/ai-native/m0-service')
     const prisma = require('@/lib/db/prisma')
 
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_whatsapp_template_1',
       afterSnapshot: { template_id: 'wa_tpl_1' },
@@ -120,7 +120,7 @@ describe('CRM config mutation idempotency', () => {
     const m0Service = require('@/lib/ai-native/m0-service')
     const prisma = require('@/lib/db/prisma')
 
-    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    auth.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     prisma.prisma.user.findUnique.mockResolvedValue({ role: 'admin' })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_field_layout_1',
@@ -154,7 +154,7 @@ describe('CRM config mutation idempotency', () => {
     const m0Service = require('@/lib/ai-native/m0-service')
     const prisma = require('@/lib/db/prisma')
 
-    license.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1' })
+    license.requireModuleAccess.mockResolvedValue({ tenantId: 'tn_1', userId: 'usr_1', roles: ['admin'] })
     m0Service.findIdempotentRequest.mockResolvedValue({
       id: 'idem_custom_pipeline_1',
       afterSnapshot: { saved: true },

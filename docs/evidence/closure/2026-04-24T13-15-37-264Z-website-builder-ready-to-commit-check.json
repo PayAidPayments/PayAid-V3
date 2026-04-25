@@ -1,0 +1,53 @@
+{
+  "check": "website-builder-ready-to-commit",
+  "timestamp": "2026-04-24T13:15:37.264Z",
+  "overallOk": false,
+  "checks": [
+    {
+      "id": "doc:docs/WEBSITE_BUILDER_READY_TO_COMMIT_CHECKLIST.md",
+      "ok": true,
+      "detail": "present"
+    },
+    {
+      "id": "doc:docs/WEBSITE_BUILDER_STEP4_8_RUNTIME_RUNBOOK.md",
+      "ok": true,
+      "detail": "present"
+    },
+    {
+      "id": "doc:docs/WEBSITE_BUILDER_STEP4_8_ENV_TEMPLATE.md",
+      "ok": true,
+      "detail": "present"
+    },
+    {
+      "id": "doc:docs/evidence/closure/2026-04-24-website-builder-step4-8-runtime-qa-template.md",
+      "ok": true,
+      "detail": "present"
+    },
+    {
+      "id": "handoff:step4.8",
+      "ok": true,
+      "detail": "present"
+    },
+    {
+      "id": "template:discoverability",
+      "ok": false,
+      "detail": "missing discoverability markers: Started from non-Website Builder module: Yes/No | `Website Builder` visible in module switcher secondary tools: Yes/No | Click navigation landed on `/website-builder/[tenantId]/Home` (direct or redirect): Yes/No"
+    },
+    {
+      "id": "template:discoverability-evidence",
+      "ok": true,
+      "detail": "discoverability evidence fields populated in QA template"
+    },
+    {
+      "id": "artifact:runtime-json",
+      "ok": true,
+      "detail": "docs/evidence/closure/2026-04-24T13-15-17-331Z-website-builder-step4-8-runtime-checks.json"
+    },
+    {
+      "id": "artifact:runtime-md",
+      "ok": true,
+      "detail": "docs/evidence/closure/2026-04-24T13-15-17-331Z-website-builder-step4-8-runtime-checks.md"
+    }
+  ],
+  "recommendation": "Fix missing checks before commit/PR handoff."
+}

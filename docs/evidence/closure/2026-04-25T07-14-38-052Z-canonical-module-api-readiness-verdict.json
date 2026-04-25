@@ -1,0 +1,132 @@
+{
+  "check": "canonical-module-api-readiness-verdict",
+  "timestamp": "2026-04-25T07:14:38.052Z",
+  "overallOk": false,
+  "commandsOk": true,
+  "checklistOk": false,
+  "commandResults": [
+    {
+      "label": "canonical-contract",
+      "command": "npm run check:canonical-module-api-contract",
+      "ok": true,
+      "exitCode": 0,
+      "elapsedMs": 3234,
+      "outputExcerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-contract\n> node scripts/check-canonical-module-api-contract.mjs\n\n{\n  \"overallOk\": true,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-14-39-209Z-canonical-module-api-contract-check.json\",\n  \"mdPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-14-39-209Z-canonical-module-api-contract-check.md\"\n}\n\n"
+    },
+    {
+      "label": "canonical-post-cutover",
+      "command": "npm run check:canonical-module-api-post-cutover",
+      "ok": true,
+      "exitCode": 0,
+      "elapsedMs": 1959,
+      "outputExcerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-post-cutover\n> node scripts/check-canonical-module-api-post-cutover.mjs\n\n{\n  \"overallOk\": true,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-14-43-180Z-canonical-module-api-post-cutover-guard.json\",\n  \"mdPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-14-43-180Z-canonical-module-api-post-cutover-guard.md\"\n}\n\n"
+    },
+    {
+      "label": "canonical-response-snapshots",
+      "command": "npm run check:canonical-module-api-response-snapshots",
+      "ok": true,
+      "exitCode": 0,
+      "elapsedMs": 11125,
+      "outputExcerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-response-snapshots\n> node scripts/check-canonical-module-api-response-snapshots.mjs\n\n{\n  \"overallOk\": true,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-14-54-279Z-canonical-module-api-response-snapshots.json\",\n  \"mdPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-14-54-279Z-canonical-module-api-response-snapshots.md\"\n}\n\n"
+    },
+    {
+      "label": "canonical-consumer-usage",
+      "command": "npm run check:canonical-module-api-consumer-usage",
+      "ok": true,
+      "exitCode": 0,
+      "elapsedMs": 33397,
+      "outputExcerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-consumer-usage\n> node scripts/check-canonical-module-api-consumer-usage.mjs\n\n{\n  \"overallOk\": true,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-14-54-900Z-canonical-module-api-consumer-usage.json\",\n  \"mdPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T07-14-54-900Z-canonical-module-api-consumer-usage.md\",\n  \"consumers\": 3\n}\n\n"
+    }
+  ],
+  "checklist": {
+    "path": "docs/CANONICAL_MODULE_API_CONSUMER_READINESS_CHECKLIST.md",
+    "checkedCount": 5,
+    "uncheckedCount": 20,
+    "uncheckedItems": [
+      {
+        "line": 9,
+        "text": "`npm run check:canonical-module-api-readiness-verdict` passes (commands + checklist consolidated verdict)."
+      },
+      {
+        "line": 12,
+        "text": "Error handling is resilient when legacy fields are absent."
+      },
+      {
+        "line": 19,
+        "text": "Consumer uses `taxonomy` and `canonical`."
+      },
+      {
+        "line": 20,
+        "text": "Consumer no longer relies on top-level `recommended`, `all`, `base`, `industry`."
+      },
+      {
+        "line": 21,
+        "text": "QA confirms catalog pages and module switchers work in canonical-only mode."
+      },
+      {
+        "line": 25,
+        "text": "Consumer uses `canonical`, `suites`, `capabilities`, `optionalSuites`."
+      },
+      {
+        "line": 26,
+        "text": "Consumer no longer depends on `coreModules`, `industryPacks`, `optionalModules`."
+      },
+      {
+        "line": 27,
+        "text": "QA confirms industry recommendation UI works with canonical-only payload."
+      },
+      {
+        "line": 31,
+        "text": "Consumer reads canonical `enabledModules`/`enabledPacks`."
+      },
+      {
+        "line": 32,
+        "text": "Consumer does not require legacy top-level `enabled*` fields."
+      },
+      {
+        "line": 33,
+        "text": "QA confirms setup completion and template loading behavior."
+      },
+      {
+        "line": 37,
+        "text": "Consumer reads canonical `enabledModules`/`enabledFeatures`."
+      },
+      {
+        "line": 38,
+        "text": "Consumer does not require legacy top-level `enabled*` fields."
+      },
+      {
+        "line": 39,
+        "text": "QA confirms custom industry setup flow remains intact."
+      },
+      {
+        "line": 43,
+        "text": "Consumer reads `canonical.suites` for module recommendations."
+      },
+      {
+        "line": 44,
+        "text": "Consumer does not require top-level `coreModules`."
+      },
+      {
+        "line": 45,
+        "text": "QA confirms AI recommendation UI/parsing in canonical-only mode."
+      },
+      {
+        "line": 49,
+        "text": "Staging passed with `CANONICAL_MODULE_API_ONLY=1`."
+      },
+      {
+        "line": 50,
+        "text": "Production enablement plan approved (owner + window + rollback owner)."
+      },
+      {
+        "line": 51,
+        "text": "Post-enable 24-hour monitoring completed with no critical issues."
+      }
+    ]
+  },
+  "notes": [
+    "Consolidates canonical contract checks + post-cutover guard + checklist status.",
+    "Use as final readiness gate before enabling CANONICAL_MODULE_API_ONLY=1 in production."
+  ]
+}

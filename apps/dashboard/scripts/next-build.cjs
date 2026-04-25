@@ -1,7 +1,12 @@
 const { spawn } = require('node:child_process')
 
-const isVercel = process.env.VERCEL === '1'
+// Only treat as Vercel when both flags are present. Some local shells or .env files set
+// `VERCEL=1` alone, which incorrectly forces Turbopack and breaks local builds.
+const isVercel =
+  process.env.VERCEL === '1' &&
+  ['production', 'preview', 'development'].includes(String(process.env.VERCEL_ENV || ''))
 const nextBin = require.resolve('next/dist/bin/next')
+const buildTimeoutMs = Number(process.env.NEXT_BUILD_TIMEOUT_MS || 15 * 60 * 1000)
 
 if (isVercel) {
   // Keep Vercel builds conservative on memory-constrained workers.
@@ -16,8 +21,15 @@ function runBuild(mode) {
       stdio: 'inherit',
       env: process.env,
     })
+    const timeout = setTimeout(() => {
+      console.error(
+        `[next-build] ${mode} build timed out after ${buildTimeoutMs}ms; terminating child process`
+      )
+      child.kill('SIGTERM')
+    }, buildTimeoutMs)
 
     child.on('exit', (code, signal) => {
+      clearTimeout(timeout)
       resolve({ code: code ?? 1, signal })
     })
   })
@@ -37,6 +49,12 @@ function runBuild(mode) {
   // Turbopack can fail on some server-relative imports (e.g. Bull internals).
   // Retry with webpack for compatibility before failing the build.
   if (preferredMode === 'turbopack') {
+    if (isVercel && process.env.VERCEL_ALLOW_WEBPACK_FALLBACK !== '1') {
+      console.error(
+        '[next-build] turbopack failed on Vercel and webpack fallback is disabled to avoid hanging builds'
+      )
+      process.exit(first.code)
+    }
     console.warn('[next-build] turbopack failed; retrying with webpack fallback')
     const fallback = await runBuild('webpack')
     if (fallback.signal) {

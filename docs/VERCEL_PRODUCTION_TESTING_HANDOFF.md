@@ -507,6 +507,11 @@ Expected API/runtime markers (for pass/fail logging):
 
 Use this order for deterministic evidence generation:
 
+Step 4.8 strict env-flag convention:
+
+- Set optional strict gate flags to `"1"` to enable.
+- Any other value keeps strict mode disabled unless the script explicitly documents compatibility with `"true"`.
+
 1. Export env (or use token helper):
    - `npm run get:website-builder-step4-8-token`
    - Optional automation mode: `npm run get:website-builder-step4-8-token -- --json` (returns structured token/error payload for wrappers)
@@ -527,6 +532,8 @@ Use this order for deterministic evidence generation:
    - Optional: inspect `tokenHelperProbe` for parsed token-helper diagnostics (`code`, `error`, `nextSteps[]`) when auth token is missing.
    - Optional: inspect `helperTests` for helper-layer gate status.
      - Set `$env:WEBSITE_BUILDER_INCLUDE_HELPER_TESTS="1"` before pack run to enforce helper tests in the pack gate.
+   - Optional: inspect `docsAsciiCheck` for docs parser-safety gate status.
+     - Set `$env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"` before pack run to enforce docs ASCII check in the pack gate.
 5. (Optional early signal) Verify evidence-pipeline summary fields:
    - `discoverabilityGate.ok` should be `true`
    - `discoverabilityGate.status` should be `200`
@@ -535,6 +542,8 @@ Use this order for deterministic evidence generation:
    - Optional: inspect `tokenHelperProbe` for parsed token-helper failure/success hints (`code`, `error`, `nextSteps[]`) when auth token is missing.
    - Optional: inspect `helperTests` for helper-layer gate status.
      - Set `$env:WEBSITE_BUILDER_INCLUDE_HELPER_TESTS="1"` before pipeline run to enforce helper tests in the pipeline gate.
+   - Optional: inspect `docsAsciiCheck` for docs parser-safety gate status.
+     - Set `$env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"` before pipeline run to enforce docs ASCII check in the pipeline gate.
 6. (Optional helper-layer guardrail) Run:
    - `npm run test:website-builder-step4-8-helpers`
    - Parse summary fields:

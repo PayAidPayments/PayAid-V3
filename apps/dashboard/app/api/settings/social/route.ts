@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
           isActive: true,
           providerName: true,
           providerEmail: true,
+          providerAvatarUrl: true,
           lastUsedAt: true,
           expiresAt: true,
           scope: true,
@@ -68,6 +69,7 @@ export async function GET(request: NextRequest) {
         viaSocialAccount: false,
         providerName: null,
         providerEmail: null,
+        providerAvatarUrl: null,
         expiresAt: null,
         lastActivityAt: null,
         health: 'not_connected',
@@ -81,6 +83,7 @@ export async function GET(request: NextRequest) {
       item.viaOAuth = true
       item.providerName = row.providerName || null
       item.providerEmail = row.providerEmail || null
+      item.providerAvatarUrl = row.providerAvatarUrl || null
       item.expiresAt = row.expiresAt?.toISOString?.() ?? null
       item.lastActivityAt = (row.lastUsedAt || row.updatedAt)?.toISOString?.() ?? null
       item.health = deriveHealth({

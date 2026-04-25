@@ -104,11 +104,14 @@ export class LinkedInService {
    * Get LinkedIn profile
    */
   async getProfile(accessToken: string): Promise<LinkedInProfile> {
-    const response = await fetch('https://api.linkedin.com/v2/me', {
+    const response = await fetch(
+      'https://api.linkedin.com/v2/me?projection=(id,localizedFirstName,localizedLastName,headline,industry,location,profilePicture(displayImage~:playableStreams))',
+      {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
-    })
+      }
+    )
 
     if (!response.ok) {
       throw new Error('Failed to get LinkedIn profile')
@@ -136,6 +139,9 @@ export class LinkedInService {
       headline: data.headline?.localized?.en_US,
       industry: data.industry,
       location: data.location?.name,
+      profilePicture:
+        data?.profilePicture?.['displayImage~']?.elements?.[0]?.identifiers?.[0]?.identifier ||
+        undefined,
       email,
     }
   }

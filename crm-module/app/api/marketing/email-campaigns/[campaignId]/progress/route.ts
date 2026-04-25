@@ -25,8 +25,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
         sent: true,
         delivered: true,
         bounced: true,
-        opened: true,
-        clicked: true,
         scheduledFor: true,
         sentAt: true,
         createdAt: true,
@@ -62,7 +60,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       },
       orderBy: {
         _count: {
-          _all: 'desc',
+          error: 'desc',
         },
       },
       take: 5,
