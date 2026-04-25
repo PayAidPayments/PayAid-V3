@@ -22,6 +22,14 @@ One-command pack (runtime evidence + preflight):
   - `$env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"`
   - `npm run run:website-builder-ready-to-commit-pack`
   - Verify `docsAsciiCheck.ok: true` in pack summary.
+- Optional strict env-flag parser mode:
+  - `$env:WEBSITE_BUILDER_INCLUDE_FLAG_PARSER_TESTS="1"`
+  - `npm run run:website-builder-ready-to-commit-pack`
+  - Verify `flagParserTests.ok: true` in pack summary.
+- Optional strict helper-contract mode:
+  - `$env:WEBSITE_BUILDER_INCLUDE_HELPER_CONTRACT_CHECK="1"`
+  - `npm run run:website-builder-ready-to-commit-pack`
+  - Verify `helperContractCheck.ok: true` in pack summary.
 - Optional helper guardrail check:
   - `npm run test:website-builder-step4-8-helpers`
   - If helper checks fail, use runbook triage:
@@ -52,6 +60,12 @@ Preflight artifacts:
   - Optional strict pipeline docs parser-safety mode:
     - `$env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"`
     - Verify `docsAsciiCheck.ok: true` in pipeline summary.
+  - Optional strict pipeline env-flag parser mode:
+    - `$env:WEBSITE_BUILDER_INCLUDE_FLAG_PARSER_TESTS="1"`
+    - Verify `flagParserTests.ok: true` in pipeline summary.
+  - Optional strict pipeline helper-contract mode:
+    - `$env:WEBSITE_BUILDER_INCLUDE_HELPER_CONTRACT_CHECK="1"`
+    - Verify `helperContractCheck.ok: true` in pipeline summary.
 - [ ] Runtime artifacts exist:
   - `docs/evidence/closure/*-website-builder-step4-8-runtime-checks.json`
   - `docs/evidence/closure/*-website-builder-step4-8-runtime-checks.md`

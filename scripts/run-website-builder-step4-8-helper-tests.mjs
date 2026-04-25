@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process'
 
 const STEPS = [
+  ['flag-parser-gate', ['run', 'test:website-builder-step4-8-flag-parser-gate']],
   ['gates', ['run', 'test:website-builder-step4-8-gates']],
   ['docs-gate', ['run', 'test:website-builder-step4-8-docs-gate']],
   ['helper-gate', ['run', 'test:website-builder-step4-8-helper-gate']],

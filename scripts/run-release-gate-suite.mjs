@@ -21,6 +21,7 @@ const gates = [
     id: 'canonical-readiness-verdict',
     command: ['npm', 'run', 'check:canonical-module-api-readiness-verdict'],
   },
+  { id: 'leads-retention-health', command: ['npm', 'run', 'run:leads-bulk-retention-health-gate-pipeline'] },
   { id: 'm0', command: ['npm', 'run', 'test:m0'] },
   { id: 'm2', command: ['npm', 'run', 'test:m2:smoke', '--', '--runInBand'] },
   { id: 'm3', command: ['npm', 'run', 'test:m3:smoke', '--', '--runInBand'] },
@@ -29,7 +30,7 @@ const gates = [
 const include = new Set(
   (
     process.env.RELEASE_GATES ||
-    'canonical-contract,canonical-post-cutover,canonical-readiness-verdict,m0,m2,m3'
+    'canonical-contract,canonical-post-cutover,canonical-readiness-verdict,leads-retention-health,m0,m2,m3'
   )
     .split(',')
     .map((x) => x.trim())

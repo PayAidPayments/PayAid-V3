@@ -18,30 +18,35 @@ function runStep(label, command, args, env = process.env) {
     elapsedMs: Date.now() - startedAt,
     stdout: (result.stdout || '').trim(),
     stderr: (result.stderr || '').trim(),
+    parsed: (() => {
+      try {
+        return result.stdout ? JSON.parse(String(result.stdout).trim()) : null
+      } catch {
+        return null
+      }
+    })(),
   }
 }
 
-const env = { ...process.env, MARKETING_RELEASE_CLOSURE_STRICT: '1' }
+const env = {
+  ...process.env,
+  LEADS_BULK_RETENTION_HEALTH_EVIDENCE_STRICT: '1',
+  LEADS_BULK_RETENTION_HEALTH_EVIDENCE_RUN_CLEANUP:
+    process.env.LEADS_BULK_RETENTION_HEALTH_EVIDENCE_RUN_CLEANUP || '1',
+}
 
 const steps = [
-  runStep('social-smoke-evidence', process.execPath, ['scripts/run-social-oauth-smoke-evidence.mjs'], env),
   runStep(
-    'social-smoke-handoff-snippet',
+    'leads-bulk-retention-health-evidence',
     process.execPath,
-    ['scripts/generate-social-oauth-smoke-handoff-snippet.mjs'],
-    env
-  ),
-  runStep(
-    'marketing-closure-pack-strict',
-    process.execPath,
-    ['scripts/run-marketing-release-closure-pack.mjs'],
-    env
+    ['scripts/run-leads-bulk-retention-health-evidence.mjs'],
+    env,
   ),
 ]
 
 const overallOk = steps.every((s) => s.ok)
 const output = {
-  check: 'marketing-release-gate-pipeline',
+  check: 'leads-bulk-retention-health-gate-pipeline',
   overallOk,
   steps: steps.map((s) => ({
     label: s.label,
@@ -51,34 +56,58 @@ const output = {
     command: s.command,
   })),
 }
-
-console.log(JSON.stringify(output, null, 2))
+let closurePack = null
 
 if (overallOk) {
+  const closurePackStep = runStep(
+    'leads-bulk-retention-closure-pack',
+    process.execPath,
+    ['scripts/run-leads-bulk-retention-closure-pack.mjs'],
+    env,
+  )
+  closurePack = {
+    ok: closurePackStep.ok,
+    exitCode: closurePackStep.exitCode,
+    mdPath: closurePackStep.parsed?.mdPath || null,
+    jsonPath: closurePackStep.parsed?.jsonPath || null,
+  }
+  if (!closurePackStep.ok) {
+    output.overallOk = false
+  }
+
   const closureDir = join(process.cwd(), 'docs', 'evidence', 'closure')
   const markerDir = join(closureDir, 'markers')
   mkdirSync(markerDir, { recursive: true })
-  const markerPath = join(markerDir, 'marketing-release-gate-green.json')
+  const markerPath = join(markerDir, 'leads-bulk-retention-health-gate-green.json')
   writeFileSync(
     markerPath,
     `${JSON.stringify(
       {
         check: output.check,
-        overallOk: true,
+        overallOk: output.overallOk === true,
         generatedAt: new Date().toISOString(),
         steps: output.steps,
+        closurePack,
       },
       null,
-      2
+      2,
     )}\n`,
-    'utf8'
+    'utf8',
   )
   console.log(JSON.stringify({ markerPath }, null, 2))
 }
 
-if (!overallOk) {
+output.closurePack = closurePack
+console.log(JSON.stringify(output, null, 2))
+
+if (!output.overallOk) {
   const failed = steps.find((s) => !s.ok)
-  if (failed) {
+  if (failed || (closurePack && !closurePack.ok)) {
+    if (!failed && closurePack && !closurePack.ok) {
+      console.error('\n# Failed step stdout')
+      console.error('Closure pack generation failed.')
+    }
+    if (failed) {
     if (failed.stdout) {
       console.error('\n# Failed step stdout')
       console.error(failed.stdout)
@@ -87,8 +116,8 @@ if (!overallOk) {
       console.error('\n# Failed step stderr')
       console.error(failed.stderr)
     }
+    }
   }
 }
 
-process.exit(overallOk ? 0 : 1)
-
+process.exit(output.overallOk ? 0 : 1)

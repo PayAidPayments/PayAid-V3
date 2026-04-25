@@ -24,6 +24,8 @@ Optional: run `nextActionSteps[]` sequentially for structured remediation.
 Optional: inspect `tokenHelperProbe` (`code`, `error`, `nextSteps[]`) when auth token is missing.
 Optional: inspect `helperTests` (`enabled`, `ok`, `exitCode`, `elapsedMs`) for helper-layer gate status.
 Optional: inspect `docsAsciiCheck` (`enabled`, `ok`, `exitCode`, `elapsedMs`) for docs parser-safety gate status.
+Optional: inspect `flagParserTests` (`enabled`, `ok`, `exitCode`, `elapsedMs`) for env-flag parser gate status.
+Optional: inspect `helperContractCheck` (`enabled`, `ok`, `exitCode`, `elapsedMs`) for helper-test output contract gate status.
 
 To enforce helper tests in pack gating:
 
@@ -36,6 +38,20 @@ To enforce docs ASCII parser-safety in pack gating:
 
 ```powershell
 $env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"
+npm run run:website-builder-ready-to-commit-pack
+```
+
+To enforce env-flag parser tests in pack gating:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_FLAG_PARSER_TESTS="1"
+npm run run:website-builder-ready-to-commit-pack
+```
+
+To enforce helper-test contract validation in pack gating:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_HELPER_CONTRACT_CHECK="1"
 npm run run:website-builder-ready-to-commit-pack
 ```
 
@@ -55,6 +71,8 @@ Optional early-signal check from evidence-pipeline summary:
 - Optional: inspect `tokenHelperProbe` (`code`, `error`, `nextSteps[]`) when auth token is missing.
 - Optional: inspect `helperTests` (`enabled`, `ok`, `exitCode`, `elapsedMs`) for helper-layer gate status.
 - Optional: inspect `docsAsciiCheck` (`enabled`, `ok`, `exitCode`, `elapsedMs`) for docs parser-safety gate status.
+- Optional: inspect `flagParserTests` (`enabled`, `ok`, `exitCode`, `elapsedMs`) for env-flag parser gate status.
+- Optional: inspect `helperContractCheck` (`enabled`, `ok`, `exitCode`, `elapsedMs`) for helper-test output contract gate status.
 
 To enforce helper tests in pipeline gating:
 
@@ -70,6 +88,20 @@ $env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"
 npm run run:website-builder-step4-8-evidence-pipeline
 ```
 
+To enforce env-flag parser tests in pipeline gating:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_FLAG_PARSER_TESTS="1"
+npm run run:website-builder-step4-8-evidence-pipeline
+```
+
+To enforce helper-test contract validation in pipeline gating:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_HELPER_CONTRACT_CHECK="1"
+npm run run:website-builder-step4-8-evidence-pipeline
+```
+
 Optional helper-layer guardrail check:
 
 ```powershell
@@ -81,6 +113,31 @@ Expected helper-test summary fields:
 - `check` (expected `website-builder-step4-8-helper-tests`)
 - `overallOk`
 - `steps[]` (`label`, `command`, `ok`, `exitCode`, `elapsedMs`)
+- Expected `steps[].label` includes `flag-parser-gate` plus existing helper labels.
+
+JSON contract example:
+
+```json
+{
+  "check": "website-builder-step4-8-helper-tests",
+  "overallOk": true,
+  "steps": [
+    {
+      "label": "flag-parser-gate",
+      "command": "npm run test:website-builder-step4-8-flag-parser-gate",
+      "ok": true,
+      "exitCode": 0,
+      "elapsedMs": 1234
+    }
+  ]
+}
+```
+
+Contract validator command:
+
+```powershell
+npm run validate:website-builder-helper-test-contract
+```
 
 Token helper (`npm run get:website-builder-step4-8-token`) behavior:
 

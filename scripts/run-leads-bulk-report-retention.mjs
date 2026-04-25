@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { PrismaClient } from '@prisma/client'
 import { isStrictFlagEnabled } from './strict-flag.mjs'
@@ -9,6 +9,54 @@ const DEFAULT_KEEP_LAST = 50
 const DEFAULT_MAX_AGE_DAYS = 90
 const DRY_RUN = isStrictFlagEnabled(process.env.LEADS_BULK_RETENTION_DRY_RUN)
 const TENANT_FILTER = process.env.LEADS_BULK_RETENTION_TENANT_ID?.trim() || null
+const LOCK_TTL_MS = Math.max(
+  60_000,
+  Number(process.env.LEADS_BULK_RETENTION_LOCK_TTL_MS || String(2 * 60 * 60 * 1000)),
+)
+const lockRoot = path.join(process.cwd(), '.tmp', 'locks')
+const lockPath = path.join(lockRoot, 'leads-bulk-report-retention.lock.json')
+const statusPath = path.join(lockRoot, 'leads-bulk-report-retention.status.json')
+
+function readJsonSafe(filePath) {
+  if (!existsSync(filePath)) return null
+  try {
+    return JSON.parse(readFileSync(filePath, 'utf8'))
+  } catch {
+    return null
+  }
+}
+
+function writeStatus(status) {
+  mkdirSync(lockRoot, { recursive: true })
+  const previous = readJsonSafe(statusPath) || {}
+  const state = String(status?.state || previous.state || 'unknown')
+  const nowIso = new Date().toISOString()
+  const isSkipped = state === 'skipped'
+  const consecutiveSkipped = isSkipped ? Number(previous.consecutiveSkipped || 0) + 1 : 0
+  const lastStateChangeAt = previous.state !== state ? nowIso : previous.lastStateChangeAt || nowIso
+  const lastSuccessfulAt =
+    state === 'completed' ? status.completedAt || nowIso : previous.lastSuccessfulAt || null
+
+  writeFileSync(
+    statusPath,
+    `${JSON.stringify(
+      {
+        ...previous,
+        ...status,
+        state,
+        consecutiveSkipped,
+        lastSuccessfulAt,
+        lastStateChangeAt,
+        lockPath,
+        statusPath,
+        updatedAt: nowIso,
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  )
+}
 
 function normalizeSettings(settings) {
   return {
@@ -29,6 +77,14 @@ function computeCandidates(reports, keepLast, maxAgeDays) {
 }
 
 async function run() {
+  const startedAt = new Date().toISOString()
+  writeStatus({
+    state: 'running',
+    startedAt,
+    dryRun: DRY_RUN,
+    tenantFilter: TENANT_FILTER,
+  })
+
   const toggles = await prisma.featureToggle.findMany({
     where: {
       featureName: FEATURE_NAME,
@@ -129,14 +185,103 @@ async function run() {
   ]
   writeFileSync(mdPath, markdownLines.join('\n'), 'utf8')
 
+  writeStatus({
+    state: 'completed',
+    startedAt,
+    completedAt: new Date().toISOString(),
+    dryRun: DRY_RUN,
+    tenantFilter: TENANT_FILTER,
+    tenantsProcessed: results.length,
+    jsonPath,
+    mdPath,
+    results,
+  })
+
   console.log(JSON.stringify({ ...payload, jsonPath, mdPath }, null, 2))
+}
+
+function acquireLock() {
+  mkdirSync(lockRoot, { recursive: true })
+  const now = Date.now()
+  const lockPayload = {
+    pid: process.pid,
+    startedAt: new Date(now).toISOString(),
+    dryRun: DRY_RUN,
+    tenantFilter: TENANT_FILTER,
+  }
+
+  if (!existsSync(lockPath)) {
+    writeFileSync(lockPath, `${JSON.stringify(lockPayload, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' })
+    return { acquired: true, staleRecovered: false }
+  }
+
+  let existing = null
+  try {
+    existing = JSON.parse(readFileSync(lockPath, 'utf8'))
+  } catch {
+    existing = null
+  }
+  const existingStartedAt = Date.parse(String(existing?.startedAt ?? ''))
+  const stale = Number.isFinite(existingStartedAt) ? now - existingStartedAt > LOCK_TTL_MS : true
+
+  if (!stale) {
+    const minutes = Math.round((now - existingStartedAt) / 60000)
+    console.log(
+      JSON.stringify(
+        {
+          skipped: true,
+          reason: 'already_running',
+          lockPath,
+          lockAgeMinutes: minutes,
+          lockTtlMinutes: Math.round(LOCK_TTL_MS / 60000),
+          existing,
+        },
+        null,
+        2,
+      ),
+    )
+    writeStatus({
+      state: 'skipped',
+      reason: 'already_running',
+      dryRun: DRY_RUN,
+      tenantFilter: TENANT_FILTER,
+      existingLock: existing,
+      lockTtlMs: LOCK_TTL_MS,
+    })
+    return { acquired: false, staleRecovered: false }
+  }
+
+  rmSync(lockPath, { force: true })
+  writeFileSync(lockPath, `${JSON.stringify({ ...lockPayload, staleRecovered: true }, null, 2)}\n`, {
+    encoding: 'utf8',
+    flag: 'wx',
+  })
+  return { acquired: true, staleRecovered: true }
+}
+
+function releaseLock() {
+  rmSync(lockPath, { force: true })
+}
+
+const lockState = acquireLock()
+
+if (!lockState.acquired) {
+  await prisma.$disconnect()
+  process.exit(0)
 }
 
 run()
   .catch((error) => {
     console.error('[leads-bulk-report-retention-scheduler] failed:', error)
+    writeStatus({
+      state: 'failed',
+      dryRun: DRY_RUN,
+      tenantFilter: TENANT_FILTER,
+      error: error instanceof Error ? error.message : String(error),
+    })
     process.exitCode = 1
   })
   .finally(async () => {
+    releaseLock()
     await prisma.$disconnect()
   })

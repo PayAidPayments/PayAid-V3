@@ -56,6 +56,32 @@ interface BulkRetentionSettings {
   maxAgeDays: number
 }
 
+interface BulkSchedulerStatus {
+  scheduler?: {
+    hasActiveLock?: boolean
+    lock?: Record<string, unknown> | null
+    status?: Record<string, unknown> | null
+    health?: {
+      ok?: boolean
+      severity?: 'healthy' | 'warning' | 'critical'
+      reasons?: string[]
+      metrics?: {
+        consecutiveSkipped?: number
+      }
+    }
+  }
+  latestRetentionLog?: {
+    action?: string
+    reason?: string | null
+    performedAt?: string
+    performedBy?: string
+  } | null
+  latestBulkReport?: {
+    entityId?: string
+    createdAt?: string
+  } | null
+}
+
 interface BulkRetentionPreview {
   totalReports: number
   wouldDelete: number
@@ -125,6 +151,8 @@ export function ActivationReviewClient() {
   const [retentionLoading, setRetentionLoading] = useState(false)
   const [retentionApplyNow, setRetentionApplyNow] = useState(false)
   const [retentionPreview, setRetentionPreview] = useState<BulkRetentionPreview | null>(null)
+  const [schedulerStatus, setSchedulerStatus] = useState<BulkSchedulerStatus | null>(null)
+  const [schedulerStatusLoading, setSchedulerStatusLoading] = useState(false)
   const [confirmState, setConfirmState] = useState<{
     open: boolean
     item: ActivationSetItem | null
@@ -192,6 +220,26 @@ export function ActivationReviewClient() {
     }
   }
 
+  async function reloadSchedulerStatus() {
+    if (!tenantId) {
+      setSchedulerStatus(null)
+      return
+    }
+    setSchedulerStatusLoading(true)
+    try {
+      const response = await fetch(
+        `/api/activation/bulk-reports/scheduler-status?tenantId=${encodeURIComponent(tenantId)}`,
+      )
+      const data = await response.json()
+      if (!response.ok) throw new Error(data?.error ?? 'Failed to load scheduler status')
+      setSchedulerStatus(data as BulkSchedulerStatus)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load scheduler status')
+    } finally {
+      setSchedulerStatusLoading(false)
+    }
+  }
+
   useEffect(() => {
     const initialTenantId = searchParams.get('tenantId')
     const initialAccountIds = searchParams.get('accountIds')
@@ -205,6 +253,7 @@ export function ActivationReviewClient() {
   useEffect(() => {
     void reloadBulkReportHistory()
     void reloadRetentionSettings()
+    void reloadSchedulerStatus()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId])
 
@@ -713,6 +762,7 @@ export function ActivationReviewClient() {
       setRetentionApplyNow(false)
       await reloadBulkReportHistory()
       setRetentionPreview(null)
+      await reloadSchedulerStatus()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save retention settings')
     } finally {
@@ -906,6 +956,43 @@ export function ActivationReviewClient() {
       <section className="rounded-xl border border-slate-200 bg-white p-4">
         <h2 className="text-sm font-semibold text-slate-900">Bulk Reports History</h2>
         <p className="mt-1 text-xs text-slate-600">Previously exported bulk-run reports for this tenant.</p>
+        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+          <div className="flex items-center justify-between">
+            <p className="font-semibold text-slate-900">Scheduler Status</p>
+            <button
+              type="button"
+              onClick={() => void reloadSchedulerStatus()}
+              disabled={schedulerStatusLoading || !tenantId}
+              className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 disabled:cursor-not-allowed disabled:text-slate-400"
+            >
+              {schedulerStatusLoading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+          {!tenantId ? (
+            <p className="mt-1 text-slate-500">Enter tenant ID to inspect scheduler status.</p>
+          ) : schedulerStatus ? (
+            <div className="mt-1 space-y-1">
+              <p>
+                Health: {String(schedulerStatus.scheduler?.health?.severity ?? 'unknown')}
+                {schedulerStatus.scheduler?.health?.ok ? ' (ok)' : ' (attention)'}
+              </p>
+              {schedulerStatus.scheduler?.health?.reasons?.length ? (
+                <p>Reasons: {schedulerStatus.scheduler.health.reasons.join(', ')}</p>
+              ) : null}
+              <p>Active lock: {schedulerStatus.scheduler?.hasActiveLock ? 'yes' : 'no'}</p>
+              <p>Last state: {String(schedulerStatus.scheduler?.status?.state ?? 'unknown')}</p>
+              <p>Last run at: {String(schedulerStatus.scheduler?.status?.updatedAt ?? '-')}</p>
+              <p>Consecutive skips: {Number(schedulerStatus.scheduler?.health?.metrics?.consecutiveSkipped ?? 0)}</p>
+              <p>
+                Latest retention log: {schedulerStatus.latestRetentionLog?.action ?? '-'} at{' '}
+                {schedulerStatus.latestRetentionLog?.performedAt ?? '-'}
+              </p>
+              <p>Latest report export: {schedulerStatus.latestBulkReport?.createdAt ?? '-'}</p>
+            </div>
+          ) : (
+            <p className="mt-1 text-slate-500">No scheduler status available yet.</p>
+          )}
+        </div>
         <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
           <p className="text-xs font-semibold text-slate-800">Retention Settings</p>
           <div className="mt-2 flex flex-wrap items-end gap-3">

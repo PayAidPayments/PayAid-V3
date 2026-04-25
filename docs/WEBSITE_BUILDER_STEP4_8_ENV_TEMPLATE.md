@@ -65,6 +65,20 @@ $env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"
 npm run run:website-builder-step4-8-evidence-pipeline
 ```
 
+Optional strict pipeline mode (include env-flag parser tests in pipeline gate):
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_FLAG_PARSER_TESTS="1"
+npm run run:website-builder-step4-8-evidence-pipeline
+```
+
+Optional strict pipeline mode (include helper-test contract validation in pipeline gate):
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_HELPER_CONTRACT_CHECK="1"
+npm run run:website-builder-step4-8-evidence-pipeline
+```
+
 Optional early-signal check from evidence-pipeline summary:
 
 - `discoverabilityGate.ok` should be `true`
@@ -74,6 +88,8 @@ Optional early-signal check from evidence-pipeline summary:
 - Optional: inspect `tokenHelperProbe` for parsed token-helper diagnostics (`code`, `error`, `nextSteps[]`) when auth token is missing.
 - Optional: inspect `helperTests` for helper-layer gate status (`enabled`, `ok`, `exitCode`, `elapsedMs`).
 - Optional: inspect `docsAsciiCheck` for docs parser-safety gate status (`enabled`, `ok`, `exitCode`, `elapsedMs`).
+- Optional: inspect `flagParserTests` for env-flag parser gate status (`enabled`, `ok`, `exitCode`, `elapsedMs`).
+- Optional: inspect `helperContractCheck` for helper-test output contract gate status (`enabled`, `ok`, `exitCode`, `elapsedMs`).
 
 Full gate pack (runtime evidence + ready-to-commit preflight):
 
@@ -95,6 +111,20 @@ $env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"
 npm run run:website-builder-ready-to-commit-pack
 ```
 
+Optional strict pack mode (include env-flag parser tests in pack gate):
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_FLAG_PARSER_TESTS="1"
+npm run run:website-builder-ready-to-commit-pack
+```
+
+Optional strict pack mode (include helper-test contract validation in pack gate):
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_HELPER_CONTRACT_CHECK="1"
+npm run run:website-builder-ready-to-commit-pack
+```
+
 If pack summary returns `overallOk=false`, inspect `runtimeBlockers[]` for explicit env/auth blockers.
 
 Use `nextAction` from pack output (copy/paste-ready PowerShell env + rerun command, including token-helper flow when token is missing) before rerun.
@@ -102,6 +132,8 @@ Use `nextAction` from pack output (copy/paste-ready PowerShell env + rerun comma
 - Optional: inspect `tokenHelperProbe` for parsed token-helper diagnostics (`code`, `error`, `nextSteps[]`) when auth token is missing.
 - Optional: inspect `helperTests` for helper-layer gate status (`enabled`, `ok`, `exitCode`, `elapsedMs`).
 - Optional: inspect `docsAsciiCheck` for docs parser-safety gate status (`enabled`, `ok`, `exitCode`, `elapsedMs`).
+- Optional: inspect `flagParserTests` for env-flag parser gate status (`enabled`, `ok`, `exitCode`, `elapsedMs`).
+- Optional: inspect `helperContractCheck` for helper-test output contract gate status (`enabled`, `ok`, `exitCode`, `elapsedMs`).
 
 Optional helper-layer guardrail check:
 
@@ -114,3 +146,4 @@ Expected helper-test summary fields:
 - `check` (expected `website-builder-step4-8-helper-tests`)
 - `overallOk`
 - `steps[]` (`label`, `command`, `ok`, `exitCode`, `elapsedMs`)
+- Expected `steps[].label` includes `flag-parser-gate` plus existing helper labels.

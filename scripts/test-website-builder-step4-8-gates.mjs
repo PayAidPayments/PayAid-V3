@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import {
   isWebsiteBuilderDocsAsciiGateEnabled,
+  isWebsiteBuilderFlagParserTestsGateEnabled,
+  isWebsiteBuilderHelperContractCheckGateEnabled,
   isWebsiteBuilderHelperGateEnabled,
 } from './website-builder-step4-8-gates.mjs'
 import { isStrictFlagEnabled } from './strict-flag.mjs'
@@ -20,6 +22,20 @@ function run() {
     isWebsiteBuilderDocsAsciiGateEnabled({ WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK: '1' }),
     true,
     'docs flag=1 should enable docs gate'
+  )
+  assert.equal(
+    isWebsiteBuilderFlagParserTestsGateEnabled({
+      WEBSITE_BUILDER_INCLUDE_FLAG_PARSER_TESTS: '1',
+    }),
+    true,
+    'flag parser flag=1 should enable flag parser gate'
+  )
+  assert.equal(
+    isWebsiteBuilderHelperContractCheckGateEnabled({
+      WEBSITE_BUILDER_INCLUDE_HELPER_CONTRACT_CHECK: '1',
+    }),
+    true,
+    'helper contract flag=1 should enable helper contract gate'
   )
 
   console.log('website-builder-step4-8-gates tests passed')

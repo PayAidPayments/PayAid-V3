@@ -72,6 +72,10 @@ Pack summary includes discoverability gate rollup:
   - Enable by setting `WEBSITE_BUILDER_INCLUDE_HELPER_TESTS=1` before running pack.
 - `docsAsciiCheck` (optional) docs parser-safety gate status:
   - Enable by setting `WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK=1` before running pack.
+- `flagParserTests` (optional) env-flag parser gate status:
+  - Enable by setting `WEBSITE_BUILDER_INCLUDE_FLAG_PARSER_TESTS=1` before running pack.
+- `helperContractCheck` (optional) helper-test output contract gate status:
+  - Enable by setting `WEBSITE_BUILDER_INCLUDE_HELPER_CONTRACT_CHECK=1` before running pack.
 
 Or run runtime evidence only:
 
@@ -92,6 +96,10 @@ Evidence pipeline summary now includes:
   - Enable by setting `WEBSITE_BUILDER_INCLUDE_HELPER_TESTS=1` before running pipeline.
 - `docsAsciiCheck` (optional) docs parser-safety gate status:
   - Enable by setting `WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK=1` before running pipeline.
+- `flagParserTests` (optional) env-flag parser gate status:
+  - Enable by setting `WEBSITE_BUILDER_INCLUDE_FLAG_PARSER_TESTS=1` before running pipeline.
+- `helperContractCheck` (optional) helper-test output contract gate status:
+  - Enable by setting `WEBSITE_BUILDER_INCLUDE_HELPER_CONTRACT_CHECK=1` before running pipeline.
 
 Run the full pipeline (runtime check + evidence autofill):
 
@@ -126,6 +134,20 @@ $env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"
 npm run run:website-builder-ready-to-commit-pack
 ```
 
+To include flag parser tests inside pack gating itself:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_FLAG_PARSER_TESTS="1"
+npm run run:website-builder-ready-to-commit-pack
+```
+
+To include helper-test contract validation inside pack gating itself:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_HELPER_CONTRACT_CHECK="1"
+npm run run:website-builder-ready-to-commit-pack
+```
+
 To include helper tests inside pipeline gating itself:
 
 ```powershell
@@ -140,6 +162,20 @@ $env:WEBSITE_BUILDER_INCLUDE_DOCS_ASCII_CHECK="1"
 npm run run:website-builder-step4-8-evidence-pipeline
 ```
 
+To include flag parser tests inside pipeline gating itself:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_FLAG_PARSER_TESTS="1"
+npm run run:website-builder-step4-8-evidence-pipeline
+```
+
+To include helper-test contract validation inside pipeline gating itself:
+
+```powershell
+$env:WEBSITE_BUILDER_INCLUDE_HELPER_CONTRACT_CHECK="1"
+npm run run:website-builder-step4-8-evidence-pipeline
+```
+
 Expected aggregate helper-test summary fields (for CI parsing):
 
 - `check` (expected value: `website-builder-step4-8-helper-tests`)
@@ -150,6 +186,40 @@ Expected aggregate helper-test summary fields (for CI parsing):
   - `ok`
   - `exitCode`
   - `elapsedMs`
+- Current expected `steps[].label` set includes:
+  - `flag-parser-gate`, `gates`, `docs-gate`, `helper-gate`, `next-action`, `token-probe`
+
+JSON contract example (schema-style, parser-oriented):
+
+```json
+{
+  "check": "website-builder-step4-8-helper-tests",
+  "overallOk": true,
+  "steps": [
+    {
+      "label": "flag-parser-gate",
+      "command": "npm run test:website-builder-step4-8-flag-parser-gate",
+      "ok": true,
+      "exitCode": 0,
+      "elapsedMs": 1234
+    }
+  ]
+}
+```
+
+Contract notes:
+
+- `check` must equal `website-builder-step4-8-helper-tests`.
+- `overallOk` must be boolean.
+- `steps[]` must be array of objects containing `label`, `command`, `ok`, `exitCode`, `elapsedMs`.
+- `steps[].label` must be one of:
+  - `flag-parser-gate`, `gates`, `docs-gate`, `helper-gate`, `next-action`, `token-probe`.
+
+Automated contract validator:
+
+```powershell
+npm run validate:website-builder-helper-test-contract
+```
 
 ---
 
@@ -224,6 +294,8 @@ If `helperTests.ok=false` (pipeline/pack strict mode) or aggregate helper tests 
 - Run helper aggregate directly:
   - `npm run test:website-builder-step4-8-helpers`
 - Identify failing helper step from `steps[]`:
+  - `flag-parser-gate` -> inspect `scripts/website-builder-step4-8-flag-parser-gate.mjs` + test fixtures.
+  - `gates` -> inspect `scripts/website-builder-step4-8-gates.mjs` + test fixtures.
   - `docs-gate` -> inspect `scripts/website-builder-step4-8-docs-gate.mjs` + test fixtures.
   - `helper-gate` -> verify `WEBSITE_BUILDER_INCLUDE_HELPER_TESTS` is explicitly `1` only when strict mode is intended.
   - `next-action` -> inspect `scripts/website-builder-step4-8-next-action.mjs` + test fixtures.
