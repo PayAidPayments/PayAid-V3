@@ -30,6 +30,10 @@ const includeMarkerVerifier =
   process.env.MARKETING_RELEASE_INCLUDE_MARKER_VERIFIER === '1'
 const markerVerifierWarningOnly =
   process.env.MARKETING_RELEASE_MARKER_VERIFIER_WARNING_ONLY === '1'
+const includeMatrixEvidence =
+  process.env.MARKETING_RELEASE_INCLUDE_MATRIX_EVIDENCE === '1'
+const matrixEvidenceWarningOnly =
+  process.env.MARKETING_RELEASE_MATRIX_EVIDENCE_WARNING_ONLY === '1'
 
 const steps = [
   runStep('social-smoke-evidence', process.execPath, ['scripts/run-social-oauth-smoke-evidence.mjs'], env),
@@ -69,10 +73,22 @@ if (includeMarkerVerifier) {
   )
 }
 
+if (includeMatrixEvidence) {
+  steps.push(
+    runStep(
+      'marketing-gate-profile-matrix-evidence',
+      process.execPath,
+      ['scripts/run-marketing-release-gate-profile-matrix-evidence.mjs'],
+      env
+    )
+  )
+}
+
 const evaluatedSteps = steps.map((s) => {
   const warningOnly =
     (s.label === 'marker-helpers-suite' && markerHelpersWarningOnly) ||
-    (s.label === 'marker-gate-verifier' && markerVerifierWarningOnly)
+    (s.label === 'marker-gate-verifier' && markerVerifierWarningOnly) ||
+    (s.label === 'marketing-gate-profile-matrix-evidence' && matrixEvidenceWarningOnly)
   return {
     ...s,
     warningOnly,
@@ -88,6 +104,8 @@ const output = {
   markerHelpersWarningOnly,
   includeMarkerVerifier,
   markerVerifierWarningOnly,
+  includeMatrixEvidence,
+  matrixEvidenceWarningOnly,
   steps: steps.map((s) => ({
     label: s.label,
     ok: s.ok,

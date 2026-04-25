@@ -4,9 +4,9 @@ This document is the execution tracker against `payaid_v3_blueprint_Apr26.md`.
 
 ## Live closeout status (canonical gate)
 
-- Latest consolidated status: `docs/evidence/closure/2026-04-25T14-11-47-442Z-canonical-closeout-status-snapshot.md`
+- Latest consolidated status: `docs/evidence/closure/2026-04-25T14-16-23-261Z-canonical-closeout-status-snapshot.md`
 - Current state: `FAIL` (expected until time-gated monitoring windows complete)
-- Next due checkpoint: `tplus8` at `2026-04-25T16:00:00.000Z` (remaining `109` minutes at last refresh)
+- Next due checkpoint: `tplus8` at `2026-04-25T16:00:00.000Z` (remaining `104` minutes at last refresh)
 - Next command when due: `npm run run:canonical-monitor:tplus8`
 - One-command refresh: `npm run run:canonical-status-refresh`
 ## Non-negotiable execution directives
@@ -187,3 +187,4 @@ Format:
 - `2026-04-25` - P2 Website Builder helper-contract gate doc parity follow-up - Completed (evidence index helper-test contract section now explicitly lists `helper-contract-gate` in expected `steps[].label` set to align with runbook, validator, and aggregate test output) - `npm run validate:website-builder-helper-test-contract` - `docs/evidence/closure/2026-04-24-website-builder-step4-8-evidence-index.md`, `docs/WEBSITE_BUILDER_STEP4_8_RUNTIME_RUNBOOK.md`
 - `2026-04-25` - P2 Website Builder env template helper-label parity sweep - Completed (replaced residual "flag-parser-gate plus existing helper labels" wording with explicit expected `steps[].label` set including `helper-contract-gate` for parser-safe consistency across Website Builder operator docs) - `npm run validate:website-builder-helper-test-contract` - `docs/WEBSITE_BUILDER_STEP4_8_ENV_TEMPLATE.md`, `docs/WEBSITE_BUILDER_STEP4_8_RUNTIME_RUNBOOK.md`, `docs/evidence/closure/2026-04-24-website-builder-step4-8-evidence-index.md`
 - `2026-04-25` - P0 operational closeout checklist added to focused tracker view - Completed (ran `run:canonical-status-refresh`, synced live status block to latest snapshot, and added a concise non-code checkpoint/finalization checklist for cutover operators) - `npm run run:canonical-status-refresh` - `docs/PAYAID_V3_BLUEPRINT_GAP_CHECKLIST.md`, `docs/evidence/closure/2026-04-25T14-04-50-473Z-canonical-status-refresh.md`
+- `2026-04-25` - P0 due-checkpoint guard + refresh rerun (latest) - Partial pass (executed guarded due-run with no checkpoint due yet, then reran canonical status refresh and next-checkpoint planner; `tplus8` remains next with updated countdown and live status synced) - `npm run run:canonical-due-monitor-checkpoints`, `npm run run:canonical-status-refresh`, `npm run show:canonical-next-checkpoint` - `docs/evidence/closure/2026-04-25T14-11-43-276Z-canonical-due-monitor-checkpoints.md`, `docs/evidence/closure/2026-04-25T14-16-00-289Z-canonical-status-refresh.md`
