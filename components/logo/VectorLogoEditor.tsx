@@ -1037,13 +1037,22 @@ export function VectorLogoEditor({
             )}
             <div>
               <Label htmlFor="qa-diagnostics-id">QA Diagnostics ID (optional)</Label>
-              <Input
-                id="qa-diagnostics-id"
-                value={qaDiagnosticsId}
-                onChange={(e) => setQaDiagnosticsId(e.target.value)}
-                placeholder="e.g., logo_1714023741_ab12cd"
-                className="mt-1"
-              />
+              <div className="mt-1 flex gap-2">
+                <Input
+                  id="qa-diagnostics-id"
+                  value={qaDiagnosticsId}
+                  onChange={(e) => setQaDiagnosticsId(e.target.value)}
+                  placeholder="e.g., logo_1714023741_ab12cd"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setQaDiagnosticsId('')}
+                  disabled={!qaDiagnosticsId.trim()}
+                >
+                  Clear
+                </Button>
+              </div>
             </div>
             <Button
               variant="outline"
