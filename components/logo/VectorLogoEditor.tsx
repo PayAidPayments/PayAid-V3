@@ -1014,6 +1014,11 @@ export function VectorLogoEditor({
               <p className="mt-1">Env: {qaEnvironmentTag}</p>
               <p>Build: {qaBuildRef}</p>
               <p>Origin: {qaRuntimeOrigin}</p>
+              {(qaEnvironmentTag === 'unknown' || qaBuildRef === 'N/A') && (
+                <p className="mt-1 text-amber-700">
+                  Warning: environment/build context is incomplete. QA evidence may be harder to trace.
+                </p>
+              )}
             </div>
 
             <Button variant="outline" onClick={handleExportPack} disabled={!previewSvg || selectedExportCount === 0}>
