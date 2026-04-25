@@ -168,6 +168,7 @@ export function VectorLogoEditor({
   const [exportOptions, setExportOptions] = useState<ExportPackOptions>(EXPORT_PACK_PRESETS.full)
   const [lastExportSummary, setLastExportSummary] = useState<LastExportSummary | null>(null)
   const [exportHistory, setExportHistory] = useState<LastExportSummary[]>([])
+  const [qaDiagnosticsId, setQaDiagnosticsId] = useState('')
 
   // Load available fonts
   useEffect(() => {
@@ -497,6 +498,7 @@ export function VectorLogoEditor({
       'PayAid Logo Export QA Evidence',
       `Generated At: ${new Date(now).toLocaleString()}`,
       `Business Name: ${config.text || 'N/A'}`,
+      `Diagnostics ID: ${qaDiagnosticsId.trim() || 'N/A'}`,
       `Export Preset: ${selectedExportPreset}`,
       `Selected Asset Count: ${selectedExportCount}`,
       '',
@@ -948,6 +950,7 @@ export function VectorLogoEditor({
                       [
                         `Last export: ${new Date(lastExportSummary.timestamp).toLocaleString()}`,
                         `Assets: ${lastExportSummary.assets.join(', ')}`,
+                        `Diagnostics ID: ${qaDiagnosticsId.trim() || 'N/A'}`,
                       ].join('\n')
                     }
                     successMessage="Last export summary copied to clipboard."
@@ -991,6 +994,7 @@ export function VectorLogoEditor({
                             [
                               `Last export: ${new Date(entry.timestamp).toLocaleString()}`,
                               `Assets: ${entry.assets.join(', ')}`,
+                              `Diagnostics ID: ${qaDiagnosticsId.trim() || 'N/A'}`,
                             ].join('\n')
                           }
                           successMessage="Export history entry copied to clipboard."
@@ -1005,6 +1009,16 @@ export function VectorLogoEditor({
                 </div>
               </div>
             )}
+            <div>
+              <Label htmlFor="qa-diagnostics-id">QA Diagnostics ID (optional)</Label>
+              <Input
+                id="qa-diagnostics-id"
+                value={qaDiagnosticsId}
+                onChange={(e) => setQaDiagnosticsId(e.target.value)}
+                placeholder="e.g., logo_1714023741_ab12cd"
+                className="mt-1"
+              />
+            </div>
             <Button
               variant="outline"
               onClick={handleDownloadQaEvidence}
