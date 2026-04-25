@@ -517,6 +517,7 @@ export function VectorLogoEditor({
       setError('No export history available for QA evidence')
       return
     }
+    if (!ensureQaContextReady('export QA evidence')) return
 
     const fileNameBase = (config.text || 'brand').replace(/\s+/g, '-').toLowerCase()
     const reportBlob = new Blob([buildQaEvidenceBlock()], { type: 'text/plain;charset=utf-8' })
@@ -571,6 +572,19 @@ export function VectorLogoEditor({
       `Evidence Hash: ${evidenceHash}`,
       'End of report',
     ].join('\n')
+  }
+
+  const ensureQaContextReady = (action: string): boolean => {
+    if (isQaContextComplete) return true
+    if (typeof window === 'undefined') return false
+    const proceed = window.confirm(
+      `QA context is Partial (missing env/build metadata). Do you still want to ${action}?`
+    )
+    if (!proceed) {
+      setError(`Canceled ${action} because QA context is Partial`)
+      return false
+    }
+    return true
   }
 
   const addKeyword = () => {
@@ -1145,7 +1159,7 @@ export function VectorLogoEditor({
               Export QA Evidence (.txt)
             </Button>
             <CopyAction
-              textToCopy={buildQaEvidenceBlock}
+              textToCopy={() => (ensureQaContextReady('copy full QA block') ? buildQaEvidenceBlock() : '')}
               successMessage="Full QA evidence block copied to clipboard."
               label="Copy Full QA Block"
               copiedLabel="Copied"
