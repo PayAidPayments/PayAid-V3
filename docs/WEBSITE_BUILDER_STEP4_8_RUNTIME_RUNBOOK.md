@@ -187,7 +187,7 @@ Expected aggregate helper-test summary fields (for CI parsing):
   - `exitCode`
   - `elapsedMs`
 - Current expected `steps[].label` set includes:
-  - `flag-parser-gate`, `gates`, `docs-gate`, `helper-gate`, `next-action`, `token-probe`
+  - `helper-contract-gate`, `flag-parser-gate`, `gates`, `docs-gate`, `helper-gate`, `next-action`, `token-probe`
 
 JSON contract example (schema-style, parser-oriented):
 
@@ -213,7 +213,7 @@ Contract notes:
 - `overallOk` must be boolean.
 - `steps[]` must be array of objects containing `label`, `command`, `ok`, `exitCode`, `elapsedMs`.
 - `steps[].label` must be one of:
-  - `flag-parser-gate`, `gates`, `docs-gate`, `helper-gate`, `next-action`, `token-probe`.
+  - `helper-contract-gate`, `flag-parser-gate`, `gates`, `docs-gate`, `helper-gate`, `next-action`, `token-probe`.
 
 Automated contract validator:
 
@@ -294,6 +294,7 @@ If `helperTests.ok=false` (pipeline/pack strict mode) or aggregate helper tests 
 - Run helper aggregate directly:
   - `npm run test:website-builder-step4-8-helpers`
 - Identify failing helper step from `steps[]`:
+  - `helper-contract-gate` -> inspect `scripts/website-builder-step4-8-helper-contract-gate.mjs` + test fixtures.
   - `flag-parser-gate` -> inspect `scripts/website-builder-step4-8-flag-parser-gate.mjs` + test fixtures.
   - `gates` -> inspect `scripts/website-builder-step4-8-gates.mjs` + test fixtures.
   - `docs-gate` -> inspect `scripts/website-builder-step4-8-docs-gate.mjs` + test fixtures.

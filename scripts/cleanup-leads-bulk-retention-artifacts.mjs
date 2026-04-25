@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdirSync, readdirSync, renameSync, statSync, unlinkSync } from 'node:fs'
+import { mkdirSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
 import { isStrictFlagEnabled } from './strict-flag.mjs'
 
@@ -12,6 +12,7 @@ const apply = isStrictFlagEnabled(process.env.LEADS_BULK_RETENTION_ARTIFACT_CLEA
 const mode = (process.env.LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_MODE || 'delete').toLowerCase()
 const includeMarkers = isStrictFlagEnabled(process.env.LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_INCLUDE_MARKERS)
 const allowMarkerMutation = isStrictFlagEnabled(process.env.LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_ALLOW_MARKER_MUTATION)
+const approvalFile = join(markersDir, 'ALLOW_LEADS_BULK_RETENTION_MARKER_MUTATION')
 const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000
 
 const timestampedPatterns = [
@@ -71,6 +72,21 @@ function collectMarkerCandidates(dir) {
   return out
 }
 
+function hasValidMarkerApprovalFile() {
+  try {
+    const candidates = readdirSync(markersDir)
+    if (!candidates.includes('ALLOW_LEADS_BULK_RETENTION_MARKER_MUTATION')) return false
+    const raw = statSync(approvalFile)
+    if (!raw.isFile()) return false
+    const text = readFileSync(approvalFile, 'utf8')
+    const expiresAt = text.match(/expiresAt=(.+)/)?.[1]?.trim() || null
+    const expiresAtMs = Date.parse(String(expiresAt || ''))
+    return Number.isFinite(expiresAtMs) && Date.now() <= expiresAtMs
+  } catch {
+    return false
+  }
+}
+
 let candidates = []
 try {
   candidates = [...collectCandidates(closureDir), ...collectMarkerCandidates(markersDir)]
@@ -92,7 +108,8 @@ try {
 
 const deleted = []
 const archived = []
-if (apply && includeMarkers && !allowMarkerMutation) {
+const markerApprovalFromFile = hasValidMarkerApprovalFile()
+if (apply && includeMarkers && !allowMarkerMutation && !markerApprovalFromFile) {
   console.error(
     JSON.stringify(
       {
@@ -101,6 +118,7 @@ if (apply && includeMarkers && !allowMarkerMutation) {
         includeMarkers,
         apply,
         requiredEnv: 'LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_ALLOW_MARKER_MUTATION=1',
+        requiredApprovalFile: approvalFile,
       },
       null,
       2,
@@ -148,6 +166,7 @@ console.log(
       mode,
       includeMarkers,
       allowMarkerMutation,
+      markerApprovalFromFile,
       retentionDays,
       scannedDir: closureDir,
       candidateCount: candidates.length,

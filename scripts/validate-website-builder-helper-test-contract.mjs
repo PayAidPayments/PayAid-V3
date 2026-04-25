@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process'
 const EXPECTED_CHECK = 'website-builder-step4-8-helper-tests'
 const REQUIRED_STEP_FIELDS = ['label', 'command', 'ok', 'exitCode', 'elapsedMs']
 const ALLOWED_STEP_LABELS = new Set([
+  'helper-contract-gate',
   'flag-parser-gate',
   'gates',
   'docs-gate',

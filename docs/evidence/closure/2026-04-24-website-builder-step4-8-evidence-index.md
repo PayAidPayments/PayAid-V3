@@ -113,7 +113,8 @@ Expected helper-test summary fields:
 - `check` (expected `website-builder-step4-8-helper-tests`)
 - `overallOk`
 - `steps[]` (`label`, `command`, `ok`, `exitCode`, `elapsedMs`)
-- Expected `steps[].label` includes `flag-parser-gate` plus existing helper labels.
+- Expected `steps[].label` includes:
+  - `helper-contract-gate`, `flag-parser-gate`, `gates`, `docs-gate`, `helper-gate`, `next-action`, `token-probe`
 
 JSON contract example:
 

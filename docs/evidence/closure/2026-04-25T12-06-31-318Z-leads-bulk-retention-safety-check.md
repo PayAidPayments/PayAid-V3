@@ -1,0 +1,72 @@
+# Leads Bulk Retention Safety Check
+
+- Generated at: 2026-04-25T12:06:31.334Z
+- Overall OK: no
+- JSON artifact: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-25T12-06-31-318Z-leads-bulk-retention-safety-check.json`
+
+## Steps
+- marker-status: pass (exit=0)
+- marker-verifier: fail (exit=1)
+- next-actions: pass (exit=0)
+
+## Raw Results
+
+```json
+{
+  "check": "leads-bulk-retention-safety-check",
+  "generatedAt": "2026-04-25T12:06:31.334Z",
+  "overallOk": false,
+  "steps": [
+    {
+      "label": "marker-status",
+      "ok": true,
+      "exitCode": 0,
+      "scriptPath": "scripts/get-leads-bulk-retention-marker-mutation-status.mjs",
+      "parsed": {
+        "ok": true,
+        "active": false,
+        "expired": null,
+        "approvalFile": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\markers\\ALLOW_LEADS_BULK_RETENTION_MARKER_MUTATION",
+        "reason": "missing_approval_file"
+      }
+    },
+    {
+      "label": "marker-verifier",
+      "ok": false,
+      "exitCode": 1,
+      "scriptPath": "scripts/verify-leads-bulk-retention-health-gate-marker.mjs",
+      "parsed": null
+    },
+    {
+      "label": "next-actions",
+      "ok": true,
+      "exitCode": 0,
+      "scriptPath": "scripts/show-leads-bulk-retention-next-actions.mjs",
+      "parsed": {
+        "ok": true,
+        "marker": {
+          "exists": false,
+          "validJson": false,
+          "passing": false,
+          "fresh": false,
+          "maxAgeHours": 6,
+          "ageHours": null,
+          "path": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\markers\\leads-bulk-retention-health-gate-green.json"
+        },
+        "latestHealthEvidence": null,
+        "nextAction": {
+          "type": "run_gate_pipeline",
+          "message": "No valid fresh marker found. Run gate pipeline first.",
+          "commands": [
+            "npm run run:leads-bulk-retention-health-gate-pipeline"
+          ]
+        },
+        "followUpCommands": [
+          "npm run run:leads-bulk-retention-health-evidence:with-cleanup",
+          "npm run cleanup:leads-bulk-retention-artifacts"
+        ]
+      }
+    }
+  ]
+}
+```
