@@ -170,6 +170,7 @@ export function VectorLogoEditor({
   const [lastExportSummary, setLastExportSummary] = useState<LastExportSummary | null>(null)
   const [exportHistory, setExportHistory] = useState<LastExportSummary[]>([])
   const [qaDiagnosticsId, setQaDiagnosticsId] = useState('')
+  const [skipPartialQaConfirmThisSession, setSkipPartialQaConfirmThisSession] = useState(false)
 
   // Load available fonts
   useEffect(() => {
@@ -576,6 +577,7 @@ export function VectorLogoEditor({
 
   const ensureQaContextReady = (action: string): boolean => {
     if (isQaContextComplete) return true
+    if (skipPartialQaConfirmThisSession) return true
     if (typeof window === 'undefined') return false
     const proceed = window.confirm(
       `QA context is Partial (missing env/build metadata). Do you still want to ${action}?`
@@ -1040,6 +1042,15 @@ export function VectorLogoEditor({
               <p className="mt-1">Env: {qaEnvironmentTag}</p>
               <p>Build: {qaBuildRef}</p>
               <p>Origin: {qaRuntimeOrigin}</p>
+              {!isQaContextComplete && (
+                <div className="mt-2 flex items-center justify-between rounded border border-amber-200 bg-amber-50 px-2 py-1.5">
+                  <p className="text-[11px] text-amber-800">Don&apos;t ask again this session</p>
+                  <Switch
+                    checked={skipPartialQaConfirmThisSession}
+                    onCheckedChange={setSkipPartialQaConfirmThisSession}
+                  />
+                </div>
+              )}
               {!isQaContextComplete && (
                 <p className="mt-1 text-amber-700">
                   Warning: environment/build context is incomplete. QA evidence may be harder to trace.
