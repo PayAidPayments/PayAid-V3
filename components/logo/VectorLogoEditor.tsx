@@ -304,6 +304,10 @@ export function VectorLogoEditor({
 
       if (!response.ok) {
         const data = await response.json()
+        const detectedDiagnosticsId = extractDiagnosticsId(data)
+        if (detectedDiagnosticsId) {
+          setQaDiagnosticsId(detectedDiagnosticsId)
+        }
         throw new Error(data.error || 'Failed to save logo')
       }
 
@@ -311,7 +315,12 @@ export function VectorLogoEditor({
       onSave?.(data.logo)
     } catch (err) {
       console.error('Save error:', err)
-      setError(err instanceof Error ? err.message : 'Failed to save logo')
+      const message = err instanceof Error ? err.message : 'Failed to save logo'
+      const diagnosticsFromMessage = extractDiagnosticsId(message)
+      if (diagnosticsFromMessage) {
+        setQaDiagnosticsId(diagnosticsFromMessage)
+      }
+      setError(message)
     } finally {
       setSaving(false)
     }
@@ -1278,6 +1287,34 @@ function isValidLastExportSummary(value: unknown): value is LastExportSummary {
     Array.isArray(candidate.assets) &&
     candidate.assets.every((asset) => typeof asset === 'string')
   )
+}
+
+function extractDiagnosticsId(source: unknown): string | null {
+  if (!source) return null
+
+  if (typeof source === 'string') {
+    const directMatch = source.match(/\b(?:diagnosticsId|diagnostics[_\s-]?id)\b[:=\s]+([a-zA-Z0-9._-]+)/i)
+    if (directMatch?.[1]) return directMatch[1]
+    const logoPattern = source.match(/\b(logo_[a-zA-Z0-9._-]+)\b/)
+    if (logoPattern?.[1]) return logoPattern[1]
+    return null
+  }
+
+  if (typeof source === 'object') {
+    const record = source as Record<string, unknown>
+    const candidate = record.diagnosticsId
+    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+      return candidate.trim()
+    }
+    if (typeof record.error === 'string') {
+      return extractDiagnosticsId(record.error)
+    }
+    if (typeof record.message === 'string') {
+      return extractDiagnosticsId(record.message)
+    }
+  }
+
+  return null
 }
 
 function buildConceptPresets(
