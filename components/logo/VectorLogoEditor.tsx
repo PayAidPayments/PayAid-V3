@@ -77,6 +77,7 @@ const EXPORT_PACK_PRESETS: Record<Exclude<ExportPackPresetId, 'custom'>, ExportP
 
 const EXPORT_OPTIONS_STORAGE_KEY = 'payaid.logo.export-options.v1'
 const EXPORT_PRESET_STORAGE_KEY = 'payaid.logo.export-preset.v1'
+const EXPORT_HISTORY_STORAGE_KEY = 'payaid.logo.export-history.v1'
 
 type IndustryTemplate = {
   id: string
@@ -166,6 +167,7 @@ export function VectorLogoEditor({
   const [selectedExportPreset, setSelectedExportPreset] = useState<ExportPackPresetId>('full')
   const [exportOptions, setExportOptions] = useState<ExportPackOptions>(EXPORT_PACK_PRESETS.full)
   const [lastExportSummary, setLastExportSummary] = useState<LastExportSummary | null>(null)
+  const [exportHistory, setExportHistory] = useState<LastExportSummary[]>([])
 
   // Load available fonts
   useEffect(() => {
@@ -207,6 +209,13 @@ export function VectorLogoEditor({
           setExportOptions(parsed)
         }
       }
+      const savedHistory = localStorage.getItem(EXPORT_HISTORY_STORAGE_KEY)
+      if (savedHistory) {
+        const parsed = JSON.parse(savedHistory)
+        if (Array.isArray(parsed)) {
+          setExportHistory(parsed.filter(isValidLastExportSummary).slice(0, 5))
+        }
+      }
     } catch {
       // no-op; fall back to defaults on malformed local storage
     }
@@ -220,6 +229,14 @@ export function VectorLogoEditor({
       // no-op; storage can fail in restricted browser modes
     }
   }, [exportOptions, selectedExportPreset])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(EXPORT_HISTORY_STORAGE_KEY, JSON.stringify(exportHistory.slice(0, 5)))
+    } catch {
+      // no-op; storage can fail in restricted browser modes
+    }
+  }, [exportHistory])
 
   const applyExportPreset = (preset: Exclude<ExportPackPresetId, 'custom'>) => {
     setSelectedExportPreset(preset)
@@ -457,10 +474,12 @@ export function VectorLogoEditor({
       a.download = `${baseName}-brand-pack.zip`
       a.click()
       URL.revokeObjectURL(zipUrl)
-      setLastExportSummary({
+      const summary: LastExportSummary = {
         timestamp: new Date().toISOString(),
         assets: selectedAssets,
-      })
+      }
+      setLastExportSummary(summary)
+      setExportHistory((prev) => [summary, ...prev].slice(0, 5))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to export pack')
     }
@@ -906,6 +925,52 @@ export function VectorLogoEditor({
                 </div>
               </div>
             )}
+            {exportHistory.length > 0 && (
+              <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="font-medium text-slate-900">Recent Exports (Last 5)</p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2"
+                    onClick={() => {
+                      setExportHistory([])
+                      try {
+                        localStorage.removeItem(EXPORT_HISTORY_STORAGE_KEY)
+                      } catch {
+                        // no-op
+                      }
+                    }}
+                  >
+                    Clear History
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {exportHistory.map((entry, index) => (
+                    <div key={`${entry.timestamp}-${index}`} className="rounded border border-slate-200 px-2 py-1.5">
+                      <p className="text-slate-700">{new Date(entry.timestamp).toLocaleString()}</p>
+                      <p className="mt-0.5 text-slate-600">{entry.assets.join(', ')}</p>
+                      <div className="mt-1.5">
+                        <CopyAction
+                          textToCopy={() =>
+                            [
+                              `Last export: ${new Date(entry.timestamp).toLocaleString()}`,
+                              `Assets: ${entry.assets.join(', ')}`,
+                            ].join('\n')
+                          }
+                          successMessage="Export history entry copied to clipboard."
+                          label="Copy"
+                          copiedLabel="Copied"
+                          buttonProps={{ variant: 'outline', size: 'sm' }}
+                          showFeedback={false}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -1146,6 +1211,16 @@ function isValidExportOptions(value: unknown): value is ExportPackOptions {
     typeof candidate.includeIconPng === 'boolean' &&
     typeof candidate.includeCardMockup === 'boolean' &&
     typeof candidate.includeHeaderMockup === 'boolean'
+  )
+}
+
+function isValidLastExportSummary(value: unknown): value is LastExportSummary {
+  if (!value || typeof value !== 'object') return false
+  const candidate = value as Record<string, unknown>
+  return (
+    typeof candidate.timestamp === 'string' &&
+    Array.isArray(candidate.assets) &&
+    candidate.assets.every((asset) => typeof asset === 'string')
   )
 }
 
