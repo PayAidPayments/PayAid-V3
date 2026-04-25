@@ -7,6 +7,7 @@ const ttlMinutes = Number(process.env.MARKER_MUTATION_APPROVAL_TTL_MINUTES || 30
 const untilArgIndex = process.argv.findIndex((a) => a === '--until')
 const untilArgValue = untilArgIndex >= 0 ? process.argv[untilArgIndex + 1] : ''
 const untilEnvValue = (process.env.MARKER_MUTATION_APPROVAL_UNTIL_ISO || '').trim()
+const useUntilEnv = process.env.MARKER_MUTATION_APPROVAL_USE_UNTIL_ENV === '1'
 const maxWindowHours = Number(process.env.MARKER_MUTATION_APPROVAL_MAX_WINDOW_HOURS || 24)
 const enforceMaxWindow = process.env.MARKER_MUTATION_APPROVAL_ENFORCE_MAX_WINDOW === '1'
 const markersDir = join(process.cwd(), 'docs', 'evidence', 'closure', 'markers')
@@ -31,7 +32,9 @@ if (clear) {
 mkdirSync(markersDir, { recursive: true })
 const createdAt = new Date()
 let expiresAt = new Date(createdAt.getTime() + ttlMinutes * 60 * 1000)
-const untilRaw = (untilArgValue || untilEnvValue || '').trim()
+const untilRaw = (
+  untilArgIndex >= 0 ? untilArgValue : useUntilEnv ? untilEnvValue : ''
+).trim()
 if (untilRaw) {
   const parsed = new Date(untilRaw)
   if (Number.isNaN(parsed.getTime())) {
