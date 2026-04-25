@@ -605,6 +605,7 @@ export function VectorLogoEditor({
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     'N/A'
+  const isQaContextComplete = qaEnvironmentTag !== 'unknown' && qaBuildRef !== 'N/A'
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
@@ -994,7 +995,18 @@ export function VectorLogoEditor({
 
             <div className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs text-indigo-900">
               <div className="flex items-center justify-between gap-2">
-                <p className="font-medium">QA Context Snapshot</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium">QA Context Snapshot</p>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      isQaContextComplete
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
+                    {isQaContextComplete ? 'Complete' : 'Partial'}
+                  </span>
+                </div>
                 <CopyAction
                   textToCopy={() =>
                     [
@@ -1014,7 +1026,7 @@ export function VectorLogoEditor({
               <p className="mt-1">Env: {qaEnvironmentTag}</p>
               <p>Build: {qaBuildRef}</p>
               <p>Origin: {qaRuntimeOrigin}</p>
-              {(qaEnvironmentTag === 'unknown' || qaBuildRef === 'N/A') && (
+              {!isQaContextComplete && (
                 <p className="mt-1 text-amber-700">
                   Warning: environment/build context is incomplete. QA evidence may be harder to trace.
                 </p>
