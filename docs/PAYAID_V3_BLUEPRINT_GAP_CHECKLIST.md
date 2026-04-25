@@ -4,11 +4,20 @@ This document is the execution tracker against `payaid_v3_blueprint_Apr26.md`.
 
 ## Live closeout status (canonical gate)
 
-- Latest consolidated status: `docs/evidence/closure/2026-04-25T11-13-00-686Z-canonical-closeout-status-snapshot.md`
+- Latest consolidated status: `docs/evidence/closure/2026-04-25T14-04-51-858Z-canonical-closeout-status-snapshot.md`
 - Current state: `FAIL` (expected until time-gated monitoring windows complete)
-- Next due checkpoint: `tplus8` at `2026-04-25T16:00:00.000Z` (remaining `287` minutes at last refresh)
+- Next due checkpoint: `tplus8` at `2026-04-25T16:00:00.000Z` (remaining `116` minutes at last refresh)
 - Next command when due: `npm run run:canonical-monitor:tplus8`
 - One-command refresh: `npm run run:canonical-status-refresh`
+
+## Operational closeout checklist (non-code)
+
+- [ ] Wait until `tplus8` window is due, then run `npm run run:canonical-monitor:tplus8`.
+- [ ] At `tplus16` and `tplus24` due windows, run `npm run run:canonical-monitor:tplus16` and `npm run run:canonical-monitor:tplus24`.
+- [ ] After each checkpoint run, execute `npm run run:canonical-status-refresh` and confirm fresh artifacts are linked in the live status block.
+- [ ] Once all due windows are complete, run `npm run check:canonical-monitoring-complete` and confirm it reports pass.
+- [ ] Run final closure chain: `npm run check:canonical-module-api-readiness-verdict:stable` then `npm run run:canonical-closeout-status-snapshot`.
+- [ ] Confirm latest closeout snapshot flips to overall pass before marking canonical gate complete.
 ## Non-negotiable execution directives
 
 - No deviation from blueprint intent.

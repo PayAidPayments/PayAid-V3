@@ -415,4 +415,15 @@
     "husky": "^9.1.7",
     "jest": "^29.7.0",
     "pg": "^8.16.3",
-    "playwrigh
+    "playwright": "^1.58.1",
+    "ts-jest": "^29.2.5",
+    "tsx": "^4.21.0",
+    "turbo": "^2.3.0"
+  },
+  "overrides": {
+    "minimist": ">=1.2.6",
+    "node-fetch": ">=2.6.7",
+    "tmp": ">=0.2.4",
+    "dompurify": ">=3.3.2"
+  }
+}
