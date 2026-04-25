@@ -770,6 +770,7 @@ Step 4.6 sign-off evidence:
 - Brand Kit list with primary badge screenshot: [link/path]
 - Zero-export guard screenshot (disabled + reason): [link/path]
 - ZIP artifact checked (name + file count): [text]
+- Optional ready-to-fill artifact template: `docs/evidence/closure/STEP4_6_LOGO_TOOLTIP_QA_EVIDENCE_TEMPLATE.md`
 
 Step 4.8 sign-off evidence:
 - Home list with created site card screenshot: [link/path]
