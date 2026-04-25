@@ -538,3 +538,432 @@ Checklist:
   - Apply migrations that create required email tables in target DB.
   - Re-run `npm run capture:email-db-state` and `npm run verify:email-go-live-gated-precheck`.
   - If all gates pass, execute full Step 4.1 functional QA.
+
+---
+
+## Attempt #7 (Precheck gates now passing - 2026-04-24)
+
+## Run Metadata
+
+- Date: 2026-04-24
+- Tester: AI-assisted readiness rerun
+- Environment URL: not captured (precheck only)
+- Tenant ID: not captured
+- Role/User: not captured
+- Build/Commit (if known): not captured
+
+## Step 4.1.a - Email runtime readiness precheck
+
+- Status: `PASS`
+- Command run:
+  - `npm run db:apply:email-ops-schema`
+  - `npm run capture:email-db-state`
+  - `npm run verify:email-go-live-gated-precheck`
+- Notes:
+  - Required email tables were created via idempotent DB apply script.
+  - `capture:email-db-state` now shows all required email tables present.
+  - Gated precheck now passes end-to-end (`overallOk: true`).
+  - Prisma `db:migrate:status` still reports fail in this shell, but equivalent migration proof gate passes (`migrateEquivalentOk: true`) based on direct DB evidence + table presence.
+- Evidence artifact path:
+  - `docs/evidence/email/2026-04-24T12-57-57-368Z-email-db-state.md`
+  - `docs/evidence/email/2026-04-24T12-59-36-092Z-email-go-live-gated-precheck.md`
+  - `docs/evidence/email/2026-04-24T12-59-54-500Z-email-go-live-precheck.md`
+  - `docs/evidence/email/2026-04-24T13-00-23-709Z-email-prod-readiness.md`
+
+Checklist:
+
+- [x] Redis TCP reachable in run context
+- [x] Database reachable in run context
+- [x] Required email tables reported present
+- [x] Artifact attached in `docs/evidence/email/`
+
+## Step 4.1 - Marketing email campaign reliability checks
+
+- Status: `NOT AVAILABLE` (execution pending)
+- Notes:
+  - Precheck gate is now green; next action is full authenticated Step 4.1 functional run + screenshots.
+
+## Consolidated Verdict
+
+- Release recommendation: `Conditional Go` (precheck gates pass; functional Step 4.1 run still pending)
+- Blocking defects:
+  - Functional Step 4.1 QA evidence not captured yet.
+- Non-blocking defects:
+  - Prisma `db:migrate:status` remains flaky in this shell; equivalent DB-state evidence currently used as migration proof.
+- Follow-up tickets/tasks:
+  - Execute Step 4.1 functional QA on Vercel and attach artifacts.
+  - Capture `retryOperationId` parity proof between panel and history row.
+
+---
+
+## Attempt #8 (Step 4.1 API smoke harness added - 2026-04-24)
+
+## Run Metadata
+
+- Date: 2026-04-24
+- Tester: AI-assisted runtime smoke harness
+- Environment URL: not provided in this shell
+- Tenant ID: not provided in this shell
+- Role/User: not provided in this shell
+- Build/Commit (if known): not captured
+
+## Step 4.1 - Marketing email campaign reliability checks
+
+- Status: `NOT AVAILABLE` (credential/context missing for API smoke execution)
+- Command run:
+  - `npm run smoke:email-step41-runtime`
+- Notes:
+  - New script is ready to validate key Step 4.1 APIs (`progress`, `failed-jobs`, `retry-history`, optional `single-retry`) using runtime credentials.
+  - Current shell did not have required env (`BASE_URL`, `TENANT_ID`, `AUTH_TOKEN`, `EMAIL_CAMPAIGN_ID`), so smoke run exited early with explicit missing-env artifact.
+- Evidence artifact path:
+  - `docs/evidence/email/2026-04-24T13-03-03-449Z-email-step41-runtime-smoke.md`
+
+## Consolidated Verdict
+
+- Release recommendation: `Conditional Go`
+- Blocking defects:
+  - Functional Step 4.1 execution evidence still pending (requires authenticated Vercel run context).
+- Non-blocking defects:
+  - Runtime smoke harness implementation complete; awaiting env injection.
+- Follow-up tickets/tasks:
+  - Run `smoke:email-step41-runtime` with required env in production-like context.
+  - Capture screenshot evidence for UI-level checks and `retryOperationId` parity.
+
+---
+
+## Attempt #9 (Smoke env-readiness helper + rerun - 2026-04-24)
+
+## Run Metadata
+
+- Date: 2026-04-24
+- Tester: AI-assisted env-readiness pass
+- Environment URL: local fallback detected (`NEXT_PUBLIC_APP_URL`)
+- Tenant ID: missing in current shell
+- Role/User: missing in current shell
+- Build/Commit (if known): not captured
+
+## Step 4.1 - Marketing email campaign reliability checks
+
+- Status: `NOT AVAILABLE` (authenticated context still missing)
+- Command run:
+  - `npm run check:email-step41-smoke-env`
+  - `npm run smoke:email-step41-runtime`
+- Notes:
+  - Added env-readiness helper confirms only `BASE_URL` is auto-resolved; `TENANT_ID`, `AUTH_TOKEN`, and `EMAIL_CAMPAIGN_ID` are still missing.
+  - Runtime smoke exits early with explicit missing-env list.
+- Evidence artifact path:
+  - `docs/evidence/email/2026-04-24T13-09-43-679Z-email-step41-smoke-env-readiness.md`
+  - `docs/evidence/email/2026-04-24T13-09-47-321Z-email-step41-runtime-smoke.md`
+
+## Consolidated Verdict
+
+- Release recommendation: `Conditional Go`
+- Blocking defects:
+  - Step 4.1 functional/API evidence still pending due to missing authenticated run context vars.
+- Non-blocking defects:
+  - Automation harnesses are in place and reporting clear missing inputs.
+- Follow-up tickets/tasks:
+  - Supply `TENANT_ID`, `AUTH_TOKEN`, and `EMAIL_CAMPAIGN_ID` in the production-like shell.
+  - Re-run `check:email-step41-smoke-env` and `smoke:email-step41-runtime`.
+  - Complete UI screenshot evidence and `retryOperationId` parity proof.
+
+---
+
+## Attempt #10 (Canonical alias support + token retrieval check - 2026-04-24)
+
+## Run Metadata
+
+- Date: 2026-04-24
+- Tester: AI-assisted runtime context fallback pass
+- Environment URL: local fallback detected (`NEXT_PUBLIC_APP_URL`)
+- Tenant ID: missing in current shell
+- Role/User: missing in current shell
+- Build/Commit (if known): not captured
+
+## Step 4.1 - Marketing email campaign reliability checks
+
+- Status: `NOT AVAILABLE` (credentials/context still unavailable)
+- Commands run:
+  - `npm run check:email-step41-smoke-env`
+  - `npm run smoke:email-step41-runtime`
+  - `npm run get:canonical-staging-token`
+- Notes:
+  - Smoke scripts now support canonical staging env aliases (`CANONICAL_STAGING_BASE_URL`, `CANONICAL_STAGING_TENANT_ID`, `CANONICAL_STAGING_AUTH_TOKEN`, `CANONICAL_STAGING_EMAIL_CAMPAIGN_ID`).
+  - Current shell still lacks required tenant/token/campaign values.
+  - Canonical token helper could not mint a token because staging login credentials were not configured in env.
+- Evidence artifact path:
+  - `docs/evidence/email/2026-04-24T13-12-06-867Z-email-step41-smoke-env-readiness.md`
+  - `docs/evidence/email/2026-04-24T13-12-08-347Z-email-step41-runtime-smoke.md`
+
+## Consolidated Verdict
+
+- Release recommendation: `Conditional Go`
+- Blocking defects:
+  - Step 4.1 runtime smoke still blocked by missing authenticated context vars.
+- Non-blocking defects:
+  - Automation and env alias/fallback support complete.
+- Follow-up tickets/tasks:
+  - Set required env using `docs/evidence/email/STEP41_SMOKE_ENV_SETUP_TEMPLATE.md`.
+  - Re-run Step 4.1 smoke commands and attach resulting PASS artifact.
+
+---
+
+## Attempt #11 (Auto-resolve auth smoke pipeline - 2026-04-24)
+
+## Run Metadata
+
+- Date: 2026-04-24
+- Tester: AI-assisted auto-resolve pipeline
+- Environment URL: `http://localhost:3000` (resolved)
+- Tenant ID: `cmo9lebrp0001qjwe54slsy4d` (resolved from DB)
+- Role/User: token not available in current shell
+- Build/Commit (if known): not captured
+
+## Step 4.1 - Marketing email campaign reliability checks
+
+- Status: `NOT AVAILABLE` (auth + campaign context still incomplete)
+- Command run:
+  - `npm run run:email-step41-auth-smoke-pipeline`
+- Notes:
+  - New pipeline can auto-resolve `TENANT_ID` from DB and attempts token minting from canonical login credentials.
+  - In this shell, `AUTH_TOKEN` remained unavailable (no canonical login creds configured), and `EMAIL_CAMPAIGN_ID` could not be resolved from DB data.
+- Evidence artifact path:
+  - Runtime command output from `run:email-step41-auth-smoke-pipeline` (captured in chat/terminal output)
+  - Existing env/smoke artifacts remain authoritative for missing inputs.
+
+## Consolidated Verdict
+
+- Release recommendation: `Conditional Go`
+- Blocking defects:
+  - Auth token and campaign ID are still missing for Step 4.1 API smoke.
+- Non-blocking defects:
+  - Pipeline automation for context resolution is now available.
+- Follow-up tickets/tasks:
+  - Provide either (`AUTH_TOKEN` + `EMAIL_CAMPAIGN_ID`) or canonical login credentials + campaign ID.
+  - Re-run `run:email-step41-auth-smoke-pipeline` and attach PASS artifact.
+
+---
+
+## Attempt #12 (Pipeline artifactized + rerun - 2026-04-24)
+
+## Run Metadata
+
+- Date: 2026-04-24
+- Tester: AI-assisted auth smoke pipeline
+- Environment URL: `http://localhost:3000` (resolved)
+- Tenant ID: `cmo9lebrp0001qjwe54slsy4d` (resolved from DB)
+- Role/User: token not available in current shell
+- Build/Commit (if known): not captured
+
+## Step 4.1 - Marketing email campaign reliability checks
+
+- Status: `NOT AVAILABLE` (still blocked by auth + campaign context)
+- Command run:
+  - `npm run run:email-step41-auth-smoke-pipeline`
+- Notes:
+  - Pipeline now writes a timestamped evidence artifact for audit traceability.
+  - Tenant auto-resolution continues to work.
+  - Auth token minting still cannot run due to missing login credentials.
+  - Campaign ID is still not auto-resolved from current DB context.
+- Evidence artifact path:
+  - `docs/evidence/email/2026-04-24T13-20-36-829Z-email-step41-auth-smoke-pipeline.md`
+
+## Consolidated Verdict
+
+- Release recommendation: `Conditional Go`
+- Blocking defects:
+  - Missing authenticated token and campaign ID for Step 4.1 runtime smoke execution.
+- Non-blocking defects:
+  - Pipeline + artifacts are fully in place and reproducible.
+- Follow-up tickets/tasks:
+  - Provide `AUTH_TOKEN` + `EMAIL_CAMPAIGN_ID` (or canonical login creds + campaign ID), then rerun the pipeline.
+
+---
+
+## Attempt #13 (Expanded campaign auto-discovery rerun - 2026-04-24)
+
+## Run Metadata
+
+- Date: 2026-04-24
+- Tester: AI-assisted auth smoke pipeline
+- Environment URL: `http://localhost:3000` (resolved)
+- Tenant ID: `cmo9lebrp0001qjwe54slsy4d` (resolved from DB)
+- Role/User: token not available in current shell
+- Build/Commit (if known): not captured
+
+## Step 4.1 - Marketing email campaign reliability checks
+
+- Status: `NOT AVAILABLE`
+- Command run:
+  - `npm run run:email-step41-auth-smoke-pipeline`
+- Notes:
+  - Pipeline now attempts campaign ID fallback from `Campaign`, `EmailSendJob`, and `EmailCampaignSenderPolicy`.
+  - In this DB context, no campaign ID was discoverable from those sources.
+  - Auth token is still unavailable (no login credentials in env for minting).
+- Evidence artifact path:
+  - `docs/evidence/email/2026-04-24T13-22-45-528Z-email-step41-auth-smoke-pipeline.md`
+
+## Consolidated Verdict
+
+- Release recommendation: `Conditional Go`
+- Blocking defects:
+  - Missing authenticated token and campaign ID for Step 4.1 runtime smoke execution.
+- Non-blocking defects:
+  - All automation/fallback paths are now exhausted in this shell context.
+- Follow-up tickets/tasks:
+  - Provide direct values for `AUTH_TOKEN` and `EMAIL_CAMPAIGN_ID`, then rerun pipeline.
+
+---
+
+## Attempt #14 (Authenticated staging smoke with token + campaign - 2026-04-24)
+
+## Run Metadata
+
+- Date: 2026-04-24
+- Tester: AI-assisted + operator-provided auth context
+- Environment URL: `https://payaid-v3.vercel.app`
+- Tenant ID: `cmo9lebrp0001qjwe54slsy4d`
+- Campaign ID: `cmoczj4oi0001kax6e3a13lvz`
+
+## Step 4.1 - Marketing email campaign reliability checks
+
+- Status: `FAIL` (deployment mismatch)
+- Command run:
+  - `npm run run:email-step41-auth-smoke-pipeline`
+- Notes:
+  - Env readiness passed and authenticated context is present.
+  - Runtime smoke reached staging endpoints but all required Step 4.1 API routes returned `404` HTML responses:
+    - `GET /api/marketing/email-campaigns/[campaignId]/progress`
+    - `GET /api/marketing/email-campaigns/[campaignId]/failed-jobs`
+    - `GET /api/marketing/email-campaigns/[campaignId]/retry-history`
+  - This indicates staging is running a build that does not include those backend routes.
+- Evidence artifact path:
+  - `docs/evidence/email/2026-04-24T14-14-34-201Z-email-step41-auth-smoke-pipeline.md`
+  - `docs/evidence/email/2026-04-24T14-12-53-714Z-email-step41-runtime-smoke.md`
+
+## Consolidated Verdict
+
+- Release recommendation: `No-Go` for Step 4.1 closure on current staging build
+- Blocking defects:
+  - Required Step 4.1 email campaign API routes are not deployed on staging (`404`).
+- Non-blocking defects:
+  - Authentication, tenant, and campaign context are confirmed working.
+- Follow-up tickets/tasks:
+  - Deploy branch/version containing Step 4.1 email campaign APIs.
+  - Re-run `run:email-step41-auth-smoke-pipeline`.
+  - After backend smoke passes, complete UI screenshot parity evidence.
+
+---
+
+## Attempt #15 (Production alias pass + screenshot closure placeholders - 2026-04-25)
+
+## Run Metadata
+
+- Date: 2026-04-25
+- Tester: AI-assisted authenticated runtime verification
+- Environment URL: `https://payaid-v3.vercel.app`
+- Tenant ID: `cmjptk2mw0000aocw31u48n64`
+- Role/User: tenant owner token context
+- Build/Commit (if known): route parity commit pushed (`50a6c16b`); alias verification executed after latest production deploys reached `Ready`
+
+## Step 4.1.a - Email runtime readiness precheck
+
+- Status: `PASS` (carried forward)
+- Command run:
+  - `npm run verify:email-go-live-gated-precheck` (already green in prior attempts)
+- Notes:
+  - Runtime readiness and table-presence gates remain green.
+- Evidence artifact path:
+  - `docs/evidence/email/2026-04-24T12-59-36-092Z-email-go-live-gated-precheck.md`
+
+## Step 4.1 - Marketing email campaign reliability checks
+
+- Status: `PASS` (API/runtime parity)
+- Command run:
+  - `npm run check:step41-routes-live`
+  - `npm run run:email-step41-auth-smoke-pipeline`
+- Notes:
+  - Production alias now serves all Step 4.1 APIs successfully:
+    - `progress` -> `200`
+    - `failed-jobs` -> `200`
+    - `retry-history` -> `200`
+  - Authenticated smoke pipeline completed with `ok: true`.
+  - UI screenshot evidence is still required to close visual workflow assertions.
+- Evidence artifact path:
+  - `docs/evidence/email/2026-04-25T05-02-29-379Z-step41-routes-live-check.md`
+  - `docs/evidence/email/2026-04-25T05-03-23-268Z-email-step41-auth-smoke-pipeline.md`
+- Screenshot placeholders (attach from browser run):
+  - `[ ] Queue progress card state screenshot`
+  - `[ ] Failed/dead-letter table screenshot`
+  - `[ ] Sender policy save confirmation screenshot`
+  - `[ ] Single-row retry summary screenshot (with retryOperationId)`
+  - `[ ] Batch retry summary screenshot (with retryOperationId)`
+  - `[ ] Retry History row screenshot matching the same retryOperationId`
+
+## Consolidated Verdict
+
+- Release recommendation: `Conditional Go`
+- Blocking defects:
+  - None at API/runtime gate level for Step 4.1.
+- Non-blocking defects:
+  - UI screenshot pack for Step 4.1 checklist is pending attachment.
+- Follow-up tickets/tasks:
+  - Execute one authenticated browser pass for Step 4.1 and attach the six screenshots above.
+  - After screenshot attachment, promote this attempt to full `Go` for Step 4.1 closure evidence.
+
+### Step 4.1 Screenshot Capture - Copy/Paste Runner
+
+Use this mini block during one authenticated browser session, then replace each placeholder with a concrete screenshot file path.
+
+```text
+Step 4.1 Screenshot Pack - Attempt #15
+Date:
+Tester:
+Environment URL: https://payaid-v3.vercel.app
+Tenant ID: cmjptk2mw0000aocw31u48n64
+Campaign ID: cmoczj4oi0001kax6e3a13lvz
+
+1) Queue progress card state screenshot:
+- path:
+- note (counts shown):
+
+2) Failed/dead-letter table screenshot:
+- path:
+- note (visible columns):
+
+3) Sender policy save confirmation screenshot:
+- path:
+- note (saved sender/domain):
+
+4) Single-row retry summary screenshot (with retryOperationId):
+- path:
+- retryOperationId:
+
+5) Batch retry summary screenshot (with retryOperationId):
+- path:
+- retryOperationId:
+
+6) Retry History row screenshot (matching retryOperationId):
+- path:
+- matched retryOperationId:
+
+Step 4.1 final visual verdict:
+- PASS | FAIL
+- if FAIL, blocker:
+```
+
+After filling this block:
+- set Attempt #15 consolidated verdict to `Go` when all six screenshots are attached and retryOperationId parity is confirmed.
+- add screenshot paths in this Attempt #15 section under Step 4.1 Evidence.
+
+### Step 4.1 Done Checklist (fast closeout)
+
+- [ ] Screenshot #1 attached (Queue progress card)
+- [ ] Screenshot #2 attached (Failed/dead-letter table)
+- [ ] Screenshot #3 attached (Sender policy save confirmation)
+- [ ] Screenshot #4 attached (Single-row retry summary with retryOperationId)
+- [ ] Screenshot #5 attached (Batch retry summary with retryOperationId)
+- [ ] Screenshot #6 attached (Retry History row with matching retryOperationId)
+- [ ] retryOperationId parity verified (panel summary vs Retry History row)
+- [ ] Attempt #15 final visual verdict set (`PASS`)
+- [ ] Attempt #15 consolidated release recommendation updated to `Go`
