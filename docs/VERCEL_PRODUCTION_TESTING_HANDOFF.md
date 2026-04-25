@@ -380,6 +380,11 @@ Expected runtime markers:
 
 Use this flow to validate the newly shipped Logo Generator + Brand Kit management path:
 
+Preflight (recommended, authenticated):
+
+- Run `npm run check:logo-runtime-smoke` with `LOGO_SMOKE_AUTH_TOKEN` (or `CANONICAL_STAGING_AUTH_TOKEN`) set.
+- Confirm `schemaMismatchDetected: false` in JSON output before proceeding with manual UI checks.
+
 1. Open `AI Studio > Logos` (`/ai-studio/[tenantId]/Logos`).
 2. Create a vector logo using the **Vector Editor** tab.
 3. Confirm options while creating:
@@ -783,6 +788,7 @@ Scope completed:
 - Step 6 (HR + Inventory): PASS / PARTIAL / FAIL / NOT AVAILABLE
 
 Step 4.6 sign-off evidence:
+- Logo runtime smoke output (json): [link/path or pasted block]
 - Vector save success screenshot: [link/path]
 - QA Context Snapshot tooltip screenshot (`Env`/`Build`/`Origin` visible): [link/path]
 - Brand Kit list with primary badge screenshot: [link/path]
