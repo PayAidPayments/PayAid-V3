@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CopyAction } from '@/components/ui/copy-action'
-import { Sparkles, Download, Save, Type, Heart, RotateCcw, SlidersHorizontal } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Sparkles, Download, Save, Type, Heart, RotateCcw, SlidersHorizontal, Info } from 'lucide-react'
 import type { LogoConfig } from '@/lib/logo/vector-engine'
 
 interface VectorLogoEditorProps {
@@ -1030,6 +1031,20 @@ export function VectorLogoEditor({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <p className="font-medium">QA Context Snapshot</p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="text-indigo-700 hover:text-indigo-900" aria-label="QA context help">
+                          <Info className="w-3.5 h-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-xs">
+                        <p><strong>Env</strong>: runtime environment label.</p>
+                        <p><strong>Build</strong>: deployed commit/build reference.</p>
+                        <p><strong>Origin</strong>: current app base URL.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                       isQaContextComplete

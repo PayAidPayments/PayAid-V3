@@ -6,7 +6,7 @@
 import type { AuthUser, Permission } from '@/types/auth'
 
 const SUPER_ADMIN_ROLES = ['SUPER_ADMIN', 'super_admin']
-const BUSINESS_ADMIN_ROLES = ['BUSINESS_ADMIN', 'business_admin', 'admin']
+const BUSINESS_ADMIN_ROLES = ['BUSINESS_ADMIN', 'business_admin', 'admin', 'OWNER', 'owner']
 
 /** Role -> default permissions (tenant-scoped; Super Admin has all super_admin.*) */
 const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
@@ -49,6 +49,26 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
     'admin.audit_log.view',
   ],
   admin: [
+    'admin.users.manage',
+    'admin.users.invite',
+    'admin.roles.manage',
+    'admin.modules.manage',
+    'admin.billing.view',
+    'admin.billing.manage',
+    'admin.integrations.manage',
+    'admin.audit_log.view',
+  ],
+  OWNER: [
+    'admin.users.manage',
+    'admin.users.invite',
+    'admin.roles.manage',
+    'admin.modules.manage',
+    'admin.billing.view',
+    'admin.billing.manage',
+    'admin.integrations.manage',
+    'admin.audit_log.view',
+  ],
+  owner: [
     'admin.users.manage',
     'admin.users.invite',
     'admin.roles.manage',

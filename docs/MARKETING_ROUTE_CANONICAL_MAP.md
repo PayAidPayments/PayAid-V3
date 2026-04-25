@@ -1,6 +1,6 @@
 # Marketing Route Canonical Map
 
-Last updated: 2026-04-24
+Last updated: 2026-04-25
 
 Purpose: keep Marketing IA consistent around **Compose / History / Channels** and prevent duplicate entry points from returning.
 
@@ -9,6 +9,12 @@ Purpose: keep Marketing IA consistent around **Compose / History / Channels** an
 - Compose: `/marketing/[tenantId]/Studio`
 - History: `/marketing/[tenantId]/History`
 - Channels: `/marketing/[tenantId]/Social-Media`
+
+## Compose workspace modes
+
+- Social Studio workspace: `/marketing/[tenantId]/Studio?workspace=social`
+- Direct Studio workspace: `/marketing/[tenantId]/Studio?workspace=direct`
+- Default when omitted: `workspace=social`
 
 ## Legacy aliases (redirects)
 
@@ -25,6 +31,9 @@ Purpose: keep Marketing IA consistent around **Compose / History / Channels** an
 - `legacyRedirect=1` is used only to trigger a one-time Compose banner for users coming from old bookmarks.
 - The banner is session-scoped via `sessionStorage` and can be dismissed by the user.
 - After banner handling, the URL is cleaned back to `/marketing/[tenantId]/Studio`.
+- Workspace mode keeps Compose scoped to relevant channels:
+  - `social` -> Facebook, Instagram, LinkedIn, YouTube
+  - `direct` -> Email, SMS, WhatsApp
 
 ## Guardrails for future changes
 

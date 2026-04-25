@@ -4,6 +4,11 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { saveStudioDraftToLibrary } from '@/lib/marketing/studio-actions'
+import {
+  filterChannelsForWorkspace,
+  getWorkspaceDefaultChannels,
+  type StudioWorkspaceMode,
+} from '@/lib/marketing/studio-workspace'
 import { useAuthStore } from '@/lib/stores/auth'
 
 const GOALS = [
@@ -27,6 +32,7 @@ const CHANNEL_OPTIONS = [
   { id: 'linkedin', label: 'LinkedIn' },
   { id: 'youtube', label: 'YouTube' },
 ] as const
+
 
 /** Where the creative will be used — steers composition and aspect hints for image generation. */
 const IMAGE_USE_CASES = [
@@ -655,12 +661,14 @@ export function MarketingStudioForm({
   socialBranding,
   socialAccounts,
   initialAuditPostId,
+  workspaceMode = 'social',
 }: {
   tenantId: string
   brandName?: string
   socialBranding?: Record<string, string>
   socialAccounts?: Array<{ id: string; platform: string; accountName: string }>
   initialAuditPostId?: string
+  workspaceMode?: StudioWorkspaceMode
 }) {
   const router = useRouter()
   const { token } = useAuthStore()
@@ -686,7 +694,7 @@ export function MarketingStudioForm({
   }, [token])
   const [goal, setGoal] = useState<string>('leads')
   const [audience, setAudience] = useState<string>('all_contacts')
-  const [channels, setChannels] = useState<string[]>(['email', 'facebook'])
+  const [channels, setChannels] = useState<string[]>(getWorkspaceDefaultChannels(workspaceMode))
   const [prompt, setPrompt] = useState('')
   const [primaryLink, setPrimaryLink] = useState('')
   const [ctaLabel, setCtaLabel] = useState<string>('Learn more')
@@ -1149,11 +1157,13 @@ export function MarketingStudioForm({
         })
         const data = (await res.json().catch(() => ({}))) as {
           url?: string
+          imageUrl?: string
           width?: number
           height?: number
           error?: string
           hint?: string
           provider?: string
+          service?: string
         }
         if (!res.ok) {
           const hint = data.hint ? ` ${data.hint}` : ''
@@ -1162,15 +1172,22 @@ export function MarketingStudioForm({
           setLastImageProvider(null)
           return
         }
-        if (!data.url) {
+        const resolvedUrl = typeof data.url === 'string' ? data.url : data.imageUrl
+        if (!resolvedUrl) {
           setGeneratedImages([])
           setLastImageProvider(null)
           setMessage('No image URL returned.')
           return
         }
-        const img = { id: `img-${Date.now()}`, url: data.url, width: data.width, height: data.height }
+        const img = { id: `img-${Date.now()}`, url: resolvedUrl, width: data.width, height: data.height }
         setGeneratedImages([img])
-        setLastImageProvider(typeof data.provider === 'string' ? data.provider : null)
+        setLastImageProvider(
+          typeof data.provider === 'string'
+            ? data.provider
+            : typeof data.service === 'string'
+              ? data.service
+              : null
+        )
         setMessage('Image generated — check previews.')
       } catch (err) {
         const aborted =
@@ -1359,6 +1376,14 @@ export function MarketingStudioForm({
     []
   )
 
+  useEffect(() => {
+    setChannels((prev) => {
+      const filtered = filterChannelsForWorkspace(prev, workspaceMode)
+      if (filtered.length > 0) return filtered
+      return getWorkspaceDefaultChannels(workspaceMode)
+    })
+  }, [workspaceMode])
+
   const canGenerateText =
     channels.length > 0 && !!prompt.trim() && !loadingCopy && !studioChainBusy
   /** Image-only: visual description or placement notes — no campaign brief or channels required. */
@@ -1372,7 +1397,10 @@ export function MarketingStudioForm({
     hasImageGenerationContext && logoOkForImage && !loadingImage && !studioChainBusy
   /** Chained text → image; `canGenerateText` already blocks `studioChainBusy` / copy loading. */
   const canGenerateTextThenImage = canGenerateText && !loadingImage
-  const canGenerateVideo = generatedImages.length > 0 && !loadingVideo
+  const canGenerateVideo =
+    workspaceMode === 'social' &&
+    generatedImages.length > 0 &&
+    !loadingVideo
   const linkIsValid = isValidHttpUrl(primaryLink)
   const linkError = !linkIsValid ? 'Enter a valid URL starting with http:// or https://' : null
   const ctaLabelClean = (ctaLabel || '').trim()
@@ -1706,32 +1734,19 @@ export function MarketingStudioForm({
                   <span className="text-xs text-slate-500 dark:text-slate-400">Step 2</span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  We’ll generate tailored versions per selected channel.
+                  {workspaceMode === 'direct'
+                    ? 'Direct channels (Email, SMS, WhatsApp) selected for this workspace.'
+                    : 'Social channels (Facebook, Instagram, LinkedIn, YouTube) selected for this workspace.'}
                 </p>
               </div>
 
               <div className="space-y-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-2">Messaging</p>
+                  <p className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-2">
+                    {workspaceMode === 'direct' ? 'Direct channels' : 'Social channels'}
+                  </p>
                   <div className="flex flex-wrap gap-2">
-                    {channelGroups.messaging.map((ch) => (
-                      <label key={ch.id} className="inline-flex items-center gap-1.5 text-sm cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={channels.includes(ch.id)}
-                          onChange={() => toggleChannel(ch.id)}
-                          className="rounded border-slate-300"
-                        />
-                        {ch.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-2">Social</p>
-                  <div className="flex flex-wrap gap-2">
-                    {channelGroups.social.map((ch) => (
+                    {(workspaceMode === 'direct' ? channelGroups.messaging : channelGroups.social).map((ch) => (
                       <label key={ch.id} className="inline-flex items-center gap-1.5 text-sm cursor-pointer">
                         <input
                           type="checkbox"
@@ -1811,6 +1826,44 @@ export function MarketingStudioForm({
                   placeholder="Example: 3-day Diwali sale on men’s shoes, 30% off, free shipping above ₹1499, playful tone, target existing customers."
                   className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
                 />
+              </div>
+              <div className="rounded-lg border border-slate-200/80 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 px-3 py-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase text-slate-600 dark:text-slate-300">Text generator</p>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Independent tool</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleGenerateCopy()}
+                    disabled={!canGenerateText}
+                    title={
+                      !channels.length
+                        ? 'Select at least one channel'
+                        : !prompt.trim()
+                          ? 'Enter a brief first'
+                          : loadingCopy
+                            ? 'Generating…'
+                            : 'Generate channel-specific drafts'
+                    }
+                    className="rounded-lg bg-violet-600 text-white px-3 py-1.5 text-sm font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingCopy ? 'Generating…' : 'Generate text'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleGenerateTextThenImage()}
+                    disabled={!canGenerateTextThenImage}
+                    title={
+                      studioChainBusy || loadingImage
+                        ? 'Working…'
+                        : 'Generate channel copy, then a matching image in one flow'
+                    }
+                    className="rounded-lg bg-violet-700 text-white px-3 py-1.5 text-sm font-medium hover:bg-violet-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {studioChainBusy || loadingCopy || loadingImage ? 'Working…' : 'Generate text & image'}
+                  </button>
+                </div>
               </div>
 
               <div className="rounded-lg border border-slate-200/80 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 px-3 py-2 space-y-2">
@@ -1974,10 +2027,42 @@ export function MarketingStudioForm({
                   )}
                 </div>
               </div>
+              <div className="rounded-lg border border-slate-200/80 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 px-3 py-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase text-slate-600 dark:text-slate-300">Image generator</p>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Independent tool</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleGenerateImage()}
+                  disabled={!canGenerateImage}
+                  title={
+                    !hasImageGenerationContext
+                      ? 'Add a brief + channels, or describe the image (3+ chars in visual or placement notes)'
+                      : !logoOkForImage
+                        ? 'Fix logo URL or clear it'
+                        : studioChainBusy
+                          ? 'Text + image flow in progress…'
+                          : loadingImage
+                            ? 'Generating…'
+                            : 'Generate image — with or without campaign brief / text copy'
+                  }
+                  className="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingImage ? 'Generating…' : 'Generate image'}
+                </button>
+                {lastImageProvider ? (
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                    Last image provider:{' '}
+                    <span className="font-mono rounded bg-slate-200/80 dark:bg-slate-800 px-1.5 py-0.5">{lastImageProvider}</span>
+                  </p>
+                ) : null}
+              </div>
 
+              {workspaceMode === 'social' ? (
               <div className="rounded-lg border border-slate-200/80 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 px-3 py-3 space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Dynamic video controls</p>
+                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Video generator</p>
                   <span
                     title={videoCapability.details ?? videoCapability.label}
                     className={[
@@ -1995,7 +2080,7 @@ export function MarketingStudioForm({
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Used by external dynamic workers (AnimateDiff / SVD / Kling-style backends). Ignored by the local fallback worker.
+                  Optional for social campaigns. Required only when YouTube is selected for publishing.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
@@ -2084,90 +2169,33 @@ export function MarketingStudioForm({
                     />
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => void handleGenerateVideo()}
+                  disabled={!canGenerateVideo}
+                  title={generatedImages.length === 0 ? 'Generate an image first' : loadingVideo ? 'Generating…' : 'Generate a short video from the creative'}
+                  className="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingVideo ? 'Generating…' : 'Generate video'}
+                </button>
               </div>
+              ) : null}
             </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-200/80 dark:border-slate-800">
-          <button
-            type="button"
-            onClick={() => void handleGenerateCopy()}
-            disabled={!canGenerateText}
-            title={
-              !channels.length
-                ? 'Select at least one channel'
-                : !prompt.trim()
-                  ? 'Enter a brief first'
-                  : loadingCopy
-                    ? 'Generating…'
-                    : 'Generate channel-specific drafts'
-            }
-            className="rounded-lg bg-violet-600 text-white px-3 py-1.5 text-sm font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loadingCopy ? 'Generating…' : 'Generate text'}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleGenerateTextThenImage()}
-            disabled={!canGenerateTextThenImage}
-            title={
-              studioChainBusy || loadingImage
-                ? 'Working…'
-                : 'Generate channel copy, then a matching image in one flow'
-            }
-            className="rounded-lg bg-violet-700 text-white px-3 py-1.5 text-sm font-medium hover:bg-violet-800 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {studioChainBusy || loadingCopy || loadingImage ? 'Working…' : 'Generate text & image'}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleGenerateImage()}
-            disabled={!canGenerateImage}
-            title={
-              !hasImageGenerationContext
-                ? 'Add a brief + channels, or describe the image (3+ chars in visual or placement notes)'
-                : !logoOkForImage
-                  ? 'Fix logo URL or clear it'
-                  : studioChainBusy
-                    ? 'Text + image flow in progress…'
-                    : loadingImage
-                      ? 'Generating…'
-                      : 'Generate image — with or without campaign brief / text copy'
-            }
-            className="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loadingImage ? 'Generating…' : 'Generate image'}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleGenerateVideo()}
-            disabled={!canGenerateVideo}
-            title={generatedImages.length === 0 ? 'Generate an image first' : loadingVideo ? 'Generating…' : 'Generate a short video from the creative'}
-            className="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loadingVideo ? 'Generating…' : 'Generate video'}
-          </button>
-        </div>
-
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Recommended: <span className="font-medium text-slate-600 dark:text-slate-300">Generate text</span> for each channel,
-          then <span className="font-medium text-slate-600 dark:text-slate-300">Generate image</span> so the creative aligns with
-          your copy — or generate an image from the brief alone using the creative image fields above. You can add a short
-          video from the image when ready.
+          Generators are independent: use Text, Image, and Video only when needed for the selected channels in this workspace.
         </p>
-        {lastImageProvider ? (
-          <p className="text-xs text-slate-600 dark:text-slate-300">
-            Last image provider:{' '}
-            <span className="font-mono rounded bg-slate-200/80 dark:bg-slate-800 px-1.5 py-0.5">{lastImageProvider}</span>
-          </p>
-        ) : null}
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Keep content lawful and suitable for your audience. Third-party APIs may apply their own content policies; rate limits
           can apply on free tiers (retry after a short wait if you see rate-limit errors).
         </p>
 
         <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-200/80 dark:border-slate-800">
+          <span className="w-full text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Publish actions
+          </span>
           <button
             type="button"
             disabled={pending}

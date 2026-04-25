@@ -21,6 +21,8 @@ export default function MarketingStudioPage() {
   const searchParams = useSearchParams()
   const tenantId = (params?.tenantId as string) ?? ''
   const initialAuditPostId = (searchParams.get('auditPostId') || '').trim()
+  const workspaceParam = (searchParams.get('workspace') || '').trim().toLowerCase()
+  const workspaceMode: 'social' | 'direct' = workspaceParam === 'direct' ? 'direct' : 'social'
   const { token } = useAuthStore()
   const [brandName, setBrandName] = useState<string | undefined>(undefined)
   const [socialAccounts, setSocialAccounts] = useState<
@@ -102,7 +104,37 @@ export default function MarketingStudioPage() {
 
   return (
     <section className="flex-1 space-y-5">
-      <h1 className="text-xl font-semibold text-slate-900 dark:text-white">Compose</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-white">Compose</h1>
+        <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 p-1 bg-white dark:bg-slate-900">
+          <button
+            type="button"
+            onClick={() => router.replace(`/marketing/${tenantId}/Studio?workspace=social`)}
+            className={[
+              'rounded-md px-3 py-1.5 text-sm font-medium',
+              workspaceMode === 'social'
+                ? 'bg-violet-600 text-white'
+                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',
+            ].join(' ')}
+            aria-pressed={workspaceMode === 'social'}
+          >
+            Social Studio
+          </button>
+          <button
+            type="button"
+            onClick={() => router.replace(`/marketing/${tenantId}/Studio?workspace=direct`)}
+            className={[
+              'rounded-md px-3 py-1.5 text-sm font-medium',
+              workspaceMode === 'direct'
+                ? 'bg-violet-600 text-white'
+                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',
+            ].join(' ')}
+            aria-pressed={workspaceMode === 'direct'}
+          >
+            Direct Studio
+          </button>
+        </div>
+      </div>
       {showLegacyRedirectBanner && (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
           <div className="flex items-start justify-between gap-3">
@@ -122,6 +154,7 @@ export default function MarketingStudioPage() {
         brandName={brandName}
         socialAccounts={socialAccounts.length > 0 ? socialAccounts : undefined}
         initialAuditPostId={initialAuditPostId || undefined}
+        workspaceMode={workspaceMode}
       />
     </section>
   )
