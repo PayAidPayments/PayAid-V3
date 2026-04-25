@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { ensureLogoSchemaCompatibility } from '@/lib/logo/ensure-logo-schema'
 import { z } from 'zod'
 import { generateImage } from '@/lib/ai/image-generation'
 
@@ -16,6 +17,7 @@ export async function GET(request: NextRequest) {
   try {
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
+    await ensureLogoSchemaCompatibility()
 
     const logos = await prisma.logo.findMany({
       where: {
@@ -48,6 +50,7 @@ export async function POST(request: NextRequest) {
   try {
     // Check crm module license
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
+    await ensureLogoSchemaCompatibility()
 
     // Get token from request headers for passing to image generation
     const authHeader = request.headers.get('authorization')

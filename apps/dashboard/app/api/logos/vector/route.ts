@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess } from '@/lib/middleware/auth'
 import { vectorLogoEngine, type LogoConfig } from '@/lib/logo/vector-engine'
+import { ensureLogoSchemaCompatibility } from '@/lib/logo/ensure-logo-schema'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
   try {
     // Check AI Studio module license
     const { tenantId } = await requireModuleAccess(request, 'ai-studio')
+    await ensureLogoSchemaCompatibility()
 
     const body = await request.json()
     const validated = vectorLogoSchema.parse(body)
@@ -197,6 +199,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'ai-studio')
+    await ensureLogoSchemaCompatibility()
 
     const logos = await prisma.logo.findMany({
       where: {
