@@ -531,9 +531,15 @@ export function VectorLogoEditor({
   const buildQaEvidenceBlock = () => {
     const now = new Date().toISOString()
     const entries = (lastExportSummary ? [lastExportSummary, ...exportHistory] : exportHistory).slice(0, 5)
+    const buildRef =
+      process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ||
+      process.env.NEXT_PUBLIC_GIT_COMMIT_SHA ||
+      process.env.NEXT_PUBLIC_BUILD_SHA ||
+      'N/A'
     const coreLines = [
       'PayAid Logo Export QA Evidence',
       `Generated At: ${new Date(now).toLocaleString()}`,
+      `Build Ref: ${buildRef}`,
       `Business Name: ${config.text || 'N/A'}`,
       `Diagnostics ID: ${qaDiagnosticsId.trim() || 'N/A'}`,
       `Export Preset: ${selectedExportPreset}`,
