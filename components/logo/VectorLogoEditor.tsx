@@ -78,6 +78,7 @@ const EXPORT_PACK_PRESETS: Record<Exclude<ExportPackPresetId, 'custom'>, ExportP
 const EXPORT_OPTIONS_STORAGE_KEY = 'payaid.logo.export-options.v1'
 const EXPORT_PRESET_STORAGE_KEY = 'payaid.logo.export-preset.v1'
 const EXPORT_HISTORY_STORAGE_KEY = 'payaid.logo.export-history.v1'
+const QA_DIAGNOSTICS_ID_STORAGE_KEY = 'payaid.logo.qa-diagnostics-id.v1'
 
 type IndustryTemplate = {
   id: string
@@ -217,6 +218,10 @@ export function VectorLogoEditor({
           setExportHistory(parsed.filter(isValidLastExportSummary).slice(0, 5))
         }
       }
+      const savedDiagnosticsId = localStorage.getItem(QA_DIAGNOSTICS_ID_STORAGE_KEY)
+      if (savedDiagnosticsId) {
+        setQaDiagnosticsId(savedDiagnosticsId)
+      }
     } catch {
       // no-op; fall back to defaults on malformed local storage
     }
@@ -238,6 +243,18 @@ export function VectorLogoEditor({
       // no-op; storage can fail in restricted browser modes
     }
   }, [exportHistory])
+
+  useEffect(() => {
+    try {
+      if (qaDiagnosticsId.trim()) {
+        localStorage.setItem(QA_DIAGNOSTICS_ID_STORAGE_KEY, qaDiagnosticsId.trim())
+      } else {
+        localStorage.removeItem(QA_DIAGNOSTICS_ID_STORAGE_KEY)
+      }
+    } catch {
+      // no-op; storage can fail in restricted browser modes
+    }
+  }, [qaDiagnosticsId])
 
   const applyExportPreset = (preset: Exclude<ExportPackPresetId, 'custom'>) => {
     setSelectedExportPreset(preset)
