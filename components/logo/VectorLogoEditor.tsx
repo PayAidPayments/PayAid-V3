@@ -531,7 +531,7 @@ export function VectorLogoEditor({
   const buildQaEvidenceBlock = () => {
     const now = new Date().toISOString()
     const entries = (lastExportSummary ? [lastExportSummary, ...exportHistory] : exportHistory).slice(0, 5)
-    return [
+    const coreLines = [
       'PayAid Logo Export QA Evidence',
       `Generated At: ${new Date(now).toLocaleString()}`,
       `Business Name: ${config.text || 'N/A'}`,
@@ -544,7 +544,13 @@ export function VectorLogoEditor({
         `${index + 1}. ${new Date(entry.timestamp).toLocaleString()}`,
         `   Assets: ${entry.assets.join(', ')}`,
       ]),
+    ]
+    const evidenceHash = computeEvidenceHash(coreLines.join('\n'))
+    return [
+      ...coreLines,
       '',
+      `Evidence Timestamp (UTC): ${now}`,
+      `Evidence Hash: ${evidenceHash}`,
       'End of report',
     ].join('\n')
   }
@@ -1351,6 +1357,14 @@ function extractDiagnosticsId(source: unknown): string | null {
   }
 
   return null
+}
+
+function computeEvidenceHash(input: string): string {
+  let hash = 5381
+  for (let i = 0; i < input.length; i++) {
+    hash = ((hash << 5) + hash) ^ input.charCodeAt(i)
+  }
+  return `qa_${(hash >>> 0).toString(16).padStart(8, '0')}`
 }
 
 function buildConceptPresets(
