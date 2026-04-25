@@ -69,6 +69,8 @@
     "run:marketing-release-gate-pipeline": "node scripts/run-marketing-release-gate-pipeline.mjs",
     "run:marketing-release-gate-pipeline:with-markers": "cross-env MARKETING_RELEASE_INCLUDE_MARKER_HELPERS=1 node scripts/run-marketing-release-gate-pipeline.mjs",
     "run:marketing-release-gate-pipeline:with-markers:warn": "cross-env MARKETING_RELEASE_INCLUDE_MARKER_HELPERS=1 MARKETING_RELEASE_MARKER_HELPERS_WARNING_ONLY=1 node scripts/run-marketing-release-gate-pipeline.mjs",
+    "run:marketing-release-gate-pipeline:with-marker-verifier": "cross-env MARKETING_RELEASE_INCLUDE_MARKER_VERIFIER=1 node scripts/run-marketing-release-gate-pipeline.mjs",
+    "run:marketing-release-gate-pipeline:with-marker-verifier:warn": "cross-env MARKETING_RELEASE_INCLUDE_MARKER_VERIFIER=1 MARKETING_RELEASE_MARKER_VERIFIER_WARNING_ONLY=1 node scripts/run-marketing-release-gate-pipeline.mjs",
     "verify:marketing-release-gate-marker": "node scripts/verify-marketing-release-gate-marker.mjs",
     "verify:marketing-release-gate-marker:strict": "cross-env MARKETING_RELEASE_GATE_MARKER_MAX_AGE_HOURS=2 node scripts/verify-marketing-release-gate-marker.mjs",
     "cleanup:marketing-release-artifacts": "node scripts/cleanup-marketing-release-artifacts.mjs",
