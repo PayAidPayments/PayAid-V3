@@ -22,6 +22,66 @@ type ProviderStatus = {
   health?: 'not_connected' | 'healthy' | 'expiring_soon' | 'expired' | 'missing_scope'
 }
 
+type ProviderGuide = {
+  connectMethod: string
+  tokenSource: string
+  steps: string[]
+  docsUrl: string
+}
+
+const PROVIDER_GUIDES: Record<ProviderStatus['provider'], ProviderGuide> = {
+  linkedin: {
+    connectMethod: 'OAuth (recommended)',
+    tokenSource: 'No manual token needed for normal setup; use Connect/Reconnect button.',
+    steps: [
+      'Click Connect and sign in to your LinkedIn account.',
+      'Approve requested permissions for posting and profile access.',
+      'Return here and use Test to verify connection.',
+    ],
+    docsUrl: 'https://learn.microsoft.com/linkedin/shared/authentication/authentication',
+  },
+  facebook: {
+    connectMethod: 'Manual token',
+    tokenSource: 'Meta Graph API Explorer or your Facebook app token tools.',
+    steps: [
+      'Open Graph API Explorer and sign in with the target Facebook account/page role.',
+      'Generate a User/Page access token with publish permissions.',
+      'Paste token here, optionally set account name/email/expiry, then click Connect token.',
+    ],
+    docsUrl: 'https://developers.facebook.com/docs/graph-api/get-started',
+  },
+  instagram: {
+    connectMethod: 'Manual token',
+    tokenSource: 'Meta Graph API / Instagram Graph API token flow.',
+    steps: [
+      'Ensure Instagram Business/Creator account is linked to a Facebook Page.',
+      'Generate token through Meta developer flow with required Instagram scopes.',
+      'Paste token and click Connect token, then run Test.',
+    ],
+    docsUrl: 'https://developers.facebook.com/docs/instagram-platform',
+  },
+  twitter: {
+    connectMethod: 'Manual token',
+    tokenSource: 'X Developer Portal app credentials and OAuth token flow.',
+    steps: [
+      'Create/configure an app in X Developer Portal.',
+      'Generate an access token with post/write permissions.',
+      'Paste token here and click Connect token, then use Test.',
+    ],
+    docsUrl: 'https://developer.x.com/en/docs/authentication/oauth-2-0',
+  },
+  youtube: {
+    connectMethod: 'Manual token or refresh',
+    tokenSource: 'Google OAuth token for YouTube Data API.',
+    steps: [
+      'Enable YouTube Data API in your Google Cloud project.',
+      'Generate OAuth token that includes youtube.upload scope.',
+      'Paste token here and connect, or use Refresh token if already connected.',
+    ],
+    docsUrl: 'https://developers.google.com/youtube/v3/guides/authentication',
+  },
+}
+
 function authHeaders() {
   const { token } = useAuthStore.getState()
   return {
@@ -261,6 +321,48 @@ export default function SocialSettingsPage() {
                 ) : null}
                 <div className="text-xs text-slate-500 dark:text-slate-400">
                   Last activity: {st?.lastActivityAt || '—'}
+                </div>
+                <details className="rounded-lg border border-slate-200/80 dark:border-slate-800 px-3 py-2 bg-slate-50/60 dark:bg-slate-900/30">
+                  <summary className="cursor-pointer text-xs font-medium text-slate-800 dark:text-slate-200">
+                    How to connect {p.label}
+                  </summary>
+                  <div className="mt-2 space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                    <p>
+                      <span className="font-semibold">Method:</span>{' '}
+                      {PROVIDER_GUIDES[p.id].connectMethod}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Access token source:</span>{' '}
+                      {PROVIDER_GUIDES[p.id].tokenSource}
+                    </p>
+                    <ol className="list-decimal pl-4 space-y-1">
+                      {PROVIDER_GUIDES[p.id].steps.map((step) => (
+                        <li key={`${p.id}-${step}`}>{step}</li>
+                      ))}
+                    </ol>
+                    <a
+                      href={PROVIDER_GUIDES[p.id].docsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex text-violet-700 dark:text-violet-300 underline underline-offset-2"
+                    >
+                      Open official setup guide
+                    </a>
+                  </div>
+                </details>
+                <div className="rounded-lg border border-amber-200/80 dark:border-amber-800/70 bg-amber-50/70 dark:bg-amber-950/20 px-3 py-2">
+                  <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">Common token issues</p>
+                  <ul className="mt-1 list-disc pl-4 space-y-1 text-xs text-amber-800 dark:text-amber-300">
+                    <li>
+                      <span className="font-medium">Invalid token:</span> Re-generate from provider console and paste again.
+                    </li>
+                    <li>
+                      <span className="font-medium">Expired token:</span> Use Refresh token (if available) or reconnect.
+                    </li>
+                    <li>
+                      <span className="font-medium">Missing scope:</span> Reconnect and grant publish/upload permissions.
+                    </li>
+                  </ul>
                 </div>
                 <div className="flex items-center gap-2">
                   {p.id === 'linkedin' ? (
