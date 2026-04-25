@@ -876,7 +876,18 @@ export function VectorLogoEditor({
             </Button>
             {lastExportSummary && (
               <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
-                <p className="font-medium">Last export: {new Date(lastExportSummary.timestamp).toLocaleString()}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-medium">Last export: {new Date(lastExportSummary.timestamp).toLocaleString()}</p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-emerald-900 hover:text-emerald-950"
+                    onClick={() => setLastExportSummary(null)}
+                  >
+                    Clear
+                  </Button>
+                </div>
                 <p className="mt-1 text-emerald-800">{lastExportSummary.assets.join(', ')}</p>
                 <div className="mt-2">
                   <CopyAction
