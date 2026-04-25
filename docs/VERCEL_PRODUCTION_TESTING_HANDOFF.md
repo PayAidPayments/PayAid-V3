@@ -766,6 +766,7 @@ Scope completed:
 
 Step 4.6 sign-off evidence:
 - Vector save success screenshot: [link/path]
+- QA Context Snapshot tooltip screenshot (`Env`/`Build`/`Origin` visible): [link/path]
 - Brand Kit list with primary badge screenshot: [link/path]
 - Zero-export guard screenshot (disabled + reason): [link/path]
 - ZIP artifact checked (name + file count): [text]
