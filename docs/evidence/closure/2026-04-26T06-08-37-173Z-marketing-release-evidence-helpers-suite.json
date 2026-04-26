@@ -1,0 +1,31 @@
+{
+  "check": "marketing-release-evidence-helpers-suite",
+  "capturedAt": "2026-04-26T06:08:37.173Z",
+  "command": "npm run run:marketing-release-evidence-helpers-suite:evidence",
+  "warningOnly": true,
+  "overallOk": true,
+  "effectiveOk": true,
+  "stepTimeoutMs": 300000,
+  "timedOut": false,
+  "exitCode": 0,
+  "summary": {
+    "check": "marketing-release-evidence-helpers-suite",
+    "overallOk": true,
+    "steps": [
+      {
+        "label": "marketing-warning-flag-resolver-test",
+        "ok": true,
+        "exitCode": 0,
+        "elapsedMs": 302
+      },
+      {
+        "label": "marketing-evidence-bundle-warn-smoke",
+        "ok": true,
+        "exitCode": 0,
+        "elapsedMs": 16990
+      }
+    ]
+  },
+  "stdout": "{\n  \"check\": \"marketing-release-evidence-helpers-suite\",\n  \"overallOk\": true,\n  \"steps\": [\n    {\n      \"label\": \"marketing-warning-flag-resolver-test\",\n      \"ok\": true,\n      \"exitCode\": 0,\n      \"elapsedMs\": 302\n    },\n    {\n      \"label\": \"marketing-evidence-bundle-warn-smoke\",\n      \"ok\": true,\n      \"exitCode\": 0,\n      \"elapsedMs\": 16990\n    }\n  ]\n}",
+  "stderr": ""
+}

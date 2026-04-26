@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
@@ -26,6 +26,14 @@ interface WebsiteSite {
   updatedAt: string
 }
 
+function normalizeSlug(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
 export default function WebsiteBuilderDashboardPage() {
   const params = useParams()
   const tenantId = (params?.tenantId as string) || ''
@@ -38,9 +46,11 @@ export default function WebsiteBuilderDashboardPage() {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [createName, setCreateName] = useState('')
   const [createSlug, setCreateSlug] = useState('')
+  const [createSlugTouched, setCreateSlugTouched] = useState(false)
   const [createGoalType, setCreateGoalType] = useState<
     'lead_generation' | 'appointment_booking' | 'local_presence' | 'campaign_microsite' | 'service_showcase'
   >('lead_generation')
+  const [createError, setCreateError] = useState<string | null>(null)
 
   const {
     data,
@@ -77,17 +87,44 @@ export default function WebsiteBuilderDashboardPage() {
           goalType: createGoalType,
         }),
       })
-      if (!response.ok) throw new Error('Failed to create website')
+      if (!response.ok) {
+        let message = 'Failed to create website'
+        try {
+          const payload = await response.json()
+          if (payload?.error) message = String(payload.error)
+        } catch {
+          // no-op: keep default message
+        }
+        throw new Error(message)
+      }
       return response.json()
     },
     onSuccess: () => {
+      setCreateError(null)
       setCreateName('')
       setCreateSlug('')
+      setCreateSlugTouched(false)
       setCreateGoalType('lead_generation')
       setShowCreateForm(false)
       refetch()
     },
+    onError: (error) => {
+      setCreateError(error instanceof Error ? error.message : 'Failed to create website')
+    },
   })
+
+  useEffect(() => {
+    if (!showCreateForm) {
+      setCreateError(null)
+      setCreateSlugTouched(false)
+    }
+  }, [showCreateForm])
+
+  useEffect(() => {
+    if (!showCreateForm || createSlugTouched) return
+    const derivedSlug = normalizeSlug(createName)
+    setCreateSlug(derivedSlug)
+  }, [createName, createSlugTouched, showCreateForm])
 
   const publishMutation = useMutation({
     mutationFn: async ({ id, publish }: { id: string; publish: boolean }) => {
@@ -113,7 +150,21 @@ export default function WebsiteBuilderDashboardPage() {
     { label: 'Websites', value: String(sites.length), icon: <Globe className="w-5 h-5" />, color: 'purple' as const },
   ]
 
-  const canCreate = createName.trim().length > 0 && createSlug.trim().length > 0 && !createSiteMutation.isPending
+  const canCreate = Boolean(token) && createName.trim().length > 0 && createSlug.trim().length > 0 && !createSiteMutation.isPending
+  const slugFormatValid = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(createSlug.trim())
+  const slugLengthValid = createSlug.trim().length >= 3
+  const createDisabledReason = !token
+    ? 'Session expired. Please sign in again.'
+    : !createName.trim()
+    ? 'Enter a site name.'
+    : !createSlug.trim()
+      ? 'Enter a valid slug.'
+      : !slugLengthValid
+        ? 'Slug must be at least 3 characters.'
+        : !slugFormatValid
+          ? 'Slug can use lowercase letters, numbers, and hyphens only.'
+      : null
+  const canSubmitCreate = canCreate && slugFormatValid && slugLengthValid
 
   return (
     <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative" style={{ zIndex: 1 }}>
@@ -173,32 +224,41 @@ export default function WebsiteBuilderDashboardPage() {
             </div>
 
             {showCreateForm && (
-              <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+              <form
+                className="mb-6 rounded-lg border border-gray-200 bg-white p-4 space-y-3"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (!canSubmitCreate) return
+                  createSiteMutation.mutate()
+                }}
+              >
                 <h3 className="text-sm font-semibold text-gray-900">Create Website</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <input
                     value={createName}
-                    onChange={(e) => setCreateName(e.target.value)}
+                    onChange={(e) => {
+                      setCreateName(e.target.value)
+                      if (createError) setCreateError(null)
+                    }}
                     placeholder="Site name"
                     className="h-9 rounded-md border border-gray-300 px-3 text-sm"
                   />
                   <input
                     value={createSlug}
-                    onChange={(e) =>
-                      setCreateSlug(
-                        e.target.value
-                          .toLowerCase()
-                          .replace(/[^a-z0-9-]/g, '-')
-                          .replace(/-+/g, '-')
-                          .replace(/^-|-$/g, '')
-                      )
-                    }
+                    onChange={(e) => {
+                      setCreateSlugTouched(true)
+                      setCreateSlug(normalizeSlug(e.target.value))
+                      if (createError) setCreateError(null)
+                    }}
                     placeholder="site-slug"
                     className="h-9 rounded-md border border-gray-300 px-3 text-sm"
                   />
                   <select
                     value={createGoalType}
-                    onChange={(e) => setCreateGoalType(e.target.value as typeof createGoalType)}
+                    onChange={(e) => {
+                      setCreateGoalType(e.target.value as typeof createGoalType)
+                      if (createError) setCreateError(null)
+                    }}
                     className="h-9 rounded-md border border-gray-300 px-2 text-sm"
                   >
                     <option value="lead_generation">Lead generation</option>
@@ -208,13 +268,22 @@ export default function WebsiteBuilderDashboardPage() {
                     <option value="service_showcase">Service showcase</option>
                   </select>
                 </div>
+                <p className="text-xs text-gray-500">Slug auto-generates from site name until you edit it manually.</p>
+                {createSlug.trim().length > 0 && !slugLengthValid ? (
+                  <p className="text-xs text-amber-700">Slug must be at least 3 characters.</p>
+                ) : null}
+                {createSlug.trim().length >= 3 && !slugFormatValid ? (
+                  <p className="text-xs text-amber-700">Use lowercase letters, numbers, and hyphens only.</p>
+                ) : null}
                 <div className="flex items-center gap-2">
-                  <Button onClick={() => createSiteMutation.mutate()} disabled={!canCreate}>
+                  <Button type="submit" disabled={!canSubmitCreate}>
                     {createSiteMutation.isPending ? 'Creating...' : 'Create'}
                   </Button>
                   <p className="text-xs text-gray-500">First page generation and visual editing come in next phase.</p>
                 </div>
-              </div>
+                {!canSubmitCreate && createDisabledReason ? <p className="text-xs text-amber-700">{createDisabledReason}</p> : null}
+                {createError ? <p className="text-xs text-red-600" role="alert">{createError}</p> : null}
+              </form>
             )}
 
             {isLoading ? (

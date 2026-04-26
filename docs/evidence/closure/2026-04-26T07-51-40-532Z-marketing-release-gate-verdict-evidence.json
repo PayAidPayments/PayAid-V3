@@ -1,0 +1,99 @@
+{
+  "check": "marketing-release-gate-verdict-evidence",
+  "capturedAt": "2026-04-26T07:51:40.532Z",
+  "command": "npm run run:marketing-release-gate-verdict-evidence",
+  "warningOnly": true,
+  "overallOk": false,
+  "effectiveOk": true,
+  "pipeline": {
+    "exitCode": 1,
+    "ok": false,
+    "parsed": {
+      "check": "marketing-release-gate-pipeline",
+      "overallOk": false,
+      "verdictReason": "failed_required_step",
+      "stepTimeoutDefaults": {
+        "global": 300000,
+        "socialSmokeEvidence": 300000,
+        "socialSmokeHandoffSnippet": 300000,
+        "marketingClosurePackStrict": 300000,
+        "markerHelpersSuite": 300000,
+        "markerGateVerifier": 300000,
+        "marketingGateProfileMatrixEvidence": 300000
+      },
+      "includeMarkerHelpers": false,
+      "markerHelpersWarningOnly": false,
+      "includeMarkerVerifier": false,
+      "markerVerifierWarningOnly": false,
+      "includeMatrixEvidence": false,
+      "matrixEvidenceWarningOnly": false,
+      "skipOptionalAfterFailure": false,
+      "steps": [
+        {
+          "label": "social-smoke-evidence",
+          "ok": false,
+          "effectiveOk": false,
+          "warningOnly": false,
+          "skipped": false,
+          "skipReason": null,
+          "exitCode": 1,
+          "elapsedMs": 314,
+          "timeoutMs": 300000,
+          "timedOut": false,
+          "command": "c:\\Users\\phani\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\helpers\\node.exe scripts/run-social-oauth-smoke-evidence.mjs"
+        },
+        {
+          "label": "social-smoke-handoff-snippet",
+          "ok": true,
+          "effectiveOk": true,
+          "warningOnly": false,
+          "skipped": false,
+          "skipReason": null,
+          "exitCode": 0,
+          "elapsedMs": 71,
+          "timeoutMs": 300000,
+          "timedOut": false,
+          "command": "c:\\Users\\phani\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\helpers\\node.exe scripts/generate-social-oauth-smoke-handoff-snippet.mjs"
+        },
+        {
+          "label": "marketing-closure-pack-strict",
+          "ok": false,
+          "effectiveOk": false,
+          "warningOnly": false,
+          "skipped": false,
+          "skipReason": null,
+          "exitCode": 1,
+          "elapsedMs": 103,
+          "timeoutMs": 300000,
+          "timedOut": false,
+          "command": "c:\\Users\\phani\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\helpers\\node.exe scripts/run-marketing-release-closure-pack.mjs"
+        }
+      ]
+    },
+    "stdout": "{\n  \"check\": \"marketing-release-gate-pipeline\",\n  \"overallOk\": false,\n  \"verdictReason\": \"failed_required_step\",\n  \"stepTimeoutDefaults\": {\n    \"global\": 300000,\n    \"socialSmokeEvidence\": 300000,\n    \"socialSmokeHandoffSnippet\": 300000,\n    \"marketingClosurePackStrict\": 300000,\n    \"markerHelpersSuite\": 300000,\n    \"markerGateVerifier\": 300000,\n    \"marketingGateProfileMatrixEvidence\": 300000\n  },\n  \"includeMarkerHelpers\": false,\n  \"markerHelpersWarningOnly\": false,\n  \"includeMarkerVerifier\": false,\n  \"markerVerifierWarningOnly\": false,\n  \"includeMatrixEvidence\": false,\n  \"matrixEvidenceWarningOnly\": false,\n  \"skipOptionalAfterFailure\": false,\n  \"steps\": [\n    {\n      \"label\": \"social-smoke-evidence\",\n      \"ok\": false,\n      \"effectiveOk\": false,\n      \"warningOnly\": false,\n      \"skipped\": false,\n      \"skipReason\": null,\n      \"exitCode\": 1,\n      \"elapsedMs\": 314,\n      \"timeoutMs\": 300000,\n      \"timedOut\": false,\n      \"command\": \"c:\\\\Users\\\\phani\\\\AppData\\\\Local\\\\Programs\\\\cursor\\\\resources\\\\app\\\\resources\\\\helpers\\\\node.exe scripts/run-social-oauth-smoke-evidence.mjs\"\n    },\n    {\n      \"label\": \"social-smoke-handoff-snippet\",\n      \"ok\": true,\n      \"effectiveOk\": true,\n      \"warningOnly\": false,\n      \"skipped\": false,\n      \"skipReason\": null,\n      \"exitCode\": 0,\n      \"elapsedMs\": 71,\n      \"timeoutMs\": 300000,\n      \"timedOut\": false,\n      \"command\": \"c:\\\\Users\\\\phani\\\\AppData\\\\Local\\\\Programs\\\\cursor\\\\resources\\\\app\\\\resources\\\\helpers\\\\node.exe scripts/generate-social-oauth-smoke-handoff-snippet.mjs\"\n    },\n    {\n      \"label\": \"marketing-closure-pack-strict\",\n      \"ok\": false,\n      \"effectiveOk\": false,\n      \"warningOnly\": false,\n      \"skipped\": false,\n      \"skipReason\": null,\n      \"exitCode\": 1,\n      \"elapsedMs\": 103,\n      \"timeoutMs\": 300000,\n      \"timedOut\": false,\n      \"command\": \"c:\\\\Users\\\\phani\\\\AppData\\\\Local\\\\Programs\\\\cursor\\\\resources\\\\app\\\\resources\\\\helpers\\\\node.exe scripts/run-marketing-release-closure-pack.mjs\"\n    }\n  ]\n}",
+    "stderr": "# Failed step stdout\n{\n  \"ok\": false,\n  \"exitCode\": 1,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-26T07-51-40-170Z-social-oauth-smoke.json\",\n  \"markdownPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-26T07-51-40-170Z-social-oauth-smoke.md\",\n  \"latestIndexPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\latest-social-oauth-smoke.md\",\n  \"handoffSnippetPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\latest-social-oauth-smoke-handoff-snippet.md\",\n  \"handoffGeneratorOk\": true\n}"
+  },
+  "explainer": {
+    "exitCode": 0,
+    "ok": true,
+    "parsed": {
+      "ok": true,
+      "check": "marketing-release-gate-verdict-explainer",
+      "overallOk": false,
+      "verdictReason": "failed_required_step",
+      "summary": "Required release-gate stage failed; release should remain blocked.",
+      "severity": "blocking",
+      "failedStep": {
+        "label": "social-smoke-evidence",
+        "timedOut": false,
+        "skipReason": null
+      },
+      "nextSteps": [
+        "Inspect failed step stdout/stderr and resolve root cause.",
+        "Re-run gate pipeline after fix."
+      ]
+    },
+    "stdout": "{\n  \"ok\": true,\n  \"check\": \"marketing-release-gate-verdict-explainer\",\n  \"overallOk\": false,\n  \"verdictReason\": \"failed_required_step\",\n  \"summary\": \"Required release-gate stage failed; release should remain blocked.\",\n  \"severity\": \"blocking\",\n  \"failedStep\": {\n    \"label\": \"social-smoke-evidence\",\n    \"timedOut\": false,\n    \"skipReason\": null\n  },\n  \"nextSteps\": [\n    \"Inspect failed step stdout/stderr and resolve root cause.\",\n    \"Re-run gate pipeline after fix.\"\n  ]\n}",
+    "stderr": ""
+  }
+}

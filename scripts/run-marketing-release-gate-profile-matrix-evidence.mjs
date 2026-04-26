@@ -2,6 +2,7 @@
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { resolveWarningOnlyFlag } from './lib/warning-only-flag.mjs'
 
 function isoForFile(date = new Date()) {
   return date.toISOString().replace(/[:.]/g, '-')
@@ -24,8 +25,9 @@ const run = spawnSync(process.execPath, ['scripts/run-marketing-release-gate-pro
 const stdout = (run.stdout || '').trim()
 const stderr = (run.stderr || '').trim()
 const parsed = parseJsonSafely(stdout)
-const warningOnly =
-  process.env.MARKETING_RELEASE_GATE_PROFILE_MATRIX_EVIDENCE_WARNING_ONLY === '1'
+const warningOnly = resolveWarningOnlyFlag({
+  specificKey: 'MARKETING_RELEASE_GATE_PROFILE_MATRIX_EVIDENCE_WARNING_ONLY',
+})
 const overallOk = Boolean(parsed?.overallOk)
 const effectiveOk = warningOnly ? true : overallOk
 
