@@ -42,6 +42,8 @@ const preflightTimeoutMs = resolveTimeoutMs({
   specificKey: 'LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_PREFLIGHT',
   fallbackMs: 180000,
 })
+const includeHelpersEvidence = process.env.LEADS_BULK_RETENTION_INCLUDE_HELPERS_EVIDENCE === '1'
+const helpersEvidenceWarningOnly = process.env.LEADS_BULK_RETENTION_HELPERS_EVIDENCE_WARNING_ONLY === '1'
 const gateTimeoutMs = resolveTimeoutMs({
   globalKey: 'LEADS_BULK_RETENTION_STEP_TIMEOUT_MS',
   specificKey: 'LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_GATE_PIPELINE',
@@ -61,6 +63,8 @@ if (!preflight.ok) {
         check: 'leads-bulk-retention-health-gate-with-preflight',
         blocked: true,
         reason: 'scheduler_health_preflight_failed',
+        includeHelpersEvidence,
+        helpersEvidenceWarningOnly,
         preflight: {
           ok: preflight.ok,
           exitCode: preflight.exitCode,
@@ -70,7 +74,9 @@ if (!preflight.ok) {
         },
         suggestedCommands: [
           'npm run check:leads-bulk-retention-scheduler-health:quick-triage:next-action',
-          'npm run run:leads-bulk-retention-health-gate-pipeline',
+          includeHelpersEvidence
+            ? 'npm run run:leads-bulk-retention-health-gate-pipeline:with-helpers'
+            : 'npm run run:leads-bulk-retention-health-gate-pipeline',
         ],
       },
       null,
@@ -80,13 +86,20 @@ if (!preflight.ok) {
   process.exit(1)
 }
 
-const gate = runNpmScript('run:leads-bulk-retention-health-gate-pipeline', process.env, gateTimeoutMs)
+const gateScriptName = includeHelpersEvidence
+  ? helpersEvidenceWarningOnly
+    ? 'run:leads-bulk-retention-health-gate-pipeline:with-helpers:warn'
+    : 'run:leads-bulk-retention-health-gate-pipeline:with-helpers'
+  : 'run:leads-bulk-retention-health-gate-pipeline'
+const gate = runNpmScript(gateScriptName, process.env, gateTimeoutMs)
 console.log(
   JSON.stringify(
     {
       ok: gate.ok,
       check: 'leads-bulk-retention-health-gate-with-preflight',
       blocked: false,
+      includeHelpersEvidence,
+      helpersEvidenceWarningOnly,
       preflight: {
         ok: preflight.ok,
         exitCode: preflight.exitCode,

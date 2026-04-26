@@ -53,6 +53,8 @@ const defaultTimeoutMs = resolveTimeoutMs(
   null,
   300000,
 )
+const includeHelpersEvidence = process.env.LEADS_BULK_RETENTION_INCLUDE_HELPERS_EVIDENCE === '1'
+const helpersEvidenceWarningOnly = process.env.LEADS_BULK_RETENTION_HELPERS_EVIDENCE_WARNING_ONLY === '1'
 const healthEvidenceTimeoutMs = resolveTimeoutMs(
   process.env.LEADS_BULK_RETENTION_STEP_TIMEOUT_MS,
   process.env.LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_HEALTH_EVIDENCE,
@@ -61,6 +63,11 @@ const healthEvidenceTimeoutMs = resolveTimeoutMs(
 const closurePackTimeoutMs = resolveTimeoutMs(
   process.env.LEADS_BULK_RETENTION_STEP_TIMEOUT_MS,
   process.env.LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_CLOSURE_PACK,
+  defaultTimeoutMs,
+)
+const helpersEvidenceTimeoutMs = resolveTimeoutMs(
+  process.env.LEADS_BULK_RETENTION_STEP_TIMEOUT_MS,
+  process.env.LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_HELPERS_EVIDENCE,
   defaultTimeoutMs,
 )
 
@@ -78,9 +85,14 @@ const overallOk = steps.every((s) => s.ok)
 const output = {
   check: 'leads-bulk-retention-health-gate-pipeline',
   overallOk,
+  includeHelpersEvidence,
+  helpersEvidenceWarningOnly,
   steps: steps.map((s) => ({
     label: s.label,
     ok: s.ok,
+    overallOk: s.ok,
+    warningOnly: false,
+    effectiveOk: s.ok,
     exitCode: s.exitCode,
     elapsedMs: s.elapsedMs,
     command: s.command,
@@ -89,8 +101,51 @@ const output = {
   })),
 }
 let closurePack = null
+let helpersEvidence = null
 
 if (overallOk) {
+  if (includeHelpersEvidence) {
+    const helpersEvidenceStep = runStep(
+      'leads-bulk-retention-helpers-suite-evidence',
+      process.execPath,
+      ['scripts/run-leads-bulk-retention-helpers-suite-evidence.mjs'],
+      env,
+      helpersEvidenceTimeoutMs,
+    )
+    const helpersOverallOk =
+      typeof helpersEvidenceStep.parsed?.overallOk === 'boolean'
+        ? helpersEvidenceStep.parsed.overallOk
+        : helpersEvidenceStep.ok
+    const helpersEffectiveOk = helpersEvidenceWarningOnly ? true : helpersOverallOk
+    helpersEvidence = {
+      ok: helpersEvidenceStep.ok,
+      overallOk: helpersOverallOk,
+      warningOnly: helpersEvidenceWarningOnly,
+      effectiveOk: helpersEffectiveOk,
+      exitCode: helpersEvidenceStep.exitCode,
+      jsonPath: helpersEvidenceStep.parsed?.jsonPath || null,
+      markdownPath: helpersEvidenceStep.parsed?.markdownPath || null,
+      latestIndexPath: helpersEvidenceStep.parsed?.latestIndexPath || null,
+      timedOut: helpersEvidenceStep.timedOut,
+      timeoutMs: helpersEvidenceStep.timeoutMs,
+    }
+    output.steps.push({
+      label: 'leads-bulk-retention-helpers-suite-evidence',
+      ok: helpersEvidenceStep.ok,
+      overallOk: helpersOverallOk,
+      warningOnly: helpersEvidenceWarningOnly,
+      effectiveOk: helpersEffectiveOk,
+      exitCode: helpersEvidenceStep.exitCode,
+      elapsedMs: helpersEvidenceStep.elapsedMs,
+      command: helpersEvidenceStep.command,
+      timedOut: helpersEvidenceStep.timedOut,
+      timeoutMs: helpersEvidenceStep.timeoutMs,
+    })
+    if (!helpersEffectiveOk) {
+      output.overallOk = false
+    }
+  }
+
   const closurePackStep = runStep(
     'leads-bulk-retention-closure-pack',
     process.execPath,
@@ -122,6 +177,7 @@ if (overallOk) {
         overallOk: output.overallOk === true,
         generatedAt: new Date().toISOString(),
         steps: output.steps,
+        helpersEvidence,
         closurePack,
       },
       null,
@@ -133,6 +189,7 @@ if (overallOk) {
 }
 
 output.closurePack = closurePack
+output.helpersEvidence = helpersEvidence
 console.log(JSON.stringify(output, null, 2))
 
 if (!output.overallOk) {
