@@ -17,6 +17,9 @@ interface VectorLogoEditorProps {
   tenantId: string
   businessName?: string
   brandColors?: string[]
+  initialConfig?: Partial<LogoConfig>
+  initialIndustry?: string
+  initialKeywords?: string[]
   onSave?: (logo: any) => void
   onCancel?: () => void
 }
@@ -131,6 +134,9 @@ export function VectorLogoEditor({
   tenantId: _tenantId,
   businessName = '',
   brandColors = [],
+  initialConfig,
+  initialIndustry = '',
+  initialKeywords = [],
   onSave,
   onCancel,
 }: VectorLogoEditorProps) {
@@ -144,7 +150,7 @@ export function VectorLogoEditor({
     iconColor: brandColors[0] || '#000000',
     animation: 'none',
     background: { type: 'transparent', value: '' },
-    layout: { align: 'center', offsetX: 0, offsetY: 0, rotation: 0 },
+    layout: { align: 'center', offsetX: 0, offsetY: 0, rotation: 0, lockupType: 'combination-horizontal' },
   })
 
   // UI state
@@ -192,7 +198,38 @@ export function VectorLogoEditor({
     if (config.text) {
       generatePreview()
     }
-  }, [config])
+  }, [config, activeLockup])
+
+  useEffect(() => {
+    if (!initialConfig && !businessName && !initialIndustry && initialKeywords.length === 0) return
+
+    setConfig((prev) => ({
+      ...prev,
+      ...initialConfig,
+      text: initialConfig?.text ?? businessName ?? prev.text,
+      color: initialConfig?.color ?? brandColors[0] ?? prev.color,
+      iconColor: initialConfig?.iconColor ?? brandColors[0] ?? prev.iconColor,
+      layout: {
+        ...(prev.layout || { align: 'center', offsetX: 0, offsetY: 0, rotation: 0 }),
+        ...(initialConfig?.layout || {}),
+      },
+    }))
+    setIndustry(initialIndustry || '')
+    setKeywords(initialKeywords)
+    if (initialConfig?.layout?.lockupType) {
+      setActiveLockup(initialConfig.layout.lockupType)
+    }
+  }, [initialConfig, businessName, brandColors, initialIndustry, initialKeywords])
+
+  useEffect(() => {
+    setConfig((prev) => ({
+      ...prev,
+      layout: {
+        ...(prev.layout || { align: 'center', offsetX: 0, offsetY: 0, rotation: 0 }),
+        lockupType: activeLockup,
+      },
+    }))
+  }, [activeLockup])
 
   useEffect(() => {
     if (!config.text.trim()) {
@@ -838,7 +875,16 @@ export function VectorLogoEditor({
               <Label htmlFor="lockup">Logo Lockup</Label>
               <Select
                 value={activeLockup}
-                onValueChange={(value: LogoLockupType) => setActiveLockup(value)}
+                onValueChange={(value: LogoLockupType) => {
+                  setActiveLockup(value)
+                  setConfig((prev) => ({
+                    ...prev,
+                    layout: {
+                      ...(prev.layout || { align: 'center', offsetX: 0, offsetY: 0, rotation: 0 }),
+                      lockupType: value,
+                    },
+                  }))
+                }}
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
@@ -1266,7 +1312,14 @@ export function VectorLogoEditor({
                       onClick={() => {
                         const selected = concepts.find((c) => c.id === selectedConceptId)
                         if (selected) {
-                          setConfig((prev) => ({ ...prev, ...selected.config }))
+                        setConfig((prev) => ({
+                          ...prev,
+                          ...selected.config,
+                          layout: {
+                            ...(selected.config.layout || prev.layout || { align: 'center', offsetX: 0, offsetY: 0, rotation: 0 }),
+                            lockupType: activeLockup,
+                          },
+                        }))
                         }
                         setConceptCount(24)
                         setConceptPage((p) => p + 1)
@@ -1313,7 +1366,14 @@ export function VectorLogoEditor({
                       type="button"
                       onClick={() => {
                         setSelectedConceptId(concept.id)
-                        setConfig((prev) => ({ ...prev, ...concept.config }))
+                        setConfig((prev) => ({
+                          ...prev,
+                          ...concept.config,
+                          layout: {
+                            ...(concept.config.layout || prev.layout || { align: 'center', offsetX: 0, offsetY: 0, rotation: 0 }),
+                            lockupType: activeLockup,
+                          },
+                        }))
                       }}
                       className={`rounded-md border bg-slate-50 hover:bg-slate-100 p-2 text-left transition-colors ${
                         selectedConceptId === concept.id ? 'border-indigo-400 ring-1 ring-indigo-300' : 'border-slate-200'

@@ -45,6 +45,7 @@ const vectorLogoSchema = z.object({
     offsetX: z.number(),
     offsetY: z.number(),
     rotation: z.number(),
+    lockupType: z.enum(['combination-horizontal', 'stacked', 'wordmark', 'emblem']).optional(),
   }).optional(),
   saveToBrandKit: z.boolean().optional(),
   setAsBrandLogo: z.boolean().optional(),
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
         offsetX: 0,
         offsetY: 0,
         rotation: 0,
+        lockupType: 'combination-horizontal',
       },
     }
 

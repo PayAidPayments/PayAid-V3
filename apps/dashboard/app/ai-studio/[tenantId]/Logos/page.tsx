@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { PageLoading } from '@/components/ui/loading'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { VectorLogoEditor } from '@/components/logo/VectorLogoEditor'
+import type { LogoConfig } from '@/lib/logo/vector-engine'
 import { Sparkles, Wand2 } from 'lucide-react'
 
 interface Logo {
@@ -18,6 +19,7 @@ interface Logo {
   businessName: string
   industry?: string
   style?: string
+  colors?: string[]
   status: string
   logoType?: 'VECTOR' | 'AI_IMAGE'
   variations: Array<{
@@ -26,6 +28,7 @@ interface Logo {
     thumbnailUrl?: string
     isSelected: boolean
     svgData?: string
+    layoutConfig?: Partial<LogoConfig> | null
   }>
   _count: {
     variations: number
@@ -38,6 +41,7 @@ export default function LogosPage() {
   const tenantId = params.tenantId as string
   const [showGenerator, setShowGenerator] = useState(false)
   const [generatorMode, setGeneratorMode] = useState<'vector' | 'ai'>('vector')
+  const [editingVectorLogo, setEditingVectorLogo] = useState<Logo | null>(null)
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
     businessName: '',
@@ -141,14 +145,22 @@ export default function LogosPage() {
                   </p>
                 </div>
                 <VectorLogoEditor
+                  key={`vector-editor-${editingVectorLogo?.id || 'new'}`}
                   tenantId={tenantId}
-                  businessName={formData.businessName}
-                  brandColors={formData.colors}
+                  businessName={editingVectorLogo?.businessName || formData.businessName}
+                  brandColors={editingVectorLogo?.colors || formData.colors}
+                  initialConfig={editingVectorLogo?.variations[0]?.layoutConfig || undefined}
+                  initialIndustry={editingVectorLogo?.industry || ''}
+                  initialKeywords={editingVectorLogo?.style ? editingVectorLogo.style.split(',').map((s) => s.trim()).filter(Boolean) : []}
                   onSave={(logo) => {
                     setShowGenerator(false)
+                    setEditingVectorLogo(null)
                     refetch()
                   }}
-                  onCancel={() => setShowGenerator(false)}
+                  onCancel={() => {
+                    setShowGenerator(false)
+                    setEditingVectorLogo(null)
+                  }}
                 />
               </TabsContent>
 
@@ -242,16 +254,32 @@ export default function LogosPage() {
           </TabsList>
 
           <TabsContent value="all">
-            <LogoGrid logos={logos} />
+            <LogoGrid
+              logos={logos}
+              tenantId={tenantId}
+              onEditVector={(logo) => {
+                setEditingVectorLogo(logo)
+                setGeneratorMode('vector')
+                setShowGenerator(true)
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="vector">
-            <LogoGrid logos={vectorLogos} />
+            <LogoGrid
+              logos={vectorLogos}
+              tenantId={tenantId}
+              onEditVector={(logo) => {
+                setEditingVectorLogo(logo)
+                setGeneratorMode('vector')
+                setShowGenerator(true)
+              }}
+            />
           </TabsContent>
 
           {aiLogos.length > 0 && (
             <TabsContent value="ai">
-              <LogoGrid logos={aiLogos} />
+              <LogoGrid logos={aiLogos} tenantId={tenantId} onEditVector={() => {}} />
             </TabsContent>
           )}
         </Tabs>
@@ -260,7 +288,15 @@ export default function LogosPage() {
   )
 }
 
-function LogoGrid({ logos }: { logos: Logo[] }) {
+function LogoGrid({
+  logos,
+  tenantId,
+  onEditVector,
+}: {
+  logos: Logo[]
+  tenantId: string
+  onEditVector: (logo: Logo) => void
+}) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {logos.map((logo) => (
@@ -318,11 +354,29 @@ function LogoGrid({ logos }: { logos: Logo[] }) {
                 <div className="text-sm text-gray-500">
                   {logo._count.variations} variation{logo._count.variations !== 1 ? 's' : ''}
                 </div>
-                <Link href={`/dashboard/logos/${logo.id}`}>
-                  <Button variant="outline" size="sm" className="w-full">
-                    View & {logo.logoType === 'VECTOR' ? 'Edit' : 'Customize'}
-                  </Button>
-                </Link>
+                {logo.logoType === 'VECTOR' && (
+                  <div className="text-xs text-slate-600 rounded bg-slate-100 px-2 py-1">
+                    Lockup: {getLockupLabel(logo.variations[0]?.layoutConfig)}
+                  </div>
+                )}
+                {logo.logoType === 'VECTOR' ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" size="sm" onClick={() => onEditVector(logo)}>
+                      Edit
+                    </Button>
+                    <Link href={`/ai-studio/${tenantId}/Logos/${logo.id}`}>
+                      <Button variant="outline" size="sm" className="w-full">
+                        Detail
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <Link href={`/dashboard/logos/${logo.id}`}>
+                    <Button variant="outline" size="sm" className="w-full">
+                      View & Customize
+                    </Button>
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">No variations available</div>
@@ -332,4 +386,12 @@ function LogoGrid({ logos }: { logos: Logo[] }) {
       ))}
     </div>
   )
+}
+
+function getLockupLabel(layoutConfig?: Partial<LogoConfig> | null): string {
+  const lockup = layoutConfig?.layout?.lockupType || 'combination-horizontal'
+  if (lockup === 'stacked') return 'Stacked'
+  if (lockup === 'wordmark') return 'Wordmark'
+  if (lockup === 'emblem') return 'Emblem'
+  return 'Horizontal'
 }

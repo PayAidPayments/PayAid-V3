@@ -36,6 +36,7 @@ export interface LogoLayout {
   offsetX: number
   offsetY: number
   rotation: number
+  lockupType?: 'combination-horizontal' | 'stacked' | 'wordmark' | 'emblem'
 }
 
 export interface LogoConfig {
@@ -91,9 +92,10 @@ export class VectorLogoEngine {
 
     // Calculate text position
     const align = layout?.align || 'center'
+    const lockupType = layout?.lockupType || 'combination-horizontal'
     let textAnchor = 'middle'
     let x = centerX + (layout?.offsetX || 0)
-    const y = centerY + (layout?.offsetY || 0)
+    let y = centerY + (layout?.offsetY || 0)
 
     if (align === 'left') {
       textAnchor = 'start'
@@ -222,12 +224,15 @@ export class VectorLogoEngine {
 
     const selectedIconStyle = iconStyle || 'circle-monogram'
     const iconFill = iconColor || color
+    const hasIcon = lockupType !== 'wordmark' && selectedIconStyle !== 'none'
+    const isStacked = lockupType === 'stacked'
+    const isEmblem = lockupType === 'emblem'
 
     const renderIcon = () => {
-      if (selectedIconStyle === 'none') return ''
+      if (!hasIcon) return ''
       const iconSize = Math.max(72, Math.min(140, Math.round(fontSize * 1.4)))
-      const iconX = Math.max(70, x - (selectedIconStyle === 'none' ? 0 : iconSize * 0.9))
-      const iconY = y
+      const iconX = isStacked || isEmblem ? x : Math.max(70, x - iconSize * 0.9)
+      const iconY = isStacked ? y - iconSize * 0.8 : y
       if (selectedIconStyle === 'circle-monogram') {
         const monogram = (text || '?').trim().charAt(0).toUpperCase()
         return `
@@ -269,8 +274,20 @@ export class VectorLogoEngine {
   </g>`
     }
 
+    if (isStacked) {
+      y = y + Math.max(56, Math.round(fontSize * 0.9))
+      textAnchor = 'middle'
+    }
+    if (isEmblem) {
+      y = y + Math.max(72, Math.round(fontSize * 1.05))
+      textAnchor = 'middle'
+    }
+
     // Build text element
     let textStyle = `font-family: '${fontFamily}'; font-size: ${fontSize}px;`
+    if (isEmblem) {
+      textStyle = `font-family: '${fontFamily}'; font-size: ${Math.max(24, Math.round(fontSize * 0.6))}px; font-weight: 600;`
+    }
     let textFill = gradient ? `url(#textGradient)` : color
     let textFilter = shadow ? `filter="url(#textShadow)"` : ''
     let textClass = animation && animation !== 'none' ? `class="animated-text"` : ''
