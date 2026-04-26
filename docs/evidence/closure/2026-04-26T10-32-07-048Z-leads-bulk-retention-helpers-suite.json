@@ -1,0 +1,46 @@
+{
+  "check": "leads-bulk-retention-helpers-suite",
+  "capturedAt": "2026-04-26T10:32:07.048Z",
+  "command": "npm run run:leads-bulk-retention-helpers-suite:evidence",
+  "warningOnly": false,
+  "overallOk": true,
+  "effectiveOk": true,
+  "stepTimeoutMs": 300000,
+  "timedOut": false,
+  "exitCode": 0,
+  "summary": {
+    "check": "leads-bulk-retention-helpers-suite",
+    "overallOk": true,
+    "smokeMaxMs": null,
+    "smokeWithinBudget": true,
+    "smokeLatencyViolation": false,
+    "steps": [
+      {
+        "label": "leads-policy-mirror-regression-test",
+        "ok": true,
+        "exitCode": 0,
+        "elapsedMs": 4928
+      },
+      {
+        "label": "leads-policy-mirror-verifier-test",
+        "ok": true,
+        "exitCode": 0,
+        "elapsedMs": 1086
+      },
+      {
+        "label": "leads-timeout-guardrails-regression-test",
+        "ok": true,
+        "exitCode": 0,
+        "elapsedMs": 129197
+      },
+      {
+        "label": "leads-quick-triage-next-action-timeout-guard-smoke",
+        "ok": true,
+        "exitCode": 0,
+        "elapsedMs": 7282
+      }
+    ]
+  },
+  "stdout": "{\n  \"check\": \"leads-bulk-retention-helpers-suite\",\n  \"overallOk\": true,\n  \"smokeMaxMs\": null,\n  \"smokeWithinBudget\": true,\n  \"smokeLatencyViolation\": false,\n  \"steps\": [\n    {\n      \"label\": \"leads-policy-mirror-regression-test\",\n      \"ok\": true,\n      \"exitCode\": 0,\n      \"elapsedMs\": 4928\n    },\n    {\n      \"label\": \"leads-policy-mirror-verifier-test\",\n      \"ok\": true,\n      \"exitCode\": 0,\n      \"elapsedMs\": 1086\n    },\n    {\n      \"label\": \"leads-timeout-guardrails-regression-test\",\n      \"ok\": true,\n      \"exitCode\": 0,\n      \"elapsedMs\": 129197\n    },\n    {\n      \"label\": \"leads-quick-triage-next-action-timeout-guard-smoke\",\n      \"ok\": true,\n      \"exitCode\": 0,\n      \"elapsedMs\": 7282\n    }\n  ]\n}",
+  "stderr": ""
+}

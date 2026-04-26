@@ -1,6 +1,6 @@
 # Latest Marketing Release Evidence Latency Rollup
 
-- Last updated: 2026-04-26T10:04:48.581Z
+- Last updated: 2026-04-26T11:13:16.182Z
 - Sample window: 20
 - Sample count: 20
 - p50 (ms): 431230
@@ -9,8 +9,8 @@
 
 ## Artifacts
 
-- JSON: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-26T10-04-48-581Z-marketing-release-evidence-latency-rollup.json`
-- Markdown: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-26T10-04-48-581Z-marketing-release-evidence-latency-rollup.md`
+- JSON: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-26T11-13-16-182Z-marketing-release-evidence-latency-rollup.json`
+- Markdown: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-26T11-13-16-182Z-marketing-release-evidence-latency-rollup.md`
 
 ## Quick Command
 

@@ -1,0 +1,35 @@
+{
+  "check": "marketing-release-rollout-guarded-flow",
+  "capturedAt": "2026-04-26T11:13:16.494Z",
+  "skipRollout": false,
+  "overallOk": true,
+  "steps": [
+    {
+      "label": "operator-policy-preflight",
+      "command": "npm run show:marketing-release-operator-policy:rollout-warn-timeout-guard",
+      "ok": true,
+      "exitCode": 0,
+      "elapsedMs": 9152,
+      "skipped": false,
+      "skipReason": null
+    },
+    {
+      "label": "policy-mirror-verifier",
+      "command": "npm run verify:marketing-release-policy-mirror",
+      "ok": true,
+      "exitCode": 0,
+      "elapsedMs": 424,
+      "skipped": false,
+      "skipReason": null
+    },
+    {
+      "label": "rollout-verification-warn-timeout-guard",
+      "command": "npm run run:marketing-release-production-rollout-verification:warn:timeout-guard",
+      "ok": true,
+      "exitCode": 0,
+      "elapsedMs": 408112,
+      "skipped": false,
+      "skipReason": null
+    }
+  ]
+}

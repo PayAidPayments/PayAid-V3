@@ -1,0 +1,108 @@
+# Marketing Release Gate Evidence Bundle
+
+- Captured at: 2026-04-26T10:16:49.903Z
+- Command: `npm run run:marketing-release-gate-evidence-bundle`
+- Overall OK: no
+- Effective OK: no
+- Warning only mode: no
+- Include helpers evidence: yes
+- Helpers warning only: no
+- Include latency gate: no
+- Latency gate warning only: no
+
+## Step Results
+
+- Matrix evidence: failed (exit 1)
+- Verdict evidence: failed (exit 1)
+- Helpers-suite evidence: failed (exit 1)
+- Latency gate: not included
+
+## Summary JSON
+
+```json
+{
+  "check": "marketing-release-gate-evidence-bundle",
+  "capturedAt": "2026-04-26T10:16:49.903Z",
+  "command": "npm run run:marketing-release-gate-evidence-bundle",
+  "warningOnly": false,
+  "includeEvidenceHelpers": true,
+  "evidenceHelpersWarningOnly": false,
+  "includeLatencyGate": false,
+  "latencyGateWarningOnly": false,
+  "stepTimeoutDefaults": {
+    "global": 300000,
+    "matrix": 300000,
+    "verdict": 300000,
+    "helpers": 300000,
+    "latencyGate": 300000
+  },
+  "overallOk": false,
+  "effectiveOk": false,
+  "steps": [
+    {
+      "label": "marketing-gate-profile-matrix-evidence",
+      "command": "npm run run:marketing-release-gate:profile:matrix:evidence",
+      "ok": false,
+      "overallOk": false,
+      "warningOnly": false,
+      "effectiveOk": false,
+      "timedOut": false,
+      "timeoutMs": 300000,
+      "exitCode": 1,
+      "elapsedMs": 17250,
+      "summary": {
+        "ok": false,
+        "overallOk": false,
+        "warningOnly": false,
+        "exitCode": 1,
+        "jsonPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\2026-04-26T10-11-46-110Z-marketing-release-gate-profile-matrix.json",
+        "markdownPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\2026-04-26T10-11-46-110Z-marketing-release-gate-profile-matrix.md",
+        "latestIndexPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\latest-marketing-release-gate-profile-matrix.md"
+      }
+    },
+    {
+      "label": "marketing-gate-verdict-evidence",
+      "command": "npm run run:marketing-release-gate-verdict-evidence",
+      "ok": false,
+      "overallOk": false,
+      "warningOnly": false,
+      "effectiveOk": false,
+      "timedOut": false,
+      "timeoutMs": 300000,
+      "exitCode": 1,
+      "elapsedMs": 3011,
+      "summary": {
+        "ok": false,
+        "overallOk": false,
+        "warningOnly": false,
+        "pipelineOk": false,
+        "pipelineExitCode": 1,
+        "verdictReason": "failed_required_step",
+        "explainerOk": true,
+        "jsonPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\2026-04-26T10-11-49-251Z-marketing-release-gate-verdict-evidence.json",
+        "markdownPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\2026-04-26T10-11-49-251Z-marketing-release-gate-verdict-evidence.md",
+        "latestIndexPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\latest-marketing-release-gate-verdict-evidence.md"
+      }
+    },
+    {
+      "label": "marketing-evidence-helpers-suite-evidence",
+      "command": "npm run run:marketing-release-evidence-helpers-suite:evidence",
+      "ok": false,
+      "overallOk": false,
+      "warningOnly": false,
+      "effectiveOk": false,
+      "timedOut": true,
+      "timeoutMs": 300000,
+      "exitCode": 1,
+      "elapsedMs": 300125,
+      "summary": null
+    }
+  ]
+}
+```
+
+## Helpers-suite stderr
+
+```text
+Step "marketing-evidence-helpers-suite-evidence" timed out after 300000ms.
+```

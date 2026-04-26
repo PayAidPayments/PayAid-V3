@@ -1,0 +1,21 @@
+{
+  "check": "leads-bulk-retention-health-gate-preflight-evidence",
+  "capturedAt": "2026-04-26T10:30:26.380Z",
+  "ok": false,
+  "exitCode": 1,
+  "timedOut": true,
+  "timeoutMs": 1,
+  "result": null,
+  "helpersSuiteEvidence": {
+    "ok": false,
+    "overallOk": false,
+    "warningOnly": false,
+    "effectiveOk": false,
+    "exitCode": 2147483651,
+    "timedOut": false,
+    "timeoutMs": 300000,
+    "jsonPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\2026-04-26T10-30-44-137Z-leads-bulk-retention-helpers-suite.json",
+    "markdownPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\2026-04-26T10-30-44-137Z-leads-bulk-retention-helpers-suite.md",
+    "latestIndexPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\latest-leads-bulk-retention-helpers-suite.md"
+  }
+}

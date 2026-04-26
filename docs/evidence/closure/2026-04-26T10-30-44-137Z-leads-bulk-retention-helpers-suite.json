@@ -1,0 +1,14 @@
+{
+  "check": "leads-bulk-retention-helpers-suite",
+  "capturedAt": "2026-04-26T10:30:44.137Z",
+  "command": "npm run run:leads-bulk-retention-helpers-suite:evidence",
+  "warningOnly": false,
+  "overallOk": false,
+  "effectiveOk": false,
+  "stepTimeoutMs": 300000,
+  "timedOut": false,
+  "exitCode": 2147483651,
+  "summary": null,
+  "stdout": "",
+  "stderr": "AssignProcessToJobObject: (50) The request is not supported."
+}

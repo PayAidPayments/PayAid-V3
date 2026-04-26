@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "strictMode": false,
+  "generatedAt": "2026-04-26T10:16:07.949Z",
+  "stepSummary": [
+    {
+      "label": "health-evidence",
+      "ok": true,
+      "exitCode": 0,
+      "scriptPath": "scripts/run-leads-bulk-retention-health-evidence.mjs",
+      "timedOut": false,
+      "timeoutMs": 180000
+    },
+    {
+      "label": "handoff-snippet",
+      "ok": true,
+      "exitCode": 0,
+      "scriptPath": "scripts/generate-leads-bulk-retention-handoff-snippet.mjs",
+      "timedOut": false,
+      "timeoutMs": 180000
+    },
+    {
+      "label": "next-actions",
+      "ok": true,
+      "exitCode": 0,
+      "scriptPath": "scripts/show-leads-bulk-retention-next-actions.mjs",
+      "timedOut": false,
+      "timeoutMs": 180000
+    }
+  ],
+  "latestArtifacts": {
+    "latestHealthIndex": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\latest-leads-bulk-retention-scheduler-health.md",
+    "latestHandoffSnippet": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\latest-leads-bulk-retention-handoff-snippet.md"
+  },
+  "healthSummary": {
+    "healthOk": "yes"
+  }
+}

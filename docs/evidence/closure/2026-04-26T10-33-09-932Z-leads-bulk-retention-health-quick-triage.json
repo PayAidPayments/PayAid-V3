@@ -1,0 +1,59 @@
+{
+  "check": "leads-bulk-retention-health-quick-triage-evidence",
+  "capturedAt": "2026-04-26T10:33:09.897Z",
+  "ok": true,
+  "quickTriageExitCode": 0,
+  "timedOut": false,
+  "timeoutMs": 180000,
+  "quickTriage": {
+    "ok": true,
+    "check": "leads-bulk-retention-health-quick-triage",
+    "evaluatedAt": "2026-04-26T10:33:09.879Z",
+    "probes": [
+      {
+        "timeoutMs": 3000,
+        "ok": true,
+        "exitCode": 0,
+        "parsed": {
+          "ok": true,
+          "check": "leads-bulk-retention-scheduler-health",
+          "endpoint": "local-fallback",
+          "severity": "healthy",
+          "reasons": [],
+          "metrics": {
+            "statusAgeMinutes": 44,
+            "runningForMinutes": 44,
+            "consecutiveSkipped": 0,
+            "state": "completed",
+            "hasActiveLock": false,
+            "tenantId": "demo-business-pvt-ltd"
+          },
+          "evaluatedAt": "2026-04-26T10:33:09.642Z",
+          "source": "local-fallback"
+        }
+      },
+      {
+        "timeoutMs": 5000,
+        "ok": true,
+        "exitCode": 0,
+        "parsed": {
+          "ok": true,
+          "check": "leads-bulk-retention-scheduler-health",
+          "endpoint": "local-fallback",
+          "severity": "healthy",
+          "reasons": [],
+          "metrics": {
+            "statusAgeMinutes": 44,
+            "runningForMinutes": 44,
+            "consecutiveSkipped": 0,
+            "state": "completed",
+            "hasActiveLock": false,
+            "tenantId": "demo-business-pvt-ltd"
+          },
+          "evaluatedAt": "2026-04-26T10:33:09.869Z",
+          "source": "local-fallback"
+        }
+      }
+    ]
+  }
+}

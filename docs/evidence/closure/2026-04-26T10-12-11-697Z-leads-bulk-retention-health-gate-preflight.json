@@ -1,0 +1,9 @@
+{
+  "check": "leads-bulk-retention-health-gate-preflight-evidence",
+  "capturedAt": "2026-04-26T10:12:11.209Z",
+  "ok": false,
+  "exitCode": 1,
+  "timedOut": true,
+  "timeoutMs": 1,
+  "result": null
+}
