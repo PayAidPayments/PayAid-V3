@@ -1,0 +1,10 @@
+{
+  "check": "social-oauth-connectors-smoke",
+  "capturedAt": "2026-04-25T14:34:54.320Z",
+  "command": "npm run run:social-oauth-smoke-pipeline",
+  "exitCode": 2147483651,
+  "ok": false,
+  "summary": null,
+  "stdout": "",
+  "stderr": "AssignProcessToJobObject: (50) The request is not supported."
+}

@@ -1,0 +1,51 @@
+{
+  "check": "leads-bulk-retention-health-quick-triage-evidence",
+  "capturedAt": "2026-04-25T16:28:28.996Z",
+  "ok": false,
+  "quickTriageExitCode": 1,
+  "quickTriage": {
+    "ok": false,
+    "check": "leads-bulk-retention-health-quick-triage",
+    "evaluatedAt": "2026-04-25T16:28:28.989Z",
+    "probes": [
+      {
+        "timeoutMs": 3000,
+        "ok": false,
+        "exitCode": 1,
+        "parsed": {
+          "ok": false,
+          "check": "leads-bulk-retention-scheduler-health",
+          "message": "Scheduler health check request failed",
+          "endpoint": "http://127.0.0.1:3010/api/activation/bulk-reports/scheduler-status?tenantId=demo-business-pvt-ltd&staleAfterMinutes=180&runningMaxMinutes=180&skipWarnCount=3",
+          "fetchTimeoutMs": 3000,
+          "errorName": "TypeError",
+          "error": "fetch failed",
+          "hint": [
+            "Verify the app serving http://127.0.0.1:3010/api/activation/bulk-reports/scheduler-status?tenantId=demo-business-pvt-ltd&staleAfterMinutes=180&runningMaxMinutes=180&skipWarnCount=3 is running and reachable.",
+            "If this endpoint is in the leads app, ensure `apps/leads` is running on the expected port.",
+            "You can tune timeout via LEADS_BULK_RETENTION_HEALTH_FETCH_TIMEOUT_MS."
+          ]
+        }
+      },
+      {
+        "timeoutMs": 5000,
+        "ok": false,
+        "exitCode": 1,
+        "parsed": {
+          "ok": false,
+          "check": "leads-bulk-retention-scheduler-health",
+          "message": "Scheduler health check request failed",
+          "endpoint": "http://127.0.0.1:3010/api/activation/bulk-reports/scheduler-status?tenantId=demo-business-pvt-ltd&staleAfterMinutes=180&runningMaxMinutes=180&skipWarnCount=3",
+          "fetchTimeoutMs": 5000,
+          "errorName": "TypeError",
+          "error": "fetch failed",
+          "hint": [
+            "Verify the app serving http://127.0.0.1:3010/api/activation/bulk-reports/scheduler-status?tenantId=demo-business-pvt-ltd&staleAfterMinutes=180&runningMaxMinutes=180&skipWarnCount=3 is running and reachable.",
+            "If this endpoint is in the leads app, ensure `apps/leads` is running on the expected port.",
+            "You can tune timeout via LEADS_BULK_RETENTION_HEALTH_FETCH_TIMEOUT_MS."
+          ]
+        }
+      }
+    ]
+  }
+}

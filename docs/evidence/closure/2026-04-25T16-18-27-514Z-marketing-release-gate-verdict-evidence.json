@@ -1,0 +1,135 @@
+{
+  "check": "marketing-release-gate-verdict-evidence",
+  "capturedAt": "2026-04-25T16:18:27.514Z",
+  "command": "npm run run:marketing-release-gate-verdict-evidence",
+  "pipeline": {
+    "exitCode": 1,
+    "ok": false,
+    "parsed": {
+      "check": "marketing-release-gate-pipeline",
+      "overallOk": false,
+      "verdictReason": "failed_required_step",
+      "stepTimeoutDefaults": {
+        "global": 60000,
+        "socialSmokeEvidence": 1,
+        "socialSmokeHandoffSnippet": 60000,
+        "marketingClosurePackStrict": 60000,
+        "markerHelpersSuite": 60000,
+        "markerGateVerifier": 60000,
+        "marketingGateProfileMatrixEvidence": 60000
+      },
+      "includeMarkerHelpers": true,
+      "markerHelpersWarningOnly": false,
+      "includeMarkerVerifier": true,
+      "markerVerifierWarningOnly": true,
+      "includeMatrixEvidence": true,
+      "matrixEvidenceWarningOnly": false,
+      "skipOptionalAfterFailure": true,
+      "steps": [
+        {
+          "label": "social-smoke-evidence",
+          "ok": false,
+          "effectiveOk": false,
+          "warningOnly": false,
+          "skipped": false,
+          "skipReason": null,
+          "exitCode": 1,
+          "elapsedMs": 7,
+          "timeoutMs": 1,
+          "timedOut": true,
+          "command": "c:\\Users\\phani\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\helpers\\node.exe scripts/run-social-oauth-smoke-evidence.mjs"
+        },
+        {
+          "label": "social-smoke-handoff-snippet",
+          "ok": true,
+          "effectiveOk": true,
+          "warningOnly": false,
+          "skipped": false,
+          "skipReason": null,
+          "exitCode": 0,
+          "elapsedMs": 55,
+          "timeoutMs": 60000,
+          "timedOut": false,
+          "command": "c:\\Users\\phani\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\helpers\\node.exe scripts/generate-social-oauth-smoke-handoff-snippet.mjs"
+        },
+        {
+          "label": "marketing-closure-pack-strict",
+          "ok": false,
+          "effectiveOk": false,
+          "warningOnly": false,
+          "skipped": false,
+          "skipReason": null,
+          "exitCode": 1,
+          "elapsedMs": 368,
+          "timeoutMs": 60000,
+          "timedOut": false,
+          "command": "c:\\Users\\phani\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\helpers\\node.exe scripts/run-marketing-release-closure-pack.mjs"
+        },
+        {
+          "label": "marker-helpers-suite",
+          "ok": null,
+          "effectiveOk": true,
+          "warningOnly": false,
+          "skipped": true,
+          "skipReason": "skipped_optional_after_prior_failure",
+          "exitCode": null,
+          "elapsedMs": 0,
+          "timeoutMs": 60000,
+          "timedOut": false,
+          "command": "c:\\Users\\phani\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\helpers\\node.exe scripts/run-marker-helpers-suite.mjs"
+        },
+        {
+          "label": "marker-gate-verifier",
+          "ok": null,
+          "effectiveOk": true,
+          "warningOnly": true,
+          "skipped": true,
+          "skipReason": "skipped_optional_after_prior_failure",
+          "exitCode": null,
+          "elapsedMs": 0,
+          "timeoutMs": 60000,
+          "timedOut": false,
+          "command": "c:\\Users\\phani\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\helpers\\node.exe scripts/verify-marketing-release-gate-marker.mjs"
+        },
+        {
+          "label": "marketing-gate-profile-matrix-evidence",
+          "ok": null,
+          "effectiveOk": true,
+          "warningOnly": false,
+          "skipped": true,
+          "skipReason": "skipped_optional_after_prior_failure",
+          "exitCode": null,
+          "elapsedMs": 0,
+          "timeoutMs": 60000,
+          "timedOut": false,
+          "command": "c:\\Users\\phani\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\helpers\\node.exe scripts/run-marketing-release-gate-profile-matrix-evidence.mjs"
+        }
+      ]
+    },
+    "stdout": "{\n  \"check\": \"marketing-release-gate-pipeline\",\n  \"overallOk\": false,\n  \"verdictReason\": \"failed_required_step\",\n  \"stepTimeoutDefaults\": {\n    \"global\": 60000,\n    \"socialSmokeEvidence\": 1,\n    \"socialSmokeHandoffSnippet\": 60000,\n    \"marketingClosurePackStrict\": 60000,\n    \"markerHelpersSuite\": 60000,\n    \"markerGateVerifier\": 60000,\n    \"marketingGateProfileMatrixEvidence\": 60000\n  },\n  \"includeMarkerHelpers\": true,\n  \"markerHelpersWarningOnly\": false,\n  \"includeMarkerVerifier\": true,\n  \"markerVerifierWarningOnly\": true,\n  \"includeMatrixEvidence\": true,\n  \"matrixEvidenceWarningOnly\": false,\n  \"skipOptionalAfterFailure\": true,\n  \"steps\": [\n    {\n      \"label\": \"social-smoke-evidence\",\n      \"ok\": false,\n      \"effectiveOk\": false,\n      \"warningOnly\": false,\n      \"skipped\": false,\n      \"skipReason\": null,\n      \"exitCode\": 1,\n      \"elapsedMs\": 7,\n      \"timeoutMs\": 1,\n      \"timedOut\": true,\n      \"command\": \"c:\\\\Users\\\\phani\\\\AppData\\\\Local\\\\Programs\\\\cursor\\\\resources\\\\app\\\\resources\\\\helpers\\\\node.exe scripts/run-social-oauth-smoke-evidence.mjs\"\n    },\n    {\n      \"label\": \"social-smoke-handoff-snippet\",\n      \"ok\": true,\n      \"effectiveOk\": true,\n      \"warningOnly\": false,\n      \"skipped\": false,\n      \"skipReason\": null,\n      \"exitCode\": 0,\n      \"elapsedMs\": 55,\n      \"timeoutMs\": 60000,\n      \"timedOut\": false,\n      \"command\": \"c:\\\\Users\\\\phani\\\\AppData\\\\Local\\\\Programs\\\\cursor\\\\resources\\\\app\\\\resources\\\\helpers\\\\node.exe scripts/generate-social-oauth-smoke-handoff-snippet.mjs\"\n    },\n    {\n      \"label\": \"marketing-closure-pack-strict\",\n      \"ok\": false,\n      \"effectiveOk\": false,\n      \"warningOnly\": false,\n      \"skipped\": false,\n      \"skipReason\": null,\n      \"exitCode\": 1,\n      \"elapsedMs\": 368,\n      \"timeoutMs\": 60000,\n      \"timedOut\": false,\n      \"command\": \"c:\\\\Users\\\\phani\\\\AppData\\\\Local\\\\Programs\\\\cursor\\\\resources\\\\app\\\\resources\\\\helpers\\\\node.exe scripts/run-marketing-release-closure-pack.mjs\"\n    },\n    {\n      \"label\": \"marker-helpers-suite\",\n      \"ok\": null,\n      \"effectiveOk\": true,\n      \"warningOnly\": false,\n      \"skipped\": true,\n      \"skipReason\": \"skipped_optional_after_prior_failure\",\n      \"exitCode\": null,\n      \"elapsedMs\": 0,\n      \"timeoutMs\": 60000,\n      \"timedOut\": false,\n      \"command\": \"c:\\\\Users\\\\phani\\\\AppData\\\\Local\\\\Programs\\\\cursor\\\\resources\\\\app\\\\resources\\\\helpers\\\\node.exe scripts/run-marker-helpers-suite.mjs\"\n    },\n    {\n      \"label\": \"marker-gate-verifier\",\n      \"ok\": null,\n      \"effectiveOk\": true,\n      \"warningOnly\": true,\n      \"skipped\": true,\n      \"skipReason\": \"skipped_optional_after_prior_failure\",\n      \"exitCode\": null,\n      \"elapsedMs\": 0,\n      \"timeoutMs\": 60000,\n      \"timedOut\": false,\n      \"command\": \"c:\\\\Users\\\\phani\\\\AppData\\\\Local\\\\Programs\\\\cursor\\\\resources\\\\app\\\\resources\\\\helpers\\\\node.exe scripts/verify-marketing-release-gate-marker.mjs\"\n    },\n    {\n      \"label\": \"marketing-gate-profile-matrix-evidence\",\n      \"ok\": null,\n      \"effectiveOk\": true,\n      \"warningOnly\": false,\n      \"skipped\": true,\n      \"skipReason\": \"skipped_optional_after_prior_failure\",\n      \"exitCode\": null,\n      \"elapsedMs\": 0,\n      \"timeoutMs\": 60000,\n      \"timedOut\": false,\n      \"command\": \"c:\\\\Users\\\\phani\\\\AppData\\\\Local\\\\Programs\\\\cursor\\\\resources\\\\app\\\\resources\\\\helpers\\\\node.exe scripts/run-marketing-release-gate-profile-matrix-evidence.mjs\"\n    }\n  ]\n}",
+    "stderr": "# Failed step stderr\nStep \"social-smoke-evidence\" timed out after 1ms."
+  },
+  "explainer": {
+    "exitCode": 0,
+    "ok": true,
+    "parsed": {
+      "ok": true,
+      "check": "marketing-release-gate-verdict-explainer",
+      "overallOk": false,
+      "verdictReason": "failed_required_step",
+      "summary": "Required release-gate stage failed; release should remain blocked.",
+      "severity": "blocking",
+      "failedStep": {
+        "label": "social-smoke-evidence",
+        "timedOut": true,
+        "skipReason": null
+      },
+      "nextSteps": [
+        "Increase step timeout and retry: set step-specific timeout for \"social-smoke-evidence\".",
+        "Re-run gate pipeline after fix."
+      ]
+    },
+    "stdout": "{\n  \"ok\": true,\n  \"check\": \"marketing-release-gate-verdict-explainer\",\n  \"overallOk\": false,\n  \"verdictReason\": \"failed_required_step\",\n  \"summary\": \"Required release-gate stage failed; release should remain blocked.\",\n  \"severity\": \"blocking\",\n  \"failedStep\": {\n    \"label\": \"social-smoke-evidence\",\n    \"timedOut\": true,\n    \"skipReason\": null\n  },\n  \"nextSteps\": [\n    \"Increase step timeout and retry: set step-specific timeout for \\\"social-smoke-evidence\\\".\",\n    \"Re-run gate pipeline after fix.\"\n  ]\n}",
+    "stderr": ""
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "check": "marketing-release-gate-profile-matrix",
+  "capturedAt": "2026-04-25T15:40:17.509Z",
+  "command": "npm run run:marketing-release-gate:profile:matrix",
+  "exitCode": 3221226505,
+  "ok": false,
+  "summary": null,
+  "stdout": "",
+  "stderr": ""
+}

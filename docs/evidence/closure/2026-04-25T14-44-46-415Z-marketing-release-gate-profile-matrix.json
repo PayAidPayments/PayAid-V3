@@ -1,0 +1,53 @@
+{
+  "check": "marketing-release-gate-profile-matrix",
+  "capturedAt": "2026-04-25T14:44:46.415Z",
+  "command": "npm run run:marketing-release-gate:profile:matrix",
+  "exitCode": 1,
+  "ok": false,
+  "summary": {
+    "check": "marketing-release-gate-profile-matrix",
+    "overallOk": false,
+    "profiles": [
+      "baseline",
+      "hardened",
+      "audit"
+    ],
+    "results": [
+      {
+        "profile": "baseline",
+        "ok": false,
+        "exitCode": 2147483651,
+        "elapsedMs": 16270,
+        "pipelineOverallOk": null,
+        "includeMarkerHelpers": null,
+        "includeMarkerVerifier": null,
+        "markerHelpersWarningOnly": null,
+        "markerVerifierWarningOnly": null
+      },
+      {
+        "profile": "hardened",
+        "ok": false,
+        "exitCode": 1,
+        "elapsedMs": 19144,
+        "pipelineOverallOk": false,
+        "includeMarkerHelpers": true,
+        "includeMarkerVerifier": true,
+        "markerHelpersWarningOnly": false,
+        "markerVerifierWarningOnly": false
+      },
+      {
+        "profile": "audit",
+        "ok": false,
+        "exitCode": 1,
+        "elapsedMs": 28215,
+        "pipelineOverallOk": false,
+        "includeMarkerHelpers": true,
+        "includeMarkerVerifier": true,
+        "markerHelpersWarningOnly": true,
+        "markerVerifierWarningOnly": true
+      }
+    ]
+  },
+  "stdout": "{\n  \"check\": \"marketing-release-gate-profile-matrix\",\n  \"overallOk\": false,\n  \"profiles\": [\n    \"baseline\",\n    \"hardened\",\n    \"audit\"\n  ],\n  \"results\": [\n    {\n      \"profile\": \"baseline\",\n      \"ok\": false,\n      \"exitCode\": 2147483651,\n      \"elapsedMs\": 16270,\n      \"pipelineOverallOk\": null,\n      \"includeMarkerHelpers\": null,\n      \"includeMarkerVerifier\": null,\n      \"markerHelpersWarningOnly\": null,\n      \"markerVerifierWarningOnly\": null\n    },\n    {\n      \"profile\": \"hardened\",\n      \"ok\": false,\n      \"exitCode\": 1,\n      \"elapsedMs\": 19144,\n      \"pipelineOverallOk\": false,\n      \"includeMarkerHelpers\": true,\n      \"includeMarkerVerifier\": true,\n      \"markerHelpersWarningOnly\": false,\n      \"markerVerifierWarningOnly\": false\n    },\n    {\n      \"profile\": \"audit\",\n      \"ok\": false,\n      \"exitCode\": 1,\n      \"elapsedMs\": 28215,\n      \"pipelineOverallOk\": false,\n      \"includeMarkerHelpers\": true,\n      \"includeMarkerVerifier\": true,\n      \"markerHelpersWarningOnly\": true,\n      \"markerVerifierWarningOnly\": true\n    }\n  ]\n}",
+  "stderr": "# Failed profile stderr\n#\r\n# Fatal JavaScript out of memory: MemoryChunk allocation failed during deserialization.\r\n#\r\n----- Native stack trace -----\r\n\r\n 1: 00007FF6EDB418E7 \r\n 2: 00007FF6EDA120FF \r\n 3: 00007FF6EED11016 \r\n 4: 00007FF6EE6AAEA3 \r\n 5: 00007FF6EE697916 \r\n 6: 00007FF6EE4F4060 \r\n 7: 00007FF6EE4BB081 \r\n 8: 00007FF6EE4BB6A0 \r\n 9: 00007FF6EE4BB3A6 \r\n10: 00007FF6EE4AAE8B \r\n11: 00007FF6EE4AA4BA \r\n12: 00007FF6EE501EA0 \r\n13: 00007FF6EE565F83 \r\n14: 00007FF6EE198FF3 \r\n15: 00007FF6EE6A0A41 \r\n16: 00007FF6EDB8098D \r\n17: 00007FF6EDA4411B \r\n18: 00007FF6EDAECF99 \r\n19: 00007FF6EDAEBCAE \r\n20: 00007FF6ED84B01C \r\n21: 00007FF6EF405E1C \r\n22: 00007FFBB2E8E8D7 BaseThreadInitThunk+23\r\n23: 00007FFBB428C3FC RtlUserThreadStart+44"
+}

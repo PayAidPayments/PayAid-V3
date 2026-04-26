@@ -1,0 +1,62 @@
+# Social OAuth Smoke Evidence
+
+- Captured at: 2026-04-25T14:35:48.385Z
+- Command: `npm run run:social-oauth-smoke-pipeline`
+- Exit code: 2147483651
+- Overall OK: no
+
+## Summary JSON
+
+```json
+{
+  "parseError": "Pipeline output was not valid JSON",
+  "stdout": ""
+}
+```
+
+## stderr
+
+```text
+<--- Last few GCs --->
+
+
+<--- JS stacktrace --->
+
+
+
+#
+# Fatal JavaScript out of memory: MemoryChunk allocation failed during deserialization.
+#
+----- Native stack trace -----
+
+ 1: 00007FF6EDB418E7 
+ 2: 00007FF6EDA120FF 
+ 3: 00007FF6EED11016 
+ 4: 00007FF6EE6AAEA3 
+ 5: 00007FF6EE697916 
+ 6: 00007FF6EE4F4060 
+ 7: 00007FF6EE4BB081 
+ 8: 00007FF6EE4BB6A0 
+ 9: 00007FF6EE4BB122 
+10: 00007FF6EE4E3B9B 
+11: 00007FF6EE4E3E05 
+12: 00007FF6EE4E3F56 
+13: 00007FF6EE506422 
+14: 00007FF6EE1B3B46 
+15: 00007FF6EE1B5472 
+16: 00007FF6EE1B0F65 
+17: 00007FF6EE1B5B0F 
+18: 00007FF6EE4FA068 
+19: 00007FF6EE191110 
+20: 00007FF6EE5663D5 
+21: 00007FF6EE198FF3 
+22: 00007FF6EE6A0A41 
+23: 00007FF6EDB8098D 
+24: 00007FF6EDA4411B 
+25: 00007FF6EDAECF99 
+26: 00007FF6EDAEBCAE 
+27: 00007FF6ED84B01C 
+28: 00007FF6EF405E1C 
+29: 00007FFBB2E8E8D7 BaseThreadInitThunk+23
+30: 00007FFBB428C3FC
+```

@@ -1,0 +1,10 @@
+{
+  "check": "marketing-release-gate-profile-matrix",
+  "capturedAt": "2026-04-25T14:35:48.292Z",
+  "command": "npm run run:marketing-release-gate:profile:matrix",
+  "exitCode": 134,
+  "ok": false,
+  "summary": null,
+  "stdout": "",
+  "stderr": "<--- Last few GCs --->\r\n\r\n\r\n<--- JS stacktrace --->\r\n\r\nFATAL ERROR: Committing semi space failed. Allocation failed - JavaScript heap out of memory\r\n----- Native stack trace -----\r\n\r\n 1: 00007FF6EDB418E7 \r\n 2: 00007FF6EDAA212B \r\n 3: 00007FF6EE6AAE51 \r\n 4: 00007FF6EE697916 \r\n 5: 00007FF6EE4F4060 \r\n 6: 00007FF6EE4ABCBD \r\n 7: 00007FF6EE4FD2A3 \r\n 8: 00007FF6EE4ED12D \r\n 9: 00007FF6EE4E8CE5 \r\n10: 00007FF6EDE7273D"
+}

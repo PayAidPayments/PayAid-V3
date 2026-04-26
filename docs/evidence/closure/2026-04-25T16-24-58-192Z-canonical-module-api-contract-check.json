@@ -1,0 +1,35 @@
+{
+  "check": "canonical-module-api-contract",
+  "timestamp": "2026-04-25T16:24:58.192Z",
+  "overallOk": true,
+  "files": [
+    {
+      "id": "api-modules-route",
+      "file": "apps/dashboard/app/api/modules/route.ts",
+      "ok": true,
+      "missing": []
+    },
+    {
+      "id": "api-industry-route",
+      "file": "apps/dashboard/app/api/industries/[industry]/modules/route.ts",
+      "ok": true,
+      "missing": []
+    },
+    {
+      "id": "api-industry-custom-route",
+      "file": "apps/dashboard/app/api/industries/custom/modules/route.ts",
+      "ok": true,
+      "missing": []
+    },
+    {
+      "id": "api-ai-analyze-industry-route",
+      "file": "apps/dashboard/app/api/ai/analyze-industry/route.ts",
+      "ok": true,
+      "missing": []
+    }
+  ],
+  "notes": [
+    "Static contract check for canonical + legacy-gated fields.",
+    "Use with CANONICAL_MODULE_API_CUTOVER_RUNBOOK during rollout gates."
+  ]
+}

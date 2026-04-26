@@ -1,0 +1,10 @@
+{
+  "check": "marketing-release-gate-profile-matrix",
+  "capturedAt": "2026-04-25T14:33:44.293Z",
+  "command": "npm run run:marketing-release-gate:profile:matrix",
+  "exitCode": 2147483651,
+  "ok": false,
+  "summary": null,
+  "stdout": "",
+  "stderr": "#\r\n# Fatal process out of memory: Re-embedded builtins: set permissions\r\n#\r\n----- Native stack trace -----\r\n\r\n 1: 00007FF6EDB418E7 node::SetCppgcReference+18263\r\n 2: 00007FF6EDA120FF node::TriggerNodeReport+71583\r\n 3: 00007FF6EED11016 v8::base::FatalOOM+54\r\n 4: 00007FF6EE6AAEA3 v8::Isolate::ReportExternalAllocationLimitReached+147\r\n 5: 00007FF6EE697916 v8::Function::Experimental_IsNopFunction+3302\r\n 6: 00007FF6EE540E5A v8::CppHeap::wrapper_descriptor+55594\r\n 7: 00007FF6EE567F6A v8::base::CPU::has_sse41+82026\r\n 8: 00007FF6EE565F4F v8::base::CPU::has_sse41+73807\r\n 9: 00007FF6EE198FF3 v8::base::AddressSpaceReservation::AddressSpaceReservation+12051\r\n10: 00007FF6EE6A0A41 v8::Isolate::Initialize+433\r\n11: 00007FF6EDB8098D node::NewContext+397\r\n12: 00007FF6EDA4411B v8_inspector::protocol::Binary::operator=+128891\r\n13: 00007FF6EDAECF99 node::Start+4873\r\n14: 00007FF6EDAEBCAE node::Start+30\r\n15: 00007FF6ED84B01C AES_cbc_encrypt+151564\r\n16: 00007FF6EF405E1C inflateValidate+40748\r\n17: 00007FFBB2E8E8D7 BaseThreadInitThunk+23\r\n18: 00007FFBB428C3FC RtlUserThreadStart+44"
+}

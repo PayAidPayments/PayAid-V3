@@ -1,0 +1,10 @@
+{
+  "check": "marketing-release-gate-profile-matrix",
+  "capturedAt": "2026-04-25T15:40:05.415Z",
+  "command": "npm run run:marketing-release-gate:profile:matrix",
+  "exitCode": 2147483651,
+  "ok": false,
+  "summary": null,
+  "stdout": "",
+  "stderr": "AssignProcessToJobObject: (50) The request is not supported."
+}

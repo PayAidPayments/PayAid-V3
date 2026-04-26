@@ -1,0 +1,93 @@
+# Canonical module API readiness verdict
+
+- Timestamp: 2026-04-25T15:30:29.511Z
+- Overall: fail
+- Commands: fail
+- Checklist: fail (2 unchecked)
+- JSON artifact: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-25T15-30-29-511Z-canonical-module-api-readiness-verdict.json`
+
+## Command results
+
+- PASS `npm run check:canonical-module-api-contract` (36569ms, timeout=120000ms)
+- FAIL `npm run check:canonical-module-api-post-cutover` (33801ms, timeout=120000ms)
+- FAIL `npm run check:canonical-module-api-response-snapshots` (21199ms, timeout=120000ms)
+- FAIL `npm run check:canonical-module-api-consumer-usage` (197422ms, timeout=300000ms)
+
+## Unchecked checklist items
+
+- (16) `npm run check:canonical-module-api-readiness-verdict` passes (commands + checklist consolidated verdict).
+- (58) Post-enable 24-hour monitoring completed with no critical issues.
+
+## Raw payload
+
+```json
+{
+  "check": "canonical-module-api-readiness-verdict",
+  "timestamp": "2026-04-25T15:30:29.511Z",
+  "overallOk": false,
+  "commandsOk": false,
+  "checklistOk": false,
+  "commandTimeoutMsDefault": 120000,
+  "commandResults": [
+    {
+      "label": "canonical-contract",
+      "command": "npm run check:canonical-module-api-contract",
+      "ok": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "timeoutMs": 120000,
+      "elapsedMs": 36569,
+      "outputExcerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-contract\n> node scripts/check-canonical-module-api-contract.mjs\n\n{\n  \"overallOk\": true,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T15-31-02-632Z-canonical-module-api-contract-check.json\",\n  \"mdPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-25T15-31-02-632Z-canonical-module-api-contract-check.md\"\n}\n\n"
+    },
+    {
+      "label": "canonical-post-cutover",
+      "command": "npm run check:canonical-module-api-post-cutover",
+      "ok": false,
+      "exitCode": 4294963202,
+      "timedOut": false,
+      "timeoutMs": 120000,
+      "elapsedMs": 33801,
+      "outputExcerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-post-cutover\n> node scripts/check-canonical-module-api-post-cutover.mjs\n\n\n"
+    },
+    {
+      "label": "canonical-response-snapshots",
+      "command": "npm run check:canonical-module-api-response-snapshots",
+      "ok": false,
+      "exitCode": 4294963202,
+      "timedOut": false,
+      "timeoutMs": 120000,
+      "elapsedMs": 21199,
+      "outputExcerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-response-snapshots\n> node scripts/check-canonical-module-api-response-snapshots.mjs\n\n\n"
+    },
+    {
+      "label": "canonical-consumer-usage",
+      "command": "npm run check:canonical-module-api-consumer-usage",
+      "ok": false,
+      "exitCode": 1,
+      "timedOut": false,
+      "timeoutMs": 300000,
+      "elapsedMs": 197422,
+      "outputExcerpt": "\n> payaid-v3@0.1.0 check:canonical-module-api-consumer-usage\n> node scripts/check-canonical-module-api-consumer-usage.mjs\n\n\nnode:fs:440\r\n    return binding.readFileUtf8(path, stringToFlags(options.flag));\r\n                   ^\r\n\r\nError: UNKNOWN: unknown error, read\r\n    at readFileSync (node:fs:440:20)\r\n    at file:///D:/Cursor%20Projects/PayAid%20V3/scripts/check-canonical-module-api-consumer-usage.mjs:84:18\r\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\r\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)\r\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {\r\n  errno: -4094,\r\n  code: 'UNKNOWN',\r\n  syscall: 'read'\r\n}\r\n\r\nNode.js v22.22.0\r\n"
+    }
+  ],
+  "checklist": {
+    "path": "docs/CANONICAL_MODULE_API_CONSUMER_READINESS_CHECKLIST.md",
+    "checkedCount": 23,
+    "uncheckedCount": 2,
+    "uncheckedItems": [
+      {
+        "line": 16,
+        "text": "`npm run check:canonical-module-api-readiness-verdict` passes (commands + checklist consolidated verdict)."
+      },
+      {
+        "line": 58,
+        "text": "Post-enable 24-hour monitoring completed with no critical issues."
+      }
+    ]
+  },
+  "notes": [
+    "Consolidates canonical contract checks + post-cutover guard + checklist status.",
+    "Use as final readiness gate before enabling CANONICAL_MODULE_API_ONLY=1 in production."
+  ]
+}
+```

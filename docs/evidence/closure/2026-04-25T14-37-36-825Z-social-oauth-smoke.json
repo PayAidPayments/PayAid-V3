@@ -1,0 +1,10 @@
+{
+  "check": "social-oauth-connectors-smoke",
+  "capturedAt": "2026-04-25T14:37:36.825Z",
+  "command": "npm run run:social-oauth-smoke-pipeline",
+  "exitCode": 1,
+  "ok": false,
+  "summary": null,
+  "stdout": "",
+  "stderr": ""
+}

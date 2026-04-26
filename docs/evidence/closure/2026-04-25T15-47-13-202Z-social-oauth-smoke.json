@@ -1,0 +1,10 @@
+{
+  "check": "social-oauth-connectors-smoke",
+  "capturedAt": "2026-04-25T15:47:13.202Z",
+  "command": "npm run run:social-oauth-smoke-pipeline",
+  "exitCode": 134,
+  "ok": false,
+  "summary": null,
+  "stdout": "",
+  "stderr": "#  C:\\WINDOWS\\system32\\cmd.exe [63208]: class std::unique_ptr<void *,struct std::default_delete<void *> > __cdecl node::WorkerThreadsTaskRunner::DelayedTaskScheduler::Start(void) at c:\\ws\\src\\node_platform.cc:104\r\n  #  Assertion failed: (0) == (uv_thread_create(t.get(), start_thread, this))\r\n\r\n----- Native stack trace -----\r\n\r\n 1: 00007FF64EA318E7 node::SetCppgcReference+18263\r\n 2: 00007FF64E98F801 v8::base::CPU::num_virtual_address_bits+92545\r\n 3: 00007FF64E903656 node::TriggerNodeReport+77046\r\n 4: 00007FF64E902FDC node::TriggerNodeReport+75388\r\n 5: 00007FF64E9D834E node_api_get_module_file_name+9614\r\n 6: 00007FF64E9DAA07 node::InitializeOncePerProcess+2487\r\n 7: 00007FF64E9DCB2B node::Start+3739\r\n 8: 00007FF64E9DBCAE node::Start+30\r\n 9: 00007FF64E73B01C AES_cbc_encrypt+151564\r\n10: 00007FF6502F5E1C inflateValidate+40748\r\n11: 00007FF9F591E8D7 BaseThreadInitThunk+23\r\n12: 00007FF9F6BAC3FC RtlUserThreadStart+44"
+}

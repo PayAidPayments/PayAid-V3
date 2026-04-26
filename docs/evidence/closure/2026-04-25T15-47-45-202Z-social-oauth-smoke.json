@@ -1,0 +1,10 @@
+{
+  "check": "social-oauth-connectors-smoke",
+  "capturedAt": "2026-04-25T15:47:45.202Z",
+  "command": "npm run run:social-oauth-smoke-pipeline",
+  "exitCode": 2147483651,
+  "ok": false,
+  "summary": null,
+  "stdout": "",
+  "stderr": "<--- Last few GCs --->\r\n\r\n\r\n<--- JS stacktrace --->\r\n\r\n\r\n\r\n#\r\n# Fatal JavaScript out of memory: MemoryChunk allocation failed during deserialization.\r\n#\r\n----- Native stack trace -----\r\n\r\n 1: 00007FF64EA318E7 \r\n 2: 00007FF64E9020FF \r\n 3: 00007FF64FC01016 \r\n 4: 00007FF64F59AEA3 \r\n 5: 00007FF64F587916 \r\n 6: 00007FF64F3E4060 \r\n 7: 00007FF64F3AB081 \r\n 8: 00007FF64F3AB6A0 \r\n 9: 00007FF64F3AB3A6 \r\n10: 00007FF64F390FEC \r\n11: 00007FF64F3D1B96 \r\n12: 00007FF64F3D1820 \r\n13: 00007FF64F3D0F08 \r\n14: 00007FF64F3D0681 \r\n15: 00007FF64F0A3B82 \r\n16: 00007FF64F0A5472 \r\n17: 00007FF64F0A0F65 \r\n18: 00007FF64F0A5B0F \r\n19: 00007FF64F3EA068 \r\n20: 00007FF64F081110 \r\n21: 00007FF64F4563D5 \r\n22: 00007FF64F088FF3 \r\n23: 00007FF64F590A41 \r\n24: 00007FF64EA7098D \r\n25: 00007FF64E93411B \r\n26: 00007FF64E9DCF99 \r\n27: 00007FF64E9DBCAE \r\n28: 00007FF64E73B01C \r\n29: 00007FF6502F5E1C \r\n30: 00007FF9F591E8D7 BaseThreadInitThunk+23\r\n31: 00007FF9F6BAC3FC RtlUserThreadStart+44"
+}

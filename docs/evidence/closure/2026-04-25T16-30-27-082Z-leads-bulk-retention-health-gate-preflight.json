@@ -1,0 +1,34 @@
+{
+  "check": "leads-bulk-retention-health-gate-preflight-evidence",
+  "capturedAt": "2026-04-25T16:30:26.870Z",
+  "ok": false,
+  "exitCode": 1,
+  "result": {
+    "ok": false,
+    "check": "leads-bulk-retention-health-gate-with-preflight",
+    "blocked": true,
+    "reason": "scheduler_health_preflight_failed",
+    "preflight": {
+      "ok": false,
+      "exitCode": 1,
+      "parsed": {
+        "ok": false,
+        "check": "leads-bulk-retention-scheduler-health",
+        "message": "Scheduler health check request failed",
+        "endpoint": "http://127.0.0.1:3010/api/activation/bulk-reports/scheduler-status?tenantId=demo-business-pvt-ltd&staleAfterMinutes=180&runningMaxMinutes=180&skipWarnCount=3",
+        "fetchTimeoutMs": 3000,
+        "errorName": "TypeError",
+        "error": "fetch failed",
+        "hint": [
+          "Verify the app serving http://127.0.0.1:3010/api/activation/bulk-reports/scheduler-status?tenantId=demo-business-pvt-ltd&staleAfterMinutes=180&runningMaxMinutes=180&skipWarnCount=3 is running and reachable.",
+          "If this endpoint is in the leads app, ensure `apps/leads` is running on the expected port.",
+          "You can tune timeout via LEADS_BULK_RETENTION_HEALTH_FETCH_TIMEOUT_MS."
+        ]
+      }
+    },
+    "suggestedCommands": [
+      "npm run check:leads-bulk-retention-scheduler-health:quick-triage:next-action",
+      "npm run run:leads-bulk-retention-health-gate-pipeline"
+    ]
+  }
+}

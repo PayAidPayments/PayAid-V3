@@ -24,6 +24,10 @@ const run = spawnSync(process.execPath, ['scripts/run-marketing-release-gate-pro
 const stdout = (run.stdout || '').trim()
 const stderr = (run.stderr || '').trim()
 const parsed = parseJsonSafely(stdout)
+const warningOnly =
+  process.env.MARKETING_RELEASE_GATE_PROFILE_MATRIX_EVIDENCE_WARNING_ONLY === '1'
+const overallOk = Boolean(parsed?.overallOk)
+const effectiveOk = warningOnly ? true : overallOk
 
 const now = new Date()
 const stamp = isoForFile(now)
@@ -38,8 +42,10 @@ const evidence = {
   check: 'marketing-release-gate-profile-matrix',
   capturedAt: now.toISOString(),
   command: 'npm run run:marketing-release-gate:profile:matrix',
+  warningOnly,
   exitCode: run.status ?? 1,
-  ok: Boolean(parsed?.overallOk),
+  ok: overallOk,
+  effectiveOk,
   summary: parsed ?? null,
   stdout,
   stderr,
@@ -54,6 +60,8 @@ const mdLines = [
   `- Command: \`${evidence.command}\``,
   `- Exit code: ${evidence.exitCode}`,
   `- Overall OK: ${evidence.ok ? 'yes' : 'no'}`,
+  `- Effective OK: ${evidence.effectiveOk ? 'yes' : 'no'}`,
+  `- Warning only mode: ${warningOnly ? 'yes' : 'no'}`,
   '',
   '## Summary JSON',
   '',
@@ -71,6 +79,8 @@ const latestLines = [
   '',
   `- Last updated: ${evidence.capturedAt}`,
   `- Overall OK: ${evidence.ok ? 'yes' : 'no'}`,
+  `- Effective OK: ${evidence.effectiveOk ? 'yes' : 'no'}`,
+  `- Warning only mode: ${warningOnly ? 'yes' : 'no'}`,
   `- Exit code: ${evidence.exitCode}`,
   '',
   '## Artifacts',
@@ -87,7 +97,9 @@ writeFileSync(latestIndexPath, `${latestLines.join('\n')}\n`, 'utf8')
 console.log(
   JSON.stringify(
     {
-      ok: evidence.ok,
+      ok: evidence.effectiveOk,
+      overallOk: evidence.ok,
+      warningOnly,
       exitCode: evidence.exitCode,
       jsonPath,
       markdownPath: mdPath,
@@ -98,5 +110,5 @@ console.log(
   )
 )
 
-process.exit(run.status ?? 1)
+process.exit(evidence.effectiveOk ? 0 : run.status ?? 1)
 

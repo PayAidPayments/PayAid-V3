@@ -1,0 +1,52 @@
+{
+  "check": "canonical-monitoring-complete-check",
+  "timestamp": "2026-04-25T16:23:34.007Z",
+  "requiredLabels": [
+    "tplus8",
+    "tplus16",
+    "tplus24"
+  ],
+  "mode": "executed",
+  "overallOk": false,
+  "cutoverStart": {
+    "source": "signoff-doc",
+    "ms": 1777104000000,
+    "raw": "2026-04-25T08:00:00Z"
+  },
+  "checkpoints": [
+    {
+      "label": "tplus8",
+      "present": true,
+      "artifact": "docs/evidence/closure/2026-04-25T09-00-26-586Z-canonical-post-enable-monitor-checkpoint-tplus8.md",
+      "artifactTimestampUtc": "2026-04-25T09:00:26.586Z",
+      "requiredHours": 8,
+      "eligibleAtUtc": "2026-04-25T16:00:00.000Z",
+      "elapsedEligible": false
+    },
+    {
+      "label": "tplus16",
+      "present": false,
+      "artifact": null,
+      "artifactTimestampUtc": null,
+      "requiredHours": 16,
+      "eligibleAtUtc": "2026-04-26T00:00:00.000Z",
+      "elapsedEligible": false
+    },
+    {
+      "label": "tplus24",
+      "present": false,
+      "artifact": null,
+      "artifactTimestampUtc": null,
+      "requiredHours": 24,
+      "eligibleAtUtc": "2026-04-26T08:00:00.000Z",
+      "elapsedEligible": false
+    }
+  ],
+  "missingLabels": [
+    "tplus16",
+    "tplus24"
+  ],
+  "tooEarlyLabels": [
+    "tplus8"
+  ]
+}

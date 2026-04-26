@@ -1,0 +1,62 @@
+# Marketing Release Gate Profile Matrix Evidence
+
+- Captured at: 2026-04-25T15:43:33.155Z
+- Command: `npm run run:marketing-release-gate:profile:matrix`
+- Exit code: 2147483651
+- Overall OK: no
+
+## Summary JSON
+
+```json
+{
+  "parseError": "Matrix output was not valid JSON",
+  "stdout": ""
+}
+```
+
+## stderr
+
+```text
+<--- Last few GCs --->
+
+
+<--- JS stacktrace --->
+
+
+
+#
+# Fatal JavaScript out of memory: MemoryChunk allocation failed during deserialization.
+#
+----- Native stack trace -----
+
+ 1: 00007FF64EA318E7 
+ 2: 00007FF64E9020FF 
+ 3: 00007FF64FC01016 
+ 4: 00007FF64F59AEA3 
+ 5: 00007FF64F587916 
+ 6: 00007FF64F3E4060 
+ 7: 00007FF64F3AB081 
+ 8: 00007FF64F3AB6A0 
+ 9: 00007FF64F3AB122 
+10: 00007FF64F3D3B9B 
+11: 00007FF64F3D3E05 
+12: 00007FF64F3D3F56 
+13: 00007FF64F3F6422 
+14: 00007FF64F0A3B46 
+15: 00007FF64F0A5472 
+16: 00007FF64F0A0F65 
+17: 00007FF64F0A5B0F 
+18: 00007FF64F3EA068 
+19: 00007FF64F081110 
+20: 00007FF64F4563D5 
+21: 00007FF64F088FF3 
+22: 00007FF64F590A41 
+23: 00007FF64EA7098D 
+24: 00007FF64E93411B 
+25: 00007FF64E9DCF99 
+26: 00007FF64E9DBCAE 
+27: 00007FF64E73B01C 
+28: 00007FF6502F5E1C 
+29: 00007FF9F591E8D7 BaseThreadInitThunk+23
+30: 00007FF9F6BAC3FC RtlUserThreadStart+44
+```

@@ -1,0 +1,10 @@
+{
+  "check": "social-oauth-connectors-smoke",
+  "capturedAt": "2026-04-25T15:37:09.965Z",
+  "command": "npm run run:social-oauth-smoke-pipeline",
+  "exitCode": 134,
+  "ok": false,
+  "summary": null,
+  "stdout": "",
+  "stderr": "#  C:\\WINDOWS\\system32\\cmd.exe [51700]: class std::shared_ptr<class node::InitializationResultImpl> __cdecl node::InitializeOncePerProcessInternal(const class std::vector<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::allocator<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > > > &,enum node::ProcessInitializationFlags::Flags) at c:\\ws\\src\\node.cc:1266\r\n  #  Assertion failed: ncrypto::CSPRNG(nullptr, 0)\r\n\r\n----- Native stack trace -----\r\n\r\n 1: 00007FF64EA318E7 \r\n 2: 00007FF64E98F801 \r\n 3: 00007FF64E9DAB91 \r\n 4: 00007FF64E9DCB2B \r\n 5: 00007FF64E9DBCAE \r\n 6: 00007FF64E73B01C \r\n 7: 00007FF6502F5E1C \r\n 8: 00007FF9F591E8D7 BaseThreadInitThunk+23\r\n 9: 00007FF9F6BAC3FC RtlUserThreadStart+44"
+}
