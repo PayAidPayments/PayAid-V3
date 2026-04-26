@@ -51,6 +51,14 @@ function extractErrorText(json, text) {
     .join(' | ')
 }
 
+function extractBuildRef(res, json) {
+  return (
+    res.headers.get('x-payaid-build-ref') ||
+    json?.buildRef ||
+    'unknown'
+  )
+}
+
 function isSchemaMismatch(text) {
   return /logotype|column.+logoType.+does not exist|invalid prisma\.logo\.create/i.test(text || '')
 }
@@ -81,6 +89,7 @@ async function callApi({ key, path, method, body }) {
       status: res.status,
       ok: res.ok,
       elapsedMs: Date.now() - startedAt,
+      buildRef: extractBuildRef(res, json),
       errorText,
       schemaMismatchDetected: isSchemaMismatch(errorText),
     }

@@ -5,6 +5,12 @@ import { ensureLogoSchemaCompatibility } from '@/lib/logo/ensure-logo-schema'
 import { z } from 'zod'
 import { generateImage } from '@/lib/ai/image-generation'
 
+const API_BUILD_REF =
+  process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ||
+  process.env.NEXT_PUBLIC_GIT_COMMIT_SHA ||
+  process.env.NEXT_PUBLIC_BUILD_SHA ||
+  'unknown'
+
 const createLogoSchema = z.object({
   businessName: z.string().min(1),
   industry: z.string().optional(),
@@ -35,12 +41,15 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json({ logos })
+    return NextResponse.json(
+      { logos, buildRef: API_BUILD_REF },
+      { headers: { 'x-payaid-build-ref': API_BUILD_REF } }
+    )
   } catch (error) {
     console.error('Get logos error:', error)
     return NextResponse.json(
-      { error: 'Failed to get logos' },
-      { status: 500 }
+      { error: 'Failed to get logos', buildRef: API_BUILD_REF },
+      { status: 500, headers: { 'x-payaid-build-ref': API_BUILD_REF } }
     )
   }
 }
@@ -103,8 +112,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         ...logo,
         status: 'COMPLETED',
+        buildRef: API_BUILD_REF,
         variations,
-      }, { status: 201 })
+      }, { status: 201, headers: { 'x-payaid-build-ref': API_BUILD_REF } })
     } catch (error) {
       // Update logo status to failed
       await prisma.logo.update({
@@ -124,8 +134,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
+        { error: 'Validation error', buildRef: API_BUILD_REF, details: error.errors },
+        { status: 400, headers: { 'x-payaid-build-ref': API_BUILD_REF } }
       )
     }
 
@@ -157,8 +167,9 @@ export async function POST(request: NextRequest) {
         error: 'Unable to generate logo right now.',
         hint,
         diagnosticsId,
+        buildRef: API_BUILD_REF,
       },
-      { status: 500 }
+      { status: 500, headers: { 'x-payaid-build-ref': API_BUILD_REF } }
     )
   }
 }

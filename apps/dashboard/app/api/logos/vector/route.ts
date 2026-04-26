@@ -5,6 +5,12 @@ import { ensureLogoSchemaCompatibility } from '@/lib/logo/ensure-logo-schema'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 
+const API_BUILD_REF =
+  process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ||
+  process.env.NEXT_PUBLIC_GIT_COMMIT_SHA ||
+  process.env.NEXT_PUBLIC_BUILD_SHA ||
+  'unknown'
+
 const vectorLogoSchema = z.object({
   businessName: z.string().min(1).max(100),
   industry: z.string().optional(),
@@ -168,9 +174,10 @@ export async function POST(request: NextRequest) {
         logo,
         brandKitAssetId,
         svg: svgData,
+        buildRef: API_BUILD_REF,
         message: 'Vector logo generated successfully',
       },
-      { status: 201 }
+      { status: 201, headers: { 'x-payaid-build-ref': API_BUILD_REF } }
     )
   } catch (error) {
     console.error('[Vector Logo] Generation error:', error)
@@ -179,18 +186,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Validation error',
+          buildRef: API_BUILD_REF,
           details: error.errors,
         },
-        { status: 400 }
+        { status: 400, headers: { 'x-payaid-build-ref': API_BUILD_REF } }
       )
     }
 
     return NextResponse.json(
       {
         error: 'Failed to generate vector logo',
+        buildRef: API_BUILD_REF,
         message: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500, headers: { 'x-payaid-build-ref': API_BUILD_REF } }
     )
   }
 }
@@ -221,12 +230,15 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json({ logos })
+    return NextResponse.json(
+      { logos, buildRef: API_BUILD_REF },
+      { headers: { 'x-payaid-build-ref': API_BUILD_REF } }
+    )
   } catch (error) {
     console.error('[Vector Logo] List error:', error)
     return NextResponse.json(
-      { error: 'Failed to list vector logos' },
-      { status: 500 }
+      { error: 'Failed to list vector logos', buildRef: API_BUILD_REF },
+      { status: 500, headers: { 'x-payaid-build-ref': API_BUILD_REF } }
     )
   }
 }
