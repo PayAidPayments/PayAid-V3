@@ -44,6 +44,8 @@ const fullPreflight =
   'cross-env LEADS_BULK_RETENTION_INCLUDE_HELPERS_EVIDENCE=1 LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_PREFLIGHT=180000 LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_GATE_PIPELINE=180000 LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_HELPERS_EVIDENCE=180000 node scripts/noop.mjs'
 const fullPreflightEvidence =
   'cross-env LEADS_BULK_RETENTION_INCLUDE_HELPERS_EVIDENCE=1 LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_PREFLIGHT_EVIDENCE=180000 LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_PREFLIGHT=180000 LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_GATE_PIPELINE=180000 LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_HELPERS_EVIDENCE=180000 node scripts/noop.mjs'
+const fullPreflightEvidenceHelpersSuite =
+  'cross-env LEADS_BULK_RETENTION_PREFLIGHT_EVIDENCE_INCLUDE_HELPERS_SUITE=1 LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_PREFLIGHT_EVIDENCE=300000 LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_HELPERS_SUITE_EVIDENCE=300000 LEADS_BULK_RETENTION_HELPERS_SUITE_STEP_TIMEOUT_MS=300000 node scripts/noop.mjs'
 const driftPipeline =
   'cross-env LEADS_BULK_RETENTION_INCLUDE_HELPERS_EVIDENCE=1 LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_HELPERS_EVIDENCE=180000 node scripts/noop.mjs'
 
@@ -54,6 +56,8 @@ try {
     'run:leads-bulk-retention-health-gate:preflight:with-helpers:timeout-guard': fullPreflight,
     'run:leads-bulk-retention-health-gate:preflight:evidence:with-helpers:timeout-guard':
       fullPreflightEvidence,
+    'run:leads-bulk-retention-health-gate:preflight:evidence:with-helpers-suite:timeout-guard':
+      fullPreflightEvidenceHelpersSuite,
   })
   const driftDir = join(tempRoot, 'drift')
   mkdirSync(driftDir, { recursive: true })
@@ -62,6 +66,8 @@ try {
     'run:leads-bulk-retention-health-gate:preflight:with-helpers:timeout-guard': fullPreflight,
     'run:leads-bulk-retention-health-gate:preflight:evidence:with-helpers:timeout-guard':
       fullPreflightEvidence,
+    'run:leads-bulk-retention-health-gate:preflight:evidence:with-helpers-suite:timeout-guard':
+      fullPreflightEvidenceHelpersSuite,
   })
 
   const passRun = runVerifier(passingPath)

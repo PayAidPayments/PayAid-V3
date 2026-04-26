@@ -28,6 +28,8 @@ const pipelineScriptName = 'run:leads-bulk-retention-health-gate-pipeline:with-h
 const preflightScriptName = 'run:leads-bulk-retention-health-gate:preflight:with-helpers:timeout-guard'
 const preflightEvidenceScriptName =
   'run:leads-bulk-retention-health-gate:preflight:evidence:with-helpers:timeout-guard'
+const preflightEvidenceHelpersSuiteScriptName =
+  'run:leads-bulk-retention-health-gate:preflight:evidence:with-helpers-suite:timeout-guard'
 
 const requiredPipelineTokens = [
   'LEADS_BULK_RETENTION_INCLUDE_HELPERS_EVIDENCE=1',
@@ -45,6 +47,12 @@ const requiredPreflightTokens = [
 const requiredPreflightEvidenceTokens = [
   ...requiredPreflightTokens,
   'LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_PREFLIGHT_EVIDENCE=180000',
+]
+const requiredPreflightEvidenceHelpersSuiteTokens = [
+  'LEADS_BULK_RETENTION_PREFLIGHT_EVIDENCE_INCLUDE_HELPERS_SUITE=1',
+  'LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_PREFLIGHT_EVIDENCE=300000',
+  'LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_HELPERS_SUITE_EVIDENCE=300000',
+  'LEADS_BULK_RETENTION_HELPERS_SUITE_STEP_TIMEOUT_MS=300000',
 ]
 
 function checkScript(scriptName, commandText, tokens) {
@@ -78,11 +86,17 @@ const preflightEvidenceResult = checkScript(
   scripts[preflightEvidenceScriptName],
   requiredPreflightEvidenceTokens,
 )
+const preflightEvidenceHelpersSuiteResult = checkScript(
+  preflightEvidenceHelpersSuiteScriptName,
+  scripts[preflightEvidenceHelpersSuiteScriptName],
+  requiredPreflightEvidenceHelpersSuiteTokens,
+)
 
 const ok =
   pipelineResult.missingTokens.length === 0 &&
   preflightResult.missingTokens.length === 0 &&
-  preflightEvidenceResult.missingTokens.length === 0
+  preflightEvidenceResult.missingTokens.length === 0 &&
+  preflightEvidenceHelpersSuiteResult.missingTokens.length === 0
 
 console.log(
   JSON.stringify(
@@ -92,9 +106,11 @@ console.log(
       pipelineScript: pipelineResult,
       preflightScript: preflightResult,
       preflightEvidenceScript: preflightEvidenceResult,
+      preflightEvidenceHelpersSuiteScript: preflightEvidenceHelpersSuiteResult,
       requiredPipelineTokens,
       requiredPreflightTokens,
       requiredPreflightEvidenceTokens,
+      requiredPreflightEvidenceHelpersSuiteTokens,
     },
     null,
     2,
