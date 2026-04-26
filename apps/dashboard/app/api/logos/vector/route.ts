@@ -100,6 +100,9 @@ export async function POST(request: NextRequest) {
         industry: validated.industry,
         style: validated.style,
         colors: validated.gradient?.colors || [validated.color],
+        prompt:
+          validated.style?.trim() ||
+          `${validated.businessName} vector logo (${validated.iconStyle || 'circle-monogram'})`,
         logoType: 'VECTOR',
         status: 'COMPLETED',
         tenantId,
