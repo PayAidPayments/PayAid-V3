@@ -48,6 +48,7 @@ type LastExportSummary = {
 }
 
 type ExportPackPresetId = 'full' | 'digital' | 'icon' | 'custom'
+type LogoLockupType = 'combination-horizontal' | 'stacked' | 'wordmark' | 'emblem'
 
 const EXPORT_PACK_PRESETS: Record<Exclude<ExportPackPresetId, 'custom'>, ExportPackOptions> = {
   full: {
@@ -164,6 +165,7 @@ export function VectorLogoEditor({
   const [favoriteConceptIds, setFavoriteConceptIds] = useState<string[]>([])
   const [selectedConceptId, setSelectedConceptId] = useState<string | null>(null)
   const [previewMode, setPreviewMode] = useState<'canvas' | 'card' | 'header'>('canvas')
+  const [activeLockup, setActiveLockup] = useState<LogoLockupType>('combination-horizontal')
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [compareConceptIds, setCompareConceptIds] = useState<string[]>([])
   const [showExportOptions, setShowExportOptions] = useState(false)
@@ -296,7 +298,7 @@ export function VectorLogoEditor({
     try {
       // For now, create a simple inline SVG preview
       // In production, this should call the vector engine
-      const svg = createSimpleSVGPreview(config)
+      const svg = createSimpleSVGPreview(config, activeLockup)
       setPreviewSvg(svg)
     } catch (err) {
       console.error('Preview generation error:', err)
@@ -454,20 +456,27 @@ export function VectorLogoEditor({
       const selectedAssets: string[] = []
 
       if (exportOptions.includeLogoSvg) {
-        selectedAssets.push('Logo SVG')
-        files.push({
-          name: `${baseName}-logo.svg`,
-          data: textEncoder.encode(previewSvg),
+        const lockups: LogoLockupType[] = ['combination-horizontal', 'stacked', 'wordmark', 'emblem']
+        selectedAssets.push('Logo SVG (all lockups)')
+        lockups.forEach((lockup) => {
+          files.push({
+            name: `${baseName}-logo-${lockup}.svg`,
+            data: textEncoder.encode(createSimpleSVGPreview(config, lockup)),
+          })
         })
       }
 
       if (exportOptions.includeLogoPng) {
-        selectedAssets.push(`Logo PNG ${pngSize}px`)
-        const logoPngBlob = await renderSvgToPngBlob(previewSvg, pngSize, pngSize)
-        files.push({
-          name: `${baseName}-logo-${pngSize}.png`,
-          data: new Uint8Array(await logoPngBlob.arrayBuffer()),
-        })
+        const lockups: LogoLockupType[] = ['combination-horizontal', 'stacked', 'wordmark', 'emblem']
+        selectedAssets.push(`Logo PNG ${pngSize}px (all lockups)`)
+        for (const lockup of lockups) {
+          const lockupSvg = createSimpleSVGPreview(config, lockup)
+          const logoPngBlob = await renderSvgToPngBlob(lockupSvg, pngSize, pngSize)
+          files.push({
+            name: `${baseName}-logo-${lockup}-${pngSize}.png`,
+            data: new Uint8Array(await logoPngBlob.arrayBuffer()),
+          })
+        }
       }
 
       const iconSvg = createIconOnlySVG(config)
@@ -823,6 +832,27 @@ export function VectorLogoEditor({
                   className="flex-1"
                 />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="lockup">Logo Lockup</Label>
+              <Select
+                value={activeLockup}
+                onValueChange={(value: LogoLockupType) => setActiveLockup(value)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="combination-horizontal">Horizontal Combination</SelectItem>
+                  <SelectItem value="stacked">Stacked</SelectItem>
+                  <SelectItem value="wordmark">Wordmark Only</SelectItem>
+                  <SelectItem value="emblem">Emblem</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="mt-1 text-xs text-slate-500">
+                Exports include all four lockups for brand-kit readiness.
+              </p>
             </div>
 
             {/* Animation */}
@@ -1291,7 +1321,7 @@ export function VectorLogoEditor({
                     >
                       <div
                         className="h-16 w-full bg-white rounded border border-slate-100 overflow-hidden"
-                        dangerouslySetInnerHTML={{ __html: createSimpleSVGPreview({ ...config, ...concept.config, fontSize: 26 }) }}
+                            dangerouslySetInnerHTML={{ __html: createSimpleSVGPreview({ ...config, ...concept.config, fontSize: 26 }, activeLockup) }}
                       />
                       <div className="mt-1 flex items-center justify-between gap-2">
                         <p className="text-xs font-medium text-slate-700">{concept.label}</p>
@@ -1343,7 +1373,7 @@ export function VectorLogoEditor({
                         <div key={`compare-${concept.id}`} className="rounded border border-indigo-100 bg-white p-2">
                           <div
                             className="h-20 w-full overflow-hidden rounded border border-slate-100"
-                            dangerouslySetInnerHTML={{ __html: createSimpleSVGPreview({ ...config, ...concept.config, fontSize: 28 }) }}
+                            dangerouslySetInnerHTML={{ __html: createSimpleSVGPreview({ ...config, ...concept.config, fontSize: 28 }, activeLockup) }}
                           />
                           <p className="mt-1 text-[11px] text-slate-700">{concept.label}</p>
                         </div>
@@ -1354,6 +1384,37 @@ export function VectorLogoEditor({
               </div>
             )}
             <div className="rounded-lg border bg-white p-3">
+              <div className="mb-3 rounded-md border border-slate-200 bg-slate-50 p-2">
+                <p className="text-xs font-semibold text-slate-700 mb-2">Brand Lockup Set</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['combination-horizontal', 'stacked', 'wordmark', 'emblem'] as const).map((lockup) => (
+                    <button
+                      key={lockup}
+                      type="button"
+                      onClick={() => setActiveLockup(lockup)}
+                      className={`rounded border bg-white p-2 text-left ${
+                        activeLockup === lockup ? 'border-indigo-400 ring-1 ring-indigo-300' : 'border-slate-200'
+                      }`}
+                    >
+                      <div
+                        className="h-16 w-full overflow-hidden rounded border border-slate-100"
+                        dangerouslySetInnerHTML={{
+                          __html: createSimpleSVGPreview({ ...config, fontSize: Math.max(20, config.fontSize * 0.38) }, lockup),
+                        }}
+                      />
+                      <p className="mt-1 text-[11px] text-slate-600">
+                        {lockup === 'combination-horizontal'
+                          ? 'Horizontal'
+                          : lockup === 'stacked'
+                          ? 'Stacked'
+                          : lockup === 'wordmark'
+                          ? 'Wordmark'
+                          : 'Emblem'}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="flex gap-2 mb-3">
                 <Button
                   type="button"
@@ -1396,7 +1457,7 @@ export function VectorLogoEditor({
                 <div className="w-full max-w-xl rounded-xl bg-gradient-to-r from-slate-900 to-slate-700 p-5 shadow-lg">
                   <p className="text-[10px] uppercase tracking-wider text-slate-300 mb-3">Business Card Mockup</p>
                   <div className="bg-white rounded-lg p-4">
-                    <div className="w-full h-24" dangerouslySetInnerHTML={{ __html: createSimpleSVGPreview({ ...config, fontSize: Math.max(28, config.fontSize * 0.5) }) }} />
+                    <div className="w-full h-24" dangerouslySetInnerHTML={{ __html: createSimpleSVGPreview({ ...config, fontSize: Math.max(28, config.fontSize * 0.5) }, activeLockup) }} />
                     <p className="text-xs text-slate-500 mt-2">hello@{config.text.replace(/\s+/g, '').toLowerCase()}.com</p>
                   </div>
                 </div>
@@ -1407,7 +1468,7 @@ export function VectorLogoEditor({
                     <span className="w-2 h-2 rounded-full bg-amber-400" />
                     <span className="w-2 h-2 rounded-full bg-emerald-400" />
                   </div>
-                  <div className="h-28 px-4 flex items-center" dangerouslySetInnerHTML={{ __html: createSimpleSVGPreview({ ...config, fontSize: Math.max(24, config.fontSize * 0.45) }) }} />
+                  <div className="h-28 px-4 flex items-center" dangerouslySetInnerHTML={{ __html: createSimpleSVGPreview({ ...config, fontSize: Math.max(24, config.fontSize * 0.45) }, activeLockup) }} />
                 </div>
               )
             ) : (
@@ -1560,15 +1621,20 @@ function getIndustryTemplate(industry: string, keywords: string[]): IndustryTemp
  * Create a simple SVG preview
  * This is a simplified version - in production, use the full vector engine
  */
-function createSimpleSVGPreview(config: LogoConfig): string {
+function createSimpleSVGPreview(config: LogoConfig, lockup: LogoLockupType = 'combination-horizontal'): string {
   const width = 800
   const height = 400
   const padding = 40
-  const hasIcon = (config.iconStyle || 'circle-monogram') !== 'none'
+  const hasIcon = lockup !== 'wordmark' && (config.iconStyle || 'circle-monogram') !== 'none'
   const iconSize = Math.max(44, Math.min(84, Math.round(config.fontSize * 0.95)))
   const iconGap = hasIcon ? 18 : 0
   const estimatedTextWidth = Math.max(120, Math.round((config.text?.length || 1) * config.fontSize * 0.58))
-  const groupWidth = estimatedTextWidth + (hasIcon ? iconSize + iconGap : 0)
+  const groupWidth =
+    lockup === 'stacked'
+      ? Math.max(estimatedTextWidth, iconSize)
+      : lockup === 'emblem'
+      ? Math.max(iconSize * 2.3, estimatedTextWidth * 0.95)
+      : estimatedTextWidth + (hasIcon ? iconSize + iconGap : 0)
   const align = config.layout?.align || 'center'
   const groupLeft =
     align === 'left'
@@ -1577,8 +1643,15 @@ function createSimpleSVGPreview(config: LogoConfig): string {
       ? Math.max(padding, width - padding - groupWidth)
       : Math.max(padding, Math.round((width - groupWidth) / 2))
 
-  const iconCx = groupLeft + iconSize / 2
-  const textX = groupLeft + (hasIcon ? iconSize + iconGap : 0)
+  const iconCx = lockup === 'stacked' ? groupLeft + groupWidth / 2 : groupLeft + iconSize / 2
+  const textX =
+    lockup === 'stacked'
+      ? groupLeft + groupWidth / 2
+      : lockup === 'emblem'
+      ? groupLeft + groupWidth / 2
+      : groupLeft + (hasIcon ? iconSize + iconGap : 0)
+  const textY =
+    lockup === 'stacked' ? height / 2 + iconSize * 0.62 : lockup === 'emblem' ? height / 2 + iconSize * 0.85 : height / 2
   const safeText = (config.text || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -1593,6 +1666,14 @@ function createSimpleSVGPreview(config: LogoConfig): string {
         @import url('https://fonts.googleapis.com/css2?family=${encodedFont}:wght@400;500;600;700&display=swap');
       </style>
       ${config.background?.type === 'color' ? `<rect width="${width}" height="${height}" fill="${config.background.value}" />` : ''}
+      ${
+        lockup === 'emblem'
+          ? `<g transform="translate(${groupLeft + groupWidth / 2}, ${height / 2})">
+               <circle cx="0" cy="0" r="${Math.round(iconSize * 1.1)}" fill="${iconColor}" opacity="0.12" />
+               <circle cx="0" cy="0" r="${Math.round(iconSize * 0.98)}" fill="none" stroke="${iconColor}" stroke-width="3" />
+             </g>`
+          : ''
+      }
       ${
         hasIcon
           ? config.iconStyle === 'diamond'
@@ -1624,12 +1705,13 @@ function createSimpleSVGPreview(config: LogoConfig): string {
       }
       <text
         x="${textX}" 
-        y="${height / 2}" 
+        y="${textY}" 
         font-family="${config.fontFamily}, sans-serif" 
-        font-size="${config.fontSize}" 
+        font-size="${lockup === 'emblem' ? Math.max(20, Math.round(config.fontSize * 0.58)) : config.fontSize}" 
         fill="${config.color}" 
-        text-anchor="start"
+        text-anchor="${lockup === 'stacked' || lockup === 'emblem' ? 'middle' : 'start'}"
         dominant-baseline="middle"
+        font-weight="${lockup === 'emblem' ? 600 : 500}"
       >
         ${safeText}
       </text>

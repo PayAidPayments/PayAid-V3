@@ -12,6 +12,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ mode: 'preview', preview })
   }
 
+  if (preview?.risk?.blocked && !input?.overrideBlockedRisk) {
+    return NextResponse.json(
+      {
+        mode: 'blocked',
+        error: 'Activation blocked by risk policy. Resolve blocked reasons or pass overrideBlockedRisk=true.',
+        preview,
+      },
+      { status: 409 },
+    )
+  }
+
   const enqueued = await service.enqueue(input)
   return NextResponse.json({ mode: 'enqueued', preview, ...enqueued })
 }

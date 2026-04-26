@@ -13,5 +13,38 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   })
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  return NextResponse.json(item)
+  const evidenceSummary = summarizeEvidence(item.fieldEvidence)
+  return NextResponse.json({ ...item, evidenceSummary })
+}
+
+function summarizeEvidence(
+  fieldEvidence: Array<{ verificationStatus: 'VERIFIED' | 'UNVERIFIED' | 'LIKELY' | 'UNKNOWN'; fieldName: string }>,
+) {
+  const byStatus = {
+    VERIFIED: 0,
+    UNVERIFIED: 0,
+    LIKELY: 0,
+    UNKNOWN: 0,
+  } as const
+
+  const mutable = {
+    VERIFIED: 0,
+    UNVERIFIED: 0,
+    LIKELY: 0,
+    UNKNOWN: 0,
+  }
+
+  for (const item of fieldEvidence) {
+    mutable[item.verificationStatus] += 1
+  }
+
+  return {
+    total: fieldEvidence.length,
+    byStatus: mutable as typeof byStatus,
+    keyFields: {
+      emailEvidence: fieldEvidence.filter((item) => item.fieldName === 'workEmail').length,
+      phoneEvidence: fieldEvidence.filter((item) => item.fieldName === 'phone').length,
+      linkedinEvidence: fieldEvidence.filter((item) => item.fieldName === 'linkedinUrl').length,
+    },
+  }
 }

@@ -1,0 +1,55 @@
+{
+  "check": "marketing-release-gate-profile-matrix",
+  "capturedAt": "2026-04-26T09:25:20.116Z",
+  "command": "npm run run:marketing-release-gate:profile:matrix",
+  "warningOnly": true,
+  "exitCode": 1,
+  "ok": false,
+  "effectiveOk": true,
+  "summary": {
+    "check": "marketing-release-gate-profile-matrix",
+    "overallOk": false,
+    "profiles": [
+      "baseline",
+      "hardened",
+      "audit"
+    ],
+    "results": [
+      {
+        "profile": "baseline",
+        "ok": false,
+        "exitCode": 1,
+        "elapsedMs": 659,
+        "pipelineOverallOk": false,
+        "includeMarkerHelpers": false,
+        "includeMarkerVerifier": false,
+        "markerHelpersWarningOnly": false,
+        "markerVerifierWarningOnly": false
+      },
+      {
+        "profile": "hardened",
+        "ok": false,
+        "exitCode": 1,
+        "elapsedMs": 1295,
+        "pipelineOverallOk": false,
+        "includeMarkerHelpers": true,
+        "includeMarkerVerifier": true,
+        "markerHelpersWarningOnly": false,
+        "markerVerifierWarningOnly": false
+      },
+      {
+        "profile": "audit",
+        "ok": false,
+        "exitCode": 1,
+        "elapsedMs": 3124,
+        "pipelineOverallOk": false,
+        "includeMarkerHelpers": true,
+        "includeMarkerVerifier": true,
+        "markerHelpersWarningOnly": true,
+        "markerVerifierWarningOnly": true
+      }
+    ]
+  },
+  "stdout": "{\n  \"check\": \"marketing-release-gate-profile-matrix\",\n  \"overallOk\": false,\n  \"profiles\": [\n    \"baseline\",\n    \"hardened\",\n    \"audit\"\n  ],\n  \"results\": [\n    {\n      \"profile\": \"baseline\",\n      \"ok\": false,\n      \"exitCode\": 1,\n      \"elapsedMs\": 659,\n      \"pipelineOverallOk\": false,\n      \"includeMarkerHelpers\": false,\n      \"includeMarkerVerifier\": false,\n      \"markerHelpersWarningOnly\": false,\n      \"markerVerifierWarningOnly\": false\n    },\n    {\n      \"profile\": \"hardened\",\n      \"ok\": false,\n      \"exitCode\": 1,\n      \"elapsedMs\": 1295,\n      \"pipelineOverallOk\": false,\n      \"includeMarkerHelpers\": true,\n      \"includeMarkerVerifier\": true,\n      \"markerHelpersWarningOnly\": false,\n      \"markerVerifierWarningOnly\": false\n    },\n    {\n      \"profile\": \"audit\",\n      \"ok\": false,\n      \"exitCode\": 1,\n      \"elapsedMs\": 3124,\n      \"pipelineOverallOk\": false,\n      \"includeMarkerHelpers\": true,\n      \"includeMarkerVerifier\": true,\n      \"markerHelpersWarningOnly\": true,\n      \"markerVerifierWarningOnly\": true\n    }\n  ]\n}",
+  "stderr": ""
+}

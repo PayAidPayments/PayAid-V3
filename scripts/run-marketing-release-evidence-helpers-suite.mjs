@@ -34,6 +34,14 @@ const smokeMaxMs = parsePositiveInt(process.env.MARKETING_RELEASE_EVIDENCE_HELPE
 
 const steps = [
   runNodeStep(
+    'marketing-policy-mirror-regression-test',
+    'scripts/test-marketing-release-policy-mirror.mjs'
+  ),
+  runNodeStep(
+    'marketing-policy-mirror-verifier-test',
+    'scripts/verify-marketing-release-policy-mirror.mjs'
+  ),
+  runNodeStep(
     'marketing-warning-flag-resolver-test',
     'scripts/test-marketing-release-warning-flag-resolver.mjs'
   ),

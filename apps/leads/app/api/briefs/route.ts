@@ -22,11 +22,19 @@ export async function POST(request: Request) {
   const body = await request.json()
   const tenantId = body.tenantId as string
   const createdById = body.createdById as string
+  const prompt = typeof body.prompt === 'string' ? body.prompt : ''
+  const autoRun = body.autoRun === true
 
   if (!tenantId || !createdById) {
     return NextResponse.json({ error: 'tenantId and createdById are required' }, { status: 400 })
   }
 
-  const item = await service.create(tenantId, createdById, body)
-  return NextResponse.json(item, { status: 201 })
+  const input = prompt ? service.compilePromptToBrief(prompt) : body
+  const item = await service.create(tenantId, createdById, input)
+  if (!autoRun) {
+    return NextResponse.json({ item }, { status: 201 })
+  }
+
+  const run = await service.run(tenantId, item.id)
+  return NextResponse.json({ item, run }, { status: 201 })
 }

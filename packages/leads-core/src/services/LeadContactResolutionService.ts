@@ -36,8 +36,8 @@ export class LeadContactResolutionService {
           linkedinUrl: contact.linkedinUrl,
           workEmail: contact.workEmail,
           phone: contact.phone,
-          emailStatus: contact.workEmail ? 'LIKELY' : 'UNKNOWN',
-          phoneStatus: contact.phone ? 'LIKELY' : 'UNKNOWN',
+          emailStatus: resolveContactFieldStatus(contact.evidence, 'workEmail', contact.workEmail ? 'LIKELY' : 'UNKNOWN'),
+          phoneStatus: resolveContactFieldStatus(contact.evidence, 'phone', contact.phone ? 'LIKELY' : 'UNKNOWN'),
         },
       })
 
@@ -84,4 +84,13 @@ export class LeadContactResolutionService {
 
     return { createdCount: created.length, items: created }
   }
+}
+
+function resolveContactFieldStatus(
+  evidence: Array<{ fieldName: string; verificationStatus: 'VERIFIED' | 'UNVERIFIED' | 'LIKELY' | 'UNKNOWN'; isWinningValue: boolean }>,
+  fieldName: 'workEmail' | 'phone',
+  fallback: 'VERIFIED' | 'UNVERIFIED' | 'LIKELY' | 'UNKNOWN',
+) {
+  const winner = evidence.find((item) => item.fieldName === fieldName && item.isWinningValue)
+  return winner?.verificationStatus ?? fallback
 }

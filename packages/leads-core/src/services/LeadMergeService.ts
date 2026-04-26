@@ -141,13 +141,17 @@ export class LeadMergeService {
               : field.name === 'phone'
                 ? candidate.phoneConfidence
                 : undefined
+          const verificationStatus =
+            field.name === 'workEmail' || field.name === 'phone'
+              ? inferVerificationStatus(confidence)
+              : field.status
           return {
             fieldName: field.name,
             rawValue: value,
             normalizedValue: normalizeText(value),
             provider: candidate.provider,
             confidence,
-            verificationStatus: field.status,
+            verificationStatus,
             sourceUrl: candidate.sourceUrl,
             legalBasis: 'licensed_allowed',
             observedAt: now,
@@ -161,4 +165,13 @@ export class LeadMergeService {
   private weightForProvider(provider: string): number {
     return this.trustProfiles[provider]?.baseWeight ?? DEFAULT_TRUST.baseWeight
   }
+}
+
+function inferVerificationStatus(confidence?: number): FieldEvidenceCandidate['verificationStatus'] {
+  if (typeof confidence !== 'number' || !Number.isFinite(confidence)) {
+    return 'LIKELY'
+  }
+  if (confidence >= 0.9) return 'VERIFIED'
+  if (confidence <= 0.35) return 'UNVERIFIED'
+  return 'LIKELY'
 }

@@ -1,0 +1,17 @@
+{
+  "state": "completed",
+  "startedAt": "2026-04-26T09:49:01.040Z",
+  "dryRun": false,
+  "tenantFilter": null,
+  "consecutiveSkipped": 0,
+  "lastSuccessfulAt": "2026-04-26T09:49:35.984Z",
+  "lastStateChangeAt": "2026-04-26T09:49:36.046Z",
+  "lockPath": "D:\\Cursor Projects\\PayAid V3\\.tmp\\locks\\leads-bulk-report-retention.lock.json",
+  "statusPath": "D:\\Cursor Projects\\PayAid V3\\.tmp\\locks\\leads-bulk-report-retention.status.json",
+  "updatedAt": "2026-04-26T09:49:36.046Z",
+  "completedAt": "2026-04-26T09:49:35.984Z",
+  "tenantsProcessed": 0,
+  "jsonPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\2026-04-26T09-49-35-363Z-leads-bulk-report-retention-run.json",
+  "mdPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\2026-04-26T09-49-35-363Z-leads-bulk-report-retention-run.md",
+  "results": []
+}

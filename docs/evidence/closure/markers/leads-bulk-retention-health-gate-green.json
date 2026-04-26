@@ -1,0 +1,24 @@
+{
+  "check": "leads-bulk-retention-health-gate-pipeline",
+  "overallOk": true,
+  "generatedAt": "2026-04-26T10:29:11.285Z",
+  "steps": [
+    {
+      "label": "leads-bulk-retention-health-evidence",
+      "ok": true,
+      "overallOk": true,
+      "warningOnly": false,
+      "effectiveOk": true,
+      "exitCode": 0,
+      "elapsedMs": 33360,
+      "command": "c:\\Users\\phani\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\helpers\\node.exe scripts/run-leads-bulk-retention-health-evidence.mjs",
+      "timedOut": false,
+      "timeoutMs": 300000
+    }
+  ],
+  "helpersEvidence": null,
+  "closurePack": {
+    "ok": true,
+    "exitCode": 0,
+    "mdPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\2026-04-26T10-29-10-838Z-leads-bulk-retention-closure-pack.md",
+    "jsonPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\2026-04-26T1

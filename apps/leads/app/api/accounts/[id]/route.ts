@@ -13,5 +13,40 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   })
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  return NextResponse.json(item)
+  const evidenceSummary = summarizeAccountEvidence(item.fieldEvidence)
+  const contactVerificationSummary = {
+    total: item.contacts.length,
+    verifiedEmail: item.contacts.filter((contact) => contact.emailStatus === 'VERIFIED').length,
+    unverifiedEmail: item.contacts.filter((contact) => contact.emailStatus === 'UNVERIFIED').length,
+    unknownEmail: item.contacts.filter((contact) => contact.emailStatus === 'UNKNOWN').length,
+    verifiedPhone: item.contacts.filter((contact) => contact.phoneStatus === 'VERIFIED').length,
+    unverifiedPhone: item.contacts.filter((contact) => contact.phoneStatus === 'UNVERIFIED').length,
+  }
+
+  return NextResponse.json({ ...item, evidenceSummary, contactVerificationSummary })
+}
+
+function summarizeAccountEvidence(
+  fieldEvidence: Array<{ verificationStatus: 'VERIFIED' | 'UNVERIFIED' | 'LIKELY' | 'UNKNOWN'; fieldName: string }>,
+) {
+  const byStatus = {
+    VERIFIED: 0,
+    UNVERIFIED: 0,
+    LIKELY: 0,
+    UNKNOWN: 0,
+  }
+
+  for (const item of fieldEvidence) {
+    byStatus[item.verificationStatus] += 1
+  }
+
+  return {
+    total: fieldEvidence.length,
+    byStatus,
+    keyFields: {
+      domainEvidence: fieldEvidence.filter((item) => item.fieldName === 'domain').length,
+      industryEvidence: fieldEvidence.filter((item) => item.fieldName === 'industry').length,
+      employeeBandEvidence: fieldEvidence.filter((item) => item.fieldName === 'employeeBand').length,
+    },
+  }
 }

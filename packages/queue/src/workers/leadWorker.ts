@@ -76,13 +76,23 @@ async function syncLeadRecordsToCrm(payload: Record<string, unknown>) {
 
   let accountsCreated = 0
   let accountsMerged = 0
+  let accountsUpdated = 0
+  let accountsSkipped = 0
   let contactsCreated = 0
   let contactsMerged = 0
+  let contactsUpdated = 0
+  let contactsSkipped = 0
+  let contactsActivationUpdated = 0
+  let contactsActivationFailed = 0
   let tasksCreated = 0
+  let taskCreateFailed = 0
 
   const crmContactIds: string[] = []
 
   const accountMap = new Map<string, string>()
+  const accountOutcomes: Array<{ leadAccountId: string; crmAccountId?: string; outcome: 'created' | 'merged_updated' | 'merged_skipped' | 'failed'; reason?: string }> = []
+  const contactOutcomes: Array<{ leadContactId: string; crmContactId?: string; outcome: 'created' | 'merged_updated' | 'merged_skipped' | 'failed'; reason?: string }> = []
+  const taskOutcomes: Array<{ crmContactId: string; outcome: 'created' | 'failed'; reason?: string }> = []
 
   for (const leadAccount of leadAccounts) {
     const existing = await prisma.account.findFirst({
@@ -95,39 +105,66 @@ async function syncLeadRecordsToCrm(payload: Record<string, unknown>) {
       },
     })
 
-    if (existing) {
-      accountMap.set(leadAccount.id, existing.id)
-      accountsMerged += 1
-      if (!skipDuplicates) {
-        await prisma.account.update({
-          where: { id: existing.id },
+    try {
+      if (existing) {
+        accountMap.set(leadAccount.id, existing.id)
+        accountsMerged += 1
+        if (!skipDuplicates) {
+          await prisma.account.update({
+            where: { id: existing.id },
+            data: {
+              industry: existing.industry ?? leadAccount.industry ?? undefined,
+              city: existing.city ?? leadAccount.city ?? undefined,
+              state: existing.state ?? leadAccount.region ?? undefined,
+              country: existing.country ?? leadAccount.country ?? undefined,
+              employeeCount: existing.employeeCount ?? leadAccount.employeeCount ?? undefined,
+              website: existing.website ?? leadAccount.websiteUrl ?? undefined,
+            },
+          })
+          accountsUpdated += 1
+          accountOutcomes.push({
+            leadAccountId: leadAccount.id,
+            crmAccountId: existing.id,
+            outcome: 'merged_updated',
+          })
+        } else {
+          accountsSkipped += 1
+          accountOutcomes.push({
+            leadAccountId: leadAccount.id,
+            crmAccountId: existing.id,
+            outcome: 'merged_skipped',
+            reason: 'skipDuplicates=true',
+          })
+        }
+      } else {
+        const created = await prisma.account.create({
           data: {
-            industry: existing.industry ?? leadAccount.industry ?? undefined,
-            city: existing.city ?? leadAccount.city ?? undefined,
-            state: existing.state ?? leadAccount.region ?? undefined,
-            country: existing.country ?? leadAccount.country ?? undefined,
-            employeeCount: existing.employeeCount ?? leadAccount.employeeCount ?? undefined,
-            website: existing.website ?? leadAccount.websiteUrl ?? undefined,
+            tenantId,
+            name: leadAccount.companyName,
+            industry: leadAccount.industry,
+            city: leadAccount.city,
+            state: leadAccount.region,
+            country: leadAccount.country ?? 'India',
+            employeeCount: leadAccount.employeeCount,
+            website: leadAccount.websiteUrl,
+            phone: undefined,
+            email: undefined,
           },
         })
+        accountMap.set(leadAccount.id, created.id)
+        accountsCreated += 1
+        accountOutcomes.push({
+          leadAccountId: leadAccount.id,
+          crmAccountId: created.id,
+          outcome: 'created',
+        })
       }
-    } else {
-      const created = await prisma.account.create({
-        data: {
-          tenantId,
-          name: leadAccount.companyName,
-          industry: leadAccount.industry,
-          city: leadAccount.city,
-          state: leadAccount.region,
-          country: leadAccount.country ?? 'India',
-          employeeCount: leadAccount.employeeCount,
-          website: leadAccount.websiteUrl,
-          phone: undefined,
-          email: undefined,
-        },
+    } catch (error) {
+      accountOutcomes.push({
+        leadAccountId: leadAccount.id,
+        outcome: 'failed',
+        reason: error instanceof Error ? error.message : 'Account sync failed',
       })
-      accountMap.set(leadAccount.id, created.id)
-      accountsCreated += 1
     }
   }
 
@@ -143,47 +180,76 @@ async function syncLeadRecordsToCrm(payload: Record<string, unknown>) {
       },
     })
 
-    if (existing) {
-      contactsMerged += 1
-      if (!skipDuplicates) {
-        await prisma.contact.update({
-          where: { id: existing.id },
+    try {
+      if (existing) {
+        contactsMerged += 1
+        if (!skipDuplicates) {
+          await prisma.contact.update({
+            where: { id: existing.id },
+            data: {
+              email: existing.email ?? leadContact.workEmail ?? undefined,
+              phone: existing.phone ?? leadContact.phone ?? undefined,
+              source: existing.source ?? 'lead-intelligence',
+              accountId: existing.accountId ?? accountMap.get(leadContact.accountId) ?? undefined,
+              assignedToId: existing.assignedToId ?? ownerSalesRep?.id ?? undefined,
+            },
+          })
+          contactsUpdated += 1
+          contactOutcomes.push({
+            leadContactId: leadContact.id,
+            crmContactId: existing.id,
+            outcome: 'merged_updated',
+          })
+        } else {
+          contactsSkipped += 1
+          contactOutcomes.push({
+            leadContactId: leadContact.id,
+            crmContactId: existing.id,
+            outcome: 'merged_skipped',
+            reason: 'skipDuplicates=true',
+          })
+        }
+        crmContactIds.push(existing.id)
+      } else {
+        const createdContact = await prisma.contact.create({
           data: {
-            email: existing.email ?? leadContact.workEmail ?? undefined,
-            phone: existing.phone ?? leadContact.phone ?? undefined,
-            source: existing.source ?? 'lead-intelligence',
-            accountId: existing.accountId ?? accountMap.get(leadContact.accountId) ?? undefined,
-            assignedToId: existing.assignedToId ?? ownerSalesRep?.id ?? undefined,
+            tenantId,
+            name: leadContact.fullName,
+            email: leadContact.workEmail,
+            phone: leadContact.phone,
+            source: 'lead-intelligence',
+            stage: 'prospect',
+            status: 'active',
+            accountId: accountMap.get(leadContact.accountId),
+            assignedToId: ownerSalesRep?.id,
+            city: null,
+            state: null,
+            country: 'India',
+            tags: [],
           },
         })
+        crmContactIds.push(createdContact.id)
+        contactsCreated += 1
+        contactOutcomes.push({
+          leadContactId: leadContact.id,
+          crmContactId: createdContact.id,
+          outcome: 'created',
+        })
       }
-      crmContactIds.push(existing.id)
-    } else {
-      const createdContact = await prisma.contact.create({
-        data: {
-          tenantId,
-          name: leadContact.fullName,
-          email: leadContact.workEmail,
-          phone: leadContact.phone,
-          source: 'lead-intelligence',
-          stage: 'prospect',
-          status: 'active',
-          accountId: accountMap.get(leadContact.accountId),
-          assignedToId: ownerSalesRep?.id,
-          city: null,
-          state: null,
-          country: 'India',
-          tags: [],
-        },
-      })
-      crmContactIds.push(createdContact.id)
-      contactsCreated += 1
-    }
 
-    await prisma.leadContact.update({
-      where: { id: leadContact.id },
-      data: { status: 'ACTIVATED' },
-    })
+      await prisma.leadContact.update({
+        where: { id: leadContact.id },
+        data: { status: 'ACTIVATED' },
+      })
+      contactsActivationUpdated += 1
+    } catch (error) {
+      contactOutcomes.push({
+        leadContactId: leadContact.id,
+        outcome: 'failed',
+        reason: error instanceof Error ? error.message : 'Contact sync failed',
+      })
+      contactsActivationFailed += 1
+    }
   }
 
   await prisma.leadAccount.updateMany({
@@ -193,20 +259,30 @@ async function syncLeadRecordsToCrm(payload: Record<string, unknown>) {
 
   if (createTasks && crmContactIds.length > 0) {
     for (const contactId of crmContactIds) {
-      await prisma.task.create({
-        data: {
-          tenantId,
-          title: 'Lead activation follow-up',
-          description: 'Reach out to newly activated lead from Lead Intelligence module.',
-          priority: 'medium',
-          status: 'pending',
-          module: 'crm',
-          contactId,
-          assignedToId: ownerSalesRep?.userId,
-          dueDate: new Date(Date.now() + 48 * 60 * 60 * 1000),
-        },
-      })
-      tasksCreated += 1
+      try {
+        await prisma.task.create({
+          data: {
+            tenantId,
+            title: 'Lead activation follow-up',
+            description: 'Reach out to newly activated lead from Lead Intelligence module.',
+            priority: 'medium',
+            status: 'pending',
+            module: 'crm',
+            contactId,
+            assignedToId: ownerSalesRep?.userId,
+            dueDate: new Date(Date.now() + 48 * 60 * 60 * 1000),
+          },
+        })
+        tasksCreated += 1
+        taskOutcomes.push({ crmContactId: contactId, outcome: 'created' })
+      } catch (error) {
+        taskCreateFailed += 1
+        taskOutcomes.push({
+          crmContactId: contactId,
+          outcome: 'failed',
+          reason: error instanceof Error ? error.message : 'Task creation failed',
+        })
+      }
     }
   }
 
@@ -215,10 +291,22 @@ async function syncLeadRecordsToCrm(payload: Record<string, unknown>) {
     summary: {
       accountsCreated,
       accountsMerged,
+      accountsUpdated,
+      accountsSkipped,
       contactsCreated,
       contactsMerged,
+      contactsUpdated,
+      contactsSkipped,
+      contactsActivationUpdated,
+      contactsActivationFailed,
       tasksCreated,
+      taskCreateFailed,
       assignedOwnerUserId: ownerSalesRep?.userId ?? null,
+    },
+    outcomes: {
+      accounts: accountOutcomes,
+      contacts: contactOutcomes,
+      tasks: taskOutcomes,
     },
   }
 }

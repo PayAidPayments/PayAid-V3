@@ -1,0 +1,57 @@
+{
+  "check": "leads-bulk-retention-scheduler-health",
+  "capturedAt": "2026-04-26T10:01:02.490Z",
+  "command": "npm run check:leads-bulk-retention-scheduler-health",
+  "strictMode": true,
+  "exitCode": 0,
+  "ok": true,
+  "summary": {
+    "ok": true,
+    "check": "leads-bulk-retention-scheduler-health",
+    "endpoint": "local-fallback",
+    "severity": "healthy",
+    "reasons": [],
+    "metrics": {
+      "statusAgeMinutes": 11,
+      "runningForMinutes": 12,
+      "consecutiveSkipped": 0,
+      "state": "completed",
+      "hasActiveLock": false,
+      "tenantId": "demo-business-pvt-ltd"
+    },
+    "evaluatedAt": "2026-04-26T10:01:02.484Z",
+    "source": "local-fallback"
+  },
+  "stdout": "{\n  \"ok\": true,\n  \"check\": \"leads-bulk-retention-scheduler-health\",\n  \"endpoint\": \"local-fallback\",\n  \"severity\": \"healthy\",\n  \"reasons\": [],\n  \"metrics\": {\n    \"statusAgeMinutes\": 11,\n    \"runningForMinutes\": 12,\n    \"consecutiveSkipped\": 0,\n    \"state\": \"completed\",\n    \"hasActiveLock\": false,\n    \"tenantId\": \"demo-business-pvt-ltd\"\n  },\n  \"evaluatedAt\": \"2026-04-26T10:01:02.484Z\",\n  \"source\": \"local-fallback\"\n}",
+  "stderr": "",
+  "cleanup": {
+    "command": "npm run cleanup:leads-bulk-retention-artifacts",
+    "apply": false,
+    "exitCode": 0,
+    "summary": {
+      "ok": true,
+      "apply": false,
+      "mode": "delete",
+      "includeMarkers": false,
+      "allowMarkerMutation": false,
+      "markerApprovalFromFile": false,
+      "retentionDays": 14,
+      "scannedDir": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure",
+      "candidateCount": 0,
+      "deletedCount": 0,
+      "archivedCount": 0,
+      "candidates": [],
+      "archived": [],
+      "nextSteps": [
+        "Dry run only. To apply cleanup:",
+        "$env:LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_APPLY=\"1\"",
+        "$env:LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_MODE=\"archive\"  # or \"delete\"",
+        "$env:LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_INCLUDE_MARKERS=\"1\"  # optional",
+        "$env:LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_ALLOW_MARKER_MUTATION=\"1\"  # required when includeMarkers=1 + apply",
+        "npm run cleanup:leads-bulk-retention-artifacts"
+      ]
+    },
+    "stdout": "{\n  \"ok\": true,\n  \"apply\": false,\n  \"mode\": \"delete\",\n  \"includeMarkers\": false,\n  \"allowMarkerMutation\": false,\n  \"markerApprovalFromFile\": false,\n  \"retentionDays\": 14,\n  \"scannedDir\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\",\n  \"candidateCount\": 0,\n  \"deletedCount\": 0,\n  \"archivedCount\": 0,\n  \"candidates\": [],\n  \"archived\": [],\n  \"nextSteps\": [\n    \"Dry run only. To apply cleanup:\",\n    \"$env:LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_APPLY=\\\"1\\\"\",\n    \"$env:LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_MODE=\\\"archive\\\"  # or \\\"delete\\\"\",\n    \"$env:LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_INCLUDE_MARKERS=\\\"1\\\"  # optional\",\n    \"$env:LEADS_BULK_RETENTION_ARTIFACT_CLEANUP_ALLOW_MARKER_MUTATION=\\\"1\\\"  # required when includeMarkers=1 + apply\",\n    \"npm run cleanup:leads-bulk-retention-artifacts\"\n  ]\n}",
+    "stderr": ""
+  }
+}

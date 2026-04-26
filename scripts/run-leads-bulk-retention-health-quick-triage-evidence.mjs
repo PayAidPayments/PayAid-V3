@@ -2,6 +2,7 @@
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { enrichTimeoutResult, resolveTimeoutMs } from './lib/timeout-helpers.mjs'
 
 function isoForFile(date = new Date()) {
   return date.toISOString().replace(/[:.]/g, '-')
@@ -15,15 +16,28 @@ function parseJson(text) {
   }
 }
 
+const quickTriageTimeoutMs = resolveTimeoutMs({
+  globalKey: 'LEADS_BULK_RETENTION_STEP_TIMEOUT_MS',
+  specificKey: 'LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_QUICK_TRIAGE_EVIDENCE',
+  fallbackMs: 300000,
+})
+
 const run = spawnSync(process.execPath, ['scripts/run-leads-bulk-retention-health-quick-triage.mjs'], {
   env: { ...process.env },
   encoding: 'utf8',
   stdio: 'pipe',
+  timeout: quickTriageTimeoutMs,
 })
 
 const stdout = (run.stdout || '').trim()
-const stderr = (run.stderr || '').trim()
-const parsed = parseJson(stdout) || parseJson(stderr)
+const timeout = enrichTimeoutResult({
+  label: 'run-leads-bulk-retention-health-quick-triage.mjs',
+  timeoutMs: quickTriageTimeoutMs,
+  status: run.status,
+  error: run.error,
+  stderr: run.stderr || '',
+})
+const parsed = parseJson(stdout) || parseJson(timeout.stderr)
 const ok = run.status === 0 && Boolean(parsed?.ok)
 const nowIso = new Date().toISOString()
 
@@ -39,7 +53,9 @@ const payload = {
   check: 'leads-bulk-retention-health-quick-triage-evidence',
   capturedAt: nowIso,
   ok,
-  quickTriageExitCode: run.status ?? 1,
+  quickTriageExitCode: timeout.exitCode,
+  timedOut: timeout.timedOut,
+  timeoutMs: quickTriageTimeoutMs,
   quickTriage: parsed,
 }
 
@@ -51,7 +67,9 @@ const lines = [
   '',
   `- Captured at: ${nowIso}`,
   `- Overall OK: ${ok ? 'yes' : 'no'}`,
-  `- Source command exit: ${run.status ?? 1}`,
+  `- Source command exit: ${timeout.exitCode}`,
+  `- Timed out: ${timeout.timedOut ? 'yes' : 'no'}`,
+  `- Timeout budget: ${quickTriageTimeoutMs}ms`,
   '',
   '## Probes',
   ...probes.map((probe) => `- ${probe.timeoutMs}ms: ${probe.ok ? 'pass' : 'fail'} (exit=${probe.exitCode})`),

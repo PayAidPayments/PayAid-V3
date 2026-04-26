@@ -8,14 +8,24 @@ function isoForFile(date = new Date()) {
   return date.toISOString().replace(/[:.]/g, '-')
 }
 
-function runStep(label, scriptPath, env = process.env) {
+function resolveTimeoutMs(globalValue, specificValue, fallbackMs) {
+  const specific = Number(specificValue)
+  if (Number.isFinite(specific) && specific > 0) return specific
+  const global = Number(globalValue)
+  if (Number.isFinite(global) && global > 0) return global
+  return fallbackMs
+}
+
+function runStep(label, scriptPath, env = process.env, timeoutMs = 300000) {
   const run = spawnSync(process.execPath, [scriptPath], {
     env: { ...env },
     encoding: 'utf8',
     stdio: 'pipe',
+    timeout: timeoutMs,
   })
   const stdout = (run.stdout || '').trim()
-  const stderr = (run.stderr || '').trim()
+  const timedOut = run.error?.name === 'Error' && /timed out/i.test(String(run.error?.message || ''))
+  const stderr = `${(run.stderr || '').trim()}${timedOut ? `\nCommand timed out after ${timeoutMs}ms.` : ''}`.trim()
   let parsed = null
   try {
     parsed = stdout ? JSON.parse(stdout) : null
@@ -27,6 +37,8 @@ function runStep(label, scriptPath, env = process.env) {
     scriptPath,
     ok: run.status === 0,
     exitCode: run.status ?? 1,
+    timedOut,
+    timeoutMs,
     parsed,
     stdout,
     stderr,
@@ -46,11 +58,43 @@ const env = {
   LEADS_BULK_RETENTION_HEALTH_EVIDENCE_RUN_CLEANUP:
     process.env.LEADS_BULK_RETENTION_HEALTH_EVIDENCE_RUN_CLEANUP || '1',
 }
+const defaultTimeoutMs = resolveTimeoutMs(
+  process.env.LEADS_BULK_RETENTION_STEP_TIMEOUT_MS,
+  null,
+  300000,
+)
 
 const steps = [
-  runStep('health-evidence', 'scripts/run-leads-bulk-retention-health-evidence.mjs', env),
-  runStep('handoff-snippet', 'scripts/generate-leads-bulk-retention-handoff-snippet.mjs', env),
-  runStep('next-actions', 'scripts/show-leads-bulk-retention-next-actions.mjs', env),
+  runStep(
+    'health-evidence',
+    'scripts/run-leads-bulk-retention-health-evidence.mjs',
+    env,
+    resolveTimeoutMs(
+      process.env.LEADS_BULK_RETENTION_STEP_TIMEOUT_MS,
+      process.env.LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_HEALTH_EVIDENCE,
+      defaultTimeoutMs,
+    ),
+  ),
+  runStep(
+    'handoff-snippet',
+    'scripts/generate-leads-bulk-retention-handoff-snippet.mjs',
+    env,
+    resolveTimeoutMs(
+      process.env.LEADS_BULK_RETENTION_STEP_TIMEOUT_MS,
+      process.env.LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_HANDOFF_SNIPPET,
+      defaultTimeoutMs,
+    ),
+  ),
+  runStep(
+    'next-actions',
+    'scripts/show-leads-bulk-retention-next-actions.mjs',
+    env,
+    resolveTimeoutMs(
+      process.env.LEADS_BULK_RETENTION_STEP_TIMEOUT_MS,
+      process.env.LEADS_BULK_RETENTION_STEP_TIMEOUT_MS_NEXT_ACTIONS,
+      defaultTimeoutMs,
+    ),
+  ),
 ]
 const overallOk = steps.every((s) => s.ok)
 
@@ -74,6 +118,8 @@ const payload = {
     ok: s.ok,
     exitCode: s.exitCode,
     scriptPath: s.scriptPath,
+    timedOut: s.timedOut,
+    timeoutMs: s.timeoutMs,
   })),
   latestArtifacts: {
     latestHealthIndex: existsSync(latestHealthIndex) ? latestHealthIndex : null,

@@ -1,6 +1,6 @@
 # Latest Marketing Release Gate Verdict Evidence
 
-- Last updated: 2026-04-26T08:11:47.858Z
+- Last updated: 2026-04-26T10:04:11.302Z
 - Pipeline overall OK: no
 - Pipeline exit code: 1
 - Verdict reason: failed_required_step
@@ -10,8 +10,8 @@
 
 ## Artifacts
 
-- JSON: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-26T08-11-47-858Z-marketing-release-gate-verdict-evidence.json`
-- Markdown: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-26T08-11-47-858Z-marketing-release-gate-verdict-evidence.md`
+- JSON: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-26T10-04-11-302Z-marketing-release-gate-verdict-evidence.json`
+- Markdown: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-26T10-04-11-302Z-marketing-release-gate-verdict-evidence.md`
 
 ## Quick Command
 

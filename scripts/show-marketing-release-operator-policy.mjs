@@ -34,6 +34,10 @@ const policy = {
     latencyGate: env.MARKETING_RELEASE_INCLUDE_EVIDENCE_LATENCY_GATE === '1',
   },
   timeoutMs: {
+    helpersSuiteGlobal: resolveTimeoutMs({
+      env,
+      globalKey: 'MARKETING_RELEASE_EVIDENCE_HELPERS_SUITE_STEP_TIMEOUT_MS',
+    }),
     bundleGlobal: resolveTimeoutMs({
       env,
       globalKey: 'MARKETING_RELEASE_GATE_EVIDENCE_BUNDLE_STEP_TIMEOUT_MS',

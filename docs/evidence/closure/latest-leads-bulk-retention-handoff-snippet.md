@@ -2,11 +2,11 @@
 
 ## Scheduler Health Summary
 - Check: leads-bulk-retention-scheduler-health
-- Last updated: 2026-04-25T16:28:46.688Z
-- Health OK: no
-- Exit code: 1
-- Evidence JSON: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-25T16-28-46-688Z-leads-bulk-retention-scheduler-health.json`
-- Evidence Markdown: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-25T16-28-46-688Z-leads-bulk-retention-scheduler-health.md`
+- Last updated: 2026-04-26T10:08:22.950Z
+- Health OK: yes
+- Exit code: 0
+- Evidence JSON: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-26T10-08-22-950Z-leads-bulk-retention-scheduler-health.json`
+- Evidence Markdown: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-26T10-08-22-950Z-leads-bulk-retention-scheduler-health.md`
 
 ## Suggested Release Note Line
-- Leads bulk retention scheduler health did not pass (see latest evidence artifacts above).
+- Leads bulk retention scheduler health passed (see latest evidence artifacts above).

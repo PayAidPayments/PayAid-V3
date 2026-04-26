@@ -9,6 +9,12 @@ function isoForFile(date = new Date()) {
 }
 
 function resolveCheckTimeoutMs(label) {
+  if (label === 'policy-mirror-verifier') {
+    return resolveTimeoutMs({
+      globalKey: 'MARKETING_RELEASE_PRODUCTION_VERIFICATION_TIMEOUT_MS',
+      specificKey: 'MARKETING_RELEASE_PRODUCTION_VERIFICATION_TIMEOUT_MS_POLICY_MIRROR',
+    })
+  }
   if (label === 'warning-flag-resolver') {
     return resolveTimeoutMs({
       globalKey: 'MARKETING_RELEASE_PRODUCTION_VERIFICATION_TIMEOUT_MS',
@@ -101,6 +107,7 @@ const evidenceBundleLabel = warningOnly
   : 'evidence-bundle-with-helpers'
 
 const checks = [
+  runNpmScript('policy-mirror-verifier', 'verify:marketing-release-policy-mirror'),
   runNpmScript('warning-flag-resolver', 'test:marketing-release-warning-flag-resolver'),
   runNpmScript('evidence-helpers-suite', 'test:marketing-release-evidence-helpers-suite'),
   runNpmScript(evidenceBundleLabel, evidenceBundleScript),
@@ -137,6 +144,7 @@ const payload = {
   pointers,
   timeoutDefaults: {
     global: resolveCheckTimeoutMs('default'),
+    policyMirrorVerifier: resolveCheckTimeoutMs('policy-mirror-verifier'),
     warningFlagResolver: resolveCheckTimeoutMs('warning-flag-resolver'),
     evidenceHelpersSuite: resolveCheckTimeoutMs('evidence-helpers-suite'),
     evidenceBundle: resolveCheckTimeoutMs(evidenceBundleLabel),
