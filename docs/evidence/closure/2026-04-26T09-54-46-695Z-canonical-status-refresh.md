@@ -1,0 +1,110 @@
+# Canonical status refresh
+
+- Timestamp: 2026-04-26T09:54:46.695Z
+- Overall: pass
+- JSON artifact: `D:\Cursor Projects\PayAid-V3-temp-finish\docs\evidence\closure\2026-04-26T09-54-46-695Z-canonical-status-refresh.json`
+
+## Step results
+
+- PASS closeout-status-snapshot (`npm run run:canonical-closeout-status-snapshot`, 29254ms, timeout=420000ms)
+- PASS live-status-sync (`npm run sync:canonical-live-status`, 1999ms, timeout=120000ms)
+- PASS closeout-next-actions (`npm run show:canonical-closeout-next-actions`, 1070ms, timeout=120000ms)
+
+## Raw payload
+
+```json
+{
+  "check": "canonical-status-refresh",
+  "timestamp": "2026-04-26T09:54:46.695Z",
+  "overallOk": true,
+  "totalSteps": 3,
+  "completedSteps": 3,
+  "results": [
+    {
+      "id": "closeout-status-snapshot",
+      "command": "npm run run:canonical-closeout-status-snapshot",
+      "timeoutMs": 420000,
+      "elapsedMs": 29254,
+      "exitCode": 1,
+      "timedOut": false,
+      "expectedExit": true,
+      "ok": true,
+      "outputTail": [
+        "",
+        "> payaid-v3@0.1.0 run:canonical-closeout-status-snapshot",
+        "> node scripts/run-canonical-closeout-status-snapshot.mjs",
+        "",
+        "{",
+        "  \"overallOk\": false,",
+        "  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid-V3-temp-finish\\\\docs\\\\evidence\\\\closure\\\\2026-04-26T09-54-47-919Z-canonical-closeout-status-snapshot.json\",",
+        "  \"mdPath\": \"D:\\\\Cursor Projects\\\\PayAid-V3-temp-finish\\\\docs\\\\evidence\\\\closure\\\\2026-04-26T09-54-47-919Z-canonical-closeout-status-snapshot.md\"",
+        "}",
+        "",
+        ""
+      ]
+    },
+    {
+      "id": "live-status-sync",
+      "command": "npm run sync:canonical-live-status",
+      "timeoutMs": 120000,
+      "elapsedMs": 1999,
+      "exitCode": 0,
+      "timedOut": false,
+      "expectedExit": true,
+      "ok": true,
+      "outputTail": [
+        "",
+        "> payaid-v3@0.1.0 sync:canonical-live-status",
+        "> node scripts/sync-canonical-live-status-block.mjs",
+        "",
+        "{",
+        "  \"ok\": true,",
+        "  \"updatedFile\": \"docs/PAYAID_V3_BLUEPRINT_GAP_CHECKLIST.md\",",
+        "  \"snapshot\": \"docs/evidence/closure/2026-04-26T09-54-47-919Z-canonical-closeout-status-snapshot.json\",",
+        "  \"state\": \"FAIL\",",
+        "  \"nextCheckpoint\": null",
+        "}",
+        "",
+        ""
+      ]
+    },
+    {
+      "id": "closeout-next-actions",
+      "command": "npm run show:canonical-closeout-next-actions",
+      "timeoutMs": 120000,
+      "elapsedMs": 1070,
+      "exitCode": 0,
+      "timedOut": false,
+      "expectedExit": true,
+      "ok": true,
+      "outputTail": [
+        "",
+        "> payaid-v3@0.1.0 show:canonical-closeout-next-actions",
+        "> node scripts/show-canonical-closeout-next-actions.mjs",
+        "",
+        "{",
+        "  \"ok\": true,",
+        "  \"latestSnapshot\": \"docs/evidence/closure/2026-04-26T09-54-47-919Z-canonical-closeout-status-snapshot.json\",",
+        "  \"latestMonitoringCheck\": \"docs/evidence/closure/2026-04-26T09-55-14-564Z-canonical-monitoring-complete-check.json\",",
+        "  \"monitoringComplete\": true,",
+        "  \"nextCheckpoint\": null,",
+        "  \"nextAction\": {",
+        "    \"type\": \"run_due_now\",",
+        "    \"message\": \"A checkpoint should be due now; run due checkpoint orchestrator.\",",
+        "    \"commands\": [",
+        "      \"npm run run:canonical-due-monitor-checkpoints\"",
+        "    ]",
+        "  },",
+        "  \"finalizeCommands\": [",
+        "    \"npm run check:canonical-monitoring-complete\",",
+        "    \"npm run check:canonical-module-api-readiness-verdict:stable\",",
+        "    \"npm run run:canonical-closeout-status-snapshot\"",
+        "  ]",
+        "}",
+        "",
+        ""
+      ]
+    }
+  ]
+}
+```
