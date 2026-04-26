@@ -128,6 +128,12 @@ const aiPayload = {
   colors: ['#111827', '#1D4ED8'],
 }
 
+const vectorListProbe = await callApi({
+  key: 'vector-logo-list-probe',
+  method: 'GET',
+  path: '/api/logos/vector',
+})
+
 const vectorResult = await callApi({
   key: 'vector-logo-create',
   method: 'POST',
@@ -142,7 +148,10 @@ const aiResult = await callApi({
   body: aiPayload,
 })
 
-const schemaMismatchDetected = vectorResult.schemaMismatchDetected || aiResult.schemaMismatchDetected
+const schemaMismatchDetected =
+  vectorListProbe.schemaMismatchDetected || vectorResult.schemaMismatchDetected || aiResult.schemaMismatchDetected
+const rolloutProbeVisible = vectorListProbe.ok || vectorListProbe.status === 500
+const rolloutBuildRefVisible = vectorListProbe.buildRef !== 'unknown'
 const vectorPass = vectorResult.ok && !vectorResult.schemaMismatchDetected
 const aiPass = !aiResult.schemaMismatchDetected && (aiResult.ok || (allowAiSoftFail && aiResult.status >= 500))
 const overallOk = vectorPass && aiPass && !schemaMismatchDetected
@@ -153,12 +162,20 @@ const summary = {
   allowAiSoftFail,
   overallOk,
   schemaMismatchDetected,
-  results: [vectorResult, aiResult],
+  rolloutSignals: {
+    vectorListProbeStatus: vectorListProbe.status,
+    vectorListProbeBuildRef: vectorListProbe.buildRef,
+    rolloutProbeVisible,
+    rolloutBuildRefVisible,
+  },
+  results: [vectorListProbe, vectorResult, aiResult],
   nextSteps: overallOk
     ? ['Logo endpoints are reachable without schema mismatch regression.']
     : [
         schemaMismatchDetected
           ? 'Schema mismatch still detected. Verify Logo.logoType migration deployment.'
+          : !rolloutBuildRefVisible
+          ? 'Deployment stamp not visible yet. Confirm production is on latest commit and rerun smoke.'
           : 'Review endpoint errors. If only AI provider failed, configure provider keys or set LOGO_SMOKE_ALLOW_AI_SOFT_FAIL=1.',
       ],
 }
