@@ -17,6 +17,9 @@ interface VectorLogoEditorProps {
   tenantId: string
   businessName?: string
   brandColors?: string[]
+  initialConfig?: Partial<LogoConfig>
+  initialIndustry?: string
+  initialKeywords?: string[]
   onSave?: (logo: any) => void
   onCancel?: () => void
 }
@@ -130,6 +133,9 @@ export function VectorLogoEditor({
   tenantId: _tenantId,
   businessName = '',
   brandColors = [],
+  initialConfig,
+  initialIndustry = '',
+  initialKeywords = [],
   onSave,
   onCancel,
 }: VectorLogoEditorProps) {
@@ -143,7 +149,7 @@ export function VectorLogoEditor({
     iconColor: brandColors[0] || '#000000',
     animation: 'none',
     background: { type: 'transparent', value: '' },
-    layout: { align: 'center', offsetX: 0, offsetY: 0, rotation: 0 },
+    layout: { align: 'center', offsetX: 0, offsetY: 0, rotation: 0, lockupType: 'combination-horizontal' },
   })
 
   // UI state
@@ -191,6 +197,24 @@ export function VectorLogoEditor({
       generatePreview()
     }
   }, [config])
+
+  useEffect(() => {
+    if (!initialConfig && !businessName && !initialIndustry && initialKeywords.length === 0) return
+
+    setConfig((prev) => ({
+      ...prev,
+      ...initialConfig,
+      text: initialConfig?.text ?? businessName ?? prev.text,
+      color: initialConfig?.color ?? brandColors[0] ?? prev.color,
+      iconColor: initialConfig?.iconColor ?? brandColors[0] ?? prev.iconColor,
+      layout: {
+        ...(prev.layout || { align: 'center', offsetX: 0, offsetY: 0, rotation: 0 }),
+        ...(initialConfig?.layout || {}),
+      },
+    }))
+    setIndustry(initialIndustry || '')
+    setKeywords(initialKeywords)
+  }, [initialConfig, businessName, brandColors, initialIndustry, initialKeywords])
 
   useEffect(() => {
     if (!config.text.trim()) {
