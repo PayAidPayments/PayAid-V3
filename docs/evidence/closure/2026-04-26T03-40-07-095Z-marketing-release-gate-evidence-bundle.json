@@ -1,0 +1,47 @@
+{
+  "check": "marketing-release-gate-evidence-bundle",
+  "capturedAt": "2026-04-26T03:40:07.095Z",
+  "command": "npm run run:marketing-release-gate-evidence-bundle",
+  "warningOnly": true,
+  "overallOk": false,
+  "effectiveOk": true,
+  "steps": [
+    {
+      "label": "marketing-gate-profile-matrix-evidence",
+      "command": "npm run run:marketing-release-gate:profile:matrix:evidence",
+      "ok": true,
+      "overallOk": false,
+      "exitCode": 0,
+      "elapsedMs": 12692,
+      "summary": {
+        "ok": true,
+        "overallOk": false,
+        "warningOnly": true,
+        "exitCode": 1,
+        "jsonPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\2026-04-26T03-40-02-361Z-marketing-release-gate-profile-matrix.json",
+        "markdownPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\2026-04-26T03-40-02-361Z-marketing-release-gate-profile-matrix.md",
+        "latestIndexPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\latest-marketing-release-gate-profile-matrix.md"
+      }
+    },
+    {
+      "label": "marketing-gate-verdict-evidence",
+      "command": "npm run run:marketing-release-gate-verdict-evidence",
+      "ok": true,
+      "overallOk": false,
+      "exitCode": 0,
+      "elapsedMs": 3051,
+      "summary": {
+        "ok": true,
+        "overallOk": false,
+        "warningOnly": true,
+        "pipelineOk": false,
+        "pipelineExitCode": 1,
+        "verdictReason": "failed_required_step",
+        "explainerOk": true,
+        "jsonPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\2026-04-26T03-40-06-289Z-marketing-release-gate-verdict-evidence.json",
+        "markdownPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\2026-04-26T03-40-06-289Z-marketing-release-gate-verdict-evidence.md",
+        "latestIndexPath": "D:\\Cursor Projects\\PayAid V3\\docs\\evidence\\closure\\latest-marketing-release-gate-verdict-evidence.md"
+      }
+    }
+  ]
+}

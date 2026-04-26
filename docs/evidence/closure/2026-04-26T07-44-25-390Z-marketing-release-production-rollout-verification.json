@@ -1,0 +1,55 @@
+{
+  "check": "marketing-release-production-rollout-verification",
+  "capturedAt": "2026-04-26T07:44:25.391Z",
+  "ok": false,
+  "branch": "chore/marketing-evidence-warning-helpers",
+  "head": "39ddc0fc99874dbf46240fe702b9a16e1c755014",
+  "checks": [
+    {
+      "name": "warning-flag-resolver",
+      "ok": true,
+      "exitCode": 0,
+      "command": "npm run test:marketing-release-warning-flag-resolver",
+      "output": "> payaid-v3@0.1.0 test:marketing-release-warning-flag-resolver\n> node scripts/test-marketing-release-warning-flag-resolver.mjs\n\n{\n  \"ok\": true,\n  \"check\": \"marketing-release-warning-flag-resolver\",\n  \"cases\": [\n    \"default false\",\n    \"umbrella fallback\",\n    \"specific true override\",\n    \"specific false override\",\n    \"unexpected specific value fallback\",\n    \"custom umbrella key support\"\n  ]\n}"
+    },
+    {
+      "name": "evidence-helpers-suite",
+      "ok": true,
+      "exitCode": 0,
+      "command": "npm run test:marketing-release-evidence-helpers-suite",
+      "output": "> payaid-v3@0.1.0 test:marketing-release-evidence-helpers-suite\n> node scripts/run-marketing-release-evidence-helpers-suite.mjs\n\n{\n  \"check\": \"marketing-release-evidence-helpers-suite\",\n  \"overallOk\": true,\n  \"smokeMaxMs\": null,\n  \"smokeWithinBudget\": true,\n  \"smokeLatencyViolation\": false,\n  \"steps\": [\n    {\n      \"label\": \"marketing-warning-flag-resolver-test\",\n      \"ok\": true,\n      \"exitCode\": 0,\n      \"elapsedMs\": 60\n    },\n    {\n      \"label\": \"marketing-timeout-helpers-test\",\n      \"ok\": true,\n      \"exitCode\": 0,\n      \"elapsedMs\": 150\n    },\n    {\n      \"label\": \"marketing-evidence-bundle-warn-smoke\",\n      \"ok\": true,\n      \"exitCode\": 0,\n      \"elapsedMs\": 10985\n    }\n  ]\n}"
+    },
+    {
+      "name": "evidence-bundle-with-helpers",
+      "ok": false,
+      "exitCode": 1,
+      "command": "npm run run:marketing-release-gate-evidence-bundle:with-helpers",
+      "output": "> payaid-v3@0.1.0 run:marketing-release-gate-evidence-bundle:with-helpers\n> cross-env MARKETING_RELEASE_INCLUDE_EVIDENCE_HELPERS=1 node scripts/run-marketing-release-gate-evidence-bundle.mjs\n\n{\n  \"ok\": false,\n  \"overallOk\": false,\n  \"warningOnly\": false,\n  \"includeEvidenceHelpers\": true,\n  \"evidenceHelpersWarningOnly\": false,\n  \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-26T07-47-44-582Z-marketing-release-gate-evidence-bundle.json\",\n  \"markdownPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-26T07-47-44-582Z-marketing-release-gate-evidence-bundle.md\",\n  \"latestIndexPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\latest-marketing-release-gate-evidence-bundle.md\",\n  \"steps\": [\n    {\n      \"label\": \"marketing-gate-profile-matrix-evidence\",\n      \"command\": \"npm run run:marketing-release-gate:profile:matrix:evidence\",\n      \"ok\": false,\n      \"overallOk\": false,\n      \"warningOnly\": false,\n      \"effectiveOk\": false,\n      \"timedOut\": false,\n      \"timeoutMs\": 180000,\n      \"exitCode\": 1,\n      \"elapsedMs\": 4017,\n      \"summary\": {\n        \"ok\": false,\n        \"overallOk\": false,\n        \"warningOnly\": false,\n        \"exitCode\": 1,\n        \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-26T07-44-43-796Z-marketing-release-gate-profile-matrix.json\",\n        \"markdownPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-26T07-44-43-796Z-marketing-release-gate-profile-matrix.md\",\n        \"latestIndexPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\latest-marketing-release-gate-profile-matrix.md\"\n      }\n    },\n    {\n      \"label\": \"marketing-gate-verdict-evidence\",\n      \"command\": \"npm run run:marketing-release-gate-verdict-evidence\",\n      \"ok\": false,\n      \"overallOk\": false,\n      \"warningOnly\": false,\n      \"effectiveOk\": false,\n      \"timedOut\": false,\n      \"timeoutMs\": 180000,\n      \"exitCode\": 1,\n      \"elapsedMs\": 692,\n      \"summary\": {\n        \"ok\": false,\n        \"overallOk\": false,\n        \"warningOnly\": false,\n        \"pipelineOk\": false,\n        \"pipelineExitCode\": 1,\n        \"verdictReason\": \"failed_required_step\",\n        \"explainerOk\": true,\n        \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-26T07-44-44-447Z-marketing-release-gate-verdict-evidence.json\",\n        \"markdownPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-26T07-44-44-447Z-marketing-release-gate-verdict-evidence.md\",\n        \"latestIndexPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\latest-marketing-release-gate-verdict-evidence.md\"\n      }\n    },\n    {\n      \"label\": \"marketing-evidence-helpers-suite-evidence\",\n      \"command\": \"npm run run:marketing-release-evidence-helpers-suite:evidence\",\n      \"ok\": false,\n      \"overallOk\": false,\n      \"warningOnly\": false,\n      \"effectiveOk\": false,\n      \"timedOut\": true,\n      \"timeoutMs\": 180000,\n      \"exitCode\": 1,\n      \"elapsedMs\": 180077,\n      \"summary\": null\n    }\n  ]\n}"
+    },
+    {
+      "name": "evidence-latency-gate-warn",
+      "ok": true,
+      "exitCode": 0,
+      "command": "npm run run:marketing-release-evidence-latency-gate:warn",
+      "output": "> payaid-v3@0.1.0 run:marketing-release-evidence-latency-gate:warn\n> cross-env MARKETING_RELEASE_EVIDENCE_LATENCY_GATE_WARNING_ONLY=1 node scripts/run-marketing-release-evidence-latency-gate.mjs\n\n{\n  \"check\": \"marketing-release-evidence-latency-gate\",\n  \"warningOnly\": true,\n  \"thresholdP95Ms\": 600000,\n  \"p95Ms\": 686294,\n  \"thresholdBreached\": true,\n  \"overallOk\": false,\n  \"effectiveOk\": true,\n  \"rollupCommandOk\": true,\n  \"rollup\": {\n    \"ok\": true,\n    \"sampleCount\": 20,\n    \"sampleWindow\": 20,\n    \"p50Ms\": 431230,\n    \"p95Ms\": 686294,\n    \"latestMs\": 715264,\n    \"jsonPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-26T07-48-08-533Z-marketing-release-evidence-latency-rollup.json\",\n    \"markdownPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\2026-04-26T07-48-08-533Z-marketing-release-evidence-latency-rollup.md\",\n    \"latestIndexPath\": \"D:\\\\Cursor Projects\\\\PayAid V3\\\\docs\\\\evidence\\\\closure\\\\latest-marketing-release-evidence-latency-rollup.md\"\n  }\n}"
+    }
+  ],
+  "pointers": [
+    {
+      "path": "docs/evidence/closure/latest-marketing-release-gate-evidence-bundle.md",
+      "exists": true
+    },
+    {
+      "path": "docs/evidence/closure/latest-marketing-release-evidence-helpers-suite.md",
+      "exists": true
+    },
+    {
+      "path": "docs/evidence/closure/latest-marketing-release-gate-profile-matrix.md",
+      "exists": true
+    },
+    {
+      "path": "docs/evidence/closure/latest-marketing-release-gate-verdict-evidence.md",
+      "exists": true
+    }
+  ]
+}

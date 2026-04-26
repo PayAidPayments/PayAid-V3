@@ -60,7 +60,9 @@ function extractBuildRef(res, json) {
 }
 
 function isSchemaMismatch(text) {
-  return /logotype|column.+logoType.+does not exist|invalid prisma\.logo\.create/i.test(text || '')
+  return /column\s+[`"']?logotype[`"']?\s+does not exist|column.+logoType.+does not exist|invalid prisma\.logo\.create/i.test(
+    text || ''
+  )
 }
 
 async function callApi({ key, path, method, body }) {

@@ -19,15 +19,27 @@ function runNodeStep(label, scriptPath, env = process.env) {
   }
 }
 
+function parsePositiveInt(value) {
+  const parsed = Number.parseInt(value ?? '', 10)
+  if (!Number.isFinite(parsed) || parsed <= 0) return null
+  return parsed
+}
+
 const sharedWarnEnv = {
   ...process.env,
   MARKETING_RELEASE_GATE_EVIDENCE_WARNING_ONLY: '1',
 }
 
+const smokeMaxMs = parsePositiveInt(process.env.MARKETING_RELEASE_EVIDENCE_HELPERS_SUITE_SMOKE_MAX_MS)
+
 const steps = [
   runNodeStep(
     'marketing-warning-flag-resolver-test',
     'scripts/test-marketing-release-warning-flag-resolver.mjs'
+  ),
+  runNodeStep(
+    'marketing-timeout-helpers-test',
+    'scripts/test-marketing-release-timeout-helpers.mjs'
   ),
   runNodeStep(
     'marketing-evidence-bundle-warn-smoke',
@@ -36,10 +48,16 @@ const steps = [
   ),
 ]
 
-const overallOk = steps.every((s) => s.ok)
+const smokeStep = steps.find((s) => s.label === 'marketing-evidence-bundle-warn-smoke')
+const smokeWithinBudget = smokeMaxMs === null ? true : (smokeStep?.elapsedMs ?? Number.MAX_SAFE_INTEGER) <= smokeMaxMs
+const smokeLatencyViolation = !smokeWithinBudget
+const overallOk = steps.every((s) => s.ok) && smokeWithinBudget
 const output = {
   check: 'marketing-release-evidence-helpers-suite',
   overallOk,
+  smokeMaxMs,
+  smokeWithinBudget,
+  smokeLatencyViolation,
   steps: steps.map((s) => ({
     label: s.label,
     ok: s.ok,
@@ -51,14 +69,21 @@ const output = {
 console.log(JSON.stringify(output, null, 2))
 
 if (!overallOk) {
-  const failed = steps.find((s) => !s.ok)
-  if (failed?.stdout) {
-    console.error('\n# Failed step stdout')
-    console.error(failed.stdout)
-  }
-  if (failed?.stderr) {
-    console.error('\n# Failed step stderr')
-    console.error(failed.stderr)
+  if (smokeLatencyViolation) {
+    console.error('\n# Smoke latency budget violated')
+    console.error(
+      `marketing-evidence-bundle-warn-smoke took ${smokeStep?.elapsedMs ?? 'unknown'}ms (max ${smokeMaxMs}ms).`
+    )
+  } else {
+    const failed = steps.find((s) => !s.ok)
+    if (failed?.stdout) {
+      console.error('\n# Failed step stdout')
+      console.error(failed.stdout)
+    }
+    if (failed?.stderr) {
+      console.error('\n# Failed step stderr')
+      console.error(failed.stderr)
+    }
   }
 }
 

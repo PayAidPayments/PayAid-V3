@@ -1,0 +1,99 @@
+{
+  "check": "marketing-release-gate-verdict-evidence",
+  "capturedAt": "2026-04-26T06:03:58.362Z",
+  "command": "npm run run:marketing-release-gate-verdict-evidence",
+  "warningOnly": true,
+  "overallOk": false,
+  "effectiveOk": true,
+  "pipeline": {
+    "exitCode": 1,
+    "ok": false,
+    "parsed": {
+      "check": "marketing-release-gate-pipeline",
+      "overallOk": false,
+      "verdictReason": "failed_required_step",
+      "stepTimeoutDefaults": {
+        "global": 1,
+        "socialSmokeEvidence": 1,
+        "socialSmokeHandoffSnippet": 1,
+        "marketingClosurePackStrict": 1,
+        "markerHelpersSuite": 1,
+        "markerGateVerifier": 1,
+        "marketingGateProfileMatrixEvidence": 1
+      },
+      "includeMarkerHelpers": false,
+      "markerHelpersWarningOnly": false,
+      "includeMarkerVerifier": false,
+      "markerVerifierWarningOnly": false,
+      "includeMatrixEvidence": false,
+      "matrixEvidenceWarningOnly": false,
+      "skipOptionalAfterFailure": false,
+      "steps": [
+        {
+          "label": "social-smoke-evidence",
+          "ok": false,
+          "effectiveOk": false,
+          "warningOnly": false,
+          "skipped": false,
+          "skipReason": null,
+          "exitCode": 1,
+          "elapsedMs": 9,
+          "timeoutMs": 1,
+          "timedOut": true,
+          "command": "c:\\Users\\phani\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\helpers\\node.exe scripts/run-social-oauth-smoke-evidence.mjs"
+        },
+        {
+          "label": "social-smoke-handoff-snippet",
+          "ok": false,
+          "effectiveOk": false,
+          "warningOnly": false,
+          "skipped": false,
+          "skipReason": null,
+          "exitCode": 1,
+          "elapsedMs": 7,
+          "timeoutMs": 1,
+          "timedOut": true,
+          "command": "c:\\Users\\phani\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\helpers\\node.exe scripts/generate-social-oauth-smoke-handoff-snippet.mjs"
+        },
+        {
+          "label": "marketing-closure-pack-strict",
+          "ok": false,
+          "effectiveOk": false,
+          "warningOnly": false,
+          "skipped": false,
+          "skipReason": null,
+          "exitCode": 1,
+          "elapsedMs": 8,
+          "timeoutMs": 1,
+          "timedOut": true,
+          "command": "c:\\Users\\phani\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\helpers\\node.exe scripts/run-marketing-release-closure-pack.mjs"
+        }
+      ]
+    },
+    "stdout": "{\n  \"check\": \"marketing-release-gate-pipeline\",\n  \"overallOk\": false,\n  \"verdictReason\": \"failed_required_step\",\n  \"stepTimeoutDefaults\": {\n    \"global\": 1,\n    \"socialSmokeEvidence\": 1,\n    \"socialSmokeHandoffSnippet\": 1,\n    \"marketingClosurePackStrict\": 1,\n    \"markerHelpersSuite\": 1,\n    \"markerGateVerifier\": 1,\n    \"marketingGateProfileMatrixEvidence\": 1\n  },\n  \"includeMarkerHelpers\": false,\n  \"markerHelpersWarningOnly\": false,\n  \"includeMarkerVerifier\": false,\n  \"markerVerifierWarningOnly\": false,\n  \"includeMatrixEvidence\": false,\n  \"matrixEvidenceWarningOnly\": false,\n  \"skipOptionalAfterFailure\": false,\n  \"steps\": [\n    {\n      \"label\": \"social-smoke-evidence\",\n      \"ok\": false,\n      \"effectiveOk\": false,\n      \"warningOnly\": false,\n      \"skipped\": false,\n      \"skipReason\": null,\n      \"exitCode\": 1,\n      \"elapsedMs\": 9,\n      \"timeoutMs\": 1,\n      \"timedOut\": true,\n      \"command\": \"c:\\\\Users\\\\phani\\\\AppData\\\\Local\\\\Programs\\\\cursor\\\\resources\\\\app\\\\resources\\\\helpers\\\\node.exe scripts/run-social-oauth-smoke-evidence.mjs\"\n    },\n    {\n      \"label\": \"social-smoke-handoff-snippet\",\n      \"ok\": false,\n      \"effectiveOk\": false,\n      \"warningOnly\": false,\n      \"skipped\": false,\n      \"skipReason\": null,\n      \"exitCode\": 1,\n      \"elapsedMs\": 7,\n      \"timeoutMs\": 1,\n      \"timedOut\": true,\n      \"command\": \"c:\\\\Users\\\\phani\\\\AppData\\\\Local\\\\Programs\\\\cursor\\\\resources\\\\app\\\\resources\\\\helpers\\\\node.exe scripts/generate-social-oauth-smoke-handoff-snippet.mjs\"\n    },\n    {\n      \"label\": \"marketing-closure-pack-strict\",\n      \"ok\": false,\n      \"effectiveOk\": false,\n      \"warningOnly\": false,\n      \"skipped\": false,\n      \"skipReason\": null,\n      \"exitCode\": 1,\n      \"elapsedMs\": 8,\n      \"timeoutMs\": 1,\n      \"timedOut\": true,\n      \"command\": \"c:\\\\Users\\\\phani\\\\AppData\\\\Local\\\\Programs\\\\cursor\\\\resources\\\\app\\\\resources\\\\helpers\\\\node.exe scripts/run-marketing-release-closure-pack.mjs\"\n    }\n  ]\n}",
+    "stderr": "# Failed step stderr\nStep \"social-smoke-evidence\" timed out after 1ms."
+  },
+  "explainer": {
+    "exitCode": 0,
+    "ok": true,
+    "parsed": {
+      "ok": true,
+      "check": "marketing-release-gate-verdict-explainer",
+      "overallOk": false,
+      "verdictReason": "failed_required_step",
+      "summary": "Required release-gate stage failed; release should remain blocked.",
+      "severity": "blocking",
+      "failedStep": {
+        "label": "social-smoke-evidence",
+        "timedOut": true,
+        "skipReason": null
+      },
+      "nextSteps": [
+        "Increase step timeout and retry: set step-specific timeout for \"social-smoke-evidence\".",
+        "Re-run gate pipeline after fix."
+      ]
+    },
+    "stdout": "{\n  \"ok\": true,\n  \"check\": \"marketing-release-gate-verdict-explainer\",\n  \"overallOk\": false,\n  \"verdictReason\": \"failed_required_step\",\n  \"summary\": \"Required release-gate stage failed; release should remain blocked.\",\n  \"severity\": \"blocking\",\n  \"failedStep\": {\n    \"label\": \"social-smoke-evidence\",\n    \"timedOut\": true,\n    \"skipReason\": null\n  },\n  \"nextSteps\": [\n    \"Increase step timeout and retry: set step-specific timeout for \\\"social-smoke-evidence\\\".\",\n    \"Re-run gate pipeline after fix.\"\n  ]\n}",
+    "stderr": ""
+  }
+}

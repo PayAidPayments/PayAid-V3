@@ -2,6 +2,7 @@
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { enrichTimeoutResult, resolveTimeoutMs } from './lib/timeout-helpers.mjs'
 import { resolveWarningOnlyFlag } from './lib/warning-only-flag.mjs'
 
 function isoForFile(date = new Date()) {
@@ -16,6 +17,10 @@ function parseJsonSafely(text) {
   }
 }
 
+const stepTimeoutMs = resolveTimeoutMs({
+  globalKey: 'MARKETING_RELEASE_EVIDENCE_HELPERS_SUITE_STEP_TIMEOUT_MS',
+})
+
 const warningOnly = resolveWarningOnlyFlag({
   specificKey: 'MARKETING_RELEASE_EVIDENCE_HELPERS_SUITE_WARNING_ONLY',
 })
@@ -24,10 +29,17 @@ const run = spawnSync(process.execPath, ['scripts/run-marketing-release-evidence
   env: { ...process.env },
   encoding: 'utf8',
   stdio: 'pipe',
+  timeout: stepTimeoutMs,
 })
 
 const stdout = (run.stdout || '').trim()
-const stderr = (run.stderr || '').trim()
+const timeoutMeta = enrichTimeoutResult({
+  label: 'marketing-release-evidence-helpers-suite',
+  timeoutMs: stepTimeoutMs,
+  status: run.status,
+  error: run.error,
+  stderr: run.stderr || '',
+})
 const parsed = parseJsonSafely(stdout)
 const overallOk = Boolean(parsed?.overallOk)
 const effectiveOk = warningOnly ? true : overallOk
@@ -48,10 +60,12 @@ const evidence = {
   warningOnly,
   overallOk,
   effectiveOk,
-  exitCode: run.status ?? 1,
+  stepTimeoutMs: timeoutMeta.timeoutMs,
+  timedOut: timeoutMeta.timedOut,
+  exitCode: timeoutMeta.exitCode,
   summary: parsed ?? null,
   stdout,
-  stderr,
+  stderr: timeoutMeta.stderr,
 }
 
 writeFileSync(jsonPath, `${JSON.stringify(evidence, null, 2)}\n`, 'utf8')
@@ -65,6 +79,8 @@ const mdLines = [
   `- Overall OK: ${overallOk ? 'yes' : 'no'}`,
   `- Effective OK: ${effectiveOk ? 'yes' : 'no'}`,
   `- Warning only mode: ${warningOnly ? 'yes' : 'no'}`,
+  `- Step timeout (ms): ${stepTimeoutMs}`,
+  `- Timed out: ${timedOut ? 'yes' : 'no'}`,
   '',
   '## Summary JSON',
   '',
@@ -92,6 +108,8 @@ const latestLines = [
   `- Overall OK: ${overallOk ? 'yes' : 'no'}`,
   `- Effective OK: ${effectiveOk ? 'yes' : 'no'}`,
   `- Warning only mode: ${warningOnly ? 'yes' : 'no'}`,
+  `- Step timeout (ms): ${stepTimeoutMs}`,
+  `- Timed out: ${timedOut ? 'yes' : 'no'}`,
   `- Exit code: ${evidence.exitCode}`,
   '',
   '## Artifacts',
@@ -111,6 +129,8 @@ console.log(
       ok: effectiveOk,
       overallOk,
       warningOnly,
+      timedOut,
+      stepTimeoutMs,
       exitCode: evidence.exitCode,
       jsonPath,
       markdownPath: mdPath,

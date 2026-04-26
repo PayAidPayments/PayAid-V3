@@ -1,0 +1,10 @@
+{
+  "check": "social-oauth-connectors-smoke",
+  "capturedAt": "2026-04-26T07:49:31.202Z",
+  "command": "npm run run:social-oauth-smoke-pipeline",
+  "exitCode": 1,
+  "ok": false,
+  "summary": null,
+  "stdout": "",
+  "stderr": "{\n  \"ok\": false,\n  \"error\": \"Missing SOCIAL_SMOKE_AUTH_TOKEN\",\n  \"nextSteps\": [\n    \"Set SOCIAL_SMOKE_AUTH_TOKEN to a valid app JWT for a tenant admin/owner user.\",\n    \"Run: node scripts/smoke-social-oauth-connectors.mjs\"\n  ]\n}"
+}

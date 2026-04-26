@@ -1,0 +1,14 @@
+{
+  "check": "marketing-release-evidence-helpers-suite",
+  "capturedAt": "2026-04-26T06:08:30.134Z",
+  "command": "npm run run:marketing-release-evidence-helpers-suite:evidence",
+  "warningOnly": false,
+  "overallOk": false,
+  "effectiveOk": false,
+  "stepTimeoutMs": 1,
+  "timedOut": true,
+  "exitCode": 1,
+  "summary": null,
+  "stdout": "",
+  "stderr": "Step \"marketing-release-evidence-helpers-suite\" timed out after 1ms."
+}

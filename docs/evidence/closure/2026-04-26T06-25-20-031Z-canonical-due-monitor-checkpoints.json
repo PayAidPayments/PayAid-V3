@@ -1,0 +1,39 @@
+{
+  "check": "canonical-due-monitor-checkpoints",
+  "timestamp": "2026-04-26T06:25:20.031Z",
+  "cutoverStart": {
+    "source": "signoff-doc",
+    "valueUtc": "2026-04-25T08:00:00.000Z",
+    "raw": "2026-04-25T08:00:00Z"
+  },
+  "checkpointTimeoutMs": 180000,
+  "plan": [
+    {
+      "label": "tplus8",
+      "hours": 8,
+      "eligibleAtUtc": "2026-04-25T16:00:00.000Z",
+      "due": true,
+      "alreadyCaptured": true,
+      "shouldRun": false
+    },
+    {
+      "label": "tplus16",
+      "hours": 16,
+      "eligibleAtUtc": "2026-04-26T00:00:00.000Z",
+      "due": true,
+      "alreadyCaptured": true,
+      "shouldRun": false
+    },
+    {
+      "label": "tplus24",
+      "hours": 24,
+      "eligibleAtUtc": "2026-04-26T08:00:00.000Z",
+      "due": false,
+      "alreadyCaptured": false,
+      "shouldRun": false
+    }
+  ],
+  "runLabels": [],
+  "runResults": [],
+  "overallOk": true
+}

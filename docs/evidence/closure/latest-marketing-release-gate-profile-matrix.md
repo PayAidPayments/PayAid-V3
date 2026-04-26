@@ -1,6 +1,6 @@
 # Latest Marketing Release Gate Profile Matrix
 
-- Last updated: 2026-04-26T03:37:58.656Z
+- Last updated: 2026-04-26T08:11:31.150Z
 - Overall OK: no
 - Effective OK: yes
 - Warning only mode: yes
@@ -8,8 +8,8 @@
 
 ## Artifacts
 
-- JSON: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-26T03-37-58-656Z-marketing-release-gate-profile-matrix.json`
-- Markdown: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-26T03-37-58-656Z-marketing-release-gate-profile-matrix.md`
+- JSON: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-26T08-11-31-150Z-marketing-release-gate-profile-matrix.json`
+- Markdown: `D:\Cursor Projects\PayAid V3\docs\evidence\closure\2026-04-26T08-11-31-150Z-marketing-release-gate-profile-matrix.md`
 
 ## Quick Command
 

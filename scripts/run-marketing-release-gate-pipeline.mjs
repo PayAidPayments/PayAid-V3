@@ -2,56 +2,48 @@
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-
-function parseTimeoutMs(value, fallbackMs) {
-  const parsed = Number.parseInt(value ?? '', 10)
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallbackMs
-  return parsed
-}
+import { enrichTimeoutResult, resolveTimeoutMs } from './lib/timeout-helpers.mjs'
 
 function resolveStepTimeoutMs(label) {
-  const globalTimeoutMs = parseTimeoutMs(
-    process.env.MARKETING_RELEASE_STEP_TIMEOUT_MS,
-    300000
-  )
-
   if (label === 'social-smoke-evidence') {
-    return parseTimeoutMs(
-      process.env.MARKETING_RELEASE_STEP_TIMEOUT_MS_SOCIAL_SMOKE_EVIDENCE,
-      globalTimeoutMs
-    )
+    return resolveTimeoutMs({
+      globalKey: 'MARKETING_RELEASE_STEP_TIMEOUT_MS',
+      specificKey: 'MARKETING_RELEASE_STEP_TIMEOUT_MS_SOCIAL_SMOKE_EVIDENCE',
+    })
   }
   if (label === 'social-smoke-handoff-snippet') {
-    return parseTimeoutMs(
-      process.env.MARKETING_RELEASE_STEP_TIMEOUT_MS_SOCIAL_SMOKE_HANDOFF_SNIPPET,
-      globalTimeoutMs
-    )
+    return resolveTimeoutMs({
+      globalKey: 'MARKETING_RELEASE_STEP_TIMEOUT_MS',
+      specificKey: 'MARKETING_RELEASE_STEP_TIMEOUT_MS_SOCIAL_SMOKE_HANDOFF_SNIPPET',
+    })
   }
   if (label === 'marketing-closure-pack-strict') {
-    return parseTimeoutMs(
-      process.env.MARKETING_RELEASE_STEP_TIMEOUT_MS_MARKETING_CLOSURE_PACK_STRICT,
-      globalTimeoutMs
-    )
+    return resolveTimeoutMs({
+      globalKey: 'MARKETING_RELEASE_STEP_TIMEOUT_MS',
+      specificKey: 'MARKETING_RELEASE_STEP_TIMEOUT_MS_MARKETING_CLOSURE_PACK_STRICT',
+    })
   }
   if (label === 'marker-helpers-suite') {
-    return parseTimeoutMs(
-      process.env.MARKETING_RELEASE_STEP_TIMEOUT_MS_MARKER_HELPERS_SUITE,
-      globalTimeoutMs
-    )
+    return resolveTimeoutMs({
+      globalKey: 'MARKETING_RELEASE_STEP_TIMEOUT_MS',
+      specificKey: 'MARKETING_RELEASE_STEP_TIMEOUT_MS_MARKER_HELPERS_SUITE',
+    })
   }
   if (label === 'marker-gate-verifier') {
-    return parseTimeoutMs(
-      process.env.MARKETING_RELEASE_STEP_TIMEOUT_MS_MARKER_GATE_VERIFIER,
-      globalTimeoutMs
-    )
+    return resolveTimeoutMs({
+      globalKey: 'MARKETING_RELEASE_STEP_TIMEOUT_MS',
+      specificKey: 'MARKETING_RELEASE_STEP_TIMEOUT_MS_MARKER_GATE_VERIFIER',
+    })
   }
   if (label === 'marketing-gate-profile-matrix-evidence') {
-    return parseTimeoutMs(
-      process.env.MARKETING_RELEASE_STEP_TIMEOUT_MS_MARKETING_GATE_PROFILE_MATRIX_EVIDENCE,
-      globalTimeoutMs
-    )
+    return resolveTimeoutMs({
+      globalKey: 'MARKETING_RELEASE_STEP_TIMEOUT_MS',
+      specificKey: 'MARKETING_RELEASE_STEP_TIMEOUT_MS_MARKETING_GATE_PROFILE_MATRIX_EVIDENCE',
+    })
   }
-  return globalTimeoutMs
+  return resolveTimeoutMs({
+    globalKey: 'MARKETING_RELEASE_STEP_TIMEOUT_MS',
+  })
 }
 
 function runStep(label, command, args, env = process.env) {
@@ -63,21 +55,24 @@ function runStep(label, command, args, env = process.env) {
     stdio: 'pipe',
     timeout: timeoutMs,
   })
-  const timedOut = result.error?.name === 'Error' && result.error?.code === 'ETIMEDOUT'
-  const baseStderr = (result.stderr || '').trim()
-  const timeoutSuffix = timedOut ? `Step "${label}" timed out after ${timeoutMs}ms.` : ''
-  const mergedStderr = [baseStderr, timeoutSuffix].filter(Boolean).join('\n')
+  const timeoutMeta = enrichTimeoutResult({
+    label,
+    timeoutMs,
+    status: result.status,
+    error: result.error,
+    stderr: result.stderr || '',
+  })
 
   return {
     label,
     command: [command, ...args].join(' '),
     ok: result.status === 0,
-    exitCode: result.status ?? 1,
+    exitCode: timeoutMeta.exitCode,
     elapsedMs: Date.now() - startedAt,
-    timeoutMs,
-    timedOut,
+    timeoutMs: timeoutMeta.timeoutMs,
+    timedOut: timeoutMeta.timedOut,
     stdout: (result.stdout || '').trim(),
-    stderr: mergedStderr,
+    stderr: timeoutMeta.stderr,
   }
 }
 

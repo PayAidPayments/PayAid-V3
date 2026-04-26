@@ -1,0 +1,71 @@
+{
+  "check": "marketing-release-production-rollout-verification",
+  "capturedAt": "2026-04-26T08:04:00.604Z",
+  "warningOnly": false,
+  "ok": false,
+  "branch": "unknown",
+  "head": "unknown",
+  "checks": [
+    {
+      "name": "warning-flag-resolver",
+      "ok": false,
+      "exitCode": 1,
+      "timedOut": true,
+      "timeoutMs": 1000,
+      "command": "npm run test:marketing-release-warning-flag-resolver",
+      "output": "Step \"warning-flag-resolver\" timed out after 1000ms."
+    },
+    {
+      "name": "evidence-helpers-suite",
+      "ok": false,
+      "exitCode": 1,
+      "timedOut": true,
+      "timeoutMs": 1000,
+      "command": "npm run test:marketing-release-evidence-helpers-suite",
+      "output": "Step \"evidence-helpers-suite\" timed out after 1000ms."
+    },
+    {
+      "name": "evidence-bundle-with-helpers",
+      "ok": false,
+      "exitCode": 1,
+      "timedOut": true,
+      "timeoutMs": 1000,
+      "command": "npm run run:marketing-release-gate-evidence-bundle:with-helpers",
+      "output": "Step \"evidence-bundle-with-helpers\" timed out after 1000ms."
+    },
+    {
+      "name": "evidence-latency-gate-warn",
+      "ok": false,
+      "exitCode": 1,
+      "timedOut": true,
+      "timeoutMs": 1000,
+      "command": "npm run run:marketing-release-evidence-latency-gate:warn",
+      "output": "Step \"evidence-latency-gate-warn\" timed out after 1000ms."
+    }
+  ],
+  "pointers": [
+    {
+      "path": "docs/evidence/closure/latest-marketing-release-gate-evidence-bundle.md",
+      "exists": true
+    },
+    {
+      "path": "docs/evidence/closure/latest-marketing-release-evidence-helpers-suite.md",
+      "exists": true
+    },
+    {
+      "path": "docs/evidence/closure/latest-marketing-release-gate-profile-matrix.md",
+      "exists": true
+    },
+    {
+      "path": "docs/evidence/closure/latest-marketing-release-gate-verdict-evidence.md",
+      "exists": true
+    }
+  ],
+  "timeoutDefaults": {
+    "global": 1000,
+    "warningFlagResolver": 1000,
+    "evidenceHelpersSuite": 1000,
+    "evidenceBundle": 1000,
+    "evidenceLatencyGate": 1000
+  }
+}
