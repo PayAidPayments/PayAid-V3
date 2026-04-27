@@ -904,6 +904,13 @@ export default function CRMLeadsPage() {
     <>
       {/* Action buttons in header area */}
       <div className="fixed top-16 right-6 z-50 flex items-center gap-2">
+          <Link
+            href={`/crm/${tenantId}/Leads/Generator`}
+            className="px-4 py-2 border border-blue-200 text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2"
+          >
+            <Zap className="w-4 h-4" />
+            Lead Generator
+          </Link>
           {/* Create Lead Dropdown */}
           <div className="relative" ref={createMenuRef}>
               <button
