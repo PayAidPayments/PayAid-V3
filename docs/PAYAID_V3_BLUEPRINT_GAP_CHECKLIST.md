@@ -93,6 +93,10 @@ Complete in strict order unless explicitly re-prioritized.
 - [x] Stabilize authenticated QA env inputs for automated scripts (token, tenant, campaign resolution with reproducible runbook).
 - [ ] Eliminate critical test hangs/timeouts for release-gate suites.
 
+### P0.1 - Optional hygiene (non-blocking)
+
+- [ ] Triage and (if worthwhile) eliminate recurring Vercel clone warning: `Failed to fetch one or more git submodules`.
+
 ### P1 - Core architecture parity
 
 - [ ] Enforce shared business graph contracts across CRM, Finance, Marketing, Projects, Inventory.
@@ -202,3 +206,4 @@ Format:
 - `2026-04-26` - P0 canonical readiness verdict gate reached green - Completed (canonical contract/post-cutover/response/consumer checks all pass, checklist unchecked count is zero, and consolidated readiness verdict returns `overallOk: true`) - `npm run check:canonical-module-api-readiness-verdict` - `docs/evidence/closure/2026-04-26T09-55-20-206Z-canonical-module-api-readiness-verdict.md`
 - `2026-04-28` - P0 dashboard build reliability (`main` + prod) - Partial (PR **#3** â†’ **`main`** `68fc4d5fa`; prod **`dpl_HgQGâ€¦`** **Ready**; alias `payaid-v3.vercel.app` updated; sampled logs: **Turbopack** build, no invalid `outputFileTracing` warning; submodule clone warning; **step41** needs secretsâ€”closure phases 51â€“52) - `git + Vercel` - `https://github.com/PayAidPayments/PayAid-V3/pull/3`, `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`
 - `2026-04-28` - P0 dashboard reliability and Step 4.1 gates fully closed (phase 66) - Completed (`main` includes dependency remediation + closure docs; production alias on Ready deployment; `check:step41-routes-live` passes with all target routes `200`; operator fallback runbook documented; submodule warning triaged as non-blocking hygiene) - `vercel inspect`, `npm run check:step41-routes-live` - `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`, `docs/evidence/email/2026-04-28T07-28-18-801Z-step41-routes-live-check.md`, `docs/VERCEL_PRODUCTION_TESTING_HANDOFF.md`
+- `2026-04-28` - P0.1 optional hygiene backlog item added for submodule warning cleanup - Open (explicitly tracked as non-blocking follow-up after reliability closure) - `docs update` - `docs/PAYAID_V3_BLUEPRINT_GAP_CHECKLIST.md`, `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`
