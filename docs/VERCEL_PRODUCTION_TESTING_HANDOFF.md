@@ -265,6 +265,44 @@ If blocked:
 - Record blocker details in QA run notes using:
   - `docs/evidence/email/EMAIL_PRECHECK_BLOCKER_TRIAGE.md`
 
+### Step 4.1.b - Operator fallback (auto-resolve env for live routes check)
+
+Use this only when `TENANT_ID` / `EMAIL_CAMPAIGN_ID` / `AUTH_TOKEN` are not preloaded but `.env` already has valid login creds and DB access.
+
+PowerShell one-shot (repo root):
+
+```powershell
+$envContent = Get-Content .env -ErrorAction Stop
+function GetEnvVal([string]$name) {
+  $line = $envContent | Where-Object { $_ -match "^$name=" } | Select-Object -First 1
+  if (-not $line) { return '' }
+  return ($line -replace "^$name=", '').Trim('"')
+}
+
+$base = "https://payaid-v3.vercel.app"
+$loginEmail = GetEnvVal "PERF_TEST_EMAIL"
+$loginPassword = GetEnvVal "PERF_TEST_PASSWORD"
+$loginBody = @{ email = $loginEmail; password = $loginPassword } | ConvertTo-Json
+$resp = Invoke-RestMethod -Method Post -Uri "$base/api/auth/login" -ContentType "application/json" -Body $loginBody -TimeoutSec 30
+$token = $resp.token
+if (-not $token) { $token = $resp.accessToken }
+if (-not $token) { $token = $resp.jwt }
+
+$campaignObj = (node scripts/get-latest-email-campaign-id.mjs) | ConvertFrom-Json
+$env:BASE_URL = $base
+$env:TENANT_ID = [string]$campaignObj.tenantId
+$env:EMAIL_CAMPAIGN_ID = [string]$campaignObj.campaignId
+$env:AUTH_TOKEN = [string]$token
+
+npm run check:step41-routes-live
+```
+
+Expected outcome:
+
+- `ok: true` from `check:step41-routes-live`
+- `progress`, `failed-jobs`, `retry-history` return `200`
+- artifact written under `docs/evidence/email/*-step41-routes-live-check.md`
+
 ## Step 4.2 - Marketing canonical route verification (IA consistency)
 
 Before running Marketing UI checks, use canonical routes only:
