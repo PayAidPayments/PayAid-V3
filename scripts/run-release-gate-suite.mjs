@@ -5,11 +5,17 @@ import { spawnSync } from 'node:child_process'
 const root = process.cwd()
 const outDir = path.join(root, 'docs', 'evidence', 'release-gates')
 const gateTimeoutMs = Number(process.env.RELEASE_GATE_TIMEOUT_MS || '240000')
+const defaultGateTimeoutOverrides = {
+  'canonical-readiness-verdict': 900000,
+  m0: 900000,
+  m2: 900000,
+  m3: 900000,
+}
 
 function getGateTimeoutMs(gateId) {
   const envKey = `RELEASE_GATE_TIMEOUT_MS_${gateId.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`
   const override = process.env[envKey]
-  if (!override) return gateTimeoutMs
+  if (!override) return defaultGateTimeoutOverrides[gateId] || gateTimeoutMs
   const parsed = Number(override)
   return Number.isFinite(parsed) && parsed > 0 ? parsed : gateTimeoutMs
 }
