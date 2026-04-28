@@ -28,9 +28,32 @@ const gates = [
     command: ['npm', 'run', 'check:canonical-module-api-readiness-verdict'],
   },
   { id: 'leads-retention-health', command: ['npm', 'run', 'run:leads-bulk-retention-health-gate-pipeline'] },
-  { id: 'm0', command: ['npm', 'run', 'test:m0'] },
-  { id: 'm2', command: ['npm', 'run', 'test:m2:smoke', '--', '--runInBand'] },
-  { id: 'm3', command: ['npm', 'run', 'test:m3:smoke', '--', '--runInBand'] },
+  {
+    id: 'm0',
+    command: ['node', 'node_modules/jest/bin/jest.js', '--config', 'jest.m0.config.js', '--runInBand', '--forceExit'],
+  },
+  {
+    id: 'm2',
+    command: [
+      'node',
+      'node_modules/jest/bin/jest.js',
+      '--config',
+      'jest.m2.smoke.config.js',
+      '--runInBand',
+      '--forceExit',
+    ],
+  },
+  {
+    id: 'm3',
+    command: [
+      'node',
+      'node_modules/jest/bin/jest.js',
+      '--config',
+      'jest.m3.smoke.config.js',
+      '--runInBand',
+      '--forceExit',
+    ],
+  },
 ]
 
 const include = new Set(
