@@ -768,6 +768,17 @@
 - Outcome:
   - production deploy reliability + live-route smoke gate now have closure-quality green evidence in this cycle.
 
+64) **Post-doc-update production deployment terminal state captured (2026-04-28)**
+
+- Follow-up production deployments triggered by phase-63 documentation commits reached terminal states:
+  - **Ready**: `dpl_bKTEhHkLxb36NFLjRsCphraU5xqr`
+    - URL: `https://payaid-v3-mgccomqw5-payaid-projects-a67c6b27.vercel.app`
+    - Aliases include `https://payaid-v3.vercel.app`
+  - **Canceled**: `dpl_FNKx5wYavVp7k2gfPWp9rxuVzmW1`
+    - URL: `https://payaid-v3-r8t19kag3-payaid-projects-a67c6b27.vercel.app`
+- Interpretation:
+  - Cancellation is consistent with overlapping production queue behavior while a newer run completed; production alias now points at the successful Ready deployment.
+
 ## Interpretation
 
 - The build pipeline now fails deterministically with heartbeat + elapsed diagnostics instead of opaque/stalled behavior.
@@ -792,3 +803,4 @@
 - **Current focus (post Phase 61):** land missing dashboard dependencies in `apps/dashboard/package.json`, trigger a new production deployment, confirm terminal **Ready** + alias target, then run **step41** with loaded secrets (`TENANT_ID`, `EMAIL_CAMPAIGN_ID`, `AUTH_TOKEN` or `CANONICAL_STAGING_*`) for closure evidence.
 - **Current focus (post Phase 62):** with production deploy now **Ready** on the dependency-remediation commit, load `TENANT_ID`, `EMAIL_CAMPAIGN_ID`, and `AUTH_TOKEN` (or `CANONICAL_STAGING_*`) in shell/`.env.local` and rerun **`npm run check:step41-routes-live`** to produce closure-quality pass evidence.
 - **Current focus (post Phase 63):** convert this run into final closeout by keeping the step41 env-resolution path documented (or baking canonical staging vars in operator runbook), then proceed with remaining non-blocking cleanup items (for example, optional submodule warning triage).
+- **Current focus (post Phase 64):** production alias and step41 smoke are both green in this cycle; remaining items are optional hygiene tasks (for example, submodule warning cleanup and env/runbook hardening for repeatable operator smoke runs).
