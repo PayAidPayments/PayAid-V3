@@ -91,7 +91,7 @@ Complete in strict order unless explicitly re-prioritized.
 - [x] Fix production deploy/build reliability for dashboard (must achieve consistent green deploys).
 - [x] Resolve Step 4.1 email campaign route parity on live deployment (`progress`, `failed-jobs`, `retry-history`).
 - [x] Stabilize authenticated QA env inputs for automated scripts (token, tenant, campaign resolution with reproducible runbook).
-- [ ] Eliminate critical test hangs/timeouts for release-gate suites.
+- [ ] Eliminate critical test hangs/timeouts for release-gate suites. (Timeout defaults hardened in code; full `m0/m2/m3` terminal validation under new profile is in progress.)
 
 ### P0.1 - Optional hygiene (non-blocking)
 
@@ -210,3 +210,4 @@ Format:
 - `2026-04-28` - P0.1 submodule warning root-cause audit - Open (confirmed gitlinks under `repositories/*` without `.gitmodules` mapping; warning explained and remains non-blocking until structural cleanup is explicitly prioritized) - `git submodule status`, `git ls-files --stage`, `git ls-tree HEAD:repositories` - `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`
 - `2026-04-28` - P0.1 submodule warning mitigation landed on `main` (phase 69) - In progress (removed stale `repositories/*` gitlinks via commit `44a37dfc7fa682a59396317b3c151b1e0c8343f9`; awaiting one Vercel build-log recheck to confirm warning elimination before closing item) - `gh api git/trees`, `gh api git/refs` - `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`
 - `2026-04-28` - P0.1 submodule warning elimination verified (phase 70) - Completed (fresh production clone logs for deployment `dpl_33anSj3fHp3W96JFBq46QpMVa8ZQ` on commit `44a37df` show clone completion and no submodule warning line) - `vercel inspect --logs` - `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`
+- `2026-04-28` - P0 release-gate timeout hardening started (phase 71) - In progress (added in-code timeout defaults for `canonical-readiness-verdict`/`m0`/`m2`/`m3`, increased readiness safe-wrapper timeout, and captured bounded-timeout proof artifact for `m0`; full `m0/m2/m3` terminal validation pending) - `npm run release:gate:smoke` - `docs/evidence/release-gates/2026-04-28T11-05-13-127Z-release-gate-suite.json`, `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`
