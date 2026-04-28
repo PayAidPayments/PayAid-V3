@@ -88,9 +88,9 @@ Complete in strict order unless explicitly re-prioritized.
 
 ### P0 - Blockers to unblock enhancement velocity
 
-- [ ] Fix production deploy/build reliability for dashboard (must achieve consistent green deploys).
-- [ ] Resolve Step 4.1 email campaign route parity on live deployment (`progress`, `failed-jobs`, `retry-history`).
-- [ ] Stabilize authenticated QA env inputs for automated scripts (token, tenant, campaign resolution with reproducible runbook).
+- [x] Fix production deploy/build reliability for dashboard (must achieve consistent green deploys).
+- [x] Resolve Step 4.1 email campaign route parity on live deployment (`progress`, `failed-jobs`, `retry-history`).
+- [x] Stabilize authenticated QA env inputs for automated scripts (token, tenant, campaign resolution with reproducible runbook).
 - [ ] Eliminate critical test hangs/timeouts for release-gate suites.
 
 ### P1 - Core architecture parity
@@ -200,3 +200,5 @@ Format:
 - `2026-04-26` - P0 canonical checkpoints executed for `tplus24`/`tplus8`/`tplus16` and consolidated refresh rerun - Partial pass (all due checkpoints executed in blocked mode with fresh evidence; live status now reports no remaining due checkpoint windows) - `npm run run:canonical-monitor:tplus24`, `npm run run:canonical-monitor:tplus8`, `npm run run:canonical-monitor:tplus16`, `npm run run:canonical-status-refresh` - `docs/evidence/closure/2026-04-26T09-51-17-513Z-canonical-post-enable-monitor-checkpoint-tplus24.md`, `docs/evidence/closure/2026-04-26T09-51-19-900Z-canonical-post-enable-monitor-checkpoint-tplus8.md`, `docs/evidence/closure/2026-04-26T09-53-18-661Z-canonical-post-enable-monitor-checkpoint-tplus16.md`, `docs/evidence/closure/2026-04-26T09-54-46-695Z-canonical-status-refresh.md`
 - `2026-04-26` - P0 canonical monitoring-complete gate reached pass - Completed (`check:canonical-monitoring-complete` now passes with all required checkpoints present and eligible) - `npm run check:canonical-monitoring-complete` - `docs/evidence/closure/2026-04-26T09-55-14-564Z-canonical-monitoring-complete-check.md`
 - `2026-04-26` - P0 canonical readiness verdict gate reached green - Completed (canonical contract/post-cutover/response/consumer checks all pass, checklist unchecked count is zero, and consolidated readiness verdict returns `overallOk: true`) - `npm run check:canonical-module-api-readiness-verdict` - `docs/evidence/closure/2026-04-26T09-55-20-206Z-canonical-module-api-readiness-verdict.md`
+- `2026-04-28` - P0 dashboard build reliability (`main` + prod) - Partial (PR **#3** â†’ **`main`** `68fc4d5fa`; prod **`dpl_HgQGâ€¦`** **Ready**; alias `payaid-v3.vercel.app` updated; sampled logs: **Turbopack** build, no invalid `outputFileTracing` warning; submodule clone warning; **step41** needs secretsâ€”closure phases 51â€“52) - `git + Vercel` - `https://github.com/PayAidPayments/PayAid-V3/pull/3`, `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`
+- `2026-04-28` - P0 dashboard reliability and Step 4.1 gates fully closed (phase 66) - Completed (`main` includes dependency remediation + closure docs; production alias on Ready deployment; `check:step41-routes-live` passes with all target routes `200`; operator fallback runbook documented; submodule warning triaged as non-blocking hygiene) - `vercel inspect`, `npm run check:step41-routes-live` - `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`, `docs/evidence/email/2026-04-28T07-28-18-801Z-step41-routes-live-check.md`, `docs/VERCEL_PRODUCTION_TESTING_HANDOFF.md`
