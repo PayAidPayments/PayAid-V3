@@ -95,7 +95,7 @@ Complete in strict order unless explicitly re-prioritized.
 
 ### P0.1 - Optional hygiene (non-blocking)
 
-- [ ] Triage and (if worthwhile) eliminate recurring Vercel clone warning: `Failed to fetch one or more git submodules`.
+- [ ] Triage and (if worthwhile) eliminate recurring Vercel clone warning: `Failed to fetch one or more git submodules`. (Root-cause cleanup landed on `main`; pending one Vercel log recheck for closure.)
 
 ### P1 - Core architecture parity
 
@@ -208,3 +208,4 @@ Format:
 - `2026-04-28` - P0 dashboard reliability and Step 4.1 gates fully closed (phase 66) - Completed (`main` includes dependency remediation + closure docs; production alias on Ready deployment; `check:step41-routes-live` passes with all target routes `200`; operator fallback runbook documented; submodule warning triaged as non-blocking hygiene) - `vercel inspect`, `npm run check:step41-routes-live` - `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`, `docs/evidence/email/2026-04-28T07-28-18-801Z-step41-routes-live-check.md`, `docs/VERCEL_PRODUCTION_TESTING_HANDOFF.md`
 - `2026-04-28` - P0.1 optional hygiene backlog item added for submodule warning cleanup - Open (explicitly tracked as non-blocking follow-up after reliability closure) - `docs update` - `docs/PAYAID_V3_BLUEPRINT_GAP_CHECKLIST.md`, `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`
 - `2026-04-28` - P0.1 submodule warning root-cause audit - Open (confirmed gitlinks under `repositories/*` without `.gitmodules` mapping; warning explained and remains non-blocking until structural cleanup is explicitly prioritized) - `git submodule status`, `git ls-files --stage`, `git ls-tree HEAD:repositories` - `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`
+- `2026-04-28` - P0.1 submodule warning mitigation landed on `main` (phase 69) - In progress (removed stale `repositories/*` gitlinks via commit `44a37dfc7fa682a59396317b3c151b1e0c8343f9`; awaiting one Vercel build-log recheck to confirm warning elimination before closing item) - `gh api git/trees`, `gh api git/refs` - `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`
