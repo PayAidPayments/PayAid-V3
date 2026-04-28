@@ -839,6 +839,19 @@
 - Remaining validation:
   - run one fresh Vercel production clone/build check to confirm warning no longer appears in deployment logs.
 
+70) **Submodule warning elimination verified on fresh production clone logs (2026-04-28)**
+
+- Follow-up production deployment inspected:
+  - deployment: `dpl_33anSj3fHp3W96JFBq46QpMVa8ZQ`
+  - URL: `https://payaid-v3-agvri4zsh-payaid-projects-a67c6b27.vercel.app`
+  - clone commit: `44a37df` (gitlink-cleanup commit)
+- `vercel inspect --logs` clone section now shows:
+  - `Cloning github.com/PayAidPayments/PayAid-V3 (Branch: main, Commit: 44a37df)`
+  - `Cloning completed: ...`
+  - no `Failed to fetch one or more git submodules` warning line present.
+- Outcome:
+  - optional hygiene objective for submodule clone warning is functionally resolved for current production clone path.
+
 ## Interpretation
 
 - The build pipeline now fails deterministically with heartbeat + elapsed diagnostics instead of opaque/stalled behavior.
@@ -869,3 +882,4 @@
 - **Current focus (post Phase 67):** no actionable reliability blockers remain; continue only optional hygiene tasks if/when prioritized.
 - **Current focus (post Phase 68):** root cause for submodule warning is documented (gitlinks without `.gitmodules` mapping); keep as optional hygiene unless/until repository-structure cleanup is explicitly prioritized.
 - **Current focus (post Phase 69):** stale gitlinks removed on `main`; perform one follow-up Vercel deploy/log inspection to verify clone warning elimination and then close optional hygiene item.
+- **Current focus (post Phase 70):** submodule warning hygiene thread is closed (verification captured on fresh production clone logs); no additional action required unless warning reappears.
