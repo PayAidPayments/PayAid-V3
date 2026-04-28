@@ -874,6 +874,27 @@
   - release-gate timeout handling is now calibrated in code defaults and reproducibly bounded.
   - final closeout of this P0 item still requires a full `m0/m2/m3` validation pass (or documented terminal evidence for each suite) under the new defaults.
 
+72) **Release-gate `m0/m2/m3` blocker closed with calibrated runner + passing artifact (2026-04-28)**
+
+- Additional hardening applied after phase 71 triage:
+  - `scripts/run-release-gate-suite.mjs`
+    - switched `m0`/`m2`/`m3` commands from `npm run ...` wrappers to direct Jest invocations:
+      - `node node_modules/jest/bin/jest.js --config <suite> --runInBand --forceExit`
+    - purpose: avoid wrapper-level process-lifecycle stalls and keep gate execution deterministic.
+  - `__tests__/m3/m3-revenue-forecast-route.test.ts`
+    - stabilized month-bucket expectation by fixing `thisMonthClose` date generation to avoid month-end rollover flakiness.
+- Validation sequence captured:
+  - isolated reruns documented prior failure signatures:
+    - `m0` timed out at `900000ms` under wrapper path artifact: `docs/evidence/release-gates/2026-04-28T13-27-57-480Z-release-gate-suite.json`
+    - `m2` timed out at `900000ms` under wrapper path artifact: `docs/evidence/release-gates/2026-04-28T13-44-54-517Z-release-gate-suite.json`
+    - `m3` exposed a concrete assertion failure (revenue forecast bucket expectation) under wrapper path artifact: `docs/evidence/release-gates/2026-04-28T14-01-30-218Z-release-gate-suite.json`
+  - post-fix full gate run:
+    - command: `RELEASE_GATES=m0,m2,m3 npm run release:gate:smoke`
+    - artifact: `docs/evidence/release-gates/2026-04-28T14-45-34-620Z-release-gate-suite.json`
+    - result: `all_pass: true` with all target suites non-timeout and exit code `0`.
+- Outcome:
+  - P0 blocker **"Eliminate critical test hangs/timeouts for release-gate suites"** is closed for this cycle with closure-grade green evidence.
+
 ## Interpretation
 
 - The build pipeline now fails deterministically with heartbeat + elapsed diagnostics instead of opaque/stalled behavior.
@@ -906,3 +927,4 @@
 - **Current focus (post Phase 69):** stale gitlinks removed on `main`; perform one follow-up Vercel deploy/log inspection to verify clone warning elimination and then close optional hygiene item.
 - **Current focus (post Phase 70):** submodule warning hygiene thread is closed (verification captured on fresh production clone logs); no additional action required unless warning reappears.
 - **Current focus (post Phase 71):** complete full release-gate validation for `m0/m2/m3` with the new default timeout profile and then close the P0 test-hang/timeout blocker.
+- **Current focus (post Phase 72):** no active P0 reliability blockers remain in this thread; proceed to next prioritized architecture-parity backlog item when scheduled.
