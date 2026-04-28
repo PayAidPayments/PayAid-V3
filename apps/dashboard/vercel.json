@@ -2,6 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "npm install --legacy-peer-deps --no-audit --no-fund",
-  "buildCommand": "NEXT_BUILD_TIMEOUT_MS=600000 VERCEL_ALLOW_WEBPACK_FALLBACK=0 NODE_OPTIONS=--max-old-space-size=4096 npm run build",
-  "outputDirectory": ".next"
+  "buildCommand": "node scripts/vercel-build.cjs",
+  "outputDirectory": ".next-vercel-build"
 }
