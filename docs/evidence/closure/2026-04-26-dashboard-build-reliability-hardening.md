@@ -852,6 +852,28 @@
 - Outcome:
   - optional hygiene objective for submodule clone warning is functionally resolved for current production clone path.
 
+71) **Release-gate timeout hardening started for test-hang blocker (2026-04-28)**
+
+- Code hardening applied to remove reliance on ad-hoc env tuning for known long-running suites:
+  - `scripts/run-release-gate-suite.mjs`
+    - default per-gate timeout overrides added:
+      - `canonical-readiness-verdict`: `900000ms`
+      - `m0`: `900000ms`
+      - `m2`: `900000ms`
+      - `m3`: `900000ms`
+  - `scripts/run-canonical-readiness-verdict-safe.mjs`
+    - default wrapper timeout increased from `180000ms` to `900000ms`
+  - `scripts/check-canonical-module-api-readiness-verdict.mjs`
+    - default per-command override added for `canonical-consumer-usage` (`600000ms`)
+    - per-command progress logs added for deterministic triage (`running/completed`, elapsed, timeout marker)
+- Validation artifact captured for deterministic timeout behavior:
+  - command: `RELEASE_GATES=m0 RELEASE_GATE_TIMEOUT_MS_M0=120000 npm run release:gate:smoke`
+  - artifact: `docs/evidence/release-gates/2026-04-28T11-05-13-127Z-release-gate-suite.json`
+  - result: explicit bounded timeout on `m0` at `120076ms` (`timed_out: true`) with no indefinite stall.
+- Outcome:
+  - release-gate timeout handling is now calibrated in code defaults and reproducibly bounded.
+  - final closeout of this P0 item still requires a full `m0/m2/m3` validation pass (or documented terminal evidence for each suite) under the new defaults.
+
 ## Interpretation
 
 - The build pipeline now fails deterministically with heartbeat + elapsed diagnostics instead of opaque/stalled behavior.
@@ -883,3 +905,4 @@
 - **Current focus (post Phase 68):** root cause for submodule warning is documented (gitlinks without `.gitmodules` mapping); keep as optional hygiene unless/until repository-structure cleanup is explicitly prioritized.
 - **Current focus (post Phase 69):** stale gitlinks removed on `main`; perform one follow-up Vercel deploy/log inspection to verify clone warning elimination and then close optional hygiene item.
 - **Current focus (post Phase 70):** submodule warning hygiene thread is closed (verification captured on fresh production clone logs); no additional action required unless warning reappears.
+- **Current focus (post Phase 71):** complete full release-gate validation for `m0/m2/m3` with the new default timeout profile and then close the P0 test-hang/timeout blocker.
