@@ -95,7 +95,7 @@ Complete in strict order unless explicitly re-prioritized.
 
 ### P0.1 - Optional hygiene (non-blocking)
 
-- [ ] Triage and (if worthwhile) eliminate recurring Vercel clone warning: `Failed to fetch one or more git submodules`. (Root-cause cleanup landed on `main`; pending one Vercel log recheck for closure.)
+- [x] Triage and (if worthwhile) eliminate recurring Vercel clone warning: `Failed to fetch one or more git submodules`. (Root-cause cleanup landed on `main`; follow-up Vercel clone logs no longer show warning.)
 
 ### P1 - Core architecture parity
 
@@ -209,3 +209,4 @@ Format:
 - `2026-04-28` - P0.1 optional hygiene backlog item added for submodule warning cleanup - Open (explicitly tracked as non-blocking follow-up after reliability closure) - `docs update` - `docs/PAYAID_V3_BLUEPRINT_GAP_CHECKLIST.md`, `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`
 - `2026-04-28` - P0.1 submodule warning root-cause audit - Open (confirmed gitlinks under `repositories/*` without `.gitmodules` mapping; warning explained and remains non-blocking until structural cleanup is explicitly prioritized) - `git submodule status`, `git ls-files --stage`, `git ls-tree HEAD:repositories` - `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`
 - `2026-04-28` - P0.1 submodule warning mitigation landed on `main` (phase 69) - In progress (removed stale `repositories/*` gitlinks via commit `44a37dfc7fa682a59396317b3c151b1e0c8343f9`; awaiting one Vercel build-log recheck to confirm warning elimination before closing item) - `gh api git/trees`, `gh api git/refs` - `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`
+- `2026-04-28` - P0.1 submodule warning elimination verified (phase 70) - Completed (fresh production clone logs for deployment `dpl_33anSj3fHp3W96JFBq46QpMVa8ZQ` on commit `44a37df` show clone completion and no submodule warning line) - `vercel inspect --logs` - `docs/evidence/closure/2026-04-26-dashboard-build-reliability-hardening.md`
