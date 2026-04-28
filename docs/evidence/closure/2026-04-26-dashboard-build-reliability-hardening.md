@@ -800,6 +800,18 @@
   - warning remains **non-blocking** for build/deploy readiness in current flow
   - explicitly tracked as optional hygiene cleanup (not a release gate blocker for dashboard reliability closure).
 
+67) **Post-closeout alias stability recheck captured (2026-04-28)**
+
+- Production alias recheck:
+  - `vercel inspect https://payaid-v3.vercel.app`
+  - alias currently resolves to Ready deployment **`dpl_8areve1BQZ2kH49knoTdYnCypLUa`**
+  - URL: `https://payaid-v3-7yezwecr1-payaid-projects-a67c6b27.vercel.app`
+- Deployment queue state:
+  - newer production runs may still queue/cancel while doc-only commits process
+  - no regression observed in alias target readiness at check time.
+- Outcome:
+  - reliability closure remains intact; active production alias still points to a Ready deployment.
+
 ## Interpretation
 
 - The build pipeline now fails deterministically with heartbeat + elapsed diagnostics instead of opaque/stalled behavior.
@@ -827,3 +839,4 @@
 - **Current focus (post Phase 64):** production alias and step41 smoke are both green in this cycle; remaining items are optional hygiene tasks (for example, submodule warning cleanup and env/runbook hardening for repeatable operator smoke runs).
 - **Current focus (post Phase 65):** closed for this reliability thread; only optional hardening/cleanup remains and can be scheduled independently of deployment-readiness gates.
 - **Current focus (post Phase 66):** no new blockers; submodule warning is confirmed persistent but non-blocking and remains backlog hygiene work separate from closure gates.
+- **Current focus (post Phase 67):** no actionable reliability blockers remain; continue only optional hygiene tasks if/when prioritized.
