@@ -788,6 +788,18 @@
   - post-doc follow-up deployment poll recorded with alias still on Ready deployment
 - Remaining work is optional/non-blocking hygiene (for example, submodule warning cleanup and operator env/runbook hardening for repeated smoke runs).
 
+66) **Submodule warning triage refreshed on latest Ready production deploy (2026-04-28)**
+
+- Latest Ready production deployment inspected:
+  - URL: `https://payaid-v3-7yezwecr1-payaid-projects-a67c6b27.vercel.app`
+  - Commit: `94c50be`
+  - Status: **Ready**
+- Build log still reports clone-time warning:
+  - `Warning: Failed to fetch one or more git submodules`
+- Outcome:
+  - warning remains **non-blocking** for build/deploy readiness in current flow
+  - explicitly tracked as optional hygiene cleanup (not a release gate blocker for dashboard reliability closure).
+
 ## Interpretation
 
 - The build pipeline now fails deterministically with heartbeat + elapsed diagnostics instead of opaque/stalled behavior.
@@ -814,3 +826,4 @@
 - **Current focus (post Phase 63):** convert this run into final closeout by keeping the step41 env-resolution path documented (or baking canonical staging vars in operator runbook), then proceed with remaining non-blocking cleanup items (for example, optional submodule warning triage).
 - **Current focus (post Phase 64):** production alias and step41 smoke are both green in this cycle; remaining items are optional hygiene tasks (for example, submodule warning cleanup and env/runbook hardening for repeatable operator smoke runs).
 - **Current focus (post Phase 65):** closed for this reliability thread; only optional hardening/cleanup remains and can be scheduled independently of deployment-readiness gates.
+- **Current focus (post Phase 66):** no new blockers; submodule warning is confirmed persistent but non-blocking and remains backlog hygiene work separate from closure gates.
