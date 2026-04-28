@@ -826,6 +826,19 @@
 - Outcome:
   - Optional hygiene item remains open, now with concrete root-cause evidence to guide a later structural cleanup decision (remove gitlinks vs restore full `.gitmodules` mapping policy).
 
+69) **Submodule warning mitigation applied on main by removing stale gitlinks (2026-04-28)**
+
+- Applied repository-structure cleanup directly on `main`:
+  - commit: `44a37dfc7fa682a59396317b3c151b1e0c8343f9`
+  - action: removed stale gitlink entries under `repositories/*` from the Git tree.
+- GitHub Git Data verification:
+  - `refs/heads/main` now points to `44a37dfc7fa682a59396317b3c151b1e0c8343f9`
+  - `git/trees/main:repositories` now returns `404` (path absent), confirming the gitlink directory no longer exists in tree state.
+- Interpretation:
+  - This removes the previously documented root cause (gitlinks without `.gitmodules` mapping).
+- Remaining validation:
+  - run one fresh Vercel production clone/build check to confirm warning no longer appears in deployment logs.
+
 ## Interpretation
 
 - The build pipeline now fails deterministically with heartbeat + elapsed diagnostics instead of opaque/stalled behavior.
@@ -855,3 +868,4 @@
 - **Current focus (post Phase 66):** no new blockers; submodule warning is confirmed persistent but non-blocking and remains backlog hygiene work separate from closure gates.
 - **Current focus (post Phase 67):** no actionable reliability blockers remain; continue only optional hygiene tasks if/when prioritized.
 - **Current focus (post Phase 68):** root cause for submodule warning is documented (gitlinks without `.gitmodules` mapping); keep as optional hygiene unless/until repository-structure cleanup is explicitly prioritized.
+- **Current focus (post Phase 69):** stale gitlinks removed on `main`; perform one follow-up Vercel deploy/log inspection to verify clone warning elimination and then close optional hygiene item.
