@@ -779,6 +779,15 @@
 - Interpretation:
   - Cancellation is consistent with overlapping production queue behavior while a newer run completed; production alias now points at the successful Ready deployment.
 
+65) **Dashboard build reliability closeout snapshot recorded (2026-04-28)**
+
+- Closure criteria met in this cycle:
+  - dependency remediation merged on `main` (PR #5 / commit `2be8f6a`)
+  - production deployment Ready on remediated snapshot
+  - Step 4.1 live routes smoke pass captured (`progress`, `failed-jobs`, `retry-history` all 200)
+  - post-doc follow-up deployment poll recorded with alias still on Ready deployment
+- Remaining work is optional/non-blocking hygiene (for example, submodule warning cleanup and operator env/runbook hardening for repeated smoke runs).
+
 ## Interpretation
 
 - The build pipeline now fails deterministically with heartbeat + elapsed diagnostics instead of opaque/stalled behavior.
@@ -804,3 +813,4 @@
 - **Current focus (post Phase 62):** with production deploy now **Ready** on the dependency-remediation commit, load `TENANT_ID`, `EMAIL_CAMPAIGN_ID`, and `AUTH_TOKEN` (or `CANONICAL_STAGING_*`) in shell/`.env.local` and rerun **`npm run check:step41-routes-live`** to produce closure-quality pass evidence.
 - **Current focus (post Phase 63):** convert this run into final closeout by keeping the step41 env-resolution path documented (or baking canonical staging vars in operator runbook), then proceed with remaining non-blocking cleanup items (for example, optional submodule warning triage).
 - **Current focus (post Phase 64):** production alias and step41 smoke are both green in this cycle; remaining items are optional hygiene tasks (for example, submodule warning cleanup and env/runbook hardening for repeatable operator smoke runs).
+- **Current focus (post Phase 65):** closed for this reliability thread; only optional hardening/cleanup remains and can be scheduled independently of deployment-readiness gates.
