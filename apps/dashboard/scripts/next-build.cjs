@@ -36,7 +36,13 @@ function runBuild(mode) {
 }
 
 ;(async () => {
-  const preferredMode = isVercel ? 'turbopack' : 'webpack'
+  const envMode = String(process.env.NEXT_BUILD_PREFERRED_MODE || '').trim().toLowerCase()
+  const preferredMode =
+    envMode === 'webpack' || envMode === 'turbopack'
+      ? envMode
+      : isVercel
+        ? 'turbopack'
+        : 'webpack'
   const first = await runBuild(preferredMode)
   if (first.signal) {
     console.error(`[next-build] terminated by signal: ${first.signal}`)
