@@ -812,6 +812,20 @@
 - Outcome:
   - reliability closure remains intact; active production alias still points to a Ready deployment.
 
+68) **Submodule warning root-cause audit captured (2026-04-28)**
+
+- Local repository submodule metadata check:
+  - `.gitmodules` is absent at repo root.
+  - `git submodule status` returns:
+    - `fatal: no submodule mapping found in .gitmodules for path 'repositories/payaid-ai-studio'`
+- Git tree/index inspection confirms committed gitlinks under `repositories/*` (mode `160000`), including:
+  - `payaid-ai-studio`, `payaid-analytics`, `payaid-communication`, `payaid-core`, `payaid-crm`, `payaid-finance`, `payaid-hr`, `payaid-marketing`, `payaid-whatsapp`
+- Interpretation:
+  - Vercel clone-time warning `Failed to fetch one or more git submodules` aligns with stale/incomplete submodule metadata in the repository snapshot.
+  - This remains non-blocking for current dashboard deploy/runtime reliability gates.
+- Outcome:
+  - Optional hygiene item remains open, now with concrete root-cause evidence to guide a later structural cleanup decision (remove gitlinks vs restore full `.gitmodules` mapping policy).
+
 ## Interpretation
 
 - The build pipeline now fails deterministically with heartbeat + elapsed diagnostics instead of opaque/stalled behavior.
@@ -840,3 +854,4 @@
 - **Current focus (post Phase 65):** closed for this reliability thread; only optional hardening/cleanup remains and can be scheduled independently of deployment-readiness gates.
 - **Current focus (post Phase 66):** no new blockers; submodule warning is confirmed persistent but non-blocking and remains backlog hygiene work separate from closure gates.
 - **Current focus (post Phase 67):** no actionable reliability blockers remain; continue only optional hygiene tasks if/when prioritized.
+- **Current focus (post Phase 68):** root cause for submodule warning is documented (gitlinks without `.gitmodules` mapping); keep as optional hygiene unless/until repository-structure cleanup is explicitly prioritized.
