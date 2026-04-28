@@ -8,6 +8,9 @@ const stamp = isoNow.replace(/[:.]/g, '-')
 
 const CHECKLIST_PATH = 'docs/CANONICAL_MODULE_API_CONSUMER_READINESS_CHECKLIST.md'
 const commandTimeoutMsDefault = Number(process.env.CANONICAL_READINESS_COMMAND_TIMEOUT_MS || '120000')
+const defaultCommandTimeoutOverrides = {
+  'canonical-consumer-usage': 600000,
+}
 const COMMANDS = [
   ['canonical-contract', ['run', 'check:canonical-module-api-contract']],
   ['canonical-post-cutover', ['run', 'check:canonical-module-api-post-cutover']],
@@ -16,9 +19,14 @@ const COMMANDS = [
 ]
 
 function runCommand(label, args) {
-  const override = Number(process.env[`CANONICAL_READINESS_COMMAND_TIMEOUT_MS_${label.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`])
-  const timeoutMs = Number.isFinite(override) && override > 0 ? override : commandTimeoutMsDefault
+  const envOverrideKey = `CANONICAL_READINESS_COMMAND_TIMEOUT_MS_${label.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`
+  const override = Number(process.env[envOverrideKey])
+  const timeoutMs =
+    Number.isFinite(override) && override > 0
+      ? override
+      : defaultCommandTimeoutOverrides[label] || commandTimeoutMsDefault
   const started = Date.now()
+  console.log(`[canonical-readiness] running ${label}: npm ${args.join(' ')} (timeout=${timeoutMs}ms)`)
   const run = spawnSync('npm', args, {
     cwd: process.cwd(),
     env: process.env,
@@ -28,6 +36,11 @@ function runCommand(label, args) {
     maxBuffer: 16 * 1024 * 1024,
   })
   const elapsedMs = Date.now() - started
+  console.log(
+    `[canonical-readiness] completed ${label}: exit=${typeof run.status === 'number' ? run.status : 1}, elapsed=${elapsedMs}ms${
+      run.error?.code === 'ETIMEDOUT' ? ' (timed out)' : ''
+    }`
+  )
   const exitCode = typeof run.status === 'number' ? run.status : 1
   const timedOut = run.error?.code === 'ETIMEDOUT'
   return {
