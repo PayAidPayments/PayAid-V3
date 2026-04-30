@@ -35,11 +35,11 @@ function buildBriefingFallback(kpis: HomeSummaryKPIs): string[] {
   const bullets: string[] = []
   if (kpis.openDeals > 0) {
     const lakhs = (kpis.openDealsValue / 1_00_000).toFixed(1)
-    bullets.push(`${kpis.openDeals} open deal${kpis.openDeals === 1 ? '' : 's'} in the pipeline (₹${lakhs} L).`)
+    bullets.push(`${kpis.openDeals} open deal${kpis.openDeals === 1 ? '' : 's'} in the pipeline (???${lakhs} L).`)
   }
   if (kpis.pendingInvoices > 0 || kpis.overdueInvoices > 0) {
     const lakhs = (kpis.pendingInvoicesTotal / 1_00_000).toFixed(1)
-    bullets.push(`Invoices: ${kpis.pendingInvoices} pending (₹${lakhs} L)${kpis.overdueInvoices > 0 ? `, ${kpis.overdueInvoices} overdue.` : '.'}`)
+    bullets.push(`Invoices: ${kpis.pendingInvoices} pending (???${lakhs} L)${kpis.overdueInvoices > 0 ? `, ${kpis.overdueInvoices} overdue.` : '.'}`)
   }
   if (kpis.overdueTasks > 0) {
     bullets.push(`${kpis.overdueTasks} task${kpis.overdueTasks === 1 ? '' : 's'} not yet completed.`)
@@ -264,13 +264,13 @@ export default function TenantHomePage() {
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Today&apos;s overview</p>
             <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
               {summaryLoading ? (
-                <span className="text-slate-400 dark:text-slate-500">Loading…</span>
+                <span className="text-slate-400 dark:text-slate-500">Loading???</span>
               ) : summaryError ? (
                 <span className="text-amber-600 dark:text-amber-400 text-base">Unable to load</span>
               ) : summary?.kpis != null ? (
-                `${summary.kpis.overdueTasks} tasks · ${summary.kpis.overdueInvoices} overdue`
+                `${summary.kpis.overdueTasks} tasks ?? ${summary.kpis.overdueInvoices} overdue`
               ) : (
-                '0 tasks · 0 overdue'
+                '0 tasks ?? 0 overdue'
               )}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -284,13 +284,13 @@ export default function TenantHomePage() {
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">This month</p>
             <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
               {summaryLoading ? (
-                <span className="text-slate-400 dark:text-slate-500">Loading…</span>
+                <span className="text-slate-400 dark:text-slate-500">Loading???</span>
               ) : summaryError ? (
                 <span className="text-amber-600 dark:text-amber-400 text-base">Unable to load</span>
               ) : summary?.kpis != null ? (
-                `₹${(summary.kpis.pendingInvoicesTotal / 1_00_000).toFixed(1)} L`
+                `???${(summary.kpis.pendingInvoicesTotal / 1_00_000).toFixed(1)} L`
               ) : (
-                '₹0 L'
+                '???0 L'
               )}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Receivables</p>
@@ -302,7 +302,7 @@ export default function TenantHomePage() {
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Team activity</p>
             <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
               {summaryLoading ? (
-                <span className="text-slate-400 dark:text-slate-500">Loading…</span>
+                <span className="text-slate-400 dark:text-slate-500">Loading???</span>
               ) : summaryError ? (
                 <span className="text-amber-600 dark:text-amber-400 text-base">Unable to load</span>
               ) : summary?.kpis != null ? (
@@ -380,7 +380,7 @@ export default function TenantHomePage() {
               <Link href={`/crm/${tenantId}/Deals`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Open Deals</span>
                 <span className="ml-2 text-lg font-semibold text-slate-900 dark:text-slate-50">{summary.kpis.openDeals}</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">· ₹{(summary.kpis.openDealsValue / 1_00_000).toFixed(1)} L</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">?? ???{(summary.kpis.openDealsValue / 1_00_000).toFixed(1)} L</span>
               </Link>
               <Link href={`/crm/${tenantId}/Contacts`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Contacts</span>
@@ -390,7 +390,7 @@ export default function TenantHomePage() {
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Pending Invoices</span>
                 <span className="ml-2 text-lg font-semibold text-slate-900 dark:text-slate-50">{summary.kpis.pendingInvoices}</span>
                 {summary.kpis.overdueInvoices > 0 && (
-                  <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">· {summary.kpis.overdueInvoices} overdue</span>
+                  <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">?? {summary.kpis.overdueInvoices} overdue</span>
                 )}
               </Link>
               <Link href={`/hr/${tenantId}/Employees`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
@@ -399,7 +399,7 @@ export default function TenantHomePage() {
               </Link>
               <Link href={`/approvals/${tenantId}`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Approvals</span>
-                <span className="ml-2 text-sm font-semibold text-slate-900 dark:text-slate-50">Expense · Leave · PO</span>
+                <span className="ml-2 text-sm font-semibold text-slate-900 dark:text-slate-50">Expense ?? Leave ?? PO</span>
               </Link>
             </div>
           </section>
