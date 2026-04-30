@@ -8,6 +8,8 @@ const DASHBOARD_PATH = '/dashboard'
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const segments = pathname.split('/').filter(Boolean)
+  const tenantRouteKeyFromPath = segments[1] ?? ''
 
   // Canonical Sales Pages route enforcement (server-side).
   if (pathname.includes('/Landing-Pages')) {
@@ -20,7 +22,24 @@ export function proxy(request: NextRequest) {
   const token = getTokenFromRequest(request)
   const decodedToken = token ? safeDecodeToken(token) : null
   const tenantId = decodedToken?.tenantId || decodedToken?.tenant_id || ''
-  const tenantBillingPath = tenantId ? `/finance/${tenantId}/Billing` : '/dashboard/billing'
+  const tenantSlug = decodedToken?.tenantSlug || decodedToken?.tenant_slug || ''
+  const tenantRouteKey = tenantSlug || tenantId
+
+  // Canonicalize old ID-based module URLs to slug-based URLs when available.
+  if (
+    tenantRouteKeyFromPath &&
+    tenantId &&
+    tenantSlug &&
+    tenantRouteKeyFromPath === tenantId &&
+    tenantSlug !== tenantId
+  ) {
+    const redirectUrl = request.nextUrl.clone()
+    segments[1] = tenantSlug
+    redirectUrl.pathname = `/${segments.join('/')}`
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  const tenantBillingPath = tenantRouteKey ? `/finance/${tenantRouteKey}/Billing` : '/dashboard/billing'
   const isSubscriptionPath =
     pathname === tenantBillingPath ||
     pathname === '/dashboard/billing' ||
@@ -38,11 +57,13 @@ export function proxy(request: NextRequest) {
 
   if (!pathname.startsWith(DASHBOARD_PATH)) return NextResponse.next()
 
-  const segments = pathname.slice(DASHBOARD_PATH.length).split('/').filter(Boolean)
-  const tenantSlug = segments[0]
-  if (tenantSlug) {
+  const dashboardTenantRouteKey = pathname
+    .slice(DASHBOARD_PATH.length)
+    .split('/')
+    .filter(Boolean)[0]
+  if (dashboardTenantRouteKey) {
     const res = NextResponse.next()
-    res.headers.set('x-tenant-slug', tenantSlug)
+    res.headers.set('x-tenant-slug', dashboardTenantRouteKey)
     return res
   }
   return NextResponse.next()
