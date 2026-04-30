@@ -9,7 +9,11 @@ const Providers = dynamic(() => import('./providers').then((m) => m.Providers), 
 })
 
 function useMinimalShell(): boolean {
-  const pathname = usePathname() ?? ''
+  const pathname = usePathname()
+  // On first client render pathname can be temporarily unavailable.
+  // Default to full provider shell to avoid rendering react-query hooks
+  // before QueryClientProvider is mounted.
+  if (!pathname) return false
   const path = pathname.split('?')[0].replace(/\/+$/, '') || '/'
   if (path === '/') return true
   if (path === '/login' || path === '/signup' || path === '/register') return true
