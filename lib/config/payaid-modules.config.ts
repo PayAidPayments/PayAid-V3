@@ -398,11 +398,11 @@ export function getModuleById(id: string): PayAidModuleConfig | undefined {
   return PAYAID_MODULES.find((m) => m.id === id)
 }
 
-/** Build module home URL: e.g. /crm/{tenantId}/Home */
-export function getModuleHomeUrl(moduleId: string, tenantId: string): string {
+/** Build module home URL: e.g. /crm/{tenantRouteKey}/Home */
+export function getModuleHomeUrl(moduleId: string, tenantRouteKey: string): string {
   const mod = getModuleById(moduleId)
-  if (!mod) return `/home/${tenantId}`
+  if (!mod) return `/home/${tenantRouteKey}`
   const segment = mod.homeSegment ?? 'Home'
   const path = mod.basePath.replace(/^\//, '')
-  return segment ? `/${path}/${tenantId}/${segment}` : `/${path}/${tenantId}`
+  return segment ? `/${path}/${tenantRouteKey}/${segment}` : `/${path}/${tenantRouteKey}`
 }
