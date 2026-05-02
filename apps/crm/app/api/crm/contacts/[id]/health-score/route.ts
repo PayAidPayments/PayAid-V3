@@ -8,12 +8,13 @@ import { calculateCustomerHealthScore, getRetentionPlaybook } from '@/lib/ai/cus
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    const healthScore = await calculateCustomerHealthScore(params.id, tenantId)
+    const healthScore = await calculateCustomerHealthScore(id, tenantId)
     const playbook = getRetentionPlaybook(healthScore.riskLevel)
 
     return NextResponse.json({

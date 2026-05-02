@@ -31,11 +31,10 @@ const UpdateContactSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  context?: { params?: Promise<Record<string, string>> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const params = await (context?.params || Promise.resolve({}))
-    const id = (params as Record<string, string>).id
+    const { id } = await params
     if (!id) {
       return NextResponse.json({ success: false, statusCode: 400, error: { code: 'MISSING_ID', message: 'ID is required' } }, { status: 400 })
     }
@@ -104,11 +103,10 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  context?: { params?: Promise<Record<string, string>> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const params = await (context?.params || Promise.resolve({}))
-    const id = (params as Record<string, string>).id
+    const { id } = await params
     if (!id) {
       return NextResponse.json({ success: false, statusCode: 400, error: { code: 'MISSING_ID', message: 'ID is required' } }, { status: 400 })
     }
@@ -186,12 +184,11 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  context?: { params?: Promise<Record<string, string>> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId, tenantId } = await requireModuleAccess(request, 'crm')
-    const params = await (context?.params || Promise.resolve({}))
-    const id = (params as Record<string, string>).id
+    const { id } = await params
     if (!id) {
       return NextResponse.json({ success: false, statusCode: 400, error: { code: 'MISSING_ID', message: 'ID is required' } }, { status: 400 })
     }

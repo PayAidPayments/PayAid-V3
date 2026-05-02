@@ -252,10 +252,15 @@ export async function calculateCustomerHealthScoresBatch(
       })
 
   const tenantUserIds = new Set(tenantMembers.map((m) => m.userId))
-  const userByEmail = new Map(usersByEmail.filter((u) => tenantUserIds.has(u.id)).map((u) => [u.email!, u]))
+  const userByEmail = new Map(
+    usersByEmail
+      .filter((u): u is (typeof u & { email: string }) => tenantUserIds.has(u.id) && u.email != null && u.email !== '')
+      .map((u) => [u.email, u])
+  )
   const contactMap = new Map(contacts.map((c) => [c.id, c]))
   const interactionsByContact = groupBy(interactions, (i) => i.contactId)
-  const invoicesByContact = groupBy(invoices, (i) => i.customerId)
+  const invoicesForGrouping = invoices.filter((i): i is (typeof i & { customerId: string }) => i.customerId != null)
+  const invoicesByContact = groupBy(invoicesForGrouping, (i) => i.customerId)
 
   const results: Array<{ contactId: string; contactName: string | null; contactEmail: string | null } & CustomerHealthScore> = []
   for (const contactId of contactIds) {

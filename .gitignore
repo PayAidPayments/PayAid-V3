@@ -98,7 +98,8 @@ PrintHood/
 Recent/
 SendTo/
 Start Menu/
-Templates/
+# Root only — bare "Templates/" matches apps/.../crm/.../templates/ on Windows (ignorecase)
+/Templates/
 !app/spreadsheet/**/Templates/**
 3D Objects/
 # Root only — bare "Contacts/" matches apps/.../crm/contacts/ on Windows (ignorecase)

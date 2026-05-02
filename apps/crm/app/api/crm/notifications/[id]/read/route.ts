@@ -8,9 +8,10 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/licens
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { tenantId, userId } = await requireModuleAccess(request, 'crm')
 
     // Find SalesRep by userId
@@ -24,7 +25,7 @@ export async function POST(
     if (salesRep) {
       await prisma.alert.updateMany({
         where: {
-          id: params.id,
+          id,
           repId: salesRep.id,
           tenantId,
         },

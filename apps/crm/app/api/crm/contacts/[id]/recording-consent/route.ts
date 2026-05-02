@@ -13,14 +13,15 @@ const ConsentSchema = z.object({
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const body = await request.json()
     const { consent } = ConsentSchema.parse(body)
 
-    await updateRecordingConsent(params.id, consent, tenantId)
+    await updateRecordingConsent(id, consent, tenantId)
 
     return NextResponse.json({
       success: true,

@@ -62,13 +62,13 @@ function getPrismaClient(): PrismaClient {
 export const prisma = new Proxy({} as PrismaClient, {
   get(_, prop) {
     const client = getPrismaClient()
-    const value = (client as Record<string | symbol, unknown>)[prop]
+    const value = (client as unknown as Record<string | symbol, unknown>)[prop]
     if (typeof value === 'function') return value.bind(client)
     return value
   },
   set(_, prop, value) {
     const client = getPrismaClient()
-    ;(client as Record<string | symbol, unknown>)[prop] = value
+    ;(client as unknown as Record<string | symbol, unknown>)[prop] = value
     return true
   },
   has(_, prop) {

@@ -1269,7 +1269,7 @@ export default function CRMDashboardPage() {
                 atRiskContacts: (safeStats as any).atRiskContacts ?? 0,
               }}
               timePeriod={timePeriod}
-              userName={user?.name}
+              userName={user?.name ?? undefined}
             />
           </motion.div>
         )}

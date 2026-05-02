@@ -167,11 +167,14 @@ export default function AgentsDashboardPage() {
                   <div className={`mb-3 text-sm flex items-center gap-2 ${result.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                     {result.ok ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                     {result.message}
-                    {result.ok && result.data && typeof result.data === 'object' && 'summaryMessage' in result.data && (
+                    {result.ok &&
+                    typeof result.data === 'object' &&
+                    result.data !== null &&
+                    'summaryMessage' in result.data ? (
                       <span className="text-gray-600 dark:text-gray-400 truncate">
                         — {(result.data as { summaryMessage?: string }).summaryMessage}
                       </span>
-                    )}
+                    ) : null}
                   </div>
                 )}
                 <Button

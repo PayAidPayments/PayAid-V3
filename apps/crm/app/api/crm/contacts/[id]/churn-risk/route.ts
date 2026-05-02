@@ -8,11 +8,11 @@ import { calculateChurnRisk } from '@/lib/ai/churn-predictor'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
-    const { id: contactId } = params
+    const { id: contactId } = await params
 
     const result = await calculateChurnRisk({
       contactId,
@@ -27,7 +27,7 @@ export async function GET(
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }
-    console.error(`Error calculating churn risk for ${params.id}:`, error)
+    console.error('Error calculating churn risk:', error)
     return NextResponse.json(
       { error: 'Failed to calculate churn risk' },
       { status: 500 }

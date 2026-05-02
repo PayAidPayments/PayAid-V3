@@ -6,7 +6,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const nextConfig = {
   reactStrictMode: true,
   typescript: { ignoreBuildErrors: false },
-  eslint: { ignoreDuringBuilds: false },
   transpilePackages: ['@payaid/db'],
   experimental: {
     optimizePackageImports: ['@radix-ui/*', 'lucide-react', 'framer-motion', 'recharts', 'handsontable', '@tiptap/react', 'x-data-spreadsheet'],
