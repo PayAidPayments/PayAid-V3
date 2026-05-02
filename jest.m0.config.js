@@ -1,3 +1,7 @@
+// `forceExit` ends the Jest process immediately after tests finish. The M0 suite historically
+// relied on this to avoid hanging workers when some tests left async handles open; expect the
+// post-run `Force exiting Jest` hint when running under this config. Removing `forceExit`
+// requires a full `jest.m0` `--detectOpenHandles` audit, not a silent toggle.
 module.exports = {
   forceExit: true,
   testEnvironment: 'node',

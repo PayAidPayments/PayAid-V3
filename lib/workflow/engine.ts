@@ -150,7 +150,7 @@ export async function executeStep(
 export async function runWorkflow(
   workflowId: string,
   context: TriggerContext
-): Promise<{ executionId: string; status: 'COMPLETED' | 'FAILED'; error?: string }> {
+): Promise<{ executionId: string; status: 'COMPLETED' | 'FAILED' | 'PENDING_APPROVAL'; error?: string }> {
   const workflow = await prisma.workflow.findFirst({
     where: { id: workflowId, tenantId: context.tenantId, isActive: true },
   })
@@ -177,7 +177,28 @@ export async function runWorkflow(
 
   const results: Array<{ stepId: string; success: boolean; error?: string }> = []
   let failed = false
+  const approvalBypass =
+    Boolean((context.data as Record<string, unknown> | undefined)?.workflowApproval?.approved)
+
   for (const step of steps.sort((a, b) => a.order - b.order)) {
+    const cfg = (step.config ?? {}) as Record<string, unknown>
+    if (
+      step.type === 'create_task' &&
+      cfg.requiresApproval === true &&
+      !approvalBypass
+    ) {
+      await prisma.workflowExecution.update({
+        where: { id: execution.id },
+        data: {
+          status: 'PENDING_APPROVAL',
+          completedAt: null,
+          result: [{ stepId: step.id, success: true, pendingApproval: true }],
+          error: null,
+        },
+      })
+      return { executionId: execution.id, status: 'PENDING_APPROVAL' }
+    }
+
     const result = await executeStep(step, context)
     results.push({ stepId: step.id, success: result.success, error: result.error })
     if (!result.success) failed = true

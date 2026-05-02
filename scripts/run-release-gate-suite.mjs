@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 
+// Jest pins: __tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts — describe 'timeline release-gate workflow contracts'; release-gate orchestration (timeline bundle gate rows: Phase 312–313).
 const root = process.cwd()
 const outDir = path.join(root, 'docs', 'evidence', 'release-gates')
 const gateTimeoutMs = Number(process.env.RELEASE_GATE_TIMEOUT_MS || '240000')
@@ -25,6 +26,30 @@ const gates = [
   { id: 'm0', command: ['npm', 'run', 'test:m0'] },
   { id: 'm2', command: ['npm', 'run', 'test:m2:smoke', '--', '--runInBand'] },
   { id: 'm3', command: ['npm', 'run', 'test:m3:smoke', '--', '--runInBand'] },
+
+  // Phase 312: workflow-automation-contracts gate -> run-workflow-automation-closure-check.mjs (M0_TIMELINE_* mirrors TIMELINE_CONTRACT_SUITE_RELPATH, Phase 311; __tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts).
+  {
+    id: 'workflow-automation-contracts',
+    command: ['node', 'scripts/run-workflow-automation-closure-check.mjs'],
+  },
+
+  // Phase 313: crm-timeline-routes-contracts gate -> run-crm-timeline-routes-closure-check.mjs (timeline RELEASE_GATES bundle; wiring alongside __tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts).
+  {
+    id: 'crm-timeline-routes-contracts',
+    command: ['node', 'scripts/run-crm-timeline-routes-closure-check.mjs'],
+  },
+
+  // Phase 313: m0-deeplink-context-contracts gate -> run-m0-deeplink-context-check.mjs (timeline RELEASE_GATES bundle; wiring alongside __tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts).
+  {
+    id: 'm0-deeplink-context-contracts',
+    command: ['node', 'scripts/run-m0-deeplink-context-check.mjs'],
+  },
+
+  // Phase 313: prisma-generate-closure-contracts gate -> run-prisma-generate-closure-check.mjs (timeline RELEASE_GATES bundle, warn-only in release:gate:timeline-contracts; wiring alongside __tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts).
+  {
+    id: 'prisma-generate-closure-contracts',
+    command: ['node', 'scripts/run-prisma-generate-closure-check.mjs'],
+  },
 ]
 
 const include = new Set(
