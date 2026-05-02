@@ -30,7 +30,7 @@ This document is the execution tracker against `payaid_v3_blueprint_Apr26.md`.
 
 ## Current gap snapshot (baseline)
 
-Parity snapshot last refreshed: **2026-04-25**
+Parity snapshot last refreshed: **2026-04-25** (percent baseline; **2026-05-02** tracker pass did not recalc phase weights—run the next refresh when module checkboxes move).
 
 - Overall blueprint parity (rough): **56%**
 - Phase 1 (Core operating spine): **68%**
@@ -146,6 +146,22 @@ Use the following when you close a blueprint backlog line or ship a meaningful s
 - [ ] No-404 validation passed for touched routes/pages.
 - [ ] Evidence artifact linked in update log.
 
+## P1 timeline release-gate contract slice — evidence pointer (2026-05-02)
+
+This subsection records **test and CI evidence** for the **timeline workflow contract / bundle** work only (Phases **284–317** in `docs/evidence/closure/2026-04-29-unified-contact-timeline-slice.md`). It does **not** mark the full P1 line *Build unified communication timeline…* or the Phase 1 module *Communication timeline layer* as blueprint-complete; those remain **Partial** until the remaining blueprint depth is closed.
+
+- **Tests:** `__tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts` (**14** cases) pins YAML, `package.json`, `jest.m0`, `run-release-gate-suite.mjs`, `run-workflow-automation-closure-check.mjs`, and related release-gate env/path contracts.
+- **Commands:** `npm run release:gate:timeline-contracts`; GitHub Actions `.github/workflows/timeline-contracts-release-gate.yml` on path-filtered PR/push.
+- **Ship status:** Landed on `chore/dashboard-main-build-sync` (e.g. `30e16a42f`). **Production** updates only after **merge to `main`** (Preview ≠ Production **Current** on Vercel).
+- **Related code:** `lib/workflow/engine.ts` (`PENDING_APPROVAL` for approval-gated `create_task` aligned with closure suites).
+
+## Next recommended steps (execution)
+
+1. **Merge to production branch:** Open or refresh PR **`chore/dashboard-main-build-sync` → `main`**, resolve review, wait for green checks (including **Timeline contracts release gate** on GitHub).
+2. **Verify production:** Confirm Vercel **Production** deployment shows the merge commit as **Current** (not only **Preview**).
+3. **Resume P0 backlog:** Work the **P0 – Blockers** list in order (deploy/build reliability → Step 4.1 live parity → QA env stability → release-gate hang elimination).
+4. **Parity refresh:** After the next module promotion (e.g. Communication timeline or Automation), recompute phase % using the status-weighted method above and update this section.
+
 ## Update log (append only)
 
 Format:
@@ -245,3 +261,4 @@ Format:
 - `2026-05-02` - P1 unified timeline — closure + release-gate script Jest pins root describe alignment (phase 317) - Completed (`WORKFLOW_AUTOMATION_CLOSURE_RUNNER_JEST_CONTRACT_HEADER_LINE` + `RELEASE_GATE_SUITE_JEST_CONTRACT_HEADER_LINE` cite `TIMELINE_RELEASE_GATE_CONTRACT_SUITE_DESCRIBE_TITLE`; **14** tests) - `scripts/run-workflow-automation-closure-check.mjs`, `scripts/run-release-gate-suite.mjs`, `__tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts`, `docs/evidence/closure/2026-04-29-unified-contact-timeline-slice.md` - `docs/evidence/closure/2026-04-29-unified-contact-timeline-slice.md` (Phase 317)
 - `2026-05-02` - P0 blueprint tracker hygiene — canonical closeout snapshot + live header + reading guide - Completed (ran `run:canonical-closeout-status-snapshot` → `2026-05-02T06-04-51-410Z` with `overallOk: true`; ran `sync:canonical-live-status` so header shows `PASS`; added "How to read pending items" section and clarified test gate scope) - `npm run run:canonical-closeout-status-snapshot`, `node scripts/sync-canonical-live-status-block.mjs` - `docs/evidence/closure/2026-05-02T06-04-51-410Z-canonical-closeout-status-snapshot.md`, `docs/PAYAID_V3_BLUEPRINT_GAP_CHECKLIST.md`
 - `2026-05-02` - Lead Intelligence — planning and Sprint 1 ops pack documented (docs-only) - In progress (implementation-ready data/workflow spec, UI screen spec, build backlog, tickets `LI-001`..`LI-028`, Sprint 1 execution plan, Day 1–Day 5 dashboards, standup/EOD scripts, closeout checklist, ops pack README; on branch `chore/dashboard-main-build-sync` / PR #6 commit `1b249cd2b`; tracker updates in `docs/PAYAID_V3_PENDING_ITEMS_PRIORITY_CHECKLIST.md`) - Docs authoring + PR comment on `https://github.com/PayAidPayments/PayAid-V3/pull/6` - `docs/LEAD_INTELLIGENCE_OPS_PACK_README.md`, `docs/LEAD_INTELLIGENCE_DATA_WORKFLOW_SPEC.md`, `docs/LEAD_INTELLIGENCE_UI_SCREEN_SPEC.md`
+- `2026-05-02` - Blueprint gap checklist — completion pass (handoff + evidence pointer + next steps) - Completed (parity baseline note for **2026-05-02**; P1 timeline contract slice evidence subsection; merge-to-main + P0 sequencing; does not recalc % or flip Partial module boxes) - `docs update` - `docs/PAYAID_V3_BLUEPRINT_GAP_CHECKLIST.md`
