@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuthStore } from '@/lib/stores/auth'
 import { validateWebsitePageTree } from '@/lib/website-builder/page-tree-validation'
+import { WebsiteTelemetryPanel } from './WebsiteTelemetryPanel'
 
 interface WebsiteSiteDetail {
   id: string
@@ -177,9 +178,10 @@ export default function WebsiteBuilderSiteDetailPage() {
     },
   })
 
-  const derivedPageTree = useMemo(() => {
-    if (Array.isArray(site?.pageTree) && site.pageTree.length > 0) {
-      return site.pageTree.map((entry, index) => ({
+  const derivedPageTree: { id: string; label: string }[] = (() => {
+    const pageTree = site?.pageTree
+    if (Array.isArray(pageTree) && pageTree.length > 0) {
+      return pageTree.map((entry, index) => ({
         id: `tree-${index}`,
         label:
           typeof entry === 'string'
@@ -199,7 +201,7 @@ export default function WebsiteBuilderSiteDetailPage() {
     }
 
     return []
-  }, [site?.pageTree, site?.schemaJson])
+  })()
 
   useEffect(() => {
     const source = Array.isArray(site?.pageTree) ? site.pageTree : []
@@ -694,6 +696,13 @@ export default function WebsiteBuilderSiteDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      <WebsiteTelemetryPanel
+        siteId={siteId}
+        token={token}
+        editorTelemetry={site.schemaJson?.editorTelemetry as Record<string, unknown> | undefined}
+        onUpdated={() => refetch()}
+      />
     </div>
   )
 }
