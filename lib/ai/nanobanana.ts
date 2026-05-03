@@ -1,7 +1,7 @@
 /**
  * Google Gemini 2.5 Flash Image (Nano Banana) Integration
  * Superior image generation with editing and fusion capabilities
- * Cost: ₹3.23 per image (~$0.039 USD)
+ * Cost: ₹3.23 per image (approx. 0.039 USD)
  */
 
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai'

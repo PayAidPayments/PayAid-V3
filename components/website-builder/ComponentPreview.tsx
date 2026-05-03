@@ -29,7 +29,7 @@ export function ComponentPreview({ code, componentName }: ComponentPreviewProps)
       // Clean the code - remove export statements and extract component
       let cleanCode = code
         .replace(/export\s+default\s+/g, '')
-        .replace(/export\s+(const|function)\s+/g, '$1 ')
+        .replace(/export\s+(const|function)\s+/g, (_, kw) => `${kw} `)
         .replace(/export\s+/g, '')
 
       // Try to extract component name from code
