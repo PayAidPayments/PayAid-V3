@@ -84,7 +84,8 @@ function DealRow({ deal, tenantId, onDelete }: { deal: any; tenantId: string; on
 }
 
 export default function CRMDealsPage() {
-  const params = useParams()
+  try {
+    const params = useParams()
     const searchParams = useSearchParams()
     const tenantId = params?.tenantId as string
     const { token } = useAuthStore()
@@ -432,6 +433,31 @@ export default function CRMDealsPage() {
     return (categorizedDeals.closing ?? []).slice(0, 10)
   }, [categorizedDeals.closing])
 
+  // Handle errors gracefully
+  if (pageError) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="text-center py-12">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Error Loading Deals Page</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{pageError.message}</p>
+            <Button onClick={() => window.location.reload()}>Reload Page</Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return <PageLoading message="Loading deals..." fullScreen={false} />
+  }
+
+  // Handle API errors gracefully
+  if (dealsError) {
+    console.error('[DEALS_PAGE] Error fetching deals:', dealsError)
+  }
+
   const deals = Array.isArray(data?.deals) ? data.deals : []
 
   const sortedDeals = useMemo(() => {
@@ -465,31 +491,6 @@ export default function CRMDealsPage() {
     // (keeps selection behavior predictable)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage])
-
-  // Handle errors gracefully
-  if (pageError) {
-    return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="text-center py-12">
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Error Loading Deals Page</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">{pageError.message}</p>
-            <Button onClick={() => window.location.reload()}>Reload Page</Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  if (isLoading) {
-    return <PageLoading message="Loading deals..." fullScreen={false} />
-  }
-
-  // Handle API errors gracefully
-  if (dealsError) {
-    console.error('[DEALS_PAGE] Error fetching deals:', dealsError)
-  }
 
   const toggleSort = (key: typeof sortKey) => {
     if (sortKey === key) {
@@ -1580,5 +1581,22 @@ export default function CRMDealsPage() {
       </div>
     </div>
   )
+  } catch (error: any) {
+    console.error('[DEALS_PAGE] Component error:', error)
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="text-center py-12">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Error Loading Deals Page</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              {error?.message || 'An unexpected error occurred'}
+            </p>
+            <Button onClick={() => window.location.reload()}>Reload Page</Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 }
 
