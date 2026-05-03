@@ -9,7 +9,22 @@ const next = require('eslint-config-next')
  */
 /** `react/*` rules must sit in the same flat-config block as `plugins.react` (the `name: 'next'` block in `eslint-config-next`). */
 const nextConfigs = [...next]
-export default nextConfigs.map((block) =>
+
+/** Local Next build / verify artifacts (must not be ESLint targets; files can be huge). */
+const localBuildArtifactIgnores = {
+  ignores: [
+    '.next/**',
+    'out/**',
+    'node_modules/**',
+    '.next-build-verify/**',
+    '.next-full-surface*/**',
+    'coverage/**',
+  ],
+}
+
+export default [
+  localBuildArtifactIgnores,
+  ...nextConfigs.map((block) =>
   block && block.name === 'next'
     ? {
         ...block,
@@ -23,4 +38,5 @@ export default nextConfigs.map((block) =>
         },
       }
     : block
-)
+  ),
+]
