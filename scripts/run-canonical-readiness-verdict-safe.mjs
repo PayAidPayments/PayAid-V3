@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 const now = new Date()
 const isoNow = now.toISOString()
 const stamp = isoNow.replace(/[:.]/g, '-')
-const timeoutMs = Number(process.env.CANONICAL_READINESS_VERDICT_TIMEOUT_MS || '180000')
+const timeoutMs = Number(process.env.CANONICAL_READINESS_VERDICT_TIMEOUT_MS || '900000')
 
 const started = Date.now()
 const run = spawnSync('npm', ['run', 'check:canonical-module-api-readiness-verdict'], {

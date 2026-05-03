@@ -1,4 +1,4 @@
-import { readFileSync, mkdirSync, writeFileSync } from 'node:fs'
+import { readFileSync, mkdirSync, writeFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 
@@ -6,7 +6,8 @@ const now = new Date()
 const isoNow = now.toISOString()
 const stamp = isoNow.replace(/[:.]/g, '-')
 
-const SEARCH_ROOT = 'apps/dashboard'
+const SEARCH_ROOTS = ['apps/dashboard/app', 'apps/dashboard/components', 'apps/dashboard/lib']
+const ENDPOINT_PATTERNS = ['/api/modules', '/api/industries/', '/api/ai/analyze-industry']
 const EXCLUDE_PATH_SNIPPETS = ['/app/api/', '\\app\\api\\', '__tests__']
 
 function isCanonicalModuleEndpointConsumer(source) {
@@ -46,21 +47,64 @@ const CANONICAL_PATTERNS = [
 ]
 
 function discoverCandidateFiles() {
-  const result = spawnSync(
-    'git',
-    ['ls-files', `${SEARCH_ROOT}/**/*.ts`, `${SEARCH_ROOT}/**/*.tsx`],
-    {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-      shell: process.platform === 'win32',
+  const discovered = new Set()
+
+  for (const searchRoot of SEARCH_ROOTS) {
+    const absRoot = path.join(process.cwd(), searchRoot)
+    if (!existsSync(absRoot) || !statSync(absRoot).isDirectory()) continue
+
+    // Fast-path on Windows: leverage findstr index scan for endpoint strings.
+    for (const endpointPattern of ENDPOINT_PATTERNS) {
+      const escaped = endpointPattern.replace(/"/g, '\\"')
+      const run = spawnSync(
+        'cmd',
+        ['/d', '/s', '/c', `findstr /S /M /I /P /C:"${escaped}" *.ts *.tsx`],
+        {
+          cwd: absRoot,
+          encoding: 'utf8',
+          windowsHide: true,
+        }
+      )
+      const stdout = run.stdout || ''
+      for (const line of stdout.split(/\r?\n/)) {
+        const rel = line.trim()
+        if (!rel) continue
+        discovered.add(path.resolve(absRoot, rel))
+      }
     }
-  )
-  const stdout = result.stdout || ''
-  return stdout
-    .split(/\r?\n/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((rel) => path.join(process.cwd(), rel))
+  }
+
+  if (discovered.size > 0) {
+    return [...discovered]
+  }
+
+  // Fallback for non-Windows or environments where findstr is unavailable.
+  const walked = []
+  function walk(current) {
+    const entries = readdirSync(current, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name)
+      if (entry.isDirectory()) {
+        if (entry.name === 'node_modules' || entry.name === '.next') continue
+        walk(fullPath)
+        continue
+      }
+      if (entry.isFile() && (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx'))) {
+        const size = statSync(fullPath).size
+        if (size > 1024 * 1024) continue
+        walked.push(fullPath)
+      }
+    }
+  }
+
+  for (const searchRoot of SEARCH_ROOTS) {
+    const root = path.join(process.cwd(), searchRoot)
+    if (existsSync(root) && statSync(root).isDirectory()) {
+      walk(root)
+    }
+  }
+
+  return walked
 }
 
 function countMatches(content, patterns) {

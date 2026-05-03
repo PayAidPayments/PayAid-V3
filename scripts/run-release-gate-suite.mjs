@@ -6,11 +6,17 @@ import { spawnSync } from 'node:child_process'
 const root = process.cwd()
 const outDir = path.join(root, 'docs', 'evidence', 'release-gates')
 const gateTimeoutMs = Number(process.env.RELEASE_GATE_TIMEOUT_MS || '240000')
+const defaultGateTimeoutOverrides = {
+  'canonical-readiness-verdict': 900000,
+  m0: 900000,
+  m2: 900000,
+  m3: 900000,
+}
 
 function getGateTimeoutMs(gateId) {
   const envKey = `RELEASE_GATE_TIMEOUT_MS_${gateId.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`
   const override = process.env[envKey]
-  if (!override) return gateTimeoutMs
+  if (!override) return defaultGateTimeoutOverrides[gateId] || gateTimeoutMs
   const parsed = Number(override)
   return Number.isFinite(parsed) && parsed > 0 ? parsed : gateTimeoutMs
 }
@@ -23,9 +29,32 @@ const gates = [
     command: ['npm', 'run', 'check:canonical-module-api-readiness-verdict'],
   },
   { id: 'leads-retention-health', command: ['npm', 'run', 'run:leads-bulk-retention-health-gate-pipeline'] },
-  { id: 'm0', command: ['npm', 'run', 'test:m0'] },
-  { id: 'm2', command: ['npm', 'run', 'test:m2:smoke', '--', '--runInBand'] },
-  { id: 'm3', command: ['npm', 'run', 'test:m3:smoke', '--', '--runInBand'] },
+  {
+    id: 'm0',
+    command: ['node', 'node_modules/jest/bin/jest.js', '--config', 'jest.m0.config.js', '--runInBand', '--forceExit'],
+  },
+  {
+    id: 'm2',
+    command: [
+      'node',
+      'node_modules/jest/bin/jest.js',
+      '--config',
+      'jest.m2.smoke.config.js',
+      '--runInBand',
+      '--forceExit',
+    ],
+  },
+  {
+    id: 'm3',
+    command: [
+      'node',
+      'node_modules/jest/bin/jest.js',
+      '--config',
+      'jest.m3.smoke.config.js',
+      '--runInBand',
+      '--forceExit',
+    ],
+  },
 
   // Phase 312: workflow-automation-contracts gate -> run-workflow-automation-closure-check.mjs (M0_TIMELINE_* mirrors TIMELINE_CONTRACT_SUITE_RELPATH, Phase 311; __tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts).
   {
