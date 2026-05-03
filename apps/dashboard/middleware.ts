@@ -1,12 +1,10 @@
-/**
- * Phase 10: Edge proxy – tenant from path (no DB).
- */
+/** Edge middleware: tenant from path (no DB). Named middleware.ts to avoid Next 16 proxy NFT rename bugs on Vercel. */
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 const DASHBOARD_PATH = '/dashboard'
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const segments = pathname.split('/').filter(Boolean)
   const tenantRouteKeyFromPath = segments[1] ?? ''
