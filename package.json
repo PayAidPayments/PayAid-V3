@@ -129,7 +129,7 @@
     "build:with-db": "prisma generate && prisma db push --skip-generate --accept-data-loss && cross-env NODE_OPTIONS=--max-old-space-size=5120 npm run build -w dashboard",
     "start": "npm run start -w dashboard",
     "postinstall": "node scripts/prisma-generate-with-retry.js",
-    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint": "npm run lint -w dashboard && npm run lint -w crm",
     "db:generate": "cross-env PRISMA_GENERATE_STRICT=1 node scripts/prisma-generate-with-retry.js",
     "db:generate:loose": "node scripts/prisma-generate-with-retry.js",
     "db:push": "prisma db push",
