@@ -90,6 +90,12 @@ const include = new Set(
     .map((x) => x.trim())
     .filter(Boolean)
 )
+const warnOnlyGates = new Set(
+  (process.env.RELEASE_GATE_WARN_ONLY_GATES || '')
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean)
+)
 const selected = gates.filter((g) => include.has(g.id))
 
 if (selected.length === 0) {
@@ -126,6 +132,7 @@ for (const gate of selected) {
   const exitCode = typeof run.status === 'number' ? run.status : 1
   const timedOut = run.error?.code === 'ETIMEDOUT'
 
+  const warnOnly = warnOnlyGates.has(gate.id)
   results.push({
     gate: gate.id,
     command: [cmd, ...args].join(' '),
@@ -133,15 +140,17 @@ for (const gate of selected) {
     timed_out: timedOut,
     timeout_ms: effectiveTimeoutMs,
     duration_ms: durationMs,
+    warn_only: warnOnly,
     output_excerpt: (stdout + '\n' + stderr).split('\n').slice(-60).join('\n'),
   })
 
-  if (exitCode !== 0 || timedOut) allPass = false
+  if ((exitCode !== 0 || timedOut) && !warnOnly) allPass = false
 }
 
 const artifact = {
   collected_at_utc: startedAt.toISOString(),
   selected_gates: selected.map((g) => g.id),
+  warn_only_gates: [...warnOnlyGates],
   gate_timeout_ms_default: gateTimeoutMs,
   all_pass: allPass,
   results,
