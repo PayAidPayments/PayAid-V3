@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
 
     const zipBytes = createZip(files)
     const stamp = new Date().toISOString().replace(/[:.]/g, '-')
-    return new NextResponse(zipBytes, {
+    return new NextResponse(new Blob([zipBytes]), {
       status: 200,
       headers: {
         'Content-Type': 'application/zip',
