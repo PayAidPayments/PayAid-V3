@@ -33,6 +33,8 @@ export interface TTSOptions {
   language?: string
   voiceId?: string
   speed?: number
+  /** UI tone label; mapped to VEXYL voiceStyle when applicable */
+  voiceTone?: string | null
   /** VEXYL voice style: calm | warm | formal (maps from voiceTone) */
   voiceStyle?: VexylVoiceStyle
   /** JWT for AI Gateway (same secret as app auth); pass from API route so gateway accepts the request */
@@ -83,9 +85,7 @@ export async function synthesizeSpeech(
   options?: TTSOptions
 ): Promise<Buffer> {
   const voiceStyle =
-    options?.voiceStyle ??
-    voiceToneToStyle((options as { voiceTone?: string })?.voiceTone) ??
-    voiceIdToStyle(voiceId)
+    options?.voiceStyle ?? voiceToneToStyle(options?.voiceTone) ?? voiceIdToStyle(voiceId)
 
   // Coqui TTS Docker when configured: no API keys, no 401s, try first
   if (isCoquiDockerConfigured()) {

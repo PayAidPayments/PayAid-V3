@@ -20,6 +20,12 @@ export interface LogContext {
   action?: string
   duration?: number
   metadata?: Record<string, any>
+  path?: string
+  query?: Record<string, string | string[]>
+  method?: string
+  status?: number
+  ip?: string
+  errors?: Record<string, unknown>
 }
 
 export class StructuredLogger {

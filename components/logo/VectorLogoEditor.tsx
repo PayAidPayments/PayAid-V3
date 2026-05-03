@@ -537,7 +537,9 @@ export function VectorLogoEditor({
       }
 
       const zipBytes = createZip(files)
-      const zipBlob = new Blob([zipBytes], { type: 'application/zip' })
+      const zipCopy = new Uint8Array(zipBytes.byteLength)
+      zipCopy.set(zipBytes)
+      const zipBlob = new Blob([zipCopy], { type: 'application/zip' })
       const zipUrl = URL.createObjectURL(zipBlob)
       const a = document.createElement('a')
       a.href = zipUrl

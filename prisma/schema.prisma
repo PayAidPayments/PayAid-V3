@@ -4077,7 +4077,9 @@ model Webhook {
   isActive        Boolean   @default(true)
   description     String?
   lastTriggeredAt DateTime?
+  lastFailureAt   DateTime?
   failureCount    Int       @default(0)
+  metadata        Json?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)

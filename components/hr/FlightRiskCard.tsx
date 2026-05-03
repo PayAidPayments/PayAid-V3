@@ -18,7 +18,8 @@ interface FlightRiskCardProps {
 export function FlightRiskCard({ employeeId, tenantId, token }: FlightRiskCardProps) {
   const { token: authToken } = useAuthStore()
   const queryClient = useQueryClient()
-  const headers = token ?? authToken ? { Authorization: `Bearer ${token ?? authToken}` } : {}
+  const bearer = token ?? authToken
+  const headers: HeadersInit = bearer ? { Authorization: `Bearer ${bearer}` } : {}
 
   const { data: riskData, isLoading } = useQuery({
     queryKey: ['flight-risk', employeeId],

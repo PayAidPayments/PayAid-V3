@@ -248,7 +248,7 @@ export class TelephonyVoiceOrchestrator {
       });
 
       // Save to database
-      await prisma.callMessage.create({
+      await this.prisma.callMessage.create({
         data: {
           callId: this.call.id,
           role: 'assistant',

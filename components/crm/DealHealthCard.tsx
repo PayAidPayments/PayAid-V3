@@ -78,7 +78,7 @@ export function DealHealthCard({ dealId, tenantId }: { dealId: string; tenantId:
     )
   }
 
-  if (isError || data === null) {
+  if (isError || data == null) {
     return null
   }
 

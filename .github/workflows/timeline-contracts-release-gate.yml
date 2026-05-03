@@ -139,6 +139,9 @@ jobs:
       - name: Run timeline contracts release gate
         run: npm run release:gate:timeline-contracts
         env:
+          # Ensure warn-only list reaches Node even if cross-env / shell parsing differs on ubuntu-latest.
+          RELEASE_GATES: workflow-automation-contracts,crm-timeline-routes-contracts,m0-deeplink-context-contracts,prisma-generate-closure-contracts
+          RELEASE_GATE_WARN_ONLY_GATES: prisma-generate-closure-contracts
           WORKFLOW_AUTOMATION_CLOSURE_TIMEOUT_MS: '900000'
           WORKFLOW_AUTOMATION_CLOSURE_TIMEOUT_PER_SUITE_MS: '300000'
           CRM_TIMELINE_CLOSURE_TIMEOUT_PER_SUITE_MS: '300000'

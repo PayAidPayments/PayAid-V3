@@ -57,10 +57,11 @@ export async function runAnomalyDetection(tenantId: string): Promise<AnomalyItem
 
   const expenseSeen = new Map<string, { first: { amount: unknown; date: Date; employeeId: string }; count: number }>()
   for (const e of expenses) {
-    const key = String(Number(e.amount)) + '_' + e.date.toISOString().slice(0, 10) + '_' + e.employeeId
+    const empId = e.employeeId ?? 'unknown'
+    const key = String(Number(e.amount)) + '_' + e.date.toISOString().slice(0, 10) + '_' + empId
     const existing = expenseSeen.get(key)
     if (existing) existing.count++
-    else expenseSeen.set(key, { first: { amount: e.amount, date: e.date, employeeId: e.employeeId }, count: 1 })
+    else expenseSeen.set(key, { first: { amount: e.amount, date: e.date, employeeId: empId }, count: 1 })
   }
   for (const v of expenseSeen.values()) {
     if (v.count >= 2) {

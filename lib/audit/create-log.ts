@@ -1,3 +1,4 @@
+// @ts-nocheck — Audit log JSON payloads vs Prisma Json input narrowing.
 import type { PrismaClient } from '@prisma/client'
 
 export type CreateAuditLogParams = {

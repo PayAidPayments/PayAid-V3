@@ -14,6 +14,7 @@ import { seedSalesAndBillingModule, SalesBillingSeedResult } from './seed-sales-
 import { seedMarketingModule, MarketingSeedResult } from './seed-marketing'
 import { seedSupportModule, SupportSeedResult } from './seed-support'
 import { seedOperationsModule, OperationsSeedResult } from './seed-operations'
+import { ensureDemoProjectsSampleData, type DemoProjectsSampleSeedResult } from './seed-demo-projects'
 
 // Create PrismaClient with minimal connections for seeding
 // CRITICAL: Use direct connection or transaction mode to avoid PgBouncer session mode limits
@@ -284,6 +285,7 @@ export interface DemoBusinessSeedResult {
   marketing: MarketingSeedResult
   support: SupportSeedResult
   operations: OperationsSeedResult
+  projects: DemoProjectsSampleSeedResult
   totalRecords: number
 }
 
@@ -639,7 +641,7 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
 
   // 6. Seed Sales & Billing Module
   console.log('💰 Seeding Sales & Billing Module...')
-  const salesBillingResult = await seedSalesAndBillingModule(tenantId, contacts, products, DEMO_DATE_RANGE, prisma)
+  const salesBillingResult = await seedSalesAndBillingModule(tenantId, contacts, products, DEMO_DATE_RANGE, getPrisma())
   console.log('')
 
   // 7. Seed Marketing Module
@@ -657,13 +659,22 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
   const operationsResult = await seedOperationsModule(tenantId, userId, DEMO_DATE_RANGE, getPrisma())
   console.log('')
 
-  // 10. Summary
+  // 10. Projects module (sample dashboards: projects, tasks, time this month)
+  console.log('📁 Seeding Projects module (sample data, idempotent)...')
+  const projectsResult = await ensureDemoProjectsSampleData(getPrisma(), tenantId)
+  console.log(
+    `  ✓ Projects sample: ${projectsResult.projects} projects, ${projectsResult.tasks} tasks, ${projectsResult.timeEntries} time entries, ${projectsResult.members} member rows`
+  )
+  console.log('')
+
+  // 11. Summary
   const totalRecords = 
     crmResult.contacts + crmResult.deals + crmResult.tasks + crmResult.activities +
     salesBillingResult.orders + salesBillingResult.invoices + salesBillingResult.payments +
     marketingResult.campaigns + marketingResult.landingPages + marketingResult.leadSources +
     supportResult.tickets + supportResult.replies +
-    operationsResult.auditLogs + operationsResult.automationRuns + operationsResult.notifications
+    operationsResult.auditLogs + operationsResult.automationRuns + operationsResult.notifications +
+    projectsResult.projects + projectsResult.tasks + projectsResult.timeEntries
 
   const result: DemoBusinessSeedResult = {
     crm: crmResult,
@@ -671,6 +682,7 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
     marketing: marketingResult,
     support: supportResult,
     operations: operationsResult,
+    projects: projectsResult,
     totalRecords,
   }
 
@@ -684,6 +696,7 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
   console.log(`  Marketing: ${marketingResult.campaigns} campaigns, ${marketingResult.landingPages} landing pages`)
   console.log(`  Support: ${supportResult.tickets} tickets, ${supportResult.replies} replies`)
   console.log(`  Operations: ${operationsResult.auditLogs} audit logs, ${operationsResult.automationRuns} automation runs`)
+  console.log(`  Projects: ${projectsResult.projects} projects, ${projectsResult.tasks} tasks, ${projectsResult.timeEntries} time entries`)
   console.log(`  Total Records: ${totalRecords}`)
   console.log('')
   console.log('📋 Test Credentials:')

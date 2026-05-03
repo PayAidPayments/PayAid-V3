@@ -428,3 +428,20 @@ export function getModulesByCategory(category: 'core' | 'addon' | 'premium'): Mo
     .filter(module => module.category === category)
     .sort((a, b) => a.order - b.order)
 }
+
+/** Licensed module id (string keys of MODULE_REGISTRY and tenant.licensedModules). */
+export type ModuleId = string
+
+/**
+ * Whether the tenant is licensed for the module (reads Tenant.licensedModules).
+ * Used by entitlement middleware; dynamic import keeps @payaid/db optional at bundle time for edge-only builds.
+ */
+export async function hasModule(tenantId: string, moduleId: string): Promise<boolean> {
+  if (!MODULE_REGISTRY[moduleId]) return false
+  const { prisma } = await import('@payaid/db')
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { licensedModules: true },
+  })
+  return Boolean(tenant?.licensedModules?.includes(moduleId))
+}

@@ -7,11 +7,13 @@ export {
   getEnabledModules,
   getAccessibleRoutes,
   hasModuleAccess,
+  hasModule,
   getModule,
   getAllModules,
   getModulesByCategory,
   type ModuleRoute,
   type ModuleDefinition,
+  type ModuleId,
 } from './moduleRegistry'
 export {
   getFeatureFlags,

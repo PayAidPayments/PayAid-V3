@@ -24,8 +24,8 @@ export function generateSSOToken(payload: JWTPayload & { token?: string }): SSOT
     token: (payload as any).token || '', // Use existing JWT token if available
     expiresAt,
     modules: payload.licensedModules || [],
-    tenantId: payload.tenantId,
-    userId: payload.userId,
+    tenantId: payload.tenantId ?? '',
+    userId: payload.userId ?? '',
   }
 }
 

@@ -180,7 +180,7 @@ export class TransactionSyncService {
     const expense = await prisma.expense.findUnique({
       where: { id: expenseId },
       include: {
-        expenseApprovals: true,
+        approvals: true,
       },
     })
 
@@ -255,9 +255,7 @@ export class TransactionSyncService {
       },
     })
 
-    const isApproved = expense.expenseApprovals.some(
-      (approval) => approval.status === 'approved'
-    )
+    const isApproved = expense.approvals.some((approval) => approval.status === 'approved')
 
     if (existing) {
       await prisma.financialTransaction.update({

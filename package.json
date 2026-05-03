@@ -156,6 +156,7 @@
     "db:seed-news": "npx tsx prisma/seed-news-items.ts",
     "seed:demo-home-data": "npx tsx scripts/seed-demo-home-data.ts",
     "seed:demo-business": "npx tsx prisma/seeds/demo/run-demo-business-seed.ts",
+    "seed:demo-projects": "npx tsx prisma/seeds/demo/seed-demo-projects.ts",
     "seed:verify-demo-workforce": "npx tsx prisma/seeds/demo/verify-demo-workforce.ts",
     "seed:verify-demo-workforce:strict": "npx tsx prisma/seeds/demo/verify-demo-workforce.ts --strict",
     "seed:admin-users": "npx tsx prisma/seeds/seed-admin-users.ts",

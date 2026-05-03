@@ -321,7 +321,7 @@ async function linkEmailToContactAndDeal(
 /**
  * Create interaction/activity record for email
  */
-async function logEmailActivity(
+export async function logEmailActivity(
   tenantId: string,
   contactId: string | null,
   parsedEmail: ParsedEmail,
