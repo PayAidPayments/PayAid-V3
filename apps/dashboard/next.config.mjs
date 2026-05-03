@@ -67,6 +67,10 @@ const nextConfig = {
       : {}),
   },
   webpack: (config, { webpack, isServer }) => {
+    // Vercel build workers share RAM; cap parallel module work to reduce SIGKILL/OOM risk.
+    if (isVercel) {
+      config.parallelism = 2
+    }
     config.resolve.alias = config.resolve.alias || {}
     config.resolve.alias['@'] = path.resolve(__dirname, '../..')
     if (disableOutputFileTracingForBuildTriage && isServer) {
