@@ -13,14 +13,15 @@ const UpdateCommentSchema = z.object({
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { tenantId } = await requireModuleAccess(request, 'crm')
     const body = await request.json()
     const { content } = UpdateCommentSchema.parse(body)
 
-    const comment = await updateComment(params.id, content, tenantId)
+    const comment = await updateComment(id, content, tenantId)
 
     return NextResponse.json({
       success: true,
@@ -50,12 +51,13 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
-    await deleteComment(params.id, tenantId)
+    await deleteComment(id, tenantId)
 
     return NextResponse.json({
       success: true,

@@ -30,7 +30,7 @@ export async function getSmartLeaveBalance(
       byType.set(b.leaveTypeId, {
         balance: Number(b.balance),
         asOfDate: b.asOfDate,
-        leaveType: b.leaveType,
+        leaveType: { name: b.leaveType.name, code: b.leaveType.code ?? '' },
       })
     }
   }

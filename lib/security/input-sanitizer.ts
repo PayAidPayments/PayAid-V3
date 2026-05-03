@@ -65,13 +65,14 @@ export function sanitizeUrl(url: string): string | null {
  * Sanitize object recursively
  */
 export function sanitizeObject<T extends Record<string, any>>(obj: T): T {
-  const sanitized = { ...obj }
-  for (const key in sanitized) {
-    if (typeof sanitized[key] === 'string') {
-      sanitized[key] = sanitizeInput(sanitized[key])
-    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
-      sanitized[key] = sanitizeObject(sanitized[key])
+  const out = { ...obj } as Record<string, unknown>
+  for (const key of Object.keys(out)) {
+    const v = out[key]
+    if (typeof v === 'string') {
+      out[key] = sanitizeInput(v)
+    } else if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
+      out[key] = sanitizeObject(v as Record<string, any>)
     }
   }
-  return sanitized
+  return out as T
 }

@@ -64,6 +64,8 @@ next-env.d.ts
 !/prisma/migrations/20260420120000_idx_deal_tenant_created_desc/migration.sql
 !/prisma/migrations/20260420130000_idx_task_tenant_priority_due/
 !/prisma/migrations/20260420130000_idx_task_tenant_priority_due/migration.sql
+!/prisma/migrations/20260503120000_webhook_retry_fields/
+!/prisma/migrations/20260503120000_webhook_retry_fields/migration.sql
 
 # separate module repositories (already in their own repos)
 /repositories.vercel
@@ -98,7 +100,8 @@ PrintHood/
 Recent/
 SendTo/
 Start Menu/
-Templates/
+# Root only — bare "Templates/" matches apps/.../crm/.../templates/ on Windows (ignorecase)
+/Templates/
 !app/spreadsheet/**/Templates/**
 3D Objects/
 # Root only — bare "Contacts/" matches apps/.../crm/contacts/ on Windows (ignorecase)

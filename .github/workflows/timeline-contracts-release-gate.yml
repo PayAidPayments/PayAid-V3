@@ -1,0 +1,368 @@
+# Runs workflow + CRM timeline closure gates (see npm run release:gate:timeline-contracts).
+# Jest pins: __tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts — describe 'timeline release-gate workflow contracts', nested describe 'timeline release-gate wiring'.
+# Ubuntu runners usually avoid the Windows "Jest hangs before first suite output" class;
+# per-suite budgets are raised vs local triage defaults so real assertion failures surface.
+
+name: Timeline contracts release gate
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '35 7 * * 1'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - '.github/workflows/timeline-contracts-release-gate.yml'
+      - 'package.json'
+      - 'jest.m0.config.js'
+      - 'lib/crm/email-timeline-href.ts'
+      - 'lib/crm/call-transcript-timeline-href.ts'
+      - 'lib/crm/recording-timeline-href.ts'
+      - 'lib/crm/voice-agent-timeline.ts'
+      - 'lib/crm/whatsapp-timeline-href.ts'
+      - 'lib/crm/sms-timeline-href.ts'
+      - 'lib/crm/sms-timeline-shared.ts'
+      - 'lib/crm/email-timeline-shared.ts'
+      - 'lib/crm/unified-account-timeline.ts'
+      - 'lib/crm/unified-contact-timeline.ts'
+      - 'lib/crm/unified-deal-timeline.ts'
+      - 'components/crm/contact/ContactTimeline.tsx'
+      - 'components/crm/deal/DealTimeline.tsx'
+      - 'components/crm/account/AccountActivityTimeline.tsx'
+      - 'apps/dashboard/app/dashboard/whatsapp/inbox/page.tsx'
+      - 'apps/dashboard/app/crm/**/Calls/page.tsx'
+      - 'apps/dashboard/app/marketing/**/Campaigns/**/page.tsx'
+      - '__tests__/m0/m0-email-timeline-href.test.ts'
+      - 'apps/dashboard/app/api/crm/**/timeline/**'
+      - '__tests__/m0/m0-*-timeline-route.test.ts'
+      - '__tests__/m0/m0-call-transcript-timeline-href.test.ts'
+      - '__tests__/m0/m0-sms-timeline-href.test.ts'
+      - '__tests__/m0/m0-email-campaign-deeplink-context-route.test.ts'
+      - 'apps/dashboard/app/api/marketing/email-campaigns/**'
+      - '__tests__/m0/m0-email-timeline-preview.test.ts'
+      - '__tests__/m0/m0-workflow*.test.ts'
+      - '__tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts'
+      - 'lib/workflow/**'
+      - 'scripts/run-crm-timeline-routes-closure-check.mjs'
+      - 'scripts/run-m0-deeplink-context-check.mjs'
+      - 'scripts/run-prisma-generate-closure-check.mjs'
+      - 'scripts/show-release-gate-warn-only-next-actions.mjs'
+      - 'scripts/show-latest-release-gate-warn-only-checklist-pointer.mjs'
+      - 'scripts/run-release-gate-warn-only-pointer-summary.mjs'
+      - 'scripts/open-latest-release-gate-warn-only-artifacts.mjs'
+      - 'scripts/run-release-gate-warn-only-artifact-pack-bundle.mjs'
+      - 'scripts/show-release-gate-warn-only-bundle-verdict.mjs'
+      - 'scripts/run-release-gate-warn-only-bundle-verdict-artifact.mjs'
+      - 'scripts/show-latest-release-gate-warn-only-bundle-verdict-pointer.mjs'
+      - 'scripts/show-release-gate-warn-only-pointer-pack.mjs'
+      - 'scripts/show-latest-release-gate-warn-only-pointer-pack-json-pointer.mjs'
+      - 'scripts/run-release-gate-warn-only-pointer-pack-index.mjs'
+      - 'scripts/show-latest-release-gate-warn-only-pointer-pack-index-pointer.mjs'
+      - 'scripts/show-release-gate-warn-only-pointer-handoff-pack.mjs'
+      - 'scripts/run-release-gate-warn-only-pointer-handoff-schema-check-artifact.mjs'
+      - 'scripts/show-latest-release-gate-warn-only-pointer-handoff-schema-check-pointer.mjs'
+      - 'scripts/run-workflow-automation-closure-check.mjs'
+      - 'scripts/run-release-gate-suite.mjs'
+  push:
+    branches: [main, develop]
+    paths:
+      - '.github/workflows/timeline-contracts-release-gate.yml'
+      - 'package.json'
+      - 'jest.m0.config.js'
+      - 'lib/crm/email-timeline-href.ts'
+      - 'lib/crm/call-transcript-timeline-href.ts'
+      - 'lib/crm/recording-timeline-href.ts'
+      - 'lib/crm/voice-agent-timeline.ts'
+      - 'lib/crm/whatsapp-timeline-href.ts'
+      - 'lib/crm/sms-timeline-href.ts'
+      - 'lib/crm/sms-timeline-shared.ts'
+      - 'lib/crm/email-timeline-shared.ts'
+      - 'lib/crm/unified-account-timeline.ts'
+      - 'lib/crm/unified-contact-timeline.ts'
+      - 'lib/crm/unified-deal-timeline.ts'
+      - 'components/crm/contact/ContactTimeline.tsx'
+      - 'components/crm/deal/DealTimeline.tsx'
+      - 'components/crm/account/AccountActivityTimeline.tsx'
+      - 'apps/dashboard/app/dashboard/whatsapp/inbox/page.tsx'
+      - 'apps/dashboard/app/crm/**/Calls/page.tsx'
+      - 'apps/dashboard/app/marketing/**/Campaigns/**/page.tsx'
+      - '__tests__/m0/m0-email-timeline-href.test.ts'
+      - 'apps/dashboard/app/api/crm/**/timeline/**'
+      - '__tests__/m0/m0-*-timeline-route.test.ts'
+      - '__tests__/m0/m0-call-transcript-timeline-href.test.ts'
+      - '__tests__/m0/m0-sms-timeline-href.test.ts'
+      - '__tests__/m0/m0-email-campaign-deeplink-context-route.test.ts'
+      - 'apps/dashboard/app/api/marketing/email-campaigns/**'
+      - '__tests__/m0/m0-email-timeline-preview.test.ts'
+      - '__tests__/m0/m0-workflow*.test.ts'
+      - '__tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts'
+      - 'lib/workflow/**'
+      - 'scripts/run-crm-timeline-routes-closure-check.mjs'
+      - 'scripts/run-m0-deeplink-context-check.mjs'
+      - 'scripts/run-prisma-generate-closure-check.mjs'
+      - 'scripts/show-release-gate-warn-only-next-actions.mjs'
+      - 'scripts/show-latest-release-gate-warn-only-checklist-pointer.mjs'
+      - 'scripts/run-release-gate-warn-only-pointer-summary.mjs'
+      - 'scripts/open-latest-release-gate-warn-only-artifacts.mjs'
+      - 'scripts/run-release-gate-warn-only-artifact-pack-bundle.mjs'
+      - 'scripts/show-release-gate-warn-only-bundle-verdict.mjs'
+      - 'scripts/run-release-gate-warn-only-bundle-verdict-artifact.mjs'
+      - 'scripts/show-latest-release-gate-warn-only-bundle-verdict-pointer.mjs'
+      - 'scripts/show-release-gate-warn-only-pointer-pack.mjs'
+      - 'scripts/show-latest-release-gate-warn-only-pointer-pack-json-pointer.mjs'
+      - 'scripts/run-release-gate-warn-only-pointer-pack-index.mjs'
+      - 'scripts/show-latest-release-gate-warn-only-pointer-pack-index-pointer.mjs'
+      - 'scripts/show-release-gate-warn-only-pointer-handoff-pack.mjs'
+      - 'scripts/run-release-gate-warn-only-pointer-handoff-schema-check-artifact.mjs'
+      - 'scripts/show-latest-release-gate-warn-only-pointer-handoff-schema-check-pointer.mjs'
+      - 'scripts/run-workflow-automation-closure-check.mjs'
+      - 'scripts/run-release-gate-suite.mjs'
+
+jobs:
+  timeline-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run timeline contracts release gate
+        run: npm run release:gate:timeline-contracts
+        env:
+          # Ensure warn-only list reaches Node even if cross-env / shell parsing differs on ubuntu-latest.
+          RELEASE_GATES: workflow-automation-contracts,crm-timeline-routes-contracts,m0-deeplink-context-contracts,prisma-generate-closure-contracts
+          RELEASE_GATE_WARN_ONLY_GATES: prisma-generate-closure-contracts
+          WORKFLOW_AUTOMATION_CLOSURE_TIMEOUT_MS: '900000'
+          WORKFLOW_AUTOMATION_CLOSURE_TIMEOUT_PER_SUITE_MS: '300000'
+          CRM_TIMELINE_CLOSURE_TIMEOUT_PER_SUITE_MS: '300000'
+          M0_DEEPLINK_CONTEXT_TIMEOUT_MS: '120000'
+          PRISMA_GENERATE_CLOSURE_TIMEOUT_MS: '300000'
+          RELEASE_GATE_TIMEOUT_MS_WORKFLOW_AUTOMATION_CONTRACTS: '960000'
+          RELEASE_GATE_TIMEOUT_MS_CRM_TIMELINE_ROUTES_CONTRACTS: '420000'
+          RELEASE_GATE_TIMEOUT_MS_M0_DEEPLINK_CONTEXT_CONTRACTS: '150000'
+          RELEASE_GATE_TIMEOUT_MS_PRISMA_GENERATE_CLOSURE_CONTRACTS: '420000'
+
+      - name: Generate warn-only next-actions checklist
+        if: always()
+        run: npm run show:release-gate-warn-only-next-actions:markdown:write
+
+      - name: Print warn-only checklist pointer
+        if: always()
+        run: npm run show:release-gate-warn-only-checklist:pointer:from-release-gate-json || npm run show:release-gate-warn-only-checklist:pointer
+
+      - name: Write warn-only pointer summary artifacts
+        if: always()
+        run: npm run run:release-gate-warn-only-pointer-summary:allow-missing-checklist
+
+      - name: Build warn-only artifact pack bundle summary
+        if: always()
+        run: npm run run:release-gate-warn-only:artifact-pack-bundle:post-gate
+        env:
+          RELEASE_GATE_WARN_ONLY_BUNDLE_STEP_TIMEOUT_MS: '120000'
+
+      - name: Print warn-only bundle verdict line
+        if: always()
+        run: npm run show:release-gate-warn-only:bundle-verdict:soft
+
+      - name: Print warn-only bundle verdict JSON
+        if: always()
+        run: npm run show:release-gate-warn-only:bundle-verdict:json:soft
+
+      - name: Write warn-only bundle verdict artifact
+        if: always()
+        run: npm run run:release-gate-warn-only:bundle-verdict-artifact:soft
+
+      - name: Print warn-only bundle verdict pointer
+        if: always()
+        run: npm run show:release-gate-warn-only:bundle-verdict:pointer || true
+
+      # Schema-check artifact before pointer-pack so strict pointer-pack completeness
+      # (Phase 179) sees an on-disk schema-check JSON; writer is strict namespaced (Phase 191).
+      - name: Write warn-only pointer handoff schema-check artifact
+        if: always()
+        run: npm run run:release-gate-warn-only:pointer:handoff-schema-check-artifact:namespaced
+
+      - name: Write warn-only pointer handoff schema-check artifact (plain strict)
+        if: always()
+        run: npm run run:release-gate-warn-only:pointer:handoff-schema-check-artifact
+
+      - name: Print warn-only pointer handoff schema-check artifact pointer
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-schema-check-artifact:pointer || true
+
+      - name: Print warn-only pointer pack
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer-pack:soft
+
+      - name: Write warn-only pointer pack markdown artifact
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer-pack:markdown:write:soft
+
+      - name: Write warn-only pointer pack JSON artifact
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer-pack:json:write:soft
+
+      - name: Print warn-only pointer pack JSON pointer
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer-pack:json:pointer || true
+
+      - name: Write warn-only pointer pack index artifact
+        if: always()
+        run: npm run run:release-gate-warn-only:pointer-pack:index
+
+      - name: Print warn-only pointer pack index pointer
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer-pack:index:pointer || true
+
+      # Strict pointer-pack requires index on disk (Phase 179); index needs md+json first.
+      - name: Print warn-only pointer pack (strict completeness)
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer-pack
+
+      - name: Print warn-only pointer handoff pack
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:soft
+
+      - name: Print warn-only pointer handoff pack single line
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:single-line:soft
+
+      - name: Print warn-only pointer handoff pack single line namespaced
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:single-line:namespaced:soft
+
+      - name: Print warn-only pointer handoff pack JSON line
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:json-line:soft
+
+      - name: Print warn-only pointer handoff pack JSON line namespaced
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:json-line:namespaced:soft
+
+      - name: Print warn-only pointer handoff pack JSON line strict schema
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:json-line:strict-schema:soft
+
+      - name: Print warn-only pointer handoff pack JSON line strict schema namespaced
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:json-line:strict-schema:namespaced:soft
+
+      - name: Print warn-only pointer handoff pack JSON line strict schema min1
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:json-line:strict-schema:min1:soft
+
+      - name: Print warn-only pointer handoff pack JSON line strict schema namespaced min1
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:json-line:strict-schema:namespaced:min1:soft
+
+      - name: Print warn-only pointer handoff pack schema check only
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-only:soft
+
+      - name: Print warn-only pointer handoff pack schema check only namespaced
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-only:namespaced:soft
+
+      - name: Print warn-only pointer handoff pack schema check JSON line
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-json-line:soft
+
+      - name: Print warn-only pointer handoff pack schema check JSON line namespaced
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-json-line:namespaced:soft
+
+      - name: Print warn-only pointer handoff pack schema check code only
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-code-only:soft
+
+      - name: Print warn-only pointer handoff pack schema check code only namespaced
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-code-only:namespaced:soft
+
+      - name: Print warn-only pointer handoff pack schema check env line
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-env-line:soft
+
+      - name: Print warn-only pointer handoff pack schema check env line namespaced
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-env-line:namespaced:soft
+
+      # Order of strict pointer-handoff-pack `run:` steps from here through "strict completeness"
+      # must match `orderedStrictSchemaMarkerSuffixRow` / TIMELINE_WORKFLOW_STRICT_SCHEMA_MARKER_SUFFIXES in
+      # __tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts (strict schema gate sequence test).
+
+      - name: Print warn-only pointer handoff pack JSON line strict schema min1 (strict)
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:json-line:strict-schema:min1
+
+      - name: Print warn-only pointer handoff pack JSON line strict schema namespaced min1 (strict)
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:json-line:strict-schema:namespaced:min1
+
+      - name: Print warn-only pointer handoff pack schema check only (strict)
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-only
+
+      - name: Print warn-only pointer handoff pack schema check only namespaced (strict)
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-only:namespaced
+
+      - name: Print warn-only pointer handoff pack schema check JSON line (strict)
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-json-line
+
+      - name: Print warn-only pointer handoff pack schema check JSON line namespaced (strict)
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-json-line:namespaced
+
+      - name: Print warn-only pointer handoff pack schema check code only (strict)
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-code-only
+
+      - name: Print warn-only pointer handoff pack schema check code only namespaced (strict)
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-code-only:namespaced
+
+      - name: Print warn-only pointer handoff pack schema check env line (strict)
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-env-line
+
+      - name: Print warn-only pointer handoff pack schema check env line namespaced (strict)
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack:schema-check-env-line:namespaced
+
+      # Strict handoff-pack completeness after all soft diagnostic variants are emitted.
+      - name: Print warn-only pointer handoff pack (strict completeness)
+        if: always()
+        run: npm run show:release-gate-warn-only:pointer:handoff-pack
+
+      - name: Stage fresh gate artifacts (this run)
+        if: always()
+        run: |
+          mkdir -p .ci-artifacts/timeline-contracts-gate
+          for d in docs/evidence/release-gates docs/evidence/closure; do
+            if [ -d "$d" ]; then
+              find "$d" -maxdepth 1 -type f \( -name '*-release-gate-suite.json' -o -name '*-closure-check.md' -o -name '*-m0-deeplink-context-check.md' -o -name '*-prisma-generate-closure-check.md' -o -name '*-release-gate-warn-only-next-actions.md' -o -name '*-release-gate-warn-only-pointer-summary.json' -o -name '*-release-gate-warn-only-pointer-summary.md' -o -name '*-release-gate-warn-only-artifact-pack-bundle.md' -o -name '*-release-gate-warn-only-bundle-verdict.json' -o -name '*-release-gate-warn-only-pointer-pack.md' -o -name '*-release-gate-warn-only-pointer-pack.json' -o -name '*-release-gate-warn-only-pointer-pack-index.json' -o -name '*-release-gate-warn-only-pointer-handoff-schema-check.json' \) -mmin -120 -exec cp -t .ci-artifacts/timeline-contracts-gate {} +
+            fi
+          done
+          ls -la .ci-artifacts/timeline-contracts-gate || true
+
+      - name: Upload gate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: timeline-contracts-gate-${{ github.run_id }}
+          path: .ci-artifacts/timeline-contracts-gate/
+          if-no-files-found: ignore
+          retention-days: 14
+

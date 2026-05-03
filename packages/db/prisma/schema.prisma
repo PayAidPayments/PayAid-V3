@@ -9545,6 +9545,7 @@ model LeadContact {
   tenant             Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   account            LeadAccount            @relation(fields: [accountId], references: [id], onDelete: Cascade)
   scores             LeadScore[]
+  signals            LeadSignal[]
   snapshots          LeadEnrichmentSnapshot[]
   fieldEvidence      LeadFieldEvidence[]
   consentProfile     LeadConsentProfile?

@@ -8,11 +8,11 @@ import { calculateDealClosureProbability } from '@/lib/ai/deal-closure-probabili
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
-    const { id: dealId } = params
+    const { id: dealId } = await params
 
     const result = await calculateDealClosureProbability({
       dealId,
@@ -27,7 +27,7 @@ export async function GET(
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }
-    console.error(`Error calculating deal probability for ${params.id}:`, error)
+    console.error('Error calculating deal probability:', error)
     return NextResponse.json(
       { error: 'Failed to calculate deal probability' },
       { status: 500 }

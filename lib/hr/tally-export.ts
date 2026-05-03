@@ -15,12 +15,12 @@ export async function getPayrollJournalEntries(
   tenantId: string,
   options: { cycleId?: string; month?: number; year?: number }
 ): Promise<{ entries: TallyJournalEntry[]; summary: { totalDebit: number; totalCredit: number; employeeCount: number } }> {
-  let cycleId = options.cycleId
+  let cycleId: string | undefined = options.cycleId
   if (!cycleId && options.month != null && options.year != null) {
     const cycle = await prisma.payrollCycle.findFirst({
       where: { tenantId, month: options.month, year: options.year },
     })
-    cycleId = cycle?.id ?? null
+    cycleId = cycle?.id
   }
   if (!cycleId) {
     return { entries: [], summary: { totalDebit: 0, totalCredit: 0, employeeCount: 0 } }

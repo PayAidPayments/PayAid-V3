@@ -28,6 +28,8 @@ jobs:
       - name: Prisma validate
         run: npx prisma validate
         working-directory: .
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://local:local@localhost:5432/local?schema=public' }}
 
       - name: Turbo lint
         run: npx turbo run lint --filter=crm --filter=hr --filter=voice --filter=dashboard --concurrency 4

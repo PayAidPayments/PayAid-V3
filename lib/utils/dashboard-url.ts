@@ -20,11 +20,11 @@ function getTenantRoute(): string | null {
  * Generate a tenant-aware dashboard URL
  * @param path - The dashboard path (e.g., '/contacts', '/invoices/new', '/websites/123')
  * @returns Full path with tenant ID (e.g., '/dashboard/[tenantId]/contacts')
- * 
+ *
  * Usage in components:
  * ```tsx
  * import { getDashboardUrl } from '@/lib/utils/dashboard-url'
- * 
+ *
  * const url = getDashboardUrl('/websites')
  * <Link href={url}>Websites</Link>
  * ```
@@ -33,7 +33,7 @@ export function getDashboardUrl(path: string): string {
   if (!path || typeof path !== 'string') {
     path = '/dashboard'
   }
-  
+
   const tenantRoute = getTenantRoute()
   if (!tenantRoute) {
     // Fallback to path without tenantId (middleware will add it)
@@ -56,7 +56,7 @@ export function getDashboardUrl(path: string): string {
 export function useDashboardUrl(path: string): string {
   const { tenant } = useAuthStore()
   const tenantRoute = getTenantRouteKey(tenant)
-  
+
   if (!tenantRoute) {
     return `/dashboard${path.startsWith('/') ? path : '/' + path}`
   }
@@ -68,4 +68,3 @@ export function useDashboardUrl(path: string): string {
   // Prefer direct decoupled routes to avoid extra client-side redirect hop.
   return decoupledPath ?? `/dashboard/${tenantRoute}${cleanPath ? '/' + cleanPath : ''}`
 }
-

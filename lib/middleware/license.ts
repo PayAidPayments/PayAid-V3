@@ -65,6 +65,11 @@ export async function checkModuleAccess(
       throw new LicenseError(moduleId, 'Invalid token: missing tenantId')
     }
 
+    const userId = payload.userId ?? payload.sub
+    if (!userId) {
+      throw new LicenseError(moduleId, 'Invalid token: missing user id')
+    }
+
     // Get licensed modules from token
     const licensedModules = payload.licensedModules || []
     const subscriptionTier = payload.subscriptionTier || 'free'
@@ -92,7 +97,7 @@ export async function checkModuleAccess(
     }
 
     return {
-      userId: payload.userId,
+      userId,
       tenantId: payload.tenantId,
       licensedModules,
       subscriptionTier,

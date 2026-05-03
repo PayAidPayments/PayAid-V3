@@ -4,6 +4,7 @@
  */
 
 import 'server-only'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 
 export interface RetryConfig {
@@ -72,10 +73,10 @@ export async function queueWebhookRetry(
       lastFailureAt: new Date(),
       // Store retry config in metadata
       metadata: {
-        retryConfig: config,
+        retryConfig: JSON.parse(JSON.stringify(config)),
         nextRetryAt: nextRetryAt.toISOString(),
         priority: config.priority,
-      },
+      } as Prisma.InputJsonValue,
     },
   })
 }
@@ -100,7 +101,7 @@ export async function processRetryQueue(): Promise<{
       failureCount: { gt: 0 },
       metadata: {
         path: ['nextRetryAt'],
-        not: null,
+        not: Prisma.JsonNull,
       },
     },
     take: 100, // Process in batches
@@ -141,7 +142,7 @@ export async function processRetryQueue(): Promise<{
             metadata: {
               ...metadata,
               nextRetryAt: null,
-            },
+            } as Prisma.InputJsonValue,
           },
         })
         succeeded++
@@ -163,7 +164,7 @@ export async function processRetryQueue(): Promise<{
               ...metadata,
               deadLettered: true,
               deadLetteredAt: new Date().toISOString(),
-            },
+            } as Prisma.InputJsonValue,
           },
         })
       } else {
@@ -204,7 +205,7 @@ export async function getRetryQueueStats(tenantId?: string): Promise<{
       ...where,
       metadata: {
         path: ['nextRetryAt'],
-        not: null,
+        not: Prisma.JsonNull,
       },
     },
   })

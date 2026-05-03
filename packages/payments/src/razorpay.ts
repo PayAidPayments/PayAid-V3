@@ -36,9 +36,9 @@ export function createOrder(params: CreateOrderParams): Promise<{ orderId: strin
       receipt,
       notes: notes ?? {},
     })
-    .then((order: { id: string; amount: number; currency: string }) => ({
+    .then((order) => ({
       orderId: order.id,
-      amount: order.amount,
+      amount: typeof order.amount === 'string' ? Number(order.amount) : order.amount,
       currency: order.currency,
     }))
     .catch(() => null)

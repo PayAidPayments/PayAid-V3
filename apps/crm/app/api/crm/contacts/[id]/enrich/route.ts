@@ -8,14 +8,15 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/licens
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { tenantId } = await requireModuleAccess(request, 'crm')
 
     const contact = await prisma.contact.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId,
       },
     })

@@ -138,7 +138,6 @@ export async function getDealsOptimized(
       name: true,
       value: true,
       stage: true,
-      status: true,
       expectedCloseDate: true,
       createdAt: true,
       // Only select needed fields, avoid heavy relations

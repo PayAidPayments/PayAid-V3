@@ -113,8 +113,16 @@ export async function rateLimit(
 /**
  * Generate default rate limit key from request
  */
+function clientIp(request: NextRequest): string {
+  return (
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    'unknown'
+  )
+}
+
 function generateDefaultKey(request: NextRequest): string {
-  const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown'
+  const ip = clientIp(request)
   const path = new URL(request.url).pathname
   return `${ip}:${path}`
 }

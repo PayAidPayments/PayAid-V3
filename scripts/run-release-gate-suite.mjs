@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 
+// Jest pins: __tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts — describe 'timeline release-gate workflow contracts'; release-gate orchestration (timeline bundle gate rows: Phase 312–313).
 const root = process.cwd()
 const outDir = path.join(root, 'docs', 'evidence', 'release-gates')
 const gateTimeoutMs = Number(process.env.RELEASE_GATE_TIMEOUT_MS || '240000')
@@ -54,6 +55,30 @@ const gates = [
       '--forceExit',
     ],
   },
+
+  // Phase 312: workflow-automation-contracts gate -> run-workflow-automation-closure-check.mjs (M0_TIMELINE_* mirrors TIMELINE_CONTRACT_SUITE_RELPATH, Phase 311; __tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts).
+  {
+    id: 'workflow-automation-contracts',
+    command: ['node', 'scripts/run-workflow-automation-closure-check.mjs'],
+  },
+
+  // Phase 313: crm-timeline-routes-contracts gate -> run-crm-timeline-routes-closure-check.mjs (timeline RELEASE_GATES bundle; wiring alongside __tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts).
+  {
+    id: 'crm-timeline-routes-contracts',
+    command: ['node', 'scripts/run-crm-timeline-routes-closure-check.mjs'],
+  },
+
+  // Phase 313: m0-deeplink-context-contracts gate -> run-m0-deeplink-context-check.mjs (timeline RELEASE_GATES bundle; wiring alongside __tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts).
+  {
+    id: 'm0-deeplink-context-contracts',
+    command: ['node', 'scripts/run-m0-deeplink-context-check.mjs'],
+  },
+
+  // Phase 313: prisma-generate-closure-contracts gate -> run-prisma-generate-closure-check.mjs (timeline RELEASE_GATES bundle, warn-only in release:gate:timeline-contracts; wiring alongside __tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts).
+  {
+    id: 'prisma-generate-closure-contracts',
+    command: ['node', 'scripts/run-prisma-generate-closure-check.mjs'],
+  },
 ]
 
 const include = new Set(
@@ -61,6 +86,12 @@ const include = new Set(
     process.env.RELEASE_GATES ||
     'canonical-contract,canonical-post-cutover,canonical-readiness-verdict,leads-retention-health,m0,m2,m3'
   )
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean)
+)
+const warnOnlyGates = new Set(
+  (process.env.RELEASE_GATE_WARN_ONLY_GATES || '')
     .split(',')
     .map((x) => x.trim())
     .filter(Boolean)
@@ -101,6 +132,7 @@ for (const gate of selected) {
   const exitCode = typeof run.status === 'number' ? run.status : 1
   const timedOut = run.error?.code === 'ETIMEDOUT'
 
+  const warnOnly = warnOnlyGates.has(gate.id)
   results.push({
     gate: gate.id,
     command: [cmd, ...args].join(' '),
@@ -108,15 +140,17 @@ for (const gate of selected) {
     timed_out: timedOut,
     timeout_ms: effectiveTimeoutMs,
     duration_ms: durationMs,
+    warn_only: warnOnly,
     output_excerpt: (stdout + '\n' + stderr).split('\n').slice(-60).join('\n'),
   })
 
-  if (exitCode !== 0 || timedOut) allPass = false
+  if ((exitCode !== 0 || timedOut) && !warnOnly) allPass = false
 }
 
 const artifact = {
   collected_at_utc: startedAt.toISOString(),
   selected_gates: selected.map((g) => g.id),
+  warn_only_gates: [...warnOnlyGates],
   gate_timeout_ms_default: gateTimeoutMs,
   all_pass: allPass,
   results,

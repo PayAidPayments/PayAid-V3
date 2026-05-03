@@ -8,6 +8,8 @@ export interface TaxRule {
   name: string
   taxType: 'GST' | 'VAT' | 'SALES_TAX' | 'CUSTOM'
   rate: number // Percentage (e.g., 18.0 for 18%)
+  /** When false, rule is ignored for default / appliesTo-all selection. */
+  isActive?: boolean
   isDefault?: boolean
   appliesTo?: 'all' | 'products' | 'services' | 'specific'
   productIds?: string[]
@@ -68,8 +70,8 @@ export function calculateItemTax(
   } else {
     // Find default rule or rule that applies to this item
     applicableRule =
-      taxRules.find((r) => r.isDefault && r.isActive) ||
-      taxRules.find((r) => r.appliesTo === 'all' && r.isActive) ||
+      taxRules.find((r) => r.isDefault && (r.isActive ?? true)) ||
+      taxRules.find((r) => r.appliesTo === 'all' && (r.isActive ?? true)) ||
       null
   }
 
@@ -184,7 +186,7 @@ export function getApplicableTaxRules(
   productId?: string
 ): TaxRule[] {
   return taxRules.filter((rule) => {
-    if (!rule.isActive) return false
+    if (rule.isActive === false) return false
     if (rule.isExempt) return true // Exemption rules always apply
 
     // Check customer-specific rules

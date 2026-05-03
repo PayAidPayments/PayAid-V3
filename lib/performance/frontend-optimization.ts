@@ -2,6 +2,8 @@
  * Frontend performance optimization utilities
  */
 
+import * as React from 'react'
+
 /**
  * Lazy load component
  */

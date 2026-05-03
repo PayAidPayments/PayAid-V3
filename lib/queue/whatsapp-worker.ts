@@ -13,6 +13,8 @@ async function processSendJob(job: { id: string; data: WhatsAppOutboundJobData }
   return { sent: false, reason: 'Baileys not wired' }
 }
 
-whatsappOutboundQueue.process('send', async (job) => processSendJob(job))
+whatsappOutboundQueue.process('send', async (job) =>
+  processSendJob({ id: String(job.id), data: job.data as WhatsAppOutboundJobData })
+)
 
 console.log('[whatsapp-worker] listening for whatsapp-outbound jobs')

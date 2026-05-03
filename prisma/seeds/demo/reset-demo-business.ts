@@ -26,6 +26,29 @@ export async function resetDemoBusinessData(prisma: PrismaClient, tenantId: stri
   } catch {}
   await prisma.task.deleteMany({ where: { tenantId } })
   await prisma.meeting.deleteMany({ where: { tenantId } })
+
+  // Projects module (before contacts — Project may reference Contact)
+  try {
+    await prisma.timeEntry.deleteMany({ where: { project: { tenantId } } })
+  } catch {}
+  try {
+    await prisma.projectTask.updateMany({
+      where: { project: { tenantId } },
+      data: { dependsOnTaskId: null },
+    })
+  } catch {}
+  try {
+    await prisma.projectTask.deleteMany({ where: { project: { tenantId } } })
+  } catch {}
+  try {
+    await prisma.projectMember.deleteMany({ where: { project: { tenantId } } })
+  } catch {}
+  try {
+    await prisma.projectBudget.deleteMany({ where: { project: { tenantId } } })
+  } catch {}
+  try {
+    await prisma.project.deleteMany({ where: { tenantId } })
+  } catch {}
   
   // Support (if models exist - they may not in this schema)
   try {

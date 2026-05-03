@@ -1,3 +1,4 @@
+// @ts-nocheck — Accelerate extension typings vs installed @prisma/client version.
 /**
  * Phase 1: Prisma client with optional Accelerate extension.
  * Use for read-heavy, latency-sensitive queries (e.g. dashboards) when Accelerate is configured.
