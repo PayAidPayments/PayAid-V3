@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { useAuthStore } from '@/lib/stores/auth'
+import { getTenantRouteKey } from '@/lib/utils/tenant-route-key'
 
 /**
  * Company-wide search in the top nav. Same component across all modules.
@@ -27,7 +28,8 @@ export function GlobalSearch() {
     e.preventDefault()
     if (!query.trim()) return
     const q = encodeURIComponent(query.trim())
-    const target = tenant?.id ? `/home/${tenant.id}?q=${q}` : `/home?q=${q}`
+    const key = getTenantRouteKey(tenant)
+    const target = key ? `/home/${key}?q=${q}` : `/home?q=${q}`
     router.push(target)
     setOpen(false)
     setQuery('')

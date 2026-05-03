@@ -5,6 +5,7 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import Link from 'next/link'
+import { getTenantRouteKey } from '@/lib/utils/tenant-route-key'
 
 interface ModuleGateProps {
   module: string
@@ -92,7 +93,7 @@ export function ModuleGate({
           </Link>
           
           <Link
-            href={tenant?.id ? `/home/${tenant.id}` : '/home'}
+            href={tenantRouteKey ? `/home/${tenantRouteKey}` : '/home'}
             className="inline-block w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-center"
           >
             Back to Home
