@@ -170,9 +170,13 @@ export default function CRMTasksPage() {
   const bulkComplete = useBulkCompleteTasks()
 
   const tasks = useMemo(() => data?.tasks ?? [], [data?.tasks])
+  const [dueSortNowTs, setDueSortNowTs] = useState(() => Date.now())
+  useEffect(() => {
+    setDueSortNowTs(Date.now())
+  }, [sortMode, tasks])
   const sortedTasks = useMemo(() => {
     const priorityRank: Record<string, number> = { high: 3, medium: 2, low: 1 }
-    const nowTs = Date.now()
+    const nowTs = dueSortNowTs
     const byDate = (value?: string | null) => {
       if (!value) return null
       const ts = new Date(value).getTime()
@@ -222,7 +226,7 @@ export default function CRMTasksPage() {
       return compareDates(a.updatedAt, b.updatedAt, 'desc')
     })
     return rows
-  }, [tasks, sortMode])
+  }, [tasks, sortMode, dueSortNowTs])
   const pagination = data?.pagination
   const stats = data?.stats ?? {
     openCount: 0,

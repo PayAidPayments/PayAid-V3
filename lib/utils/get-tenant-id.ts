@@ -5,12 +5,10 @@
 
 import { useParams } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
-import { getTenantRouteKey } from '@/lib/utils/tenant-route-key'
 
 /**
- * Tenant segment from the current route `[tenantId]` param, with auth-store fallback.
- * Prefer slug for the same canonical URLs as home; uses internal id only when slug is absent.
- * For APIs that require the database primary key, use `tenant?.id` from `useAuthStore`.
+ * Safely get tenantId from URL params with fallback to auth store
+ * @returns tenantId as string or undefined
  */
 export function useTenantId(): string | undefined {
   const params = useParams()
@@ -22,9 +20,8 @@ export function useTenantId(): string | undefined {
     ? tenantIdParam[0] 
     : (tenantIdParam as string | undefined)
   
-  const fromRoute =
-    tenantIdFromParams && typeof tenantIdFromParams === 'string' ? tenantIdFromParams.trim() : ''
-  if (fromRoute) return fromRoute
-
-  return getTenantRouteKey(tenant) ?? undefined
+  // Return valid string tenantId, or fallback to auth store
+  return (tenantIdFromParams && typeof tenantIdFromParams === 'string' && tenantIdFromParams.trim()) 
+    ? tenantIdFromParams 
+    : (tenant?.id && typeof tenant.id === 'string' ? tenant.id : undefined)
 }

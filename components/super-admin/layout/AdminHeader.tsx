@@ -8,7 +8,6 @@ import { Newspaper, User, Settings, LogOut, ChevronDown } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getTenantRouteKey } from '@/lib/utils/tenant-route-key'
 
 interface AdminHeaderProps {
   title?: string
@@ -83,8 +82,9 @@ export function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   }
 
   const getProfileUrl = () => {
-    const key = getTenantRouteKey(tenant)
-    if (key) return `/home/${key}`
+    if (tenant?.id) {
+      return `/home/${tenant.id}`
+    }
     return '/home'
   }
 
