@@ -26,6 +26,7 @@ import {
   type PayAidModuleConfig,
 } from '@/lib/config/payaid-modules.config'
 import { isModuleListedForTenantLicense } from '@/lib/tenant/module-license-filter'
+import { getTenantRouteKey } from '@/lib/utils/tenant-route-key'
 
 const RupeeIcon = ({ className }: { className?: string }) => (
   <span className={className} style={{ fontSize: '1rem', fontWeight: 'bold' }}>₹</span>
@@ -74,31 +75,39 @@ export function ModuleSwitcher({ currentModule }: { currentModule?: string }) {
   const [moreOpen, setMoreOpen] = useState(false)
   const { tenant } = useAuthStore()
   const router = useRouter()
-  const tenantId = tenant?.id
+  /** Internal tenant id — required for license/module gating APIs */
+  const tenantLicenseKey = tenant?.id
+  /** Slug-first segment for URLs (matches /home/... and module paths) */
+  const tenantRouteKey = useMemo(() => getTenantRouteKey(tenant) ?? undefined, [tenant])
 
   const primaryModules = getPrimaryModules()
   const secondaryByGroupRaw = getSecondaryModulesByGroup()
   const licensedModules = tenant?.licensedModules ?? []
 
   const primaryModulesVisible = useMemo(
-    () => primaryModules.filter((m) => isModuleListedForTenantLicense(m.id, tenantId, licensedModules)),
-    [tenantId, licensedModules, primaryModules]
+    () =>
+      primaryModules.filter((m) =>
+        isModuleListedForTenantLicense(m.id, tenantLicenseKey, licensedModules)
+      ),
+    [tenantLicenseKey, licensedModules, primaryModules]
   )
 
   const secondaryByGroup = useMemo(() => {
-    if (!tenantId) return secondaryByGroupRaw
+    if (!tenantLicenseKey) return secondaryByGroupRaw
     const out = { ...secondaryByGroupRaw }
     for (const k of Object.keys(out) as Array<keyof typeof out>) {
-      out[k] = out[k].filter((m) => isModuleListedForTenantLicense(m.id, tenantId, licensedModules))
+      out[k] = out[k].filter((m) =>
+        isModuleListedForTenantLicense(m.id, tenantLicenseKey, licensedModules)
+      )
     }
     return out
-  }, [tenantId, licensedModules, secondaryByGroupRaw])
+  }, [tenantLicenseKey, licensedModules, secondaryByGroupRaw])
 
   const currentModuleData = primaryModulesVisible.find((m) => m.id === currentModule)
 
   const handleModuleSwitch = (mod: PayAidModuleConfig) => {
     const token = useAuthStore.getState().token
-    const targetUrl = tenantId ? getModuleHomeUrl(mod.id, tenantId) : mod.basePath
+    const targetUrl = tenantRouteKey ? getModuleHomeUrl(mod.id, tenantRouteKey) : mod.basePath
     if (token && typeof window !== 'undefined') {
       sessionStorage.setItem('sso_token', token)
     }
@@ -224,7 +233,7 @@ export function ModuleSwitcher({ currentModule }: { currentModule?: string }) {
           <div className="border-t border-gray-200 dark:border-slate-700 my-2" />
           <button
             onClick={() => {
-              router.push(tenantId ? `/home/${tenantId}` : '/home')
+              router.push(tenantRouteKey ? `/home/${tenantRouteKey}` : '/home')
               setOpen(false)
             }}
             className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"

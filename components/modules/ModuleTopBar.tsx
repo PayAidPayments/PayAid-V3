@@ -13,6 +13,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { GlobalSearch } from '@/components/layout/GlobalSearch'
 import { useQueryClient } from '@tanstack/react-query'
 import { getAuthHeaders } from '@/lib/hooks/use-api'
+import { getTenantRouteKey } from '@/lib/utils/tenant-route-key'
 
 interface TopBarItem {
   name: string
@@ -33,6 +34,7 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
   const router = useRouter()
   const queryClient = useQueryClient()
   const { logout, tenant, user, token } = useAuthStore()
+  const tenantRouteKey = getTenantRouteKey(tenant)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -86,9 +88,7 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
   }
 
   const getProfileUrl = () => {
-    if (tenant?.id) {
-      return `/home/${tenant.id}`
-    }
+    if (tenantRouteKey) return `/home/${tenantRouteKey}`
     return '/home'
   }
 
@@ -125,9 +125,8 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
   }, [token])
 
   const handleNewsClick = () => {
-    // Navigate to Industry Intelligence module or news page
-    if (tenant?.id) {
-      router.push(`/industry-intelligence/${tenant.id}/Home`)
+    if (tenantRouteKey) {
+      router.push(`/industry-intelligence/${tenantRouteKey}/Home`)
     } else {
       router.push('/industry-intelligence')
     }
@@ -159,8 +158,8 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
   }, [token, tenant?.id])
 
   useEffect(() => {
-    if (trialBillingStatus !== 'payment_required' || !tenant?.id) return
-    const billingPath = `/finance/${tenant.id}/Billing`
+    if (trialBillingStatus !== 'payment_required' || !tenantRouteKey) return
+    const billingPath = `/finance/${tenantRouteKey}/Billing`
     const isAllowedPath =
       pathname?.startsWith(billingPath) ||
       pathname?.startsWith('/dashboard/billing') ||
@@ -169,7 +168,7 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
     if (!isAllowedPath) {
       router.replace(billingPath)
     }
-  }, [trialBillingStatus, tenant?.id, pathname, router])
+  }, [trialBillingStatus, tenantRouteKey, pathname, router])
 
   const showTrialBanner =
     trialBillingStatus === 'payment_required' ||
@@ -485,9 +484,9 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
                   : `Your trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'}. Complete billing to avoid interruption.`}
               </span>
             </div>
-            {tenant?.id && (
+            {tenantRouteKey && (
               <Link
-                href={`/finance/${tenant.id}/Billing`}
+                href={`/finance/${tenantRouteKey}/Billing`}
                 className="font-semibold underline underline-offset-2 whitespace-nowrap"
               >
                 Upgrade now
