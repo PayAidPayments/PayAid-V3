@@ -5,6 +5,8 @@
 
 import { z } from 'zod'
 
+import { BUSINESS_GRAPH_MODULES, EntityIdSchema } from '../business-graph'
+
 export type WidgetType = 'metric' | 'chart' | 'table' | 'gauge' | 'heatmap'
 export type ChartType = 'line' | 'bar' | 'pie' | 'area'
 export type DateRange = 'today' | 'week' | 'month' | 'quarter' | 'year' | 'custom'
@@ -54,3 +56,27 @@ export interface ReportSection {
   data: unknown[]
   chartType?: ChartType
 }
+
+export const DashboardWidgetSchema = z.object({
+  id: EntityIdSchema,
+  organizationId: EntityIdSchema,
+  dashboardId: EntityIdSchema,
+  widgetType: z.enum(['metric', 'chart', 'table', 'gauge', 'heatmap']),
+  title: z.string().min(1),
+  dataSource: z.object({
+    module: z.enum(BUSINESS_GRAPH_MODULES),
+    metric: z.string().min(1),
+    filters: z.record(z.unknown()).optional(),
+    dateRange: z.enum(['today', 'week', 'month', 'quarter', 'year', 'custom']),
+  }),
+  displayOptions: z
+    .object({
+      chartType: z.enum(['line', 'bar', 'pie', 'area']).optional(),
+      currencyDisplay: z.literal('INR'),
+      compareWith: z.enum(['previous_period', 'previous_year']).optional(),
+    })
+    .optional(),
+  position: z.object({ x: z.number(), y: z.number() }),
+  size: z.object({ width: z.number(), height: z.number() }),
+  refreshInterval: z.number().int().positive().optional(),
+})

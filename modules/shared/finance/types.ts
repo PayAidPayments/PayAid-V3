@@ -5,6 +5,8 @@
 
 import { z } from 'zod'
 
+import { EntityIdSchema } from '../business-graph'
+
 export type InvoiceStatus = 'draft' | 'sent' | 'viewed' | 'partially_paid' | 'paid' | 'overdue' | 'cancelled'
 export type PaymentMethod = 'payaid' | 'bank_transfer' | 'cash' | 'cheque' | 'upi'
 export type PaymentTerms = 'immediate' | 'net15' | 'net30' | 'net45' | 'custom'
@@ -103,8 +105,8 @@ export interface GSTReturn {
 
 // Validation schemas
 export const CreateInvoiceSchema = z.object({
-  organizationId: z.string().uuid(),
-  customerId: z.string().uuid(),
+  organizationId: EntityIdSchema,
+  customerId: EntityIdSchema,
   invoiceDate: z.string().datetime(),
   dueDate: z.string().datetime(),
   lineItems: z.array(
@@ -124,7 +126,7 @@ export const CreateInvoiceSchema = z.object({
 })
 
 export const CreateExpenseSchema = z.object({
-  organizationId: z.string().uuid(),
+  organizationId: EntityIdSchema,
   description: z.string().min(1),
   amountINR: z.number().positive(),
   category: z.enum(['office', 'travel', 'marketing', 'utilities', 'supplies', 'other']),
@@ -132,5 +134,5 @@ export const CreateExpenseSchema = z.object({
   vendor: z.string().optional(),
   receiptAttachment: z.string().optional(),
   isRecurring: z.boolean().default(false),
-  allocationToInvoice: z.string().uuid().optional(),
+  allocationToInvoice: EntityIdSchema.optional(),
 })
