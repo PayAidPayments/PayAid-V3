@@ -58,20 +58,29 @@ export async function GET(request: NextRequest) {
       })
     )
 
+    const repPayload = repsWithStats.map((rep) => ({
+      id: rep.id,
+      userId: rep.userId,
+      name: rep.user.name,
+      email: rep.user.email,
+      specialization: rep.specialization,
+      conversionRate: rep.conversionRate,
+      isOnLeave: rep.isOnLeave,
+      leaveEndDate: rep.leaveEndDate,
+      assignedLeadsCount: rep._count.assignedLeads,
+      dealsCount: rep._count.deals,
+      createdAt: rep.createdAt,
+    }))
+
+    const byUserId = new Map<string, (typeof repPayload)[number]>()
+    for (const row of repPayload) {
+      if (!byUserId.has(row.userId)) {
+        byUserId.set(row.userId, row)
+      }
+    }
+
     return NextResponse.json({
-      reps: repsWithStats.map((rep) => ({
-        id: rep.id,
-        userId: rep.userId,
-        name: rep.user.name,
-        email: rep.user.email,
-        specialization: rep.specialization,
-        conversionRate: rep.conversionRate,
-        isOnLeave: rep.isOnLeave,
-        leaveEndDate: rep.leaveEndDate,
-        assignedLeadsCount: rep._count.assignedLeads,
-        dealsCount: rep._count.deals,
-        createdAt: rep.createdAt,
-      })),
+      reps: [...byUserId.values()],
     })
   } catch (error) {
     console.error('Get sales reps error:', error)
