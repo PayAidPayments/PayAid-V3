@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const where = {
       tenantId,
       campaignId,
-      status: { in: ['failed', 'dead_letter'] as const },
+      status: { in: ['failed', 'dead_letter'] },
     }
 
     const [rows, total] = await Promise.all([
