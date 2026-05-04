@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -17,7 +17,11 @@ import { Users } from 'lucide-react'
  */
 export default function CRMLoginPage() {
   const router = useRouter()
-  const [mounted, setMounted] = useState(false)
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  )
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -27,8 +31,6 @@ export default function CRMLoginPage() {
   const { login, isLoading, isAuthenticated, tenant } = useAuthStore()
   
   useEffect(() => {
-    setMounted(true)
-    
     // If already logged in, redirect to CRM dashboard
     if (isAuthenticated && tenant?.id) {
       router.push(`/crm/${tenant.id}/Home/`)
@@ -57,8 +59,8 @@ export default function CRMLoginPage() {
     }
   }
   
-  // Prevent hydration issues
-  if (!mounted) {
+  // Prevent hydration issues (no setState in useEffect)
+  if (!isClient) {
     return null
   }
 

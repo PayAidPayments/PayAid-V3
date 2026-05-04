@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess } from '@/lib/middleware/auth'
-import { vectorLogoEngine, type LogoConfig } from '@/lib/logo/vector-engine'
+import { vectorLogoEngine, type LogoConfig, type LogoGradient } from '@/lib/logo/vector-engine'
 import { ensureLogoSchemaCompatibility } from '@/lib/logo/ensure-logo-schema'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
@@ -66,6 +66,16 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Vector Logo] Generating logo for business: ${validated.businessName}`)
 
+    const gradient: LogoGradient | undefined = validated.gradient
+      ? {
+          type: validated.gradient.type,
+          colors: validated.gradient.colors,
+          ...(validated.gradient.angle !== undefined
+            ? { angle: validated.gradient.angle }
+            : {}),
+        }
+      : undefined
+
     // Build logo configuration
     const logoConfig: LogoConfig = {
       text: validated.businessName,
@@ -74,7 +84,7 @@ export async function POST(request: NextRequest) {
       color: validated.color,
       iconStyle: validated.iconStyle || 'circle-monogram',
       iconColor: validated.iconColor || validated.color,
-      gradient: validated.gradient,
+      gradient,
       shadow: validated.shadow,
       outline: validated.outline,
       animation: validated.animation || 'none',
