@@ -142,7 +142,7 @@ export default function SocialSettingsPage() {
 
   const connectWithToken = useMutation({
     mutationFn: async (payload: {
-      provider: 'facebook' | 'instagram' | 'twitter'
+      provider: 'facebook' | 'instagram' | 'twitter' | 'youtube'
       accessToken: string
       providerName?: string
       providerEmail?: string
