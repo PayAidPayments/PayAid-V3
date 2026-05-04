@@ -29,7 +29,7 @@ export default function HomePage() {
         window.location.replace(`/home/${tenantPublicId}`);
         return;
       }
-      if (isAuth && !tenantId) {
+      if (isAuth && !tenantPublicId) {
         window.location.replace('/login');
         return;
       }
