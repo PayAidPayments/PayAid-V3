@@ -87,7 +87,6 @@ export async function GET(
           platform: true,
           status: true,
           platformPostId: true,
-          errorMessage: true,
           createdAt: true,
           publishedAt: true,
         },
@@ -97,7 +96,8 @@ export async function GET(
         platform: r.platform,
         status: r.status,
         platformPostId: r.platformPostId ?? null,
-        errorMessage: r.errorMessage ?? null,
+        // SocialPost model has no errorMessage; see marketingPost.metadata / ScheduledPost for failures
+        errorMessage: null,
         createdAt: r.createdAt.toISOString(),
         publishedAt: r.publishedAt ? r.publishedAt.toISOString() : null,
       }))
