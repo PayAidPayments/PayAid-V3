@@ -40,7 +40,7 @@ export default function LogosPage() {
   const params = useParams()
   const tenantId = params.tenantId as string
   const [showGenerator, setShowGenerator] = useState(false)
-  const [generatorMode, setGeneratorMode] = useState<'vector' | 'ai'>('vector')
+  const [generatorMode, setGeneratorMode] = useState<'vector' | 'ai'>('ai')
   const [editingVectorLogo, setEditingVectorLogo] = useState<Logo | null>(null)
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
@@ -109,7 +109,10 @@ export default function LogosPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Logo Generator</h1>
-          <p className="mt-2 text-gray-600">Create professional vector logos for your business</p>
+          <p className="mt-2 text-gray-600">
+            Start with <strong>AI concepts</strong> for varied marks, or use the <strong>vector editor</strong> for a
+            typography + simple-shape lockup you can export as SVG.
+          </p>
         </div>
         {!showGenerator && (
           <Button onClick={() => setShowGenerator(true)}>
@@ -126,48 +129,24 @@ export default function LogosPage() {
             <CardDescription>Choose your preferred creation method</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={generatorMode} onValueChange={(v) => setGeneratorMode(v as any)}>
+            <Tabs value={generatorMode} onValueChange={(v) => setGeneratorMode(v as 'vector' | 'ai')}>
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="vector" className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  Vector Editor (Recommended)
-                </TabsTrigger>
                 <TabsTrigger value="ai" className="flex items-center gap-2">
                   <Wand2 className="w-4 h-4" />
-                  AI Generator (Legacy)
+                  AI concepts
+                </TabsTrigger>
+                <TabsTrigger value="vector" className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Vector mark
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="vector">
-                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
-                  <p className="text-sm text-blue-800">
-                    <strong>✨ New!</strong> Create editable vector logos with SVG export, professional typography, and instant generation.
-                  </p>
-                </div>
-                <VectorLogoEditor
-                  key={`vector-editor-${editingVectorLogo?.id || 'new'}`}
-                  tenantId={tenantId}
-                  businessName={editingVectorLogo?.businessName || formData.businessName}
-                  brandColors={editingVectorLogo?.colors || formData.colors}
-                  initialConfig={editingVectorLogo?.variations[0]?.layoutConfig || undefined}
-                  initialIndustry={editingVectorLogo?.industry || ''}
-                  initialKeywords={editingVectorLogo?.style ? editingVectorLogo.style.split(',').map((s) => s.trim()).filter(Boolean) : []}
-                  onSave={(logo) => {
-                    setShowGenerator(false)
-                    setEditingVectorLogo(null)
-                    refetch()
-                  }}
-                  onCancel={() => {
-                    setShowGenerator(false)
-                    setEditingVectorLogo(null)
-                  }}
-                />
-              </TabsContent>
-
               <TabsContent value="ai">
-                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Note:</strong> AI-generated logos are PNG only and not editable. We recommend using the Vector Editor for better results.
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-sm text-blue-900">
+                    Generates <strong>five PNG concepts</strong> via your workspace image model. Best when you want a
+                    richer mark than typography + basic shapes. Requires a configured image provider (see env / AI
+                    Studio settings).
                   </p>
                 </div>
                 <form
@@ -228,6 +207,34 @@ export default function LogosPage() {
                     </Button>
                   </div>
                 </form>
+              </TabsContent>
+
+              <TabsContent value="vector">
+                <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-md">
+                  <p className="text-sm text-amber-950">
+                    Builds an <strong>SVG from fonts + a small set of geometric icons</strong> (circle monogram, shield,
+                    etc.). It will not look like a full illustration—use <strong>AI concepts</strong> for that, then
+                    trace or refine elsewhere if you need vectors.
+                  </p>
+                </div>
+                <VectorLogoEditor
+                  key={`vector-editor-${editingVectorLogo?.id || 'new'}`}
+                  tenantId={tenantId}
+                  businessName={editingVectorLogo?.businessName || formData.businessName}
+                  brandColors={editingVectorLogo?.colors || formData.colors}
+                  initialConfig={editingVectorLogo?.variations[0]?.layoutConfig || undefined}
+                  initialIndustry={editingVectorLogo?.industry || ''}
+                  initialKeywords={editingVectorLogo?.style ? editingVectorLogo.style.split(',').map((s) => s.trim()).filter(Boolean) : []}
+                  onSave={(logo) => {
+                    setShowGenerator(false)
+                    setEditingVectorLogo(null)
+                    refetch()
+                  }}
+                  onCancel={() => {
+                    setShowGenerator(false)
+                    setEditingVectorLogo(null)
+                  }}
+                />
               </TabsContent>
             </Tabs>
           </CardContent>

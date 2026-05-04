@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess } from '@/lib/middleware/auth'
-import { vectorLogoEngine, type LogoConfig, type LogoGradient } from '@/lib/logo/vector-engine'
+import {
+  vectorLogoEngine,
+  type LogoConfig,
+  type LogoGradient,
+  type LogoShadow,
+  type LogoOutline,
+} from '@/lib/logo/vector-engine'
 import { ensureLogoSchemaCompatibility } from '@/lib/logo/ensure-logo-schema'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
@@ -76,6 +82,22 @@ export async function POST(request: NextRequest) {
         }
       : undefined
 
+    const shadow: LogoShadow | undefined = validated.shadow
+      ? {
+          x: validated.shadow.x,
+          y: validated.shadow.y,
+          blur: validated.shadow.blur,
+          color: validated.shadow.color,
+        }
+      : undefined
+
+    const outline: LogoOutline | undefined = validated.outline
+      ? {
+          width: validated.outline.width,
+          color: validated.outline.color,
+        }
+      : undefined
+
     // Build logo configuration
     const logoConfig: LogoConfig = {
       text: validated.businessName,
@@ -85,8 +107,8 @@ export async function POST(request: NextRequest) {
       iconStyle: validated.iconStyle || 'circle-monogram',
       iconColor: validated.iconColor || validated.color,
       gradient,
-      shadow: validated.shadow,
-      outline: validated.outline,
+      shadow,
+      outline,
       animation: validated.animation || 'none',
       background: validated.background || { type: 'transparent', value: '' },
       layout: validated.layout || {
