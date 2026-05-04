@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useDeal, useUpdateDeal, useContacts } from '@/lib/hooks/use-api'
@@ -9,38 +9,34 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageLoading } from '@/components/ui/loading'
 
-export default function EditDealPage() {
-  const params = useParams()
-  const tenantId = params.tenantId as string
-  const id = params.id as string
-  const router = useRouter()
-  const { data: deal, isLoading } = useDeal(id, tenantId)
-  const { data: contactsData } = useContacts({ tenantId })
-  const updateDeal = useUpdateDeal()
-  const contacts = contactsData?.contacts || []
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    value: '',
-    probability: '50',
-    stage: 'lead' as 'lead' | 'qualified' | 'proposal' | 'negotiation' | 'won' | 'lost',
-    contactId: '',
-    expectedCloseDate: '',
-  })
-  const [error, setError] = useState('')
+type DealRecord = NonNullable<ReturnType<typeof useDeal>['data']>
 
-  useEffect(() => {
-    if (deal) {
-      setFormData({
-        name: deal.name || '',
-        value: deal.value?.toString() || '',
-        probability: deal.probability?.toString() || '50',
-        stage: deal.stage || 'lead',
-        contactId: deal.contactId || '',
-        expectedCloseDate: deal.expectedCloseDate ? new Date(deal.expectedCloseDate).toISOString().split('T')[0] : '',
-      })
-    }
-  }, [deal])
+function buildFormState(deal: DealRecord) {
+  return {
+    name: deal.name || '',
+    value: deal.value?.toString() || '',
+    probability: deal.probability?.toString() || '50',
+    stage: (deal.stage || 'lead') as 'lead' | 'qualified' | 'proposal' | 'negotiation' | 'won' | 'lost',
+    contactId: deal.contactId || '',
+    expectedCloseDate: deal.expectedCloseDate ? new Date(deal.expectedCloseDate).toISOString().split('T')[0] : '',
+  }
+}
+
+function EditDealForm({
+  deal,
+  tenantId,
+  id,
+  contacts,
+}: {
+  deal: DealRecord
+  tenantId: string
+  id: string
+  contacts: any[]
+}) {
+  const router = useRouter()
+  const updateDeal = useUpdateDeal()
+  const [formData, setFormData] = useState(() => buildFormState(deal))
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,21 +64,6 @@ export default function EditDealPage() {
       ...formData,
       [e.target.name]: e.target.value,
     })
-  }
-
-  if (isLoading) {
-    return <PageLoading message="Loading deal..." fullScreen={false} />
-  }
-
-  if (!deal) {
-    return (
-      <div className="p-6 text-center">
-        <p className="text-gray-600 dark:text-gray-400 mb-4">Deal not found</p>
-        <Link href={`/crm/${tenantId}/Deals`}>
-          <Button className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">Back to Deals</Button>
-        </Link>
-      </div>
-    )
   }
 
   return (
@@ -231,4 +212,30 @@ export default function EditDealPage() {
       </Card>
     </div>
   )
+}
+
+export default function EditDealPage() {
+  const params = useParams()
+  const tenantId = params.tenantId as string
+  const id = params.id as string
+  const { data: deal, isLoading } = useDeal(id, tenantId)
+  const { data: contactsData } = useContacts({ tenantId })
+  const contacts = contactsData?.contacts || []
+
+  if (isLoading) {
+    return <PageLoading message="Loading deal..." fullScreen={false} />
+  }
+
+  if (!deal) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-gray-600 dark:text-gray-400 mb-4">Deal not found</p>
+        <Link href={`/crm/${tenantId}/Deals`}>
+          <Button className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">Back to Deals</Button>
+        </Link>
+      </div>
+    )
+  }
+
+  return <EditDealForm key={deal.id} deal={deal} tenantId={tenantId} id={id} contacts={contacts} />
 }
