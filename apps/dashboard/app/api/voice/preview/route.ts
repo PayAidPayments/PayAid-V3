@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return new NextResponse(audio, {
+    return new NextResponse(new Uint8Array(audio), {
       status: 200,
       headers: {
         'Content-Type': contentType,

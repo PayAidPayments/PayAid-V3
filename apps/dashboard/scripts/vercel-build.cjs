@@ -11,7 +11,9 @@ function setDefault(name, value) {
 }
 
 setDefault('NEXT_BUILD_DIST_DIR', '.next-vercel-build')
-setDefault('NEXT_BUILD_TIMEOUT_MS', '1800000')
+// Disable local watchdog on Vercel; rely on platform timeout to avoid killing
+// long-running page-data collection jobs that would otherwise eventually finish.
+setDefault('NEXT_BUILD_TIMEOUT_MS', '0')
 setDefault('NEXT_BUILD_KILL_GRACE_MS', '15000')
 setDefault('NEXT_BUILD_HEARTBEAT_MS', '60000')
 setDefault('NEXT_BUILD_PREFERRED_MODE', 'webpack')
