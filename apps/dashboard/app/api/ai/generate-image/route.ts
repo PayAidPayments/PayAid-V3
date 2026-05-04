@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { aiGateway } from '@/lib/ai/gateway'
-import { getHuggingFaceClient } from '@/lib/ai/huggingface'
-import { getNanoBananaClient } from '@/lib/ai/nanobanana'
-import { isSelfHostedImageAvailable, generateSelfHostedImage } from '@/lib/ai/self-hosted-image'
+import { imageGenerationRequestSchema } from '@/lib/ai/generation/contracts'
+import { normalizeImageProvider } from '@/lib/ai/generation/provider-plan'
+import { orchestrateImageGeneration } from '@/lib/ai/generation/image-orchestrator'
 import { prisma } from '@/lib/db/prisma'
 import { prismaWithRetry } from '@/lib/db/connection-retry'
-import { enhanceImagePrompt } from '@/lib/ai/prompt-enhancer'
-import { analyzePromptContext } from '@/lib/ai/context-analyzer'
 import { z } from 'zod'
-
-const generateImageSchema = z.object({
-  prompt: z.string().min(1),
-  style: z.string().optional(),
-  size: z.string().optional(),
-})
 
 // POST /api/ai/generate-image - Generate image using AI
 export async function POST(request: NextRequest) {
@@ -37,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const validated = generateImageSchema.parse(body)
+    const validated = imageGenerationRequestSchema.parse(body)
 
     // Get token from request headers
     const authHeader = request.headers.get('authorization')
@@ -48,260 +40,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Get provider preference from request (default: auto-detect)
-    const provider = body.provider || 'auto' // 'auto', 'self-hosted', 'google-ai-studio', 'huggingface', 'nanobanana'
+    const provider = normalizeImageProvider(validated.provider)
 
-    // Self-hosted image generator (your own SDXL/worker — no Google key or quota)
-    const useSelfHosted = provider === 'self-hosted' || (provider === 'auto' && isSelfHostedImageAvailable())
-    if (useSelfHosted) {
-      const result = await generateSelfHostedImage({
-        prompt: validated.prompt,
-        style: validated.style,
-        size: validated.size,
-      })
-      if (result) {
-        console.log('✅ Image generated with self-hosted worker')
-        return NextResponse.json({
-          imageUrl: result.imageUrl,
-          revisedPrompt: result.revisedPrompt,
-          service: 'self-hosted',
-          generationTime: result.generationTime,
-        })
-      }
-      if (provider === 'self-hosted') {
-        return NextResponse.json({
-          error: 'Self-hosted image service unavailable',
-          message: 'The image worker did not return an image. Check that IMAGE_WORKER_URL is correct and the service is running (e.g. docker or python server).',
-          hint: 'Start the worker: see services/text-to-image/README or set IMAGE_WORKER_URL to your worker URL.',
-        }, { status: 503 })
-      }
-      // auto: fall through to other providers
-    }
-
-    // If Nano Banana is explicitly selected, use it directly
-    if (provider === 'nanobanana') {
-      const nanoBanana = getNanoBananaClient()
-      
-      if (!nanoBanana.isAvailable()) {
-        return NextResponse.json({
-          error: 'Nano Banana service not configured',
-          message: 'GEMINI_API_KEY is not set in your .env file.',
-          hint: 'Get API key from https://aistudio.google.com/app/apikey and add to .env: GEMINI_API_KEY="AIza_xxx"',
-        }, { status: 503 })
-      }
-      
-      try {
-        console.log('🎨 Attempting image generation with Nano Banana (explicit selection)...')
-        
-        const result = await nanoBanana.generateImage({
-          prompt: validated.prompt,
-          style: validated.style,
-          size: validated.size,
-        })
-        
-        console.log('✅ Image generated successfully with Nano Banana')
-        return NextResponse.json({
-          imageUrl: result.image_url,
-          revisedPrompt: result.revised_prompt,
-          service: result.service,
-          processingTimeMs: result.processingTimeMs,
-          costInINR: result.costInINR,
-        })
-      } catch (nanoBananaError) {
-        console.error('❌ Nano Banana error:', nanoBananaError)
-        const errorMessage = nanoBananaError instanceof Error ? nanoBananaError.message : String(nanoBananaError)
-        
-        let hint = `Nano Banana API call failed: ${errorMessage}`
-        
-        if (errorMessage.includes('API_KEY') || errorMessage.includes('API key')) {
-          hint += '\n\nPlease verify your GEMINI_API_KEY is correct at https://aistudio.google.com/app/apikey'
-        } else if (errorMessage.includes('quota') || errorMessage.includes('limit')) {
-          hint += '\n\nCheck your usage and quota at https://ai.dev/usage'
-        }
-        
-        return NextResponse.json({
-          error: 'Nano Banana API error',
-          message: errorMessage,
-          hint,
-          details: process.env.NODE_ENV === 'development' && nanoBananaError instanceof Error ? { 
-            name: nanoBananaError.name, 
-            message: nanoBananaError.message,
-            stack: nanoBananaError.stack 
-          } : undefined,
-        }, { status: 500 })
-      }
-    }
-
-    // If Hugging Face is explicitly selected, use it directly (skip gateway)
-    if (provider === 'huggingface') {
-      const huggingFaceApiKey = process.env.HUGGINGFACE_API_KEY
-      if (!huggingFaceApiKey) {
-        return NextResponse.json({
-          error: 'Hugging Face Inference API key not configured',
-          message: 'HUGGINGFACE_API_KEY is not set in your .env file.',
-          hint: 'Add HUGGINGFACE_API_KEY to your .env file:\n\n1. Get API key from https://huggingface.co/settings/tokens\n2. Add to .env: HUGGINGFACE_API_KEY="hf_your_token"\n3. Optional: Set HUGGINGFACE_IMAGE_MODEL (default: ByteDance/SDXL-Lightning)\n4. Restart dev server: npm run dev',
-        }, { status: 503 })
-      }
-      
-      try {
-        console.log('🎨 Attempting image generation with Hugging Face Inference API (explicit selection)...')
-        console.log('🔑 Hugging Face API key found:', huggingFaceApiKey.substring(0, 10) + '...')
-        
-        const huggingFace = getHuggingFaceClient()
-        const result = await huggingFace.textToImage({
-          prompt: validated.prompt,
-          style: validated.style,
-          size: validated.size,
-        })
-        
-        console.log('✅ Image generated successfully with Hugging Face Inference API')
-        return NextResponse.json({
-          imageUrl: result.image_url,
-          revisedPrompt: result.revised_prompt,
-          service: result.service,
-        })
-      } catch (huggingFaceError) {
-        console.error('❌ Hugging Face Inference API error:', huggingFaceError)
-        const errorMessage = huggingFaceError instanceof Error ? huggingFaceError.message : String(huggingFaceError)
-        console.error('❌ Full error stack:', huggingFaceError instanceof Error ? huggingFaceError.stack : 'No stack trace')
-        
-        // Extract more helpful information from error
-        let hint = `Hugging Face API call failed: ${errorMessage}`
-        
-        if (errorMessage.includes('loading')) {
-          hint += '\n\nThe model is currently loading. Please wait a moment and try again.'
-        } else if (errorMessage.includes('Authentication')) {
-          hint += '\n\nPlease verify your HUGGINGFACE_API_KEY is correct and active at https://huggingface.co/settings/tokens'
-        } else if (errorMessage.includes('not found')) {
-          hint += `\n\nThe model "${process.env.HUGGINGFACE_IMAGE_MODEL || 'ByteDance/SDXL-Lightning'}" may not be available. Try a different model in .env: HUGGINGFACE_IMAGE_MODEL="black-forest-labs/FLUX.1-dev"`
-        } else {
-          hint += `\n\nPlease check:\n1. Your HUGGINGFACE_API_KEY is valid\n2. The API key has access to image generation models\n3. The model "${process.env.HUGGINGFACE_IMAGE_MODEL || 'ByteDance/SDXL-Lightning'}" is available\n4. Check server logs for detailed error information`
-        }
-        
-        return NextResponse.json({
-          error: 'Hugging Face Inference API error',
-          message: errorMessage,
-          hint,
-          details: process.env.NODE_ENV === 'development' && huggingFaceError instanceof Error ? { 
-            name: huggingFaceError.name, 
-            message: huggingFaceError.message,
-            stack: huggingFaceError.stack 
-          } : undefined,
-        }, { status: 500 })
-      }
-    }
-
-    // Try Google AI Studio (if selected or auto)
-    // Check if tenant has their own API key configured
-    const shouldUseGoogle = provider === 'auto' || provider === 'google-ai-studio'
+    // Check if tenant has their own Google AI Studio key configured
     const tenant = await prismaWithRetry(() =>
       prisma.tenant.findUnique({
         where: { id: tenantId },
         select: { googleAiStudioApiKey: true },
       })
     )
-    
-    if (shouldUseGoogle && tenant?.googleAiStudioApiKey) {
-      try {
-        console.log('🎨 Attempting image generation with Google AI Studio...')
-        
-        // Call Google AI Studio API
-        const baseUrl = process.env.APP_URL || 'http://localhost:3000'
-        const googleResponse = await fetch(`${baseUrl}/api/ai/google-ai-studio/generate-image`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': request.headers.get('authorization') || '',
-          },
-          body: JSON.stringify({
-            prompt: validated.prompt,
-            style: validated.style,
-            size: validated.size,
-          }),
-        })
-
-        if (googleResponse.ok) {
-          const googleData = await googleResponse.json()
-          console.log('✅ Image generated successfully with Google AI Studio')
-          return NextResponse.json(googleData)
-        }
-        
-        // If Google fails, log the error and handle based on provider
-        const errorData = await googleResponse.json().catch(() => ({}))
-        console.error('❌ Google AI Studio API error:', {
-          status: googleResponse.status,
-          error: errorData,
-        })
-        
-        // If explicitly selected, return error immediately
-        if (provider === 'google-ai-studio') {
-          return NextResponse.json({
-            error: 'Google AI Studio API error',
-            message: errorData.error?.message || errorData.message || `API returned ${googleResponse.status}`,
-            hint: errorData.hint || 'Please check your API key in Settings > AI Integrations.',
-            details: errorData,
-          }, { status: googleResponse.status })
-        }
-        
-        // If auto mode, continue to fallback (Hugging Face)
-        console.log('⚠️ Google AI Studio failed in auto mode, falling back to Hugging Face...')
-      } catch (googleError) {
-        console.error('❌ Google AI Studio error:', googleError)
-        // If explicitly selected, return error
-        if (provider === 'google-ai-studio') {
-          return NextResponse.json({
-            error: 'Google AI Studio error',
-            message: googleError instanceof Error ? googleError.message : String(googleError),
-            hint: 'Please check your API key in Settings > AI Integrations. Make sure it\'s valid and not expired.',
-            details: googleError instanceof Error ? { name: googleError.name, stack: googleError.stack } : undefined,
-          }, { status: 500 })
-        }
-        // Fall through to other providers if auto
+    const run = await orchestrateImageGeneration(
+      {
+        provider,
+        authHeader: request.headers.get('authorization') || '',
+        tenantHasGoogleAiStudio: Boolean(tenant?.googleAiStudioApiKey),
+      },
+      {
+        prompt: validated.prompt,
+        style: validated.style,
+        size: validated.size,
       }
+    )
+
+    if (run.success) {
+      return NextResponse.json(run.success.payload)
     }
 
-    // Try Hugging Face Inference API (if selected or auto)
-    // Only try if not already handled above (when explicitly selected)
-    if (provider === 'auto') {
-      const huggingFaceApiKey = process.env.HUGGINGFACE_API_KEY
-      
-      if (huggingFaceApiKey) {
-        try {
-          console.log('🎨 Attempting image generation with Hugging Face Inference API (auto fallback)...')
-          console.log('🔑 Hugging Face API key found:', huggingFaceApiKey.substring(0, 10) + '...')
-          
-          const huggingFace = getHuggingFaceClient()
-          const result = await huggingFace.textToImage({
-            prompt: validated.prompt,
-            style: validated.style,
-            size: validated.size,
-          })
-          
-          console.log('✅ Image generated successfully with Hugging Face Inference API')
-          return NextResponse.json({
-            imageUrl: result.image_url,
-            revisedPrompt: result.revised_prompt,
-            service: result.service,
-          })
-        } catch (huggingFaceError) {
-          console.error('❌ Hugging Face Inference API error (auto fallback):', huggingFaceError)
-          const errorMessage = huggingFaceError instanceof Error ? huggingFaceError.message : String(huggingFaceError)
-          console.error('❌ Error details:', errorMessage)
-          console.error('❌ Full error:', huggingFaceError)
-          console.error('❌ Full error stack:', huggingFaceError instanceof Error ? huggingFaceError.stack : 'No stack trace')
-          // Continue to error message below - but include info that Hugging Face was tried
-        }
-      } else {
-        console.log('⚠️ Hugging Face API key not found in environment variables')
-      }
-    }
-
-    const payAidWorkerAttemptedFirst =
-      provider === 'auto' && isSelfHostedImageAvailable()
-
-    const huggingFaceApiKey = process.env.HUGGINGFACE_API_KEY
-    const hasHuggingFace = !!huggingFaceApiKey
-    const nanoBanana = getNanoBananaClient()
-    const hasNanoBanana = nanoBanana.isAvailable()
+    const providerPlan = run.plan
+    const failuresByProvider = Object.fromEntries(run.failures.map((f) => [f.provider, f]))
+    const payAidWorkerAttemptedFirst = provider === 'auto' && providerPlan.includes('self-hosted')
+    const hasHuggingFace = providerPlan.includes('huggingface')
+    const hasNanoBanana = providerPlan.includes('nanobanana')
+    const triedGoogle = providerPlan.includes('google-ai-studio')
 
     const payAidWorkerTroubleshoot =
       'PayAid image worker (IMAGE_WORKER_URL): start the service in services/text-to-image (see README), ensure POST /generate returns image_url, and that the dashboard can reach the URL (same machine: http://localhost:7860).'
@@ -311,32 +81,44 @@ export async function POST(request: NextRequest) {
     
     // Check provider-specific errors
     if (provider === 'self-hosted') {
-      errorMessage = 'Self-hosted image worker is not configured or not responding.'
-      hint = 'Set IMAGE_WORKER_URL in your environment to your text-to-image service (e.g. http://localhost:7860). See services/text-to-image/ for the included SDXL server.'
+      const failure = failuresByProvider['self-hosted']
+      errorMessage = failure?.error || 'Self-hosted image worker is not configured or not responding.'
+      hint =
+        failure?.hint ||
+        'Set IMAGE_WORKER_URL in your environment to your text-to-image service (e.g. http://localhost:7860). See services/text-to-image/ for the included SDXL server.'
     } else if (provider === 'google-ai-studio') {
-      errorMessage = 'Google AI Studio API key is not configured for your account. Each tenant must use their own API key.'
-      hint = 'Get your free API key from https://aistudio.google.com/app/apikey\n\n1. Go to https://aistudio.google.com/app/apikey\n2. Click "Create API Key"\n3. Copy the API key\n4. Go to Settings > AI Integrations\n5. Add your API key in the Google AI Studio section'
+      const failure = failuresByProvider['google-ai-studio']
+      errorMessage =
+        failure?.error ||
+        'Google AI Studio API key is not configured for your account. Each tenant must use their own API key.'
+      hint =
+        failure?.hint ||
+        'Get your free API key from https://aistudio.google.com/app/apikey\n\n1. Go to https://aistudio.google.com/app/apikey\n2. Click "Create API Key"\n3. Copy the API key\n4. Go to Settings > AI Integrations\n5. Add your API key in the Google AI Studio section'
     } else if (provider === 'nanobanana') {
+      const failure = failuresByProvider['nanobanana']
       if (!hasNanoBanana) {
         errorMessage = 'Nano Banana API key is not configured.'
         hint = 'Get API key from https://aistudio.google.com/app/apikey and add to .env:\n\n1. Go to https://aistudio.google.com/app/apikey\n2. Click "Create API Key"\n3. Copy the API key\n4. Add to .env: GEMINI_API_KEY="AIza_xxx"\n5. Restart dev server: npm run dev'
       } else {
-        errorMessage = 'Nano Banana image generation failed. Please check your API key and try again.'
-        hint = 'Your GEMINI_API_KEY is configured, but image generation failed. Please check:\n1. API key is valid\n2. Server has been restarted after adding the key\n3. Check server logs for detailed error messages'
+        errorMessage = failure?.error || 'Nano Banana image generation failed. Please check your API key and try again.'
+        hint =
+          failure?.hint ||
+          'Your GEMINI_API_KEY is configured, but image generation failed. Please check:\n1. API key is valid\n2. Server has been restarted after adding the key\n3. Check server logs for detailed error messages'
       }
     } else if (provider === 'huggingface') {
+      const failure = failuresByProvider['huggingface']
       if (!hasHuggingFace) {
         errorMessage = 'Hugging Face Inference API key is not configured.'
         hint = 'Add HUGGINGFACE_API_KEY to your .env file:\n\n1. Get API key from https://huggingface.co/settings/tokens\n2. Add to .env: HUGGINGFACE_API_KEY="hf_your_token"\n3. Optional: Set HUGGINGFACE_IMAGE_MODEL (default: ByteDance/SDXL-Lightning)\n4. Restart dev server: npm run dev'
       } else {
-        // This shouldn't happen - if we got here, Hugging Face failed
-        errorMessage = 'Hugging Face image generation failed. Please check your API key and try again.'
-        hint = 'Your HUGGINGFACE_API_KEY is configured, but image generation failed. Please check:\n1. API key is valid\n2. Server has been restarted after adding the key\n3. Check server logs for detailed error messages'
+        errorMessage = failure?.error || 'Hugging Face image generation failed. Please check your API key and try again.'
+        hint =
+          failure?.hint ||
+          'Your HUGGINGFACE_API_KEY is configured, but image generation failed. Please check:\n1. API key is valid\n2. Server has been restarted after adding the key\n3. Check server logs for detailed error messages'
       }
     } else {
       // Auto mode - check what's available
       if (hasHuggingFace) {
-        const triedGoogle = shouldUseGoogle && tenant?.googleAiStudioApiKey
         const workerPreamble = payAidWorkerAttemptedFirst
           ? `Auto mode tried the PayAid self-hosted worker first, but it did not return an image (${payAidWorkerTroubleshoot})\n\n`
           : ''
@@ -351,7 +133,7 @@ export async function POST(request: NextRequest) {
         }
       } else {
         errorMessage =
-          'Image generation service not configured, or every configured provider failed. Options:\n\n1. PayAid SDXL worker (own infra): set IMAGE_WORKER_URL and run services/text-to-image (see README)\n2. Google AI Studio: https://aistudio.google.com/app/apikey → Settings > AI Integrations\n3. Hugging Face: token at https://huggingface.co/settings/tokens → HUGGINGFACE_API_KEY in server env'
+          `Image generation service not configured, or every configured provider failed. Attempt plan: ${providerPlan.join(' -> ') || 'none'}.\n\nOptions:\n\n1. PayAid SDXL worker (own infra): set IMAGE_WORKER_URL and run services/text-to-image (see README)\n2. Google AI Studio: https://aistudio.google.com/app/apikey → Settings > AI Integrations\n3. Hugging Face: token at https://huggingface.co/settings/tokens → HUGGINGFACE_API_KEY in server env`
         hint = `Prefer your own generator: ${payAidWorkerTroubleshoot}\n\nCloud: Google AI Studio (per-tenant key) or Hugging Face (server env).`
       }
     }
