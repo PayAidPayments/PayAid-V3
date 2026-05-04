@@ -3,6 +3,7 @@ import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { aiGateway } from '@/lib/ai/gateway'
 import { getHuggingFaceClient } from '@/lib/ai/huggingface'
 import { getNanoBananaClient } from '@/lib/ai/nanobanana'
+import { isSelfHostedImageAvailable, generateSelfHostedImage } from '@/lib/ai/self-hosted-image'
 import { prisma } from '@payaid/db'
 import { enhanceImagePrompt } from '@/lib/ai/prompt-enhancer'
 import { analyzePromptContext } from '@/lib/ai/context-analyzer'
@@ -33,6 +34,32 @@ export async function POST(request: NextRequest) {
 
     // Get provider preference from request (default: auto-detect)
     const provider = body.provider || 'auto' // 'auto', 'self-hosted', 'google-ai-studio', 'huggingface' (free options only)
+
+    // Self-hosted PayAid SDXL worker (services/text-to-image) — first when Auto + IMAGE_WORKER_URL
+    const useSelfHosted = provider === 'self-hosted' || (provider === 'auto' && isSelfHostedImageAvailable())
+    if (useSelfHosted) {
+      const result = await generateSelfHostedImage({
+        prompt: validated.prompt,
+        style: validated.style,
+        size: validated.size,
+      })
+      if (result) {
+        console.log('✅ Image generated with self-hosted worker')
+        return NextResponse.json({
+          imageUrl: result.imageUrl,
+          revisedPrompt: result.revisedPrompt,
+          service: 'self-hosted',
+          generationTime: result.generationTime,
+        })
+      }
+      if (provider === 'self-hosted') {
+        return NextResponse.json({
+          error: 'Self-hosted image service unavailable',
+          message: 'The image worker did not return an image. Check that IMAGE_WORKER_URL is correct and the service is running (e.g. docker or python server).',
+          hint: 'Start the worker: see services/text-to-image/README or set IMAGE_WORKER_URL to your worker URL.',
+        }, { status: 503 })
+      }
+    }
 
     // If Nano Banana is explicitly selected, use it directly
     if (provider === 'nanobanana') {
@@ -147,9 +174,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Note: Self-hosted Docker image generation removed - using cloud APIs only
-    // (Hugging Face Docker services removed due to space constraints)
-
     // Try Google AI Studio (if selected or auto)
     // Check if tenant has their own API key configured
     const shouldUseGoogle = provider === 'auto' || provider === 'google-ai-studio'
@@ -238,20 +262,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // No image generation service configured
-    // Note: Self-hosted Docker image generation has been removed (cloud-only now)
+    const payAidWorkerAttemptedFirst =
+      provider === 'auto' && isSelfHostedImageAvailable()
+
     const huggingFaceApiKey = process.env.HUGGINGFACE_API_KEY
     const hasHuggingFace = !!huggingFaceApiKey
     const nanoBanana = getNanoBananaClient()
     const hasNanoBanana = nanoBanana.isAvailable()
-    
+
+    const payAidWorkerTroubleshoot =
+      'PayAid image worker (IMAGE_WORKER_URL): start the service in services/text-to-image (see README), ensure POST /generate returns image_url, and that the app can reach the URL (e.g. http://localhost:7860).'
+
     let errorMessage = 'Image generation service not configured.'
     let hint = ''
-    
-    // Check provider-specific errors
+
     if (provider === 'self-hosted') {
-      errorMessage = 'Self-hosted image generation is no longer available. Docker services for image generation have been removed.'
-      hint = 'Please use cloud APIs instead:\n- Google AI Studio (free, per-tenant API key)\n- Hugging Face Cloud API (free tier)\n\nSee CLOUD_ONLY_SETUP.md for details.'
+      errorMessage = 'Self-hosted image worker is not configured or not responding.'
+      hint = 'Set IMAGE_WORKER_URL in your environment to your text-to-image service (e.g. http://localhost:7860). See services/text-to-image/ for the included SDXL server.'
     } else if (provider === 'google-ai-studio') {
       errorMessage = 'Google AI Studio API key is not configured for your account. Each tenant must use their own API key.'
       hint = 'Get your free API key from https://aistudio.google.com/app/apikey\n\n1. Go to https://aistudio.google.com/app/apikey\n2. Click "Create API Key"\n3. Copy the API key\n4. Go to Settings > AI Integrations\n5. Add your API key in the Google AI Studio section'
@@ -273,15 +300,24 @@ export async function POST(request: NextRequest) {
         hint = 'Your HUGGINGFACE_API_KEY is configured, but image generation failed. Please check:\n1. API key is valid\n2. Server has been restarted after adding the key\n3. Check server logs for detailed error messages'
       }
     } else {
-      // Auto mode - check what's available
       if (hasHuggingFace) {
-        // Hugging Face is configured but failed - this is unexpected
-        errorMessage = 'Image generation failed. Hugging Face API key is configured, but generation failed.'
-        hint = 'Your HUGGINGFACE_API_KEY is set, but image generation failed. Please:\n1. Check server logs for detailed error messages\n2. Verify your API key is valid at https://huggingface.co/settings/tokens\n3. Try restarting the dev server: npm run dev\n\nAlternatively, you can configure Google AI Studio in Settings > AI Integrations.'
+        const triedGoogle = shouldUseGoogle && tenant?.googleAiStudioApiKey
+        const workerPreamble = payAidWorkerAttemptedFirst
+          ? `Auto mode tried the PayAid self-hosted worker first, but it did not return an image (${payAidWorkerTroubleshoot})\n\n`
+          : ''
+        if (triedGoogle) {
+          errorMessage =
+            'Image generation failed after trying the PayAid worker (if configured), Google AI Studio, and Hugging Face.'
+          hint = `${workerPreamble}Cloud fallbacks were also attempted:\n\n1. Google AI Studio: failed (check Settings > AI Integrations)\n2. Hugging Face: failed (check HUGGINGFACE_API_KEY at https://huggingface.co/settings/tokens)\n\nCheck server logs for details. To use only your own generator, set IMAGE_WORKER_URL and choose provider "self-hosted", or fix the worker until Auto succeeds without cloud keys.`
+        } else {
+          errorMessage =
+            'Image generation failed after trying the PayAid worker (if configured) and Hugging Face.'
+          hint = `${workerPreamble}Your HUGGINGFACE_API_KEY is set, but Hugging Face generation failed. Verify the key and model (HUGGINGFACE_IMAGE_MODEL). Alternatively configure Google AI Studio in Settings > AI Integrations, or run the PayAid text-to-image service and set IMAGE_WORKER_URL.`
+        }
       } else {
-        // Nothing configured
-        errorMessage = 'Image generation service not configured. Please configure one of these free cloud services:\n\n1. Google AI Studio: Get free key from https://aistudio.google.com/app/apikey (Recommended)\n2. Hugging Face: Get free key from https://huggingface.co/settings/tokens'
-        hint = 'Image generation requires one of:\n- Google AI Studio API key (free, per-tenant - add via Dashboard > Settings > AI Integrations)\n- Hugging Face API key (free, cloud-based - add to .env file)\n\nNote: Self-hosted Docker image generation has been removed. See CLOUD_ONLY_SETUP.md for details.'
+        errorMessage =
+          'Image generation service not configured, or every configured provider failed. Options:\n\n1. PayAid SDXL worker (own infra): set IMAGE_WORKER_URL and run services/text-to-image (see README)\n2. Google AI Studio: https://aistudio.google.com/app/apikey → Settings > AI Integrations\n3. Hugging Face: token at https://huggingface.co/settings/tokens → HUGGINGFACE_API_KEY in server env'
+        hint = `Prefer your own generator: ${payAidWorkerTroubleshoot}\n\nCloud: Google AI Studio (per-tenant key) or Hugging Face (server env).`
       }
     }
     
@@ -299,7 +335,7 @@ export async function POST(request: NextRequest) {
             '4. Add to .env: GEMINI_API_KEY="AIza_xxx"',
             '5. Restart dev server: npm run dev',
           ],
-          cost: '₹3.23 per image (~$0.039 USD)',
+          cost: '₹3.23 per image',
           features: 'Superior quality, faster (5-10s), image editing, multi-image fusion',
         },
         googleAiStudio: {
@@ -319,6 +355,14 @@ export async function POST(request: NextRequest) {
             '2. Add to .env: HUGGINGFACE_API_KEY="hf_your_token"',
             '3. Optional: Set HUGGINGFACE_IMAGE_MODEL (default: ByteDance/SDXL-Lightning)',
             '4. Restart dev server: npm run dev',
+          ],
+        },
+        payAidImageWorker: {
+          steps: [
+            '1. From repo root: cd services/text-to-image && pip install -r requirements.txt && python server.py (listens on http://localhost:7860)',
+            '2. Set IMAGE_WORKER_URL=http://localhost:7860 in the same env as this app',
+            '3. Confirm GET /health and POST /generate work from the machine running Next.js',
+            '4. Restart the app after changing env',
           ],
         },
       },

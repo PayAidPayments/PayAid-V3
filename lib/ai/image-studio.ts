@@ -16,6 +16,8 @@ export interface ImageParams {
   negativePrompt?: string
   style?: string
   size?: string
+  /** Generation backend (e.g. auto vs self-hosted) — affects cache key. */
+  provider?: string
   width?: number
   height?: number
   steps?: number
@@ -30,6 +32,7 @@ export function imageParamsHash(params: ImageParams): string {
     (params.negativePrompt || '').trim(),
     params.style ?? '',
     params.size ?? '',
+    params.provider ?? '',
     params.width ?? '',
     params.height ?? '',
     params.steps ?? '',

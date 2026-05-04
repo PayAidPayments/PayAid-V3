@@ -29,7 +29,22 @@ const generateSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
+    let tenantId: string
+    let userId: string
+    try {
+      const access = await requireModuleAccess(request, 'ai-studio')
+      tenantId = access.tenantId
+      userId = access.userId
+    } catch (accessError) {
+      if (accessError && typeof accessError === 'object' && 'moduleId' in accessError) {
+        const fallbackAccess = await requireModuleAccess(request, 'marketing')
+        tenantId = fallbackAccess.tenantId
+        userId = fallbackAccess.userId
+      } else {
+        throw accessError
+      }
+    }
+
     const body = await request.json()
     const validated = generateSchema.parse(body)
 
@@ -86,6 +101,7 @@ export async function POST(request: NextRequest) {
       negativePrompt: validated.negativePrompt,
       style: validated.style,
       size: validated.size,
+      provider: validated.provider || 'auto',
     })
     const cachedUrl = await getCachedImageUrl(tenantId, paramsHash)
     if (cachedUrl) {
