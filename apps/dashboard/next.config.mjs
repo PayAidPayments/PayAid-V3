@@ -59,7 +59,9 @@ const nextConfig = {
     // This avoids worker SIGKILL/OOM in large monorepo compiles.
     ...(isVercel
       ? {
-          memoryBasedWorkersCount: false,
+          // Keep memory optimizations enabled, but allow Next to choose worker count
+          // from available memory so page-data collection is not forced to a single worker.
+          memoryBasedWorkersCount: true,
           webpackMemoryOptimizations: true,
           webpackBuildWorker: false,
           parallelServerBuildTraces: false,
