@@ -33,6 +33,10 @@ export type ImageAttemptFailure = {
 
 export type ImageAttemptResult = ImageAttemptSuccess | ImageAttemptFailure
 
+function isImageAttemptFailure(result: ImageAttemptResult): result is ImageAttemptFailure {
+  return !result.ok
+}
+
 function toErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message
   return String(error)
@@ -207,7 +211,9 @@ export async function orchestrateImageGeneration(
       result = await tryNanoBanana(input)
     }
     if (result.ok) return { success: result, failures, plan }
-    failures.push(result)
+    if (isImageAttemptFailure(result)) {
+      failures.push(result)
+    }
   }
 
   return { failures, plan }
