@@ -1,6 +1,26 @@
-import { PrismaClient } from '@prisma/client'
+import { Prisma, PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
+
+const DEMO_COMPETITOR_PREFIX = '[Industry Intelligence Demo]'
+
+/** Industry slugs used for global catalog rows (tenantId null) — matches common Tenant.industry values */
+const GLOBAL_NEWS_INDUSTRIES = [
+  'service-business',
+  'restaurant',
+  'software',
+  'healthcare',
+  'retail',
+  'manufacturing',
+  'hospitality',
+  'education',
+  'construction',
+  'finance',
+  'agriculture',
+  'professional-services',
+  'logistics',
+  'real-estate',
+] as const
 
 /**
  * Seed News Items - Industry Intelligence Dashboard
@@ -283,7 +303,167 @@ async function seedNewsItems() {
     }
   }
 
+  await seedGlobalCatalogNewsByIndustry(now)
+  await seedDemoCompetitorsForAllTenants()
+
   console.log('\n✨ News items seeding completed successfully!')
+}
+
+/**
+ * Global rows (tenantId null) tagged per industry so Industry Intelligence has data for any tenant industry.
+ */
+async function seedGlobalCatalogNewsByIndustry(now: Date) {
+  console.log('\n📰 Ensuring global industry catalog news...')
+
+  for (const industry of GLOBAL_NEWS_INDUSTRIES) {
+    const items = [
+      {
+        title: `Regulatory watch: ${industry} compliance updates (India)`,
+        summary: 'Recent notifications and deadlines relevant to your sector.',
+        description:
+          'Curated compliance reminders for MSMEs and growing businesses. Review applicability with your advisor.',
+        source: 'government',
+        category: 'government-alerts',
+        urgency: 'important',
+        icon: '🟡',
+        industry,
+        sourceName: 'PayAid Intelligence',
+        publishedAt: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000),
+        tags: ['compliance', 'regulatory', industry],
+      },
+      {
+        title: `Market signal: demand trends in ${industry.replace(/-/g, ' ')}`,
+        summary: 'Channel and pricing signals worth monitoring this quarter.',
+        description:
+          'Benchmark against local peers and adjust campaigns or capacity where it matters most.',
+        source: 'market',
+        category: 'market-trends',
+        urgency: 'informational',
+        icon: '🟢',
+        industry,
+        sourceName: 'Industry Brief',
+        publishedAt: new Date(now.getTime() - 9 * 24 * 60 * 60 * 1000),
+        tags: ['market', 'trends', industry],
+      },
+    ]
+
+    for (const row of items) {
+      const existing = await prisma.newsItem.findFirst({
+        where: {
+          tenantId: null,
+          title: row.title,
+          industry: row.industry,
+        },
+      })
+      if (!existing) {
+        await prisma.newsItem.create({
+          data: {
+            tenantId: null,
+            title: row.title,
+            summary: row.summary,
+            description: row.description,
+            source: row.source,
+            category: row.category,
+            urgency: row.urgency,
+            icon: row.icon,
+            industry: row.industry,
+            sourceName: row.sourceName,
+            publishedAt: row.publishedAt,
+            tags: row.tags,
+          },
+        })
+      }
+    }
+  }
+  console.log('   ✅ Global industry catalog ready')
+}
+
+async function seedDemoCompetitorsForAllTenants() {
+  const tenants = await prisma.tenant.findMany({ select: { id: true, name: true, industry: true } })
+  console.log('\n🎯 Seeding demo competitors for Industry Intelligence...')
+
+  for (const tenant of tenants) {
+    await prisma.competitor.deleteMany({
+      where: {
+        tenantId: tenant.id,
+        name: { startsWith: DEMO_COMPETITOR_PREFIX },
+      },
+    })
+
+    const a = await prisma.competitor.create({
+      data: {
+        tenantId: tenant.id,
+        name: `${DEMO_COMPETITOR_PREFIX} ${tenant.name.slice(0, 24)} — Regional player`,
+        website: 'https://example.com',
+        industry: tenant.industry || undefined,
+        description: 'Demo competitor for Industry Intelligence dashboards.',
+        priceTrackingEnabled: true,
+        locationTrackingEnabled: true,
+        monitoringEnabled: true,
+      },
+    })
+
+    await prisma.competitorPrice.create({
+      data: {
+        competitorId: a.id,
+        productName: 'Core service bundle',
+        price: new Prisma.Decimal('12999.00'),
+        currency: 'INR',
+        source: 'manual',
+        lastCheckedAt: new Date(),
+      },
+    })
+
+    await prisma.competitorLocation.create({
+      data: {
+        competitorId: a.id,
+        name: 'Flagship branch',
+        address: '12 MG Road',
+        city: 'Bengaluru',
+        state: 'Karnataka',
+        country: 'India',
+        isActive: true,
+      },
+    })
+
+    await prisma.competitorAlert.create({
+      data: {
+        competitorId: a.id,
+        type: 'PRICE_CHANGE',
+        title: 'Price check recorded',
+        message: 'Demo alert: competitor pricing last verified for seed data.',
+        severity: 'INFO',
+        isRead: false,
+      },
+    })
+
+    const b = await prisma.competitor.create({
+      data: {
+        tenantId: tenant.id,
+        name: `${DEMO_COMPETITOR_PREFIX} Alternate vendor`,
+        website: 'https://example.org',
+        industry: tenant.industry || undefined,
+        description: 'Second demo track for charts and alerts.',
+        priceTrackingEnabled: false,
+        locationTrackingEnabled: true,
+        monitoringEnabled: true,
+      },
+    })
+
+    await prisma.competitorLocation.create({
+      data: {
+        competitorId: b.id,
+        name: 'City outlet',
+        address: '88 High Street',
+        city: 'Hyderabad',
+        state: 'Telangana',
+        country: 'India',
+        isActive: true,
+      },
+    })
+  }
+
+  console.log(`   ✅ Demo competitors for ${tenants.length} tenant(s)`)
 }
 
 // Run the seeder
