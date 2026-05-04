@@ -304,7 +304,18 @@ async function seedNewsItems() {
   }
 
   await seedGlobalCatalogNewsByIndustry(now)
-  await seedDemoCompetitorsForAllTenants()
+  try {
+    await seedDemoCompetitorsForAllTenants()
+  } catch (e) {
+    const code = e && typeof e === 'object' && 'code' in e ? String((e as { code?: string }).code) : ''
+    if (code === 'P2021') {
+      console.warn(
+        '\n⚠️  Skipping demo competitors: the Competitor table is not in this database yet. Apply migrations or `prisma db push` to enable competitor seeding. News items were still created.'
+      )
+    } else {
+      throw e
+    }
+  }
 
   console.log('\n✨ News items seeding completed successfully!')
 }
