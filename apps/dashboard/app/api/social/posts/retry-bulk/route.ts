@@ -16,6 +16,7 @@ type BulkRetryBody = {
 }
 
 const CHANNELS = ['EMAIL', 'WHATSAPP', 'SMS', 'FACEBOOK', 'INSTAGRAM', 'TWITTER', 'LINKEDIN', 'YOUTUBE'] as const
+type RetryCandidatePost = { id: string; status: string | null; metadata: unknown }
 
 function asObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
@@ -85,10 +86,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Bulk retry limit is 100 posts per request.' }, { status: 400 })
     }
 
-    const posts = await prisma.marketingPost.findMany({
+    const posts = (await prisma.marketingPost.findMany({
       where: { tenantId, id: { in: ids } },
       select: { id: true, status: true, metadata: true },
-    })
+    })) as RetryCandidatePost[]
     const byId = new Map(posts.map((p) => [p.id, p]))
     const retried: string[] = []
     const skipped: Array<{ id: string; reason: string }> = []
