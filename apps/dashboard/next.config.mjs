@@ -59,7 +59,9 @@ const nextConfig = {
     // This avoids worker SIGKILL/OOM in large monorepo compiles.
     ...(isVercel
       ? {
-          memoryBasedWorkersCount: false,
+          // Keep memory optimizations enabled, but allow Next to choose worker count
+          // from available memory so page-data collection is not forced to a single worker.
+          memoryBasedWorkersCount: true,
           webpackMemoryOptimizations: true,
           webpackBuildWorker: false,
           parallelServerBuildTraces: false,
@@ -67,6 +69,10 @@ const nextConfig = {
       : {}),
   },
   webpack: (config, { webpack, isServer }) => {
+    // Vercel build workers share RAM; cap parallel module work to reduce SIGKILL/OOM risk.
+    if (isVercel) {
+      config.parallelism = 2
+    }
     config.resolve.alias = config.resolve.alias || {}
     config.resolve.alias['@'] = path.resolve(__dirname, '../..')
     if (disableOutputFileTracingForBuildTriage && isServer) {

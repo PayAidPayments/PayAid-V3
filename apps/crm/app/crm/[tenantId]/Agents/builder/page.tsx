@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { PageLoading } from '@/components/ui/loading'
 import Link from 'next/link'
 import { ArrowLeft, Save, Play, Loader2 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 const TRIGGER_TYPES = [
   { value: 'manual', label: 'Manual run' },
@@ -29,36 +29,35 @@ const STEP_TYPES = [
   { value: 'retail_inventory', label: 'Retail reorder' },
 ]
 
-export default function WorkflowBuilderPage() {
-  const params = useParams()
-  const searchParams = useSearchParams()
-  const tenantId = params?.tenantId as string
-  const workflowId = searchParams?.get('workflowId') as string | null
+type WorkflowPayload = {
+  name?: string
+  description?: string
+  trigger?: { type?: string }
+  steps?: Array<{ id: string; type: string; config: Record<string, unknown> }>
+}
+
+function WorkflowBuilderForm({
+  tenantId,
+  workflowId,
+  initialWorkflow,
+}: {
+  tenantId: string
+  workflowId: string | null
+  initialWorkflow: WorkflowPayload | null
+}) {
   const queryClient = useQueryClient()
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [triggerType, setTriggerType] = useState('manual')
-  const [steps, setSteps] = useState<Array<{ id: string; type: string; config: Record<string, unknown> }>>([])
-  const [runStatus, setRunStatus] = useState<string | null>(null)
-
-  const { data: workflow, isLoading } = useQuery({
-    queryKey: ['workflow', workflowId],
-    queryFn: async () => {
-      const res = await apiRequest(`/api/agents/workflows/${workflowId}`)
-      if (!res.ok) throw new Error('Not found')
-      return res.json()
-    },
-    enabled: !!workflowId,
+  const [name, setName] = useState(() => initialWorkflow?.name ?? '')
+  const [description, setDescription] = useState(() => initialWorkflow?.description ?? '')
+  const [triggerType, setTriggerType] = useState(
+    () => (initialWorkflow?.trigger?.type as string) ?? 'manual',
+  )
+  const [steps, setSteps] = useState<
+    Array<{ id: string; type: string; config: Record<string, unknown> }>
+  >(() => {
+    const s = initialWorkflow?.steps
+    return Array.isArray(s) ? s : []
   })
-
-  useEffect(() => {
-    if (workflow) {
-      setName(workflow.name ?? '')
-      setDescription(workflow.description ?? '')
-      setTriggerType((workflow.trigger?.type as string) ?? 'manual')
-      setSteps(Array.isArray(workflow.steps) ? workflow.steps : [])
-    }
-  }, [workflow])
+  const [runStatus, setRunStatus] = useState<string | null>(null)
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -94,9 +93,6 @@ export default function WorkflowBuilderPage() {
 
   const addStep = () => setSteps((s) => [...s, { id: `step-${Date.now()}`, type: 'ai', config: { prompt: '' } }])
   const removeStep = (id: string) => setSteps((s) => s.filter((x) => x.id !== id))
-
-  if (!tenantId) return <PageLoading message="Loading..." fullScreen={false} />
-  if (workflowId && isLoading) return <PageLoading message="Loading workflow..." fullScreen={false} />
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -173,5 +169,34 @@ export default function WorkflowBuilderPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function WorkflowBuilderPage() {
+  const params = useParams()
+  const searchParams = useSearchParams()
+  const tenantId = params?.tenantId as string
+  const workflowId = searchParams?.get('workflowId') as string | null
+
+  const { data: workflow, isLoading } = useQuery({
+    queryKey: ['workflow', workflowId],
+    queryFn: async () => {
+      const res = await apiRequest(`/api/agents/workflows/${workflowId}`)
+      if (!res.ok) throw new Error('Not found')
+      return res.json()
+    },
+    enabled: !!workflowId,
+  })
+
+  if (!tenantId) return <PageLoading message="Loading..." fullScreen={false} />
+  if (workflowId && isLoading) return <PageLoading message="Loading workflow..." fullScreen={false} />
+
+  return (
+    <WorkflowBuilderForm
+      key={workflowId ?? '__new__'}
+      tenantId={tenantId}
+      workflowId={workflowId}
+      initialWorkflow={(workflow as WorkflowPayload | undefined) ?? null}
+    />
   )
 }

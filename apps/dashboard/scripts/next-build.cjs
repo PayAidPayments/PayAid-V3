@@ -21,15 +21,18 @@ function runBuild(mode) {
       stdio: 'inherit',
       env: process.env,
     })
-    const timeout = setTimeout(() => {
-      console.error(
-        `[next-build] ${mode} build timed out after ${buildTimeoutMs}ms; terminating child process`
-      )
-      child.kill('SIGTERM')
-    }, buildTimeoutMs)
+    const timeout =
+      Number.isFinite(buildTimeoutMs) && buildTimeoutMs > 0
+        ? setTimeout(() => {
+            console.error(
+              `[next-build] ${mode} build timed out after ${buildTimeoutMs}ms; terminating child process`
+            )
+            child.kill('SIGTERM')
+          }, buildTimeoutMs)
+        : null
 
     child.on('exit', (code, signal) => {
-      clearTimeout(timeout)
+      if (timeout) clearTimeout(timeout)
       resolve({ code: code ?? 1, signal })
     })
   })

@@ -8,22 +8,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { withErrorHandling, successResponse } from '@/lib/api/route-wrapper'
 import { ApiResponse, Contact } from '@/types/base-modules'
-import { CreateContactRequest, UpdateContactRequest, ContactListFilters, ContactListResponse } from '../types'
+import {
+  CreateContactRequest,
+  CreateContactSchema,
+  UpdateContactRequest,
+  ContactListFilters,
+  ContactListResponse,
+} from '../types'
 import { z } from 'zod'
-
-// Validation schemas
-const CreateContactSchema = z.object({
-  organizationId: z.string().uuid(),
-  industryModule: z.string(),
-  firstName: z.string().min(1).max(100),
-  lastName: z.string().min(1).max(100),
-  email: z.string().email(),
-  phone: z.string().regex(/^\+?[1-9]\d{1,14}$/),
-  contactType: z.enum(['lead', 'customer', 'supplier', 'prospect']),
-  tags: z.array(z.string()).optional(),
-  customFields: z.record(z.unknown()).optional(),
-  notes: z.string().optional(),
-})
 
 const UpdateContactSchema = z.object({
   firstName: z.string().min(1).max(100).optional(),

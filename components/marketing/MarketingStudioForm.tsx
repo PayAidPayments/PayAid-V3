@@ -679,6 +679,23 @@ function aspectRatioForPrimaryChannel(primary: ChannelId | null): '1:1' | '4:5' 
   return '1:1'
 }
 
+/** Pixel size for `size` on `/api/ai/image/generate` (HF + PayAid worker accept WxH). */
+function sizeStringForAspect(ratio: '1:1' | '4:5' | '9:16' | '16:9'): string {
+  switch (ratio) {
+    case '4:5':
+      return '896x1120'
+    case '9:16':
+      return '576x1024'
+    case '16:9':
+      return '1024x576'
+    case '1:1':
+    default:
+      return '1024x1024'
+  }
+}
+
+type ImageGenProvider = 'auto' | 'self-hosted' | 'google-ai-studio' | 'huggingface'
+
 export function MarketingStudioForm({
   tenantId,
   brandName,
@@ -793,6 +810,7 @@ export function MarketingStudioForm({
   const [studioChainBusy, setStudioChainBusy] = useState(false)
   const [imageStyle, setImageStyle] = useState<'photo' | 'illustration'>('photo')
   const [imageAspect, setImageAspect] = useState<'auto' | '1:1' | '4:5' | '9:16' | '16:9'>('auto')
+  const [imageGenProvider, setImageGenProvider] = useState<ImageGenProvider>('auto')
 
   const connectedByPlatform = useMemo(() => {
     const rows = (socialAccounts || []).filter((a) => a.platform && a.accountName)
@@ -1133,6 +1151,7 @@ export function MarketingStudioForm({
         const primary = pickPrimaryChannel(channelsForLayout)
         const autoAspect = aspectRatioForPrimaryChannel(primary)
         const aspectRatio = imageAspect === 'auto' ? autoAspect : imageAspect
+        const sizeForApi = sizeStringForAspect(aspectRatio)
         const purposeBlock = [
           `Image use / placement: ${useCaseLabel}.`,
           imagePurposeNote.trim() ? `Placement notes: ${imagePurposeNote.trim()}` : null,
@@ -1183,11 +1202,12 @@ export function MarketingStudioForm({
           signal: ac.signal,
           body: JSON.stringify({
             prompt: creativePrompt,
-            aspectRatio,
+            size: sizeForApi,
             style: imageStyle,
             negativePrompt: imageNegativePrompt.trim() || undefined,
             brandColors: brandColors.trim() || undefined,
             brandLogoUrl: brandLogoUrl.trim() || undefined,
+            provider: imageGenProvider,
           }),
         })
         const data = (await res.json().catch(() => ({}))) as {
@@ -1252,6 +1272,7 @@ export function MarketingStudioForm({
       fullPrompt,
       getHeaders,
       imageAspect,
+      imageGenProvider,
       imageNegativePrompt,
       imagePrompt,
       imagePurposeNote,
@@ -1998,6 +2019,32 @@ export function MarketingStudioForm({
                     <option value="16:9">Wide (16:9)</option>
                   </select>
                 </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+                  Image provider
+                </label>
+                <select
+                  value={imageGenProvider}
+                  onChange={(e) => setImageGenProvider(e.target.value as ImageGenProvider)}
+                  disabled={loadingImage}
+                  className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+                >
+                  <option value="auto">Auto — PayAid worker first if IMAGE_WORKER_URL is set, then Google / Hugging Face</option>
+                  <option value="self-hosted">PayAid Image Generator only (self-hosted SDXL)</option>
+                  <option value="google-ai-studio">Google AI Studio (your key in Settings → AI Integrations)</option>
+                  <option value="huggingface">Hugging Face (server HUGGINGFACE_API_KEY)</option>
+                </select>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {imageGenProvider === 'auto' &&
+                    'Uses your own SDXL service when IMAGE_WORKER_URL points at services/text-to-image; otherwise falls back to cloud.'}
+                  {imageGenProvider === 'self-hosted' &&
+                    'Only calls the worker at IMAGE_WORKER_URL — no Google or Hugging Face. Ensure the service is running (see services/text-to-image/README).'}
+                  {imageGenProvider === 'google-ai-studio' &&
+                    'Requires a valid Google AI Studio key for this tenant.'}
+                  {imageGenProvider === 'huggingface' &&
+                    'Uses the Hugging Face token configured on the server (not per-tenant).'}
+                </p>
               </div>
               <div>
                 <label className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">

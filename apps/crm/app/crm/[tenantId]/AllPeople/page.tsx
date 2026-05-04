@@ -57,52 +57,51 @@ export default function CRMAllPeoplePage() {
   const contacts = data?.contacts || []
   const pagination = data?.pagination
 
-  // Get time period boundaries
-  const getTimePeriodBounds = () => {
+  // Calculate stats based on time period (bounds inlined so useMemo deps match React Compiler)
+  const stats = useMemo(() => {
     const now = new Date()
-    
+    let period: { start: Date; end: Date; label: string }
     switch (timePeriod) {
       case 'month':
-        return {
+        period = {
           start: startOfMonth(now),
           end: endOfMonth(now),
-          label: 'This Month'
+          label: 'This Month',
         }
+        break
       case 'quarter':
-        return {
+        period = {
           start: startOfQuarter(now),
           end: endOfQuarter(now),
-          label: 'This Quarter'
+          label: 'This Quarter',
         }
-      case 'financial-year':
-        // Financial year in India runs from April 1 to March 31
+        break
+      case 'financial-year': {
         const currentYear = now.getFullYear()
         const currentMonth = now.getMonth()
         const fyStartYear = currentMonth >= 3 ? currentYear : currentYear - 1
         const fyEndYear = fyStartYear + 1
-        return {
+        period = {
           start: new Date(fyStartYear, 3, 1),
           end: new Date(fyEndYear, 2, 31, 23, 59, 59, 999),
-          label: 'This Financial Year'
+          label: 'This Financial Year',
         }
+        break
+      }
       case 'year':
-        return {
+        period = {
           start: startOfYear(now),
           end: endOfYear(now),
-          label: 'This Year'
+          label: 'This Year',
         }
+        break
       default:
-        return {
+        period = {
           start: startOfMonth(now),
           end: endOfMonth(now),
-          label: 'This Month'
+          label: 'This Month',
         }
     }
-  }
-
-  // Calculate stats based on time period
-  const stats = useMemo(() => {
-    const period = getTimePeriodBounds()
     
     // Categorize all contacts
     const categorized = {

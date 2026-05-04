@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
-import { seedDemoBusiness } from '@/prisma/seeds/demo/demo-business-master-seed'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { isSeedRunning, startSeedTracking, stopSeedTracking } from '@/lib/utils/seed-status'
 
@@ -48,8 +47,10 @@ function createSeedPrismaClient(): PrismaClient {
   })
 }
 
-// Use optimized Prisma client for this endpoint
-const prisma = createSeedPrismaClient()
+async function runSeedDemoBusiness(tenantId: string) {
+  const { seedDemoBusiness } = await import('@/prisma/seeds/demo/demo-business-master-seed')
+  return seedDemoBusiness(tenantId)
+}
 
 /**
  * POST /api/admin/seed-now
@@ -59,6 +60,7 @@ const prisma = createSeedPrismaClient()
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
+  const prisma = createSeedPrismaClient()
   
   try {
     // Authenticate user
@@ -157,7 +159,7 @@ export async function POST(request: NextRequest) {
     // If wait=true, run synchronously (may timeout on large seeds)
     if (wait) {
       try {
-        const seedResult = await seedDemoBusiness(tenantId)
+        const seedResult = await runSeedDemoBusiness(tenantId)
         console.log(`[SEED_NOW] ✅ Seed function completed successfully`)
         
         // Wait a moment for database to sync
@@ -211,7 +213,7 @@ export async function POST(request: NextRequest) {
     const seedPromise = (async () => {
       try {
         console.log(`[SEED_NOW] 🚀 Starting background seed for tenant: ${tenantId}`)
-        const seedResult = await seedDemoBusiness(tenantId)
+        const seedResult = await runSeedDemoBusiness(tenantId)
         console.log(`[SEED_NOW] ✅ Background seed completed`)
         
         // Wait a moment for database to sync
@@ -289,6 +291,7 @@ export async function POST(request: NextRequest) {
  * Check seed status, data counts, or show instructions
  */
 export async function GET(request: NextRequest) {
+  const prisma = createSeedPrismaClient()
   try {
     const searchParams = request.nextUrl.searchParams
     const tenantId = searchParams.get('tenantId')
@@ -359,5 +362,9 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect().catch(() => {
+      // Ignore disconnect errors
+    })
   }
 }

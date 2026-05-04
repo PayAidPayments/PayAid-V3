@@ -1,11 +1,11 @@
 /**
  * Date Range Utilities for Demo Business Seeding
- * Ensures all demo data falls within March 2025 - February 2026
+ * Ensures demo data spans March 2025 through May 2026 (inclusive)
  */
 
 export const DEMO_DATE_RANGE = {
   start: new Date('2025-03-01T00:00:00.000Z'),
-  end: new Date('2026-02-28T23:59:59.999Z'), // Feb 28, 2026 (2026 is not a leap year, so Feb 29 doesn't exist)
+  end: new Date('2026-05-31T23:59:59.999Z'),
 }
 
 export interface DateRange {
@@ -47,7 +47,7 @@ export function getMonthsInRange(range: DateRange = DEMO_DATE_RANGE): Date[] {
 
 /**
  * Distribute records across months (ensures each month has some data)
- * CRITICAL: This ensures data is spread evenly across ALL 12 months (Mar 2025 - Feb 2026)
+ * CRITICAL: This ensures data is spread evenly across all months in DEMO_DATE_RANGE
  * to avoid clustering in Jan/Feb only
  */
 export function distributeAcrossMonths<T>(
@@ -177,7 +177,7 @@ export function getMonthRange(year: number, month: number): DateRange {
 
 /**
  * Get financial year quarters (India: Apr-Mar)
- * For Mar 2025 - Feb 2026, this spans FY 2025-26
+ * For Mar 2025 - May 2026, this spans FY 2025-26 plus early FY 2026-27
  */
 export function getQuarterRanges(range: DateRange = DEMO_DATE_RANGE): DateRange[] {
   const quarters: DateRange[] = []
@@ -200,10 +200,16 @@ export function getQuarterRanges(range: DateRange = DEMO_DATE_RANGE): DateRange[
     end: new Date('2025-12-31T23:59:59.999Z'),
   })
   
-  // Q4: Jan-Mar 2026 (but we only go to Feb 28)
+  // Q4: Jan-Mar 2026
   quarters.push({
     start: new Date('2026-01-01T00:00:00.000Z'),
-    end: new Date('2026-02-28T23:59:59.999Z'),
+    end: new Date('2026-03-31T23:59:59.999Z'),
+  })
+
+  // Q1 FY 2026-27 (partial in demo): Apr-May 2026
+  quarters.push({
+    start: new Date('2026-04-01T00:00:00.000Z'),
+    end: new Date('2026-05-31T23:59:59.999Z'),
   })
   
   return quarters

@@ -152,6 +152,34 @@ export async function requireModuleAccess(
 }
 
 /**
+ * Grant access if the tenant is licensed for any of the given modules (first match wins).
+ */
+export async function requireAnyModuleAccess(
+  request: NextRequest,
+  moduleIds: string[]
+): Promise<{
+  userId: string
+  tenantId: string
+  licensedModules: string[]
+  subscriptionTier: string
+  roles: string[]
+}> {
+  let lastError: LicenseError | undefined
+  for (const moduleId of moduleIds) {
+    try {
+      return await checkModuleAccess(request, moduleId)
+    } catch (error) {
+      if (error instanceof LicenseError) {
+        lastError = error
+        continue
+      }
+      throw error
+    }
+  }
+  throw lastError ?? new LicenseError(moduleIds[0] || 'unknown', 'No module access')
+}
+
+/**
  * Helper to check if a module is licensed (non-throwing)
  * Returns true if licensed, false otherwise
  */

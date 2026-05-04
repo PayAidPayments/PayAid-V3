@@ -83,15 +83,18 @@ export async function GET(request: NextRequest) {
     if (tenant?.industry) {
       where.OR = [
         { tenantId }, // Tenant-specific news (if any)
-        { 
+        {
           AND: [
-            { tenantId: null }, // Global news
-            { industry: tenant.industry }, // Matching tenant's industry only
-          ]
-        }, // Industry-specific news matching tenant's industry only
+            { tenantId: null },
+            {
+              OR: [
+                { industry: tenant.industry },
+                { industry: 'all' }, // Cross-industry / general business intelligence
+              ],
+            },
+          ],
+        },
       ]
-      // Note: We explicitly do NOT include { tenantId: null, industry: 'all' } 
-      // to prevent showing general news that might be irrelevant
     } else {
       // If no industry set, only show tenant-specific news (no general news)
       where.tenantId = tenantId

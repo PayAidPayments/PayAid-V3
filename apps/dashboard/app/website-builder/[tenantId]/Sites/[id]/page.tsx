@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, startTransition } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
@@ -9,6 +9,25 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuthStore } from '@/lib/stores/auth'
 import { validateWebsitePageTree } from '@/lib/website-builder/page-tree-validation'
+import {
+  addSection as addSectionOp,
+  moveSection as moveSectionOp,
+  removeSection as removeSectionOp,
+  updateSection as updateSectionOp,
+  type EditablePageTreeEntry,
+} from '@/lib/website-builder/page-tree-editor-ops'
+import { WebsiteSettingsEditorPanel } from './WebsiteSettingsEditorPanel'
+import { WebsiteTelemetryPanel } from './WebsiteTelemetryPanel'
+import {
+  getAiDraftPagePlan,
+  hasAiDraftPagePlan,
+  mergeWebsiteSiteSchemaJson,
+  readWebsiteSiteSchemaJson,
+  type WebsiteAiDraftPagePlanEntry,
+  type WebsiteSiteSchemaJson,
+} from '@/lib/website-builder/site-schema'
+
+const SECTION_UPDATE_DEBOUNCE_MS = 450
 
 interface WebsiteSiteDetail {
   id: string
@@ -22,26 +41,11 @@ interface WebsiteSiteDetail {
     | 'campaign_microsite'
     | 'service_showcase'
   pageTree?: unknown[]
-  schemaJson?: Record<string, any>
+  schemaJson?: WebsiteSiteSchemaJson
   metaTitle?: string | null
   metaDescription?: string | null
   createdAt: string
   updatedAt: string
-}
-
-type DraftPage = {
-  pageType?: string
-  title?: string
-  sections?: string[]
-}
-
-type EditablePageTreeEntry = {
-  id: string
-  slug: string
-  title: string
-  pageType: string
-  orderIndex: number
-  sections: string[]
 }
 
 export default function WebsiteBuilderSiteDetailPage() {
@@ -76,6 +80,9 @@ export default function WebsiteBuilderSiteDetailPage() {
   const [pageTreeSaveInfo, setPageTreeSaveInfo] = useState<string>('')
   const [pageTreeDirty, setPageTreeDirty] = useState(false)
 
+  const sectionUpdateTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const lastEmittedSectionDetailRef = useRef<Map<string, string>>(new Map())
+
   const { data: site, isLoading, refetch } = useQuery<WebsiteSiteDetail>({
     queryKey: ['website-site-detail', siteId],
     queryFn: async () => {
@@ -99,6 +106,110 @@ export default function WebsiteBuilderSiteDetailPage() {
       metaDescription: site.metaDescription ?? '',
     })
   }, [site])
+
+  const emitSectionTelemetry = useCallback(
+    async (ev: {
+      eventType: 'section_add' | 'section_update' | 'section_move' | 'section_delete'
+      pageId: string
+      pageSlug: string
+      sectionIndex: number
+      detail?: string
+    }) => {
+      if (!token || !siteId) return
+      try {
+        const res = await fetch('/api/website/telemetry', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            siteId,
+            events: [{ ...ev, at: new Date().toISOString() }],
+          }),
+        })
+        if (res.ok) void refetch()
+      } catch {
+        // non-blocking
+      }
+    },
+    [token, siteId, refetch]
+  )
+
+  const clearSectionUpdateDebouncers = useCallback(() => {
+    for (const t of sectionUpdateTimersRef.current.values()) {
+      clearTimeout(t)
+    }
+    sectionUpdateTimersRef.current.clear()
+    lastEmittedSectionDetailRef.current.clear()
+  }, [])
+
+  /** Clears pending `section_update` timers and dedupe state only for one page (stable `pageId`). */
+  const clearSectionUpdateDebouncersForPage = useCallback((pageId: string) => {
+    const prefix = `${pageId}:`
+    for (const key of [...sectionUpdateTimersRef.current.keys()]) {
+      if (!key.startsWith(prefix)) continue
+      const t = sectionUpdateTimersRef.current.get(key)
+      if (t) clearTimeout(t)
+      sectionUpdateTimersRef.current.delete(key)
+    }
+    for (const key of [...lastEmittedSectionDetailRef.current.keys()]) {
+      if (key.startsWith(prefix)) lastEmittedSectionDetailRef.current.delete(key)
+    }
+  }, [])
+
+  const tryEmitSectionUpdate = useCallback(
+    (pageId: string, pageSlug: string, sectionIndex: number, value: string) => {
+      const key = `${pageId}:${sectionIndex}`
+      const trimmed = value.slice(0, 200)
+      if (lastEmittedSectionDetailRef.current.get(key) === trimmed) return
+      lastEmittedSectionDetailRef.current.set(key, trimmed)
+      void emitSectionTelemetry({
+        eventType: 'section_update',
+        pageId,
+        pageSlug,
+        sectionIndex,
+        detail: trimmed,
+      })
+    },
+    [emitSectionTelemetry]
+  )
+
+  const queueSectionUpdateTelemetry = useCallback(
+    (pageId: string, pageSlug: string, sectionIndex: number, value: string) => {
+      const key = `${pageId}:${sectionIndex}`
+      const prevTimer = sectionUpdateTimersRef.current.get(key)
+      if (prevTimer) clearTimeout(prevTimer)
+      const t = setTimeout(() => {
+        sectionUpdateTimersRef.current.delete(key)
+        tryEmitSectionUpdate(pageId, pageSlug, sectionIndex, value)
+      }, SECTION_UPDATE_DEBOUNCE_MS)
+      sectionUpdateTimersRef.current.set(key, t)
+    },
+    [tryEmitSectionUpdate]
+  )
+
+  const flushSectionUpdateTelemetry = useCallback(
+    (pageId: string, pageSlug: string, sectionIndex: number, value: string) => {
+      const key = `${pageId}:${sectionIndex}`
+      const prevTimer = sectionUpdateTimersRef.current.get(key)
+      if (prevTimer) {
+        clearTimeout(prevTimer)
+        sectionUpdateTimersRef.current.delete(key)
+      }
+      tryEmitSectionUpdate(pageId, pageSlug, sectionIndex, value)
+    },
+    [tryEmitSectionUpdate]
+  )
+
+  useEffect(() => {
+    return () => {
+      for (const t of sectionUpdateTimersRef.current.values()) {
+        clearTimeout(t)
+      }
+      sectionUpdateTimersRef.current.clear()
+    }
+  }, [])
 
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -159,11 +270,10 @@ export default function WebsiteBuilderSiteDetailPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          schemaJson: {
-            ...(site?.schemaJson ?? {}),
-            aiDraft: generated.draft ?? null,
+          schemaJson: mergeWebsiteSiteSchemaJson(site?.schemaJson, {
+            aiDraft: (generated.draft ?? null) as WebsiteSiteSchemaJson['aiDraft'],
             aiDraftGeneratedAt: new Date().toISOString(),
-          },
+          }),
         }),
       })
       if (!patchResponse.ok) {
@@ -177,9 +287,10 @@ export default function WebsiteBuilderSiteDetailPage() {
     },
   })
 
-  const derivedPageTree = useMemo(() => {
-    if (Array.isArray(site?.pageTree) && site.pageTree.length > 0) {
-      return site.pageTree.map((entry, index) => ({
+  const derivedPageTree: { id: string; label: string }[] = (() => {
+    const pageTree = site?.pageTree
+    if (Array.isArray(pageTree) && pageTree.length > 0) {
+      return pageTree.map((entry, index) => ({
         id: `tree-${index}`,
         label:
           typeof entry === 'string'
@@ -190,16 +301,16 @@ export default function WebsiteBuilderSiteDetailPage() {
       }))
     }
 
-    const plan = site?.schemaJson?.aiDraft?.pagePlan
-    if (Array.isArray(plan)) {
-      return plan.map((entry: any, index: number) => ({
+    const plan = site?.schemaJson ? getAiDraftPagePlan(site.schemaJson) : []
+    if (plan.length > 0) {
+      return plan.map((entry: WebsiteAiDraftPagePlanEntry, index: number) => ({
         id: `plan-${index}`,
         label: entry?.title || entry?.pageType || `Page ${index + 1}`,
       }))
     }
 
     return []
-  }, [site?.pageTree, site?.schemaJson])
+  })()
 
   useEffect(() => {
     const source = Array.isArray(site?.pageTree) ? site.pageTree : []
@@ -214,8 +325,10 @@ export default function WebsiteBuilderSiteDetailPage() {
           ? entry.sections.map((section: unknown) => String(section))
           : [],
       }))
-      setEditablePageTree(mapped)
-      setPageTreeDirty(false)
+      startTransition(() => {
+        setEditablePageTree(mapped)
+        setPageTreeDirty(false)
+      })
       return
     }
 
@@ -231,15 +344,17 @@ export default function WebsiteBuilderSiteDetailPage() {
       orderIndex: index,
       sections: [],
     }))
-    setEditablePageTree(fallback)
-    setPageTreeDirty(false)
+    startTransition(() => {
+      setEditablePageTree(fallback)
+      setPageTreeDirty(false)
+    })
   }, [site?.pageTree, derivedPageTree])
 
-  const hasAiDraftPlan = Array.isArray(site?.schemaJson?.aiDraft?.pagePlan) && site.schemaJson.aiDraft.pagePlan.length > 0
+  const hasAiDraftPlan = Boolean(site?.schemaJson && hasAiDraftPagePlan(site.schemaJson))
 
   const applyDraftToPagesMutation = useMutation({
     mutationFn: async () => {
-      const pagePlan = (site?.schemaJson?.aiDraft?.pagePlan ?? []) as DraftPage[]
+      const pagePlan = site?.schemaJson ? getAiDraftPagePlan(site.schemaJson) : []
       if (!Array.isArray(pagePlan) || pagePlan.length === 0) {
         throw new Error('No AI draft page plan available to apply')
       }
@@ -266,10 +381,9 @@ export default function WebsiteBuilderSiteDetailPage() {
         },
         body: JSON.stringify({
           pageTree: pageTreePayload,
-          schemaJson: {
-            ...(site?.schemaJson ?? {}),
+          schemaJson: mergeWebsiteSiteSchemaJson(site?.schemaJson, {
             aiDraftAppliedAt: new Date().toISOString(),
-          },
+          }),
         }),
       })
       if (!response.ok) {
@@ -308,6 +422,7 @@ export default function WebsiteBuilderSiteDetailPage() {
       return response.json()
     },
     onSuccess: () => {
+      clearSectionUpdateDebouncers()
       setPageTreeSaveInfo('Page tree saved successfully. Server normalization applied.')
       setPageTreeDirty(false)
       refetch()
@@ -363,6 +478,68 @@ export default function WebsiteBuilderSiteDetailPage() {
         sections: [],
       },
     ])
+  }
+
+  const addSectionRow = (pageIndex: number) => {
+    const entry = editablePageTree[pageIndex]
+    if (!entry) return
+    clearSectionUpdateDebouncersForPage(entry.id)
+    const nextLabel = `section-${entry.sections.length + 1}`
+    const next = addSectionOp(editablePageTree, pageIndex, nextLabel)
+    setPageTreeSaveInfo('')
+    setPageTreeDirty(true)
+    setPageTreeValidationErrors([])
+    setEditablePageTree(next)
+    const newLen = next[pageIndex]?.sections.length ?? 0
+    void emitSectionTelemetry({
+      eventType: 'section_add',
+      pageId: entry.id,
+      pageSlug: entry.slug,
+      sectionIndex: Math.max(0, newLen - 1),
+      detail: nextLabel,
+    })
+  }
+
+  const removeSectionRow = (pageIndex: number, sectionIndex: number) => {
+    const entry = editablePageTree[pageIndex]
+    if (!entry) return
+    clearSectionUpdateDebouncersForPage(entry.id)
+    const removed = entry.sections[sectionIndex] ?? ''
+    void emitSectionTelemetry({
+      eventType: 'section_delete',
+      pageId: entry.id,
+      pageSlug: entry.slug,
+      sectionIndex,
+      detail: removed.slice(0, 200),
+    })
+    setPageTreeSaveInfo('')
+    setPageTreeDirty(true)
+    setPageTreeValidationErrors([])
+    setEditablePageTree(removeSectionOp(editablePageTree, pageIndex, sectionIndex))
+  }
+
+  const moveSectionRow = (pageIndex: number, sectionIndex: number, direction: -1 | 1) => {
+    const entry = editablePageTree[pageIndex]
+    if (!entry) return
+    clearSectionUpdateDebouncersForPage(entry.id)
+    void emitSectionTelemetry({
+      eventType: 'section_move',
+      pageId: entry.id,
+      pageSlug: entry.slug,
+      sectionIndex,
+      detail: direction === -1 ? 'up' : 'down',
+    })
+    setPageTreeSaveInfo('')
+    setPageTreeDirty(true)
+    setPageTreeValidationErrors([])
+    setEditablePageTree(moveSectionOp(editablePageTree, pageIndex, sectionIndex, direction))
+  }
+
+  const updateSectionValue = (pageIndex: number, sectionIndex: number, value: string) => {
+    setPageTreeSaveInfo('')
+    setPageTreeDirty(true)
+    setPageTreeValidationErrors([])
+    setEditablePageTree(updateSectionOp(editablePageTree, pageIndex, sectionIndex, value))
   }
 
   if (isLoading || !site) {
@@ -567,11 +744,19 @@ export default function WebsiteBuilderSiteDetailPage() {
         </Card>
       )}
 
+      <WebsiteSettingsEditorPanel
+        siteId={siteId}
+        token={token}
+        schemaJson={site.schemaJson}
+        onSaved={() => void refetch()}
+      />
+
       <Card>
         <CardHeader>
           <CardTitle>Page Tree Editor</CardTitle>
           <CardDescription>
-            Reorder, rename, add, or remove pages. Save to persist into canonical page tree payload.
+            Reorder, rename, add, or remove pages; edit per-page section identifiers. Section changes emit telemetry to
+            the site schema (see Section telemetry below). Save to persist the canonical page tree.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -634,6 +819,56 @@ export default function WebsiteBuilderSiteDetailPage() {
                       placeholder="page type"
                     />
                   </div>
+                  <div className="space-y-2 border-t border-gray-100 pt-2">
+                    <p className="text-xs font-medium text-gray-600">Sections (string identifiers)</p>
+                    {entry.sections.length === 0 ? (
+                      <p className="text-xs text-gray-500">No sections yet.</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {entry.sections.map((sec, secIdx) => (
+                          <li key={`${entry.id}-sec-${secIdx}`} className="flex flex-wrap items-center gap-2">
+                            <Input
+                              className="max-w-xs flex-1 min-w-[8rem]"
+                              value={sec}
+                              onChange={(e) => {
+                                const v = e.target.value
+                                updateSectionValue(index, secIdx, v)
+                                queueSectionUpdateTelemetry(entry.id, entry.slug, secIdx, v)
+                              }}
+                              onBlur={(e) =>
+                                flushSectionUpdateTelemetry(entry.id, entry.slug, secIdx, e.target.value)
+                              }
+                              placeholder="section-id"
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              type="button"
+                              onClick={() => moveSectionRow(index, secIdx, -1)}
+                              disabled={secIdx === 0}
+                            >
+                              Sec up
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              type="button"
+                              onClick={() => moveSectionRow(index, secIdx, 1)}
+                              disabled={secIdx === entry.sections.length - 1}
+                            >
+                              Sec down
+                            </Button>
+                            <Button size="sm" variant="outline" type="button" onClick={() => removeSectionRow(index, secIdx)}>
+                              Remove sec
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <Button size="sm" variant="outline" type="button" onClick={() => addSectionRow(index)}>
+                      Add section
+                    </Button>
+                  </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-400">#{index + 1}</span>
                     <div className="flex items-center gap-2">
@@ -694,6 +929,13 @@ export default function WebsiteBuilderSiteDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      <WebsiteTelemetryPanel
+        siteId={siteId}
+        token={token}
+        editorTelemetry={site.schemaJson?.editorTelemetry}
+        onUpdated={() => refetch()}
+      />
     </div>
   )
 }

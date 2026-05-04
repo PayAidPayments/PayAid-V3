@@ -5,6 +5,8 @@
 
 import { z } from 'zod'
 
+import { BusinessEntityRefSchema, EntityIdSchema } from '../business-graph'
+
 export type TaskStatus = 'todo' | 'in_progress' | 'in_review' | 'done' | 'blocked'
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived'
@@ -69,24 +71,25 @@ export interface Milestone {
 
 // Validation schemas
 export const CreateTaskSchema = z.object({
-  organizationId: z.string().uuid(),
-  projectId: z.string().uuid().optional(),
+  organizationId: EntityIdSchema,
+  projectId: EntityIdSchema.optional(),
   title: z.string().min(1),
   description: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']).default('medium'),
-  assignedTo: z.array(z.string().uuid()),
+  assignedTo: z.array(EntityIdSchema),
   dueDate: z.string().datetime().optional(),
   estimatedHours: z.number().positive().optional(),
+  linkedTo: BusinessEntityRefSchema.optional(),
 })
 
 export const CreateProjectSchema = z.object({
-  organizationId: z.string().uuid(),
+  organizationId: EntityIdSchema,
   name: z.string().min(1),
   description: z.string().optional(),
-  clientId: z.string().uuid().optional(),
+  clientId: EntityIdSchema.optional(),
   startDate: z.string().datetime(),
   endDate: z.string().datetime().optional(),
   budgetINR: z.number().nonnegative().optional(),
-  team: z.array(z.string().uuid()),
+  team: z.array(EntityIdSchema),
   visibility: z.enum(['public', 'team', 'private']).default('team'),
 })

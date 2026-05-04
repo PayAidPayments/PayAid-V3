@@ -3,8 +3,29 @@ import * as bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
+/**
+ * Prisma `upsert` maps to PostgreSQL ON CONFLICT, which requires matching unique indexes.
+ * Local or partially migrated DBs sometimes have tables but no unique constraints; create them idempotently.
+ */
+async function ensureUpsertUniqueIndexes(): Promise<void> {
+  const statements = [
+    'CREATE UNIQUE INDEX IF NOT EXISTS "Tenant_subdomain_key" ON "Tenant" ("subdomain")',
+    'CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User" ("email")',
+    'CREATE UNIQUE INDEX IF NOT EXISTS "TenantMember_userId_tenantId_key" ON "TenantMember" ("userId", "tenantId")',
+    'CREATE UNIQUE INDEX IF NOT EXISTS "FeatureToggle_tenantId_featureName_key" ON "FeatureToggle" ("tenantId", "featureName")',
+  ]
+  for (const sql of statements) {
+    try {
+      await prisma.$executeRawUnsafe(sql)
+    } catch (e) {
+      console.warn(`⚠️  Optional index ensure skipped (${sql.slice(0, 60)}...):`, e)
+    }
+  }
+}
+
 async function main() {
   console.log('🌱 Seeding database with comprehensive demo data...')
+  await ensureUpsertUniqueIndexes()
 
   // Hash password for test users
   const hashedPassword = await bcrypt.hash('Test@1234', 10)

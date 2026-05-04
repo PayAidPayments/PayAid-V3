@@ -3,7 +3,7 @@
  * Uses a per-run timeout + Windows process-tree kill (same pattern as CRM timeline closure).
  *
  * Env:
- * - M0_DEEPLINK_CONTEXT_TIMEOUT_MS (default 45000)
+ * - M0_DEEPLINK_CONTEXT_TIMEOUT_MS (default 120000, matches timeline-contracts CI)
  *
  * Note: Some Windows dev hosts reproduce a Jest stall before first suite output; the artifact still
  * records the command and any captured logs. Ubuntu CI typically completes this single-file run.
@@ -13,7 +13,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const repoRoot = process.cwd()
-const runTimeoutMs = Number(process.env.M0_DEEPLINK_CONTEXT_TIMEOUT_MS || 45000)
+const runTimeoutMs = Number(process.env.M0_DEEPLINK_CONTEXT_TIMEOUT_MS || 120000)
 const testFile = '__tests__/m0/m0-email-campaign-deeplink-context-route.test.ts'
 
 const jestArgs = [

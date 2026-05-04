@@ -1,7 +1,7 @@
 /**
  * CRM Module Seeder for Demo Business
  * Seeds: Contacts, Deals, Tasks, Activities, Notes, Meetings
- * Date Range: March 2025 - February 2026
+ * Date Range: March 2025 - May 2026 (plus calendar-current month when seed runs)
  */
 
 import { PrismaClient } from '@prisma/client'
@@ -670,7 +670,7 @@ export async function seedCRMModule(
   console.log(`  ✓ Created ${meetings.filter(Boolean).length} meetings`)
 
   // CRITICAL: Create current month data for dashboard stats
-  // Historical data is in March 2025 - Feb 2026, but dashboard queries current month
+  // Historical data follows DEMO_DATE_RANGE; dashboard queries current calendar month
   console.log(`  📅 Creating current month data for dashboard...`)
   const now = new Date()
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -776,6 +776,72 @@ export async function seedCRMModule(
       select: { id: true, name: true, createdAt: true },
     })
     console.log(`  ✓ Verified first deal: ${verifyDeal?.name} created at ${verifyDeal?.createdAt?.toISOString()}`)
+  }
+
+  // Explicit May 2026 slice so FY/month views stay populated even when legacy demo ended at Feb 2026 or seed runs off-month
+  const may2026ExtraContacts: { id: string }[] = []
+  const may2026ExtraDeals: { id: string }[] = []
+  const may2026Start = new Date(Date.UTC(2026, 4, 1, 0, 0, 0, 0))
+  const may2026End = new Date(Date.UTC(2026, 4, 31, 23, 59, 59, 999))
+  if (range.start.getTime() <= may2026End.getTime() && range.end.getTime() >= may2026Start.getTime()) {
+    console.log(`  📅 Seeding guaranteed May 2026 CRM samples (contacts + deals)...`)
+    for (let i = 0; i < 8; i++) {
+      const day = Math.min(2 + i * 3, 28)
+      const createdAt = new Date(Date.UTC(2026, 4, day, 9, 30 + i, 0))
+      try {
+        const c = await client.contact.create({
+          data: {
+            tenantId,
+            name: `Spring FY Lead ${i + 1}`,
+            email: `may2026.lead.${i + 1}@example.com`,
+            phone: `+91-981000${String(2000 + i).padStart(4, '0')}`,
+            company: `Prospect Ventures May ${i + 1}`,
+            source: ['Website', 'LinkedIn', 'Referral', 'Google Ads'][i % 4],
+            stage: i % 2 === 0 ? 'customer' : 'prospect',
+            status: 'active',
+            city: 'Hyderabad',
+            state: 'Telangana',
+            postalCode: '500001',
+            country: 'India',
+            assignedToId: salesRepId,
+            createdAt,
+          },
+        })
+        may2026ExtraContacts.push(c)
+      } catch (e: any) {
+        console.warn(`  ⚠️ May 2026 contact ${i + 1} skipped:`, e?.message || e)
+      }
+    }
+    const mayContactsAll = [...may2026ExtraContacts]
+    if (mayContactsAll.length > 0) {
+      for (let i = 0; i < 6; i++) {
+        const day = Math.min(4 + i * 4, 29)
+        const createdAt = new Date(Date.UTC(2026, 4, Math.min(day, 28), 11, i, 0))
+        const contact = mayContactsAll[i % mayContactsAll.length]
+        const stage = ['qualified', 'proposal', 'negotiation'][i % 3]
+        try {
+          const d = await client.deal.create({
+            data: {
+              tenantId,
+              name: `May 2026 Pipeline ${i + 1}`,
+              value: Math.floor(Math.random() * 350000) + 25000,
+              stage: stage as any,
+              probability: Math.floor(Math.random() * 70) + 25,
+              contactId: contact.id,
+              assignedToId: salesRepId,
+              createdAt,
+              expectedCloseDate: new Date(Date.UTC(2026, 5, 15, 12, 0, 0, 0)),
+            },
+          })
+          may2026ExtraDeals.push(d)
+        } catch (e: any) {
+          console.warn(`  ⚠️ May 2026 deal ${i + 1} skipped:`, e?.message || e)
+        }
+      }
+    }
+    console.log(
+      `  ✓ May 2026 extras: ${may2026ExtraContacts.length} contacts, ${may2026ExtraDeals.length} deals`
+    )
   }
   
   // Final verification - count current month data
@@ -969,8 +1035,8 @@ export async function seedCRMModule(
   console.log(`  ✅ Final verification: ${finalCurrentMonthContacts} contacts, ${finalCurrentMonthDeals} deals in current month`)
   
   // Final summary with error reporting
-  const totalDeals = deals.length + currentMonthDeals.length
-  const expectedDeals = 200 + 15 // 200 historical + 15 current month
+  const totalDeals = deals.length + currentMonthDeals.length + may2026ExtraDeals.length
+  const expectedDeals = 200 + 15 + 6 // historical + current month + May 2026 extras
   
   // CRITICAL: Final verification - check actual database count
   let finalActualDealCount = 0
@@ -997,7 +1063,7 @@ export async function seedCRMModule(
   }
   
   return {
-    contacts: contacts.length + currentMonthContacts.length,
+    contacts: contacts.length + currentMonthContacts.length + may2026ExtraContacts.length,
     deals: finalActualDealCount > 0 ? finalActualDealCount : totalDeals, // Use actual count if available
     tasks: tasks.length,
     activities: activityFeeds.filter(Boolean).length,

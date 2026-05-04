@@ -2,7 +2,7 @@
 /**
  * Master Demo Business Seeder
  * Orchestrates seeding of all modules for Demo Business Pvt Ltd
- * Date Range: March 2025 - February 2026
+ * Date Range: March 2025 - May 2026
  */
 
 import { PrismaClient } from '@prisma/client'
@@ -257,7 +257,8 @@ async function provisionDemoWorkforce(tenantId: string, hashedPassword: string) 
       },
     })
 
-    if (blueprint.role.includes('sales') || blueprint.role === 'owner' || blueprint.role === 'admin') {
+    // Only real sales roster gets SalesRep rows (owner/admin stay out to avoid duplicate "Aarav Mehta" / exec rows in rep pickers)
+    if (blueprint.role === 'sales_manager' || blueprint.role === 'sales_rep') {
       await prisma.salesRep.upsert({
         where: { userId: user.id },
         update: { tenantId, isOnLeave: false },
@@ -271,6 +272,13 @@ async function provisionDemoWorkforce(tenantId: string, hashedPassword: string) 
       })
     }
   }
+
+  await prisma.salesRep.deleteMany({
+    where: {
+      tenantId,
+      user: { role: { in: ['owner', 'admin'] } },
+    },
+  })
 
   const adminUser =
     users.find((u) => u.email === 'admin@demo.com') ||
@@ -500,15 +508,23 @@ export async function seedDemoBusiness(demoTenantId?: string): Promise<DemoBusin
   console.log(`✅ Using user: ${workforce.adminUser.name} (${userId})`)
   console.log('')
 
-  // 3.5. Get SalesRep for admin user (required for CRM seeding assignment)
-  const salesRep = await getPrisma().salesRep.findUnique({
-    where: { userId },
-  })
+  // 3.5. Primary SalesRep for CRM assignment (sales manager preferred, then any sales rep)
+  const salesRep =
+    (await getPrisma().salesRep.findFirst({
+      where: { tenantId, user: { role: 'sales_manager' } },
+      orderBy: { createdAt: 'asc' },
+    })) ??
+    (await getPrisma().salesRep.findFirst({
+      where: { tenantId, user: { role: 'sales_rep' } },
+      orderBy: { createdAt: 'asc' },
+    }))
   if (!salesRep) {
-    throw new Error(`SalesRep missing for admin user ${userId} after workforce provisioning`)
+    throw new Error(
+      `No SalesRep row for sales team after workforce provisioning (tenant ${tenantId}). Expected at least one sales_manager or sales_rep.`
+    )
   }
   const salesRepId = salesRep.id
-  console.log(`✅ Using SalesRep: ${salesRepId}`)
+  console.log(`✅ Using SalesRep for CRM seed: ${salesRepId} (user ${salesRep.userId})`)
   console.log('')
 
   // 4. Seed Products (needed for orders)

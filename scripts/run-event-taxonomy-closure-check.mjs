@@ -1,3 +1,7 @@
+/**
+ * M0 event taxonomy + outbox closure Jest orchestrator.
+ * Set EVENT_TAXONOMY_CLOSURE_DETECT_OPEN_HANDLES=0 (or false) to omit Jest --detectOpenHandles for faster local runs; default keeps it on for CI-style runs.
+ */
 import { spawn } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -6,6 +10,9 @@ const repoRoot = process.cwd()
 const timeoutMs = Number(process.env.EVENT_TAXONOMY_CLOSURE_TIMEOUT_MS || 180000)
 const perSuiteTimeoutMs = Number(process.env.EVENT_TAXONOMY_CLOSURE_TIMEOUT_PER_SUITE_MS || timeoutMs)
 const mode = process.env.EVENT_TAXONOMY_CLOSURE_MODE || 'split'
+const detectOpenHandles =
+  process.env.EVENT_TAXONOMY_CLOSURE_DETECT_OPEN_HANDLES !== '0' &&
+  process.env.EVENT_TAXONOMY_CLOSURE_DETECT_OPEN_HANDLES !== 'false'
 const tests = [
   '__tests__/m0/m0-event-taxonomy-contract.test.ts',
   '__tests__/m0/m0-non-leads-queue-contracts.test.ts',
@@ -27,7 +34,7 @@ function getJestArgs(runTests) {
     '--runTestsByPath',
     ...runTests,
     '--forceExit',
-    '--detectOpenHandles',
+    ...(detectOpenHandles ? ['--detectOpenHandles'] : []),
   ]
 }
 

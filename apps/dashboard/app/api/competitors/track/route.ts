@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
+import { requireAnyModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { prisma } from '@/lib/db/prisma'
 
 // GET /api/competitors/track - Get tracked competitors
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'analytics')
+    const { tenantId } = await requireAnyModuleAccess(request, [
+      'industry-intelligence',
+      'analytics',
+      'crm',
+    ])
 
     const competitors = await prisma.competitor.findMany({
       where: { tenantId },
@@ -50,7 +54,11 @@ export async function GET(request: NextRequest) {
 // POST /api/competitors/track - Add competitor to track
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'analytics')
+    const { tenantId } = await requireAnyModuleAccess(request, [
+      'industry-intelligence',
+      'analytics',
+      'crm',
+    ])
 
     const body = await request.json()
     const { name, website, industry, description, priceTrackingEnabled, locationTrackingEnabled } = body

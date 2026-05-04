@@ -6,10 +6,12 @@
  * to use your own text-to-image service. Compatible with services/text-to-image/server.py.
  */
 
-const IMAGE_WORKER_URL = process.env.IMAGE_WORKER_URL || process.env.TEXT_TO_IMAGE_SERVICE_URL || ''
+function getImageWorkerUrl(): string {
+  return (process.env.IMAGE_WORKER_URL || process.env.TEXT_TO_IMAGE_SERVICE_URL || '').trim()
+}
 
 export function isSelfHostedImageAvailable(): boolean {
-  return Boolean(IMAGE_WORKER_URL?.trim())
+  return Boolean(getImageWorkerUrl())
 }
 
 export interface SelfHostedGenerateOptions {
@@ -28,7 +30,7 @@ export interface SelfHostedGenerateResult {
 export async function generateSelfHostedImage(
   options: SelfHostedGenerateOptions
 ): Promise<SelfHostedGenerateResult | null> {
-  const baseUrl = IMAGE_WORKER_URL.replace(/\/$/, '')
+  const baseUrl = getImageWorkerUrl().replace(/\/$/, '')
   if (!baseUrl) return null
 
   const { prompt, style = 'realistic', size = '1024x1024' } = options
@@ -83,7 +85,7 @@ export async function generateSelfHostedImage(
 
 /** Quick health check (GET /health). */
 export async function checkSelfHostedImageHealth(): Promise<boolean> {
-  const baseUrl = IMAGE_WORKER_URL.replace(/\/$/, '')
+  const baseUrl = getImageWorkerUrl().replace(/\/$/, '')
   if (!baseUrl) return false
   try {
     const res = await fetch(`${baseUrl}/health`, { method: 'GET' })

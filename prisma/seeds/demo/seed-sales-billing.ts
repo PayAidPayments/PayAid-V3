@@ -1,7 +1,7 @@
 /**
  * Sales & Billing Module Seeder for Demo Business
  * Seeds: Orders, OrderItems, Invoices, Payments, Subscriptions
- * Date Range: March 2025 - February 2026
+ * Date Range: March 2025 - May 2026
  */
 
 import { PrismaClient } from '@prisma/client'
@@ -54,7 +54,7 @@ export async function seedSalesAndBillingModule(
   }
   console.log(`  ✓ Using ${validContacts.length} contacts for order customerId`)
 
-  // 1. ORDERS - distributed across ALL 12 months (Mar 2025 - Feb 2026)
+  // 1. ORDERS - distributed across each month in DEMO_DATE_RANGE (Mar 2025 - May 2026)
   // CRITICAL: Ensure data spans entire range, not clustered in Jan/Feb
   const orderStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled']
   const months = getMonthsInRange(range)

@@ -1,4 +1,5 @@
 export * from './types'
+export * from './contract-guards'
 export { LeadBriefService } from './services/LeadBriefService'
 export { LeadDiscoveryService } from './services/LeadDiscoveryService'
 export { LeadActivationService } from './services/LeadActivationService'

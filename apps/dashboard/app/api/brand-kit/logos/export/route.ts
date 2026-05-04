@@ -214,7 +214,9 @@ export async function POST(request: NextRequest) {
 
     const zipBytes = createZip(files)
     const stamp = new Date().toISOString().replace(/[:.]/g, '-')
-    return new NextResponse(zipBytes, {
+    // Copy into a fresh ArrayBuffer-backed view so Blob accepts it under strict DOM lib typings.
+    const zipBody = new Uint8Array(zipBytes)
+    return new NextResponse(new Blob([zipBody]), {
       status: 200,
       headers: {
         'Content-Type': 'application/zip',

@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireModuleAccess } from '@/lib/middleware/auth'
-import { vectorLogoEngine, type LogoConfig } from '@/lib/logo/vector-engine'
+import {
+  vectorLogoEngine,
+  type LogoConfig,
+  type LogoGradient,
+  type LogoShadow,
+  type LogoOutline,
+  type LogoBackground,
+  type LogoLayout,
+} from '@/lib/logo/vector-engine'
 import { ensureLogoSchemaCompatibility } from '@/lib/logo/ensure-logo-schema'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
@@ -66,6 +74,57 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Vector Logo] Generating logo for business: ${validated.businessName}`)
 
+    const gradient: LogoGradient | undefined = validated.gradient
+      ? {
+          type: validated.gradient.type,
+          colors: validated.gradient.colors,
+          ...(validated.gradient.angle !== undefined
+            ? { angle: validated.gradient.angle }
+            : {}),
+        }
+      : undefined
+
+    const shadow: LogoShadow | undefined = validated.shadow
+      ? {
+          x: validated.shadow.x,
+          y: validated.shadow.y,
+          blur: validated.shadow.blur,
+          color: validated.shadow.color,
+        }
+      : undefined
+
+    const outline: LogoOutline | undefined = validated.outline
+      ? {
+          width: validated.outline.width,
+          color: validated.outline.color,
+        }
+      : undefined
+
+    const background: LogoBackground = validated.background
+      ? {
+          type: validated.background.type,
+          value: validated.background.value,
+        }
+      : { type: 'transparent', value: '' }
+
+    const layout: LogoLayout = validated.layout
+      ? {
+          align: validated.layout.align,
+          offsetX: validated.layout.offsetX,
+          offsetY: validated.layout.offsetY,
+          rotation: validated.layout.rotation,
+          ...(validated.layout.lockupType !== undefined
+            ? { lockupType: validated.layout.lockupType }
+            : {}),
+        }
+      : {
+          align: 'center',
+          offsetX: 0,
+          offsetY: 0,
+          rotation: 0,
+          lockupType: 'combination-horizontal',
+        }
+
     // Build logo configuration
     const logoConfig: LogoConfig = {
       text: validated.businessName,
@@ -74,18 +133,12 @@ export async function POST(request: NextRequest) {
       color: validated.color,
       iconStyle: validated.iconStyle || 'circle-monogram',
       iconColor: validated.iconColor || validated.color,
-      gradient: validated.gradient,
-      shadow: validated.shadow,
-      outline: validated.outline,
+      gradient,
+      shadow,
+      outline,
       animation: validated.animation || 'none',
-      background: validated.background || { type: 'transparent', value: '' },
-      layout: validated.layout || {
-        align: 'center',
-        offsetX: 0,
-        offsetY: 0,
-        rotation: 0,
-        lockupType: 'combination-horizontal',
-      },
+      background,
+      layout,
     }
 
     // Generate SVG
@@ -244,3 +297,5 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
+

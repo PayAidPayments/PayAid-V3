@@ -6,6 +6,8 @@
 import { z } from 'zod'
 import { Contact, Segment, LeadPipeline, ContactType, ContactStatus } from '@/types/base-modules'
 
+import { EntityIdSchema } from '../business-graph'
+
 export interface CreateContactRequest {
   organizationId: string
   industryModule: string
@@ -67,6 +69,19 @@ export interface CreatePipelineRequest {
     probability: number
   }>
 }
+
+export const CreateContactSchema = z.object({
+  organizationId: EntityIdSchema,
+  industryModule: z.string(),
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
+  email: z.string().email(),
+  phone: z.string().regex(/^\+?[1-9]\d{1,14}$/),
+  contactType: z.enum(['lead', 'customer', 'supplier', 'prospect']),
+  tags: z.array(z.string()).optional(),
+  customFields: z.record(z.unknown()).optional(),
+  notes: z.string().optional(),
+})
 
 export const UpdateContactSchema = z.object({
   firstName: z.string().min(1).optional(),
