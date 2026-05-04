@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -43,6 +43,7 @@ export default function LogosPage() {
   const [generatorMode, setGeneratorMode] = useState<'vector' | 'ai'>('ai')
   const [editingVectorLogo, setEditingVectorLogo] = useState<Logo | null>(null)
   const [error, setError] = useState('')
+  const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     businessName: '',
     industry: '',
@@ -99,6 +100,29 @@ export default function LogosPage() {
       console.error('Logo generation error:', err)
     },
   })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (logoId: string) => {
+      const response = await apiRequest(`/api/logos/${logoId}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload.error || 'Failed to delete logo')
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      refetch()
+      setSnackbarMessage('Logo deleted successfully')
+    },
+  })
+
+  useEffect(() => {
+    if (!snackbarMessage) return
+    const timer = setTimeout(() => setSnackbarMessage(null), 3000)
+    return () => clearTimeout(timer)
+  }, [snackbarMessage])
 
   const logos = data?.logos || []
   const vectorLogos = logos.filter(l => l.logoType === 'VECTOR' || !l.logoType)
@@ -264,6 +288,16 @@ export default function LogosPage() {
             <LogoGrid
               logos={logos}
               tenantId={tenantId}
+              onDelete={(logo) => {
+                const ok = window.confirm(`Delete logo "${logo.businessName}"? This cannot be undone.`)
+                if (!ok) return
+                setError('')
+                deleteMutation.mutate(logo.id, {
+                  onError: (err: Error) => {
+                    setError(err.message || 'Failed to delete logo')
+                  },
+                })
+              }}
               onEditVector={(logo) => {
                 setEditingVectorLogo(logo)
                 setGeneratorMode('vector')
@@ -276,6 +310,16 @@ export default function LogosPage() {
             <LogoGrid
               logos={vectorLogos}
               tenantId={tenantId}
+              onDelete={(logo) => {
+                const ok = window.confirm(`Delete logo "${logo.businessName}"? This cannot be undone.`)
+                if (!ok) return
+                setError('')
+                deleteMutation.mutate(logo.id, {
+                  onError: (err: Error) => {
+                    setError(err.message || 'Failed to delete logo')
+                  },
+                })
+              }}
               onEditVector={(logo) => {
                 setEditingVectorLogo(logo)
                 setGeneratorMode('vector')
@@ -286,11 +330,30 @@ export default function LogosPage() {
 
           {aiLogos.length > 0 && (
             <TabsContent value="ai">
-              <LogoGrid logos={aiLogos} tenantId={tenantId} onEditVector={() => {}} />
+              <LogoGrid
+                logos={aiLogos}
+                tenantId={tenantId}
+                onDelete={(logo) => {
+                  const ok = window.confirm(`Delete logo "${logo.businessName}"? This cannot be undone.`)
+                  if (!ok) return
+                  setError('')
+                  deleteMutation.mutate(logo.id, {
+                    onError: (err: Error) => {
+                      setError(err.message || 'Failed to delete logo')
+                    },
+                  })
+                }}
+                onEditVector={() => {}}
+              />
             </TabsContent>
           )}
         </Tabs>
       ))}
+      {snackbarMessage ? (
+        <div className="fixed bottom-6 right-6 z-50 rounded-md bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
+          {snackbarMessage}
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -298,10 +361,12 @@ export default function LogosPage() {
 function LogoGrid({
   logos,
   tenantId,
+  onDelete,
   onEditVector,
 }: {
   logos: Logo[]
   tenantId: string
+  onDelete: (logo: Logo) => void
   onEditVector: (logo: Logo) => void
 }) {
   return (
@@ -367,7 +432,7 @@ function LogoGrid({
                   </div>
                 )}
                 {logo.logoType === 'VECTOR' ? (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <Button variant="outline" size="sm" onClick={() => onEditVector(logo)}>
                       Edit
                     </Button>
@@ -376,13 +441,21 @@ function LogoGrid({
                         Detail
                       </Button>
                     </Link>
+                    <Button variant="destructive" size="sm" onClick={() => onDelete(logo)}>
+                      Delete
+                    </Button>
                   </div>
                 ) : (
-                  <Link href={`/dashboard/logos/${logo.id}`}>
-                    <Button variant="outline" size="sm" className="w-full">
-                      View & Customize
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link href={`/dashboard/logos/${logo.id}`}>
+                      <Button variant="outline" size="sm" className="w-full">
+                        View & Customize
+                      </Button>
+                    </Link>
+                    <Button variant="destructive" size="sm" onClick={() => onDelete(logo)}>
+                      Delete
                     </Button>
-                  </Link>
+                  </div>
                 )}
               </div>
             ) : (
