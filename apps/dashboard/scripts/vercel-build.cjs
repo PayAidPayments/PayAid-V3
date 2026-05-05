@@ -16,7 +16,10 @@ setDefault('NEXT_BUILD_DIST_DIR', '.next-vercel-build')
 setDefault('NEXT_BUILD_TIMEOUT_MS', '0')
 setDefault('NEXT_BUILD_KILL_GRACE_MS', '15000')
 setDefault('NEXT_BUILD_HEARTBEAT_MS', '60000')
-setDefault('NEXT_BUILD_PREFERRED_MODE', 'webpack')
+// Prefer Turbopack for production builds (typically much faster than webpack on large apps).
+// `scripts/next-build.cjs` falls back to webpack when Turbopack fails (e.g. Bull edge cases).
+// Vercel still has a hard ~45m build cap; staying under it requires a fast primary compiler.
+setDefault('NEXT_BUILD_PREFERRED_MODE', 'turbopack')
 setDefault('NEXT_BUILD_ALLOW_ALTERNATE_RETRY', '1')
 setDefault('NEXT_BUILD_CLEAR_STALE_LOCK', '1')
 setDefault('NEXT_BUILD_TRIAGE_DISABLE_OUTPUT_FILE_TRACING', '1')
