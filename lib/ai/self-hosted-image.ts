@@ -84,11 +84,11 @@ export async function generateSelfHostedImage(
 }
 
 /** Quick health check (GET /health). */
-export async function checkSelfHostedImageHealth(): Promise<boolean> {
+export async function checkSelfHostedImageHealth(signal?: AbortSignal): Promise<boolean> {
   const baseUrl = getImageWorkerUrl().replace(/\/$/, '')
   if (!baseUrl) return false
   try {
-    const res = await fetch(`${baseUrl}/health`, { method: 'GET' })
+    const res = await fetch(`${baseUrl}/health`, { method: 'GET', signal })
     if (!res.ok) return false
     const data = (await res.json()) as { status?: string }
     return data.status === 'healthy'
