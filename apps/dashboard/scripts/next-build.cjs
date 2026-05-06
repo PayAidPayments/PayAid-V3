@@ -78,3 +78,5 @@ function runBuild(mode) {
   console.error('[next-build] unexpected failure:', err)
   process.exit(1)
 })
+
+// retrigger: refresh Vercel deployment status
