@@ -12,6 +12,7 @@ import { PageLoading } from '@/components/ui/loading'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatINRStandard } from '@/lib/utils/formatINR'
 import { Printer, FileDown } from 'lucide-react'
+import { buildQueryStringWithUpdates } from '@/lib/url/query-state'
 
 function getAuthHeaders() {
   const { token } = useAuthStore.getState()
@@ -32,11 +33,9 @@ export default function FinanceReportsPage() {
   const { data: plData, isLoading: plLoading } = useQuery({
     queryKey: ['pl-report', startDate, endDate],
     queryFn: async () => {
-      const queryString = new URLSearchParams()
-      queryString.set('startDate', startDate)
-      queryString.set('endDate', endDate)
-      
-      const response = await fetch(`/api/accounting/reports/pl?${queryString}`, {
+      const qs = buildQueryStringWithUpdates('', { startDate, endDate })
+
+      const response = await fetch(`/api/accounting/reports/pl?${qs}`, {
         headers: getAuthHeaders(),
       })
       if (!response.ok) throw new Error('Failed to fetch P&L report')
@@ -48,7 +47,8 @@ export default function FinanceReportsPage() {
   const { data: balanceSheetData, isLoading: balanceSheetLoading } = useQuery({
     queryKey: ['balance-sheet-report', asOfDate],
     queryFn: async () => {
-      const response = await fetch(`/api/accounting/reports/balance-sheet?asOfDate=${asOfDate}`, {
+      const qs = buildQueryStringWithUpdates('', { asOfDate })
+      const response = await fetch(`/api/accounting/reports/balance-sheet?${qs}`, {
         headers: getAuthHeaders(),
       })
       if (!response.ok) throw new Error('Failed to fetch balance sheet')
@@ -60,7 +60,8 @@ export default function FinanceReportsPage() {
   const { data: trialBalanceData, isLoading: trialBalanceLoading } = useQuery({
     queryKey: ['trial-balance-report', asOfDate],
     queryFn: async () => {
-      const response = await fetch(`/api/accounting/reports/trial-balance?asOfDate=${asOfDate}`, {
+      const qs = buildQueryStringWithUpdates('', { asOfDate })
+      const response = await fetch(`/api/accounting/reports/trial-balance?${qs}`, {
         headers: getAuthHeaders(),
       })
       if (!response.ok) throw new Error('Failed to fetch trial balance')

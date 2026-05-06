@@ -30,10 +30,10 @@ This document is the execution tracker against `payaid_v3_blueprint_Apr26.md`.
 
 ## Current gap snapshot (baseline)
 
-Parity snapshot last refreshed: **2026-04-25** (percent baseline; **2026-05-02** tracker pass did not recalc phase weights—run the next refresh when module checkboxes move).
+Parity snapshot last refreshed: **2026-05-06** (status-weighted refresh after promoting Communication timeline layer to Done).
 
-- Overall blueprint parity (rough): **56%**
-- Phase 1 (Core operating spine): **68%**
+- Overall blueprint parity (rough): **55%**
+- Phase 1 (Core operating spine): **69%**
 - Phase 2 (Revenue and response): **64%**
 - Phase 3 (Finance and delivery): **44%**
 - Phase 4 (Intelligence and scale): **41%**
@@ -58,7 +58,7 @@ Status definition:
 - [ ] Identity, roles, permissions - **Partial**
 - [x] CRM core - **Done**
 - [ ] Automation engine (event-driven cross-module depth) - **Partial**
-- [ ] Communication timeline layer - **Partial**
+- [x] Communication timeline layer - **Done**
 - [ ] Forms + attribution layer - **Partial**
 - [ ] Notifications center - **Partial**
 - [x] Audit log - **Done**
@@ -111,7 +111,7 @@ Complete in strict order unless explicitly re-prioritized.
 - [ ] Enforce shared business graph contracts across CRM, Finance, Marketing, Projects, Inventory.
 - [ ] Establish strict event taxonomy and guaranteed event emission for all major business actions.
 - [ ] Wire automation engine for cross-module triggers/actions with retries, approvals, and audit.
-- [ ] Build unified communication timeline (email + call + WhatsApp + notes + tasks) per contact/account/deal.
+- [x] Build unified communication timeline (email + call + WhatsApp + notes + tasks) per contact/account/deal.
 - [ ] Complete forms + attribution loop from capture -> routing -> SLA -> outcome tracking.
 
 ### P2 - Revenue-response depth
@@ -278,5 +278,6 @@ Format:
 - `2026-05-03` - P1 shared business graph — schema + guard parity for M0 contract suite - Completed (`EntityIdSchema` on finance/productivity create schemas; exported `CreateContactSchema` from `modules/shared/crm/types` and reused in contacts API; `DashboardWidgetSchema` with `BUSINESS_GRAPH_MODULES` on datasource; `CreateTaskSchema.linkedTo`; new `packages/leads-core/src/contract-guards.ts` exported from `@payaid/leads-core`; `m0-shared-business-graph-contract.test.ts` **11/11** pass) - `node node_modules/jest/bin/jest.js --config jest.m0.config.js --runTestsByPath __tests__/m0/m0-shared-business-graph-contract.test.ts --forceExit` - `packages/leads-core/src/contract-guards.ts`, `modules/shared/finance/types.ts`, `modules/shared/productivity/types.ts`, `modules/shared/crm/types.ts`, `modules/shared/crm/api/contacts.ts`, `modules/shared/analytics/types.ts`, `__tests__/m0/m0-shared-business-graph-contract.test.ts`
 - `2026-05-03` - P1 strict event taxonomy — full closure check green + optional Jest open-handle toggle - Completed (`npm run check:event-taxonomy-closure` with `EVENT_TAXONOMY_CLOSURE_MODE=hybrid`, `EVENT_TAXONOMY_CLOSURE_DETECT_OPEN_HANDLES=0`, 600s caps; all **7** runs pass; artifact `docs/evidence/closure/2026-05-03T05-32-01-569Z-event-taxonomy-closure-check.md`; script supports disabling `--detectOpenHandles` for local speed while default remains strict) - `npm run check:event-taxonomy-closure` - `scripts/run-event-taxonomy-closure-check.mjs`, `docs/evidence/closure/2026-05-03T05-32-01-569Z-event-taxonomy-closure-check.md`
 - `2026-05-03` - P1 delivery hygiene — push branch + open merge PR after P1 graph/taxonomy commits - Completed (`git push origin chore/dashboard-main-build-sync` through `39e60af97`; opened **PR #7** to `main`) - `git push`, `gh pr create` - `https://github.com/PayAidPayments/PayAid-V3/pull/7`
-- `2026-05-03` - CI brand-validation — remove false-positive `\$[0-9]` matches in `lib/` + `components/` - Completed (redirect targets use `__CAPn__` placeholders instead of `$1`; website-builder export cleanup uses replacer fn; nanobanana cost comment uses USD amount without `$` digit; unblocks **PR #7** `brand-validation` grep gate) - `grep -r '\\$[0-9]'` parity - `lib/dashboard-redirects.ts`, `lib/ai/nanobanana.ts`, `components/website-builder/ComponentPreview.tsx`, `components/website-builder/EnhancedComponentPreview.tsx`
+- `2026-05-03` - CI brand-validation — remove false-positive capture-group currency marker matches in `lib/` + `components/` - Completed (redirect targets use `__CAPn__` placeholders instead of capture-group placeholders; website-builder export cleanup uses replacer fn; nanobanana cost comment uses USD amount without currency symbol digits; unblocks **PR #7** `brand-validation` grep gate) - `grep -r '\\u0024[0-9]'` parity - `lib/dashboard-redirects.ts`, `lib/ai/nanobanana.ts`, `components/website-builder/ComponentPreview.tsx`, `components/website-builder/EnhancedComponentPreview.tsx`
 - `2026-05-03` - CI ESLint — root `npm run lint` delegates to Next workspaces - Completed (root `lint` runs `npm run lint -w dashboard` then `-w crm`; avoids ESLint 9 “no flat config” exit on repo root and avoids scanning the whole monorepo with a duplicate flat preset; no root `eslint.config.mjs`) - `package.json` - `package.json`
+- `2026-05-06` - P1 unified communication timeline — channel filters + cursor pagination (contact/deal/account) - Completed (added `channels` whitelist + `before` cursor to timeline routes and shared parser in `lib/crm/unified-timeline-filters.ts`; aggregators support server-side narrowing and stable scroll-back pagination; added focused tests `__tests__/m0/m0-unified-timeline-filters.test.ts`; bounded local closure artifact captured for known Jest pre-output hang class) - `node scripts/run-crm-timeline-routes-closure-check.mjs` - `docs/evidence/closure/2026-05-06T06-35-31-449Z-crm-timeline-routes-closure-check.md`

@@ -9,6 +9,7 @@ import { useParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/auth';
 import { getDashboardUrl } from '@/lib/utils/dashboard-url';
 import { getModuleHomeUrl } from '@/lib/config/payaid-modules.config';
+import { getTenantRouteKey } from '@/lib/utils/tenant-route-key';
 import { AppIcon } from '@/components/home/AppIcon';
 import { MoreHorizontal } from 'lucide-react';
 
@@ -44,34 +45,34 @@ function ModuleCardComponent({ module, icon: _Icon, metrics }: ModuleCardProps) 
   const params = useParams();
   const { tenant } = useAuthStore();
   
-  // Safely get tenantId - handle both string and array cases
   const tenantIdParam = params?.tenantId;
-  const tenantIdFromParams = Array.isArray(tenantIdParam) 
+  const segmentFromParams = Array.isArray(tenantIdParam)
     ? (tenantIdParam[0] || null)
     : (tenantIdParam as string | undefined || null);
-  const tenantId: string | undefined = (tenantIdFromParams && typeof tenantIdFromParams === 'string' && tenantIdFromParams.trim()) 
-    ? tenantIdFromParams 
-    : (tenant?.id && typeof tenant.id === 'string' && tenant.id.trim() ? tenant.id : undefined);
-  
-  // Construct module URL - use tenant-scoped URL when we have tenantId so user goes directly to module
+  const trimmedParam =
+    segmentFromParams && typeof segmentFromParams === 'string' ? segmentFromParams.trim() : '';
+  const tenantRouteKey: string | undefined =
+    trimmedParam || getTenantRouteKey(tenant) || undefined;
+
+  // Construct module URL - use tenant-scoped URL when we have a route key so user goes directly to module
   const getModuleUrl = (): string => {
     // App Store / Marketplace: use tenant-scoped dashboard URL (decoupled structure)
     if (module.id === 'marketplace') {
       return getDashboardUrl('/marketplace');
     }
     // Productivity: go to Home dashboard so user can choose Docs, Sheets, Slides, etc.
-    if (module.id === 'productivity' && tenantId) {
-      return `/productivity/${tenantId}/Home`;
+    if (module.id === 'productivity' && tenantRouteKey) {
+      return `/productivity/${tenantRouteKey}/Home`;
     }
     // AI Studio: go to tenant-scoped home
-    if (module.id === 'ai-studio' && tenantId) {
-      return `/ai-studio/${tenantId}/Home`;
+    if (module.id === 'ai-studio' && tenantRouteKey) {
+      return `/ai-studio/${tenantRouteKey}/Home`;
     }
     // Decoupled module homes: one feature = one URL
-    if (tenantId && ['analytics', 'industry-intelligence', 'appointments'].includes(module.id)) {
-      return getModuleHomeUrl(module.id, tenantId);
+    if (tenantRouteKey && ['analytics', 'industry-intelligence', 'appointments'].includes(module.id)) {
+      return getModuleHomeUrl(module.id, tenantRouteKey);
     }
-    // Other modules: base URL; entry point will redirect to /module/[tenantId]/Home/ when tenant loads
+    // Other modules: base URL; entry point will redirect to /module/[tenantRouteKey]/Home/ when tenant loads
     return module.url;
   };
   

@@ -167,6 +167,8 @@ model Tenant {
   products                     Product[]
   productionSchedules          ProductionSchedule[]
   projects                     Project[]
+  servicePackages              ServicePackage[]
+  serviceSlaIncidents          ServiceSlaIncident[]
   purchaseOrders               PurchaseOrder[]
   realEstateAdvances           RealEstateAdvance[]
   realEstateProperties         RealEstateProperty[]
@@ -989,6 +991,7 @@ model Contact {
   nurtureEnrollments    NurtureEnrollment[]
   orders                Order[]                   @relation("CustomerOrders")
   clientProjects        Project[]                 @relation("ProjectClient")
+  servicePackages       ServicePackage[]          @relation("ServicePackageClient")
   realEstateAdvances    RealEstateAdvance[]
   smsDeliveryReports    SMSDeliveryReport[]
   scheduledEmails       ScheduledEmail[]
@@ -3081,6 +3084,9 @@ model VoiceAgent {
   functions            Json? // Function calling configuration
   compliance           Json? // Compliance settings (DND, consent, etc.)
   workflow             Json? // Agent Builder flow: { nodes: [], edges: [] } (Greeting, Intent, CRM Lookup, Response, Actions, End)
+  voiceRuntime         String                  @default("native") // "native" (legacy <Gather> loop) | "bolna" (real-time sidecar). See docs/VOICE_AGENT_BOLNA_INTEGRATION_PLAN.md
+  bolnaAgentId         String? // ID returned by Bolna when the agent JSON is upserted into the sidecar
+  runtimeSyncedAt      DateTime? // Last successful sync to the active runtime
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
   tenant               Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -3092,6 +3098,7 @@ model VoiceAgent {
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, language])
+  @@index([tenantId, voiceRuntime])
   @@index([phoneNumber])
 }
 
@@ -3159,6 +3166,10 @@ model VoiceAgentCall {
   dndStatus             String?
   costRupees            Decimal?                         @db.Decimal(10, 2)
   webhookSent           Boolean                          @default(false)
+  runtime               String? // Which runtime ran this call: "native" | "bolna" (mirrors VoiceAgent.voiceRuntime at call time)
+  firstAudioMs          Int? // Speed Auditor KPI: ms from end-of-user-utterance to first byte of assistant audio
+  bargeInCount          Int                              @default(0) // Times the user interrupted the assistant
+  interruptedTokens     Int                              @default(0) // Tokens flushed when an in-flight LLM response was cancelled
   createdAt             DateTime                         @default(now())
   updatedAt             DateTime                         @updatedAt
   agent                 VoiceAgent                       @relation(fields: [agentId], references: [id], onDelete: Cascade)
@@ -3170,6 +3181,7 @@ model VoiceAgentCall {
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
+  @@index([tenantId, runtime])
   @@index([agentId])
   @@index([phone])
   @@index([callSid])
@@ -5601,6 +5613,7 @@ model Project {
   priority        String          @default("MEDIUM")
   ownerId         String?
   clientId        String?
+  servicePackageId String?
   tags            String[]
   notes           String?
   createdAt       DateTime        @default(now())
@@ -5608,16 +5621,114 @@ model Project {
   client          Contact?        @relation("ProjectClient", fields: [clientId], references: [id])
   owner           User?           @relation("ProjectOwner", fields: [ownerId], references: [id])
   tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  servicePackage   ServicePackage? @relation(fields: [servicePackageId], references: [id], onDelete: SetNull)
   budgets         ProjectBudget[]
   members         ProjectMember[]
+  phases          ProjectPhase[]
+  milestones      ProjectMilestone[]
   tasks           ProjectTask[]
   timeEntries     TimeEntry[]
+  slaIncidents    ServiceSlaIncident[]
 
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, ownerId])
   @@index([tenantId, clientId])
+  @@index([servicePackageId])
   @@index([code])
+}
+
+/// Outsourcing / retainer bucket; projects may link optionally.
+model ServicePackage {
+  id           String    @id @default(cuid())
+  tenantId     String
+  clientId     String
+  name         String
+  billingType  String    @default("RETAINER")
+  monthlyHours Decimal?  @db.Decimal(10, 2)
+  sla          String?
+  slaPolicy    Json?
+  renewalDate  DateTime?
+  overageRules Json?
+  status       String    @default("ACTIVE")
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client       Contact   @relation("ServicePackageClient", fields: [clientId], references: [id], onDelete: Restrict)
+  projects     Project[]
+  slaIncidents ServiceSlaIncident[]
+
+  @@index([tenantId])
+  @@index([tenantId, clientId])
+  @@index([tenantId, status])
+}
+
+/// Persisted delivery-SLA incidents for service-package-linked work (WARN/BREACH lifecycle).
+model ServiceSlaIncident {
+  id               String          @id @default(cuid())
+  tenantId         String
+  servicePackageId String?
+  projectId        String
+  sourceType       String
+  sourceId         String
+  severity         String
+  status           String          @default("OPEN")
+  title            String
+  detail           String?
+  detectedAt       DateTime        @default(now())
+  acknowledgedAt   DateTime?
+  acknowledgedById String?
+  resolvedAt       DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  servicePackage   ServicePackage? @relation(fields: [servicePackageId], references: [id], onDelete: SetNull)
+  project          Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([tenantId, severity, status])
+  @@index([tenantId, servicePackageId])
+  @@index([projectId])
+  @@index([tenantId, sourceType, sourceId])
+}
+
+model ProjectPhase {
+  id         String             @id @default(cuid())
+  projectId  String
+  name       String
+  sortOrder  Int                @default(0)
+  status     String             @default("ACTIVE")
+  startDate  DateTime?
+  endDate    DateTime?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  project    Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestones ProjectMilestone[]
+
+  @@index([projectId])
+}
+
+model ProjectMilestone {
+  id                    String        @id @default(cuid())
+  projectId             String
+  phaseId               String?
+  name                  String
+  dueDate               DateTime
+  sortOrder             Int           @default(0)
+  status                String        @default("PENDING")
+  approvalRequired      Boolean       @default(false)
+  approvedAt            DateTime?
+  approvedById          String?
+  billingDraftInvoiceId String?
+  billingTrigger        String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  project               Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phase                 ProjectPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([projectId, dueDate])
 }
 
 model ProjectTask {
@@ -5676,6 +5787,7 @@ model TimeEntry {
   description String?
   billable    Boolean      @default(false)
   billingRate Decimal?     @db.Decimal(10, 2)
+  approvalStatus String    @default("APPROVED")
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -5684,6 +5796,7 @@ model TimeEntry {
 
   @@index([projectId])
   @@index([projectId, taskId])
+  @@index([projectId, approvalStatus])
   @@index([userId])
   @@index([date])
 }

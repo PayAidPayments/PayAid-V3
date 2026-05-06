@@ -26,7 +26,6 @@ try {
 const nextConfig = {
   reactStrictMode: true,
   ...(customDistDir ? { distDir: customDistDir } : {}),
-  eslint: { ignoreDuringBuilds: process.env.VERCEL === '1' },
   // Turbopack currently struggles with Bull's server-relative child-process imports.
   // Keep Bull external so app-route/instrumentation bundles do not attempt to resolve
   // node_modules/bull/lib/process/* at build time.
