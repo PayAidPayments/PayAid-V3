@@ -9545,7 +9545,7 @@ model LeadContact {
   tenant             Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   account            LeadAccount            @relation(fields: [accountId], references: [id], onDelete: Cascade)
   scores             LeadScore[]
-  signals            LeadSignal[]
+  signals            LeadSignal[]           @relation("LeadContactSignals")
   snapshots          LeadEnrichmentSnapshot[]
   fieldEvidence      LeadFieldEvidence[]
   consentProfile     LeadConsentProfile?
@@ -9573,7 +9573,7 @@ model LeadSignal {
   createdAt      DateTime     @default(now())
   tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   account        LeadAccount? @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  contact        LeadContact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contact        LeadContact? @relation("LeadContactSignals", fields: [contactId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, accountId, observedAt])
   @@index([tenantId, type, observedAt])
