@@ -6,7 +6,7 @@ const isVercel =
   process.env.VERCEL === '1' &&
   ['production', 'preview', 'development'].includes(String(process.env.VERCEL_ENV || ''))
 const nextBin = require.resolve('next/dist/bin/next')
-const buildTimeoutMs = Number(process.env.NEXT_BUILD_TIMEOUT_MS || 15 * 60 * 1000)
+const buildTimeoutMs = Number(process.env.NEXT_BUILD_TIMEOUT_MS || 45 * 60 * 1000)
 
 if (isVercel) {
   // Keep Vercel builds conservative on memory-constrained workers.
@@ -78,3 +78,6 @@ function runBuild(mode) {
   console.error('[next-build] unexpected failure:', err)
   process.exit(1)
 })
+
+// retrigger: refresh Vercel deployment status
+// retrigger-2: refresh Vercel deployment status
