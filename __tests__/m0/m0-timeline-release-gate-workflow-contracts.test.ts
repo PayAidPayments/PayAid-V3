@@ -139,6 +139,7 @@ const TIMELINE_WARN_ONLY_GATE = 'prisma-generate-closure-contracts'
 
 const TIMELINE_GATE_WORKFLOW_AUTOMATION_CONTRACTS = 'workflow-automation-contracts'
 const TIMELINE_GATE_CRM_TIMELINE_ROUTES_CONTRACTS = 'crm-timeline-routes-contracts'
+const TIMELINE_GATE_LEAD_INTELLIGENCE_M1_CONTRACTS = 'lead-intelligence-m1-contracts'
 
 const TIMELINE_GATE_SUITE_ID_M0 = 'm0'
 const TIMELINE_GATE_SUITE_ID_M0_DEEPLINK_CONTEXT_CONTRACTS = 'm0-deeplink-context-contracts'
@@ -147,6 +148,7 @@ const TIMELINE_GATE_TOKENS = [
   TIMELINE_GATE_WORKFLOW_AUTOMATION_CONTRACTS,
   TIMELINE_GATE_CRM_TIMELINE_ROUTES_CONTRACTS,
   TIMELINE_GATE_SUITE_ID_M0_DEEPLINK_CONTEXT_CONTRACTS,
+  TIMELINE_GATE_LEAD_INTELLIGENCE_M1_CONTRACTS,
   TIMELINE_WARN_ONLY_GATE,
 ] as const
 
@@ -167,10 +169,13 @@ const TIMELINE_RELEASE_GATE_SCRIPT_TIMEOUT_SNIPPETS = [
   'WORKFLOW_AUTOMATION_CLOSURE_TIMEOUT_PER_SUITE_MS=300000',
   'CRM_TIMELINE_CLOSURE_TIMEOUT_PER_SUITE_MS=300000',
   'M0_DEEPLINK_CONTEXT_TIMEOUT_MS=120000',
+  'LEAD_INTELLIGENCE_M1_CLOSURE_TIMEOUT_MS=240000',
+  'LEAD_INTELLIGENCE_M1_CLOSURE_TIMEOUT_PER_SUITE_MS=180000',
   'PRISMA_GENERATE_CLOSURE_TIMEOUT_MS=300000',
   'RELEASE_GATE_TIMEOUT_MS_WORKFLOW_AUTOMATION_CONTRACTS=960000',
   'RELEASE_GATE_TIMEOUT_MS_CRM_TIMELINE_ROUTES_CONTRACTS=420000',
   'RELEASE_GATE_TIMEOUT_MS_M0_DEEPLINK_CONTEXT_CONTRACTS=150000',
+  'RELEASE_GATE_TIMEOUT_MS_LEAD_INTELLIGENCE_M1_CONTRACTS=300000',
   'RELEASE_GATE_TIMEOUT_MS_PRISMA_GENERATE_CLOSURE_CONTRACTS=420000',
 ] as const
 /** Indent matches `timeline-contracts-release-gate.yml` under `Run timeline contracts release gate` → `env:`. */
@@ -179,10 +184,13 @@ const TIMELINE_GITHUB_RELEASE_GATE_STEP_ENV_LINES = [
   "          WORKFLOW_AUTOMATION_CLOSURE_TIMEOUT_PER_SUITE_MS: '300000'",
   "          CRM_TIMELINE_CLOSURE_TIMEOUT_PER_SUITE_MS: '300000'",
   "          M0_DEEPLINK_CONTEXT_TIMEOUT_MS: '120000'",
+  "          LEAD_INTELLIGENCE_M1_CLOSURE_TIMEOUT_MS: '240000'",
+  "          LEAD_INTELLIGENCE_M1_CLOSURE_TIMEOUT_PER_SUITE_MS: '180000'",
   "          PRISMA_GENERATE_CLOSURE_TIMEOUT_MS: '300000'",
   "          RELEASE_GATE_TIMEOUT_MS_WORKFLOW_AUTOMATION_CONTRACTS: '960000'",
   "          RELEASE_GATE_TIMEOUT_MS_CRM_TIMELINE_ROUTES_CONTRACTS: '420000'",
   "          RELEASE_GATE_TIMEOUT_MS_M0_DEEPLINK_CONTEXT_CONTRACTS: '150000'",
+  "          RELEASE_GATE_TIMEOUT_MS_LEAD_INTELLIGENCE_M1_CONTRACTS: '300000'",
   "          RELEASE_GATE_TIMEOUT_MS_PRISMA_GENERATE_CLOSURE_CONTRACTS: '420000'",
 ] as const
 /** First three `paths:` entries under each `on:` trigger (PR + push); gate wiring + CI must stay in sync. */
@@ -203,6 +211,7 @@ const TIMELINE_GITHUB_PATH_FILTER_WORKFLOW_AUTOMATION_CLOSURE_SCRIPT_LINE =
 const TIMELINE_GITHUB_PATH_FILTER_REMAINING_CLOSURE_RUNNER_LINES = [
   "      - 'scripts/run-crm-timeline-routes-closure-check.mjs'",
   "      - 'scripts/run-m0-deeplink-context-check.mjs'",
+  "      - 'scripts/run-lead-intelligence-m1-closure-check.mjs'",
   "      - 'scripts/run-prisma-generate-closure-check.mjs'",
 ] as const
 const TIMELINE_RELEASE_GATES_ENV = 'RELEASE_GATES'
@@ -247,6 +256,7 @@ const RELEASE_GATE_SUITE_WORKFLOW_AUTOMATION_PH312_COMMENT_LINE =
 const RELEASE_GATE_SUITE_TIMELINE_BUNDLE_CLOSURE_PH313_COMMENT_LINES = [
   `// Phase 313: crm-timeline-routes-contracts gate -> run-crm-timeline-routes-closure-check.mjs (timeline RELEASE_GATES bundle; wiring alongside ${TIMELINE_CONTRACT_SUITE_RELPATH}).`,
   `// Phase 313: m0-deeplink-context-contracts gate -> run-m0-deeplink-context-check.mjs (timeline RELEASE_GATES bundle; wiring alongside ${TIMELINE_CONTRACT_SUITE_RELPATH}).`,
+  `// Phase 313: lead-intelligence-m1-contracts gate -> run-lead-intelligence-m1-closure-check.mjs (timeline RELEASE_GATES bundle; wiring alongside ${TIMELINE_CONTRACT_SUITE_RELPATH}).`,
   `// Phase 313: prisma-generate-closure-contracts gate -> run-prisma-generate-closure-check.mjs (timeline RELEASE_GATES bundle, warn-only in release:gate:timeline-contracts; wiring alongside ${TIMELINE_CONTRACT_SUITE_RELPATH}).`,
 ] as const
 
