@@ -1,0 +1,55 @@
+# Fast path: Lead Intelligence M1 closure only (Jest + no-404 contracts).
+# Complements the full timeline release gate when PRs touch LI-only paths.
+
+name: Lead Intelligence M1 closure
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - '.github/workflows/lead-intelligence-m1-closure.yml'
+      - 'apps/dashboard/app/lead-intelligence/**'
+      - 'apps/dashboard/app/api/lead-intelligence/**'
+      - 'components/lead-intelligence/**'
+      - 'lib/lead-intelligence/**'
+      - '__tests__/m0/m0-lead-intelligence*.ts'
+      - 'scripts/run-lead-intelligence-m1-closure-check.mjs'
+      - 'jest.m0.config.js'
+      - 'tsconfig.jest-m0.json'
+  push:
+    branches: [main, develop]
+    paths:
+      - '.github/workflows/lead-intelligence-m1-closure.yml'
+      - 'apps/dashboard/app/lead-intelligence/**'
+      - 'apps/dashboard/app/api/lead-intelligence/**'
+      - 'components/lead-intelligence/**'
+      - 'lib/lead-intelligence/**'
+      - '__tests__/m0/m0-lead-intelligence*.ts'
+      - 'scripts/run-lead-intelligence-m1-closure-check.mjs'
+      - 'jest.m0.config.js'
+      - 'tsconfig.jest-m0.json'
+
+jobs:
+  lead-intelligence-m1-closure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lead Intelligence M1 closure check
+        run: npm run check:lead-intelligence-m1-closure
+        env:
+          LEAD_INTELLIGENCE_M1_CLOSURE_TIMEOUT_MS: '300000'
+          LEAD_INTELLIGENCE_M1_CLOSURE_TIMEOUT_PER_SUITE_MS: '240000'

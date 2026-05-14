@@ -17,8 +17,10 @@
   "include": [
     "__tests__/m0/**/*.ts",
     "lib/ai-native/**/*.ts",
+    "lib/lead-intelligence/**/*.ts",
     "apps/dashboard/app/api/v1/**/*.ts",
     "apps/dashboard/app/api/marketing/**/*.ts",
+    "apps/dashboard/app/api/lead-intelligence/**/*.ts",
     "lib/middleware/**/*.ts",
     "lib/db/prisma.ts"
   ]

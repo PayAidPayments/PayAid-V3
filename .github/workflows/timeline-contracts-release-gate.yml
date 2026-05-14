@@ -45,6 +45,7 @@ on:
       - 'lib/workflow/**'
       - 'scripts/run-crm-timeline-routes-closure-check.mjs'
       - 'scripts/run-m0-deeplink-context-check.mjs'
+      - 'scripts/run-lead-intelligence-m1-closure-check.mjs'
       - 'scripts/run-prisma-generate-closure-check.mjs'
       - 'scripts/show-release-gate-warn-only-next-actions.mjs'
       - 'scripts/show-latest-release-gate-warn-only-checklist-pointer.mjs'
@@ -99,6 +100,7 @@ on:
       - 'lib/workflow/**'
       - 'scripts/run-crm-timeline-routes-closure-check.mjs'
       - 'scripts/run-m0-deeplink-context-check.mjs'
+      - 'scripts/run-lead-intelligence-m1-closure-check.mjs'
       - 'scripts/run-prisma-generate-closure-check.mjs'
       - 'scripts/show-release-gate-warn-only-next-actions.mjs'
       - 'scripts/show-latest-release-gate-warn-only-checklist-pointer.mjs'
@@ -140,16 +142,19 @@ jobs:
         run: npm run release:gate:timeline-contracts
         env:
           # Ensure warn-only list reaches Node even if cross-env / shell parsing differs on ubuntu-latest.
-          RELEASE_GATES: workflow-automation-contracts,crm-timeline-routes-contracts,m0-deeplink-context-contracts,prisma-generate-closure-contracts
+          RELEASE_GATES: workflow-automation-contracts,crm-timeline-routes-contracts,m0-deeplink-context-contracts,lead-intelligence-m1-contracts,prisma-generate-closure-contracts
           RELEASE_GATE_WARN_ONLY_GATES: prisma-generate-closure-contracts
           WORKFLOW_AUTOMATION_CLOSURE_TIMEOUT_MS: '900000'
           WORKFLOW_AUTOMATION_CLOSURE_TIMEOUT_PER_SUITE_MS: '300000'
           CRM_TIMELINE_CLOSURE_TIMEOUT_PER_SUITE_MS: '300000'
           M0_DEEPLINK_CONTEXT_TIMEOUT_MS: '120000'
+          LEAD_INTELLIGENCE_M1_CLOSURE_TIMEOUT_MS: '240000'
+          LEAD_INTELLIGENCE_M1_CLOSURE_TIMEOUT_PER_SUITE_MS: '180000'
           PRISMA_GENERATE_CLOSURE_TIMEOUT_MS: '300000'
           RELEASE_GATE_TIMEOUT_MS_WORKFLOW_AUTOMATION_CONTRACTS: '960000'
           RELEASE_GATE_TIMEOUT_MS_CRM_TIMELINE_ROUTES_CONTRACTS: '420000'
           RELEASE_GATE_TIMEOUT_MS_M0_DEEPLINK_CONTEXT_CONTRACTS: '150000'
+          RELEASE_GATE_TIMEOUT_MS_LEAD_INTELLIGENCE_M1_CONTRACTS: '300000'
           RELEASE_GATE_TIMEOUT_MS_PRISMA_GENERATE_CLOSURE_CONTRACTS: '420000'
 
       - name: Generate warn-only next-actions checklist
