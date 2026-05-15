@@ -234,6 +234,10 @@ export async function POST(request: NextRequest) {
     })
 
     // Persist an audit record in StockTransfer so the list page can display it
+    const notesWithRef = [validated.notes, validated.referenceNumber ? `Ref: ${validated.referenceNumber}` : null]
+      .filter((part): part is string => Boolean(part?.trim()))
+      .join('\n')
+      .trim()
     const transfer = await prisma.stockTransfer.create({
       data: {
         tenantId,
@@ -246,8 +250,7 @@ export async function POST(request: NextRequest) {
         toLocationId: validated.type !== 'OUT' ? validated.locationId : null,
         status: 'COMPLETED',
         reason: validated.reason || null,
-        notes: validated.notes || null,
-        referenceNumber: validated.referenceNumber || null,
+        notes: notesWithRef || null,
         transferDate: new Date(),
         createdById: userId || null,
       },

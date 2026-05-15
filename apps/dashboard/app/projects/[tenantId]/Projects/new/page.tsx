@@ -67,7 +67,8 @@ export default function NewProjectPage() {
         const error = await response.json().catch(() => ({}))
         throw new Error((error as { error?: string }).error || 'Failed to fetch service templates')
       }
-      return response.json() as { templates: ServiceTemplateDto[] }
+      const payload: unknown = await response.json()
+      return payload as { templates: ServiceTemplateDto[] }
     },
     enabled: Boolean(tenantId),
   })

@@ -1,17 +1,2 @@
-ERROR_TS_COUNT: 12
-SOURCE: npm run typecheck:dashboard (2026-05-15, post B4-R03 site-schema / public layout)
-
-apps/dashboard/app/api/ai/image/status/route.ts(45,62): error TS2554: Expected 0 arguments, but got 1.
-apps/dashboard/app/api/inventory/stock-movements/route.ts(250,9): error TS2353: Object literal may only specify known properties, and 'referenceNumber' does not exist in type '(Without<StockTransferCreateInput, StockTransferUncheckedCreateInput> & StockTransferUncheckedCreateInput) | (Without<...> & StockTransferCreateInput)'.
-apps/dashboard/app/api/lead-intelligence/discovery/people/route.ts(228,32): error TS2345: Argument of type '"people_search_started"' is not assignable to parameter of type 'LeadIntelligenceTelemetryAction'.
-apps/dashboard/app/api/lead-intelligence/discovery/people/route.ts(229,32): error TS2345: Argument of type '"people_discovery_results_nonempty" | "people_discovery_results_empty"' is not assignable to parameter of type 'LeadIntelligenceTelemetryAction'.
-  Type '"people_discovery_results_nonempty"' is not assignable to type 'LeadIntelligenceTelemetryAction'. Did you mean '"discovery_results_nonempty"'?
-apps/dashboard/app/api/projects/[id]/route.ts(66,9): error TS2353: Object literal may only specify known properties, and 'deal' does not exist in type 'ProjectInclude<DefaultArgs>'.
-apps/dashboard/app/api/projects/[id]/route.ts(160,32): error TS2339: Property 'timeEntries' does not exist on type '{ currency: string; tenantId: string; code: string; description: string; status: string; startDate: Date; endDate: Date; id: string; createdAt: Date; updatedAt: Date; name: string; ... 11 more ...; servicePackageId: string; }'.
-apps/dashboard/app/api/projects/[id]/route.ts(162,25): error TS2551: Property 'servicePackage' does not exist on type '{ currency: string; tenantId: string; code: string; description: string; status: string; startDate: Date; endDate: Date; id: string; createdAt: Date; updatedAt: Date; name: string; ... 11 more ...; servicePackageId: string; }'. Did you mean 'servicePackageId'?
-apps/dashboard/app/api/projects/[id]/route.ts(177,28): error TS2339: Property 'timeEntries' does not exist on type '{ currency: string; tenantId: string; code: string; description: string; status: string; startDate: Date; endDate: Date; id: string; createdAt: Date; updatedAt: Date; name: string; ... 11 more ...; servicePackageId: string; }'.
-apps/dashboard/app/api/projects/[id]/route.ts(184,27): error TS2339: Property 'milestones' does not exist on type '{ currency: string; tenantId: string; code: string; description: string; status: string; startDate: Date; endDate: Date; id: string; createdAt: Date; updatedAt: Date; name: string; ... 11 more ...; servicePackageId: string; }'.
-apps/dashboard/app/projects/[tenantId]/Projects/new/page.tsx(70,14): error TS2352: Conversion of type 'Promise<any>' to type '{ templates: ServiceTemplateDto[]; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
-  Property 'templates' is missing in type 'Promise<any>' but required in type '{ templates: ServiceTemplateDto[]; }'.
-lib/lead-intelligence/audit.ts(24,9): error TS2322: Type 'Record<string, unknown>' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue'.
-  Type 'Record<string, unknown>' is missing the following properties from type 'readonly InputJsonValue[]': length, concat, join, slice, and 26 more.
+ERROR_TS_COUNT: 0
+SOURCE: npm run typecheck:dashboard (2026-05-15, post B4-R08 final; exit 0)

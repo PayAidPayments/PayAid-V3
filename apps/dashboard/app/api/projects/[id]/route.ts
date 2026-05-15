@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { seedOperationalTasksFromProfileMetadata } from '@/lib/api/projects/project-profile-automation'
 import {
@@ -49,6 +50,80 @@ const patchProjectRowSelect = {
   ownerId: true,
 } as const
 
+const projectDetailInclude = {
+  owner: { select: { id: true, name: true, email: true } },
+  client: { select: { id: true, name: true, email: true } },
+  servicePackage: {
+    select: {
+      id: true,
+      name: true,
+      billingType: true,
+      monthlyHours: true,
+      sla: true,
+      slaPolicy: true,
+      renewalDate: true,
+      status: true,
+      clientId: true,
+    },
+  },
+  tasks: {
+    orderBy: { updatedAt: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      priority: true,
+      assignedToId: true,
+      dueDate: true,
+      progress: true,
+      phaseId: true,
+      milestoneId: true,
+      phase: { select: { id: true, name: true } },
+      milestone: { select: { id: true, name: true } },
+    },
+  },
+  members: {
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+    },
+  },
+  timeEntries: {
+    orderBy: { date: 'desc' },
+    take: 150,
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+      task: { select: { id: true, name: true } },
+    },
+  },
+  phases: {
+    orderBy: { sortOrder: 'asc' },
+    select: {
+      id: true,
+      name: true,
+      sortOrder: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+    },
+  },
+  milestones: {
+    orderBy: [{ dueDate: 'asc' }, { sortOrder: 'asc' }],
+    select: {
+      id: true,
+      phaseId: true,
+      name: true,
+      dueDate: true,
+      status: true,
+      approvalRequired: true,
+      approvedAt: true,
+      approvedById: true,
+      billingDraftInvoiceId: true,
+      billingTrigger: true,
+      sortOrder: true,
+    },
+  },
+} satisfies Prisma.ProjectInclude
+
 // GET /api/projects/[id] — single project for detail UI (tasks, team, time)
 export async function GET(
   request: NextRequest,
@@ -60,80 +135,7 @@ export async function GET(
 
     const project = await prisma.project.findFirst({
       where: { id, tenantId },
-      include: {
-        owner: { select: { id: true, name: true, email: true } },
-        client: { select: { id: true, name: true, email: true } },
-        deal: { select: { id: true, name: true, stage: true } },
-        servicePackage: {
-          select: {
-            id: true,
-            name: true,
-            billingType: true,
-            monthlyHours: true,
-            sla: true,
-            slaPolicy: true,
-            renewalDate: true,
-            status: true,
-            clientId: true,
-          },
-        },
-        tasks: {
-          orderBy: { updatedAt: 'desc' },
-          select: {
-            id: true,
-            name: true,
-            status: true,
-            priority: true,
-            assignedToId: true,
-            dueDate: true,
-            progress: true,
-            phaseId: true,
-            milestoneId: true,
-            phase: { select: { id: true, name: true } },
-            milestone: { select: { id: true, name: true } },
-          },
-        },
-        members: {
-          include: {
-            user: { select: { id: true, name: true, email: true } },
-          },
-        },
-        timeEntries: {
-          orderBy: { date: 'desc' },
-          take: 150,
-          include: {
-            user: { select: { id: true, name: true, email: true } },
-            task: { select: { id: true, name: true } },
-          },
-        },
-        phases: {
-          orderBy: { sortOrder: 'asc' },
-          select: {
-            id: true,
-            name: true,
-            sortOrder: true,
-            status: true,
-            startDate: true,
-            endDate: true,
-          },
-        },
-        milestones: {
-          orderBy: [{ dueDate: 'asc' }, { sortOrder: 'asc' }],
-          select: {
-            id: true,
-            phaseId: true,
-            name: true,
-            dueDate: true,
-            status: true,
-            approvalRequired: true,
-            approvedAt: true,
-            approvedById: true,
-            billingDraftInvoiceId: true,
-            billingTrigger: true,
-            sortOrder: true,
-          },
-        },
-      },
+      include: projectDetailInclude,
     })
 
     if (!project) {
@@ -178,8 +180,6 @@ export async function GET(
         ...e,
         hours: Number(e.hours),
         approvalStatus: e.approvalStatus,
-        source: e.source,
-        isAdhoc: e.isAdhoc,
       })),
       milestones: project.milestones.map((m) => ({
         ...m,

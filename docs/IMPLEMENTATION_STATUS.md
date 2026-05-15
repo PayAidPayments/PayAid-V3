@@ -1,7 +1,7 @@
 # PayAid V3 — implementation status (founder-facing)
 
 **Last updated:** 2026-05-15 (UTC)  
-**Operational pass (production + UTF-8 evidence):** **`origin/main`** includes **`032d04597`** ( **`fix(leads-core): …`** on top of **`d7cc86746`** / **`4bcf754ad`** ancestry). **`git merge-base --is-ancestor 4bcf754ad origin/main`** remains **0**. **Vercel production (GitHub Deployments):** **Production – payaid-v3** latest deployment **`sha`** = **`032d04597…`**, **`state`** = **`success`** ( **`2026-05-15T05:27:50Z`** ). **Typecheck:** **`ERROR_TS_COUNT: 12`** after **B4-R03** ( **`lib/website-builder/site-schema.ts`** canvas model + **`settings-public-layout.tsx`** `homeCanvasBlocks` ); prior capture was **22**. **Chore** worktree: **`chore/dashboard-main-build-sync`** (local docs may lag **`main`** until merged).  
+**Operational pass (production + UTF-8 evidence):** **Production green** on latest deployed **`origin/main`** — **Production – payaid-v3** **`a3d950bdd…`**, **`state`** = **`success`** (`2026-05-15`). **Typecheck:** **`ERROR_TS_COUNT: 0`** — **`npm run typecheck:dashboard`** exit **0** (2026-05-15, post **B4-R07** + **B4-R08**); artifact: `docs/evidence/typecheck-dashboard-latest.txt`. **B3 build-integrity gate:** **green** (local strict `tsc`). Local remediation batches **B4-R04–R08** are **not yet on `origin/main`** until pushed.  
 **Execution contract:** Blockers first (Prisma → build integrity → nav → placeholders → core OS → LI M1 → …). **No** Lead Intelligence / CRM / Sales / Email / Finance **feature** work until **(a)** **A10** is closed *or* a **reachable staging / clone DB path is explicitly approved**, **and (b)** **typecheck remediation** has an **explicit plan** (§12 batches + owner), even though **B3 is now evidenced as red** with a full artifact (`docs/evidence/typecheck-dashboard-latest.txt`).
 
 ---
@@ -13,8 +13,8 @@
 | Prisma canonical schema + migrations + generate | A1–A9 | **Approved / done** |
 | Prisma migrate on real DB + `_prisma_migrations` audit | **A10** | **Open** — see §10 |
 | TS-ignore policy (strict by default on Vercel) | B1–B2 | **Approved / done** |
-| `typecheck:dashboard` (artifact + green gate) | **B3** | **Open** — **red**; **`ERROR_TS_COUNT: 12`** in `docs/evidence/typecheck-dashboard-latest.txt` (2026-05-15, post **B4-R03**) — see §11 |
-| Typecheck remediation **execution queue** | **B4** | **Open** — §12 **collapse + repair**; **B4-C04 deferred**; next waves **B4-C03** (done) → **R06** → **R07** → **R08** — **no** nav/UI-only in this phase. |
+| `typecheck:dashboard` (artifact + green gate) | **B3** | **Done (local)** — **`ERROR_TS_COUNT: 0`**, exit **0** (`docs/evidence/typecheck-dashboard-latest.txt`, 2026-05-15) — see §11 |
+| Typecheck remediation **execution queue** | **B4** | **Done (local repair waves R04–R08)** — §12; **B4-C04 deferred** |
 
 ---
 
@@ -44,8 +44,8 @@
 |-------|--------|--------|
 | **B1** TS-ignore | **Done** | `apps/dashboard/next.config.mjs`: ignore only if `VERCEL=1` **and** `PAYAID_VERCEL_IGNORE_TS_ERRORS=1`. |
 | **B2** Deadline | **Tracked** | **2026-06-15** or 14 days after green `typecheck:dashboard` on Vercel. |
-| **B3** `typecheck:dashboard` | **Open** | **Fail** — **`ERROR_TS_COUNT: 12`** (`docs/evidence/typecheck-dashboard-latest.txt`, 2026-05-15, post **B4-R03**); historical **76**-line capture: `docs/evidence/typecheck-dashboard-b4c01.txt` — **§11**. |
-| **B4** Remediation | **Open** | **§12** execution queue (collapse **B4-C01–C03, C05–C08**; **defer B4-C04**; repair waves **R06–R08** per §12); assign owners + dates. |
+| **B3** `typecheck:dashboard` | **Done (local)** | **Pass** — **`ERROR_TS_COUNT: 0`**, `npm run typecheck:dashboard` exit **0** (2026-05-15); historical **76**-line capture: `docs/evidence/typecheck-dashboard-b4c01.txt` — **§11**. |
+| **B4** Remediation | **Done (local)** | Repair waves **B4-R04–R08** complete; **B4-C04** still deferred — **§12**. |
 
 ---
 
@@ -107,7 +107,7 @@ LIMIT 50;
 **Command:** `npm run typecheck:dashboard`  
 **Strict Vercel-equivalent:** `ignoreBuildErrors` is **false** unless `PAYAID_VERCEL_IGNORE_TS_ERRORS=1`.
 
-**Current UTF-8 capture (2026-05-15):** **`ERROR_TS_COUNT: 12`** — after **B4-R03** (`lib/website-builder/site-schema.ts`: **`WEBSITE_CANVAS_BLOCK_KINDS`**, **`WebsiteCanvasBlock`**, **`WebsiteCanvasBlockKind`**, **`canvas.homeBlocks`**, merge/read normalization; **`settings-public-layout.tsx`**: **`homeCanvasBlocks`** + **`WebsiteHomeCanvasSections`**). **Next batch (B4-R04):** **`app/api/projects/[id]/route.ts`** Prisma **`include` / result typing** (largest remaining cluster, **5** lines).
+**Current UTF-8 capture (2026-05-15):** **`ERROR_TS_COUNT: 0`** — **`typecheck:dashboard`** exit **0** after **B4-R07** (`checkSelfHostedImageHealth()` no-arg) and **B4-R08** (drop **`referenceNumber`** from `StockTransferCreateInput`; optional ref folded into **`notes`**). **Remaining build blockers for product resume:** **A10** (Prisma migrate on reachable DB) only; push local typecheck fixes to **`main`** for Vercel parity.
 
 **Before / after (B4-C01):** baseline full dashboard `tsc` had **~193** `error TS` lines. **After B4-C01** (schema + `prisma generate` + full `tsc`, exit **2**): **76** `error TS` lines — authoritative line count in **`docs/evidence/typecheck-dashboard-b4c01.txt`** (UTF-16 LE capture from the same run).
 
