@@ -42,6 +42,39 @@ export type WebsiteEditorSettingsBlocks = {
   contact?: WebsiteContactSettings
 }
 
+/** Kinds supported by `WebsiteCanvasBlocksPanel` and `WebsiteHomeCanvasSections`. */
+export const WEBSITE_CANVAS_BLOCK_KINDS = [
+  'features',
+  'cta_strip',
+  'testimonials',
+  'faq',
+  'rich_text',
+  'image_split',
+] as const
+
+export type WebsiteCanvasBlockKind = (typeof WEBSITE_CANVAS_BLOCK_KINDS)[number]
+
+export type WebsiteCanvasCta = {
+  label?: string
+  href?: string
+}
+
+export type WebsiteCanvasBlock = {
+  id: string
+  kind: WebsiteCanvasBlockKind
+  headline?: string
+  subheadline?: string
+  body?: string
+  bullets?: string[]
+  imageUrl?: string
+  primaryCta?: WebsiteCanvasCta
+  secondaryCta?: WebsiteCanvasCta
+}
+
+export type WebsiteSiteSchemaCanvas = {
+  homeBlocks?: WebsiteCanvasBlock[]
+}
+
 export type WebsiteAiDraftPagePlanEntry = {
   pageType?: string
   title?: string
@@ -55,6 +88,8 @@ export type WebsiteAiDraft = {
 
 export type WebsiteSiteSchemaJson = {
   settings?: WebsiteEditorSettingsBlocks
+  /** Marketing sections below hero (`schemaJson.canvas.homeBlocks`). */
+  canvas?: WebsiteSiteSchemaCanvas
   aiDraft?: WebsiteAiDraft | null
   aiDraftGeneratedAt?: string
   aiDraftAppliedAt?: string
@@ -79,6 +114,46 @@ export function normalizeWebsiteEditorSettings(raw: unknown): WebsiteEditorSetti
     seo: pickSettingsBlock<WebsiteSeoSettings>(raw.seo),
     contact: pickSettingsBlock<WebsiteContactSettings>(raw.contact),
   }
+}
+
+function isCanvasBlockKind(k: string): k is WebsiteCanvasBlockKind {
+  return (WEBSITE_CANVAS_BLOCK_KINDS as readonly string[]).includes(k)
+}
+
+function normalizeCanvasBlock(raw: unknown): WebsiteCanvasBlock | null {
+  if (!isPlainObject(raw)) return null
+  const id = typeof raw.id === 'string' ? raw.id.trim() : ''
+  const kindStr = typeof raw.kind === 'string' ? raw.kind.trim() : ''
+  if (!id || !isCanvasBlockKind(kindStr)) return null
+  const bullets = Array.isArray(raw.bullets)
+    ? raw.bullets.map((x) => (typeof x === 'string' ? x : String(x)))
+    : undefined
+  const pickCta = (v: unknown): WebsiteCanvasCta | undefined => {
+    if (!isPlainObject(v)) return undefined
+    const label = typeof v.label === 'string' ? v.label : undefined
+    const href = typeof v.href === 'string' ? v.href : undefined
+    if (label === undefined && href === undefined) return undefined
+    return { label, href }
+  }
+  return {
+    id,
+    kind: kindStr,
+    headline: typeof raw.headline === 'string' ? raw.headline : undefined,
+    subheadline: typeof raw.subheadline === 'string' ? raw.subheadline : undefined,
+    body: typeof raw.body === 'string' ? raw.body : undefined,
+    bullets,
+    imageUrl: typeof raw.imageUrl === 'string' ? raw.imageUrl : undefined,
+    primaryCta: pickCta(raw.primaryCta),
+    secondaryCta: pickCta(raw.secondaryCta),
+  }
+}
+
+function normalizeCanvasInput(raw: unknown): WebsiteSiteSchemaCanvas | undefined {
+  if (!isPlainObject(raw)) return undefined
+  const hb = raw.homeBlocks
+  if (!Array.isArray(hb)) return { homeBlocks: [] }
+  const homeBlocks = hb.map(normalizeCanvasBlock).filter((b): b is WebsiteCanvasBlock => b != null)
+  return { homeBlocks }
 }
 
 function mergeEditorSettingsBlocks(
@@ -106,6 +181,10 @@ export function readWebsiteSiteSchemaJson(raw: unknown): WebsiteSiteSchemaJson {
   if ('settings' in raw) {
     out.settings = normalizeWebsiteEditorSettings(raw.settings)
   }
+  if ('canvas' in raw && raw.canvas != null) {
+    const c = normalizeCanvasInput(raw.canvas)
+    if (c) out.canvas = c
+  }
   return out
 }
 
@@ -114,13 +193,17 @@ export function mergeWebsiteSiteSchemaJson(
   patch: Partial<WebsiteSiteSchemaJson> & Record<string, unknown>
 ): WebsiteSiteSchemaJson {
   const b = readWebsiteSiteSchemaJson(base)
-  const { settings: patchSettings, ...patchRest } = patch
-  return {
+  const { settings: patchSettings, canvas: patchCanvas, ...patchRest } = patch
+  const merged: WebsiteSiteSchemaJson = {
     ...b,
     ...patchRest,
     settings:
       patchSettings !== undefined ? mergeEditorSettingsBlocks(b.settings, normalizeWebsiteEditorSettings(patchSettings)) : b.settings,
   }
+  if (patchCanvas !== undefined) {
+    merged.canvas = normalizeCanvasInput(patchCanvas) ?? { homeBlocks: [] }
+  }
+  return merged
 }
 
 export function getAiDraftPagePlan(schema: unknown): WebsiteAiDraftPagePlanEntry[] {
