@@ -1,4 +1,5 @@
 import { prisma } from '@payaid/db'
+import { toInputJson } from '../prisma-json'
 import type { LeadBriefInput } from '../types'
 
 export class LeadBriefService {
@@ -9,14 +10,14 @@ export class LeadBriefService {
         createdById,
         name: input.name,
         description: input.description,
-        industryFilters: input.industryFilters,
-        geoFilters: input.geoFilters,
-        sizeFilters: input.sizeFilters,
-        revenueFilters: input.revenueFilters ?? [],
-        personaFilters: input.personaFilters,
-        techFilters: input.techFilters ?? [],
-        triggerFilters: input.triggerFilters ?? [],
-        exclusionFilters: input.exclusionFilters ?? [],
+        industryFilters: toInputJson(input.industryFilters),
+        geoFilters: toInputJson(input.geoFilters),
+        sizeFilters: toInputJson(input.sizeFilters),
+        revenueFilters: toInputJson(input.revenueFilters ?? []),
+        personaFilters: toInputJson(input.personaFilters),
+        techFilters: toInputJson(input.techFilters ?? []),
+        triggerFilters: toInputJson(input.triggerFilters ?? []),
+        exclusionFilters: toInputJson(input.exclusionFilters ?? []),
       },
     })
   }
@@ -32,14 +33,14 @@ export class LeadBriefService {
       data: {
         ...(input.name ? { name: input.name } : {}),
         ...(input.description !== undefined ? { description: input.description } : {}),
-        ...(input.industryFilters ? { industryFilters: input.industryFilters } : {}),
-        ...(input.geoFilters ? { geoFilters: input.geoFilters } : {}),
-        ...(input.sizeFilters ? { sizeFilters: input.sizeFilters } : {}),
-        ...(input.revenueFilters ? { revenueFilters: input.revenueFilters } : {}),
-        ...(input.personaFilters ? { personaFilters: input.personaFilters } : {}),
-        ...(input.techFilters ? { techFilters: input.techFilters } : {}),
-        ...(input.triggerFilters ? { triggerFilters: input.triggerFilters } : {}),
-        ...(input.exclusionFilters ? { exclusionFilters: input.exclusionFilters } : {}),
+        ...(input.industryFilters ? { industryFilters: toInputJson(input.industryFilters) } : {}),
+        ...(input.geoFilters ? { geoFilters: toInputJson(input.geoFilters) } : {}),
+        ...(input.sizeFilters ? { sizeFilters: toInputJson(input.sizeFilters) } : {}),
+        ...(input.revenueFilters ? { revenueFilters: toInputJson(input.revenueFilters) } : {}),
+        ...(input.personaFilters ? { personaFilters: toInputJson(input.personaFilters) } : {}),
+        ...(input.techFilters ? { techFilters: toInputJson(input.techFilters) } : {}),
+        ...(input.triggerFilters ? { triggerFilters: toInputJson(input.triggerFilters) } : {}),
+        ...(input.exclusionFilters ? { exclusionFilters: toInputJson(input.exclusionFilters) } : {}),
       },
     })
   }

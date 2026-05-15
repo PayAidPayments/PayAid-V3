@@ -1,4 +1,5 @@
 import { prisma } from '@payaid/db'
+import { toInputJson } from '../prisma-json'
 import type { ContactCandidate } from '../types'
 import { LeadMergeService } from './LeadMergeService'
 
@@ -69,8 +70,8 @@ export class LeadContactResolutionService {
           operation: 'resolveContacts',
           status: 'success',
           requestFingerprint: `${input.accountId}:${contact.normalizedFullName}`,
-          rawPayload: { contact },
-          normalizedPayload: contact,
+          rawPayload: toInputJson({ contact }),
+          normalizedPayload: toInputJson(contact),
         },
       })
 
