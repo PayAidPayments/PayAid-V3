@@ -1,5 +1,6 @@
 import { prisma } from '@payaid/db'
 import { LEAD_JOBS, runLeadJob } from '@payaid/queue'
+import { toInputJson } from '../prisma-json'
 import type { ActivationRequest } from '../types'
 
 export class LeadActivationService {
@@ -75,7 +76,7 @@ export class LeadActivationService {
         initiatedById: 'system',
         destination: input.destination,
         status: 'PENDING',
-        payload: input,
+        payload: toInputJson(input),
       },
     })
 
@@ -89,7 +90,7 @@ export class LeadActivationService {
 
       await prisma.leadActivationJob.update({
         where: { id: job.id },
-        data: { status: 'COMPLETED', resultSummary: result as object },
+        data: { status: 'COMPLETED', resultSummary: toInputJson(result as unknown) },
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown activation failure'
@@ -97,7 +98,7 @@ export class LeadActivationService {
         where: { id: job.id },
         data: {
           status: 'FAILED',
-          resultSummary: { error: message },
+          resultSummary: toInputJson({ error: message }),
         },
       })
       throw error

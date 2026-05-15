@@ -1,4 +1,5 @@
 import { prisma } from '@payaid/db'
+import { toInputJson } from '../prisma-json'
 import type { CompanyCandidate } from '../types'
 import { LeadMergeService } from './LeadMergeService'
 import { LeadScoreService } from './LeadScoreService'
@@ -95,8 +96,8 @@ export class LeadDiscoveryOrchestratorService {
           operation: 'discoverCompanies',
           status: 'success',
           requestFingerprint: `${input.segmentId}:${company.normalizedName}`,
-          rawPayload: { company },
-          normalizedPayload: company,
+          rawPayload: toInputJson({ company }),
+          normalizedPayload: toInputJson(company),
         },
       })
 
