@@ -29,6 +29,52 @@ export default function NewProjectPage() {
     clientId: '',
     tags: '',
   })
+<<<<<<< HEAD
+=======
+  const [serviceTemplateId, setServiceTemplateId] = useState('')
+  const [seedServiceTemplate, setSeedServiceTemplate] = useState(true)
+  const [flowProfile, setFlowProfile] = useState<'all' | 'software' | 'outsourcing' | 'agency'>('all')
+  const [currentStep, setCurrentStep] = useState(0)
+  const [profileDefaultsApplied, setProfileDefaultsApplied] = useState(false)
+  const [profileMeta, setProfileMeta] = useState({
+    outsourcingSlaHours: '',
+    outsourcingRenewalCadence: 'quarterly',
+    softwareReleaseCadence: 'biweekly',
+    softwareUatOwner: '',
+    agencyReportingCadence: 'monthly',
+    agencyPrimaryChannel: 'email',
+  })
+
+  type ServiceTemplateDto = {
+    id: string
+    label: string
+    phaseNames: string[]
+    milestoneNames: string[]
+    milestoneDefaults: Array<{
+      name: string
+      billingTrigger: 'NONE' | 'ON_COMPLETE' | 'ON_APPROVE'
+      approvalRequired: boolean
+    }>
+    deliveryTypeDefault: string
+    billingModelDefault: string
+  }
+
+  const { data: templatesPayload } = useQuery({
+    queryKey: ['projects', tenantId, 'service-templates'],
+    queryFn: async () => {
+      const response = await fetch('/api/projects/service-templates', {
+        headers: { ...getAuthHeaders() },
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error((error as { error?: string }).error || 'Failed to fetch service templates')
+      }
+      const payload: unknown = await response.json()
+      return payload as { templates: ServiceTemplateDto[] }
+    },
+    enabled: Boolean(tenantId),
+  })
+>>>>>>> 63fb4b2d7 (fix(typecheck): complete B4-R04 through B4-R08; dashboard tsc green (0 errors))
 
   const createProject = useMutation({
     mutationFn: async (data: any) => {

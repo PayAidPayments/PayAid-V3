@@ -1,4 +1,9 @@
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
+
+function toInputJson(value: unknown): Prisma.InputJsonValue {
+  return value as Prisma.InputJsonValue
+}
 
 type LeadAuditParams = {
   tenantId: string
@@ -21,7 +26,7 @@ export async function writeLeadAuditEvent(params: LeadAuditParams): Promise<void
         action: params.action,
         entityType: params.entityType,
         entityId: params.entityId,
-        metadata: params.metadata ?? {},
+        metadata: toInputJson(params.metadata ?? {}),
       },
     })
   } catch (error) {
