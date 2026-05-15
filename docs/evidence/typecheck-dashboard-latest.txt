@@ -1,5 +1,5 @@
-ERROR_TS_COUNT: 22
-SOURCE: npm run typecheck:dashboard (2026-05-15, post leads-core InputJson batch)
+ERROR_TS_COUNT: 12
+SOURCE: npm run typecheck:dashboard (2026-05-15, post B4-R03 site-schema / public layout)
 
 apps/dashboard/app/api/ai/image/status/route.ts(45,62): error TS2554: Expected 0 arguments, but got 1.
 apps/dashboard/app/api/inventory/stock-movements/route.ts(250,9): error TS2353: Object literal may only specify known properties, and 'referenceNumber' does not exist in type '(Without<StockTransferCreateInput, StockTransferUncheckedCreateInput> & StockTransferUncheckedCreateInput) | (Without<...> & StockTransferCreateInput)'.
@@ -13,14 +13,5 @@ apps/dashboard/app/api/projects/[id]/route.ts(177,28): error TS2339: Property 't
 apps/dashboard/app/api/projects/[id]/route.ts(184,27): error TS2339: Property 'milestones' does not exist on type '{ currency: string; tenantId: string; code: string; description: string; status: string; startDate: Date; endDate: Date; id: string; createdAt: Date; updatedAt: Date; name: string; ... 11 more ...; servicePackageId: string; }'.
 apps/dashboard/app/projects/[tenantId]/Projects/new/page.tsx(70,14): error TS2352: Conversion of type 'Promise<any>' to type '{ templates: ServiceTemplateDto[]; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
   Property 'templates' is missing in type 'Promise<any>' but required in type '{ templates: ServiceTemplateDto[]; }'.
-apps/dashboard/app/sites/lp/[slug]/page.tsx(36,35): error TS2339: Property 'canvas' does not exist on type 'WebsiteSiteSchemaJson'.
-apps/dashboard/app/sites/lp/[slug]/page.tsx(65,13): error TS2322: Type '{ variant: "public"; siteName: string; metaTitle: string; metaDescription: string; settings: WebsiteEditorSettingsBlocks; homeCanvasBlocks: any; pageSummaries: WebsitePublishedPageDetail[]; publishedNavigation: { ...; }; }' is not assignable to type 'IntrinsicAttributes & WebsiteSettingsPublicLayoutProps'.
-  Property 'homeCanvasBlocks' does not exist on type 'IntrinsicAttributes & WebsiteSettingsPublicLayoutProps'.
-apps/dashboard/app/website-builder/[tenantId]/Sites/[id]/WebsiteCanvasBlocksPanel.tsx(10,3): error TS2305: Module '"@/lib/website-builder/site-schema"' has no exported member 'WEBSITE_CANVAS_BLOCK_KINDS'.
-apps/dashboard/app/website-builder/[tenantId]/Sites/[id]/WebsiteCanvasBlocksPanel.tsx(11,8): error TS2305: Module '"@/lib/website-builder/site-schema"' has no exported member 'WebsiteCanvasBlock'.
-apps/dashboard/app/website-builder/[tenantId]/Sites/[id]/WebsiteCanvasBlocksPanel.tsx(12,8): error TS2305: Module '"@/lib/website-builder/site-schema"' has no exported member 'WebsiteCanvasBlockKind'.
-apps/dashboard/app/website-builder/[tenantId]/Sites/[id]/WebsiteCanvasBlocksPanel.tsx(43,80): error TS2339: Property 'canvas' does not exist on type 'WebsiteSiteSchemaJson'.
-apps/dashboard/app/website-builder/[tenantId]/Sites/[id]/WebsiteCanvasBlocksPanel.tsx(47,27): error TS2339: Property 'canvas' does not exist on type 'WebsiteSiteSchemaJson'.
-apps/dashboard/app/website-builder/[tenantId]/Sites/[id]/WebsiteCanvasBlocksPanel.tsx(81,27): error TS2339: Property 'canvas' does not exist on type 'WebsiteSiteSchemaJson'.
 lib/lead-intelligence/audit.ts(24,9): error TS2322: Type 'Record<string, unknown>' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue'.
   Type 'Record<string, unknown>' is missing the following properties from type 'readonly InputJsonValue[]': length, concat, join, slice, and 26 more.

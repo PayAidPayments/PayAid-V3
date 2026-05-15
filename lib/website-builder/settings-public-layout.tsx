@@ -1,5 +1,6 @@
 import { PublishedSectionBlocks } from '@/lib/website-builder/published-section-blocks'
-import type { WebsiteEditorSettingsBlocks } from '@/lib/website-builder/site-schema'
+import { WebsiteHomeCanvasSections } from '@/lib/website-builder/canvas-blocks'
+import type { WebsiteCanvasBlock, WebsiteEditorSettingsBlocks } from '@/lib/website-builder/site-schema'
 
 export type WebsitePublishedPageSummary = {
   id: string
@@ -81,6 +82,8 @@ export type WebsiteSettingsPublicLayoutProps = {
    * and hides the plain “Pages” bullet list.
    */
   publishedNavigation?: { basePath: string; activePageSlug: string | null }
+  /** Home canvas blocks from `schemaJson.canvas.homeBlocks` (public LP + dashboard preview). */
+  homeCanvasBlocks?: WebsiteCanvasBlock[]
   /** Inner route: skip hero/about blocks; render page title + section ids. */
   publishedInnerPage?: { title: string; sections: string[] }
 }
@@ -101,10 +104,12 @@ export function WebsiteSettingsPublicLayout({
   pageSummaries,
   publishedNavigation,
   publishedInnerPage,
+  homeCanvasBlocks,
 }: WebsiteSettingsPublicLayoutProps) {
   const hasBlockContent = hasRenderableSettings(settings)
   const hasMetaOnly = Boolean(metaTitle?.trim() || metaDescription?.trim())
-  const hasContent = hasBlockContent || hasMetaOnly
+  const hasCanvasBlocks = Boolean(homeCanvasBlocks?.length)
+  const hasContent = hasBlockContent || hasMetaOnly || hasCanvasBlocks
   const header = settings?.header
   const hero = settings?.hero
   const seo = settings?.seo
@@ -222,6 +227,8 @@ export function WebsiteSettingsPublicLayout({
           </div>
         </section>
       ) : null}
+
+      {hasCanvasBlocks && !publishedInnerPage ? <WebsiteHomeCanvasSections blocks={homeCanvasBlocks ?? []} /> : null}
 
       {showAboutSitePanel && (
         <section
