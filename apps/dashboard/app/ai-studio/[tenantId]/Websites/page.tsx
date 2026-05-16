@@ -29,6 +29,7 @@ export default function WebsitesPage() {
     domain: '',
     description: '',
   })
+  const [createError, setCreateError] = useState<string | null>(null)
 
   const { data, isLoading, refetch } = useQuery<{ websites: Website[] }>({
     queryKey: ['websites'],
@@ -56,6 +57,10 @@ export default function WebsitesPage() {
       refetch()
       setShowCreateModal(false)
       setFormData({ name: '', domain: '', description: '' })
+      setCreateError(null)
+    },
+    onError: (error) => {
+      setCreateError(error instanceof Error ? error.message : 'Failed to create website')
     },
   })
 
@@ -152,6 +157,7 @@ export default function WebsitesPage() {
               <form
                 onSubmit={(e) => {
                   e.preventDefault()
+                  setCreateError(null)
                   createMutation.mutate(formData)
                 }}
                 className="space-y-4"
@@ -160,7 +166,10 @@ export default function WebsitesPage() {
                   <label className="text-sm font-medium">Website Name *</label>
                   <Input
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, name: e.target.value })
+                      if (createError) setCreateError(null)
+                    }}
                     placeholder="e.g., Main Website"
                     required
                   />
@@ -169,7 +178,10 @@ export default function WebsitesPage() {
                   <label className="text-sm font-medium">Domain *</label>
                   <Input
                     value={formData.domain}
-                    onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, domain: e.target.value })
+                      if (createError) setCreateError(null)
+                    }}
                     placeholder="e.g., example.com"
                     required
                   />
@@ -178,15 +190,26 @@ export default function WebsitesPage() {
                   <label className="text-sm font-medium">Description</label>
                   <Input
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, description: e.target.value })
+                      if (createError) setCreateError(null)
+                    }}
                     placeholder="Optional description"
                   />
                 </div>
+                {createError ? (
+                  <p className="text-sm text-red-600" role="alert">
+                    {createError}
+                  </p>
+                ) : null}
                 <div className="flex gap-2 justify-end">
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setShowCreateModal(false)}
+                    onClick={() => {
+                      setShowCreateModal(false)
+                      setCreateError(null)
+                    }}
                   >
                     Cancel
                   </Button>
