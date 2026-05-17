@@ -8,9 +8,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const nextConfig = {
   reactStrictMode: true,
   typescript: { ignoreBuildErrors: true },
-  transpilePackages: ['@payaid/db', '@payaid/domain-billing'],
+  transpilePackages: ['@payaid/db', '@payaid/domain-projects'],
   webpack: (config) => {
-    applyMonorepoWebpackAliases(config, __dirname, 'finance')
+    applyMonorepoWebpackAliases(config, __dirname, 'projects')
     return config
   },
 }

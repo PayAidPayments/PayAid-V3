@@ -41,6 +41,9 @@ export default function NewInvoicePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const prefillCustomerId = searchParams.get('customerId')
+  const prefillProjectId = searchParams.get('projectId')
+  const prefillMilestoneId = searchParams.get('milestoneId')
+  const handoffSource = searchParams.get('source')
   const { data: contactsData, isLoading: contactsLoading, error: contactsError } = useContacts({ limit: 1000 })
   const { data: productsData } = useProducts({ limit: 1000 })
   const { data: tenantData } = useTenant()
@@ -96,6 +99,7 @@ export default function NewInvoicePage() {
   ])
   const [error, setError] = useState('')
   const [attachments, setAttachments] = useState<File[]>([])
+  const [projectsHandoffBanner, setProjectsHandoffBanner] = useState<string | null>(null)
   
   // Fetch sales reps
   const { data: salesRepsData } = useQuery({
@@ -219,6 +223,66 @@ export default function NewInvoicePage() {
       }
     }
   }, [prefillCustomerId, contacts, tenantData])
+
+  // Projects milestone handoff prefill (source=projects)
+  useEffect(() => {
+    if (handoffSource !== 'projects' || !prefillProjectId || !prefillMilestoneId || !tenantId) {
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const q = new URLSearchParams({
+          projectId: prefillProjectId,
+          milestoneId: prefillMilestoneId,
+        })
+        if (prefillCustomerId) q.set('customerId', prefillCustomerId)
+        const { token } = useAuthStore.getState()
+        const res = await fetch(`/api/projects/handoff/invoice-prefill?${q.toString()}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        })
+        if (!res.ok || cancelled) return
+        const { prefill } = (await res.json()) as {
+          prefill?: {
+            customerId: string | null
+            notesSuggestion: string
+            billingDraftInvoiceId: string | null
+            redirectToEdit: boolean
+            projectName: string
+            milestoneName: string
+          }
+        }
+        if (!prefill || cancelled) return
+        if (prefill.redirectToEdit && prefill.billingDraftInvoiceId) {
+          router.replace(`/finance/${tenantId}/Invoices/${prefill.billingDraftInvoiceId}/Edit`)
+          return
+        }
+        setFormData((prev) => ({
+          ...prev,
+          ...(prefill.customerId ? { customerId: prefill.customerId } : {}),
+          notes: prefill.notesSuggestion || prev.notes,
+        }))
+        setProjectsHandoffBanner(
+          `From Projects: ${prefill.projectName} — milestone “${prefill.milestoneName}”. Review and save as draft before sending.`
+        )
+      } catch (e) {
+        console.warn('Projects milestone invoice prefill failed', e)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [
+    handoffSource,
+    prefillProjectId,
+    prefillMilestoneId,
+    prefillCustomerId,
+    tenantId,
+    router,
+  ])
 
   // Helper function to calculate due date from payment terms
   const calculateDueDate = (terms: string, invoiceDate: string): string => {
@@ -456,6 +520,16 @@ export default function NewInvoicePage() {
           <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Cancel</Button>
         </Link>
       </div>
+
+      {handoffSource === 'projects' && projectsHandoffBanner ? (
+        <p className="rounded-lg border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-900 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-100">
+          {projectsHandoffBanner}
+        </p>
+      ) : handoffSource === 'projects' ? (
+        <p className="rounded-lg border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-900 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-100">
+          Loading project milestone context…
+        </p>
+      ) : null}
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
