@@ -5,88 +5,27 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@payaid/db'
-import { ApiResponse, Segment } from '@/types/base-modules'
-import { CreateSegmentRequest } from '@/modules/shared/crm/types'
+import { createCrmDomainDeps, createSegmentInputSchema } from '@payaid/domain-crm'
+import type { Segment } from '@/types/base-modules'
+import { ApiResponse } from '@/types/base-modules'
 import { z } from 'zod'
+import { isCrmTenantContext, requireCrmTenant } from '@/lib/api/crm/resolve-crm-tenant'
+import { logCrmAudit } from '@/lib/audit-log-crm'
 
-const CreateSegmentSchema = z.object({
-  organizationId: z.string().uuid(),
-  name: z.string().min(1).max(255),
-  criteria: z.array(
-    z.object({
-      field: z.string(),
-      operator: z.enum(['equals', 'contains', 'greater_than', 'less_than', 'in', 'not_in']),
-      value: z.unknown(),
-    })
-  ),
-})
+const crmDomain = createCrmDomainDeps()
 
-/**
- * Get all segments for an organization
- * GET /api/crm/segments?organizationId=xxx
- */
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams
-    const organizationId = searchParams.get('organizationId')
+    const organizationId = request.nextUrl.searchParams.get('organizationId')
+    const auth = await requireCrmTenant(request, organizationId)
+    if (!isCrmTenantContext(auth)) return auth
 
-    if (!organizationId) {
-      return NextResponse.json(
-        {
-          success: false,
-          statusCode: 400,
-          error: {
-            code: 'MISSING_ORGANIZATION_ID',
-            message: 'organizationId is required',
-          },
-        },
-        { status: 400 }
-      )
-    }
-
-    const segments = await prisma.segment.findMany({
-      where: {
-        tenantId: organizationId,
-      },
-      orderBy: { createdAt: 'desc' },
-    })
-
-    // Contact count per segment: parallel counts (N queries). True batch would need raw SQL with dynamic criteria.
-    const segmentsWithCounts = await Promise.all(
-      segments.map(async (segment) => {
-        let contactCount = 0
-        try {
-          // Parse criteria and count matching contacts
-          const criteriaArray = typeof segment.criteria === 'string' 
-            ? JSON.parse(segment.criteria) 
-            : segment.criteria
-          const whereClause = buildWhereClauseFromCriteria(criteriaArray)
-          contactCount = await prisma.contact.count({
-            where: {
-              tenantId: organizationId,
-              ...whereClause,
-            },
-          })
-        } catch (error) {
-          console.error(`Error calculating contact count for segment ${segment.id}:`, error)
-        }
-
-        return {
-          id: segment.id,
-          organizationId: segment.tenantId,
-          name: segment.name,
-          criteria: JSON.parse(segment.criteria || '[]'),
-          contactCount,
-          createdAt: segment.createdAt,
-        }
-      })
-    )
+    const segments = await crmDomain.listSegments(auth.tenantId)
 
     const response: ApiResponse<Segment[]> = {
       success: true,
       statusCode: 200,
-      data: segmentsWithCounts as Segment[],
+      data: segments as Segment[],
       meta: {
         timestamp: new Date().toISOString(),
       },
@@ -102,49 +41,31 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/**
- * Create a new segment
- * POST /api/crm/segments
- */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const validatedData = CreateSegmentSchema.parse(body)
+    const validatedData = createSegmentInputSchema.parse(body)
+    const auth = await requireCrmTenant(request, validatedData.organizationId)
+    if (!isCrmTenantContext(auth)) return auth
 
-    const segment = await prisma.segment.create({
-      data: {
-        tenantId: validatedData.organizationId,
-        name: validatedData.name,
-        criteria: JSON.stringify(validatedData.criteria),
-        criteriaConfig: JSON.stringify(validatedData.criteria),
-      },
+    const segment = await crmDomain.createSegment({
+      ...validatedData,
+      organizationId: auth.tenantId,
     })
 
-    // Calculate initial contact count
-    let contactCount = 0
-    try {
-      const whereClause = buildWhereClauseFromCriteria(validatedData.criteria.filter((c): c is { field: string; operator: 'equals' | 'contains' | 'greater_than' | 'less_than' | 'in' | 'not_in'; value: unknown } => c.value !== undefined))
-      contactCount = await prisma.contact.count({
-        where: {
-          tenantId: validatedData.organizationId,
-          ...whereClause,
-        },
-      })
-    } catch (error) {
-      console.error(`Error calculating contact count for new segment:`, error)
-    }
+    await logCrmAudit({
+      tenantId: auth.tenantId,
+      userId: auth.userId,
+      entityType: 'segment',
+      entityId: segment.id,
+      action: 'create',
+      changeSummary: `Created segment ${segment.name ?? segment.id}`,
+    })
 
     const response: ApiResponse<Segment> = {
       success: true,
       statusCode: 201,
-      data: {
-        id: segment.id,
-        organizationId: segment.tenantId,
-        name: segment.name,
-        criteria: validatedData.criteria.filter((c): c is { field: string; operator: 'equals' | 'contains' | 'greater_than' | 'less_than' | 'in' | 'not_in'; value: unknown } => c.value !== undefined),
-        contactCount,
-        createdAt: segment.createdAt,
-      },
+      data: segment as Segment,
       meta: {
         timestamp: new Date().toISOString(),
       },
@@ -164,59 +85,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
-
-/**
- * Helper function to build Prisma where clause from criteria
- */
-function buildWhereClauseFromCriteria(
-  criteria: Array<{
-    field: string
-    operator: 'equals' | 'contains' | 'greater_than' | 'less_than' | 'in' | 'not_in'
-    value: unknown
-  }>
-): Record<string, unknown> {
-  if (!Array.isArray(criteria) || criteria.length === 0) {
-    return {}
-  }
-
-  // Filter out criteria with undefined values
-  const validCriteria = criteria.filter((c) => c.value !== undefined)
-  const where: Record<string, unknown> = {}
-
-  for (const criterion of validCriteria) {
-    switch (criterion.operator) {
-      case 'equals':
-        where[criterion.field] = criterion.value
-        break
-      case 'contains':
-        where[criterion.field] = {
-          contains: criterion.value,
-          mode: 'insensitive',
-        }
-        break
-      case 'greater_than':
-        where[criterion.field] = {
-          gt: criterion.value,
-        }
-        break
-      case 'less_than':
-        where[criterion.field] = {
-          lt: criterion.value,
-        }
-        break
-      case 'in':
-        where[criterion.field] = {
-          in: Array.isArray(criterion.value) ? criterion.value : [criterion.value],
-        }
-        break
-      case 'not_in':
-        where[criterion.field] = {
-          notIn: Array.isArray(criterion.value) ? criterion.value : [criterion.value],
-        }
-        break
-    }
-  }
-
-  return where
 }

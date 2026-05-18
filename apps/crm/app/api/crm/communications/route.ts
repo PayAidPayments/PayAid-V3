@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
 import { ApiResponse, Communication } from '@/types/base-modules'
 import { z } from 'zod'
+import { isCrmTenantContext, requireCrmTenant } from '@/lib/api/crm/resolve-crm-tenant'
+import { logCrmAudit } from '@/lib/audit-log-crm'
 
 const CreateCommunicationSchema = z.object({
   organizationId: z.string().uuid(),
@@ -35,24 +37,14 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const organizationId = searchParams.get('organizationId')
+    const auth = await requireCrmTenant(request, organizationId)
+    if (!isCrmTenantContext(auth)) return auth
+    const tenantId = auth.tenantId
+
     const contactId = searchParams.get('contactId')
     const channel = searchParams.get('channel') as Communication['channel'] | null
     const page = parseInt(searchParams.get('page') || '1', 10)
     const pageSize = parseInt(searchParams.get('pageSize') || '20', 10)
-
-    if (!organizationId) {
-      return NextResponse.json(
-        {
-          success: false,
-          statusCode: 400,
-          error: {
-            code: 'MISSING_ORGANIZATION_ID',
-            message: 'organizationId is required',
-          },
-        },
-        { status: 400 }
-      )
-    }
 
     const where: Record<string, unknown> = {}
 
@@ -90,12 +82,12 @@ export async function GET(request: NextRequest) {
 
     // Filter by organizationId using contact's tenantId
     const filteredCommunications = communications.filter(
-      (interaction) => interaction.contact?.tenantId === organizationId
+      (interaction) => interaction.contact?.tenantId === tenantId
     )
 
     const formattedCommunications: Communication[] = filteredCommunications.map((interaction) => ({
       id: interaction.id,
-      organizationId: interaction.contact?.tenantId || organizationId,
+      organizationId: interaction.contact?.tenantId || tenantId,
       channel: (interaction.type === 'email'
         ? 'email'
         : interaction.type === 'whatsapp'
@@ -157,6 +149,23 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const validatedData = CreateCommunicationSchema.parse(body)
+    const auth = await requireCrmTenant(request, validatedData.organizationId)
+    if (!isCrmTenantContext(auth)) return auth
+
+    const contact = await prisma.contact.findFirst({
+      where: { id: validatedData.senderContactId, tenantId: auth.tenantId },
+      select: { id: true },
+    })
+    if (!contact) {
+      return NextResponse.json(
+        {
+          success: false,
+          statusCode: 404,
+          error: { code: 'CONTACT_NOT_FOUND', message: 'Contact not found for tenant' },
+        },
+        { status: 404 }
+      )
+    }
 
     // Create interaction record
     const interaction = await prisma.interaction.create({
@@ -168,15 +177,18 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Get contact to get tenantId
-    const contact = await prisma.contact.findUnique({
-      where: { id: validatedData.senderContactId },
-      select: { tenantId: true },
+    await logCrmAudit({
+      tenantId: auth.tenantId,
+      userId: auth.userId,
+      entityType: 'communication',
+      entityId: interaction.id,
+      action: 'create',
+      changeSummary: `Logged ${validatedData.channel} communication`,
     })
 
     const communication: Communication = {
       id: interaction.id,
-      organizationId: contact?.tenantId || validatedData.organizationId,
+      organizationId: auth.tenantId,
       channel: validatedData.channel,
       direction: validatedData.direction,
       senderContactId: validatedData.senderContactId,
