@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
 import { ApiResponse } from '@/types/base-modules'
 import { formatINR } from '@/lib/currency'
+import { isCrmTenantContext, requireCrmTenant } from '@/lib/api/crm/resolve-crm-tenant'
 
 /**
  * Get CRM analytics summary
@@ -16,20 +17,9 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const organizationId = searchParams.get('organizationId')
-
-    if (!organizationId) {
-      return NextResponse.json(
-        {
-          success: false,
-          statusCode: 400,
-          error: {
-            code: 'MISSING_ORGANIZATION_ID',
-            message: 'organizationId is required',
-          },
-        },
-        { status: 400 }
-      )
-    }
+    const auth = await requireCrmTenant(request, organizationId)
+    if (!isCrmTenantContext(auth)) return auth
+    const tenantId = auth.tenantId
 
     // Get all metrics in parallel
     const [
@@ -46,37 +36,37 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       // Total contacts
       prisma.contact.count({
-        where: { tenantId: organizationId },
+        where: { tenantId },
       }),
       // Active contacts
       prisma.contact.count({
         where: {
-          tenantId: organizationId,
+          tenantId,
           status: 'active',
         },
       }),
       // Total leads (using type field - deprecated but still used)
       prisma.contact.count({
         where: {
-          tenantId: organizationId,
+          tenantId,
           type: 'lead',
         },
       }),
       // Total customers
       prisma.contact.count({
         where: {
-          tenantId: organizationId,
+          tenantId,
           stage: 'customer',
         },
       }),
       // Total deals
       prisma.deal.count({
-        where: { tenantId: organizationId },
+        where: { tenantId },
       }),
       // Active deals (not won/lost)
       prisma.deal.count({
         where: {
-          tenantId: organizationId,
+          tenantId,
           stage: {
             notIn: ['won', 'lost'],
           },
@@ -85,7 +75,7 @@ export async function GET(request: NextRequest) {
       // Pipeline value (active deals)
       prisma.deal.aggregate({
         where: {
-          tenantId: organizationId,
+          tenantId,
           stage: {
             notIn: ['won', 'lost'],
           },
@@ -97,7 +87,7 @@ export async function GET(request: NextRequest) {
       // Won deals value
       prisma.deal.aggregate({
         where: {
-          tenantId: organizationId,
+          tenantId,
           stage: 'won',
         },
         _sum: {
@@ -107,13 +97,13 @@ export async function GET(request: NextRequest) {
       // Contacts by type
       prisma.contact.groupBy({
         by: ['type'],
-        where: { tenantId: organizationId },
+        where: { tenantId },
         _count: true,
       }),
       // Deals by stage
       prisma.deal.groupBy({
         by: ['stage'],
-        where: { tenantId: organizationId },
+        where: { tenantId },
         _sum: {
           value: true,
         },

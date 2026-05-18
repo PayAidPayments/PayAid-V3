@@ -10,6 +10,10 @@ import { ApiResponse } from '@/types/base-modules'
 import { CreateExpenseSchema } from '@/modules/shared/finance/types'
 import { formatINR } from '@/lib/currency'
 import { z } from 'zod'
+import {
+  isFinanceTenantContext,
+  requireFinanceTenant,
+} from '@/lib/api/finance/resolve-finance-tenant'
 
 // Local Expense type matching the base-modules interface
 interface Expense {
@@ -37,10 +41,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const validatedData = CreateExpenseSchema.parse(body)
+    const auth = await requireFinanceTenant(request, validatedData.organizationId)
+    if (!isFinanceTenantContext(auth)) return auth
 
     const expense = await prisma.expense.create({
       data: {
-        tenantId: validatedData.organizationId,
+        tenantId: auth.tenantId,
         description: validatedData.description,
         amount: validatedData.amountINR,
         category: validatedData.category,
@@ -100,27 +106,16 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const organizationId = searchParams.get('organizationId')
+    const auth = await requireFinanceTenant(request, organizationId)
+    if (!isFinanceTenantContext(auth)) return auth
+
     const category = searchParams.get('category')
     const approvalStatus = searchParams.get('approvalStatus')
     const page = parseInt(searchParams.get('page') || '1', 10)
     const pageSize = parseInt(searchParams.get('pageSize') || '20', 10)
 
-    if (!organizationId) {
-      return NextResponse.json(
-        {
-          success: false,
-          statusCode: 400,
-          error: {
-            code: 'MISSING_ORGANIZATION_ID',
-            message: 'organizationId is required',
-          },
-        },
-        { status: 400 }
-      )
-    }
-
     const where: Record<string, unknown> = {
-      tenantId: organizationId,
+      tenantId: auth.tenantId,
     }
 
     if (category) {

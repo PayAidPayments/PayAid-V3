@@ -7,6 +7,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { ApiResponse } from '@/types/base-modules'
 import { formatINR } from '@/lib/currency'
+import {
+  isFinanceTenantContext,
+  requireFinanceTenant,
+} from '@/lib/api/finance/resolve-finance-tenant'
 
 // Local GSTReturn type matching the base-modules interface
 interface GSTReturn {
@@ -35,23 +39,13 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const organizationId = searchParams.get('organizationId')
+    const auth = await requireFinanceTenant(request, organizationId)
+    if (!isFinanceTenantContext(auth)) return auth
+
+    const tenantId = auth.tenantId
     const period = (searchParams.get('period') as GSTReturn['period']) || 'monthly'
     const month = parseInt(searchParams.get('month') || String(new Date().getMonth() + 1), 10)
     const year = parseInt(searchParams.get('year') || String(new Date().getFullYear()), 10)
-
-    if (!organizationId) {
-      return NextResponse.json(
-        {
-          success: false,
-          statusCode: 400,
-          error: {
-            code: 'MISSING_ORGANIZATION_ID',
-            message: 'organizationId is required',
-          },
-        },
-        { status: 400 }
-      )
-    }
 
     // Calculate date range for the period
     const startDate = new Date(year, month - 1, 1)
@@ -62,7 +56,7 @@ export async function GET(request: NextRequest) {
     // Get all invoices for the period
     const invoices = await prisma.invoice.findMany({
       where: {
-        tenantId: organizationId,
+        tenantId,
         invoiceDate: {
           gte: startDate,
           lte: endDate,
@@ -76,7 +70,7 @@ export async function GET(request: NextRequest) {
     // Get all expenses for the period (for input GST credit)
     const expenses = await prisma.expense.findMany({
       where: {
-        tenantId: organizationId,
+        tenantId,
         createdAt: {
           gte: startDate,
           lte: endDate,
@@ -119,7 +113,7 @@ export async function GET(request: NextRequest) {
 
     const gstReturn: GSTReturn = {
       id: `gstr-${year}-${month}-${period}`,
-      organizationId,
+      organizationId: tenantId,
       period,
       month,
       year,
