@@ -1,12 +1,18 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
+import {
+  isFinanceTenantContext,
+  requireFinanceTenant,
+} from '@/lib/api/finance/resolve-finance-tenant'
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ period: string }> }) {
   const { period } = await params
   try {
-    const tenantId = request.nextUrl.searchParams.get('tenantId')
-    if (!tenantId) return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
+    const queryTenantId = request.nextUrl.searchParams.get('tenantId')
+    const auth = await requireFinanceTenant(request, queryTenantId)
+    if (!isFinanceTenantContext(auth)) return auth
+    const tenantId = auth.tenantId
 
     const blockedInvoices = await prisma.invoice.findMany({
       where: {

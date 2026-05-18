@@ -10,6 +10,8 @@ import { ApiResponse, LeadPipeline } from '@/types/base-modules'
 import { CreatePipelineRequest } from '@/modules/shared/crm/types'
 import { z } from 'zod'
 import { formatINR } from '@/lib/currency'
+import { isCrmTenantContext, requireCrmTenant } from '@/lib/api/crm/resolve-crm-tenant'
+import { logCrmAudit } from '@/lib/audit-log-crm'
 
 const CreatePipelineSchema = z.object({
   organizationId: z.string().uuid(),
@@ -31,25 +33,14 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const organizationId = searchParams.get('organizationId')
-
-    if (!organizationId) {
-      return NextResponse.json(
-        {
-          success: false,
-          statusCode: 400,
-          error: {
-            code: 'MISSING_ORGANIZATION_ID',
-            message: 'organizationId is required',
-          },
-        },
-        { status: 400 }
-      )
-    }
+    const auth = await requireCrmTenant(request, organizationId)
+    if (!isCrmTenantContext(auth)) return auth
+    const tenantId = auth.tenantId
 
     // Get all deals grouped by stage to build pipeline data
     const deals = await prisma.deal.findMany({
       where: {
-        tenantId: organizationId,
+        tenantId,
         stage: {
           notIn: ['lost', 'won'], // Exclude closed deals from pipeline
         },
@@ -78,7 +69,7 @@ export async function GET(request: NextRequest) {
 
     const pipeline: LeadPipeline = {
       id: 'default-pipeline',
-      organizationId,
+      organizationId: tenantId,
       name: 'Default Sales Pipeline',
       stages: defaultStages.map((stage) => ({
         id: stage.name.toLowerCase(),
@@ -117,12 +108,14 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const validatedData = CreatePipelineSchema.parse(body)
+    const auth = await requireCrmTenant(request, validatedData.organizationId)
+    if (!isCrmTenantContext(auth)) return auth
 
     // For now, we'll store pipeline configuration in a custom way
     // In production, you might want a dedicated Pipeline table
     const pipeline: LeadPipeline = {
       id: `pipeline-${Date.now()}`,
-      organizationId: validatedData.organizationId,
+      organizationId: auth.tenantId,
       name: validatedData.name,
       stages: validatedData.stages.map((stage, index) => ({
         id: `stage-${index}`,
@@ -133,6 +126,15 @@ export async function POST(request: NextRequest) {
       currency: 'INR',
       totalValue: 0, // Will be calculated from deals
     }
+
+    await logCrmAudit({
+      tenantId: auth.tenantId,
+      userId: auth.userId,
+      entityType: 'pipeline',
+      entityId: pipeline.id,
+      action: 'create',
+      changeSummary: `Created pipeline ${pipeline.name}`,
+    })
 
     const response: ApiResponse<LeadPipeline> = {
       success: true,

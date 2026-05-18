@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { searchHSNCodes, getGSTRateByCode } from '@/lib/data/gst-rates'
+import {
+  isFinanceTenantContext,
+  requireFinanceTenant,
+} from '@/lib/api/finance/resolve-finance-tenant'
 
 /**
  * GET /api/gst/search?q=query&type=goods|services
@@ -7,6 +11,9 @@ import { searchHSNCodes, getGSTRateByCode } from '@/lib/data/gst-rates'
  */
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireFinanceTenant(request)
+    if (!isFinanceTenantContext(auth)) return auth
+
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get('q') || ''
     const type = searchParams.get('type') as 'goods' | 'services' | null
@@ -39,6 +46,9 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireFinanceTenant(request)
+    if (!isFinanceTenantContext(auth)) return auth
+
     const body = await request.json()
     const { code } = body
 
