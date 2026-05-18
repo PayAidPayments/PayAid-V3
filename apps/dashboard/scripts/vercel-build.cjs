@@ -16,15 +16,14 @@ setDefault('NEXT_BUILD_DIST_DIR', '.next-vercel-build')
 setDefault('NEXT_BUILD_TIMEOUT_MS', '0')
 setDefault('NEXT_BUILD_KILL_GRACE_MS', '15000')
 setDefault('NEXT_BUILD_HEARTBEAT_MS', '60000')
-// Prefer Turbopack for production builds (typically much faster than webpack on large apps).
-// `scripts/next-build.cjs` falls back to webpack when Turbopack fails (e.g. Bull edge cases).
-// Vercel still has a hard ~45m build cap; staying under it requires a fast primary compiler.
-setDefault('NEXT_BUILD_PREFERRED_MODE', 'turbopack')
+setDefault('NEXT_BUILD_PREFERRED_MODE', 'webpack')
 setDefault('NEXT_BUILD_ALLOW_ALTERNATE_RETRY', '1')
 setDefault('NEXT_BUILD_CLEAR_STALE_LOCK', '1')
 setDefault('NEXT_BUILD_TRIAGE_DISABLE_OUTPUT_FILE_TRACING', '1')
 setDefault('VERCEL_ALLOW_WEBPACK_FALLBACK', '1')
-setDefault('NODE_OPTIONS', '--max-old-space-size=6144')
+// Vercel â€œlargeâ€ workers are 8GB RAM; reserve headroom for webpack/native so the
+// process is not SIGKILLâ€™d during compile (heap alone is not total RSS).
+setDefault('NODE_OPTIONS', '--max-old-space-size=5120')
 
 const result = spawnSync('npm', ['run', 'build'], {
   stdio: 'inherit',

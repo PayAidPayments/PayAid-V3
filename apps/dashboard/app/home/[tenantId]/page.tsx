@@ -12,7 +12,6 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { useParams, useRouter } from 'next/navigation'
 import { PAYAID_MODULES } from '@/lib/config/payaid-modules.config'
 import { getAuthFromStorage } from '../lib/auth-storage'
-import { getTenantRouteKey } from '@/lib/utils/tenant-route-key'
 
 interface HomeSummaryKPIs {
   openDeals: number
@@ -65,6 +64,7 @@ export default function TenantHomePage() {
   const didRedirect = useRef(false)
   const storageAuth = typeof window !== 'undefined' ? getAuthFromStorage() : { token: null, tenant: null }
   const authTenantId = tenant?.id ?? storageAuth.tenant?.id ?? null
+  const authTenantSlug = tenant?.slug ?? storageAuth.tenant?.slug ?? null
 
   // Start with hasCheckedAuth true when storage already has matching auth (e.g. right after login)
   const [hasCheckedAuth, setHasCheckedAuth] = useState(() => {
@@ -93,19 +93,19 @@ export default function TenantHomePage() {
       const currentState = useAuthStore.getState()
       const finalIsAuthenticated = currentState.isAuthenticated || !!tokenFromStorage
       const finalTenant = currentState.tenant ?? tenantFromStorage
-      const finalTenantPublicId = getTenantRouteKey(finalTenant)
+      const finalTenantPublicId = finalTenant?.slug || finalTenant?.id
       const paramMatchesFinalTenant =
         !!finalTenant &&
         (tenantParam === finalTenant.id || (!!finalTenant.slug && tenantParam === finalTenant.slug))
 
-      if (finalIsAuthenticated && finalTenant?.id && finalTenantPublicId && !paramMatchesFinalTenant) {
+      if (finalIsAuthenticated && finalTenant?.id && !paramMatchesFinalTenant) {
         if (!didRedirect.current) {
           didRedirect.current = true
           router.replace(`/home/${finalTenantPublicId}`)
         }
         return
       }
-      if (finalIsAuthenticated && finalTenant?.id && finalTenantPublicId && !tenantParam) {
+      if (finalIsAuthenticated && finalTenant?.id && !tenantParam) {
         if (!didRedirect.current) {
           didRedirect.current = true
           router.replace(`/home/${finalTenantPublicId}`)
@@ -160,14 +160,9 @@ export default function TenantHomePage() {
     return () => clearTimeout(t)
   }, [tenantParam, hasCheckedAuth])
 
-  // Internal id (or param) for API ?tenantId= ; slug-first segment for Link hrefs and pinned modules.
+  // Internal id for API/data calls, public id for route canonicalization.
   const dataTenantId = authTenantId ?? tenantParam
-  const tenantFromAuthOrStorage = tenant ?? storageAuth.tenant ?? null
-  const tenantRouteKey =
-    getTenantRouteKey(tenantFromAuthOrStorage) ??
-    (typeof tenantParam === 'string' && tenantParam.trim() ? tenantParam.trim() : null) ??
-    dataTenantId ??
-    ''
+  const tenantId = dataTenantId
 
   const fetchSummary = useCallback(() => {
     const authToken = useAuthStore.getState().token ?? (typeof window !== 'undefined' ? getAuthFromStorage().token : null)
@@ -263,7 +258,7 @@ export default function TenantHomePage() {
         {/* Hero row: 3 fixed metric cards (show loading, then 0 or values; never blank) */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Link
-            href={`/crm/${tenantRouteKey}/Deals`}
+            href={`/crm/${dataTenantId}/Deals`}
             className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-5 py-4 hover:shadow-md hover:-translate-y-px transition-all duration-150 h-28 flex flex-col justify-center"
           >
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Today&apos;s overview</p>
@@ -283,7 +278,7 @@ export default function TenantHomePage() {
             </p>
           </Link>
           <Link
-            href={`/finance/${tenantRouteKey}/Invoices`}
+            href={`/finance/${dataTenantId}/Invoices`}
             className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-5 py-4 hover:shadow-md hover:-translate-y-px transition-all duration-150 h-28 flex flex-col justify-center"
           >
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">This month</p>
@@ -301,7 +296,7 @@ export default function TenantHomePage() {
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Receivables</p>
           </Link>
           <Link
-            href={`/hr/${tenantRouteKey}/Employees`}
+            href={`/hr/${dataTenantId}/Employees`}
             className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-5 py-4 hover:shadow-md hover:-translate-y-px transition-all duration-150 h-28 flex flex-col justify-center"
           >
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Team activity</p>
@@ -343,11 +338,11 @@ export default function TenantHomePage() {
           <div className="rounded-2xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 px-5 py-4 mb-6">
             <p className="text-sm text-slate-600 dark:text-slate-300">
               No activity yet. Add your first{' '}
-              <Link href={`/crm/${tenantRouteKey}/Deals`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">deal</Link>
+              <Link href={`/crm/${tenantId}/Deals`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">deal</Link>
               ,{' '}
-              <Link href={`/finance/${tenantRouteKey}/Invoices`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">invoice</Link>
+              <Link href={`/finance/${tenantId}/Invoices`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">invoice</Link>
               , or{' '}
-              <Link href={`/hr/${tenantRouteKey}/Employees`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">employee</Link>
+              <Link href={`/hr/${tenantId}/Employees`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">employee</Link>
               {' '}to see your overview here.
             </p>
           </div>
@@ -356,7 +351,7 @@ export default function TenantHomePage() {
         {/* AI Briefing: full-width, directly under hero cards; fallback to rule-based from KPIs when API fails */}
         <section className="mb-8">
           <TodayAISummary
-            tenantId={tenantRouteKey}
+            tenantId={tenantId}
             bullets={
               briefingBullets.length > 0
                 ? briefingBullets
@@ -370,7 +365,7 @@ export default function TenantHomePage() {
 
         {/* Pinned & Recent: full width */}
         <PinnedModules
-          tenantId={tenantRouteKey}
+          tenantId={tenantId}
           moduleSummaries={summary?.moduleSummaries}
           availableModuleIds={PAYAID_MODULES.filter((m) => m.id !== 'home').map((m) => m.id)}
         />
@@ -382,27 +377,27 @@ export default function TenantHomePage() {
               At a glance
             </h2>
             <div className="flex flex-wrap gap-3">
-              <Link href={`/crm/${tenantRouteKey}/Deals`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
+              <Link href={`/crm/${tenantId}/Deals`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Open Deals</span>
                 <span className="ml-2 text-lg font-semibold text-slate-900 dark:text-slate-50">{summary.kpis.openDeals}</span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">· ₹{(summary.kpis.openDealsValue / 1_00_000).toFixed(1)} L</span>
               </Link>
-              <Link href={`/crm/${tenantRouteKey}/Contacts`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
+              <Link href={`/crm/${tenantId}/Contacts`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Contacts</span>
                 <span className="ml-2 text-lg font-semibold text-slate-900 dark:text-slate-50">{summary.kpis.contacts}</span>
               </Link>
-              <Link href={`/finance/${tenantRouteKey}/Invoices`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
+              <Link href={`/finance/${tenantId}/Invoices`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Pending Invoices</span>
                 <span className="ml-2 text-lg font-semibold text-slate-900 dark:text-slate-50">{summary.kpis.pendingInvoices}</span>
                 {summary.kpis.overdueInvoices > 0 && (
                   <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">· {summary.kpis.overdueInvoices} overdue</span>
                 )}
               </Link>
-              <Link href={`/hr/${tenantRouteKey}/Employees`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
+              <Link href={`/hr/${tenantId}/Employees`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Employees</span>
                 <span className="ml-2 text-lg font-semibold text-slate-900 dark:text-slate-50">{summary.kpis.activeEmployees}</span>
               </Link>
-              <Link href={`/approvals/${tenantRouteKey}`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
+              <Link href={`/approvals/${tenantId}`} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-4 py-3 hover:shadow-md hover:-translate-y-px transition-all duration-150">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Approvals</span>
                 <span className="ml-2 text-sm font-semibold text-slate-900 dark:text-slate-50">Expense · Leave · PO</span>
               </Link>
