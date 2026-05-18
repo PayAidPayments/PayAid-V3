@@ -1,0 +1,37 @@
+name: Vercel fix production alias
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_url:
+        description: Ready deployment URL to promote
+        required: true
+        default: https://payaid-v3-5lw7qy5w7-payaid-projects-a67c6b27.vercel.app
+      production_alias:
+        description: Production hostname to assign
+        required: true
+        default: payaid-v3.vercel.app
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assign production alias via Vercel API
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_DEPLOYMENT_URL: ${{ inputs.deployment_url }}
+          VERCEL_PRODUCTION_ALIAS: ${{ inputs.production_alias }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::Add VERCEL_TOKEN (and optional VERCEL_ORG_ID) in repo Secrets, then re-run."
+            exit 1
+          fi
+          node scripts/vercel-promote-production-alias.mjs
+
+      - name: Smoke probe production host
+        env:
+          CANONICAL_STAGING_BASE_URL: https://${{ inputs.production_alias }}
+        run: node scripts/assurance-staging-probe.mjs
