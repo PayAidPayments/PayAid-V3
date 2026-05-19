@@ -39,6 +39,7 @@ jobs:
 
       - name: Promote deployment to Production
         if: inputs.commit_sha != ''
+        continue-on-error: true
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -48,7 +49,8 @@ jobs:
             echo "::error::Add VERCEL_TOKEN in repo Secrets."
             exit 1
           fi
-          node scripts/vercel-promote-production-deployment.mjs
+          node scripts/vercel-promote-production-deployment.mjs || \
+            npx vercel@latest promote "${{ steps.resolve.outputs.deployment_url }}" --yes --token "$VERCEL_TOKEN" --scope payaid-projects-a67c6b27
 
       - name: Assign production alias via Vercel API
         env:
