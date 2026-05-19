@@ -43,12 +43,23 @@ async function assignAlias() {
   })
 
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) {
+  const notModified =
+    res.status === 409 &&
+    body?.error?.code === 'not_modified' &&
+    body?.error?.alias === alias
+
+  if (!res.ok && !notModified) {
     console.error(JSON.stringify({ ok: false, status: res.status, body }, null, 2))
     process.exit(1)
   }
 
-  console.log(JSON.stringify({ ok: true, alias, deploymentId, body }, null, 2))
+  console.log(
+    JSON.stringify(
+      { ok: true, alias, deploymentId, notModified: Boolean(notModified), body },
+      null,
+      2
+    )
+  )
 }
 
 assignAlias().catch((err) => {
