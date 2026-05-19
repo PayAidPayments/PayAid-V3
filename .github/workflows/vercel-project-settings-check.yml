@@ -8,6 +8,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Clear stale Output Directory override (if set)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        run: node scripts/vercel-clear-output-directory-override.mjs
+
       - name: Fetch payaid-v3 project settings
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
