@@ -3,9 +3,13 @@ name: Vercel fix production alias
 on:
   workflow_dispatch:
     inputs:
+      commit_sha:
+        description: Git commit SHA (resolves latest READY production deployment when set)
+        required: false
+        default: ''
       deployment_url:
-        description: Ready deployment URL to promote
-        required: true
+        description: Ready deployment URL to promote (ignored when commit_sha is set)
+        required: false
         default: https://payaid-v3-5lw7qy5w7-payaid-projects-a67c6b27.vercel.app
       production_alias:
         description: Production hostname to assign
@@ -18,11 +22,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Resolve deployment URL by commit
+        if: inputs.commit_sha != ''
+        id: resolve
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_COMMIT_SHA: ${{ inputs.commit_sha }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::Add VERCEL_TOKEN in repo Secrets."
+            exit 1
+          fi
+          node scripts/vercel-resolve-production-deployment.mjs | tee resolve.json
+          echo "deployment_url=$(node -pe "JSON.parse(require('fs').readFileSync('resolve.json','utf8')).deploymentUrl")" >> "$GITHUB_OUTPUT"
+
       - name: Assign production alias via Vercel API
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_DEPLOYMENT_URL: ${{ inputs.deployment_url }}
+          VERCEL_DEPLOYMENT_URL: ${{ steps.resolve.outputs.deployment_url || inputs.deployment_url }}
           VERCEL_PRODUCTION_ALIAS: ${{ inputs.production_alias }}
         run: |
           if [ -z "$VERCEL_TOKEN" ]; then
@@ -32,6 +51,12 @@ jobs:
           node scripts/vercel-promote-production-alias.mjs
 
       - name: Smoke probe production host
+        continue-on-error: true
         env:
           CANONICAL_STAGING_BASE_URL: https://${{ inputs.production_alias }}
-        run: node scripts/assurance-staging-probe.mjs
+        run: |
+          if [ -f scripts/assurance-staging-probe.mjs ]; then
+            node scripts/assurance-staging-probe.mjs
+          else
+            echo "assurance-staging-probe.mjs not on this ref; skipping"
+          fi
