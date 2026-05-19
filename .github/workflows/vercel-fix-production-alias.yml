@@ -66,12 +66,6 @@ jobs:
           node scripts/vercel-promote-production-alias.mjs
 
       - name: Smoke probe production host
-        continue-on-error: true
         env:
           CANONICAL_STAGING_BASE_URL: https://${{ inputs.production_alias }}
-        run: |
-          if [ -f scripts/assurance-staging-probe.mjs ]; then
-            node scripts/assurance-staging-probe.mjs
-          else
-            echo "assurance-staging-probe.mjs not on this ref; skipping"
-          fi
+        run: node scripts/assurance-staging-probe.mjs
