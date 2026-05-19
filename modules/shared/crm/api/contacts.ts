@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { withErrorHandling, successResponse } from '@/lib/api/route-wrapper'
 import { ApiResponse, Contact } from '@/types/base-modules'
+import { isCrmTenantContext, requireCrmTenant } from '@/lib/api/crm/resolve-crm-tenant'
+import { logCrmAudit } from '@/lib/audit-log-crm'
 import {
   CreateContactRequest,
   CreateContactSchema,
@@ -36,10 +38,12 @@ const UpdateContactSchema = z.object({
 export const POST = withErrorHandling(async (request: NextRequest) => {
   const body = await request.json()
   const validatedData = CreateContactSchema.parse(body)
+  const auth = await requireCrmTenant(request, validatedData.organizationId)
+  if (!isCrmTenantContext(auth)) return auth
 
   const contact = await prisma.contact.create({
     data: {
-      organizationId: validatedData.organizationId,
+      tenantId: auth.tenantId,
       industryModule: validatedData.industryModule,
       firstName: validatedData.firstName,
       lastName: validatedData.lastName,
@@ -54,6 +58,15 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       transactionHistory: [],
       attachments: [],
     },
+  })
+
+  await logCrmAudit({
+    tenantId: auth.tenantId,
+    userId: auth.userId,
+    entityType: 'contact',
+    entityId: contact.id,
+    action: 'create',
+    changeSummary: `Created contact ${contact.id}`,
   })
 
   const response: ApiResponse<Contact> = {
@@ -75,23 +88,11 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 export const GET = withErrorHandling(async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams
   const organizationId = searchParams.get('organizationId')
-  
-  if (!organizationId) {
-    return NextResponse.json(
-      {
-        success: false,
-        statusCode: 400,
-        error: {
-          code: 'MISSING_ORGANIZATION_ID',
-          message: 'organizationId is required',
-        },
-      },
-      { status: 400 }
-    )
-  }
+  const auth = await requireCrmTenant(request, organizationId)
+  if (!isCrmTenantContext(auth)) return auth
 
   const filters: ContactListFilters = {
-    organizationId,
+    organizationId: auth.tenantId,
     contactType: searchParams.get('contactType') as ContactListFilters['contactType'] || undefined,
     status: searchParams.get('status') as ContactListFilters['status'] || undefined,
     tags: searchParams.get('tags') ? searchParams.get('tags')!.split(',') : undefined,
@@ -101,7 +102,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
 
   const where: Record<string, unknown> = {
-    organizationId: filters.organizationId,
+    tenantId: auth.tenantId,
   }
 
   if (filters.contactType) {
