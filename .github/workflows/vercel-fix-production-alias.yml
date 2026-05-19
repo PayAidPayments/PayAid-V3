@@ -37,6 +37,19 @@ jobs:
           node scripts/vercel-resolve-production-deployment.mjs | tee resolve.json
           echo "deployment_url=$(node -pe "JSON.parse(require('fs').readFileSync('resolve.json','utf8')).deploymentUrl")" >> "$GITHUB_OUTPUT"
 
+      - name: Promote deployment to Production
+        if: inputs.commit_sha != ''
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_COMMIT_SHA: ${{ inputs.commit_sha }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::Add VERCEL_TOKEN in repo Secrets."
+            exit 1
+          fi
+          node scripts/vercel-promote-production-deployment.mjs
+
       - name: Assign production alias via Vercel API
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
