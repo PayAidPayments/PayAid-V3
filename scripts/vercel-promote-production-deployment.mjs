@@ -53,20 +53,54 @@ async function resolveDeploymentUid() {
 }
 
 async function promote(uid) {
-  const url = new URL(`https://api.vercel.com/v1/deployments/${encodeURIComponent(uid)}/promote`)
-  url.searchParams.set('teamId', teamId)
-  url.searchParams.set('projectId', projectId)
+  const attempts = [
+    {
+      name: 'v13-deployments-promote',
+      url: new URL(`https://api.vercel.com/v13/deployments/${encodeURIComponent(uid)}/promote`),
+      init: { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+    },
+    {
+      name: 'v10-projects-promote',
+      url: new URL(`https://api.vercel.com/v10/projects/${encodeURIComponent(projectId)}/promote`),
+      init: {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ deploymentId: uid }),
+      },
+    },
+  ]
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  const body = await res.json().catch(() => ({}))
-  if (!res.ok) {
-    console.error(JSON.stringify({ ok: false, status: res.status, uid, body }, null, 2))
-    process.exit(1)
+  for (const attempt of attempts) {
+    attempt.url.searchParams.set('teamId', teamId)
+    const res = await fetch(attempt.url, attempt.init)
+    const body = await res.json().catch(() => ({}))
+    if (res.ok) {
+      console.log(JSON.stringify({ ok: true, uid, via: attempt.name, body }, null, 2))
+      return
+    }
+    if (res.status !== 404) {
+      console.error(
+        JSON.stringify({ ok: false, status: res.status, uid, via: attempt.name, body }, null, 2)
+      )
+      process.exit(1)
+    }
   }
-  console.log(JSON.stringify({ ok: true, uid, body }, null, 2))
+
+  console.error(
+    JSON.stringify(
+      {
+        ok: false,
+        error: 'No promote API endpoint available; use Vercel UI Promote to Production',
+        uid,
+      },
+      null,
+      2
+    )
+  )
+  process.exit(1)
 }
 
 const uid = await resolveDeploymentUid()
