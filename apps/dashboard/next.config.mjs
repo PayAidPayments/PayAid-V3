@@ -59,8 +59,8 @@ const nextConfig = {
     // This avoids worker SIGKILL/OOM in large monorepo compiles.
     ...(isVercel
       ? {
-          // Keep memory optimizations enabled, but allow Next to choose worker count
-          // from available memory so page-data collection is not forced to a single worker.
+          // Cap SSG concurrency on 8 GB Vercel builders (1155+ routes OOM with 4 workers).
+          staticGenerationMaxConcurrency: 1,
           memoryBasedWorkersCount: true,
           webpackMemoryOptimizations: true,
           webpackBuildWorker: false,
