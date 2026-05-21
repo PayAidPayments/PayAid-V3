@@ -14,6 +14,7 @@ import { getModuleConfig } from '@/lib/modules/module-config'
 import { FileText, IndianRupee, Plus, ArrowRightLeft } from 'lucide-react'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Badge } from '@/components/ui/badge'
+import { buildQueryStringWithUpdates } from '@/lib/url/query-state'
 
 export default function FinanceDebitNotesPage() {
   const params = useParams()
@@ -26,14 +27,14 @@ export default function FinanceDebitNotesPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['debit-notes', tenantId, page, statusFilter],
     queryFn: async () => {
-      const params = new URLSearchParams({
+      const qs = buildQueryStringWithUpdates('', {
         tenantId,
         page: String(page),
         limit: String(limit),
+        status: statusFilter || null,
       })
-      if (statusFilter) params.append('status', statusFilter)
 
-      const response = await fetch(`/api/finance/debit-notes?${params.toString()}`, {
+      const response = await fetch(`/api/finance/debit-notes?${qs}`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` }),

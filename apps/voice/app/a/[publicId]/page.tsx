@@ -6,26 +6,25 @@ export const revalidate = 60
 export default async function PublicVoiceAgentPage({
   params,
 }: {
-  params: Promise<{ publicId: string }> | { publicId: string }
+  params: Promise<{ publicId: string }>
 }) {
-  const resolvedParams = params instanceof Promise ? await params : params
-  const publicId = decodeURIComponent(resolvedParams.publicId || '').trim()
+  const { publicId: rawPublicId } = await params
+  const publicId = decodeURIComponent(rawPublicId || '').trim()
   if (!publicId) notFound()
 
   const agent = await prisma.voiceAgent.findFirst({
     where: {
-      publicId,
+      id: publicId,
       status: 'active',
     },
     select: {
-      publicId: true,
+      id: true,
       name: true,
       description: true,
-      theme: true,
     },
   })
 
-  if (!agent?.publicId) notFound()
+  if (!agent?.id) notFound()
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -41,7 +40,7 @@ export default async function PublicVoiceAgentPage({
             <div id="payaid-voice-root" />
             <script
               src="/embed.js"
-              data-agent={agent.publicId}
+              data-agent={agent.id}
               data-render="inline"
               data-source="share_link"
               suppressHydrationWarning
@@ -56,4 +55,3 @@ export default async function PublicVoiceAgentPage({
     </main>
   )
 }
-

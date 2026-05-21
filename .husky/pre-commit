@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+# Husky 9+: do not source _/husky.sh (removed in Husky 10).
 
 # PayAid V3 Pre-commit Hook
 # Validates code before commit to ensure brand compliance

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Logo } from '@/components/brand/Logo'
+import { getTenantRouteKey } from '@/lib/utils/tenant-route-key'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -62,10 +63,12 @@ export default function LoginPage() {
     try {
       const loginResult = await login(email, password)
       const tenant = loginResult.tenant
-      const tenantPublicId = tenant?.slug || tenant?.id
+      const tenantRouteKey = getTenantRouteKey(tenant)
       if (tenant?.id) {
-        const crmHomeHref = `/crm/${tenant.id}/Home/`
-        router.prefetch(crmHomeHref)
+        if (tenantRouteKey) {
+          const crmHomeHref = `/crm/${tenantRouteKey}/Home/`
+          router.prefetch(crmHomeHref)
+        }
         // Warm CRM dashboard stats request for immediate post-login load.
         fetch(
           `/api/crm/dashboard/stats?period=month&lite=1&tenantId=${encodeURIComponent(tenant.id)}`,
@@ -74,37 +77,32 @@ export default function LoginPage() {
           // Best-effort warmup only.
         })
       }
-      if (!tenant?.id) {
+      if (!tenantRouteKey) {
         router.push('/home')
         return
       }
       if (redirectUrl) {
         let finalUrl = redirectUrl
         if (redirectUrl === '/crm' || redirectUrl.startsWith('/crm')) {
-          finalUrl = tenant?.id ? `/crm/${tenant.id}/Home/` : '/home'
+          finalUrl = `/crm/${tenantRouteKey}/Home/`
         } else if (redirectUrl === '/sales' || redirectUrl.startsWith('/sales')) {
-          finalUrl = tenant?.id ? `/sales/${tenant.id}/Home/` : '/home'
+          finalUrl = `/sales/${tenantRouteKey}/Home/`
         } else if (redirectUrl === '/finance' || redirectUrl.startsWith('/finance')) {
-          finalUrl = tenant?.id ? `/finance/${tenant.id}/Home/` : '/home'
+          finalUrl = `/finance/${tenantRouteKey}/Home/`
         } else if (redirectUrl === '/projects' || redirectUrl.startsWith('/projects')) {
-          finalUrl = tenant?.id ? `/projects/${tenant.id}/Home/` : '/home'
+          finalUrl = `/projects/${tenantRouteKey}/Home/`
         } else if (redirectUrl === '/inventory' || redirectUrl.startsWith('/inventory')) {
-          finalUrl = tenant?.id ? `/inventory/${tenant.id}/Home/` : '/home'
+          finalUrl = `/inventory/${tenantRouteKey}/Home/`
         } else if (redirectUrl === '/marketing' || redirectUrl.startsWith('/marketing')) {
-          finalUrl = tenant?.id ? `/marketing/${tenant.id}/Home/` : '/home'
+          finalUrl = `/marketing/${tenantRouteKey}/Home/`
         } else if (redirectUrl === '/hr' || redirectUrl.startsWith('/hr')) {
-          finalUrl = tenant?.id ? `/hr/${tenant.id}/Home/` : '/home'
+          finalUrl = `/hr/${tenantRouteKey}/Home/`
         } else if (redirectUrl === '/dashboard' || redirectUrl.startsWith('/dashboard')) {
-          finalUrl = tenantPublicId ? `/home/${tenantPublicId}` : '/home'
+          finalUrl = `/home/${tenantRouteKey}`
         }
         router.push(finalUrl)
       } else {
-        if (tenantPublicId && typeof tenantPublicId === 'string' && tenantPublicId.trim().length > 0) {
-          const homeHref = `/home/${tenantPublicId}`
-          router.push(homeHref)
-        } else {
-          router.push('/home')
-        }
+        router.push(`/home/${tenantRouteKey}`)
       }
     } catch (err) {
       const isTimeout =

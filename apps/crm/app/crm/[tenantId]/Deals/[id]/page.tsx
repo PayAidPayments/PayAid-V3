@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { PageLoading } from '@/components/ui/loading'
-import { FileText, Bot, Trophy, XCircle } from 'lucide-react'
+import { FileText, Bot, Trophy, XCircle, FolderKanban } from 'lucide-react'
+import { projectsNewHandoffUrl } from '@/lib/product-canonical-links'
 import { CloseDealModal } from '@/components/crm/deal/CloseDealModal'
 import { DealTimeline } from '@/components/crm/deal/DealTimeline'
 import { useToast } from '@/components/ui/use-toast'
@@ -84,6 +85,15 @@ export default function DealDetailPage() {
             <FileText className="h-4 w-4 mr-2" />
             Create Quote
           </Button>
+          <a href={projectsNewHandoffUrl(tenantId, { dealId: id, contactId: deal.contact?.id })}>
+            <Button
+              type="button"
+              className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600"
+            >
+              <FolderKanban className="h-4 w-4 mr-2" />
+              Create Project
+            </Button>
+          </a>
           {deal.contact && (
             <Link href={`/finance/${tenantId}/Invoices/new?customerId=${deal.contact.id}`}>
               <Button

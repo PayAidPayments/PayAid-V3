@@ -2,13 +2,14 @@ import { PAYAID_MODULES } from '@/lib/config/payaid-modules.config'
 import { getModuleHomeHref } from '@/lib/modules/module-entry'
 
 /**
- * Turn `?redirect=/crm` or `?module=crm` (via basePath) into a concrete post-login URL with tenant id.
+ * Turn `?redirect=/crm` or `?module=crm` (via basePath) into a concrete post-login URL.
+ * Pass the tenant URL segment from {@link getTenantRouteKey} (slug preferred; else id).
  */
 export function resolveRedirectAfterLogin(
   raw: string | null | undefined,
-  tenantId: string | null | undefined
+  tenantRouteKey: string | null | undefined
 ): string {
-  const tid = tenantId?.trim()
+  const tid = tenantRouteKey?.trim()
   if (!tid) return '/home'
 
   const s = (raw ?? '').trim()

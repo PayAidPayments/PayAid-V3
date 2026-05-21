@@ -6,7 +6,11 @@ const isVercel =
   process.env.VERCEL === '1' &&
   ['production', 'preview', 'development'].includes(String(process.env.VERCEL_ENV || ''))
 const nextBin = require.resolve('next/dist/bin/next')
-const buildTimeoutMs = Number(process.env.NEXT_BUILD_TIMEOUT_MS || 15 * 60 * 1000)
+const rawTimeout = process.env.NEXT_BUILD_TIMEOUT_MS
+const buildTimeoutMs =
+  rawTimeout === '' || rawTimeout === undefined
+    ? 45 * 60 * 1000
+    : Number(rawTimeout)
 
 if (isVercel) {
   // Keep Vercel builds conservative on memory-constrained workers.
@@ -30,6 +34,10 @@ function runBuild(mode) {
             child.kill('SIGTERM')
           }, buildTimeoutMs)
         : null
+
+    if (rawTimeout === '0' || buildTimeoutMs === 0) {
+      console.log('[next-build] NEXT_BUILD_TIMEOUT_MS=0 — timeout disabled')
+    }
 
     child.on('exit', (code, signal) => {
       if (timeout) clearTimeout(timeout)

@@ -40,7 +40,7 @@ async function userHasAccessToTenant(userId: string, tenantId: string): Promise<
 // GET /api/v1/voice-agents/[id] - Get agent
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticateRequest(request)
@@ -49,7 +49,7 @@ export async function GET(
     }
 
     // Handle Next.js 15 async params
-    const resolvedParams = params instanceof Promise ? await params : params
+    const resolvedParams = await params
     const queryTenantId = request.nextUrl.searchParams.get('tenantId')
 
     // Demo links: when tenantId is in the URL, allow any authenticated user to load that agent (shared demo)
@@ -89,6 +89,9 @@ export async function GET(
     if (!effectiveTenantId) {
       effectiveTenantId = user.tenantId ?? (user as any).tenant_id ?? null
     }
+    if (!effectiveTenantId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const agent = await prisma.voiceAgent.findFirst({
       where: {
@@ -121,7 +124,7 @@ export async function GET(
 // PUT /api/v1/voice-agents/[id] - Update agent
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticateRequest(request)
@@ -130,7 +133,7 @@ export async function PUT(
     }
 
     // Handle Next.js 15 async params
-    const resolvedParams = params instanceof Promise ? await params : params
+    const resolvedParams = await params
 
     const body = await request.json()
     const validated = updateAgentSchema.parse(body)
@@ -176,7 +179,7 @@ export async function PUT(
 // DELETE /api/v1/voice-agents/[id] - Delete agent (soft delete)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticateRequest(request)
@@ -185,7 +188,7 @@ export async function DELETE(
     }
 
     // Handle Next.js 15 async params
-    const resolvedParams = params instanceof Promise ? await params : params
+    const resolvedParams = await params
 
     // Check agent exists and belongs to tenant
     const existing = await prisma.voiceAgent.findFirst({

@@ -12,6 +12,7 @@ import { PageLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
 import { getDynamicTitle, getDynamicDescription } from '@/lib/utils/status-labels'
 import { formatINRStandard } from '@/lib/utils/formatINR'
+import { buildQueryStringWithUpdates } from '@/lib/url/query-state'
 
 function getAuthHeaders() {
   const { token } = useAuthStore.getState()
@@ -31,13 +32,14 @@ export default function FinanceExpensesPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['expenses', page, categoryFilter, statusFilter],
     queryFn: async () => {
-      const queryString = new URLSearchParams()
-      queryString.set('page', page.toString())
-      queryString.set('limit', '20')
-      if (categoryFilter) queryString.set('category', categoryFilter)
-      if (statusFilter) queryString.set('status', statusFilter)
-      
-      const response = await fetch(`/api/accounting/expenses?${queryString}`, {
+      const qs = buildQueryStringWithUpdates('', {
+        page: String(page),
+        limit: '20',
+        category: categoryFilter || null,
+        status: statusFilter || null,
+      })
+
+      const response = await fetch(`/api/accounting/expenses?${qs}`, {
         headers: getAuthHeaders(),
       })
       if (!response.ok) throw new Error('Failed to fetch expenses')
