@@ -17,9 +17,10 @@ const processCallSchema = z.object({
 // POST /api/v1/voice-agents/[id]/calls/[callId]/process - Process audio chunk
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string; callId: string } }
+  { params }: { params: Promise<{ id: string; callId: string }> },
 ) {
   try {
+    const { id, callId } = await params
     const user = await authenticateRequest(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -28,8 +29,8 @@ export async function POST(
     // Verify call exists and belongs to tenant
     const call = await prisma.voiceAgentCall.findFirst({
       where: {
-        id: params.callId,
-        agentId: params.id,
+        id: callId,
+        agentId: id,
         tenantId: user.tenantId,
       },
       include: {
@@ -49,14 +50,14 @@ export async function POST(
     const audioBuffer = Buffer.from(validated.audioData, 'base64')
     
     const result = await orchestrator.processVoiceCall(
-      params.id,
+      id,
       audioBuffer,
       validated.language || call.languageUsed || call.agent.language
     )
 
     // Update call
     await prisma.voiceAgentCall.update({
-      where: { id: params.callId },
+      where: { id: callId },
       data: {
         status: call.status === 'queued' ? 'answered' : call.status,
         startTime: call.startTime || new Date(),
@@ -69,7 +70,7 @@ export async function POST(
     // Note: metadata property check - using type assertion since metadata relation may not be included
     if ((call as any).metadata) {
       await prisma.voiceAgentCallMetadata.update({
-        where: { callId: params.callId },
+        where: { callId },
         data: {
           llmProvider: 'ollama',
         },
@@ -77,7 +78,7 @@ export async function POST(
     } else {
       await prisma.voiceAgentCallMetadata.create({
         data: {
-          callId: params.callId,
+          callId,
           llmProvider: 'ollama',
         },
       })

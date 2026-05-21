@@ -21,9 +21,10 @@ const updateSquadSchema = z.object({
 // GET /api/v1/voice-agents/squads/[id] - Get squad
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await authenticateRequest(request)
     if (!user || !user.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -31,7 +32,7 @@ export async function GET(
 
     const squad = await prisma.voiceAgentSquad.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId: user.tenantId,
       },
       include: {
@@ -63,9 +64,10 @@ export async function GET(
 // PUT /api/v1/voice-agents/squads/[id] - Update squad
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await authenticateRequest(request)
     if (!user || !user.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -76,7 +78,7 @@ export async function PUT(
 
     const squad = await prisma.voiceAgentSquad.updateMany({
       where: {
-        id: params.id,
+        id: id,
         tenantId: user.tenantId,
       },
       data: {
@@ -93,7 +95,7 @@ export async function PUT(
     }
 
     const updated = await prisma.voiceAgentSquad.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         members: {
           include: {
@@ -123,9 +125,10 @@ export async function PUT(
 // DELETE /api/v1/voice-agents/squads/[id] - Delete squad
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await authenticateRequest(request)
     if (!user || !user.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -133,7 +136,7 @@ export async function DELETE(
 
     const squad = await prisma.voiceAgentSquad.deleteMany({
       where: {
-        id: params.id,
+        id: id,
         tenantId: user.tenantId,
       },
     })

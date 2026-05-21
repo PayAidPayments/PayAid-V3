@@ -19,9 +19,10 @@ const routeCallSchema = z.object({
 // POST /api/v1/voice-agents/squads/[id]/route - Route a call
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await authenticateRequest(request)
     if (!user || !user.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -31,7 +32,7 @@ export async function POST(
     const context = routeCallSchema.parse(body)
 
     const router = getSquadRouter()
-    const agentId = await router.routeCall(params.id, {
+    const agentId = await router.routeCall(id, {
       phone: context.phone,
       customerId: context.customerId,
       customerName: context.customerName,

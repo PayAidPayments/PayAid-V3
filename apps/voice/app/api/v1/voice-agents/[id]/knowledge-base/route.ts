@@ -20,9 +20,10 @@ const uploadDocumentsSchema = z.object({
 // POST /api/v1/voice-agents/[id]/knowledge-base - Upload documents
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await authenticateRequest(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -31,7 +32,7 @@ export async function POST(
     // Verify agent exists
     const agent = await prisma.voiceAgent.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId: user.tenantId,
       },
     })
@@ -44,11 +45,11 @@ export async function POST(
     const validated = uploadDocumentsSchema.parse(body)
 
     // Add to knowledge base
-    const result = await addToKnowledgeBase(params.id, validated.documents)
+    const result = await addToKnowledgeBase(id, validated.documents)
 
     // Update agent knowledge base flag
     await prisma.voiceAgent.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         knowledgeBase: {
           enabled: true,
@@ -82,9 +83,10 @@ export async function POST(
 // GET /api/v1/voice-agents/[id]/knowledge-base - Search knowledge base
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await authenticateRequest(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -93,7 +95,7 @@ export async function GET(
     // Verify agent exists
     const agent = await prisma.voiceAgent.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId: user.tenantId,
       },
     })
@@ -114,7 +116,7 @@ export async function GET(
     }
 
     // Search knowledge base
-    const results = await searchKnowledgeBase(params.id, query, topK)
+    const results = await searchKnowledgeBase(id, query, topK)
 
     return NextResponse.json({
       query,

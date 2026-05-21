@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     if (callStatus === 'completed') {
       const twiml = new VoiceResponse()
-      twiml.say({ voice: 'alice', language: toTwilioGatherLanguage(activeLanguage) }, 'Thank you for calling. Goodbye.')
+      twiml.say({ voice: 'alice', language: toTwilioGatherLanguage(activeLanguage) as any }, 'Thank you for calling. Goodbye.')
       twiml.hangup()
       return new NextResponse(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } })
     }
@@ -142,8 +142,8 @@ export async function POST(request: NextRequest) {
         input: ['speech'],
         action: speechHandlerUrl,
         method: 'POST',
-        language: toTwilioGatherLanguage(requestedSwitch),
-        speechTimeout: 2,
+        language: toTwilioGatherLanguage(requestedSwitch) as any,
+        speechTimeout: '2',
         timeout: 5,
       })
       twiml.redirect(speechHandlerUrl)
@@ -187,8 +187,8 @@ export async function POST(request: NextRequest) {
       input: ['speech'],
       action: speechHandlerUrl,
       method: 'POST',
-      language: toTwilioGatherLanguage(activeLanguage),
-      speechTimeout: 2,
+      language: toTwilioGatherLanguage(activeLanguage) as any,
+      speechTimeout: '2',
       timeout: 5,
     })
     twiml.redirect(speechHandlerUrl)

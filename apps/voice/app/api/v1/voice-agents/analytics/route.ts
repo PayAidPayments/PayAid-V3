@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
 import { requireModuleAccess } from '@/lib/middleware/auth'
+import { VOICE_CALL_RUNTIME } from '@/lib/voice-agent/runtime/inbound-observability'
+import { computeFirstAudioPercentiles } from '@/lib/voice-agent/runtime/bolna-events'
 
 function startOfDay(d: Date): Date {
   const x = new Date(d)
@@ -62,10 +64,33 @@ export async function GET(request: NextRequest) {
             overview: { totalCalls: 0, completedCalls: 0, answeredCalls: 0, answeredRate: 0, conversionRate: 0, averageDuration: 0, totalCost: 0, revenueGenerated: 0 },
             sentiment: { averageScore: 0, analyzedCalls: 0, positivePercent: 0 },
             callsByStatus: [], callsByLanguage: [], hourlyVolume: [], conversionFunnel: [], agentPerformance: [], conversionByAgent: [], topPerformers: [],
+            runtime: {
+              bolnaInboundAttempts: 0,
+              bolnaConnected: 0,
+              bolnaFallbackCount: 0,
+              bolnaFallbackRate: 0,
+              bolnaStreamFailedCount: 0,
+              bolnaSilentFailureCount: 0,
+              nativeInboundCount: 0,
+              avgFirstAudioMs: null,
+              firstAudioSampleCount: 0,
+              callsByRuntime: [],
+            },
           },
         })
       }
       where.id = { in: ids }
+    }
+
+    const bolnaRuntimeWhere = {
+      ...where,
+      runtime: {
+        in: [
+          VOICE_CALL_RUNTIME.BOLNA,
+          VOICE_CALL_RUNTIME.BOLNA_FALLBACK_GATHER,
+          VOICE_CALL_RUNTIME.BOLNA_STREAM_FAILED,
+        ],
+      },
     }
 
     const [
@@ -79,8 +104,16 @@ export async function GET(request: NextRequest) {
       sentimentStats,
       positiveSentimentCount,
       callsWithMetadata,
-      hourlyCalls,
       callsByAgent,
+      bolnaInboundAttempts,
+      bolnaConnected,
+      bolnaFallbackCount,
+      bolnaStreamFailedCount,
+      nativeInboundCount,
+      callsByRuntime,
+      firstAudioAgg,
+      bargeInAgg,
+      firstAudioSamples,
     ] = await Promise.all([
       prisma.voiceAgentCall.count({ where }),
       prisma.voiceAgentCall.count({
@@ -137,6 +170,43 @@ export async function GET(request: NextRequest) {
         where,
         _count: true,
         _avg: { durationSeconds: true },
+      }),
+      prisma.voiceAgentCall.count({ where: bolnaRuntimeWhere }),
+      prisma.voiceAgentCall.count({
+        where: {
+          ...where,
+          runtime: VOICE_CALL_RUNTIME.BOLNA,
+          status: { in: ['in-progress', 'completed'] },
+        },
+      }),
+      prisma.voiceAgentCall.count({
+        where: { ...where, runtime: VOICE_CALL_RUNTIME.BOLNA_FALLBACK_GATHER },
+      }),
+      prisma.voiceAgentCall.count({
+        where: { ...where, runtime: VOICE_CALL_RUNTIME.BOLNA_STREAM_FAILED },
+      }),
+      prisma.voiceAgentCall.count({
+        where: { ...where, runtime: VOICE_CALL_RUNTIME.NATIVE },
+      }),
+      prisma.voiceAgentCall.groupBy({
+        by: ['runtime'],
+        where: { ...where, runtime: { not: null } },
+        _count: true,
+      }),
+      prisma.voiceAgentCall.aggregate({
+        where: { ...where, firstAudioMs: { not: null } },
+        _avg: { firstAudioMs: true },
+        _count: { firstAudioMs: true },
+      }),
+      prisma.voiceAgentCall.aggregate({
+        where,
+        _sum: { bargeInCount: true, interruptedTokens: true },
+      }),
+      prisma.voiceAgentCall.findMany({
+        where: { ...where, firstAudioMs: { not: null } },
+        select: { firstAudioMs: true, runtime: true },
+        take: 5000,
+        orderBy: { createdAt: 'desc' },
       }),
     ])
 
@@ -196,6 +266,15 @@ export async function GET(request: NextRequest) {
 
     const revenueGenerated = 0
 
+    const bolnaFallbackRate =
+      bolnaInboundAttempts > 0 ? (bolnaFallbackCount / bolnaInboundAttempts) * 100 : 0
+
+    const firstAudioKpis = computeFirstAudioPercentiles(
+      firstAudioSamples
+        .filter((row): row is { firstAudioMs: number; runtime: string | null } => row.firstAudioMs != null)
+        .map((row) => ({ firstAudioMs: row.firstAudioMs as number, runtime: row.runtime })),
+    )
+
     const topPerformers = agentPerformance.map((a) => ({
       agentId: a.agentId,
       agentName: a.agentName,
@@ -243,6 +322,30 @@ export async function GET(request: NextRequest) {
         agentPerformance,
         conversionByAgent,
         topPerformers,
+        runtime: {
+          bolnaInboundAttempts,
+          bolnaConnected,
+          bolnaFallbackCount,
+          bolnaFallbackRate,
+          bolnaStreamFailedCount,
+          bolnaSilentFailureCount: bolnaStreamFailedCount,
+          nativeInboundCount,
+          avgFirstAudioMs: firstAudioAgg._avg.firstAudioMs ?? null,
+          firstAudioSampleCount: firstAudioAgg._count.firstAudioMs ?? 0,
+          callsByRuntime: callsByRuntime.map((row) => ({
+            runtime: row.runtime ?? 'unknown',
+            count: row._count,
+          })),
+        },
+        realtime: {
+          runtimeBreakdown: callsByRuntime.map((row) => ({
+            runtime: row.runtime ?? 'unknown',
+            count: row._count,
+          })),
+          bargeInCount: bargeInAgg._sum.bargeInCount ?? 0,
+          interruptedTokens: bargeInAgg._sum.interruptedTokens ?? 0,
+          firstAudioMs: firstAudioKpis,
+        },
       },
     })
   } catch (error) {

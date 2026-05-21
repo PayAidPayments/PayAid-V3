@@ -21,9 +21,10 @@ const createCallSchema = z.object({
 // POST /api/v1/voice-agents/[id]/calls - Initiate call
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await authenticateRequest(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -32,7 +33,7 @@ export async function POST(
     // Verify agent exists and belongs to tenant
     const agent = await prisma.voiceAgent.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId: user.tenantId,
         status: 'active',
       },
@@ -52,7 +53,7 @@ export async function POST(
     // Create call record
     const call = await prisma.voiceAgentCall.create({
       data: {
-        agentId: params.id,
+        agentId: id,
         tenantId: user.tenantId,
         phone: validated.phone,
         customerName: validated.customerName,
@@ -70,7 +71,7 @@ export async function POST(
         const audioBuffer = Buffer.from(validated.audioData, 'base64')
         
         const result = await orchestrator.processVoiceCall(
-          params.id,
+          id,
           audioBuffer,
           validated.language || agent.language
         )
@@ -138,9 +139,10 @@ export async function POST(
 // GET /api/v1/voice-agents/[id]/calls - List calls
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await authenticateRequest(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -152,7 +154,7 @@ export async function GET(
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
 
     const where: any = {
-      agentId: params.id,
+      agentId: id,
       tenantId: user.tenantId,
     }
 
