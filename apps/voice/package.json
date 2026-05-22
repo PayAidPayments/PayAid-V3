@@ -3,14 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo -p 3003",
+    "dev": "node scripts/dev-server.cjs",
+    "dev:full": "node ../../node_modules/cross-env/dist/bin/cross-env.js PAYAID_DEV_FULL=1 node scripts/dev-server.cjs",
+    "dev:turbo": "node ../../node_modules/cross-env/dist/bin/cross-env.js PAYAID_DEV_TURBOPACK=1 node scripts/dev-server.cjs",
+    "prebuild": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true})}catch(e){}\"",
     "build": "next build --webpack",
     "start": "next start -p 3003",
-    "lint": "next lint"
+    "lint": "node ../../node_modules/cross-env/dist/bin/cross-env.js ESLINT_USE_FLAT_CONFIG=true eslint ."
   },
   "dependencies": {
+    "@vercel/analytics": "^1.6.1",
+    "@vercel/speed-insights": "^1.3.1",
     "@payaid/ai": "file:../../packages/ai",
     "@payaid/db": "file:../../packages/db",
+    "@payaid/domain-voice": "file:../../packages/domains/voice",
     "next": "^16.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
