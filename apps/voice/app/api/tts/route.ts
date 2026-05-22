@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 async function handleTTS(text: string, lang: string) {
   const result = await generateTTS(text, lang)
   if (result.audio) {
-    return new NextResponse(result.audio, {
+    return new NextResponse(new Uint8Array(result.audio), {
       headers: {
         'Content-Type': 'audio/wav',
         'Cache-Control': 'private, max-age=3600',

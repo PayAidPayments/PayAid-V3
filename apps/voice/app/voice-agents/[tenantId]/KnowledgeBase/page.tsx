@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation'
 
-export default function VoiceAgentsKnowledgeBaseAlias({
+export default async function VoiceAgentsKnowledgeBaseAlias({
   params,
 }: {
-  params: { tenantId: string }
+  params: Promise<{ tenantId: string }>
 }) {
-  redirect(`/voice-agents/${params.tenantId}/studio`)
+  const { tenantId } = await params
+  redirect(`/voice-agents/${tenantId}/studio`)
 }
