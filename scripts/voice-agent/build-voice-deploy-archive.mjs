@@ -24,7 +24,6 @@ export const VOICE_DEPLOY_ARCHIVE_PATHS = [
   'tsconfig.json',
   'tailwind.config.ts',
   'postcss.config.js',
-  'postcss.config.mjs',
 ]
 
 const workDir =
