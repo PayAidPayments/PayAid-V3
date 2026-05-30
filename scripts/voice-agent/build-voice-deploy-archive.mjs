@@ -18,6 +18,8 @@ export const VOICE_DEPLOY_ARCHIVE_PATHS = [
   'prisma',
   'contexts',
   'apps/voice',
+  'apps/dashboard/app/api/auth/login',
+  'apps/dashboard/app/api/auth/me',
   'packages',
   'lib',
   'components',
