@@ -16,6 +16,7 @@ const config: Config = {
     '../../contexts/**/*.{js,ts,jsx,tsx,mdx}',
     // Voice import graph under @/lib (avoid scanning all 600+ lib/*.ts files)
     '../../lib/voice-agent/**/*.{js,ts,jsx,tsx,mdx}',
+    '../../lib/voice-agent/browser-live/**/*.{js,ts,jsx,tsx,mdx}',
     '../../lib/middleware/**/*.{js,ts,jsx,tsx,mdx}',
     '../../lib/stores/**/*.{js,ts,jsx,tsx,mdx}',
     '../../lib/hooks/**/*.{js,ts,jsx,tsx,mdx}',

@@ -2,12 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Phone, Plus, History, BarChart3, Settings, FileText, ShieldCheck, LayoutDashboard, Megaphone, MessageSquare, Headphones } from 'lucide-react'
+import { Phone, Plus, History, BarChart3, Settings, FileText, ShieldCheck, LayoutDashboard, Megaphone, MessageSquare, Radio } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
 interface VoiceAgentsSidebarProps {
   tenantId: string
 }
+
+const LIVE_DEMO_ENABLED = process.env.NEXT_PUBLIC_VOICE_BROWSER_LIVE_DEMO === '1'
 
 export function VoiceAgentsSidebar({ tenantId }: VoiceAgentsSidebarProps) {
   const pathname = usePathname()
@@ -29,10 +31,19 @@ export function VoiceAgentsSidebar({ tenantId }: VoiceAgentsSidebarProps) {
       icon: LayoutDashboard,
     },
     {
-      name: 'Demo',
+      name: 'Browser demo',
       href: `/voice-agents/${tenantId}/Demo`,
-      icon: Headphones,
+      icon: MessageSquare,
     },
+    ...(LIVE_DEMO_ENABLED
+      ? [
+          {
+            name: 'Live voice',
+            href: `/voice-agents/${tenantId}/LiveDemo`,
+            icon: Radio,
+          },
+        ]
+      : []),
     {
       name: 'Call History',
       href: `/voice-agents/${tenantId}/Calls`,
@@ -80,7 +91,9 @@ export function VoiceAgentsSidebar({ tenantId }: VoiceAgentsSidebarProps) {
       <nav className="flex-1 p-4 space-y-1">
         {menuItems.map((item) => {
           const Icon = item.icon
-          const isActive = pathname === item.href
+          const isActive =
+            pathname === item.href ||
+            (item.href.includes('/LiveDemo') && pathname?.includes('/LiveDemo'))
           return (
             <Link
               key={item.href}

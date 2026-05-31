@@ -3,7 +3,7 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Phone, Trash2, Headphones, Pencil, FileText, Sparkles } from 'lucide-react'
+import { Phone, Trash2, MessageSquare, Pencil, FileText, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
@@ -40,6 +40,7 @@ export function VoiceAgentTable({ agents, loading, onRefresh }: VoiceAgentTableP
   const params = useParams()
   const tenantId = (params?.tenantId as string) || 'tenant'
   const { token } = useAuthStore()
+  const liveDemoEnabled = process.env.NEXT_PUBLIC_VOICE_BROWSER_LIVE_DEMO === '1'
   const [deleting, setDeleting] = useState<string | null>(null)
   const [seeding, setSeeding] = useState(false)
 
@@ -117,7 +118,7 @@ export function VoiceAgentTable({ agents, loading, onRefresh }: VoiceAgentTableP
           <Phone className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2">No voice agents yet</h3>
           <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-            Create your first voice agent to start making automated calls, or add demo agents (Ravi, Priya, Survey) to try the flow.
+            Create your first agent, or add demo agents (Ravi, Priya, Survey) to try the official browser demo.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link href={`/voice-agents/${tenantId}/create`}>
@@ -190,11 +191,23 @@ export function VoiceAgentTable({ agents, loading, onRefresh }: VoiceAgentTableP
                         variant="default"
                         size="icon"
                         className="h-8 w-8 bg-green-600 hover:bg-green-700"
-                        title="Test Demo"
+                        title="Browser demo"
                       >
-                        <Headphones className="h-4 w-4" />
+                        <MessageSquare className="h-4 w-4" />
                       </Button>
                     </Link>
+                    {liveDemoEnabled ? (
+                      <Link href={`/voice-agents/${tenantId}/LiveDemo?agentId=${agent.id}`}>
+                        <Button
+                          variant="default"
+                          size="icon"
+                          className="h-8 w-8 bg-violet-600 hover:bg-violet-700"
+                          title="Live voice demo"
+                        >
+                          <Radio className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    ) : null}
                     <Link href={`/voice-agents/${tenantId}/Calls?agentId=${agent.id}`}>
                       <Button variant="ghost" size="icon" className="h-8 w-8" title="Logs">
                         <FileText className="h-4 w-4" />
