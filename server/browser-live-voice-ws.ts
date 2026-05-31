@@ -128,36 +128,46 @@ async function startSession(
   agentId: string,
   tenantId: string,
 ) {
-  const agent = await prisma.voiceAgent.findFirst({
-    where: { id: agentId, tenantId, status: 'active' },
-  })
-  if (!agent) {
-    send(state.ws, { type: 'error', message: 'Agent not found', code: 'AGENT_NOT_FOUND' })
-    return
+  try {
+    const effectiveTenantId = state.tenantId || tenantId
+    const agent = await prisma.voiceAgent.findFirst({
+      where: { id: agentId, tenantId: effectiveTenantId, status: 'active' },
+    })
+    if (!agent) {
+      send(state.ws, { type: 'error', message: 'Agent not found', code: 'AGENT_NOT_FOUND' })
+      return
+    }
+
+    const trainingVersion = await trainingPackVersionForAgent(agentId, effectiveTenantId)
+    const session = await prisma.voiceDemoSession.create({
+      data: {
+        tenantId: effectiveTenantId,
+        voiceAgentId: agentId,
+        trainingPackVersionAtStart: trainingVersion,
+        channel: 'browser_live',
+        status: 'active',
+        transcriptJson: [],
+        metadataJson: { source: 'browser-live-ws', stubMode: STUB_MODE },
+      },
+    })
+
+    state.sessionId = session.id
+    state.agentId = agentId
+
+    send(state.ws, {
+      type: 'session.ready',
+      sessionId: session.id,
+      agentId,
+      stubMode: STUB_MODE,
+    })
+  } catch (e) {
+    console.error('[browser-live-ws] session.start error', e)
+    send(state.ws, {
+      type: 'error',
+      message: e instanceof Error ? e.message : 'Failed to start session',
+      code: 'SESSION_FAILED',
+    })
   }
-
-  const trainingVersion = await trainingPackVersionForAgent(agentId, tenantId)
-  const session = await prisma.voiceDemoSession.create({
-    data: {
-      tenantId,
-      voiceAgentId: agentId,
-      trainingPackVersionAtStart: trainingVersion,
-      channel: 'browser_live',
-      status: 'active',
-      transcriptJson: [],
-      metadataJson: { source: 'browser-live-ws', stubMode: STUB_MODE },
-    },
-  })
-
-  state.sessionId = session.id
-  state.agentId = agentId
-
-  send(state.ws, {
-    type: 'session.ready',
-    sessionId: session.id,
-    agentId,
-    stubMode: STUB_MODE,
-  })
 }
 
 async function endSession(state: ConnectionState) {
@@ -242,9 +252,15 @@ wss.on('connection', (ws, req) => {
   let tenantId: string
   let userId: string
   try {
-    const decoded = verify(token, JWT_SECRET) as { userId?: string; id?: string; tenantId?: string }
-    userId = decoded.userId || decoded.id || ''
-    tenantId = decoded.tenantId || ''
+    const decoded = verify(token, JWT_SECRET) as {
+      userId?: string
+      id?: string
+      sub?: string
+      tenantId?: string
+      tenant_id?: string
+    }
+    userId = decoded.userId || decoded.id || decoded.sub || ''
+    tenantId = decoded.tenantId || decoded.tenant_id || ''
     if (!userId || !tenantId) {
       ws.close(1008, 'Invalid token')
       return

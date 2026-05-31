@@ -174,7 +174,7 @@
     "dev:3002": "next dev -p 3002 --webpack",
     "dev:turbo": "node node_modules/turbo/bin/turbo dev --filter=dashboard",
     "dev:websocket": "tsx server/websocket-voice-server.ts",
-    "dev:browser-live-ws": "tsx server/browser-live-voice-ws.ts",
+    "dev:browser-live-ws": "cross-env PAYAID_CLI_SCRIPT=1 tsx server/browser-live-voice-ws.ts",
     "dev:voice-live-local": "npx concurrently -n voice,blws -c blue,violet \"npm run dev -w voice\" \"npm run dev:browser-live-ws\"",
     "dev:telephony": "tsx server/telephony-audio-stream.ts",
     "dev:all:3002": "npx concurrently \"npm run dev:3002\" \"npm run dev:websocket\"",

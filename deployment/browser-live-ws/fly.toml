@@ -12,6 +12,7 @@ primary_region = "sin"
 [env]
   VOICE_LIVE_WS_PORT = "3002"
   NODE_ENV = "production"
+  PAYAID_CLI_SCRIPT = "1"
 
 [http_service]
   internal_port = 3002

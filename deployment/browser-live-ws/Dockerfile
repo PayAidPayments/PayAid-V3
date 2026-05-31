@@ -19,6 +19,7 @@ COPY server server
 
 ENV NODE_ENV=production
 ENV VOICE_LIVE_WS_PORT=3002
+ENV PAYAID_CLI_SCRIPT=1
 EXPOSE 3002
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \

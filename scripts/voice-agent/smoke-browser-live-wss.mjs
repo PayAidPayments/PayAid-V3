@@ -70,8 +70,9 @@ await new Promise((resolve, reject) => {
   ws.once('error', reject)
 })
 
+const readyPromise = waitFor(ws, 'session.ready')
 ws.send(JSON.stringify({ type: 'session.start', agentId, tenantId }))
-const ready = await waitFor(ws, 'session.ready')
+const ready = await readyPromise
 const turnId = `smoke-${Date.now()}`
 ws.send(JSON.stringify({ type: 'utterance.final', text: 'Hello, smoke test', turnId }))
 await waitFor(ws, 'turn.complete', 30000)
