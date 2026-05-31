@@ -46,11 +46,12 @@ function resolveFlyctl() {
 
 function runFly(args, { inherit = false } = {}) {
   const flyctl = resolveFlyctl()
+  const token = process.env.FLY_API_TOKEN || process.env.FLY_ACCESS_TOKEN
   const result = spawnSync(flyctl, args, {
     cwd: root,
     encoding: 'utf8',
     stdio: inherit ? 'inherit' : 'pipe',
-    env: process.env,
+    env: token ? { ...process.env, FLY_API_TOKEN: token } : process.env,
   })
   return { flyctl, ...result }
 }
@@ -62,7 +63,11 @@ if (whoami.status !== 0) {
       {
         ok: false,
         error: 'Fly not authenticated',
-        fix: `${whoami.flyctl} auth login`,
+        fix: [
+          `${whoami.flyctl} auth login`,
+          'Or set FLY_API_TOKEN in .env.local (from https://fly.io/user/personal_access_tokens)',
+          'Or use Render: npm run voice-agent:deploy-browser-live-render',
+        ],
       },
       null,
       2,

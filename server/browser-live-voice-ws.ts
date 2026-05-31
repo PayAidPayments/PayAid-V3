@@ -25,7 +25,8 @@ import {
 import { runBrowserLiveTurn } from '../lib/voice-agent/browser-live/turn-handler'
 import { trainingPackVersionForAgent } from '../lib/voice-agent/training-pack-load'
 
-const PORT = parseInt(process.env.VOICE_LIVE_WS_PORT || '3002', 10)
+const PORT = parseInt(process.env.PORT || process.env.VOICE_LIVE_WS_PORT || '3002', 10)
+const HOST = process.env.HOST || '0.0.0.0'
 const JWT_SECRET = (process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'change-me-in-production').trim()
 const STUB_MODE = process.env.BROWSER_LIVE_STUB === '1'
 
@@ -223,11 +224,12 @@ const httpServer = createServer((req, res) => {
 
 const wss = new WebSocketServer({ server: httpServer })
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, HOST, () => {
   console.log(
     JSON.stringify({
       ok: true,
       service: 'browser-live-voice-ws',
+      host: HOST,
       port: PORT,
       stubMode: STUB_MODE,
     }),

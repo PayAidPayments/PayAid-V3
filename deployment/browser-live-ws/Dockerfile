@@ -18,9 +18,9 @@ COPY lib lib
 COPY server server
 
 ENV NODE_ENV=production
-ENV VOICE_LIVE_WS_PORT=3002
 ENV PAYAID_CLI_SCRIPT=1
-EXPOSE 3002
+ENV HOST=0.0.0.0
+EXPOSE 3002 10000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3002/health || exit 1

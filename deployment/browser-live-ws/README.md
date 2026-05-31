@@ -36,19 +36,26 @@ docker run --rm -p 3002:3002 \
 ## Fly.io
 
 ```bash
-fly apps create payaid-browser-live-ws
-fly secrets set DATABASE_URL=… JWT_SECRET=… GROQ_API_KEY=…
-fly deploy --config deployment/browser-live-ws/fly.toml
+flyctl auth login   # once, or set FLY_API_TOKEN in .env.local
+npm run voice-agent:deploy-browser-live-sidecar
 ```
 
-After deploy, set on the **voice** Vercel project:
+## Render.com (recommended if Fly auth is blocked)
 
-```env
-NEXT_PUBLIC_VOICE_BROWSER_LIVE_DEMO=1
-NEXT_PUBLIC_VOICE_LIVE_WS_URL=wss://payaid-browser-live-ws.fly.dev
+Blueprint: `deployment/browser-live-ws/render.yaml`
+
+```bash
+npm run voice-agent:deploy-browser-live-render   # prints setup steps
 ```
 
-Then: `npm run voice-agent:push-browser-live-vercel-env` and `npm run deploy:voice:git-archive`.
+After Render deploy:
+
+```bash
+# .env.local
+NEXT_PUBLIC_VOICE_LIVE_WS_URL=wss://payaid-browser-live-ws.onrender.com
+
+npm run voice-agent:wire-browser-live-production -- --deploy
+```
 
 ## Vercel sync (operator)
 
