@@ -3,7 +3,7 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Phone, Trash2, MessageSquare, Pencil, FileText, Sparkles } from 'lucide-react'
+import { Phone, Trash2, MessageSquare, Pencil, FileText, Sparkles, Radio } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
