@@ -60,6 +60,23 @@ npm run dev:voice-live-local
 
 ## Staging / production
 
+### Quick staging (no Render/Fly yet)
+
+Keeps **voice-six-xi** live voice working via Cloudflare tunnel to your machine:
+
+```bash
+npm run voice-agent:start-browser-live-staging
+# after tunnel URL prints, if it changed:
+npm run voice-agent:start-browser-live-staging -- --wire
+```
+
+Investor URL (after login):  
+`https://voice-six-xi.vercel.app/voice-agents/cmjptk2mw0000aocw31u48n64/LiveDemo?agentId=va_stage1_bolna_smoke`
+
+Leave the staging terminal open during the demo.
+
+### Permanent sidecar (Render)
+
 - Deploy **sidecar** to always-on host (Fly/Docker — see `deployment/browser-live-ws/README.md`).
 - Push Vercel public env and redeploy voice UI:
 
