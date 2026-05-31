@@ -30,7 +30,20 @@ if (!token) {
 const results = []
 for (const spec of VOICE_BROWSER_LIVE_VERCEL_PUBLIC) {
   const fromEnv = String(process.env[spec.key] || '').trim()
-  const value = fromEnv || spec.defaultValue || ''
+  let value = fromEnv || spec.defaultValue || ''
+  if (
+    spec.key === 'NEXT_PUBLIC_VOICE_LIVE_WS_URL' &&
+    value &&
+    /^(wss?:\/\/)?(localhost|127\.0\.0\.1)/i.test(value)
+  ) {
+    results.push({
+      key: spec.key,
+      ok: true,
+      skipped: true,
+      reason: 'localhost URL — set wss:// sidecar host before pushing to Vercel',
+    })
+    continue
+  }
   if (!value && spec.required) {
     results.push({ key: spec.key, ok: false, skipped: true, reason: 'missing locally' })
     continue
