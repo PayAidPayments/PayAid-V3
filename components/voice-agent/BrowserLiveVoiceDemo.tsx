@@ -22,11 +22,21 @@ export type BrowserLiveVoiceDemoProps = {
 type TranscriptLine = { role: 'user' | 'assistant' | 'system'; content: string; at: string }
 
 /** Minimal Web Speech API surface — avoids relying on lib.dom SpeechRecognition (not in all TS configs). */
+type BrowserSpeechRecognitionResult = {
+  isFinal: boolean
+  0: { transcript: string }
+}
+
+type BrowserSpeechRecognitionEvent = {
+  resultIndex: number
+  results: BrowserSpeechRecognitionResult[] & { length: number }
+}
+
 type BrowserSpeechRecognition = {
   continuous: boolean
   interimResults: boolean
   lang: string
-  onresult: ((event: { results: { [index: number]: { [index: number]: { transcript: string } }; length: number }; resultIndex: number }) => void) | null
+  onresult: ((event: BrowserSpeechRecognitionEvent) => void) | null
   onerror: ((event: { error?: string }) => void) | null
   onend: (() => void) | null
   start: () => void
@@ -105,7 +115,7 @@ export function BrowserLiveVoiceDemo({
     rec.interimResults = true
     rec.lang = 'en-IN'
 
-    rec.onresult = (event: SpeechRecognitionEvent) => {
+    rec.onresult = (event: BrowserSpeechRecognitionEvent) => {
       let interimLocal = ''
       let finalText = ''
       for (let i = event.resultIndex; i < event.results.length; i++) {
