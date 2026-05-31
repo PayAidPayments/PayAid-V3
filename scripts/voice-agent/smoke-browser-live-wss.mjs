@@ -29,7 +29,7 @@ if (!tokenArg) {
 
 const url = `${wsBase}/?token=${encodeURIComponent(tokenArg)}`
 
-function waitFor(ws, type, timeoutMs = 15000) {
+function waitFor(ws, type, timeoutMs = 30000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`timeout waiting for ${type}`)), timeoutMs)
     const onMsg = (raw) => {

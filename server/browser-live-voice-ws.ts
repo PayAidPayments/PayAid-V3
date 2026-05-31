@@ -130,6 +130,19 @@ async function startSession(
   tenantId: string,
 ) {
   try {
+    if (STUB_MODE) {
+      const sessionId = `stub_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      state.sessionId = sessionId
+      state.agentId = agentId
+      send(state.ws, {
+        type: 'session.ready',
+        sessionId,
+        agentId,
+        stubMode: true,
+      })
+      return
+    }
+
     const effectiveTenantId = state.tenantId || tenantId
     const agent = await prisma.voiceAgent.findFirst({
       where: { id: agentId, tenantId: effectiveTenantId, status: 'active' },
@@ -173,6 +186,11 @@ async function startSession(
 
 async function endSession(state: ConnectionState) {
   cancelActiveTurn(state, 'superseded')
+  if (state.sessionId?.startsWith('stub_')) {
+    state.sessionId = null
+    state.agentId = null
+    return
+  }
   if (state.sessionId) {
     await prisma.voiceDemoSession.updateMany({
       where: { id: state.sessionId, status: 'active' },

@@ -39,6 +39,17 @@ export async function runBrowserLiveTurn(opts: LiveTurnOptions): Promise<LiveTur
     throw new DOMException('Turn aborted', 'AbortError')
   }
 
+  if (stubMode) {
+    const agentText = `Thanks for saying "${userText.slice(0, 80)}". This is a live voice stub — full Groq + TTS runs when BROWSER_LIVE_STUB is off.`
+    return {
+      userText,
+      agentText,
+      audioBase64: null,
+      audioMime: 'audio/wav',
+      ttsError: 'stub_mode_no_tts',
+    }
+  }
+
   const agent = await prisma.voiceAgent.findFirst({
     where: { id: agentId, tenantId, status: 'active' },
   })
@@ -51,17 +62,6 @@ export async function runBrowserLiveTurn(opts: LiveTurnOptions): Promise<LiveTur
   })
   if (!session) {
     throw new Error('Session not found')
-  }
-
-  if (stubMode) {
-    const agentText = `Thanks for saying "${userText.slice(0, 80)}". This is a live voice stub — full Groq + TTS runs when BROWSER_LIVE_STUB is off.`
-    return {
-      userText,
-      agentText,
-      audioBase64: null,
-      audioMime: 'audio/wav',
-      ttsError: 'stub_mode_no_tts',
-    }
   }
 
   if (!isGroqConfigured()) {
