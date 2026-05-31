@@ -1,5 +1,4 @@
 'use client'
-// @ts-nocheck — Web Speech API types vary by browser
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -22,18 +21,31 @@ export type BrowserLiveVoiceDemoProps = {
 
 type TranscriptLine = { role: 'user' | 'assistant' | 'system'; content: string; at: string }
 
-function newTurnId() {
-  return `turn_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+/** Minimal Web Speech API surface — avoids relying on lib.dom SpeechRecognition (not in all TS configs). */
+type BrowserSpeechRecognition = {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  onresult: ((event: { results: { [index: number]: { [index: number]: { transcript: string } }; length: number }; resultIndex: number }) => void) | null
+  onerror: ((event: { error?: string }) => void) | null
+  onend: (() => void) | null
+  start: () => void
+  stop: () => void
+  abort: () => void
 }
 
-function getSpeechRecognition(): SpeechRecognition | null {
+function getSpeechRecognition(): BrowserSpeechRecognition | null {
   if (typeof window === 'undefined') return null
   const W = window as Window & {
-    SpeechRecognition?: new () => SpeechRecognition
-    webkitSpeechRecognition?: new () => SpeechRecognition
+    SpeechRecognition?: new () => BrowserSpeechRecognition
+    webkitSpeechRecognition?: new () => BrowserSpeechRecognition
   }
   const K = W.SpeechRecognition || W.webkitSpeechRecognition
   return K ? new K() : null
+}
+
+function newTurnId() {
+  return `turn_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }
 
 const PHASE_LABEL: Record<BrowserLiveSessionPhase, string> = {
@@ -63,7 +75,7 @@ export function BrowserLiveVoiceDemo({
   const smRef = useRef(new BrowserLiveSessionStateMachine({ onPhaseChange: (p) => setPhase(p) }))
   const audioRef = useRef(new AudioPlaybackQueue())
   const latencyRef = useRef(new LiveLatencyRecorder())
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
   const liveRef = useRef(false)
   const pendingUtteranceRef = useRef('')
   const utteranceDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
