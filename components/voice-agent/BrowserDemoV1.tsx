@@ -7,11 +7,15 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, PlayCircle, Save, ShieldCheck, Send, Volume2 } from 'lucide-react'
+import { parseVoiceBehaviorFromWorkflow } from '@/lib/voice-agent/voice-behavior-config'
+import { VoiceBehaviorPreview } from '@/components/voice-agent/VoiceBehaviorPreview'
 
 export interface BrowserDemoV1Props {
   agentId: string
   tenantId: string
   token: string
+  /** Loaded from GET agent — used for tone/pace/verbosity preview only (no runtime merge). */
+  agentWorkflow?: unknown
 }
 
 type PackState = {
@@ -39,7 +43,8 @@ const authHeaders = (token: string) => ({
   Authorization: `Bearer ${token}`,
 })
 
-export function BrowserDemoV1({ agentId, tenantId, token }: BrowserDemoV1Props) {
+export function BrowserDemoV1({ agentId, tenantId, token, agentWorkflow }: BrowserDemoV1Props) {
+  const voiceBehavior = parseVoiceBehaviorFromWorkflow(agentWorkflow)
   const [pack, setPack] = useState<PackState | null>(null)
   const [draftText, setDraftText] = useState('{}')
   const [packLoading, setPackLoading] = useState(true)
@@ -292,7 +297,9 @@ export function BrowserDemoV1({ agentId, tenantId, token }: BrowserDemoV1Props) 
             <div className="flex flex-wrap gap-1 shrink-0">
               <Badge variant="outline">pack v{pack.version}</Badge>
               {pack.publishedTrainingPackVersion != null ? (
-                <Badge variant="secondary">phone v{pack.publishedTrainingPackVersion}</Badge>
+                <Badge variant="secondary" title="Synced to phone/Bolna when telephony is live">
+                  synced v{pack.publishedTrainingPackVersion}
+                </Badge>
               ) : null}
             </div>
           ) : null}
@@ -311,8 +318,8 @@ export function BrowserDemoV1({ agentId, tenantId, token }: BrowserDemoV1Props) 
             <p>
               <span className="text-foreground">Published:</span>{' '}
               {pack.publishedTrainingPackVersion != null
-                ? `v${pack.publishedTrainingPackVersion} on phone`
-                : 'not published'}
+                ? `v${pack.publishedTrainingPackVersion} (phone/Bolna sync — optional for browser demo)`
+                : 'not published to phone'}
               {pack.lastPublishedAt ? ` · last published ${formatHintDate(pack.lastPublishedAt)}` : ''}
             </p>
             {pack.version >= 1 &&
@@ -320,19 +327,35 @@ export function BrowserDemoV1({ agentId, tenantId, token }: BrowserDemoV1Props) 
               pack.publishedTrainingPackVersion !== pack.version && (
                 <p className="text-amber-700 dark:text-amber-300">
                   Newer approved snapshot (v{pack.version}) than published (v{pack.publishedTrainingPackVersion}).
-                  Publish to update phone.
+                  Publish to update phone/Bolna when telephony is enabled.
                 </p>
               )}
           </div>
         )}
       </CardHeader>
       <CardContent className="space-y-6">
+        <VoiceBehaviorPreview behavior={voiceBehavior} variant="demo" />
+
         {packError && (
           <p className="text-sm text-destructive" role="alert">
             {packError}
           </p>
         )}
         {publishNote && <p className="text-sm text-green-600 dark:text-green-400">{publishNote}</p>}
+
+        <div className="rounded-md border border-blue-200/80 bg-blue-50/50 dark:bg-blue-950/20 p-3 text-xs text-muted-foreground space-y-1">
+          <p className="font-medium text-foreground">Quick test (in order)</p>
+          <ol className="list-decimal pl-4 space-y-0.5">
+            <li>Optional: edit training JSON → <strong>Save draft</strong> → <strong>Approve snapshot</strong></li>
+            <li>
+              <strong>Start session</strong> (required before sending messages)
+            </li>
+            <li>Type a message → press Enter or the send button</li>
+            <li>
+              <strong>Publish</strong> stays off until you approve a snapshot (optional for browser demo)
+            </li>
+          </ol>
+        </div>
 
         {/* Training */}
         <div className="space-y-2">
@@ -346,7 +369,7 @@ export function BrowserDemoV1({ agentId, tenantId, token }: BrowserDemoV1Props) 
             <>
               <Textarea value={draftText} onChange={(e) => setDraftText(e.target.value)} className="font-mono text-xs min-h-[140px]" />
               <div className="flex flex-wrap gap-2">
-                <Button type="button" size="sm" variant="secondary" disabled={saveBusy} onClick={() => void saveDraft()}>
+                <Button type="button" size="sm" variant="outline" disabled={saveBusy} onClick={() => void saveDraft()}>
                   {saveBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
                   Save draft
                 </Button>
@@ -365,7 +388,9 @@ export function BrowserDemoV1({ agentId, tenantId, token }: BrowserDemoV1Props) 
             <Volume2 className="h-4 w-4" />
             Preview voice (short)
           </h3>
-          <p className="text-xs text-muted-foreground">Preview voice may differ slightly from phone audio in v1.</p>
+          <p className="text-xs text-muted-foreground">
+            Short browser clip only — not a phone call. Audio may differ from live telephony.
+          </p>
           <div className="flex flex-wrap gap-2">
             <Button type="button" size="sm" variant="outline" disabled={previewBusy} onClick={() => void playPreview(true)}>
               {previewBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4 mr-1" />}
@@ -391,6 +416,11 @@ export function BrowserDemoV1({ agentId, tenantId, token }: BrowserDemoV1Props) 
               </span>
             )}
           </div>
+          {!sessionId && (
+            <p className="text-xs text-amber-700 dark:text-amber-300">
+              Message send is disabled until you click <strong>Start session</strong>.
+            </p>
+          )}
           <div className="flex gap-2">
             <Input
               placeholder="User message…"
@@ -400,7 +430,12 @@ export function BrowserDemoV1({ agentId, tenantId, token }: BrowserDemoV1Props) 
                 if (e.key === 'Enter') void sendTurn()
               }}
             />
-            <Button type="button" disabled={!sessionId || turnBusy} onClick={() => void sendTurn()}>
+            <Button
+              type="button"
+              disabled={!sessionId || turnBusy || !turnMessage.trim()}
+              title={!sessionId ? 'Click Start session first' : !turnMessage.trim() ? 'Type a message' : 'Send message'}
+              onClick={() => void sendTurn()}
+            >
               {turnBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
@@ -444,7 +479,14 @@ export function BrowserDemoV1({ agentId, tenantId, token }: BrowserDemoV1Props) 
               Escalation ok
             </label>
           </div>
-          <Button type="button" size="sm" variant="secondary" disabled={qaBusy} onClick={() => void saveQa()}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={qaBusy || !sessionId}
+            title={!sessionId ? 'Start a demo session first' : 'Save QA tags for this session'}
+            onClick={() => void saveQa()}
+          >
             {qaBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Save QA
           </Button>
@@ -454,9 +496,18 @@ export function BrowserDemoV1({ agentId, tenantId, token }: BrowserDemoV1Props) 
         <div className="space-y-2 border-t pt-4">
           <h3 className="text-sm font-semibold">Publish</h3>
           <p className="text-xs text-muted-foreground">
-            Requires an approved training pack (version ≥ 1). If this agent uses Bolna, publish triggers a sync after the version is saved.
+            Optional for browser demo. Requires approved pack (v ≥ 1). When telephony is live, publish syncs phone/Bolna.
           </p>
-          <Button type="button" disabled={publishBusy || !(pack && pack.version >= 1)} onClick={() => void publish()}>
+          <Button
+            type="button"
+            disabled={publishBusy || !(pack && pack.version >= 1)}
+            title={
+              pack && pack.version >= 1
+                ? 'Publish approved training to phone/Bolna (optional for browser demo)'
+                : 'Approve a training snapshot first (version must be ≥ 1)'
+            }
+            onClick={() => void publish()}
+          >
             {publishBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Publish training version
           </Button>
