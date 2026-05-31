@@ -414,6 +414,7 @@
     "voice-agent:sync-stage1-vercel-env": "node scripts/voice-agent/sync-stage1-vercel-env.mjs",
     "voice-agent:push-stage1-vercel-secrets": "node scripts/voice-agent/push-stage1-vercel-secrets.mjs",
     "voice-agent:push-browser-live-vercel-env": "node scripts/voice-agent/push-browser-live-vercel-env.mjs",
+    "voice-agent:deploy-browser-live-sidecar": "node scripts/voice-agent/deploy-browser-live-sidecar.mjs",
     "voice-agent:smoke-browser-live-wss": "node scripts/voice-agent/smoke-browser-live-wss.mjs",
     "voice-agent:verify-stage1-vercel-env": "node scripts/voice-agent/verify-stage1-vercel-env.mjs",
     "voice-agent:check-stage1-vercel-runtime-logs": "node scripts/voice-agent/check-stage1-vercel-runtime-logs.mjs",

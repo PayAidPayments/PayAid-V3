@@ -57,4 +57,32 @@ npm run voice-agent:push-browser-live-vercel-env
 npm run deploy:voice:git-archive
 ```
 
+## Fly sidecar deploy (operator)
+
+One-time: `flyctl auth login` (CLI at `%USERPROFILE%\.fly\bin\flyctl.exe` on Windows).
+
+```bash
+npm run voice-agent:deploy-browser-live-sidecar
+# then push WS URL + redeploy voice UI (see Staging / production above)
+```
+
+Dry-run (checks auth + local secrets only):
+
+```bash
+node scripts/voice-agent/deploy-browser-live-sidecar.mjs --dry-run
+```
+
+## WSS smoke (local or staging)
+
+Terminal A: `BROWSER_LIVE_STUB=1 npm run dev:browser-live-ws`
+
+Terminal B:
+
+```bash
+npm run voice-agent:mint-validation-auth-token   # copy JWT
+SMOKE_TENANT_ID=cmjptk2mw0000aocw31u48n64 SMOKE_AUTH_TOKEN=<jwt> npm run voice-agent:smoke-browser-live-wss
+```
+
+Expected: `"ok": true` with `session.ready` → `turn.complete`.
+
 See also: `docs/VOICE_AGENT_BROWSER_LIVE_DEMO_RUNBOOK.md`
