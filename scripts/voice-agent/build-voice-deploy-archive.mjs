@@ -26,6 +26,7 @@ export const VOICE_DEPLOY_ARCHIVE_PATHS = [
   'tsconfig.json',
   'tailwind.config.ts',
   'postcss.config.js',
+  'public/logo.png',
 ]
 
 const workDir =
@@ -62,6 +63,17 @@ copyFileSync(
   path.join(root, '.vercel', 'project.json'),
   path.join(workDir, '.vercel', 'project.json'),
 )
+
+// Next.js serves static files from apps/voice/public only.
+const voicePublicDir = path.join(workDir, 'apps', 'voice', 'public')
+const voiceLogo = path.join(voicePublicDir, 'logo.png')
+if (!existsSync(voiceLogo)) {
+  const rootLogo = path.join(workDir, 'public', 'logo.png')
+  if (existsSync(rootLogo)) {
+    mkdirSync(voicePublicDir, { recursive: true })
+    copyFileSync(rootLogo, voiceLogo)
+  }
+}
 
 function topLevelManifest(dir) {
   return readdirSync(dir).map((name) => {
