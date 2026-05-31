@@ -22,7 +22,7 @@ ENV PAYAID_CLI_SCRIPT=1
 ENV HOST=0.0.0.0
 EXPOSE 3002 10000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3002/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD sh -c 'wget -qO- "http://127.0.0.1:${PORT:-10000}/health" || exit 1'
 
 CMD ["npx", "tsx", "server/browser-live-voice-ws.ts"]
