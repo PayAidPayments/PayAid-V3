@@ -417,6 +417,7 @@
     "voice-agent:deploy-browser-live-sidecar": "node scripts/voice-agent/deploy-browser-live-sidecar.mjs",
     "voice-agent:deploy-browser-live-render": "node scripts/voice-agent/deploy-browser-live-render.mjs",
     "voice-agent:wire-browser-live-production": "node scripts/voice-agent/wire-browser-live-production.mjs",
+    "voice-agent:tunnel-browser-live-ws": "node scripts/voice-agent/tunnel-browser-live-ws.mjs",
     "voice-agent:smoke-browser-live-wss": "node scripts/voice-agent/smoke-browser-live-wss.mjs",
     "voice-agent:verify-stage1-vercel-env": "node scripts/voice-agent/verify-stage1-vercel-env.mjs",
     "voice-agent:check-stage1-vercel-runtime-logs": "node scripts/voice-agent/check-stage1-vercel-runtime-logs.mjs",

@@ -53,6 +53,7 @@ if (deploy) {
     cwd: root,
     stdio: 'inherit',
     env: process.env,
+    shell: process.platform === 'win32',
   })
   if (voice.status !== 0) process.exit(voice.status ?? 1)
 }
