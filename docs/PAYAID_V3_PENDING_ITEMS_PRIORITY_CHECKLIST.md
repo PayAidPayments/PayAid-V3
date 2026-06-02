@@ -1,4 +1,4 @@
-﻿# PayAid V3 - Pending Items (Priority Checklist)
+# PayAid V3 - Pending Items (Priority Checklist)
 
 **Purpose:** single source of truth for remaining integration + implementation work.  
 **How to use:** check items off as they ship; add a short note + date in **Update log** for anything significant.
@@ -170,7 +170,8 @@ Use this block to track final productionization verdicts for PayAid Mail (separa
 
 ## Active Track - Voice Agents real-time runtime (Bolna sidecar) (2026-05)
 
-**Owner:** Voice Agents pod. **Plan doc:** `docs/VOICE_AGENT_BOLNA_INTEGRATION_PLAN.md`.
+**Owner:** Voice Agents pod. **Plan doc:** `docs/VOICE_AGENT_BOLNA_INTEGRATION_PLAN.md`.  
+**Stage 1:** **closed — live-green — FROZEN** (golden `voice-5ljnsioga`). Regression-only ops: [`docs/VOICE_AGENT_STAGE1_VERCEL_ENV_RUNBOOK.md`](./VOICE_AGENT_STAGE1_VERCEL_ENV_RUNBOOK.md) (verify → push secrets → redeploy → smoke → latency → runtime logs). **No Stage 1 runtime code changes** unless regression is proven after that sequence. **Active:** **Stage 2 — Sarvam wiring** — [`docs/VOICE_AGENT_BOLNA_STAGE2_SARVAM_RUNBOOK.md`](./VOICE_AGENT_BOLNA_STAGE2_SARVAM_RUNBOOK.md). Telephony gate blocked on **Docker Desktop + Twilio** (external). Do not redeploy voice for Stage 2 matrix work.
 
 **Why:** the current production phone path (`apps/voice/app/api/v1/voice-agents/twilio/speech-handler/route.ts`) is turn-based with `<Gather>` + non-streaming LLM + whole-buffer TTS, producing 3.5-8s of dead air per turn. The browser/demo WS path (`server/websocket-voice-server.ts`) has the same shape (2-5s end-to-end). We are adopting `bolna-ai/bolna` as a sidecar real-time runtime so PayAid keeps the dashboard/multi-tenancy/CRM layer while Bolna owns streaming ASR/LLM/TTS, barge-in, and function calling.
 
@@ -189,20 +190,52 @@ Use this block to track final productionization verdicts for PayAid Mail (separa
 - [x] **Runtime adapter unit tests** - added `__tests__/voice-agent/runtime/bolna-agent-config.test.ts` and `__tests__/voice-agent/runtime/bolna-jwt.test.ts` covering provider routing, JWT auth, bridge secret checks, and stream URL invariants.
 - [x] **Bridge smoke command** - added `npm run smoke:voice-agent:bolna-bridge` (`scripts/voice-agent/bolna-bridge-smoke.mjs`) to validate agent lookup, `/runtime/bolna/calls/start`, and analytics contract; writes evidence under `docs/evidence/voice-agent/`.
 
-### Stage 1 - Sandbox dry run (English-only, Deepgram + ElevenLabs)
-- [ ] **Webhook signature parity** - confirm Twilio signature verification still passes against the new TwiML response in production.
-- [ ] **Tool execution path** - wire `/runtime/bolna/tools/execute` through existing `lib/voice-agent/tool-executor.ts` so audit + entitlement checks stay centralized; draft-first behavior preserved for finance/payments.
-- [ ] **KB lookup path** - wire `/runtime/bolna/kb/search` to existing `searchKnowledgeBase`; no vector duplication into Bolna.
-- [ ] **Event ingestion** - wire `/runtime/bolna/events` to write transcripts + latency KPIs into `voiceAgentCall`.
-- [ ] **Latency probe** - Speed Auditor target: p50 first-audio < 1.0s, p95 < 1.6s, barge-in < 300ms; capture evidence under `docs/evidence/voice-agent/`.
+### Stage 1 - Sandbox dry run (English-only, Deepgram + ElevenLabs) — CLOSED live-green
+
+**Canonical operator path:** [`docs/VOICE_AGENT_STAGE1_VERCEL_ENV_RUNBOOK.md`](./VOICE_AGENT_STAGE1_VERCEL_ENV_RUNBOOK.md).  
+**REDEPLOY after any Vercel secret push** (`push-stage1-vercel-secrets` or `sync-stage1-vercel-env -- --push-secrets`) — env does not apply to existing deployments.
+
+| Command | Purpose |
+| --- | --- |
+| `npm run voice-agent:verify-stage1-vercel-env` | Confirm `BOLNA_BRIDGE_SECRET`, `DATABASE_URL`, `JWT_SECRET` on voice project |
+| `npm run voice-agent:push-stage1-vercel-secrets` | Push secrets from local env (then **redeploy**) |
+| `npm run voice-agent:sync-stage1-vercel-env` | Pull `BASE_URL` + `VERCEL_PROTECTION_BYPASS` into `.env.local` |
+| `npm run smoke:voice-agent:bolna-bridge-stage1` | Live bridge smoke |
+| `npm run evidence:voice-agent:bolna-latency` | Live latency / analytics KPI evidence |
+| `npm run voice-agent:check-stage1-vercel-runtime-logs` | Runtime log scan after bridge/analytics failure |
+
+Golden deployment (preserve unless regression): `voice-5ljnsioga-payaid-projects-a67c6b27.vercel.app` / alias `voice-six-xi.vercel.app`.
+
+- [x] **Webhook signature parity** - `lib/voice-agent/twilio-webhook-signature.ts` + `__tests__/voice-agent/twilio-webhook-signature-parity.test.ts`; `npm run check:voice-agent:twilio-webhook-signature-parity`. Validates inbound POST against exact `TWILIO_WEBHOOK_URL` before Gather vs `<Connect><Stream>` branch.
+- [x] **Tool execution path** - `/runtime/bolna/tools/execute` → `executeBolnaBridgeTool` → `ToolExecutor` (`lib/voice-agent/runtime/bolna-tool-bridge.ts`); tests `__tests__/voice-agent/runtime/bolna-tool-bridge-execute.test.ts`; `npm run check:voice-agent:bolna-stage1-bridge-wiring`.
+- [x] **KB lookup path** - `/runtime/bolna/kb/search` → `searchKnowledgeBase` (no vectors in Bolna).
+- [x] **Event ingestion** - `/runtime/bolna/events` → transcript JSON + `firstAudioMs` + `metadata.ttsLatencyMs` + barge-in counters (`lib/voice-agent/runtime/bolna-events.ts`).
+- [x] **Latency probe** - `analytics.realtime.firstAudioMs` (p50/p95/p50Bolna/p95Bolna); `npm run evidence:voice-agent:bolna-latency` (targets p50 < 1.0s, p95 < 1.6s; needs pilot samples).
 - [x] **Stage 1 operator preflight + smoke scripts** - added `npm run check:voice-agent:bolna-stage1-preflight` (`scripts/voice-agent/check-bolna-stage1-preflight.mjs`) and `npm run smoke:voice-agent:bolna-bridge` (`scripts/voice-agent/bolna-bridge-smoke.mjs`), with documented run sequence in `deployment/bolna/README.md` and evidence output under `docs/evidence/voice-agent/`.
+- [x] **Stage 1 live-green (Vercel voice)** - READY `voice-5ljnsioga-payaid-projects-a67c6b27.vercel.app` / alias `voice-six-xi.vercel.app`; smoke + HTTP latency PASS (`2026-05-22T09-45-25-189Z-bolna-bridge-stage1-smoke.md`, `2026-05-22T09-43-36-481Z-bolna-latency-evidence.md`). Runtime env on voice project: `BOLNA_BRIDGE_SECRET`, `DATABASE_URL`, `JWT_SECRET`; analytics route uses batched Prisma queries for serverless pool limits.
+- [x] **Stage 1 Vercel env hardening** - `voice-agent:push-stage1-vercel-secrets`, `voice-agent:verify-stage1-vercel-env`, `sync-stage1-vercel-env --push-secrets`, `voice-agent:check-stage1-vercel-runtime-logs`; runbook `docs/VOICE_AGENT_STAGE1_VERCEL_ENV_RUNBOOK.md` documents **redeploy required after env push** (Vercel applies env only to new deployments).
 
 ### Stage 2 - Sarvam wiring (Indian languages)
-- [ ] **Sarvam transcriber adapter** - `bolna/transcriber/sarvam.py` in our `payaid/bolna` fork (Saarika streaming, hi/en/ta/te/kn/mr/gu/pa/bn/ml).
-- [ ] **Sarvam synthesizer adapter** - `bolna/synthesizer/sarvam.py` in our fork (Bulbul streaming, same language matrix).
-- [ ] **Provider registry** - register both in `bolna/providers.py`; ship as fork-tagged Docker image.
-- [ ] **Upstream PR** - submit Sarvam transcriber + synthesizer to `bolna-ai/bolna`; track until merge.
-- [ ] **Smoke matrix** - hi-IN/ta-IN/te-IN test calls with latency parity vs the Deepgram+ElevenLabs baseline.
+
+**Runbook:** [`docs/VOICE_AGENT_BOLNA_STAGE2_SARVAM_RUNBOOK.md`](./VOICE_AGENT_BOLNA_STAGE2_SARVAM_RUNBOOK.md)
+
+| Command | Purpose |
+| --- | --- |
+| `npm run check:voice-agent:bolna-stage2-sarvam-matrix` | Jest provider matrix + `SARVAM_API_KEY` readiness |
+| `npm run validate:voice-agent:stage2-sarvam` | Matrix + bridge hi/ta/te + seed + latency (no deploy) |
+| `npm run voice-agent:pull-vercel-bridge-secret` | Pull plaintext `BOLNA_BRIDGE_SECRET` from Vercel |
+| `npm run check:voice-agent:bridge-secret-parity` | Fail fast on local/sidecar/Vercel drift |
+| `npm run voice-agent:verify-stage1-vercel-env` | Stage 1 Vercel env sanity (no deploy) |
+| `npm run smoke:voice-agent:bolna-bridge-stage1` | Live bridge regression guard |
+| `npm run evidence:voice-agent:bolna-latency` | KPI evidence after pilot calls |
+
+- [x] **PayAid → Bolna provider alignment** - `buildBolnaAgent()` uses `sarvam` TTS (Bolna `SarvamConfig`: `voice_id`, `language`, `model: bulbul:v3`) instead of invalid `sarvam-bulbul`; matrix tests for hi/ta/te/en.
+- [x] **Upstream Sarvam providers** - `bolna-ai/bolna` master already registers `SarvamTranscriber` + `SarvamSynthesizer`; private fork only if we need patches beyond upstream.
+- [x] **Bridge hi/ta/te events (live Vercel)** - `2026-05-22T11-36-36-199Z-bolna-stage2-sarvam-bridge-smoke.md`; env fix: `voice-agent:pull-vercel-bridge-secret` + `fetch-vercel-env-plaintext` (no ciphertext in `.env.local`).
+- [x] **Sarvam API smoke (hi/ta/te)** - `smoke:voice-agent:sarvam-api-stage2` PASS (`2026-05-22T12-10-46-162Z-bolna-stage2-sarvam-api-smoke.md`); `voice-agent:sync-bolna-sidecar-env` fills SARVAM/GROQ in sidecar `.env`.
+- [ ] **Sidecar telephony smoke (deferred)** - Operator chose to skip live hi/ta/te calls for now. Resume when `TWILIO_*` in `.env.local` + `ghcr.io/bolna-ai/*` pull works (`2026-05-23T03-15-00-000Z-stage2-telephony-gate-closure.md`). Automated Stage 2 (matrix, Sarvam API, bridge, latency) is closed.
+- [x] **Latency parity evidence** - `2026-05-22T11-56-09-308Z-bolna-latency-evidence.md` (week: p50 840 ms, p95 880 ms, 9 samples); golden deployment unchanged.
+- [ ] **Optional upstream PR** - contribute PayAid Sarvam defaults only if gaps found in master.
 
 ### Stage 3 - Pilot tenants
 - [ ] **Tenant entitlement** - add `voiceRealTime` entitlement key; default off; opt-in for pilot tenants.
@@ -229,6 +262,32 @@ Add one line per meaningful change:
 
 - `YYYY-MM-DD` ? **Item** ? status change ? link to PR/commit/test run/evidence (if available)
 
+- `2026-06-02` ? **Browser-live investor week two-track (text-first baseline + Bhashini spoken upgrade trial)** ? Added provider-aware TTS routing (`BROWSER_LIVE_TTS_PROVIDER`), sidecar `/health/tts` stability probe, investor status probe hardening, and runbook go/no-go criteria. Validation: sidecar/tunnel path remains stable; Bhashini probe currently 0/10 due to hosted fetch failures; text-first fallback remains safe.
+- `2026-06-02` ? **Browser-live investor week lock: text-first mode only** ? Bhashini explicitly paused on critical path; runbook updated with exact blocker (`401 Invalid API key` on documented endpoint), safe fallback posture, and re-enable gate (contract fix + 10/10 probes + smoke/evidence + barge-in during audio).
+- `2026-06-02` ? **Browser-live investor handoff hardening (text-first preflight command)** ? Added `scripts/voice-agent/preflight-browser-live-investor-text-first.mjs` + `npm run voice-agent:preflight-investor-text-first`; runbook cheat-sheet updated so operators can run one non-TTS-blocking sanity check that still hard-fails on real demo blockers (sidecar/WSS/live route).
+- `2026-05-19` ? **Voice/Bolna Stage 1 — webhook signature parity** ? Completed shared `lib/voice-agent/twilio-webhook-signature.ts`, Jest suite `__tests__/voice-agent/twilio-webhook-signature-parity.test.ts`, and `npm run check:voice-agent:twilio-webhook-signature-parity` (tsx runner). Proves inbound HMAC validates against exact `TWILIO_WEBHOOK_URL` before Gather vs `<Connect><Stream>` branch.
+- `2026-05-19` ? **Voice/Bolna Stage 1 — bridge wiring (tools/KB/events/latency)** ? Tool bridge + KB search + event ingestion hardened; `analytics.realtime` KPI block; `npm run check:voice-agent:bolna-stage1-bridge-wiring`, `smoke:voice-agent:bolna-bridge-stage1`, `evidence:voice-agent:bolna-latency`.
+- `2026-05-19` ? **Voice/Bolna Stage 1 — live validation prep** ? Migration `20260605120000_voice_agent_realtime_runtime`, `vercel-voice.json`, `npm run deploy:voice`, `validate:voice-agent:stage1-live`. Local smoke PASS (`2026-05-19T15-49-08-324Z-bolna-bridge-stage1-smoke.md`); Vercel smoke blocked on Deployment Protection until `VERCEL_PROTECTION_BYPASS`.
+- `2026-05-19` ? **Voice/Bolna Stage 1 — live validation run (partial)** ? Re-applied realtime DDL; seeded pilot `firstAudioMs` row; smoke script env fixes; deploy script uses `vercel deploy --cwd apps/voice` (CLI 54 dropped `--project`); added `smoke:vercel`, `evidence:bolna-latency:db`, status doc `docs/evidence/voice-agent/2026-05-19T16-25-00Z-stage1-live-validation-status.md`. **Blocked:** `VERCEL_PROTECTION_BYPASS`, production voice promote, stable local dev compile, real Bolna pilot calls for Speed Auditor p50/p95.
+- `2026-05-19` ? **Voice/Bolna Stage 1 — Vercel env sync + deploy fix** ? `voice-agent:sync-stage1-vercel-env` (CLI token + bypass from project API); Vercel smoke past SSO but blocked on ERROR deployments; monorepo deploy fix (`vercel-voice.json`, root `tgz`, project PATCH). DB latency evidence PASS (`2026-05-19T17-17-49-024Z-bolna-latency-evidence-db.md`, seeded samples). **Next:** first READY `npm run deploy:voice`, then `smoke:voice-agent:bolna-bridge-stage1` + HTTP latency evidence.
+- `2026-05-20` — **Voice deploy — shrink `.vercelignore` + deploy script Windows `npx`** — Explicit `**/.git` / `node_modules` / caches / app `public/**` trees / root media; estimator `voice-agent:estimate-vercel-archive` (tracked bytes after rules; large `maxBuffer` for `git ls-files -z`); `deploy-voice-vercel.mjs` uses `shell: true` on win32 for `npx`. **Payload:** prior CLI ~5.2GB upload; on-disk `.git` ~6.3GB — post-rules tracked source estimate **~85–113 MB** (tgz smaller). **Deploy:** re-run `npm run deploy:voice` after canceling stuck runs; API still showed recent **ERROR** deployments at check time.
+- `2026-05-20` ? **Voice app — Next 16 / TS build green (`npm run build -w voice`)** ? Fixed cofounder route param shadowing; Prisma `InputJsonValue` casts (cofounder create, Twilio metadata upserts, toolbox bridge, domain repo workflow); `NextResponse` bodies from `Uint8Array` for WAV buffers; Twilio Gather `speechTimeout` string + typed language casts; analytics `Promise.all` destructuring aligned to queries; `readEnvForInbound` import for `BolnaFallbackReason`; assorted `components/voice-agent/*` + `agent-runtime-context` imports for strict TS. **Next:** Vercel re-auth + READY deploy, then Stage 1 smoke + HTTP latency against live `BASE_URL`.
+- `2026-05-20` — **Voice deploy blocked — expired Vercel CLI token** — `vercel whoami` → *token not valid*; API `403 Not authorized`; CLI deploys hang at *Retrieving project…* / *Deploying…* with no new READY deployment. Added `npm run voice-agent:preflight-vercel-auth` (fail-fast before deploy); deploy scripts no longer fall back to `VERCEL_OIDC_TOKEN` (payaid-v3–scoped). **Unblock:** `npx vercel login` or set `VERCEL_TOKEN` in `.env.local`, then `npm run voice-agent:deploy-pipeline` (or `deploy:voice` → `wait-vercel-ready` → `validate:voice-agent:stage1-live`). Evidence: `docs/evidence/voice-agent/2026-05-20T13-45-00Z-vercel-auth-blocker.md`.
+- `2026-05-20` — **Voice deploy payload** — Tight `.vercelignore` (explicit `.git` / `node_modules` / caches / app `public/**` / root media); `npm run voice-agent:estimate-vercel-archive`; `deploy-voice-vercel.mjs` uses `shell: true` on Windows for `npx`. Prior upload ~5.2GB; on-disk `.git` ~6.3GB; post-ignore tracked bytes ~85–113 MB (tgz smaller). Re-run `deploy:voice` after canceling stuck CLI; Vercel API showed recent ERROR deployments at validation time.
+- `2026-05-19` ? **Voice/Bolna Stage 1 — deploy/local unblock attempts** ? Root `.vercel` link; Windows `subst` in `deploy-voice-vercel.mjs`; `prebuild` clears corrupt `.next`; Vercel CLI path-space bug documented. `subst` deploy in progress; local `:3003` hung. Status: `docs/evidence/voice-agent/2026-05-19T19-05-00Z-stage1-live-validation-status.md`.
+- `2026-05-19` ? **Voice/Bolna Stage 1 — local validate helper** ? Added `npm run validate:voice-agent:stage1-local` (`wait-voice-dev-and-validate.mjs` polls bridge 401 then smoke + latency). Deploy script: reuse existing `subst` drive. All Vercel deploys still ERROR until full monorepo `tgz` READY.
+- `2026-05-22` — **Voice/Bolna Stage 1 — live-green preserved + env hardening** — READY `voice-5ljnsioga` / `voice-six-xi`; Vercel secrets `BOLNA_BRIDGE_SECRET`, `DATABASE_URL`, `JWT_SECRET`; analytics Prisma batching for pool limits. Added `voice-agent:push-stage1-vercel-secrets`, `verify-stage1-vercel-env`, `check-stage1-vercel-runtime-logs`, `docs/VOICE_AGENT_STAGE1_VERCEL_ENV_RUNBOOK.md` (explicit redeploy-after-env-push). No voice feature code changes.
+- `2026-05-22` — **Voice/Bolna Stage 1 — closed; hardening finalized** — Runbook declared canonical operator path; checklist Stage 1 table links verify/push/smoke/latency/runtime-logs + prominent redeploy rule; track handoff to **Stage 2 (Sarvam wiring)**. Sanity: `verify-stage1-vercel-env` ok. No deploy or feature changes.
+- `2026-05-22` — **Voice/Bolna Stage 2 — Sarvam alignment started** — PayAid agent JSON uses Bolna `sarvam` synthesizer + `SarvamConfig` fields; `check:voice-agent:bolna-stage2-sarvam-matrix` + `docs/VOICE_AGENT_BOLNA_STAGE2_SARVAM_RUNBOOK.md`. No Vercel redeploy (Stage 1 golden deployment preserved). Next: sidecar + hi/ta/te live calls.
+- `2026-05-22` — **Voice/Bolna Stage 2 — live bridge + latency re-green** — Fixed bridge secret drift (`pull-vercel-bridge-secret` decrypt API, parity guard, resolve from `.env.local` file); Stage 1 smoke PASS (`2026-05-22T11-33-16-882Z`); hi/ta/te bridge PASS; latency PASS (`2026-05-22T11-56-09-308Z`). Remaining: Docker sidecar + real Twilio hi/ta/te telephony.
+- `2026-05-22` — **Voice/Bolna Stage 2 — Sarvam API + sidecar env sync** — `sync-bolna-sidecar-env`, `smoke:sarvam-api-stage2` (hi/ta/te TTS bytes OK); full `validate:voice-agent:stage2-sarvam` green except preflight (Twilio + Docker). Golden Vercel deployment unchanged.
+- `2026-05-23` — **Operating model locked** — Stage 1 frozen (golden deploy + regression runbook only); Stage 2 active (provider matrix, sidecar sync, telephony prep, manual hi/ta/te). Docker + Twilio = external prerequisites for final telephony gate. No Stage 1 code changes unless regression proven.
+- `2026-05-23` — **Stage 2 automated closed; live telephony deferred** — Telephony gate attempt: no `TWILIO_*` in env; Docker healthy but `ghcr.io/bolna-ai/*` pull denied; manual calls skipped per operator. Evidence: `2026-05-23T03-15-00-000Z-stage2-telephony-gate-closure.md`.
+- `2026-05-23` — **Stage 2 telephony resume waiting** — Operator resume path documented (`2026-05-23-stage2-telephony-resume-waiting.md`): Twilio creds + GHCR access, then sync → prepare → compose up → manual hi/ta/te → evidence. Stage 1 frozen.
+- `2026-05-23` — **Browser client demo readiness** — Demo UX separates browser (text) vs phone/Twilio; evidence `2026-05-23-browser-demo-client-readiness.md`. No deploy; telephony gate untouched.
+- `2026-05-23` — **Browser demo v1 official** — Internal runbook `docs/VOICE_AGENT_BROWSER_DEMO_RUNBOOK.md`; golden API smoke `npm run smoke:voice-agent:browser-demo-golden`; DB apply `db:apply:voice-agent:browser-demo-v1` (prod schema). Golden turns blocked until `GROQ_API_KEY` on Vercel + redeploy. UI/nav relabels in repo. Stage 1 frozen.
+- `2026-05-26` — **Voice behavior config (preview)** — `workflow.voiceBehavior` (tone/pace/verbosity); Studio + browser demo preview UI; `docs/VOICE_AGENT_VOICE_BEHAVIOR_CONFIG.md`. Barge-in internal only; no Stage 1 runtime merge.
+- `2026-05-26` — **Voice behavior runtime wiring** — Merged into `buildMergedSystemContext`, demo `/turn` max_tokens, Bolna Sarvam speed + LLM tokens; tests `voice-behavior-config.test.ts`. Barge-in still not wired. Ship via voice deploy when ready (Stage 1 redeploy operator choice).
 - `2026-05-09` ? **Lead Intelligence M1 onboarding + CI contract pinning** ? Home page M1 ribbon (four-step links); Review placeholder **Meanwhile (M1)** escape hatch; `m0-lead-intelligence-no404-contract` asserts `.github/workflows/lead-intelligence-m1-closure.yml` wiring; PR template / PR draft / smoke checklist / dashboard + runbook synced.
 - `2026-05-09` ? **Lead Intelligence M1 browser smoke + CI closure workflow** ? Added `docs/LEAD_INTELLIGENCE_M1_BROWSER_SMOKE_CHECKLIST.md`, `.github/workflows/lead-intelligence-m1-closure.yml` (path-filtered), handoff/status links; aligned `LEAD_INTELLIGENCE_M1_CLOSURE_TIMEOUT_PER_SUITE_MS` to **180s** in `package.json`, `.github/workflows/timeline-contracts-release-gate.yml`, and `__tests__/m0/m0-timeline-release-gate-workflow-contracts.test.ts` pins.
 - `2026-05-09` ? **Lead Intelligence funnel telemetry + Jest M0 scope for LI** ? Added `discovery_results_nonempty` / `discovery_results_empty` and `export_csv_nonempty` / `export_csv_empty`; expanded `tsconfig.jest-m0.json` include for LI API + `lib/lead-intelligence`; enabled `ts-jest` `isolatedModules` in `jest.m0.config.js`; extended `m0-lead-intelligence-api-routes` tests.
