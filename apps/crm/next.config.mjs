@@ -38,7 +38,10 @@ const nextConfig = {
   eslint: { ignoreDuringBuilds: isVercel },
   ...(!disableTranspilePackages ? { transpilePackages: ['@payaid/db'] } : {}),
   experimental: {
-    ...(disableOptimizePackageImports
+    ...(isVercel
+      ? { cpus: 1, webpackMemoryOptimizations: true, webpackBuildWorker: false }
+      : {}),
+    ...(disableOptimizePackageImports || isVercel
       ? {}
       : {
           optimizePackageImports: [
