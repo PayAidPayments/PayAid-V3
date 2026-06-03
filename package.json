@@ -175,7 +175,7 @@
     "dev:turbo": "node node_modules/turbo/bin/turbo dev --filter=dashboard",
     "dev:websocket": "tsx server/websocket-voice-server.ts",
     "dev:browser-live-ws": "cross-env PAYAID_CLI_SCRIPT=1 tsx server/browser-live-voice-ws.ts",
-    "dev:browser-live-ws:offline": "cross-env BROWSER_LIVE_STUB=0 PAYAID_CLI_SCRIPT=1 tsx server/browser-live-voice-ws.ts",
+    "dev:browser-live-ws:offline": "cross-env DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS=--require dotenv/config BROWSER_LIVE_STUB=0 PAYAID_CLI_SCRIPT=1 tsx server/browser-live-voice-ws.ts",
     "voice-agent:validate-browser-live-local": "node scripts/voice-agent/validate-browser-live-local.mjs",
     "voice-agent:status-browser-live-investor": "node scripts/voice-agent/status-browser-live-investor.mjs",
     "voice-agent:preflight-investor-text-first": "node scripts/voice-agent/preflight-browser-live-investor-text-first.mjs",

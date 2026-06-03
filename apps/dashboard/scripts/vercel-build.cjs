@@ -16,6 +16,7 @@ setDefault('NEXT_BUILD_DIST_DIR', '.next-vercel-build')
 setDefault('NEXT_BUILD_TIMEOUT_MS', '0')
 setDefault('NEXT_BUILD_KILL_GRACE_MS', '15000')
 setDefault('NEXT_BUILD_HEARTBEAT_MS', '60000')
+// Webpack only on Vercel (Bull/server-relative imports break turbopack); no alternate retry to save RSS.
 setDefault('NEXT_BUILD_PREFERRED_MODE', 'webpack')
 setDefault('NEXT_BUILD_ALLOW_ALTERNATE_RETRY', '0')
 setDefault('NEXT_BUILD_CLEAR_STALE_LOCK', '1')
@@ -24,8 +25,9 @@ setDefault('PAYAID_DISABLE_OPTIMIZE_PACKAGE_IMPORTS', '1')
 setDefault('VERCEL_ALLOW_WEBPACK_FALLBACK', '1')
 // Vercel "large" workers are 8GB RAM; cap heap below total RSS so webpack/page-data
 // phases are less likely to be SIGKILL'd (see Next.js build memory guidance).
-setDefault('NODE_OPTIONS', '--max-old-space-size=3584')
-setDefault('UV_THREADPOOL_SIZE', '2')
+setDefault('GENERATE_SOURCEMAP', 'false')
+setDefault('NODE_OPTIONS', '--max-old-space-size=4096')
+setDefault('UV_THREADPOOL_SIZE', '1')
 
 const result = spawnSync('npm', ['run', 'build'], {
   stdio: 'inherit',

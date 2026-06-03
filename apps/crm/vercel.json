@@ -1,8 +1,10 @@
 {
-  "buildCommand": "npx prisma generate --schema=../../packages/db/prisma/schema.prisma && npm run build",
+  "buildCommand": "node scripts/vercel-build.cjs",
   "installCommand": "cd ../.. && npm install --legacy-peer-deps --no-audit --no-fund",
   "framework": "nextjs",
   "env": {
-    "PRISMA_GENERATE_DATAPROXY": "false"
+    "PRISMA_GENERATE_DATAPROXY": "false",
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "PAYAID_DISABLE_OPTIMIZE_PACKAGE_IMPORTS": "1"
   }
 }
