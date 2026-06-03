@@ -3,8 +3,8 @@
   "installCommand": "cd ../.. && npm install --legacy-peer-deps --no-audit --no-fund",
   "framework": "nextjs",
   "env": {
+    "VERCEL": "1",
     "PRISMA_GENERATE_DATAPROXY": "false",
-    "NODE_OPTIONS": "--max-old-space-size=4096",
     "PAYAID_DISABLE_OPTIMIZE_PACKAGE_IMPORTS": "1"
   }
 }

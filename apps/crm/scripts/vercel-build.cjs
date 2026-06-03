@@ -10,6 +10,8 @@ function setDefault(name, value) {
   }
 }
 
+setDefault('VERCEL', '1')
+setDefault('VERCEL_ENV', 'production')
 setDefault('GENERATE_SOURCEMAP', 'false')
 setDefault('PAYAID_DISABLE_OPTIMIZE_PACKAGE_IMPORTS', '1')
 setDefault('NODE_OPTIONS', '--max-old-space-size=4096')
