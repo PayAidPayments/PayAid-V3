@@ -24,8 +24,9 @@ setDefault('PAYAID_DISABLE_OPTIMIZE_PACKAGE_IMPORTS', '1')
 setDefault('VERCEL_ALLOW_WEBPACK_FALLBACK', '1')
 // Vercel "large" workers are 8GB RAM; cap heap below total RSS so webpack/page-data
 // phases are less likely to be SIGKILL'd (see Next.js build memory guidance).
-setDefault('NODE_OPTIONS', '--max-old-space-size=3584')
-setDefault('UV_THREADPOOL_SIZE', '2')
+setDefault('GENERATE_SOURCEMAP', 'false')
+setDefault('NODE_OPTIONS', '--max-old-space-size=4096')
+setDefault('UV_THREADPOOL_SIZE', '1')
 
 const result = spawnSync('npm', ['run', 'build'], {
   stdio: 'inherit',
