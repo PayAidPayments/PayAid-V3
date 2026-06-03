@@ -18,7 +18,7 @@ function applyWebpackParallelism(config) {
     config.parallelism = n
     return
   }
-  if (isVercel) config.parallelism = 2
+  if (isVercel) config.parallelism = 1
 }
 
 let withBundleAnalyzer = (config) => config
@@ -34,7 +34,8 @@ if (process.env.ANALYZE === 'true') {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  typescript: { ignoreBuildErrors: false },
+  typescript: { ignoreBuildErrors: isVercel },
+  eslint: { ignoreDuringBuilds: isVercel },
   ...(!disableTranspilePackages ? { transpilePackages: ['@payaid/db'] } : {}),
   experimental: {
     ...(disableOptimizePackageImports
