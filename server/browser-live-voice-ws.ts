@@ -14,6 +14,7 @@ import { resolve } from 'path'
 config({ path: resolve(process.cwd(), '.env.local'), override: false })
 config({ path: resolve(process.cwd(), '.env'), override: false })
 
+import { randomBytes } from 'node:crypto'
 import { WebSocketServer, WebSocket } from 'ws'
 import { createServer } from 'http'
 import { verify } from 'jsonwebtoken'
@@ -131,7 +132,7 @@ async function startSession(
 ) {
   try {
     if (STUB_MODE) {
-      const sessionId = `stub_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      const sessionId = `stub_${Date.now()}_${randomBytes(4).toString('hex')}`
       state.sessionId = sessionId
       state.agentId = agentId
       send(state.ws, {
