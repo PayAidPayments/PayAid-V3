@@ -39,7 +39,13 @@ const nextConfig = {
   ...(!disableTranspilePackages ? { transpilePackages: ['@payaid/db'] } : {}),
   experimental: {
     ...(isVercel
-      ? { cpus: 1, webpackMemoryOptimizations: true, webpackBuildWorker: false }
+      ? {
+          staticGenerationMaxConcurrency: 1,
+          cpus: 1,
+          memoryBasedWorkersCount: true,
+          webpackMemoryOptimizations: true,
+          webpackBuildWorker: false,
+        }
       : {}),
     ...(disableOptimizePackageImports || isVercel
       ? {}

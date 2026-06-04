@@ -27,8 +27,8 @@ setDefault('VERCEL_ALLOW_WEBPACK_FALLBACK', '1')
 // phases are less likely to be SIGKILL'd (see Next.js build memory guidance).
 setDefault('GENERATE_SOURCEMAP', 'false')
 setDefault('NEXT_TELEMETRY_DISABLED', '1')
-// Slightly lower heap to leave RSS for webpack native allocations on 8GB workers.
-setDefault('NODE_OPTIONS', '--max-old-space-size=3584')
+// Leave RSS headroom for webpack/SSG native allocations on 8GB workers (see main OOM mitigation).
+setDefault('NODE_OPTIONS', '--max-old-space-size=3072')
 setDefault('UV_THREADPOOL_SIZE', '1')
 
 const result = spawnSync('npm', ['run', 'build'], {
