@@ -1,0 +1,95 @@
+/**
+
+ * Voice event emitter — console + session persistence hook.
+
+ */
+
+
+
+import type { PrismaClient } from '@prisma/client'
+
+import type { VoiceEvent, VoiceEventName, VoiceEventPayload } from './voice-event-taxonomy'
+
+import { formatVoiceEventLog } from './voice-event-taxonomy'
+
+import { persistVoiceEventToDemoSession } from './persist-voice-event'
+
+
+
+export type EmitVoiceEventOptions = {
+
+  /** When true, also console.log structured JSON (default in development). */
+
+  log?: boolean
+
+  /** Append to VoiceDemoSession.metadataJson.voiceEvents when sessionId is set. */
+
+  persistToSession?: {
+
+    prisma: PrismaClient
+
+    sessionId: string
+
+  }
+
+}
+
+
+
+export async function emitVoiceEvent(
+
+  event: VoiceEventName,
+
+  payload: Omit<VoiceEventPayload, 'at'>,
+
+  opts?: EmitVoiceEventOptions,
+
+): Promise<VoiceEvent> {
+
+  const evt: VoiceEvent = {
+
+    event,
+
+    payload: { ...payload, at: new Date().toISOString() },
+
+  }
+
+
+
+  const shouldLog =
+
+    opts?.log ?? (process.env.NODE_ENV !== 'production' || process.env.VOICE_EVENT_LOG === '1')
+
+
+
+  if (shouldLog) {
+
+    console.log(formatVoiceEventLog(evt))
+
+  }
+
+
+
+  const sessionId = opts?.persistToSession?.sessionId ?? payload.sessionId
+
+  if (opts?.persistToSession?.prisma && sessionId) {
+
+    try {
+
+      await persistVoiceEventToDemoSession(opts.persistToSession.prisma, sessionId, evt)
+
+    } catch (e) {
+
+      console.warn('[voice-event] persist failed', e instanceof Error ? e.message : e)
+
+    }
+
+  }
+
+
+
+  return evt
+
+}
+
+
