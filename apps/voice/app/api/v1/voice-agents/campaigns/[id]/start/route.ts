@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { checkDndBatch, normalizePhoneForDnd } from '@/lib/dnd'
+import { pickupNextCampaignContact } from '@/lib/voice-agent/campaign-dialer'
 
 async function getCampaignOr404(tenantId: string, id: string) {
   return prisma.voiceAgentCampaign.findFirst({
@@ -77,9 +78,18 @@ export async function POST(
       include: { agent: { select: { id: true, name: true } } },
     })
 
+    let firstDial = null
+    if (process.env.VOICE_AUTO_DIAL_ON_START === '1') {
+      firstDial = await pickupNextCampaignContact(prisma, {
+        tenantId: user.tenantId,
+        campaignId: id,
+      })
+    }
+
     return NextResponse.json({
-      message: 'Campaign started. Outbound calls will be placed by the dialer.',
+      message: 'Campaign started. Use POST …/campaigns/[id]/tick to place outbound calls.',
       campaign: updated,
+      firstDial,
     })
   } catch (error) {
     console.error('[Campaigns] Start error:', error)

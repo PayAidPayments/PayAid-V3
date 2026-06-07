@@ -10,6 +10,10 @@ import { searchKnowledgeBase } from '@/lib/voice-agent/knowledge-base'
 import { buildMergedSystemContext } from '@/lib/voice-agent/agent-runtime-context'
 import { loadApprovedTrainingSnapshot } from '@/lib/voice-agent/training-pack-load'
 import { parseTranscriptJson, type DemoTranscriptTurn } from '@/lib/voice-agent/demo-transcript'
+import {
+  maxTokensForVerbosity,
+  parseVoiceBehaviorFromWorkflow,
+} from '@/lib/voice-agent/voice-behavior-config'
 import { z } from 'zod'
 
 export const runtime = 'nodejs'
@@ -84,7 +88,10 @@ export async function POST(
     }))
     history.push({ role: 'user', content: message })
 
-    const response = await generateVoiceResponse(systemPrompt, history, agent.language)
+    const voiceBehavior = parseVoiceBehaviorFromWorkflow(agent.workflow)
+    const response = await generateVoiceResponse(systemPrompt, history, agent.language, {
+      maxTokens: maxTokensForVerbosity(voiceBehavior.verbosityPreset),
+    })
 
     const now = new Date().toISOString()
     const nextTranscript: DemoTranscriptTurn[] = [

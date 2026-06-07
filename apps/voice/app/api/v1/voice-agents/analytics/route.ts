@@ -93,28 +93,8 @@ export async function GET(request: NextRequest) {
       },
     }
 
-    const [
-      totalCalls,
-      completedCalls,
-      answeredCalls,
-      totalDuration,
-      totalCost,
-      callsByStatus,
-      callsByLanguage,
-      sentimentStats,
-      positiveSentimentCount,
-      callsWithMetadata,
-      callsByAgent,
-      bolnaInboundAttempts,
-      bolnaConnected,
-      bolnaFallbackCount,
-      bolnaStreamFailedCount,
-      nativeInboundCount,
-      callsByRuntime,
-      firstAudioAgg,
-      bargeInAgg,
-      firstAudioSamples,
-    ] = await Promise.all([
+    // Serverless pooler default is 3 connections; batch parallel queries to avoid P2024 timeouts.
+    const [totalCalls, completedCalls, answeredCalls] = await Promise.all([
       prisma.voiceAgentCall.count({ where }),
       prisma.voiceAgentCall.count({
         where: { ...where, status: 'completed' },
@@ -125,6 +105,9 @@ export async function GET(request: NextRequest) {
           status: { in: ['completed', 'in-progress'] },
         },
       }),
+    ])
+
+    const [totalDuration, totalCost, callsByStatus] = await Promise.all([
       prisma.voiceAgentCall.aggregate({
         where: { ...where, durationSeconds: { not: null } },
         _sum: { durationSeconds: true },
@@ -138,6 +121,9 @@ export async function GET(request: NextRequest) {
         where,
         _count: true,
       }),
+    ])
+
+    const [callsByLanguage, sentimentStats, positiveSentimentCount] = await Promise.all([
       prisma.voiceAgentCall.groupBy({
         by: ['languageUsed'],
         where: { ...where, languageUsed: { not: null } },
@@ -154,6 +140,9 @@ export async function GET(request: NextRequest) {
           sentiment: 'positive',
         },
       }),
+    ])
+
+    const [callsWithMetadata, callsByAgent, bolnaInboundAttempts] = await Promise.all([
       prisma.voiceAgentCall.findMany({
         where,
         select: {
@@ -172,6 +161,9 @@ export async function GET(request: NextRequest) {
         _avg: { durationSeconds: true },
       }),
       prisma.voiceAgentCall.count({ where: bolnaRuntimeWhere }),
+    ])
+
+    const [bolnaConnected, bolnaFallbackCount, bolnaStreamFailedCount] = await Promise.all([
       prisma.voiceAgentCall.count({
         where: {
           ...where,
@@ -185,6 +177,9 @@ export async function GET(request: NextRequest) {
       prisma.voiceAgentCall.count({
         where: { ...where, runtime: VOICE_CALL_RUNTIME.BOLNA_STREAM_FAILED },
       }),
+    ])
+
+    const [nativeInboundCount, callsByRuntime, firstAudioAgg] = await Promise.all([
       prisma.voiceAgentCall.count({
         where: { ...where, runtime: VOICE_CALL_RUNTIME.NATIVE },
       }),
@@ -198,6 +193,9 @@ export async function GET(request: NextRequest) {
         _avg: { firstAudioMs: true },
         _count: { firstAudioMs: true },
       }),
+    ])
+
+    const [bargeInAgg, firstAudioSamples] = await Promise.all([
       prisma.voiceAgentCall.aggregate({
         where,
         _sum: { bargeInCount: true, interruptedTokens: true },
