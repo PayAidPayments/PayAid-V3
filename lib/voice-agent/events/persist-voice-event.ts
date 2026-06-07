@@ -3,7 +3,7 @@
  * Dedicated VoiceEvent table deferred until telephony bus consumers ship.
  */
 
-import type { PrismaClient } from '@prisma/client'
+import type { Prisma, PrismaClient } from '@prisma/client'
 import type { VoiceEvent } from './voice-event-taxonomy'
 
 const MAX_EVENTS_PER_SESSION = 200
@@ -60,7 +60,7 @@ export async function persistVoiceEventToDemoSession(
         ...prior,
         voiceEvents,
         lastVoiceEventAt: record.at,
-      },
+      } as Prisma.InputJsonValue,
     },
   })
 }
