@@ -25,6 +25,11 @@ function readMetadata(raw: unknown): Record<string, unknown> {
   return {}
 }
 
+/** Prisma JSON columns require plain JSON values — round-trip strips custom TS types. */
+function toInputJsonValue(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue
+}
+
 export async function persistVoiceEventToDemoSession(
   prisma: PrismaClient,
   sessionId: string,
@@ -56,11 +61,11 @@ export async function persistVoiceEventToDemoSession(
   await prisma.voiceDemoSession.update({
     where: { id: sessionId },
     data: {
-      metadataJson: {
+      metadataJson: toInputJsonValue({
         ...prior,
         voiceEvents,
         lastVoiceEventAt: record.at,
-      } as Prisma.InputJsonValue,
+      }),
     },
   })
 }
