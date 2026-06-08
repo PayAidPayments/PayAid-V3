@@ -71,8 +71,22 @@ npm run voice-agent:smoke-supervisor-monitor-no-404
 npm run smoke:voice-agent:campaign-dialer-tick
 ```
 
-Spoken rehearsal (`VOICE_REHEARSAL_DIRECT=1`) still needs sidecar on `:3002`.
+## Full rehearsal — HTTP path — 2026-06-08T11:12 UTC
+
+`VOICE_REHEARSAL_DIRECT=0` against Vercel + sidecar `:3002` — **all 5 steps PASS** (~6 min):
+
+| Step | Result |
+|------|--------|
+| `spoken-e2e-once` | PASS — session `cmq549jcj0001s3lq85n40hk5`, barge-in=1 |
+| `escalation-spoken-once` | PASS — `transferMode: stub`, escalation tags |
+| `trigger-queue` (HTTP) | PASS — 4/4 webhooks 200 |
+| `campaign-dialer-tick` (HTTP) | PASS — stub dial `cmq54bj8o000bnxwsvefv87fr` |
+| `supervisor-monitor-no404` | PASS — page + API 200 |
+
+```json
+{"ok":true,"message":"Promoter demo rehearsal passed"}
+```
 
 ## Phase 2 status
 
-Code checklist **100%**. Promoter rehearsal **full green** (direct + HTTP API smokes on Vercel).
+Code checklist **100%**. Promoter rehearsal **full green** (direct + HTTP + supervisor on Vercel).
