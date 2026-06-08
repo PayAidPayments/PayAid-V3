@@ -5,14 +5,14 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
-import { requireModuleAccess } from '@/lib/middleware/auth'
+import { requireVoiceRealtimeAccess } from '@/lib/voice-agent/entitlements'
 import { tickRunningCampaigns } from '@/lib/voice-agent/campaign-dialer'
 
 export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'ai-studio')
+    const { tenantId } = await requireVoiceRealtimeAccess(request)
     const body = (await request.json().catch(() => ({}))) as { maxTicks?: number }
     const results = await tickRunningCampaigns(prisma, {
       tenantId,

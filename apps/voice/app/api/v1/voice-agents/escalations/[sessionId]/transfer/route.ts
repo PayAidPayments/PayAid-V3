@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
-import { requireModuleAccess } from '@/lib/middleware/auth'
+import { requireVoiceRealtimeAccess } from '@/lib/voice-agent/entitlements'
 import { requestEscalationTransfer } from '@/lib/voice-agent/escalation-transfer'
 
 export const runtime = 'nodejs'
@@ -15,7 +15,7 @@ export async function POST(
   ctx: { params: Promise<{ sessionId: string }> },
 ) {
   try {
-    const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
+    const { tenantId, userId } = await requireVoiceRealtimeAccess(request)
     const { sessionId } = await ctx.params
     const body = (await request.json().catch(() => ({}))) as { autoDial?: boolean }
     const result = await requestEscalationTransfer(prisma, {

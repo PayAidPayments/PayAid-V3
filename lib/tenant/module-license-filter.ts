@@ -1,4 +1,8 @@
 import { ALL_LICENSE_MODULE_ID_SET } from '@/lib/modules/catalog'
+import {
+  VOICE_LEGACY_LICENSE_MODULE,
+  VOICE_REALTIME_CAPABILITY_ID,
+} from '@/lib/voice-agent/entitlements'
 
 const ALWAYS_VISIBLE_MODULES = new Set<string>([
   'home',
@@ -94,6 +98,13 @@ export function isModuleListedForTenantLicense(
 
   const normalizedLicensedModules = toLicensedModuleSet(licensedModules)
   if (normalizedLicensedModules.size === 0) return true
+
+  if (normalizedModuleId === 'voice-agents') {
+    return (
+      normalizedLicensedModules.has(VOICE_REALTIME_CAPABILITY_ID) ||
+      normalizedLicensedModules.has(VOICE_LEGACY_LICENSE_MODULE)
+    )
+  }
 
   const requiredLicense = resolveRequiredLicense(normalizedModuleId)
   if (normalizedLicensedModules.has(requiredLicense)) return true

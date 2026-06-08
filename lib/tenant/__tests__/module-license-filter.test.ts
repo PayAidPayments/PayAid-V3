@@ -21,9 +21,15 @@ describe('module license filter', () => {
     expect(resolveLicenseModuleId('industry-intelligence')).toBe('analytics')
   })
 
+  it('allows voice-agents with voice-realtime standalone SKU', () => {
+    expect(isModuleListedForTenantLicense('voice-agents', tenantId, ['voice-realtime'])).toBe(true)
+    expect(isModuleListedForTenantLicense('voice-agents', tenantId, ['crm'])).toBe(false)
+  })
+
   it('allows aliased surfaces when canonical license is active', () => {
     expect(isModuleListedForTenantLicense('support', tenantId, ['communication'])).toBe(true)
     expect(isModuleListedForTenantLicense('ai-chat', tenantId, ['ai-studio'])).toBe(true)
+    expect(isModuleListedForTenantLicense('voice-agents', tenantId, ['ai-studio'])).toBe(true)
     expect(isModuleListedForTenantLicense('workflow-automation', tenantId, ['projects'])).toBe(
       true
     )

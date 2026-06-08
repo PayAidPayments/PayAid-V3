@@ -5,14 +5,14 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
-import { requireModuleAccess } from '@/lib/middleware/auth'
+import { requireVoiceRealtimeAccess } from '@/lib/voice-agent/entitlements'
 import { aggregateDemoSessionAnalytics } from '@/lib/voice-agent/demo-session-analytics'
 
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'ai-studio')
+    const { tenantId } = await requireVoiceRealtimeAccess(request)
     const { searchParams } = new URL(request.url)
     const agentId = searchParams.get('agentId') || undefined
     const limit = Math.min(Number(searchParams.get('limit') || 200), 500)

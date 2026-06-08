@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { requireModuleAccess } from '@/lib/middleware/auth'
+import { requireVoiceRealtimeAccess } from '@/lib/voice-agent/entitlements'
 
 /** Session (ai-studio) or webhook secret + x-tenant-id. */
 export async function resolveVoiceTriggerTenantId(request: NextRequest): Promise<string | null> {
@@ -9,7 +9,7 @@ export async function resolveVoiceTriggerTenantId(request: NextRequest): Promise
     return request.headers.get('x-tenant-id')?.trim() || null
   }
   try {
-    const { tenantId } = await requireModuleAccess(request, 'ai-studio')
+    const { tenantId } = await requireVoiceRealtimeAccess(request)
     return tenantId
   } catch {
     return null

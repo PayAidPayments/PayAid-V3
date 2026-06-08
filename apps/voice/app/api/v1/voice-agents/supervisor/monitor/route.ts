@@ -4,14 +4,14 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
-import { requireModuleAccess } from '@/lib/middleware/auth'
+import { requireVoiceRealtimeAccess } from '@/lib/voice-agent/entitlements'
 import { loadSupervisorMonitorFeed } from '@/lib/voice-agent/supervisor-monitor'
 
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId } = await requireModuleAccess(request, 'ai-studio')
+    const { tenantId } = await requireVoiceRealtimeAccess(request)
     const { searchParams } = new URL(request.url)
     const agentId = searchParams.get('agentId') || undefined
     const eventLimit = Math.min(Number(searchParams.get('eventLimit') || 50), 100)
