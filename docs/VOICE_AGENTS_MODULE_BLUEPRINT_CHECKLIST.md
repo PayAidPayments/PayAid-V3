@@ -146,7 +146,7 @@
 | Entity | Status | Prisma / notes |
 |--------|--------|----------------|
 | VoiceAgent | **Done** | `VoiceAgent` |
-| VoiceCampaign | **Partial** | `VoiceAgentCampaign` — missing `trigger_source`, `business_hours` |
+| VoiceCampaign | **Partial** | `VoiceAgentCampaign` — `triggerSource` + `businessHoursJson`; dialer enforces hours |
 | VoiceCall | **Done** | `VoiceAgentCall` |
 | VoiceTurn | **Partial** | `CallMessage` + `transcriptJson`; no `interrupted_flag` column |
 | VoiceOutcome | **Partial** | `outcomeCode` + `metadataJson.postCall` |
@@ -166,7 +166,7 @@
 - [ ] Support case update path
 - [ ] Finance collections / promise-to-pay path
 
-**Phase 3 completion:** ~45%
+**Phase 3 completion:** ~52%
 
 ---
 
@@ -224,6 +224,7 @@ npm run voice-agent:validate-spoken-e2e-repeat
 | 2026-06-06 | **Phase 2 triggers + tasks** — Website lead webhook (`lead.triggered.call`); CRM follow-up tasks from objections; `escalation.requested` event; demo QA analytics API. Phase 2 ~58%. |
 | 2026-06-06 | **Phase 2 trigger webhooks complete** — CRM stage, missed-call, marketing lead routes; shared `campaign-queue.ts`; `VOICE_AGENT_TRIGGERS_RUNBOOK.md`; escalation handoff payload. Phase 2 ~72%. |
 | 2026-06-06 | **Supervisor monitor + STT safety** — Monitor UI + API; escalation ack; `VOICE_STT_LOW_CONFIDENCE_RAIL`. Phase 2 ~88%. |
+| 2026-06-08 | **Phase 3.2 campaign schema** — `triggerSource` + `businessHoursJson` on `VoiceAgentCampaign`; dialer `outside_business_hours` gate; trigger routes stamp source. |
 | 2026-06-08 | **Phase 3.2 Voice RBAC** — `voice.configure` / `voice.operate` / `voice.listen` permissions, `requireVoiceAccess` on Phase 2+ routes, sidebar gating via `useVoiceCapability`. |
 | 2026-06-08 | **Phase 3.3 Voice Inbox** — `/Inbox` UI, `loadVoiceInbox`, `GET inbox` + `GET inbox/export`; smoke `voice-agent:smoke-voice-inbox-no-404`. |
 | 2026-06-08 | **Phase 3.1 kickoff — voice-realtime entitlement** — `lib/voice-agent/entitlements.ts`, `requireVoiceRealtimeAccess`, module switcher accepts standalone `voice-realtime` SKU. |

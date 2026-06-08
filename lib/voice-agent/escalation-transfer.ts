@@ -55,6 +55,7 @@ export async function requestEscalationTransfer(
     campaignName: ESCALATION_CAMPAIGN_NAME,
     campaignType: 'lead_nurturing',
     script: 'Supervisor callback — human handoff requested during voice session.',
+    triggerSource: 'escalation_callback',
     contactMetadata: {
       triggerKind: 'escalation_transfer',
       sessionId: session.id,

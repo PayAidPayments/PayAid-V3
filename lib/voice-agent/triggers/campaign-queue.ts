@@ -4,6 +4,7 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { normalizePhone } from '@/lib/voice-agent/browser-live/transcript-routing'
+import type { VoiceCampaignTriggerSource } from '@/lib/voice-agent/campaign-schema'
 
 export type CampaignQueueInput = {
   tenantId: string
@@ -13,6 +14,7 @@ export type CampaignQueueInput = {
   campaignName: string
   campaignType: 'reminder' | 'lead_nurturing' | 'survey' | 'collections'
   script?: string
+  triggerSource?: VoiceCampaignTriggerSource
   contactMetadata: Record<string, unknown>
 }
 
@@ -38,12 +40,15 @@ export async function enqueueVoiceCampaignContact(
   })
   if (!agent) throw new Error('Voice agent not found or inactive')
 
+  const triggerSource = input.triggerSource ?? 'manual'
+
   let campaign = await prisma.voiceAgentCampaign.findFirst({
     where: {
       tenantId: input.tenantId,
       agentId: input.agentId,
       campaignType: input.campaignType,
       name: input.campaignName,
+      triggerSource,
     },
   })
 
@@ -55,6 +60,7 @@ export async function enqueueVoiceCampaignContact(
         name: input.campaignName,
         campaignType: input.campaignType,
         status: 'draft',
+        triggerSource,
         script: input.script || `Auto-triggered: ${input.campaignName}`,
       },
     })

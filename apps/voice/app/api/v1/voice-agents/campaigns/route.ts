@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { handleVoiceAccessError, requireVoiceAccess } from '@/lib/voice-agent/rbac'
+import { businessHoursSchema, triggerSourceSchema } from '@/lib/voice-agent/campaign-schema'
 import { z } from 'zod'
 
 const createCampaignSchema = z.object({
@@ -17,6 +18,8 @@ const createCampaignSchema = z.object({
   script: z.string().optional().nullable(),
   autoRemoveDnd: z.boolean().optional().default(true),
   paceCallsPerMin: z.number().int().min(1).max(120).optional().default(10),
+  triggerSource: triggerSourceSchema.optional().default('manual'),
+  businessHours: businessHoursSchema.optional().nullable(),
 })
 
 export async function GET(request: NextRequest) {
@@ -130,6 +133,8 @@ export async function POST(request: NextRequest) {
         script: validated.script ?? null,
         autoRemoveDnd: validated.autoRemoveDnd,
         paceCallsPerMin: validated.paceCallsPerMin,
+        triggerSource: validated.triggerSource,
+        businessHoursJson: validated.businessHours ?? null,
         status: 'draft',
       },
       include: { agent: { select: { id: true, name: true } } },

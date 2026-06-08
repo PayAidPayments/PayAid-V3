@@ -28,6 +28,7 @@ export async function enqueueMissedCallCallback(prisma: PrismaClient, input: Mis
     campaignName: MISSED_CALL_CAMPAIGN,
     campaignType: 'lead_nurturing',
     script: 'Missed-call callback — apologize for missed connection and resume conversation.',
+    triggerSource: 'missed_call',
     contactMetadata: {
       triggerKind: 'missed_call',
       missedCallSid: input.missedCallSid || undefined,

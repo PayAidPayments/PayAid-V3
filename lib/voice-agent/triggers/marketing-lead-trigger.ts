@@ -35,6 +35,7 @@ export async function enqueueMarketingLeadCall(prisma: PrismaClient, input: Mark
     campaignName: CAMPAIGN_BY_SOURCE[input.source],
     campaignType: 'lead_nurturing',
     script: `Outbound for ${input.source.replace('_', ' ')} — qualify and book next step.`,
+    triggerSource: 'marketing_lead',
     contactMetadata: {
       triggerKind: 'marketing_lead',
       source: input.source,

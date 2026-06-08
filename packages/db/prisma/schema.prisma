@@ -2919,6 +2919,8 @@ model VoiceAgentCampaign {
   status          String                     @default("draft") // draft, scheduled, running, paused, completed
   autoRemoveDnd   Boolean                   @default(true)
   paceCallsPerMin Int                       @default(10) // Sequential dialer: max calls per minute
+  triggerSource   String                    @default("manual") // manual, website_lead, crm_stage, missed_call, marketing_lead, escalation_callback
+  businessHoursJson Json?                   // { timezone, days[], start, end } — null = dial anytime
   scheduledAt     DateTime?
   startedAt       DateTime?
   completedAt     DateTime?

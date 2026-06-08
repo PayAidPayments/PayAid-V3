@@ -78,6 +78,8 @@ export async function enqueueWebsiteLeadCall(
 
     script: 'Callback for website lead — qualify interest and next step.',
 
+    triggerSource: 'website_lead',
+
     contactMetadata: {
 
       triggerKind: 'website_form',

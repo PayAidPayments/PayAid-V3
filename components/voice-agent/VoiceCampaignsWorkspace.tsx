@@ -1,5 +1,6 @@
 'use client'
 
+import { DEFAULT_BUSINESS_HOURS, formatTriggerSourceLabel } from '@/lib/voice-agent/campaign-schema'
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -85,6 +86,8 @@ type Campaign = {
   id: string
   name: string
   campaignType: string
+  triggerSource?: string | null
+  businessHoursJson?: unknown
   script: string | null
   status: string
   autoRemoveDnd: boolean
@@ -177,6 +180,7 @@ export function VoiceCampaignsWorkspace() {
     script?: string
     autoRemoveDnd: boolean
     paceCallsPerMin: number
+    businessHours?: typeof DEFAULT_BUSINESS_HOURS | null
     csvFile?: File
     launchNow?: boolean
     testFive?: boolean
@@ -195,6 +199,8 @@ export function VoiceCampaignsWorkspace() {
           script: body.script ?? null,
           autoRemoveDnd: body.autoRemoveDnd,
           paceCallsPerMin: body.paceCallsPerMin,
+          triggerSource: 'manual',
+          businessHours: body.businessHours ?? null,
         }),
       })
       if (!res.ok) {
@@ -460,7 +466,14 @@ export function VoiceCampaignsWorkspace() {
               <TableBody>
                 {campaigns.map((c) => (
                   <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <div>{c.name}</div>
+                      {c.triggerSource && c.triggerSource !== 'manual' && (
+                        <span className="text-xs text-muted-foreground">
+                          {formatTriggerSourceLabel(c.triggerSource)}
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>{c.agent?.name ?? '—'}</TableCell>
                     <TableCell>{c.contactCount.toLocaleString()}</TableCell>
                     <TableCell>
@@ -635,6 +648,7 @@ function NewCampaignModal({
     script?: string
     autoRemoveDnd: boolean
     paceCallsPerMin: number
+    businessHours?: typeof DEFAULT_BUSINESS_HOURS | null
     csvFile?: File
     launchNow?: boolean
     testFive?: boolean
@@ -657,6 +671,7 @@ function NewCampaignModal({
   const [whatsappFallback, setWhatsappFallback] = useState(false)
   const [launchNow, setLaunchNow] = useState(true)
   const [testFive, setTestFive] = useState(false)
+  const [restrictBusinessHours, setRestrictBusinessHours] = useState(false)
 
   const reset = () => {
     setStep(1)
@@ -674,6 +689,7 @@ function NewCampaignModal({
     setWhatsappFallback(false)
     setLaunchNow(true)
     setTestTen(false)
+    setRestrictBusinessHours(false)
   }
   const paceCallsPerMin = Math.max(1, Math.round(callsPerHour / 60))
   const estimatedContacts = contactsSource === 'crm_overdue' ? 1247 : contactsSource === 'crm_leads' ? 456 : (csvFile ? 500 : 0)
@@ -694,6 +710,7 @@ function NewCampaignModal({
       script: script.trim() || undefined,
       autoRemoveDnd,
       paceCallsPerMin: callsPerMin,
+      businessHours: restrictBusinessHours ? DEFAULT_BUSINESS_HOURS : null,
       csvFile: csvFile ?? undefined,
       launchNow: schedule === 'now' && launchNow,
       testFive,
@@ -805,7 +822,16 @@ function NewCampaignModal({
                   <span className="text-sm font-medium w-12">{callsPerHour}</span>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">Hours: 10AM–8PM (compliance window)</p>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="bizHours"
+                  checked={restrictBusinessHours}
+                  onCheckedChange={(v) => setRestrictBusinessHours(!!v)}
+                />
+                <Label htmlFor="bizHours">
+                  Restrict dialing to business hours (9AM–8PM IST, Mon–Sat)
+                </Label>
+              </div>
               <div>
                 <Label>Max retries</Label>
                 <Select value={String(maxRetries)} onValueChange={(v) => setMaxRetries(parseInt(v, 10))}>

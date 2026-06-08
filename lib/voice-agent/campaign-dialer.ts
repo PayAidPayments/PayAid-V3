@@ -6,6 +6,7 @@ import type { PrismaClient } from '@prisma/client'
 import { checkDndStatus, normalizePhoneForDnd } from '@/lib/dnd'
 import { emitVoiceEvent } from '@/lib/voice-agent/events/emit-voice-event'
 import { placeOutboundVoiceCall } from '@/lib/voice-agent/outbound-dial'
+import { isWithinBusinessHours, parseBusinessHours } from '@/lib/voice-agent/campaign-schema'
 
 export type CampaignPickupResult =
   | {
@@ -22,6 +23,7 @@ export type CampaignPickupResult =
   | { status: 'campaign_not_running'; campaignId: string }
   | { status: 'dnd_skipped'; campaignId: string; campaignContactId: string }
   | { status: 'agent_unavailable'; campaignId: string; reason: string }
+  | { status: 'outside_business_hours'; campaignId: string }
 
 async function maybeCompleteCampaign(
   prisma: PrismaClient,
@@ -68,6 +70,11 @@ export async function pickupNextCampaignContact(
       campaignId: campaign.id,
       reason: 'outbound_disabled',
     }
+  }
+
+  const businessHours = parseBusinessHours(campaign.businessHoursJson)
+  if (!isWithinBusinessHours(businessHours)) {
+    return { status: 'outside_business_hours', campaignId: campaign.id }
   }
 
   const oneMinuteAgo = new Date(Date.now() - 60_000)

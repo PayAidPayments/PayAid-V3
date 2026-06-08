@@ -52,6 +52,7 @@ export async function enqueueCrmStageCall(prisma: PrismaClient, input: CrmStageT
     campaignName: cfg.name,
     campaignType: cfg.type,
     script: cfg.script,
+    triggerSource: 'crm_stage',
     contactMetadata: {
       triggerKind: 'crm_stage',
       stageTrigger: input.stageTrigger,
