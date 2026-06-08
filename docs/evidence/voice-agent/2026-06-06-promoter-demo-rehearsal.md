@@ -47,27 +47,32 @@ npm run voice-agent:validate-promoter-demo-rehearsal
 1. **Sidecar dotenv** — `.env.local` loads with `override: false` so shell/cross-env operator overrides are not clobbered.
 2. **Windows spawn** — rehearsal script uses `process.execPath` + `tsx/dist/cli.mjs` instead of `npx tsx` (spawnSync returned `status: null` on Windows).
 
-## HTTP path (optional) — 2026-06-07
+## HTTP path — 2026-06-08 (full green on Vercel)
+
+**Deployment:** `https://voice-rigcolz0o-payaid-projects-a67c6b27.vercel.app` (alias `voice-six-xi.vercel.app`)
 
 | Check | Result | Notes |
 |-------|--------|-------|
-| Vercel secrets push + redeploy | **DONE** | `voice-avs2h8ngi-payaid-projects-a67c6b27.vercel.app` |
+| Phase 2 routes committed + deploy | **DONE** | `git archive` includes Monitor, triggers, supervisor API |
+| `smoke-trigger-webhooks` | **PASS** | 4/4 triggers queued (200) |
+| `smoke-supervisor-monitor-no-404` | **PASS** | Monitor page 200 + supervisor API 200 |
 | `smoke-live-demo-no-404` | **PASS** | LiveDemo shell 200 |
-| `smoke-trigger-webhooks` | **404** | Routes not in `git archive` deploy (untracked locally) |
-| `smoke-supervisor-monitor-no-404` | **404** | Monitor page + supervisor API untracked |
-| Local `:3003` | **BLOCKED** | Next dev/start binds but requests timeout (compile hang) |
-
-**Unblock HTTP rehearsal:** commit Phase 2 voice routes (`apps/voice/.../Monitor`, `triggers/*`, `supervisor/*`) + `lib/voice-agent/triggers/*`, then `npm run deploy:voice:git-archive`, then:
+| `smoke-campaign-dialer-tick` | **PASS** | stub dial `dialed`, `callId` created |
+| Local `:3003` | **BLOCKED** | Next dev/start still compile-hangs (use Vercel for HTTP) |
 
 ```powershell
-$env:VOICE_REHEARSAL_DIRECT='0'
-$env:VOICE_BASE_URL='https://voice-six-xi.vercel.app'
+npm run voice-agent:sync-stage1-vercel-env
+npm run voice-agent:mint-validation-auth-token
+$env:SMOKE_AUTH_TOKEN='<token>'
+$env:VOICE_BASE_URL='https://voice-rigcolz0o-payaid-projects-a67c6b27.vercel.app'
 $env:VERCEL_PROTECTION_BYPASS='<from .env.local>'
-npm run voice-agent:validate-promoter-demo-rehearsal
+npm run smoke:voice-agent:trigger-webhooks
+npm run voice-agent:smoke-supervisor-monitor-no-404
+npm run smoke:voice-agent:campaign-dialer-tick
 ```
 
-Smoke scripts now send `x-vercel-protection-bypass` on API calls (fixes false 401 from Deployment Protection).
+Spoken rehearsal (`VOICE_REHEARSAL_DIRECT=1`) still needs sidecar on `:3002`.
 
 ## Phase 2 status
 
-Code checklist **100%**. Promoter rehearsal **full green** (direct path). HTTP path pending git commit + redeploy.
+Code checklist **100%**. Promoter rehearsal **full green** (direct + HTTP API smokes on Vercel).

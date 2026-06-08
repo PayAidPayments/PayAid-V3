@@ -16,10 +16,12 @@ const agentId = process.env.SMOKE_AGENT_ID || 'va_stage1_bolna_smoke'
 const tenantId = process.env.SMOKE_TENANT_ID || 'cmjptk2mw0000aocw31u48n64'
 const token = process.env.SMOKE_AUTH_TOKEN
 const secret = process.env.VOICE_TRIGGER_WEBHOOK_SECRET?.trim()
+const bypass = process.env.VERCEL_PROTECTION_BYPASS || ''
 const phone = `9${String(Date.now()).slice(-9)}`
 
 function headers() {
   const h = { 'Content-Type': 'application/json' }
+  if (bypass) h['x-vercel-protection-bypass'] = bypass
   if (secret) {
     h['x-voice-trigger-secret'] = secret
     h['x-tenant-id'] = tenantId
@@ -29,12 +31,20 @@ function headers() {
   return h
 }
 
+function withBypass(url) {
+  if (!bypass) return url
+  const u = new URL(url)
+  u.searchParams.set('x-vercel-set-bypass-cookie', 'true')
+  u.searchParams.set('x-vercel-protection-bypass', bypass)
+  return u.toString()
+}
+
 if (!secret && !token) {
   console.error(JSON.stringify({ ok: false, error: 'Set SMOKE_AUTH_TOKEN or VOICE_TRIGGER_WEBHOOK_SECRET' }))
   process.exit(1)
 }
 
-const triggerRes = await fetch(`${base.replace(/\/$/, '')}/api/v1/voice-agents/triggers/website-lead`, {
+const triggerRes = await fetch(withBypass(`${base.replace(/\/$/, '')}/api/v1/voice-agents/triggers/website-lead`), {
   method: 'POST',
   headers: headers(),
   body: JSON.stringify({ agentId, phone, name: 'Dialer Smoke', formId: 'dialer-smoke' }),
@@ -48,7 +58,7 @@ if (!triggerRes.ok || !triggerBody.campaignId) {
 
 const campaignId = triggerBody.campaignId
 
-const startRes = await fetch(`${base.replace(/\/$/, '')}/api/v1/voice-agents/campaigns/${campaignId}/start`, {
+const startRes = await fetch(withBypass(`${base.replace(/\/$/, '')}/api/v1/voice-agents/campaigns/${campaignId}/start`), {
   method: 'POST',
   headers: headers(),
   signal: AbortSignal.timeout(30_000),
@@ -59,7 +69,7 @@ if (!startRes.ok) {
   process.exit(1)
 }
 
-const tickRes = await fetch(`${base.replace(/\/$/, '')}/api/v1/voice-agents/campaigns/${campaignId}/tick`, {
+const tickRes = await fetch(withBypass(`${base.replace(/\/$/, '')}/api/v1/voice-agents/campaigns/${campaignId}/tick`), {
   method: 'POST',
   headers: headers(),
   signal: AbortSignal.timeout(30_000),

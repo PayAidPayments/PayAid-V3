@@ -26,8 +26,14 @@ async function probePage() {
     signal: AbortSignal.timeout(25_000),
   })
   const text = await res.text()
-  const notFound = res.status === 404 || text.includes('could not be found')
-  return { ok: !notFound && res.status === 200, status: res.status }
+  const routeShell =
+    text.includes('Loading supervisor monitor') ||
+    text.includes('VoiceSupervisorMonitor') ||
+    text.includes('/Monitor')
+  const hard404 =
+    res.status === 404 ||
+    (text.includes('This page could not be found') && !routeShell)
+  return { ok: res.status === 200 && routeShell && !hard404, status: res.status }
 }
 
 async function probeApi() {
