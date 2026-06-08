@@ -7,6 +7,7 @@ import { checkDndStatus, normalizePhoneForDnd } from '@/lib/dnd'
 import { emitVoiceEvent } from '@/lib/voice-agent/events/emit-voice-event'
 import { placeOutboundVoiceCall } from '@/lib/voice-agent/outbound-dial'
 import { isWithinBusinessHours, parseBusinessHours } from '@/lib/voice-agent/campaign-schema'
+import { recordOutboundDialCompliance } from '@/lib/voice-agent/compliance-audit'
 
 export type CampaignPickupResult =
   | {
@@ -166,6 +167,14 @@ export async function pickupNextCampaignContact(
       dialMode: dial.dialMode,
       phone: contact.phone,
     },
+  })
+
+  void recordOutboundDialCompliance(prisma, {
+    tenantId: input.tenantId,
+    agentId: campaign.agentId,
+    callId: call.id,
+    campaignId: campaign.id,
+    phone: contact.phone,
   })
 
   return {

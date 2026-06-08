@@ -139,7 +139,7 @@
 - [x] `voiceRealTime` / standalone Voice Agents entitlement SKU (`lib/voice-agent/entitlements.ts`, `requireVoiceRealtimeAccess`, UI filter for `voice-realtime`)
 - [x] Module alias `voice-agents → ai-studio` (`module-license-filter.ts`)
 - [x] Voice-specific RBAC (configure vs operate vs listen-only) — `lib/voice-agent/rbac.ts`, `requireVoiceAccess`, role defaults in `lib/rbac.ts`
-- [ ] Compliance audit trail (consent, retention, redaction)
+- [x] Compliance audit trail (consent, retention, redaction) — `compliance-audit.ts`, `AuditLog` + session `complianceAudit`, `GET /compliance/audit`, inbox export `?redact=1`
 
 ### 3.2 Data model (blueprint §CRM schema)
 
@@ -166,7 +166,7 @@
 - [ ] Support case update path
 - [ ] Finance collections / promise-to-pay path
 
-**Phase 3 completion:** ~52%
+**Phase 3 completion:** ~58%
 
 ---
 
@@ -224,6 +224,7 @@ npm run voice-agent:validate-spoken-e2e-repeat
 | 2026-06-06 | **Phase 2 triggers + tasks** — Website lead webhook (`lead.triggered.call`); CRM follow-up tasks from objections; `escalation.requested` event; demo QA analytics API. Phase 2 ~58%. |
 | 2026-06-06 | **Phase 2 trigger webhooks complete** — CRM stage, missed-call, marketing lead routes; shared `campaign-queue.ts`; `VOICE_AGENT_TRIGGERS_RUNBOOK.md`; escalation handoff payload. Phase 2 ~72%. |
 | 2026-06-06 | **Supervisor monitor + STT safety** — Monitor UI + API; escalation ack; `VOICE_STT_LOW_CONFIDENCE_RAIL`. Phase 2 ~88%. |
+| 2026-06-08 | **Phase 3.1 compliance audit** — consent on session start, retention/recording on closeout, outbound dial disclosure, redacted inbox export + audit API. |
 | 2026-06-08 | **Phase 3.2 campaign schema** — `triggerSource` + `businessHoursJson` on `VoiceAgentCampaign`; dialer `outside_business_hours` gate; trigger routes stamp source. |
 | 2026-06-08 | **Phase 3.2 Voice RBAC** — `voice.configure` / `voice.operate` / `voice.listen` permissions, `requireVoiceAccess` on Phase 2+ routes, sidebar gating via `useVoiceCapability`. |
 | 2026-06-08 | **Phase 3.3 Voice Inbox** — `/Inbox` UI, `loadVoiceInbox`, `GET inbox` + `GET inbox/export`; smoke `voice-agent:smoke-voice-inbox-no-404`. |

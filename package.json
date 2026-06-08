@@ -433,6 +433,7 @@
     "smoke:voice-agent:trigger-webhooks": "node scripts/voice-agent/smoke-trigger-webhooks.mjs",
     "voice-agent:smoke-supervisor-monitor-no-404": "node scripts/voice-agent/smoke-supervisor-monitor-no-404.mjs",
     "voice-agent:smoke-voice-inbox-no-404": "node scripts/voice-agent/smoke-voice-inbox-no-404.mjs",
+    "voice-agent:smoke-compliance-audit": "node scripts/voice-agent/smoke-voice-compliance-audit.mjs",
     "smoke:voice-agent:campaign-dialer-tick": "node scripts/voice-agent/smoke-campaign-dialer-tick.mjs",
     "voice-agent:validate-promoter-demo-rehearsal": "node scripts/voice-agent/validate-promoter-demo-rehearsal.mjs",
     "voice-agent:validate-escalation-spoken-once": "node scripts/voice-agent/validate-escalation-spoken-once.mjs",
