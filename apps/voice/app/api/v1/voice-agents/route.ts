@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createVoiceAgentInputSchema, createVoiceDomainDeps } from '@payaid/domain-voice'
 import { authenticateRequest } from '@/lib/middleware/auth'
+import { handleVoiceAccessError, requireVoiceAccess } from '@/lib/voice-agent/rbac'
 import { z } from 'zod'
 
 const voiceDomain = createVoiceDomainDeps()
@@ -14,16 +15,13 @@ const voiceDomain = createVoiceDomainDeps()
 // POST /api/v1/voice-agents - Create agent
 export async function POST(request: NextRequest) {
   try {
-    const user = await authenticateRequest(request)
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { tenantId } = await requireVoiceAccess(request, 'configure')
 
     const body = await request.json()
     console.log('[VoiceAgents] Request body:', body)
-    console.log('[VoiceAgents] User tenantId:', user.tenantId)
+    console.log('[VoiceAgents] User tenantId:', tenantId)
     
-    if (!user.tenantId) {
+    if (!tenantId) {
       console.error('[VoiceAgents] No tenantId in user object:', user)
       return NextResponse.json(
         { error: 'No tenant ID found. Please log in again.' },
@@ -33,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     const validated = createVoiceAgentInputSchema.parse({
       ...body,
-      tenantId: user.tenantId,
+      tenantId,
     })
     console.log('[VoiceAgents] Validated data:', validated)
 
@@ -43,6 +41,8 @@ export async function POST(request: NextRequest) {
     console.log('[VoiceAgents] Agent created successfully:', agent.id)
     return NextResponse.json({ agent }, { status: 201 })
   } catch (error) {
+    const denied = handleVoiceAccessError(error)
+    if (denied) return denied
     if (error instanceof z.ZodError) {
       console.error('[VoiceAgents] Validation error:', error.errors)
       return NextResponse.json(

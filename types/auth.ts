@@ -62,6 +62,10 @@ export type Permission =
   | 'feature.marketing.use'
   | 'feature.support.use'
   | 'feature.whatsapp.use'
+  // Voice Agents
+  | 'voice.configure'
+  | 'voice.operate'
+  | 'voice.listen'
 
 /** User shape expected by RBAC (session / JWT) */
 export interface AuthUser {

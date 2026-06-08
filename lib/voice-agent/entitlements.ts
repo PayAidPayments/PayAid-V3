@@ -26,7 +26,7 @@ export function hasVoiceRealtimeEntitlement(licensedModules: readonly string[]):
   )
 }
 
-/** API routes for live voice ops (triggers, dialer, supervisor, in-call transfer). */
+/** API routes licensed for voice-realtime (entitlement only; pair with voice RBAC for capability). */
 export async function requireVoiceRealtimeAccess(request: NextRequest) {
   return requireAnyModuleAccess(request, [...VOICE_REALTIME_LICENSE_MODULES])
 }

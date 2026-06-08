@@ -37,6 +37,7 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
     'admin.billing.manage',
     'admin.integrations.manage',
     'admin.audit_log.view',
+    'voice.configure',
   ],
   business_admin: [
     'admin.users.manage',
@@ -47,6 +48,7 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
     'admin.billing.manage',
     'admin.integrations.manage',
     'admin.audit_log.view',
+    'voice.configure',
   ],
   admin: [
     'admin.users.manage',
@@ -57,6 +59,7 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
     'admin.billing.manage',
     'admin.integrations.manage',
     'admin.audit_log.view',
+    'voice.configure',
   ],
   OWNER: [
     'admin.users.manage',
@@ -67,6 +70,7 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
     'admin.billing.manage',
     'admin.integrations.manage',
     'admin.audit_log.view',
+    'voice.configure',
   ],
   owner: [
     'admin.users.manage',
@@ -77,6 +81,7 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
     'admin.billing.manage',
     'admin.integrations.manage',
     'admin.audit_log.view',
+    'voice.configure',
   ],
   MANAGER: [
     'crm.contacts.view',
@@ -91,6 +96,8 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
     'billing.invoices.view',
     'feature.ai.use',
     'feature.workflows.use',
+    'voice.operate',
+    'voice.listen',
   ],
   SALES: [
     'crm.contacts.view',
@@ -101,6 +108,8 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
     'crm.leads.create',
     'billing.invoices.view',
     'feature.ai.use',
+    'voice.operate',
+    'voice.listen',
   ],
   FINANCE: [
     'billing.invoices.view',
@@ -116,12 +125,14 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
     'crm.contacts.edit',
     'feature.support.use',
     'feature.ai.use',
+    'voice.listen',
   ],
   VIEWER: [
     'crm.contacts.view',
     'crm.deals.view',
     'crm.leads.view',
     'billing.invoices.view',
+    'voice.listen',
   ],
 }
 

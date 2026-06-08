@@ -5,14 +5,14 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
-import { requireVoiceRealtimeAccess } from '@/lib/voice-agent/entitlements'
+import { handleVoiceAccessError, requireVoiceAccess } from '@/lib/voice-agent/rbac'
 import { aggregateDemoSessionAnalytics } from '@/lib/voice-agent/demo-session-analytics'
 
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId } = await requireVoiceRealtimeAccess(request)
+    const { tenantId } = await requireVoiceAccess(request, 'listen')
     const { searchParams } = new URL(request.url)
     const agentId = searchParams.get('agentId') || undefined
     const limit = Math.min(Number(searchParams.get('limit') || 200), 500)
@@ -25,6 +25,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ ok: true, analytics })
   } catch (error) {
+    const denied = handleVoiceAccessError(error)
+    if (denied) return denied
     console.error('[demo/analytics] GET', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to load analytics' },

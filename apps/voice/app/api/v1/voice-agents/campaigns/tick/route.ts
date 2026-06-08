@@ -5,14 +5,14 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
-import { requireVoiceRealtimeAccess } from '@/lib/voice-agent/entitlements'
+import { handleVoiceAccessError, requireVoiceAccess } from '@/lib/voice-agent/rbac'
 import { tickRunningCampaigns } from '@/lib/voice-agent/campaign-dialer'
 
 export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId } = await requireVoiceRealtimeAccess(request)
+    const { tenantId } = await requireVoiceAccess(request, 'operate')
     const body = (await request.json().catch(() => ({}))) as { maxTicks?: number }
     const results = await tickRunningCampaigns(prisma, {
       tenantId,
@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
     })
     return NextResponse.json({ ok: true, results })
   } catch (error) {
+    const denied = handleVoiceAccessError(error)
+    if (denied) return denied
     console.error('[campaigns/tick] POST batch', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Batch tick failed' },
