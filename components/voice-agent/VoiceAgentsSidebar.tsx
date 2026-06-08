@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Phone, Plus, History, BarChart3, Settings, FileText, ShieldCheck, LayoutDashboard, Megaphone, MessageSquare, Radio } from 'lucide-react'
+import { Phone, Plus, History, BarChart3, Settings, FileText, ShieldCheck, LayoutDashboard, Megaphone, MessageSquare, Radio, Headphones, Inbox } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
 interface VoiceAgentsSidebarProps {
@@ -63,6 +63,16 @@ export function VoiceAgentsSidebar({ tenantId }: VoiceAgentsSidebarProps) {
       name: 'Analytics',
       href: `/voice-agents/${tenantId}/Analytics`,
       icon: BarChart3,
+    },
+    {
+      name: 'Supervisor',
+      href: `/voice-agents/${tenantId}/Monitor`,
+      icon: Headphones,
+    },
+    {
+      name: 'Inbox',
+      href: `/voice-agents/${tenantId}/Inbox`,
+      icon: Inbox,
     },
     {
       name: 'DND Scrub',

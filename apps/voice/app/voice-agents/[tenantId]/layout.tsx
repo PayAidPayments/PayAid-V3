@@ -11,6 +11,7 @@ const topBarItemsFor = (tenantId: string) => [
   { name: 'Transcripts', href: `/voice-agents/${tenantId}/Transcripts` },
   { name: 'Analytics', href: `/voice-agents/${tenantId}/Analytics` },
   { name: 'Supervisor', href: `/voice-agents/${tenantId}/Monitor` },
+  { name: 'Inbox', href: `/voice-agents/${tenantId}/Inbox` },
 ]
 
 export default function VoiceAgentsTenantLayout({

@@ -156,8 +156,8 @@
 ### 3.3 Standalone module inbox
 
 - [x] `no_crm_inbox` routing flag
-- [ ] Dedicated Voice Inbox UI (queue for unmatched / non-CRM tenants)
-- [ ] Webhook/API export for inbox items
+- [x] Dedicated Voice Inbox UI (queue for unmatched / non-CRM tenants) — `/Inbox`, `loadVoiceInbox`, `VoiceInboxWorkspace`
+- [x] Webhook/API export for inbox items — `GET /api/v1/voice-agents/inbox/export`
 
 ### 3.4 Cross-module bundles
 
@@ -166,7 +166,7 @@
 - [ ] Support case update path
 - [ ] Finance collections / promise-to-pay path
 
-**Phase 3 completion:** ~30%
+**Phase 3 completion:** ~38%
 
 ---
 
@@ -224,5 +224,6 @@ npm run voice-agent:validate-spoken-e2e-repeat
 | 2026-06-06 | **Phase 2 triggers + tasks** — Website lead webhook (`lead.triggered.call`); CRM follow-up tasks from objections; `escalation.requested` event; demo QA analytics API. Phase 2 ~58%. |
 | 2026-06-06 | **Phase 2 trigger webhooks complete** — CRM stage, missed-call, marketing lead routes; shared `campaign-queue.ts`; `VOICE_AGENT_TRIGGERS_RUNBOOK.md`; escalation handoff payload. Phase 2 ~72%. |
 | 2026-06-06 | **Supervisor monitor + STT safety** — Monitor UI + API; escalation ack; `VOICE_STT_LOW_CONFIDENCE_RAIL`. Phase 2 ~88%. |
+| 2026-06-08 | **Phase 3.3 Voice Inbox** — `/Inbox` UI, `loadVoiceInbox`, `GET inbox` + `GET inbox/export`; smoke `voice-agent:smoke-voice-inbox-no-404`. |
 | 2026-06-08 | **Phase 3.1 kickoff — voice-realtime entitlement** — `lib/voice-agent/entitlements.ts`, `requireVoiceRealtimeAccess`, module switcher accepts standalone `voice-realtime` SKU. |
 | 2026-06-08 | **Phase 2 exit — full promoter rehearsal green** — `VOICE_REHEARSAL_DIRECT=0` all 5 steps PASS (spoken + escalation on sidecar; trigger/dialer/supervisor on Vercel `voice-rigcolz0o`). Evidence: `docs/evidence/voice-agent/2026-06-06-promoter-demo-rehearsal.md`. Phase 2 **100%**; Phase 3 platform productization is next track. |
