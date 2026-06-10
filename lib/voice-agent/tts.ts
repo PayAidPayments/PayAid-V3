@@ -42,6 +42,8 @@ export interface TTSOptions {
   gatewayToken?: string
   /** Sarvam Bulbul pace multiplier (browser-live spoken demo). */
   sarvamPace?: number
+  /** Abort in-flight TTS fetch (browser-live barge-in). */
+  signal?: AbortSignal
 }
 
 export function browserLiveTtsProvider(): 'auto' | 'bhashini' | 'coqui' | 'gateway' | 'vexyl' | 'sarvam' {

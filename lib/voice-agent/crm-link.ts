@@ -53,7 +53,8 @@ export async function linkVoiceSessionCrmOutcome(
   prisma: PrismaClient,
   input: {
     tenantId: string
-    voiceSessionId: string
+    voiceSessionId?: string | null
+    voiceCallId?: string | null
     routing: string
     contactId?: string | null
     interactionId?: string | null
@@ -66,7 +67,8 @@ export async function linkVoiceSessionCrmOutcome(
   const ids: string[] = []
   const base = {
     tenantId: input.tenantId,
-    voiceSessionId: input.voiceSessionId,
+    voiceSessionId: input.voiceSessionId ?? null,
+    voiceCallId: input.voiceCallId ?? null,
   }
 
   if (input.contactId) {
@@ -126,10 +128,11 @@ export async function linkVoiceSessionCrmOutcome(
   }
 
   if (input.routing === 'no_crm_inbox' && ids.length === 0) {
+    const inboxRef = input.voiceSessionId || input.voiceCallId || 'inbox'
     const id = await createVoiceCrmLink(prisma, {
       ...base,
       entityType: 'lead',
-      entityId: input.voiceSessionId,
+      entityId: inboxRef,
       createMode: 'inbox_only',
       matchConfidence: 0,
       metadata: { inboxOnly: true },

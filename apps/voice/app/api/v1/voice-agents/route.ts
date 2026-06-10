@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     console.log('[VoiceAgents] User tenantId:', tenantId)
     
     if (!tenantId) {
-      console.error('[VoiceAgents] No tenantId in user object:', user)
+      console.error('[VoiceAgents] No tenantId after auth')
       return NextResponse.json(
         { error: 'No tenant ID found. Please log in again.' },
         { status: 400 }

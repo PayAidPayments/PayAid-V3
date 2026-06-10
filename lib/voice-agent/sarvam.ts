@@ -417,7 +417,7 @@ export async function sarvamStt(
   }
 
   const form = new FormData()
-  const blob = new Blob([audio], { type: options?.mime || 'audio/webm' })
+  const blob = new Blob([new Uint8Array(audio)], { type: options?.mime || 'audio/webm' })
   form.append('file', blob, mimeToSttFilename(options?.mime))
   form.append('model', 'saaras:v3')
   form.append('mode', options?.mode || 'transcribe')
