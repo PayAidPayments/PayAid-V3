@@ -138,7 +138,9 @@ export async function POST(request: NextRequest) {
         autoRemoveDnd: validated.autoRemoveDnd,
         paceCallsPerMin: validated.paceCallsPerMin,
         triggerSource: validated.triggerSource,
-        businessHoursJson: toBusinessHoursJsonInput(validated.businessHours ?? null),
+        ...(validated.businessHours !== undefined
+          ? { businessHoursJson: toBusinessHoursJsonInput(validated.businessHours) }
+          : {}),
         status: 'draft',
       },
       include: { agent: { select: { id: true, name: true } } },

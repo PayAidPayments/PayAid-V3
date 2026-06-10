@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@payaid/db'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { handleVoiceAccessError, requireVoiceAccess } from '@/lib/voice-agent/rbac'
@@ -83,14 +84,14 @@ export async function PATCH(
     const validated = patchSchema.parse(body)
     const { businessHours, ...rest } = validated
 
+    const data: Prisma.VoiceAgentCampaignUpdateInput = { ...rest }
+    if (businessHours !== undefined) {
+      data.businessHoursJson = toBusinessHoursJsonInput(businessHours)
+    }
+
     const updated = await prisma.voiceAgentCampaign.update({
       where: { id },
-      data: {
-        ...rest,
-        ...(businessHours !== undefined
-          ? { businessHoursJson: toBusinessHoursJsonInput(businessHours) }
-          : {}),
-      },
+      data,
       include: { agent: { select: { id: true, name: true } } },
     })
 

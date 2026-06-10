@@ -43,10 +43,22 @@ const workDir =
 
 const tgzPath = path.join(workDir, 'source.tgz')
 
-if (existsSync(workDir)) {
-  rmSync(workDir, { recursive: true, force: true })
+function prepareWorkDir(dir) {
+  if (existsSync(dir) && process.env.VOICE_DEPLOY_SKIP_RM !== '1') {
+    try {
+      rmSync(dir, { recursive: true, force: true })
+    } catch (error) {
+      const code = error && typeof error === 'object' && 'code' in error ? error.code : ''
+      if (code !== 'EBUSY' && code !== 'EPERM') throw error
+      console.warn(
+        JSON.stringify({ warning: 'workDir_locked', workDir: dir, action: 'incremental_copy' }),
+      )
+    }
+  }
+  mkdirSync(dir, { recursive: true })
 }
-mkdirSync(workDir, { recursive: true })
+
+prepareWorkDir(workDir)
 
 const useCopy = process.env.VOICE_DEPLOY_USE_COPY === '1'
 console.log(

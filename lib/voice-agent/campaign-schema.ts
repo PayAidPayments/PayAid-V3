@@ -101,9 +101,8 @@ export function formatTriggerSourceLabel(source: string | null | undefined): str
 }
 
 export function toBusinessHoursJsonInput(
-  hours: VoiceCampaignBusinessHours | null | undefined,
-): Prisma.InputJsonValue | typeof PrismaRuntime.JsonNull | undefined {
-  if (hours === undefined) return undefined
+  hours: VoiceCampaignBusinessHours | null,
+): Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue {
   if (hours === null) return PrismaRuntime.JsonNull
   return hours as Prisma.InputJsonValue
 }
