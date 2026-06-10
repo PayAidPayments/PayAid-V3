@@ -437,6 +437,7 @@
     "voice-agent:smoke-crm-links": "node scripts/voice-agent/smoke-voice-crm-links.mjs",
     "voice-agent:smoke-unified-analytics": "node scripts/voice-agent/smoke-unified-analytics.mjs",
     "voice-agent:smoke-compliance-policy": "node scripts/voice-agent/smoke-compliance-policy.mjs",
+    "voice-agent:apply-voice-migrations": "node scripts/voice-agent/apply-voice-migrations.mjs",
     "smoke:voice-agent:campaign-dialer-tick": "node scripts/voice-agent/smoke-campaign-dialer-tick.mjs",
     "voice-agent:validate-promoter-demo-rehearsal": "node scripts/voice-agent/validate-promoter-demo-rehearsal.mjs",
     "voice-agent:validate-escalation-spoken-once": "node scripts/voice-agent/validate-escalation-spoken-once.mjs",
