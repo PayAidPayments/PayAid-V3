@@ -4,7 +4,15 @@
  * Default output: D:\Temp\payaid-voice-deploy (no spaces in path).
  */
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, rmSync, copyFileSync, readdirSync, statSync } from 'node:fs'
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  rmSync,
+  copyFileSync,
+  readdirSync,
+  statSync,
+} from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -40,19 +48,37 @@ if (existsSync(workDir)) {
 }
 mkdirSync(workDir, { recursive: true })
 
+const useCopy = process.env.VOICE_DEPLOY_USE_COPY === '1'
 console.log(
-  JSON.stringify({ step: 'git-archive', workDir, archivePaths: VOICE_DEPLOY_ARCHIVE_PATHS }, null, 2),
+  JSON.stringify(
+    { step: useCopy ? 'fs-copy' : 'git-archive', workDir, archivePaths: VOICE_DEPLOY_ARCHIVE_PATHS },
+    null,
+    2,
+  ),
 )
 
-const archive = spawnSync(
-  'git',
-  ['archive', '--format=tar.gz', '-o', tgzPath, 'HEAD', ...VOICE_DEPLOY_ARCHIVE_PATHS],
-  { cwd: root, stdio: 'inherit' },
-)
-if (archive.status !== 0) process.exit(archive.status ?? 1)
+if (useCopy) {
+  for (const rel of VOICE_DEPLOY_ARCHIVE_PATHS) {
+    const src = path.join(root, rel)
+    const dest = path.join(workDir, rel)
+    if (!existsSync(src)) {
+      console.error(JSON.stringify({ ok: false, error: 'missing path', rel }))
+      process.exit(1)
+    }
+    mkdirSync(path.dirname(dest), { recursive: true })
+    cpSync(src, dest, { recursive: true })
+  }
+} else {
+  const archive = spawnSync(
+    'git',
+    ['archive', '--format=tar.gz', '-o', tgzPath, 'HEAD', ...VOICE_DEPLOY_ARCHIVE_PATHS],
+    { cwd: root, stdio: 'inherit' },
+  )
+  if (archive.status !== 0) process.exit(archive.status ?? 1)
 
-const extract = spawnSync('tar', ['-xzf', tgzPath, '-C', workDir], { stdio: 'inherit', shell: true })
-if (extract.status !== 0) process.exit(extract.status ?? 1)
+  const extract = spawnSync('tar', ['-xzf', tgzPath, '-C', workDir], { stdio: 'inherit', shell: true })
+  if (extract.status !== 0) process.exit(extract.status ?? 1)
+}
 
 for (const name of ['.vercelignore', 'vercel-voice.json']) {
   const src = path.join(root, name)

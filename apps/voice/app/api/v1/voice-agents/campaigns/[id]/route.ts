@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { handleVoiceAccessError, requireVoiceAccess } from '@/lib/voice-agent/rbac'
-import { businessHoursSchema } from '@/lib/voice-agent/campaign-schema'
+import { businessHoursSchema, toBusinessHoursJsonInput } from '@/lib/voice-agent/campaign-schema'
 import { z } from 'zod'
 
 const patchSchema = z.object({
@@ -87,7 +87,9 @@ export async function PATCH(
       where: { id },
       data: {
         ...rest,
-        ...(businessHours !== undefined ? { businessHoursJson: businessHours } : {}),
+        ...(businessHours !== undefined
+          ? { businessHoursJson: toBusinessHoursJsonInput(businessHours) }
+          : {}),
       },
       include: { agent: { select: { id: true, name: true } } },
     })

@@ -8,7 +8,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
 import { authenticateRequest } from '@/lib/middleware/auth'
 import { handleVoiceAccessError, requireVoiceAccess } from '@/lib/voice-agent/rbac'
-import { businessHoursSchema, triggerSourceSchema } from '@/lib/voice-agent/campaign-schema'
+import {
+  businessHoursSchema,
+  toBusinessHoursJsonInput,
+  triggerSourceSchema,
+} from '@/lib/voice-agent/campaign-schema'
 import { z } from 'zod'
 
 const createCampaignSchema = z.object({
@@ -134,7 +138,7 @@ export async function POST(request: NextRequest) {
         autoRemoveDnd: validated.autoRemoveDnd,
         paceCallsPerMin: validated.paceCallsPerMin,
         triggerSource: validated.triggerSource,
-        businessHoursJson: validated.businessHours ?? null,
+        businessHoursJson: toBusinessHoursJsonInput(validated.businessHours ?? null),
         status: 'draft',
       },
       include: { agent: { select: { id: true, name: true } } },

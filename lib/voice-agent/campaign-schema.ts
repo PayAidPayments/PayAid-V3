@@ -1,6 +1,8 @@
 /**
  * Voice campaign schema helpers — trigger_source + business_hours (Phase 3.2).
  */
+import type { Prisma } from '@prisma/client'
+import { Prisma as PrismaRuntime } from '@prisma/client'
 import { z } from 'zod'
 
 export const VOICE_CAMPAIGN_TRIGGER_SOURCES = [
@@ -96,4 +98,12 @@ export function isWithinBusinessHours(
 export function formatTriggerSourceLabel(source: string | null | undefined): string {
   if (!source || source === 'manual') return 'Manual'
   return source.replace(/_/g, ' ')
+}
+
+export function toBusinessHoursJsonInput(
+  hours: VoiceCampaignBusinessHours | null | undefined,
+): Prisma.InputJsonValue | typeof PrismaRuntime.JsonNull | undefined {
+  if (hours === undefined) return undefined
+  if (hours === null) return PrismaRuntime.JsonNull
+  return hours as Prisma.InputJsonValue
 }
