@@ -58,11 +58,23 @@ function upsertEnvLocal(key, value) {
 const sidecarEnv = {
   ...process.env,
   PAYAID_CLI_SCRIPT: '1',
+  BROWSER_LIVE_STUB: '0',
 }
 
-console.log(JSON.stringify({ step: 'start-sidecar', port, stub: process.env.BROWSER_LIVE_STUB === '1' }, null, 2))
+console.log(
+  JSON.stringify(
+    {
+      step: 'start-sidecar',
+      port,
+      script: 'dev:browser-live-ws:offline',
+      offlineReal: process.env.BROWSER_LIVE_OFFLINE_REAL === '1',
+    },
+    null,
+    2,
+  ),
+)
 
-const sidecar = spawn('npm', ['run', 'dev:browser-live-ws'], {
+const sidecar = spawn('npm', ['run', 'dev:browser-live-ws:offline'], {
   cwd: root,
   env: sidecarEnv,
   stdio: 'ignore',

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Phone, Plus, History, BarChart3, Settings, FileText, ShieldCheck, LayoutDashboard, Megaphone, MessageSquare, Radio, Headphones, Inbox } from 'lucide-react'
+import { Phone, Plus, History, BarChart3, Settings, FileText, ShieldCheck, LayoutDashboard, Megaphone, MessageSquare, Radio, Headphones, Inbox, Scale } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { useVoiceCapability } from '@/lib/hooks/useVoiceCapability'
 import type { VoiceCapability } from '@/lib/voice-agent/rbac'
@@ -95,6 +95,12 @@ export function VoiceAgentsSidebar({ tenantId }: VoiceAgentsSidebarProps) {
       href: `/voice-agents/${tenantId}/Inbox`,
       icon: Inbox,
       minCapability: 'listen' as VoiceCapability,
+    },
+    {
+      name: 'Compliance',
+      href: `/voice-agents/${tenantId}/Compliance`,
+      icon: Scale,
+      minCapability: 'configure' as VoiceCapability,
     },
     {
       name: 'DND Scrub',

@@ -28,6 +28,7 @@ import {
   isIndicParlerAvailable,
   isLanguageSupported as isIndicParlerLanguageSupported,
 } from './indicparler-tts'
+import { isSarvamConfigured, sarvamTts } from './sarvam'
 
 export interface TTSOptions {
   language?: string
@@ -39,6 +40,22 @@ export interface TTSOptions {
   voiceStyle?: VexylVoiceStyle
   /** JWT for AI Gateway (same secret as app auth); pass from API route so gateway accepts the request */
   gatewayToken?: string
+  /** Sarvam Bulbul pace multiplier (browser-live spoken demo). */
+  sarvamPace?: number
+}
+
+export function browserLiveTtsProvider(): 'auto' | 'bhashini' | 'coqui' | 'gateway' | 'vexyl' | 'sarvam' {
+  const raw = (process.env.BROWSER_LIVE_TTS_PROVIDER || '').trim().toLowerCase()
+  if (
+    raw === 'bhashini' ||
+    raw === 'coqui' ||
+    raw === 'gateway' ||
+    raw === 'vexyl' ||
+    raw === 'sarvam'
+  ) {
+    return raw
+  }
+  return 'auto'
 }
 
 // Regional Indian languages (use Bhashini or IndicParler)
@@ -86,9 +103,76 @@ export async function synthesizeSpeech(
 ): Promise<Buffer> {
   const voiceStyle =
     options?.voiceStyle ?? voiceToneToStyle(options?.voiceTone) ?? voiceIdToStyle(voiceId)
+  const provider = browserLiveTtsProvider()
+
+  if (provider === 'sarvam') {
+    if (!isSarvamConfigured()) {
+      throw new Error('Sarvam TTS selected but SARVAM_API_KEY is missing')
+    }
+    return sarvamTts(text, language, {
+      speaker: voiceId,
+      pace: options?.sarvamPace ?? speed,
+      outputCodec: 'mp3',
+      signal: options?.signal,
+    })
+  }
+
+  if (provider === 'bhashini') {
+    if (!isBhashiniConfigured()) {
+      throw new Error('Bhashini TTS selected but BHASHINI_API_KEY/SARVAM_API_KEY is missing')
+    }
+    if (!isBhashiniLanguageSupported(language)) {
+      throw new Error(`Bhashini TTS selected but language ${language} is unsupported`)
+    }
+    const result = await synthesizeWithBhashini(text, {
+      language,
+      voiceId,
+      speed,
+    })
+    if (result.audioData) return result.audioData
+    throw new Error('Bhashini TTS returned no audio data')
+  }
+
+  if (provider === 'vexyl') {
+    if (!isVexylConfigured()) {
+      throw new Error('VEXYL TTS selected but VEXYL_TTS_URL is missing')
+    }
+    return synthesizeWithVexyl(text, {
+      language,
+      speaker: voiceId || 'divya-calm',
+      voiceStyle,
+      format: 'wav',
+    })
+  }
+
+  // Spoken demo default: Sarvam Bulbul when configured (replaces Bhashini path).
+  if (isSarvamConfigured()) {
+    try {
+      console.log(`[TTS] Using Sarvam Bulbul for ${language}`)
+      return await sarvamTts(text, language, {
+        speaker: voiceId,
+        pace: options?.sarvamPace ?? speed,
+        outputCodec: 'mp3',
+        signal: options?.signal,
+      })
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error)
+      console.warn(`[TTS] Sarvam failed (${msg}), falling back.`)
+    }
+  }
 
   // Coqui TTS Docker when configured: no API keys, no 401s, try first
-  if (isCoquiDockerConfigured()) {
+  if (provider !== 'auto' && provider === 'coqui' && isCoquiDockerConfigured()) {
+    try {
+      console.log(`[TTS] Using Coqui TTS Docker for ${language}`)
+      return await synthesizeWithCoquiDocker(text, language, voiceId, speed)
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error)
+      console.warn(`[TTS] Coqui Docker failed (${msg}), falling back.`)
+    }
+  }
+
+  if (isCoquiDockerConfigured() && provider === 'auto') {
     try {
       console.log(`[TTS] Using Coqui TTS Docker for ${language}`)
       return await synthesizeWithCoquiDocker(text, language, voiceId, speed)
@@ -200,6 +284,38 @@ async function synthesizeRegionalLanguage(
   // Fallback to Coqui TTS
   console.log(`[TTS] Using Coqui (fallback) for ${language}`)
   return await synthesizeWithCoqui(text, language, voiceId, speed, gatewayToken)
+}
+
+export async function probeTtsHealth(
+  attempts: number = 3,
+  language: string = 'en',
+): Promise<{
+  ok: boolean
+  provider: string
+  successCount: number
+  attempts: number
+  lastError?: string
+}> {
+  const provider = browserLiveTtsProvider()
+  let successCount = 0
+  let lastError: string | undefined
+
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      const audio = await synthesizeSpeech('Health check', language, undefined, 1.0)
+      if (audio.length > 0) successCount += 1
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  return {
+    ok: successCount === attempts,
+    provider,
+    successCount,
+    attempts,
+    lastError,
+  }
 }
 
 /**

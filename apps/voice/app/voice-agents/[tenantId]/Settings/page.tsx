@@ -6,5 +6,5 @@ export default async function VoiceAgentsSettingsAlias({
   params: Promise<{ tenantId: string }>
 }) {
   const { tenantId } = await params
-  redirect(`/voice-agents/${tenantId}/studio`)
+  redirect(`/voice-agents/${tenantId}/Compliance`)
 }

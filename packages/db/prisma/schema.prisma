@@ -309,6 +309,9 @@ model Tenant {
   voiceAgentExperiments        VoiceAgentExperiment[]
   voiceAgentTrainingPacks      VoiceAgentTrainingPack[]
   voiceDemoSessions           VoiceDemoSession[]
+  voiceCrmLinks               VoiceCrmLink[]
+  voiceTenantCompliancePolicy VoiceTenantCompliancePolicy?
+  voiceEvents                 VoiceEvent[]
   // Productivity Suite Relations
   spreadsheets                 Spreadsheet[]
   documents                    Document[]
@@ -3019,19 +3022,76 @@ model VoiceAgentCallMetadata {
 
 // Real-time call messages/transcripts (for streaming transcripts)
 model CallMessage {
-  id         String   @id @default(cuid())
-  callId     String
-  role       String // "user", "assistant", "system"
-  content    String   @db.Text
-  isPartial  Boolean  @default(false) // Is this a partial/interim transcript?
-  confidence Float? // STT confidence score (0.0 to 1.0)
-  timestamp  DateTime @default(now())
+  id              String   @id @default(cuid())
+  callId          String
+  role            String // "user", "assistant", "system"
+  content         String   @db.Text
+  isPartial       Boolean  @default(false) // Is this a partial/interim transcript?
+  interruptedFlag Boolean  @default(false) // Blueprint VoiceTurn.interrupted_flag (barge-in)
+  confidence      Float? // STT confidence score (0.0 to 1.0)
+  timestamp       DateTime @default(now())
 
   call VoiceAgentCall @relation(fields: [callId], references: [id], onDelete: Cascade)
 
   @@index([callId])
   @@index([timestamp])
   @@index([callId, timestamp])
+}
+
+/// Maps voice sessions/calls to CRM entities (blueprint CRMLink).
+model VoiceCrmLink {
+  id              String   @id @default(cuid())
+  tenantId        String
+  voiceSessionId  String?
+  voiceCallId     String?
+  entityType      String // contact, interaction, lead, case, invoice, deal
+  entityId        String
+  matchConfidence Float?   @default(1)
+  createMode      String // matched, created, inbox_only, bundle_ref
+  syncStatus      String   @default("linked") // linked, pending, failed
+  metadataJson    Json?
+  createdAt       DateTime @default(now())
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, voiceSessionId])
+  @@index([tenantId, voiceCallId])
+  @@index([tenantId, entityType, entityId])
+}
+
+/// Tenant-level voice compliance policy (recording, consent, retention).
+model VoiceTenantCompliancePolicy {
+  id                     String   @id @default(cuid())
+  tenantId               String   @unique
+  recordingRequired      Boolean  @default(true)
+  transcriptRequired     Boolean  @default(true)
+  consentMode            String   @default("explicit_toggle") // explicit_toggle | implied_demo | outbound_disclosure
+  retentionDays          Int      @default(90)
+  redactExportsByDefault Boolean  @default(true)
+  outboundDisclosureText String?  @db.Text
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+/// Durable voice event bus (blueprint §Event routing).
+model VoiceEvent {
+  id         String   @id @default(cuid())
+  tenantId   String
+  event      String
+  agentId    String?
+  sessionId  String?
+  callId     String?
+  metaJson   Json?
+  occurredAt DateTime @default(now())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, occurredAt])
+  @@index([tenantId, event])
+  @@index([tenantId, sessionId])
+  @@index([tenantId, callId])
 }
 
 // Multi-Agent Orchestration (Squads)

@@ -16,7 +16,7 @@
 | 1 | Sarvam as primary spoken provider (demo + near-term prod) | **Approved** | `BROWSER_LIVE_TTS_PROVIDER=sarvam`; Bolna `buildBolnaAgent()` Sarvam-first for hi/ta/te |
 | 2 | First demo use case | **Approved** | Browser-live inbound spoken demo (sales/qualification); telephony deferred to Stage 2 gate |
 | 3 | Unmatched caller CRM rule | **Approved** | Create **Voice Lead (Unverified)** — `source: voice_agent`, `sourceData.verificationStatus: pending` |
-| 4 | Mandatory recording + transcript + consent per tenant | **Partial** | Demo records on `session.end`; telephony uses Twilio/Bolna hooks; tenant consent policy TBD |
+| 4 | Mandatory recording + transcript + consent per tenant | **Partial** | Tenant policy UI + API (`/Compliance`, `GET/PUT /compliance/policy`); runtime enforcement on closeout/export |
 | 5 | First launch tier | **Approved** | **Tier 1 Essentials** + spoken demo gates from Phase 1 only |
 
 ---
@@ -67,7 +67,7 @@
 | Recording | **Pass** (demo) | `postCall.recording` in all 3 runs |
 | Transcript (timestamps + turns) | **Pass** (demo) | 4 turns/run in `transcriptJson` |
 | CRM writeback | **Pass** (demo) | Voice Lead (Unverified) + `crm.match.failed` event |
-| Analytics (disposition + summary in UI) | **Partial** | Disposition/summary in artifacts; unified telephony view TBD |
+| Analytics (disposition + summary in UI) | **Pass** | Demo artifacts + `GET /unified-analytics` (telephony + browser-live) |
 
 ### 1.6 Phase 1 exit gate
 
@@ -148,10 +148,10 @@
 | VoiceAgent | **Done** | `VoiceAgent` |
 | VoiceCampaign | **Partial** | `VoiceAgentCampaign` — `triggerSource` + `businessHoursJson`; dialer enforces hours |
 | VoiceCall | **Done** | `VoiceAgentCall` |
-| VoiceTurn | **Partial** | `CallMessage` + `transcriptJson`; no `interrupted_flag` column |
+| VoiceTurn | **Done** | `CallMessage.interruptedFlag` + `transcriptJson.interruptedFlag` via barge-in (`session-metrics.ts`) |
 | VoiceOutcome | **Partial** | `outcomeCode` + `metadataJson.postCall` |
 | VoiceArtifact | **Partial** | `recordingUrl` + embedded postCall recording |
-| CRMLink | **Missing** | Direct Contact/Interaction writes; no link table |
+| CRMLink | **Done** | `VoiceCrmLink` + `linkVoiceSessionCrmOutcome`; `GET /crm-links` |
 
 ### 3.3 Standalone module inbox
 
@@ -162,11 +162,15 @@
 ### 3.4 Cross-module bundles
 
 - [x] CRM writeback (Interaction + Contact)
-- [ ] Marketing hot-lead dialer integration
-- [ ] Support case update path
-- [ ] Finance collections / promise-to-pay path
+- [x] Marketing hot-lead dialer integration — `hotLeadScore` gate on marketing-lead trigger (`VOICE_MARKETING_HOT_LEAD_MIN_SCORE`)
+- [x] Support case update path — `applySupportCaseBundle` (case link + interaction notes)
+- [x] Finance collections / promise-to-pay path — `applyFinanceCollectionsBundle` (invoice metadata + CRM link)
 
-**Phase 3 completion:** ~58%
+- [x] Unified telephony + browser-live analytics — `unified-voice-analytics.ts`, `GET /unified-analytics`, Analytics UI cross-channel cards
+- [x] Tenant consent policy UI — `VoiceTenantCompliancePolicy`, `/Compliance`, `GET/PUT /compliance/policy`
+- [x] Dedicated `VoiceEvent` table — dual-write from `persist-voice-event.ts`, `GET /events`
+
+**Phase 3 completion:** ~85%
 
 ---
 
@@ -186,7 +190,7 @@
 | `escalation.requested` | **Partial** | Post-call + handoff payload in event meta |
 
 - [x] Shared emitter: `lib/voice-agent/events/emit-voice-event.ts` (structured console log; `VOICE_EVENT_LOG=1`)
-- [x] Persist events to `VoiceDemoSession.metadataJson.voiceEvents` (`persist-voice-event.ts`; dedicated table TBD)
+- [x] Persist events to `VoiceDemoSession.metadataJson.voiceEvents` + `VoiceEvent` table (`persist-voice-event.ts`, `GET /events`)
 
 ---
 
@@ -224,6 +228,10 @@ npm run voice-agent:validate-spoken-e2e-repeat
 | 2026-06-06 | **Phase 2 triggers + tasks** — Website lead webhook (`lead.triggered.call`); CRM follow-up tasks from objections; `escalation.requested` event; demo QA analytics API. Phase 2 ~58%. |
 | 2026-06-06 | **Phase 2 trigger webhooks complete** — CRM stage, missed-call, marketing lead routes; shared `campaign-queue.ts`; `VOICE_AGENT_TRIGGERS_RUNBOOK.md`; escalation handoff payload. Phase 2 ~72%. |
 | 2026-06-06 | **Supervisor monitor + STT safety** — Monitor UI + API; escalation ack; `VOICE_STT_LOW_CONFIDENCE_RAIL`. Phase 2 ~88%. |
+| 2026-06-10 | **Tenant compliance policy + VoiceEvent table** — `VoiceTenantCompliancePolicy`, `/Compliance` UI, `GET /events`. Phase 3 ~85%. |
+| 2026-06-10 | **Unified analytics** — `loadUnifiedVoiceAnalytics`, `GET /unified-analytics`, Analytics workspace cross-channel KPIs. Phase 3 ~78%. |
+| 2026-06-08 | **Phase 3.4 cross-module bundles** — finance collections, support case, marketing hot-lead; `post-call-bundles.ts`; telephony + browser-live hooks. |
+| 2026-06-08 | **Phase 3.2 data model closeout** — `VoiceCrmLink` + `interruptedFlag`; `GET /crm-links` smoke. |
 | 2026-06-08 | **Phase 3.1 compliance audit** — consent on session start, retention/recording on closeout, outbound dial disclosure, redacted inbox export + audit API. |
 | 2026-06-08 | **Phase 3.2 campaign schema** — `triggerSource` + `businessHoursJson` on `VoiceAgentCampaign`; dialer `outside_business_hours` gate; trigger routes stamp source. |
 | 2026-06-08 | **Phase 3.2 Voice RBAC** — `voice.configure` / `voice.operate` / `voice.listen` permissions, `requireVoiceAccess` on Phase 2+ routes, sidebar gating via `useVoiceCapability`. |

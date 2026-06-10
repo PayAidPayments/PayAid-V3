@@ -78,6 +78,12 @@ export class BrowserLiveSessionStateMachine {
     this.setPhase('listening')
   }
 
+  /** Watchdog / disconnect recovery — never leave UI stuck in thinking/speaking. */
+  forceListening() {
+    this.activeTurnId = null
+    this.setPhase('listening')
+  }
+
   onError() {
     this.activeTurnId = null
     this.setPhase('error')

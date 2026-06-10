@@ -1,11 +1,14 @@
-import { prisma } from '@payaid/db'
+import { prisma as defaultPrisma } from '@payaid/db'
+import type { PrismaClient } from '@prisma/client'
 import type { TrainingPackApprovedSnapshot } from './training-pack-types'
 
 export async function loadApprovedTrainingSnapshot(
   voiceAgentId: string,
   tenantId: string,
+  prismaClient: PrismaClient = defaultPrisma as PrismaClient,
 ): Promise<TrainingPackApprovedSnapshot | null> {
-  const pack = await prisma.voiceAgentTrainingPack.findFirst({
+  if (!prismaClient?.voiceAgentTrainingPack?.findFirst) return null
+  const pack = await prismaClient.voiceAgentTrainingPack.findFirst({
     where: { voiceAgentId, tenantId },
     select: { approvedJson: true },
   })
@@ -16,8 +19,10 @@ export async function loadApprovedTrainingSnapshot(
 export async function trainingPackVersionForAgent(
   voiceAgentId: string,
   tenantId: string,
+  prismaClient: PrismaClient = defaultPrisma as PrismaClient,
 ): Promise<number> {
-  const pack = await prisma.voiceAgentTrainingPack.findFirst({
+  if (!prismaClient?.voiceAgentTrainingPack?.findFirst) return 0
+  const pack = await prismaClient.voiceAgentTrainingPack.findFirst({
     where: { voiceAgentId, tenantId },
     select: { version: true },
   })

@@ -25,6 +25,11 @@ import type {
   VoiceAgentRow,
 } from './types'
 import { buildMergedSystemContext } from '../agent-runtime-context'
+import {
+  maxTokensForVerbosity,
+  parseVoiceBehaviorFromWorkflow,
+  sarvamSpeedForPace,
+} from '../voice-behavior-config'
 import { BOLNA_FALLBACK_REASONS, type BolnaFallbackReason } from './inbound-observability'
 
 // ─── Env helpers ─────────────────────────────────────────────────────────────
@@ -151,14 +156,17 @@ function pickSynthesizer(language: string, voiceId?: string | null, voiceTone?: 
   const lang = language.toLowerCase()
   // Indian languages → Sarvam Bulbul (streaming) for natural intonation.
   if (INDIAN_LANGUAGES.has(lang)) {
+    const speaker = voiceId || defaultBulbulSpeaker(lang)
+    const locale = bulbulLocale(lang)
+    // Bolna upstream SynthesizerProvider.SARVAM + SarvamConfig (voice_id, voice, language, model, speed).
     return {
-      provider: 'sarvam-bulbul',
+      provider: 'sarvam',
       provider_config: {
-        speaker: voiceId || defaultBulbulSpeaker(lang),
-        target_language_code: bulbulLocale(lang),
-        pitch: 0,
-        pace: 1.0,
-        loudness: 1.0,
+        voice_id: speaker,
+        voice: speaker,
+        language: locale,
+        model: 'bulbul:v3',
+        speed: 1.0,
       },
       stream: true,
       audio_format: 'mulaw',
@@ -332,10 +340,21 @@ function buildBuiltinTools(agent: VoiceAgentRow): BolnaToolDefinition[] {
 }
 
 export function buildBolnaAgent(agent: VoiceAgentRow): BolnaAgentConfig {
+  const voiceBehavior = parseVoiceBehaviorFromWorkflow(agent.workflow)
   const transcriber = pickTranscriber(agent.language)
-  const synthesizer = pickSynthesizer(agent.language, agent.voiceId, agent.voiceTone)
+  let synthesizer = pickSynthesizer(agent.language, agent.voiceId, agent.voiceTone)
+  if (synthesizer.provider === 'sarvam') {
+    synthesizer = {
+      ...synthesizer,
+      provider_config: {
+        ...synthesizer.provider_config,
+        speed: sarvamSpeedForPace(voiceBehavior.pacePreset),
+      },
+    }
+  }
   const llm = resolveLlmProvider()
   const greeting = resolveGreeting(agent)
+  const maxTokens = maxTokensForVerbosity(voiceBehavior.verbosityPreset)
 
   return {
     agent_name: `${agent.name} [${agent.id}]`.slice(0, 80),
@@ -359,7 +378,7 @@ export function buildBolnaAgent(agent: VoiceAgentRow): BolnaAgentConfig {
               model: llm.model,
               family: llm.family,
               temperature: 0.3,
-              max_tokens: 512,
+              max_tokens: maxTokens,
               system_prompt: bolnaLlmSystemPrompt(agent),
             },
           },

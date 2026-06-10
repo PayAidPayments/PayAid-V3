@@ -3,6 +3,7 @@
  * Dual-writes to AuditLog + session/call metadata for operator review.
  */
 import type { Prisma, PrismaClient } from '@prisma/client'
+import { resolveTenantRetentionDays } from '@/lib/voice-agent/consent-policy'
 
 export const VOICE_COMPLIANCE_ENTITY_TYPE = 'voice_compliance'
 export const VOICE_COMPLIANCE_ACTOR = 'system:voice-compliance'
@@ -46,10 +47,22 @@ export function voiceRecordingRetentionDays(): number {
   return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 3650) : 90
 }
 
-export function computeRetentionUntil(from: Date = new Date()): string {
-  const days = voiceRecordingRetentionDays()
+export function computeRetentionUntil(from: Date = new Date(), retentionDays?: number): string {
+  const days = retentionDays ?? voiceRecordingRetentionDays()
   const until = new Date(from.getTime() + days * 24 * 60 * 60 * 1000)
   return until.toISOString()
+}
+
+export async function computeTenantRetentionUntil(
+  prisma: PrismaClient,
+  tenantId: string,
+  from: Date = new Date(),
+): Promise<{ retentionDays: number; retentionUntil: string }> {
+  const retentionDays = await resolveTenantRetentionDays(prisma, tenantId)
+  return {
+    retentionDays,
+    retentionUntil: computeRetentionUntil(from, retentionDays),
+  }
 }
 
 export function redactPhoneNumbers(text: string): string {
@@ -165,7 +178,10 @@ export async function recordSessionComplianceCloseout(
   },
 ): Promise<void> {
   const at = new Date().toISOString()
-  const retentionUntil = computeRetentionUntil()
+  const { retentionDays, retentionUntil } = await computeTenantRetentionUntil(
+    prisma,
+    input.tenantId,
+  )
 
   if (input.hasRecording) {
     await logVoiceComplianceAudit(prisma, {
@@ -187,7 +203,7 @@ export async function recordSessionComplianceCloseout(
     sessionId: input.sessionId,
     channel: input.channel,
     detail: {
-      retentionDays: voiceRecordingRetentionDays(),
+      retentionDays,
       retentionUntil,
       transcriptTurnCount: input.transcriptTurnCount,
     },

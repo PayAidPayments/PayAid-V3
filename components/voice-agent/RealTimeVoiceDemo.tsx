@@ -330,6 +330,21 @@ export function RealTimeVoiceDemo({
   }, [token])
 
   const startDemo = () => {
+    const SpeechRecognitionCtor =
+      typeof window !== 'undefined'
+        ? window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition
+        : undefined
+    if (!SpeechRecognitionCtor) {
+      setMessages([
+        {
+          role: 'assistant',
+          content:
+            'Speech recognition is not available in this browser. Use Chrome/Edge on HTTPS, or open Browser demo (typed chat) from Studio.',
+          timestamp: new Date().toLocaleTimeString(),
+        },
+      ])
+      return
+    }
     shouldBeListeningRef.current = true
     setStatus('listening')
     setMessages([])
@@ -338,6 +353,14 @@ export function RealTimeVoiceDemo({
     } catch (e) {
       setStatus('idle')
       shouldBeListeningRef.current = false
+      const msg = e instanceof Error ? e.message : String(e)
+      setMessages([
+        {
+          role: 'assistant',
+          content: `Could not start microphone: ${msg}. Allow mic access in the browser bar, then try again.`,
+          timestamp: new Date().toLocaleTimeString(),
+        },
+      ])
     }
   }
 

@@ -8,7 +8,7 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Loader2, Phone, Headphones } from 'lucide-react'
+import { ArrowLeft, Loader2, MessageSquare, Headphones, Monitor } from 'lucide-react'
 
 const BrowserDemoV1 = dynamic(
   () => import('@/components/voice-agent/BrowserDemoV1').then((m) => ({ default: m.BrowserDemoV1 })),
@@ -32,6 +32,7 @@ type Agent = {
   description?: string | null
   language?: string | null
   status?: string | null
+  workflow?: unknown
 }
 
 type FetchError = 'unauthorized' | 'not_found' | 'error' | null
@@ -208,7 +209,7 @@ export function VoiceAgentDemoWorkspace() {
               Try a voice agent demo
             </CardTitle>
             <CardDescription>
-              Select an agent to start a live conversation. You’ll see the demo call UI after you pick one.
+              Select an agent for the browser demo (typed messages — no phone call required).
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -235,8 +236,8 @@ export function VoiceAgentDemoWorkspace() {
                 {demoAgentsList.map((a) => (
                   <Link key={a.id} href={`/voice-agents/${tenantId}/Demo?agentId=${a.id}`}>
                     <Button variant="outline" className="w-full justify-start gap-2">
-                      <Phone className="h-4 w-4" />
-                      Try demo with {a.name}
+                      <MessageSquare className="h-4 w-4" />
+                      Open browser demo — {a.name}
                     </Button>
                   </Link>
                 ))}
@@ -260,7 +261,7 @@ export function VoiceAgentDemoWorkspace() {
             {!token ? (
               <>
                 <p className="text-muted-foreground font-medium">Please log in to try the demo</p>
-                <Link href="/login">
+                <Link href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : `/voice-agents/${tenantId}/Demo`)}`}>
                   <Button>Log in</Button>
                 </Link>
               </>
@@ -268,7 +269,7 @@ export function VoiceAgentDemoWorkspace() {
               <>
                 <p className="text-muted-foreground font-medium">Session expired or unauthorized</p>
                 <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
-                  <Link href="/login">
+                  <Link href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : `/voice-agents/${tenantId}/Demo`)}`}>
                     <Button>Log in again</Button>
                   </Link>
                   <Button variant="outline" onClick={() => { setFetchError(null); fetchAgent() }}>
@@ -292,7 +293,7 @@ export function VoiceAgentDemoWorkspace() {
                     <Button variant="outline">Go to Voice Agents</Button>
                   </Link>
                   {isDifferentWorkspace && (
-                    <Link href="/login">
+                    <Link href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : `/voice-agents/${tenantId}/Home`)}`}>
                       <Button variant="outline">Go to Login</Button>
                     </Link>
                   )}
@@ -320,13 +321,20 @@ export function VoiceAgentDemoWorkspace() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold">Talk to {agent.name}</h1>
+              <h1 className="text-2xl font-bold">Browser demo — {agent.name}</h1>
               <p className="text-sm text-muted-foreground">
-                Browser demo (HTTP) — speak naturally using the controls below.
+                Type messages to test the agent in your browser. No Twilio or phone call is required for this flow.
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="secondary" className="gap-1">
+              <Monitor className="h-3 w-3" />
+              Browser (text)
+            </Badge>
+            <Badge variant="outline" className="text-muted-foreground">
+              Phone / Twilio — Studio only
+            </Badge>
             <Badge variant="outline">{languageLabel}</Badge>
             <Badge variant={agent.status === 'active' ? 'default' : 'secondary'}>
               {agent.status ?? 'unknown'}
@@ -337,7 +345,12 @@ export function VoiceAgentDemoWorkspace() {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {agentId && token ? (
-          <BrowserDemoV1 agentId={agentId} tenantId={tenantId} token={token} />
+          <BrowserDemoV1
+            agentId={agentId}
+            tenantId={tenantId}
+            token={token}
+            agentWorkflow={agent.workflow}
+          />
         ) : null}
         {SHOW_EXPERIMENTAL_REALTIME_DEMO && token ? (
           <VoiceAgentDemoExperimentalPanel agent={agent} tenantId={tenantId} token={token} />

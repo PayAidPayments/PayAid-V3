@@ -8,6 +8,7 @@ import { prisma } from '@payaid/db'
 import { handleVoiceAccessError, requireVoiceAccess } from '@/lib/voice-agent/rbac'
 import { loadVoiceInbox } from '@/lib/voice-agent/voice-inbox'
 import { recordRedactionApplied, redactVoiceText } from '@/lib/voice-agent/compliance-audit'
+import { loadVoiceTenantCompliancePolicy } from '@/lib/voice-agent/consent-policy'
 
 export const runtime = 'nodejs'
 
@@ -17,7 +18,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const agentId = searchParams.get('agentId') || undefined
     const limit = Math.min(Number(searchParams.get('limit') || 100), 200)
-    const redact = searchParams.get('redact') === '1' || searchParams.get('redact') === 'true'
+    const policy = await loadVoiceTenantCompliancePolicy(prisma, tenantId)
+    const redactParam = searchParams.get('redact')
+    const redact =
+      redactParam != null
+        ? redactParam === '1' || redactParam === 'true'
+        : policy.redactExportsByDefault
 
     const rawItems = await loadVoiceInbox(prisma, { tenantId, agentId, limit })
     const items = redact

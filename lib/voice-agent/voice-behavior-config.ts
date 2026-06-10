@@ -86,6 +86,25 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 /** Parse `workflow.voiceBehavior` from API; never throws. */
+export function mergeVoiceBehaviorOverride(
+  base: VoiceBehaviorConfig,
+  override?: Partial<Pick<VoiceBehaviorConfig, 'tonePreset' | 'pacePreset' | 'verbosityPreset'>> | null,
+): VoiceBehaviorConfig {
+  if (!override) return base
+  return {
+    ...base,
+    tonePreset: TONE_SET.has(override.tonePreset as VoiceTonePreset)
+      ? (override.tonePreset as VoiceTonePreset)
+      : base.tonePreset,
+    pacePreset: PACE_SET.has(override.pacePreset as VoicePacePreset)
+      ? (override.pacePreset as VoicePacePreset)
+      : base.pacePreset,
+    verbosityPreset: VERBOSITY_SET.has(override.verbosityPreset as VoiceVerbosityPreset)
+      ? (override.verbosityPreset as VoiceVerbosityPreset)
+      : base.verbosityPreset,
+  }
+}
+
 export function parseVoiceBehaviorFromWorkflow(workflow: unknown): VoiceBehaviorConfig {
   if (!isRecord(workflow)) return { ...DEFAULT_VOICE_BEHAVIOR }
   const raw = workflow.voiceBehavior
@@ -159,6 +178,20 @@ export function maxTokensForVerbosity(preset: VoiceVerbosityPreset): number {
       return 768
     default:
       return 512
+  }
+}
+
+/** Map Studio tone preset to Sarvam/VEXYL voice style token. */
+export function voiceToneFromTonePreset(preset: VoiceTonePreset): string {
+  switch (preset) {
+    case 'calm_warm':
+      return 'warm'
+    case 'authoritative':
+      return 'formal'
+    case 'empathetic':
+      return 'calm'
+    default:
+      return 'formal'
   }
 }
 

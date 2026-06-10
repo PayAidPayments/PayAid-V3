@@ -51,6 +51,13 @@ export const VOICE_BROWSER_LIVE_VERCEL_PUBLIC = [
     readers: ['lib/voice-agent/browser-live/live-voice-transport.ts (resolveLiveWsUrl)'],
     notes: 'wss:// sidecar URL after deploying deployment/browser-live-ws. Omit locally (uses ws://host:3002).',
   },
+  {
+    key: 'NEXT_PUBLIC_VOICE_BROWSER_LIVE_SERVER_STT',
+    required: false,
+    defaultValue: '0',
+    readers: ['BrowserLiveVoiceDemo (MediaRecorder → utterance.audio)'],
+    notes: 'Set to 1 to send mic audio to sidecar Whisper STT instead of browser SpeechRecognition transcripts.',
+  },
 ]
 
 export const VOICE_VERCEL_REDEPLOY_NOTE =

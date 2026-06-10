@@ -1,6 +1,11 @@
 import type { TrainingPackApprovedSnapshot } from './training-pack-types'
 import { resolveGreeting } from '@/lib/voice-agent/runtime/bolna'
 import type { VoiceAgentRow } from '@/lib/voice-agent/runtime/types'
+import {
+  hasSavedVoiceBehavior,
+  parseVoiceBehaviorFromWorkflow,
+  voiceBehaviorPromptBlock,
+} from '@/lib/voice-agent/voice-behavior-config'
 
 export type { TrainingPackApprovedSnapshot } from './training-pack-types'
 
@@ -62,7 +67,10 @@ export function buildMergedSystemContext(
   let prompt = agent.systemPrompt.trim()
   prompt += `\n\n${VOICE_AGENT_OBJECTION_HANDLING}`
 
-  if (agent.voiceTone) {
+  const voiceBehavior = parseVoiceBehaviorFromWorkflow(agent.workflow)
+  if (hasSavedVoiceBehavior(agent.workflow)) {
+    prompt += `\n\n${voiceBehaviorPromptBlock(voiceBehavior)}`
+  } else if (agent.voiceTone) {
     prompt += `\n\nTone: ${agent.voiceTone}.`
   }
 

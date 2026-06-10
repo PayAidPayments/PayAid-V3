@@ -12,7 +12,7 @@ import type { VoiceEvent, VoiceEventName, VoiceEventPayload } from './voice-even
 
 import { formatVoiceEventLog } from './voice-event-taxonomy'
 
-import { persistVoiceEventToDemoSession } from './persist-voice-event'
+import { persistVoiceEventToDemoSession, persistVoiceEventToTable } from './persist-voice-event'
 
 
 
@@ -71,22 +71,21 @@ export async function emitVoiceEvent(
 
 
   const sessionId = opts?.persistToSession?.sessionId ?? payload.sessionId
+  const prisma = opts?.persistToSession?.prisma
 
-  if (opts?.persistToSession?.prisma && sessionId) {
-
+  if (prisma && sessionId) {
     try {
-
-      await persistVoiceEventToDemoSession(opts.persistToSession.prisma, sessionId, evt)
-
+      await persistVoiceEventToDemoSession(prisma, sessionId, evt)
     } catch (e) {
-
-      console.warn('[voice-event] persist failed', e instanceof Error ? e.message : e)
-
+      console.warn('[voice-event] session persist failed', e instanceof Error ? e.message : e)
     }
-
+  } else if (prisma && payload.tenantId) {
+    try {
+      await persistVoiceEventToTable(prisma, evt)
+    } catch (e) {
+      console.warn('[voice-event] table persist failed', e instanceof Error ? e.message : e)
+    }
   }
-
-
 
   return evt
 

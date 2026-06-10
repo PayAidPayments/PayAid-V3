@@ -22,6 +22,7 @@ const bodySchema = z.object({
   email: z.string().email().optional().nullable(),
   platformLeadId: z.string().optional().nullable(),
   campaignName: z.string().optional().nullable(),
+  hotLeadScore: z.number().min(0).max(100).optional().nullable(),
   metadata: z.record(z.unknown()).optional(),
 })
 

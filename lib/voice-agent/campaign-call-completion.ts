@@ -4,6 +4,11 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { emitVoiceEvent } from '@/lib/voice-agent/events/emit-voice-event'
+import {
+  applyPostCallCrossModuleBundles,
+  readBundleIdsFromMetadata,
+} from '@/lib/voice-agent/bundles/post-call-bundles'
+import { linkVoiceSessionCrmOutcome } from '@/lib/voice-agent/crm-link'
 
 const TERMINAL_STATUSES = new Set([
   'completed',
@@ -79,7 +84,7 @@ export async function applyTwilioCallStatusUpdate(
 
   const contact = await prisma.voiceAgentCampaignContact.findFirst({
     where: { callId: call.id },
-    select: { id: true, status: true, campaignId: true },
+    select: { id: true, status: true, campaignId: true, metadata: true },
   })
 
   let contactStatus: string | undefined
@@ -119,6 +124,30 @@ export async function applyTwilioCallStatusUpdate(
         campaignContactId: contact?.id,
       },
     })
+
+    if (contact?.metadata) {
+      const bundleIds = readBundleIdsFromMetadata(
+        typeof contact.metadata === 'object' && !Array.isArray(contact.metadata)
+          ? (contact.metadata as Record<string, unknown>)
+          : {},
+      )
+      void applyPostCallCrossModuleBundles(prisma, {
+        tenantId: call.tenantId,
+        voiceCallId: call.id,
+        disposition: 'outbound_completed',
+        invoiceId: bundleIds.invoiceId,
+        caseId: bundleIds.caseId,
+        dealId: bundleIds.dealId,
+      })
+      void linkVoiceSessionCrmOutcome(prisma, {
+        tenantId: call.tenantId,
+        voiceCallId: call.id,
+        routing: bundleIds.invoiceId ? 'matched_contact' : 'unmatched_lead',
+        invoiceId: bundleIds.invoiceId,
+        dealId: bundleIds.dealId,
+        caseId: bundleIds.caseId,
+      })
+    }
   }
 
   return {

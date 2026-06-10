@@ -62,6 +62,7 @@ export function VoiceAnalyticsWorkspace() {
   const params = useParams()
   const tenantId = params.tenantId as string
   const [analytics, setAnalytics] = useState<any>(null)
+  const [unified, setUnified] = useState<any>(null)
   const [agents, setAgents] = useState<{ id: string; name: string }[]>([])
   const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([])
   const [loading, setLoading] = useState(true)
@@ -86,17 +87,33 @@ export function VoiceAnalyticsWorkspace() {
         url.searchParams.set('startDate', startDate)
         url.searchParams.set('endDate', endDate)
       }
-      const res = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const unifiedUrl = new URL('/api/v1/voice-agents/unified-analytics', window.location.origin)
+      unifiedUrl.searchParams.set('period', period === 'custom' ? 'month' : period)
+      if (agentId && agentId !== 'all') unifiedUrl.searchParams.set('agentId', agentId)
+      if (period === 'custom') {
+        unifiedUrl.searchParams.set('startDate', startDate)
+        unifiedUrl.searchParams.set('endDate', endDate)
+      }
+
+      const [res, unifiedRes] = await Promise.all([
+        fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(unifiedUrl.toString(), { headers: { Authorization: `Bearer ${token}` } }),
+      ])
       if (res.ok) {
         const data = await res.json()
         setAnalytics(data.analytics)
       } else {
         setAnalytics(null)
       }
+      if (unifiedRes.ok) {
+        const data = await unifiedRes.json()
+        setUnified(data.analytics)
+      } else {
+        setUnified(null)
+      }
     } catch {
       setAnalytics(null)
+      setUnified(null)
     } finally {
       setLoading(false)
     }
@@ -296,6 +313,35 @@ export function VoiceAnalyticsWorkspace() {
             title="Native inbound"
             value={(analytics.runtime.nativeInboundCount ?? 0).toLocaleString()}
             subtitle="Gather loop (non-Bolna)"
+            height="sm"
+          />
+        </div>
+      )}
+
+      {unified?.combined && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <StatCard
+            title="All channels"
+            value={(unified.combined.totalInteractions ?? 0).toLocaleString()}
+            subtitle={`Telephony ${unified.telephony?.totalCalls ?? 0} · Live demo ${unified.browserLive?.endedCount ?? 0}`}
+            height="sm"
+          />
+          <StatCard
+            title="Barge-in sessions"
+            value={(unified.combined.bargeInSessions ?? 0).toLocaleString()}
+            subtitle="Telephony + browser-live"
+            height="sm"
+          />
+          <StatCard
+            title="Demo follow-ups"
+            value={(unified.combined.followUpTasksCreated ?? 0).toLocaleString()}
+            subtitle="CRM tasks from objections"
+            height="sm"
+          />
+          <StatCard
+            title="Demo avg sentiment"
+            value={(unified.browserLive?.sentiment?.averageScore ?? 0).toFixed(2)}
+            subtitle={`−1 to +1 · ${unified.browserLive?.sentiment?.positive ?? 0} positive sessions`}
             height="sm"
           />
         </div>

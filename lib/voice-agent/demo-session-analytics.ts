@@ -36,13 +36,27 @@ function readPostCall(metadataJson: unknown): {
 
 export async function aggregateDemoSessionAnalytics(
   prisma: PrismaClient,
-  input: { tenantId: string; agentId?: string; limit?: number },
+  input: {
+    tenantId: string
+    agentId?: string
+    limit?: number
+    startDate?: Date
+    endDate?: Date
+  },
 ): Promise<DemoSessionAnalytics> {
   const sessions = await prisma.voiceDemoSession.findMany({
     where: {
       tenantId: input.tenantId,
       ...(input.agentId ? { voiceAgentId: input.agentId } : {}),
       status: 'ended',
+      ...(input.startDate || input.endDate
+        ? {
+            endedAt: {
+              ...(input.startDate ? { gte: input.startDate } : {}),
+              ...(input.endDate ? { lte: input.endDate } : {}),
+            },
+          }
+        : {}),
     },
     select: { metadataJson: true },
     orderBy: { endedAt: 'desc' },

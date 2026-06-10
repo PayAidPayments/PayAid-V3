@@ -11,6 +11,11 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ArrowLeft, ArrowRight, Mic, Volume2, Loader2, CheckCircle2 } from 'lucide-react'
 import { PageLoading } from '@/components/ui/loading'
+import {
+  VOICE_AGENT_TEMPLATES,
+  getVoiceAgentTemplate,
+  type VoiceAgentTemplateId,
+} from '@/lib/voice-agent/agent-templates'
 
 const PURPOSES = [
   { value: 'collections', label: 'Collections' },
@@ -104,6 +109,22 @@ export function VoiceCreateAgentWorkspace() {
     transferToHuman: false,
   })
   const [phoneNumber, setPhoneNumber] = useState('')
+  const [templateId, setTemplateId] = useState<VoiceAgentTemplateId>('sales_qualification')
+
+  const applyTemplate = (id: VoiceAgentTemplateId) => {
+    const template = getVoiceAgentTemplate(id)
+    if (!template) return
+    setTemplateId(id)
+    setBasics((b) => ({
+      ...b,
+      purpose: template.purpose,
+      language: template.defaultLanguage,
+      voiceId: template.defaultVoiceId,
+      greeting: template.greeting,
+    }))
+    setObjections(template.objections)
+    setCrm(template.crm)
+  }
 
   useEffect(() => {
     setBasics((b) => ({ ...b, greeting: DEFAULT_GREETINGS[b.purpose] || b.greeting }))
@@ -252,6 +273,23 @@ export function VoiceCreateAgentWorkspace() {
               <CardDescription>Name, purpose, language and voice. Use preview to hear samples.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
+              <div className="space-y-2">
+                <Label>Template</Label>
+                <select
+                  value={templateId}
+                  onChange={(e) => applyTemplate(e.target.value as VoiceAgentTemplateId)}
+                  className="flex h-11 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:ring-2 focus:ring-[#7C3AED]"
+                >
+                  {VOICE_AGENT_TEMPLATES.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  {getVoiceAgentTemplate(templateId)?.description}
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label>Agent Name *</Label>
                 <Input
@@ -464,8 +502,11 @@ export function VoiceCreateAgentWorkspace() {
                       {loading ? 'Creating...' : `Test ${basics.name || 'Agent'} Now`}
                     </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Assign Number (optional)</Label>
+                  <div className="space-y-2 rounded-xl border border-dashed p-3 bg-muted/20">
+                    <Label>Phone deployment (optional)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Twilio/BSNL number for live calls only — not used by the browser demo.
+                    </p>
                     <Input
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
@@ -496,8 +537,11 @@ export function VoiceCreateAgentWorkspace() {
                       Test {basics.name || 'Agent'} Now
                     </Button>
                   </Link>
-                  <div className="space-y-2">
-                    <Label>Assign Number (optional)</Label>
+                  <div className="space-y-2 rounded-xl border border-dashed p-3 bg-muted/20">
+                    <Label>Phone deployment (optional)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      For live telephony when enabled — browser demo works without a number.
+                    </p>
                     <Input
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}

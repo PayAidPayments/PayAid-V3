@@ -38,16 +38,25 @@ export async function synthesizeWithCoquiDocker(
 
   const body = isPayAidSynthesize
     ? { text, language: langCode, voice: voiceId || '', speed }
-    : { text, language: langCode, speaker_wav: null }
+    : null
 
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 5_000) // 5s so pipeline doesn't hang when Coqui is down; demo route races at 3s
+  const timeoutId = setTimeout(() => controller.abort(), 12_000)
   let res: Response
   try {
+    // Official Coqui server endpoint prefers form fields for /api/tts.
+    const form = new URLSearchParams({
+      text,
+      language_idx: langCode,
+    })
+    if (voiceId) form.set('speaker_idx', voiceId)
+
     res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      headers: isPayAidSynthesize
+        ? { 'Content-Type': 'application/json' }
+        : { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: isPayAidSynthesize ? JSON.stringify(body) : form,
       signal: controller.signal,
     })
   } catch (e) {
@@ -75,4 +84,27 @@ export async function synthesizeWithCoquiDocker(
 
   const arrayBuffer = await res.arrayBuffer()
   return Buffer.from(arrayBuffer)
+}
+
+export async function probeCoquiTtsHealth(
+  attempts: number = 3,
+): Promise<{ ok: boolean; successCount: number; attempts: number; lastError?: string }> {
+  let successCount = 0
+  let lastError: string | undefined
+
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      const audio = await synthesizeWithCoquiDocker('Health check', 'en')
+      if (audio.length > 0) successCount += 1
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  return {
+    ok: successCount === attempts,
+    successCount,
+    attempts,
+    lastError,
+  }
 }

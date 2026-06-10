@@ -5,6 +5,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { emitVoiceEvent } from '@/lib/voice-agent/events/emit-voice-event'
 import { enqueueVoiceCampaignContact } from '@/lib/voice-agent/triggers/campaign-queue'
+import { qualifiesAsMarketingHotLead } from '@/lib/voice-agent/bundles/post-call-bundles'
 
 export const MARKETING_LEAD_SOURCES = ['facebook_lead', 'linkedin_lead'] as const
 export type MarketingLeadSource = (typeof MARKETING_LEAD_SOURCES)[number]
@@ -23,10 +24,18 @@ export type MarketingLeadTriggerInput = {
   email?: string | null
   platformLeadId?: string | null
   campaignName?: string | null
+  hotLeadScore?: number | null
   metadata?: Record<string, unknown>
 }
 
 export async function enqueueMarketingLeadCall(prisma: PrismaClient, input: MarketingLeadTriggerInput) {
+  if (!qualifiesAsMarketingHotLead(input.hotLeadScore)) {
+    return {
+      status: 'skipped' as const,
+      reason: 'below_hot_lead_threshold',
+      hotLeadScore: input.hotLeadScore ?? null,
+    }
+  }
   const queued = await enqueueVoiceCampaignContact(prisma, {
     tenantId: input.tenantId,
     agentId: input.agentId,
@@ -42,6 +51,8 @@ export async function enqueueMarketingLeadCall(prisma: PrismaClient, input: Mark
       email: input.email || undefined,
       platformLeadId: input.platformLeadId || undefined,
       adCampaignName: input.campaignName || undefined,
+      hotLeadScore: input.hotLeadScore ?? undefined,
+      hotLead: true,
       ...(input.metadata || {}),
     },
   })

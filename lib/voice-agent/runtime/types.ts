@@ -47,7 +47,7 @@ export interface BolnaTranscriberConfig {
 }
 
 export interface BolnaSynthesizerConfig {
-  provider: 'elevenlabs' | 'cartesia' | 'smallest' | 'deepgram' | 'openai' | 'polly' | 'sarvam-bulbul'
+  provider: 'elevenlabs' | 'cartesia' | 'smallest' | 'deepgram' | 'openai' | 'polly' | 'sarvam'
   provider_config: Record<string, unknown>
   stream?: boolean
   audio_format?: 'mulaw' | 'wav' | 'pcm' | 'mp3'

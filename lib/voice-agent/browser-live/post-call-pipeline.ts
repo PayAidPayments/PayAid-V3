@@ -17,6 +17,11 @@ import {
 } from '@/lib/voice-agent/crm-writeback'
 import { createVoiceFollowUpTasks } from '@/lib/voice-agent/crm-follow-up-tasks'
 import { recordSessionComplianceCloseout } from '@/lib/voice-agent/compliance-audit'
+import { linkVoiceSessionCrmOutcome } from '@/lib/voice-agent/crm-link'
+import {
+  applyPostCallCrossModuleBundles,
+  readBundleIdsFromMetadata,
+} from '@/lib/voice-agent/bundles/post-call-bundles'
 import {
   buildEscalationHandoffPayload,
   type EscalationHandoffPayload,
@@ -235,6 +240,19 @@ export async function finalizeBrowserLiveSession(
       ? (session.metadataJson as Record<string, unknown>)
       : {}
 
+  const bundleIds = readBundleIdsFromMetadata(priorMeta)
+  const bundles = await applyPostCallCrossModuleBundles(input.prisma, {
+    tenantId: input.tenantId,
+    voiceSessionId: input.sessionId,
+    summary,
+    disposition,
+    objectionTags,
+    invoiceId: bundleIds.invoiceId,
+    caseId: bundleIds.caseId,
+    dealId: bundleIds.dealId,
+    interactionId: crmMeta.interactionId,
+  })
+
   await input.prisma.voiceDemoSession.update({
     where: { id: session.id },
     data: {
@@ -243,7 +261,7 @@ export async function finalizeBrowserLiveSession(
       outcomeCode: disposition,
       metadataJson: {
         ...priorMeta,
-        postCall: artifacts,
+        postCall: { ...artifacts, bundles },
         bargeInCount: input.bargeInCount ?? priorMeta.bargeInCount,
       },
     },
@@ -271,6 +289,18 @@ export async function finalizeBrowserLiveSession(
     channel: 'browser_live',
     hasRecording: Boolean(recording?.data),
     transcriptTurnCount: turns.length,
+  })
+
+  void linkVoiceSessionCrmOutcome(input.prisma, {
+    tenantId: input.tenantId,
+    voiceSessionId: input.sessionId,
+    routing,
+    contactId: crmMeta.contactId,
+    interactionId: crmMeta.interactionId,
+    leadCreated: crmMeta.leadCreated,
+    invoiceId: bundleIds.invoiceId,
+    dealId: bundleIds.dealId,
+    caseId: bundleIds.caseId,
   })
 
   return artifacts

@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Plus, Phone, BarChart3, Mic } from 'lucide-react'
+import { Loader2, Plus, Phone, BarChart3, MessageSquare } from 'lucide-react'
 import Link from 'next/link'
 
 const VoiceAgentTable = dynamic(
@@ -190,7 +190,7 @@ export function VoiceAgentsHomeWorkspace() {
         <div>
           <h1 className="text-3xl font-bold">Voice Agents</h1>
           <p className="text-muted-foreground mt-2">
-            Create and manage AI voice agents for automated calls
+            Manage voice agents. Use <strong className="font-medium">Browser demo</strong> for client demos (typed chat — no phone).
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -211,8 +211,8 @@ export function VoiceAgentsHomeWorkspace() {
           </Link>
           <Link href={`/voice-agents/${tenantId}/Demo`}>
             <Button variant="outline">
-              <Mic className="mr-2 h-4 w-4" />
-              Demo
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Browser demo
             </Button>
           </Link>
         </div>

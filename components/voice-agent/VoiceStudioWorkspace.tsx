@@ -16,7 +16,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ArrowLeft, Save, ExternalLink, Headphones } from 'lucide-react'
+import { ArrowLeft, Save, ExternalLink, MessageSquare } from 'lucide-react'
+import {
+  DEFAULT_VOICE_BEHAVIOR,
+  VOICE_PACE_PRESETS,
+  VOICE_TONE_PRESETS,
+  VOICE_VERBOSITY_PRESETS,
+  type VoiceBehaviorConfig,
+  hasSavedVoiceBehavior,
+  parseVoiceBehaviorFromWorkflow,
+  suggestVoiceBehaviorForPurpose,
+} from '@/lib/voice-agent/voice-behavior-config'
+import { VoiceBehaviorPreview } from '@/components/voice-agent/VoiceBehaviorPreview'
 
 const PURPOSES = [
   { value: 'collections', label: 'Collections' },
@@ -31,6 +42,7 @@ type WorkflowTab = {
   script?: Record<string, string>
   objections?: { noMoney?: string; wrongNumber?: string; talkToBoss?: string }
   crm?: { autoCreateDeal?: boolean; logActivity?: boolean; whatsappFollowUp?: boolean }
+  voiceBehavior?: VoiceBehaviorConfig
 }
 
 function getToken(): string | null {
@@ -96,6 +108,7 @@ export function VoiceStudioWorkspace() {
     logActivity: true,
     whatsappFollowUp: false,
   })
+  const [voiceBehavior, setVoiceBehavior] = useState<VoiceBehaviorConfig>({ ...DEFAULT_VOICE_BEHAVIOR })
 
   useEffect(() => {
     const token = getToken()
@@ -151,6 +164,7 @@ export function VoiceStudioWorkspace() {
         whatsappFollowUp: c.whatsappFollowUp ?? false,
       })
     }
+    setVoiceBehavior(parseVoiceBehaviorFromWorkflow(agent.workflow))
   }, [selectedAgentId, agents])
 
   const selectedAgent = agents.find((a) => a.id === selectedAgentId)
@@ -168,6 +182,10 @@ export function VoiceStudioWorkspace() {
         script,
         objections,
         crm,
+        voiceBehavior: {
+          ...voiceBehavior,
+          bargeInEnabled: false,
+        },
       }
       const res = await fetch(`/api/v1/voice-agents/${selectedAgentId}`, {
         method: 'PUT',
@@ -265,7 +283,16 @@ export function VoiceStudioWorkspace() {
                   <Label>Purpose</Label>
                   <select
                     value={basics.purpose}
-                    onChange={(e) => setBasics({ ...basics, purpose: e.target.value })}
+                    onChange={(e) => {
+                      const purpose = e.target.value
+                      setBasics({ ...basics, purpose })
+                      const agent = agents.find((a) => a.id === selectedAgentId)
+                      if (!agent || hasSavedVoiceBehavior(agent.workflow)) return
+                      setVoiceBehavior((prev) => ({
+                        ...prev,
+                        ...suggestVoiceBehaviorForPurpose(purpose),
+                      }))
+                    }}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     {PURPOSES.map((p) => (
@@ -304,14 +331,91 @@ export function VoiceStudioWorkspace() {
                     rows={4}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Twilio number (E.164)</Label>
+
+                <div className="space-y-3 rounded-md border p-3">
+                  <div>
+                    <Label className="text-base">Voice behavior (preview)</Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Shapes browser demo replies and Bolna phone prompts after save. Changing purpose suggests defaults
+                      until you save custom presets. Caller interruption is not enabled in client demos.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tone preset</Label>
+                    <select
+                      value={voiceBehavior.tonePreset}
+                      onChange={(e) =>
+                        setVoiceBehavior({
+                          ...voiceBehavior,
+                          tonePreset: e.target.value as VoiceBehaviorConfig['tonePreset'],
+                        })
+                      }
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      {VOICE_TONE_PRESETS.map((p) => (
+                        <option key={p.value} value={p.value}>
+                          {p.label} — {p.recommendedFor}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Pace preset</Label>
+                      <select
+                        value={voiceBehavior.pacePreset}
+                        onChange={(e) =>
+                          setVoiceBehavior({
+                            ...voiceBehavior,
+                            pacePreset: e.target.value as VoiceBehaviorConfig['pacePreset'],
+                          })
+                        }
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        {VOICE_PACE_PRESETS.map((p) => (
+                          <option key={p.value} value={p.value}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Verbosity preset</Label>
+                      <select
+                        value={voiceBehavior.verbosityPreset}
+                        onChange={(e) =>
+                          setVoiceBehavior({
+                            ...voiceBehavior,
+                            verbosityPreset: e.target.value as VoiceBehaviorConfig['verbosityPreset'],
+                          })
+                        }
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        {VOICE_VERBOSITY_PRESETS.map((p) => (
+                          <option key={p.value} value={p.value}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <VoiceBehaviorPreview behavior={voiceBehavior} variant="studio" />
+                </div>
+
+                <div className="space-y-2 rounded-md border border-dashed p-3 bg-muted/20">
+                  <Label>Phone deployment — Twilio number (E.164)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    For inbound/outbound phone calls only. The browser demo (Demo page) does not use this field.
+                  </p>
                   <Input
                     value={basics.phoneNumber}
                     onChange={(e) => setBasics({ ...basics, phoneNumber: e.target.value })}
                     placeholder="+919876543210"
                   />
-                  <p className="text-xs text-muted-foreground">Assign this number in Twilio and set voice webhook to this app’s /api/v1/voice-agents/twilio/webhook</p>
+                  <p className="text-xs text-muted-foreground">
+                    Assign in Twilio and set the voice webhook to this app’s{' '}
+                    <code className="text-[10px]">/api/v1/voice-agents/twilio/webhook</code>
+                  </p>
                 </div>
               </TabsContent>
 
@@ -397,8 +501,8 @@ export function VoiceStudioWorkspace() {
               {selectedAgentId && (
                 <Link href={`/voice-agents/${tenantId}/Demo?agentId=${selectedAgentId}`}>
                   <Button variant="outline" size="sm" className="gap-2">
-                    <Headphones className="h-4 w-4" />
-                    Test Demo
+                    <MessageSquare className="h-4 w-4" />
+                    Browser demo
                   </Button>
                 </Link>
               )}

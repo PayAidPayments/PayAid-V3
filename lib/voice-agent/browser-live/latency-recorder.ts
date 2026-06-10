@@ -5,11 +5,22 @@
  */
 
 import type { BrowserLiveLatencyEvent } from '@/lib/voice-agent/browser-live/protocol'
+import {
+  buildLatencyEvidenceReport,
+  type LatencyEvidenceReport,
+} from '@/lib/voice-agent/browser-live/latency-evidence'
 
-const MAX_EVENTS = 200
+const MAX_EVENTS = 400
+
+export type BrowserLiveLatencySummary = LatencyEvidenceReport
 
 export class LiveLatencyRecorder {
   private events: BrowserLiveLatencyEvent[] = []
+  private mode: LatencyEvidenceReport['mode'] = 'unknown'
+
+  setMode(mode: LatencyEvidenceReport['mode']) {
+    this.mode = mode
+  }
 
   record(event: BrowserLiveLatencyEvent['event'], turnId?: string, meta?: Record<string, unknown>) {
     this.events.push({ at: Date.now(), event, turnId, meta })
@@ -18,8 +29,21 @@ export class LiveLatencyRecorder {
     }
   }
 
-  snapshot() {
-    return { recordedAt: new Date().toISOString(), events: [...this.events] }
+  snapshot(): BrowserLiveLatencySummary {
+    return buildLatencyEvidenceReport(this.events, { mode: this.mode })
+  }
+
+  summary() {
+    const s = this.snapshot()
+    return {
+      bargeInCount: s.bargeInCount,
+      turnCount: s.sampleTurns,
+      medianSpeechToFirstAudioMs: s.speechToFirstAudioMs.p50,
+      medianInterruptSilenceMs: s.interruptSilenceMs.p50,
+      p95SpeechToFirstAudioMs: s.speechToFirstAudioMs.p95,
+      p95InterruptSilenceMs: s.interruptSilenceMs.p95,
+      passes: s.passes,
+    }
   }
 
   clear() {

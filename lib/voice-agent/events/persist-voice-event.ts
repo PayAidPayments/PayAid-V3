@@ -30,6 +30,26 @@ function toInputJsonValue(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue
 }
 
+export async function persistVoiceEventToTable(
+  prisma: PrismaClient,
+  evt: VoiceEvent,
+): Promise<void> {
+  const { tenantId, agentId, sessionId, callId, meta, at } = evt.payload
+  if (!tenantId) return
+
+  await prisma.voiceEvent.create({
+    data: {
+      tenantId,
+      event: evt.event,
+      agentId: agentId ?? null,
+      sessionId: sessionId ?? null,
+      callId: callId ?? null,
+      metaJson: meta ? toInputJsonValue(meta) : undefined,
+      occurredAt: new Date(at),
+    },
+  })
+}
+
 export async function persistVoiceEventToDemoSession(
   prisma: PrismaClient,
   sessionId: string,
@@ -68,4 +88,10 @@ export async function persistVoiceEventToDemoSession(
       }),
     },
   })
+
+  try {
+    await persistVoiceEventToTable(prisma, evt)
+  } catch (error) {
+    console.warn('[voice-event] table persist failed', error instanceof Error ? error.message : error)
+  }
 }
