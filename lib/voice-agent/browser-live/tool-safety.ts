@@ -2,7 +2,7 @@
  * Draft-first guard for browser-live tool calls (mirrors Bolna bridge policy).
  */
 
-import { isDraftFirstToolName } from '@/lib/voice-agent/runtime/bolna-tool-policy'
+import { assessToolGatewayCall } from '@/lib/voice-agent/security/tool-gateway'
 
 export type BrowserLiveToolAssessment =
   | { action: 'execute' }
@@ -14,33 +14,39 @@ export type BrowserLiveToolAssessment =
         message: string
       }
     }
+  | {
+      action: 'deny'
+      message: string
+    }
 
 export function assessBrowserLiveToolCall(input: {
   name: string
   args: Record<string, unknown>
+  registeredToolNames?: string[]
 }): BrowserLiveToolAssessment {
-  const name = input.name.trim()
-  if (!name) {
+  const registered = input.registeredToolNames?.length
+    ? input.registeredToolNames
+    : [input.name.trim()].filter(Boolean)
+
+  const decision = assessToolGatewayCall({
+    name: input.name,
+    args: input.args,
+    registeredToolNames: registered,
+    channel: 'browser_live',
+  })
+
+  if (decision.action === 'deny') {
+    return { action: 'deny', message: decision.message }
+  }
+  if (decision.action === 'draft') {
     return {
       action: 'draft',
       draft: {
-        action: name,
-        args: input.args,
-        message: 'Tool name is required.',
+        action: input.name,
+        args: decision.args,
+        message: decision.message,
       },
     }
   }
-
-  const draftFirst = isDraftFirstToolName(name)
-  if (!draftFirst) return { action: 'execute' }
-  if (input.args.confirmed === true) return { action: 'execute' }
-
-  return {
-    action: 'draft',
-    draft: {
-      action: name,
-      args: input.args,
-      message: `Draft preview for "${name}". Re-run with confirmed=true to execute.`,
-    },
-  }
+  return { action: 'execute' }
 }

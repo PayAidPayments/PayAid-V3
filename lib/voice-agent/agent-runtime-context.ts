@@ -6,6 +6,7 @@ import {
   parseVoiceBehaviorFromWorkflow,
   voiceBehaviorPromptBlock,
 } from '@/lib/voice-agent/voice-behavior-config'
+import { wrapUntrustedKnowledgeBaseContent } from '@/lib/voice-agent/security/voice-guardrails'
 
 export type { TrainingPackApprovedSnapshot } from './training-pack-types'
 
@@ -131,7 +132,7 @@ export function buildMergedSystemContext(
   }
 
   if (kbContext) {
-    prompt += `\n\nRelevant context:\n${kbContext}`
+    prompt += `\n\n${wrapUntrustedKnowledgeBaseContent(kbContext)}`
   }
 
   prompt += `\n\nKeep responses concise and natural, suitable for voice conversation.`

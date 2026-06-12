@@ -173,11 +173,11 @@ const VERBOSITY_PROMPT: Record<VoiceVerbosityPreset, string> = {
 export function maxTokensForVerbosity(preset: VoiceVerbosityPreset): number {
   switch (preset) {
     case 'brief':
-      return 256
+      return 180
     case 'detailed':
-      return 768
-    default:
       return 512
+    default:
+      return 320
   }
 }
 
@@ -207,6 +207,23 @@ export function sarvamSpeedForPace(preset: VoicePacePreset): number {
   }
 }
 
+/** Investor browser-live demo languages (telephony deferred). */
+export const INVESTOR_DEMO_LANGUAGES = {
+  primary: ['en', 'hi'] as const,
+  optional: ['te'] as const,
+  codeSwitching: true as const,
+}
+
+const INVESTOR_CONVERSATION_GUIDANCE = `
+Indian conversational style (browser-live demo):
+- Keep each reply to 1–2 short sentences unless the caller asks for detail.
+- Use natural acknowledgements before answering: "Ji", "Haan", "Sure", "Okay" — pick what fits the language mix.
+- If the caller code-switches (Hindi-English or Telugu-English), mirror their mix naturally; do not force pure English.
+- After barge-in or interruption, acknowledge briefly ("Got it", "Ji, samajh gaya") then answer the latest point only.
+- Avoid translated-sounding grammar; prefer everyday spoken phrasing over formal written Hindi/English.
+- End turns with one clear next step or one clarifying question — not both unless necessary.
+`.trim()
+
 /** System-prompt block merged in buildMergedSystemContext. */
 export function voiceBehaviorPromptBlock(config: VoiceBehaviorConfig): string {
   return [
@@ -214,6 +231,7 @@ export function voiceBehaviorPromptBlock(config: VoiceBehaviorConfig): string {
     `- ${TONE_PROMPT[config.tonePreset]}`,
     `- ${PACE_PROMPT[config.pacePreset]}`,
     `- ${VERBOSITY_PROMPT[config.verbosityPreset]}`,
+    INVESTOR_CONVERSATION_GUIDANCE,
   ].join('\n')
 }
 

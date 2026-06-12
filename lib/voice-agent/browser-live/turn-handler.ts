@@ -27,6 +27,12 @@ import { parseTranscriptJson, type DemoTranscriptTurn } from '@/lib/voice-agent/
 
 import { streamTtsForText } from '@/lib/voice-agent/browser-live/tts-stream'
 import { processBrowserLiveToolIntent, type BrowserLiveToolTurnOutcome } from '@/lib/voice-agent/browser-live/turn-tools'
+import {
+  assessVoiceAgentOutput,
+  assessVoiceUserInput,
+  isVoiceGuardrailsEnabled,
+  voiceGuardrailSafeInputResponse,
+} from '@/lib/voice-agent/security/voice-guardrails'
 
 
 
@@ -213,26 +219,46 @@ export async function runBrowserLiveTurn(opts: LiveTurnOptions): Promise<LiveTur
 
 
 
+  let effectiveUserText = userText
+  if (isVoiceGuardrailsEnabled()) {
+    const inputCheck = assessVoiceUserInput(userText, 'browser_live')
+    effectiveUserText = inputCheck.sanitized
+    if (inputCheck.blocked) {
+      return {
+        userText: effectiveUserText,
+        agentText: voiceGuardrailSafeInputResponse(),
+        audioChunkCount: 0,
+        audioMime: 'audio/wav',
+        ttsError: 'guardrail_input_blocked',
+      }
+    }
+  }
+
   const transcript = parseTranscriptJson(session.transcriptJson)
 
   const history = transcript.map((t) => ({ role: t.role, content: t.content }))
 
-  history.push({ role: 'user', content: userText })
+  history.push({ role: 'user', content: effectiveUserText })
 
   if (signal?.aborted) throw new DOMException('Turn aborted', 'AbortError')
 
 
 
-  const agentText = await generateVoiceResponse(systemPrompt, history, agent.language, {
+  let agentText = await generateVoiceResponse(systemPrompt, history, agent.language, {
 
     maxTokens: maxTokensForVerbosity(voiceBehavior.verbosityPreset),
 
   })
 
+  if (isVoiceGuardrailsEnabled()) {
+    const outputCheck = assessVoiceAgentOutput(agentText)
+    agentText = outputCheck.sanitized
+  }
+
   let toolOutcome: BrowserLiveToolTurnOutcome | null = null
   if (!isEphemeralBrowserLiveSession(sessionId)) {
     toolOutcome = await processBrowserLiveToolIntent({
-      userText,
+      userText: effectiveUserText,
       callerPhone: readCallerPhoneFromSession(session),
       functions: agent.functions,
       tenantId,

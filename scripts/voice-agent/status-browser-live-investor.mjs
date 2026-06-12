@@ -12,6 +12,7 @@ import jwt from 'jsonwebtoken'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 dotenv.config({ path: path.join(root, '.env.local'), quiet: true })
+dotenv.config({ path: path.join(root, '.env'), quiet: true })
 
 const healthUrl =
   process.env.BROWSER_LIVE_HEALTH_URL ||
@@ -66,14 +67,24 @@ async function checkWs(wsBase, label) {
   const url = `${wsBase}/?token=${encodeURIComponent(token)}`
   return new Promise((resolve) => {
     const events = []
+    let settled = false
+    const finish = (fn) => {
+      if (settled) return
+      settled = true
+      fn()
+      resolve()
+    }
     const ws = new WebSocket(url)
     const timer = setTimeout(() => {
       ws.terminate()
-      out.checks.push({ name: `wss_${label}`, ok: false, wsBase, eventTypes: events.map((e) => e.type) })
-      out.blockers.push(`WSS ${label} timeout (no session.ready in 45s)`)
-      out.ok = false
-      resolve()
-    }, 45_000)
+      finish(() => {
+        out.checks.push({ name: `wss_${label}`, ok: false, wsBase, eventTypes: events.map((e) => e.type) })
+        out.blockers.push(
+          `WSS ${label} timeout (no session.ready in ${Number(process.env.BROWSER_LIVE_INVESTOR_WSS_MS || 120_000) / 1000}s)`,
+        )
+        out.ok = false
+      })
+    }, Number(process.env.BROWSER_LIVE_INVESTOR_WSS_MS || 120_000))
     ws.on('message', (raw) => {
       try {
         events.push(JSON.parse(String(raw)))
@@ -91,22 +102,34 @@ async function checkWs(wsBase, label) {
       )
     })
     ws.on('close', (code, reason) => {
-      if (code === 1008) {
-        clearTimeout(timer)
-        clearInterval(poll)
-        out.checks.push({ name: `wss_${label}`, ok: false, code, reason: reason.toString() })
-        out.blockers.push(`WSS ${label}: Invalid token (use mint-stage1-validation-auth-token)`)
+      if (events.find((e) => e.type === 'session.ready')) return
+      clearTimeout(timer)
+      clearInterval(poll)
+      finish(() => {
+        if (code === 1008) {
+          out.checks.push({ name: `wss_${label}`, ok: false, code, reason: reason.toString() })
+          out.blockers.push(`WSS ${label}: Invalid token (use mint-stage1-validation-auth-token)`)
+        } else if (code !== 1000 && code !== 1001) {
+          out.checks.push({
+            name: `wss_${label}`,
+            ok: false,
+            code,
+            reason: reason.toString(),
+            eventTypes: events.map((e) => e.type),
+          })
+          out.blockers.push(`WSS ${label} closed (${code}) before session.ready`)
+        }
         out.ok = false
-        resolve()
-      }
+      })
     })
     ws.on('error', (err) => {
       clearTimeout(timer)
       clearInterval(poll)
-      out.checks.push({ name: `wss_${label}`, ok: false, wsBase, error: err instanceof Error ? err.message : String(err) })
-      out.blockers.push(`WSS ${label} failed (${err instanceof Error ? err.message : String(err)})`)
-      out.ok = false
-      resolve()
+      finish(() => {
+        out.checks.push({ name: `wss_${label}`, ok: false, wsBase, error: err instanceof Error ? err.message : String(err) })
+        out.blockers.push(`WSS ${label} failed (${err instanceof Error ? err.message : String(err)})`)
+        out.ok = false
+      })
     })
     const poll = setInterval(() => {
       const ready = events.find((e) => e.type === 'session.ready')
@@ -114,14 +137,15 @@ async function checkWs(wsBase, label) {
         clearTimeout(timer)
         clearInterval(poll)
         ws.close()
-        out.checks.push({
-          name: `wss_${label}`,
-          ok: true,
-          wsBase,
-          sessionId: ready.sessionId,
-          offlineReal: !!ready.offlineReal,
+        finish(() => {
+          out.checks.push({
+            name: `wss_${label}`,
+            ok: true,
+            wsBase,
+            sessionId: ready.sessionId,
+            offlineReal: !!ready.offlineReal,
+          })
         })
-        resolve()
       }
     }, 100)
   })
