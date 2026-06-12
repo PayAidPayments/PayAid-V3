@@ -45,7 +45,7 @@ import {
 import { buildOfflinePostCallArtifacts } from '../lib/voice-agent/browser-live/offline-post-call'
 import { probeTtsHealth } from '../lib/voice-agent/tts'
 import { finalizeBrowserLiveSession } from '../lib/voice-agent/browser-live/post-call-pipeline'
-import { recordVoiceConsentCaptured } from '../lib/voice-agent/compliance-audit'
+import { recordBrowserLiveRuntimeComplianceStart } from '../lib/voice-agent/runtime-compliance'
 import type { BrowserLiveVoiceBehaviorOverride } from '../lib/voice-agent/browser-live/protocol'
 import {
   emitBrowserLiveWireEvent,
@@ -393,6 +393,22 @@ async function handleAudioUtterance(
     return
   }
 
+  void emitVoiceEventDirect(
+    'transcript.partial',
+    {
+      tenantId: state.tenantId,
+      agentId: state.agentId ?? undefined,
+      sessionId: state.sessionId ?? undefined,
+      meta: {
+        textPreview: text.trim().slice(0, 500),
+        final: false,
+        turnId: msg.turnId,
+        channel: 'browser_live',
+      },
+    },
+    { prisma },
+  )
+
   await handleUtterance(state, text.trim(), msg.turnId)
 }
 
@@ -478,11 +494,10 @@ async function startSession(
       agentId,
       stubMode: false,
     })
-    void recordVoiceConsentCaptured(prisma, {
+    void recordBrowserLiveRuntimeComplianceStart(prisma, {
       tenantId: effectiveTenantId,
       agentId,
       sessionId: session.id,
-      channel: 'browser_live',
       consentMode: 'implied_demo',
       crmWritebackEnabled: state.crmWritebackEnabled,
       callerPhone: state.callerPhone,

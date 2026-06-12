@@ -145,13 +145,22 @@ export async function linkVoiceSessionCrmOutcome(
 
 export async function loadVoiceCrmLinks(
   prisma: PrismaClient,
-  input: { tenantId: string; voiceSessionId?: string; voiceCallId?: string; limit?: number },
+  input: {
+    tenantId: string
+    voiceSessionId?: string
+    voiceCallId?: string
+    entityType?: VoiceCrmEntityType
+    entityId?: string
+    limit?: number
+  },
 ) {
   return prisma.voiceCrmLink.findMany({
     where: {
       tenantId: input.tenantId,
       ...(input.voiceSessionId ? { voiceSessionId: input.voiceSessionId } : {}),
       ...(input.voiceCallId ? { voiceCallId: input.voiceCallId } : {}),
+      ...(input.entityType ? { entityType: input.entityType } : {}),
+      ...(input.entityId ? { entityId: input.entityId } : {}),
     },
     orderBy: { createdAt: 'desc' },
     take: Math.min(input.limit ?? 50, 200),

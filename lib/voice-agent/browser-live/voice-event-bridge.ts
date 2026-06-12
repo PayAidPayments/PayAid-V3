@@ -42,18 +42,9 @@ export type BrowserLiveEventBridgeOpts = {
 
 
 
-function persistOpts(
-
-  ctx: BrowserLiveEventContext,
-
-  opts?: BrowserLiveEventBridgeOpts,
-
-) {
-
-  if (!opts?.prisma || !ctx.sessionId) return undefined
-
+function persistOpts(ctx: BrowserLiveEventContext, opts?: BrowserLiveEventBridgeOpts) {
+  if (!opts?.prisma) return undefined
   return { prisma: opts.prisma, sessionId: ctx.sessionId }
-
 }
 
 
@@ -82,7 +73,7 @@ export async function emitBrowserLiveWireEvent(
 
   if (mapped) {
 
-    await emitVoiceEvent(mapped.event, mapped.payload, { persistToSession: persistOpts(ctx, opts) })
+    await emitVoiceEvent(mapped.event, mapped.payload, persistOpts(ctx, opts))
 
   }
 
@@ -148,7 +139,7 @@ export async function emitPostCallVoiceEvents(
 
     },
 
-  }, { persistToSession: persist })
+  }, persist)
 
 
 
@@ -160,7 +151,7 @@ export async function emitPostCallVoiceEvents(
 
       meta: { action: 'voice_lead_unverified_created', routing: input.routing },
 
-    }, { persistToSession: persist })
+    }, persist)
 
   }
 
@@ -176,7 +167,7 @@ export async function emitPostCallVoiceEvents(
         handoff: input.escalationHandoff,
       },
 
-    }, { persistToSession: persist })
+    }, persist)
 
   }
 
@@ -204,7 +195,7 @@ export async function emitVoiceEventDirect(
 
     meta: ctx.meta,
 
-  }, { persistToSession: persistOpts(ctx, opts) })
+  }, persistOpts(ctx, opts))
 
 }
 

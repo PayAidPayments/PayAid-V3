@@ -16,7 +16,7 @@
 | 1 | Sarvam as primary spoken provider (demo + near-term prod) | **Approved** | `BROWSER_LIVE_TTS_PROVIDER=sarvam`; Bolna `buildBolnaAgent()` Sarvam-first for hi/ta/te |
 | 2 | First demo use case | **Approved** | Browser-live inbound spoken demo (sales/qualification); telephony deferred to Stage 2 gate |
 | 3 | Unmatched caller CRM rule | **Approved** | Create **Voice Lead (Unverified)** — `source: voice_agent`, `sourceData.verificationStatus: pending` |
-| 4 | Mandatory recording + transcript + consent per tenant | **Partial** | Tenant policy UI + API (`/Compliance`, `GET/PUT /compliance/policy`); runtime enforcement on closeout/export |
+| 4 | Mandatory recording + transcript + consent per tenant | **Done** (v1) | Tenant policy UI + `runtime-compliance.ts` on browser-live, Twilio inbound, campaign dialer, Bolna closeout |
 | 5 | First launch tier | **Approved** | **Tier 1 Essentials** + spoken demo gates from Phase 1 only |
 
 ---
@@ -149,8 +149,8 @@
 | VoiceCampaign | **Partial** | `VoiceAgentCampaign` — `triggerSource` + `businessHoursJson`; dialer enforces hours |
 | VoiceCall | **Done** | `VoiceAgentCall` |
 | VoiceTurn | **Done** | `CallMessage.interruptedFlag` + `transcriptJson.interruptedFlag` via barge-in (`session-metrics.ts`) |
-| VoiceOutcome | **Partial** | `outcomeCode` + `metadataJson.postCall` |
-| VoiceArtifact | **Partial** | `recordingUrl` + embedded postCall recording |
+| VoiceOutcome | **Done** (v1 freeze) | `readVoiceOutcomeV1()` — `outcomeCode` + `metadataJson.postCall` |
+| VoiceArtifact | **Done** (v1 freeze) | `readVoiceArtifactV1()` — `recordingUrl` + transcript + postCall |
 | CRMLink | **Done** | `VoiceCrmLink` + `linkVoiceSessionCrmOutcome`; `GET /crm-links` |
 
 ### 3.3 Standalone module inbox
@@ -170,7 +170,7 @@
 - [x] Tenant consent policy UI — `VoiceTenantCompliancePolicy`, `/Compliance`, `GET/PUT /compliance/policy`
 - [x] Dedicated `VoiceEvent` table — dual-write from `persist-voice-event.ts`, `GET /events`
 
-**Phase 3 completion:** ~85%
+**Phase 3 completion:** ~95% (telephony live matrix pending external Twilio/Bolna gate)
 
 ---
 
@@ -178,12 +178,12 @@
 
 | Event | Status | Implementation |
 |-------|--------|----------------|
-| `call.started` | **Partial** | Emitted from sidecar on `session.ready`; Bolna `call_started` |
-| `transcript.partial` | Partial | Client Web Speech only; Bolna received not persisted |
-| `barge_in.detected` | **Partial** | Emitted from sidecar on `interrupt.ack`; Bolna `barge_in` on `VoiceAgentCall` |
-| `call.completed` | **Partial** | Emitted from sidecar on `session.ended`; Bolna `call_ended` |
-| `summary.ready` | **Partial** | Emitted in `finalizeBrowserLiveSession` + `crm-sync.ts` |
-| `crm.match.failed` | **Partial** | Emitted on unmatched lead create (browser-live + telephony) |
+| `call.started` | **Done** | Browser-live `session.ready` + Twilio inbound + campaign dial + Bolna stream ready → `VoiceEvent` |
+| `transcript.partial` | **Done** | Browser-live STT + Bolna `transcript_partial` / finals → `VoiceEvent` |
+| `barge_in.detected` | **Done** | Browser-live `interrupt.ack` + Bolna `barge_in` → `VoiceEvent` |
+| `call.completed` | **Done** | Browser-live closeout + telephony status/Bolna end → `VoiceEvent` |
+| `summary.ready` | **Done** | Post-call pipeline + `crm-sync.ts` → `VoiceEvent` |
+| `crm.match.failed` | **Done** | Unmatched lead create (browser-live + telephony) → `VoiceEvent` |
 | `lead.triggered.call` | **Partial** | Website + marketing lead trigger routes |
 | `crm.stage.triggered` | **Partial** | `triggers/crm-stage-trigger.ts` + API route |
 | `missed_call.callback` | **Partial** | `triggers/missed-call-trigger.ts` + API route |

@@ -30,6 +30,7 @@ export const VOICE_DEPLOY_ARCHIVE_PATHS = [
   'apps/dashboard/app/api/auth/me',
   'packages',
   'lib',
+  'types',
   'components',
   'tsconfig.json',
   'tailwind.config.ts',

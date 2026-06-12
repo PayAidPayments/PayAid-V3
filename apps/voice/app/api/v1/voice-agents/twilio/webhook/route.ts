@@ -12,6 +12,11 @@ import {
   verifyTwilioInboundWebhookSignature,
 } from '@/lib/voice-agent/twilio-webhook-signature'
 import { syncVoiceCallToCrm } from '@/lib/voice-agent/crm-sync'
+import { onTelephonyCallStarted } from '@/lib/voice-agent/events/telephony-voice-events'
+import {
+  loadVoiceRuntimePolicyFlags,
+  prependOutboundDisclosure,
+} from '@/lib/voice-agent/runtime-compliance'
 import { resolveGreeting, shouldUseBolnaRuntime } from '@/lib/voice-agent/runtime/bolna'
 import { prepareBolnaInbound, toVoiceAgentRow } from '@/lib/voice-agent/runtime/bolna-inbound'
 import {
@@ -124,6 +129,18 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    await onTelephonyCallStarted(prisma, {
+      tenantId: agent.tenantId,
+      agentId: agent.id,
+      callId: call.id,
+      callSid,
+      inbound: true,
+      channel: 'telephony',
+      phone: from,
+    })
+
+    const policyFlags = await loadVoiceRuntimePolicyFlags(prisma, agent.tenantId)
+
     const twiml = new VoiceResponse()
     const agentRow = toVoiceAgentRow(agent)
 
@@ -210,7 +227,7 @@ export async function POST(request: NextRequest) {
         detail: prepared.detail,
       })
 
-      const greeting = resolveGreeting(agentRow)
+      const greeting = prependOutboundDisclosure(resolveGreeting(agentRow), policyFlags.disclosureText)
       appendNativeGatherTwiml(twiml, origin, agent, greeting)
       return new NextResponse(twiml.toString(), {
         headers: { 'Content-Type': 'text/xml', 'Cache-Control': 'no-cache' },
@@ -224,7 +241,7 @@ export async function POST(request: NextRequest) {
       runtime: VOICE_CALL_RUNTIME.NATIVE,
     })
 
-    const greeting = resolveGreeting(agentRow)
+    const greeting = prependOutboundDisclosure(resolveGreeting(agentRow), policyFlags.disclosureText)
     appendNativeGatherTwiml(twiml, origin, agent, greeting)
 
     return new NextResponse(twiml.toString(), {

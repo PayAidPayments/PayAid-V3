@@ -3,7 +3,7 @@
  */
 
 import type { PrismaClient } from '@prisma/client'
-import { emitVoiceEvent } from '@/lib/voice-agent/events/emit-voice-event'
+import { onTelephonyCallCompleted } from '@/lib/voice-agent/events/telephony-voice-events'
 import {
   applyPostCallCrossModuleBundles,
   readBundleIdsFromMetadata,
@@ -113,16 +113,20 @@ export async function applyTwilioCallStatusUpdate(
   }
 
   if (isTerminal && input.callStatus.toLowerCase() === 'completed') {
-    await emitVoiceEvent('call.completed', {
+    const callRow = await prisma.voiceAgentCall.findUnique({
+      where: { id: call.id },
+      select: { transcript: true, recordingUrl: true },
+    })
+    await onTelephonyCallCompleted(prisma, {
       tenantId: call.tenantId,
       agentId: call.agentId,
       callId: call.id,
-      meta: {
-        outbound: true,
-        callSid: input.callSid,
-        durationSeconds: duration,
-        campaignContactId: contact?.id,
-      },
+      callSid: input.callSid,
+      channel: 'campaign',
+      status: 'completed',
+      transcript: callRow?.transcript,
+      recordingUrl: callRow?.recordingUrl,
+      syncCrm: true,
     })
 
     if (contact?.metadata) {

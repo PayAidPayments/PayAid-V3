@@ -17,21 +17,17 @@ import { persistVoiceEventToDemoSession, persistVoiceEventToTable } from './pers
 
 
 export type EmitVoiceEventOptions = {
-
   /** When true, also console.log structured JSON (default in development). */
-
   log?: boolean
-
-  /** Append to VoiceDemoSession.metadataJson.voiceEvents when sessionId is set. */
-
+  /** Persist to VoiceEvent table (and optional demo session metadata). */
+  prisma?: PrismaClient
+  /** When set with prisma, also append to VoiceDemoSession.metadataJson.voiceEvents. */
+  sessionId?: string
+  /** @deprecated Use prisma + sessionId */
   persistToSession?: {
-
     prisma: PrismaClient
-
     sessionId: string
-
   }
-
 }
 
 
@@ -70,8 +66,8 @@ export async function emitVoiceEvent(
 
 
 
-  const sessionId = opts?.persistToSession?.sessionId ?? payload.sessionId
-  const prisma = opts?.persistToSession?.prisma
+  const prisma = opts?.prisma ?? opts?.persistToSession?.prisma
+  const sessionId = opts?.sessionId ?? opts?.persistToSession?.sessionId ?? payload.sessionId
 
   if (prisma && sessionId) {
     try {

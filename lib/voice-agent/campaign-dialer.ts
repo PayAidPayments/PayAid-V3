@@ -4,10 +4,8 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { checkDndStatus, normalizePhoneForDnd } from '@/lib/dnd'
-import { emitVoiceEvent } from '@/lib/voice-agent/events/emit-voice-event'
 import { placeOutboundVoiceCall } from '@/lib/voice-agent/outbound-dial'
 import { isWithinBusinessHours, parseBusinessHours } from '@/lib/voice-agent/campaign-schema'
-import { recordOutboundDialCompliance } from '@/lib/voice-agent/compliance-audit'
 
 export type CampaignPickupResult =
   | {
@@ -156,25 +154,16 @@ export async function pickupNextCampaignContact(
     },
   })
 
-  await emitVoiceEvent('call.started', {
+  const { onTelephonyCallStarted } = await import('@/lib/voice-agent/events/telephony-voice-events')
+  await onTelephonyCallStarted(prisma, {
     tenantId: input.tenantId,
     agentId: campaign.agentId,
     callId: call.id,
-    meta: {
-      outbound: true,
-      campaignId: campaign.id,
-      campaignContactId: contact.id,
-      dialMode: dial.dialMode,
-      phone: contact.phone,
-    },
-  })
-
-  void recordOutboundDialCompliance(prisma, {
-    tenantId: input.tenantId,
-    agentId: campaign.agentId,
-    callId: call.id,
-    campaignId: campaign.id,
+    callSid: dial.callSid,
+    inbound: false,
+    channel: 'campaign',
     phone: contact.phone,
+    campaignId: campaign.id,
   })
 
   return {

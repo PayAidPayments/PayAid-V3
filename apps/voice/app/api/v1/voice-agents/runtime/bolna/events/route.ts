@@ -9,9 +9,6 @@
  *   - tool_call (informational; the actual execution goes through /tools/execute)
  *   - error
  *
- * We update `voiceAgentCall` (status, transcript JSON, latency KPIs) and let
- * the existing analytics surface read from the same row.
- *
  * Auth: shared bridge secret + per-call JWT.
  */
 
@@ -25,6 +22,12 @@ import {
   type BolnaTurnTimings,
 } from '@/lib/voice-agent/runtime/bolna-events'
 import { markBolnaCallStarted } from '@/lib/voice-agent/runtime/bolna-watchdog'
+import { emitVoiceEvent } from '@/lib/voice-agent/events/emit-voice-event'
+import {
+  emitTelephonyTranscriptPartial,
+  emitTelephonyVoiceEvent,
+  onTelephonyCallCompleted,
+} from '@/lib/voice-agent/events/telephony-voice-events'
 
 export const runtime = 'nodejs'
 
@@ -40,15 +43,29 @@ type EventKind =
 
 interface BolnaEvent {
   kind?: EventKind
-  // Optional payloads — different kinds use different fields.
   text?: string
   role?: 'user' | 'assistant'
   language?: string
   timings?: BolnaTurnTimings
   durationSeconds?: number
-  status?: string // for call_ended: completed | failed | etc
-  tokens?: number // for barge_in: how many LLM tokens were flushed
+  status?: string
+  tokens?: number
   detail?: unknown
+}
+
+async function loadCallBySid(callSid: string, tenantId: string) {
+  return prisma.voiceAgentCall.findFirst({
+    where: { callSid, tenantId },
+    select: {
+      id: true,
+      agentId: true,
+      inbound: true,
+      transcript: true,
+      recordingUrl: true,
+      firstAudioMs: true,
+      metadata: { select: { id: true, ttsLatencyMs: true } },
+    },
+  })
 }
 
 export async function POST(request: NextRequest) {
@@ -75,6 +92,15 @@ export async function POST(request: NextRequest) {
             languageUsed: event.language ?? undefined,
           },
         })
+        const call = await loadCallBySid(callSid, tenantId)
+        if (call) {
+          await emitTelephonyVoiceEvent(prisma, 'call.started', {
+            tenantId,
+            agentId: call.agentId,
+            callId: call.id,
+            meta: { channel: 'telephony', callSid, runtime: 'bolna', streamReady: true },
+          })
+        }
         break
       }
 
@@ -87,6 +113,20 @@ export async function POST(request: NextRequest) {
             durationSeconds: event.durationSeconds ?? undefined,
           },
         })
+        const call = await loadCallBySid(callSid, tenantId)
+        if (call && event.status !== 'failed') {
+          await onTelephonyCallCompleted(prisma, {
+            tenantId,
+            agentId: call.agentId,
+            callId: call.id,
+            callSid,
+            channel: 'telephony',
+            status: event.status ?? 'completed',
+            transcript: call.transcript,
+            recordingUrl: call.recordingUrl,
+            syncCrm: true,
+          })
+        }
         break
       }
 
@@ -100,15 +140,7 @@ export async function POST(request: NextRequest) {
               : 'user'
         const text = (event.text || '').trim()
         if (!text) break
-        const call = await prisma.voiceAgentCall.findFirst({
-          where: { callSid, tenantId },
-          select: {
-            id: true,
-            transcript: true,
-            firstAudioMs: true,
-            metadata: { select: { id: true, ttsLatencyMs: true } },
-          },
-        })
+        const call = await loadCallBySid(callSid, tenantId)
         if (!call) break
         const nextTranscript = appendBolnaTranscript(call.transcript, { role, content: text })
         const firstAudio = pickFirstAudioMs(event.timings)
@@ -138,6 +170,15 @@ export async function POST(request: NextRequest) {
             })
           }
         }
+
+        await emitTelephonyTranscriptPartial(prisma, {
+          tenantId,
+          agentId: call.agentId,
+          callId: call.id,
+          text,
+          final: true,
+          role,
+        })
         break
       }
 
@@ -149,15 +190,40 @@ export async function POST(request: NextRequest) {
             interruptedTokens: event.tokens ? { increment: event.tokens } : undefined,
           },
         })
+        const call = await loadCallBySid(callSid, tenantId)
+        if (call) {
+          await emitVoiceEvent(
+            'barge_in.detected',
+            {
+              tenantId,
+              agentId: call.agentId,
+              callId: call.id,
+              meta: { tokens: event.tokens, channel: 'telephony' },
+            },
+            { prisma },
+          )
+        }
+        break
+      }
+
+      case 'transcript_partial': {
+        const text = (event.text || '').trim()
+        if (!text) break
+        const call = await loadCallBySid(callSid, tenantId)
+        if (!call) break
+        await emitTelephonyTranscriptPartial(prisma, {
+          tenantId,
+          agentId: call.agentId,
+          callId: call.id,
+          text,
+          final: false,
+          role: event.role,
+        })
         break
       }
 
       case 'tool_call':
-      case 'transcript_partial': {
-        // Informational — don't persist yet (would explode write load).
-        // Stage 1: stream to a Redis channel for live UI in the dashboard.
         break
-      }
 
       case 'error': {
         console.error('[runtime/bolna/events] Bolna reported error for call', callSid, event.detail)
