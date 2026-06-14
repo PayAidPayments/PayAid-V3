@@ -91,7 +91,7 @@ export async function recordBrowserLiveRuntimeComplianceStart(
     agentId: input.agentId,
     sessionId: input.sessionId,
     channel: 'browser_live',
-    consentMode: consentMode === 'outbound_disclosure' ? 'implied_demo' : consentMode,
+    consentMode,
     crmWritebackEnabled: input.crmWritebackEnabled,
     callerPhone: input.callerPhone,
   })
