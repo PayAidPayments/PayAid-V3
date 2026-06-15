@@ -4,7 +4,6 @@ import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
 import { PageLoading } from '@/components/ui/loading'
-import { getTenantRouteKey } from '@/lib/utils/tenant-route-key'
 
 /**
  * CRM Module Entry Point
@@ -76,11 +75,10 @@ export default function CRMModulePage() {
         return
       }
 
-      // If we have a tenant route key (slug preferred), redirect to dashboard
-      const tenantRouteKey = getTenantRouteKey(finalTenant)
-      if (tenantRouteKey) {
-        console.log(`[CRM] Redirecting to CRM dashboard: /crm/${tenantRouteKey}/Home/`)
-        router.replace(`/crm/${tenantRouteKey}/Home/`)
+      // If we have tenant ID, redirect to dashboard
+      if (finalTenant?.id) {
+        console.log(`[CRM] Redirecting to CRM dashboard: /crm/${finalTenant.id}/Home/`)
+        router.replace(`/crm/${finalTenant.id}/Home/`)
         return
       }
 

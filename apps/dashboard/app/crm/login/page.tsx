@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageLoading } from '@/components/ui/loading'
 import { Users } from 'lucide-react'
-import { getTenantRouteKey } from '@/lib/utils/tenant-route-key'
 
 /**
  * CRM Module Login Page
@@ -31,13 +30,12 @@ export default function CRMLoginPage() {
     const id = globalThis.setTimeout(() => {
       setMounted(true)
       // If already logged in, redirect to CRM dashboard
-      const key = getTenantRouteKey(tenant)
-      if (isAuthenticated && key) {
-        router.push(`/crm/${key}/Home/`)
+      if (isAuthenticated && tenant?.id) {
+        router.push(`/crm/${tenant.id}/Home/`)
       }
     }, 0)
     return () => globalThis.clearTimeout(id)
-  }, [isAuthenticated, tenant?.id, tenant?.slug, router])
+  }, [isAuthenticated, tenant?.id, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,9 +48,8 @@ export default function CRMLoginPage() {
       const { tenant } = useAuthStore.getState()
       
       // Always redirect to CRM dashboard after login
-      const key = getTenantRouteKey(tenant)
-      if (tenant?.id && key) {
-        const crmHomeHref = `/crm/${key}/Home/`
+      if (tenant?.id) {
+        const crmHomeHref = `/crm/${tenant.id}/Home/`
         router.prefetch(crmHomeHref)
         // Best-effort warm request so CRM Home renders faster after navigation.
         fetch(
@@ -61,7 +58,7 @@ export default function CRMLoginPage() {
         ).catch(() => {
           // No-op
         })
-        router.push(crmHomeHref)
+        router.push(`/crm/${tenant.id}/Home/`)
       } else {
         // No tenant - redirect to home
         router.push('/home')
@@ -77,7 +74,7 @@ export default function CRMLoginPage() {
   }
 
   // If already authenticated, show loading while redirecting
-  if (isAuthenticated && getTenantRouteKey(tenant)) {
+  if (isAuthenticated && tenant?.id) {
     return <PageLoading message="Redirecting to CRM..." fullScreen={true} />
   }
 

@@ -149,7 +149,7 @@
 - [x] **Run first live ticket with the new 5-skill operational pack** and archive one evidence-backed gate card to confirm trigger quality and avoid over-invocation. *(Queue #5 Day 4 closure run recorded in `docs/ai/specialist-skillpack-first-live-run-2026-04-22-queue5.md` with evidence-backed NO-GO and ordered follow-ups.)*
 
 ### Checklist maintenance rule (must follow)
-- [x] **For every next-step implementation**: update this file in the same change-set:
+- [ ] **For every next-step implementation**: update this file in the same change-set:
   - Mark moved items (`[ ]` -> `[x]` or status note),
   - Add any newly discovered gaps,
   - Append one line to **Update log** with date + evidence link/path.

@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { PageLoading } from '@/components/ui/loading'
 import { format } from 'date-fns'
-import { buildQueryStringWithUpdates } from '@/lib/url/query-state'
 
 function getAuthHeaders() {
   const { token } = useAuthStore.getState()
@@ -29,12 +28,11 @@ export default function FinanceExpensesReportsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['expense-summary', startDate, endDate],
     queryFn: async () => {
-      const qs = buildQueryStringWithUpdates('', {
-        startDate: startDate || null,
-        endDate: endDate || null,
-      })
-
-      const response = await fetch(`/api/accounting/expenses/reports/summary?${qs}`, {
+      const queryString = new URLSearchParams()
+      if (startDate) queryString.set('startDate', startDate)
+      if (endDate) queryString.set('endDate', endDate)
+      
+      const response = await fetch(`/api/accounting/expenses/reports/summary?${queryString}`, {
         headers: getAuthHeaders(),
       })
       if (!response.ok) throw new Error('Failed to fetch expense summary')
