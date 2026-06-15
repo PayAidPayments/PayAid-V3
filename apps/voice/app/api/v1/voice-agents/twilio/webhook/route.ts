@@ -1,78 +1,119 @@
 /**
- * Twilio Webhook Handler
- * Handles incoming call events from Twilio
- * 
+ * Twilio Webhook Handler — inbound Phase 1 cutover (Bolna stream or Gather fallback).
  * Webhook URL: /api/v1/voice-agents/twilio/webhook
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import twilio from 'twilio';
-import { prisma } from '@payaid/db';
-import { verifyTwilioSignature, parseTwilioWebhook } from '@/lib/twilio-utils';
-import { syncVoiceCallToCrm } from '@/lib/voice-agent/crm-sync';
+import { NextRequest, NextResponse } from 'next/server'
+import twilio from 'twilio'
+import { prisma } from '@payaid/db'
+import { parseTwilioWebhook } from '@/lib/twilio-utils'
+import {
+  resolveTwilioWebhookValidationUrl,
+  verifyTwilioInboundWebhookSignature,
+} from '@/lib/voice-agent/twilio-webhook-signature'
+import { syncVoiceCallToCrm } from '@/lib/voice-agent/crm-sync'
+import { onTelephonyCallStarted } from '@/lib/voice-agent/events/telephony-voice-events'
+import {
+  loadVoiceRuntimePolicyFlags,
+  prependOutboundDisclosure,
+} from '@/lib/voice-agent/runtime-compliance'
+import { resolveGreeting, shouldUseBolnaRuntime } from '@/lib/voice-agent/runtime/bolna'
+import { prepareBolnaInbound, toVoiceAgentRow } from '@/lib/voice-agent/runtime/bolna-inbound'
+import {
+  VOICE_CALL_RUNTIME,
+  VOICE_INBOUND_EVENTS,
+  bolnaFallbackAuditEntry,
+  logVoiceInbound,
+} from '@/lib/voice-agent/runtime/inbound-observability'
 
-const VoiceResponse = twilio.twiml.VoiceResponse;
+const VoiceResponse = twilio.twiml.VoiceResponse
+
+function twilioSayLanguage(language: string): string {
+  if (language === 'hi') return 'hi-IN'
+  if (language === 'en') return 'en-US'
+  return language
+}
+
+function appendNativeGatherTwiml(
+  twiml: InstanceType<typeof VoiceResponse>,
+  origin: string,
+  agent: { language: string },
+  greeting: string,
+): void {
+  const sayLanguage = twilioSayLanguage(agent.language)
+  const speechHandlerUrl = `${origin}/api/v1/voice-agents/twilio/speech-handler`
+  twiml.say({ voice: 'alice', language: sayLanguage as any }, greeting)
+  twiml.gather({
+    input: ['speech'],
+    action: speechHandlerUrl,
+    method: 'POST',
+    language: sayLanguage as any,
+    speechTimeout: '2',
+    timeout: 5,
+  })
+  twiml.redirect(speechHandlerUrl)
+}
 
 export async function POST(request: NextRequest) {
   try {
-    // ===== VALIDATE TWILIO WEBHOOK =====
-    const body = await request.text();
-    const signature = request.headers.get('X-Twilio-Signature') || '';
-    const webhookUrl = process.env.TWILIO_WEBHOOK_URL || 
-      `${request.nextUrl.origin}/api/v1/voice-agents/twilio/webhook`;
-    const authToken = process.env.TWILIO_AUTH_TOKEN || '';
+    const body = await request.text()
+    const signature = request.headers.get('X-Twilio-Signature') || ''
+    const validationUrl = resolveTwilioWebhookValidationUrl(request.nextUrl.origin)
+    const authToken = process.env.TWILIO_AUTH_TOKEN || ''
 
-    // Verify signature (skip in development for easier testing)
-    if (process.env.NODE_ENV === 'production') {
-      if (!verifyTwilioSignature(webhookUrl, body, signature, authToken)) {
-        console.error('[Twilio Webhook] Invalid signature');
-        return new NextResponse('Unauthorized', { status: 403 });
-      }
+    if (
+      !verifyTwilioInboundWebhookSignature({
+        validationUrl,
+        rawBody: body,
+        signatureHeader: signature,
+        authToken,
+      })
+    ) {
+      console.error('[Twilio Webhook] Invalid signature')
+      return new NextResponse('Unauthorized', { status: 403 })
     }
 
-    // ===== PARSE TWILIO PARAMETERS =====
-    const params = parseTwilioWebhook(body);
-    const { callSid, from, to, callStatus } = params;
+    const params = parseTwilioWebhook(body)
+    const { callSid, from, to, callStatus } = params
+    const origin = request.nextUrl.origin
+    const connectStatusUrl = `${origin}/api/v1/voice-agents/twilio/connect-status`
 
-    console.log('[Twilio Webhook] Incoming Call:', {
-      callSid,
-      from,
-      to,
-      callStatus,
-      timestamp: new Date().toISOString()
-    });
+    logVoiceInbound(VOICE_INBOUND_EVENTS.RECEIVED, { callSid, detail: callStatus })
 
-    // ===== FIND AGENT BY PHONE NUMBER =====
     const agent = await prisma.voiceAgent.findUnique({
-      where: { phoneNumber: to }
-    });
+      where: { phoneNumber: to },
+      include: { trainingPack: true },
+    })
 
     if (!agent) {
-      console.error('[Twilio] Agent not found for number:', to);
-      const twiml = new VoiceResponse();
-      twiml.say({
-        voice: 'alice',
-        language: 'en-US'
-      }, 'Sorry, this number is not configured. Please contact support.');
-      return new NextResponse(twiml.toString(), {
-        headers: { 'Content-Type': 'text/xml' }
-      });
+      console.error('[Twilio] Agent not found for number:', to)
+      const twiml = new VoiceResponse()
+      twiml.say(
+        { voice: 'alice', language: 'en-US' },
+        'Sorry, this number is not configured. Please contact support.',
+      )
+      return new NextResponse(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } })
     }
 
-    // Check if agent is active
     if (agent.status !== 'active') {
-      console.error('[Twilio] Agent is not active:', agent.id);
-      const twiml = new VoiceResponse();
-      twiml.say({
-        voice: 'alice',
-        language: 'en-US'
-      }, 'Sorry, this service is currently unavailable.');
-      return new NextResponse(twiml.toString(), {
-        headers: { 'Content-Type': 'text/xml' }
-      });
+      console.error('[Twilio] Agent is not active:', agent.id)
+      const twiml = new VoiceResponse()
+      twiml.say(
+        { voice: 'alice', language: 'en-US' },
+        'Sorry, this service is currently unavailable.',
+      )
+      return new NextResponse(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } })
     }
 
-    // ===== CREATE CALL RECORD =====
+    logVoiceInbound(VOICE_INBOUND_EVENTS.AGENT_RESOLVED, {
+      callSid,
+      agentId: agent.id,
+      tenantId: agent.tenantId,
+    })
+
+    const useBolna = shouldUseBolnaRuntime(agent)
+    const initialRuntime = useBolna ? VOICE_CALL_RUNTIME.BOLNA : VOICE_CALL_RUNTIME.NATIVE
+
     const call = await prisma.voiceAgentCall.create({
       data: {
         callSid,
@@ -80,127 +121,183 @@ export async function POST(request: NextRequest) {
         tenantId: agent.tenantId,
         from,
         to,
-        phone: from, // Legacy field
+        phone: from,
         inbound: true,
         status: 'ringing',
-        startTime: new Date()
+        runtime: initialRuntime,
+        startTime: new Date(),
+      },
+    })
+
+    await onTelephonyCallStarted(prisma, {
+      tenantId: agent.tenantId,
+      agentId: agent.id,
+      callId: call.id,
+      callSid,
+      inbound: true,
+      channel: 'telephony',
+      phone: from,
+    })
+
+    const policyFlags = await loadVoiceRuntimePolicyFlags(prisma, agent.tenantId)
+
+    const twiml = new VoiceResponse()
+    const agentRow = toVoiceAgentRow(agent)
+
+    if (useBolna) {
+      logVoiceInbound(VOICE_INBOUND_EVENTS.BOLNA_ATTEMPT, {
+        callSid,
+        agentId: agent.id,
+        tenantId: agent.tenantId,
+        runtime: VOICE_CALL_RUNTIME.BOLNA,
+      })
+
+      const prepared = await prepareBolnaInbound({
+        agent: agentRow,
+        callSid,
+        from,
+        to,
+        payaidOrigin: origin,
+      })
+
+      if (prepared.kind === 'stream') {
+        const didSync = !agent.bolnaAgentId
+        await prisma.voiceAgent.update({
+          where: { id: agent.id },
+          data: {
+            bolnaAgentId: prepared.bolnaAgentId,
+            runtimeSyncedAt: prepared.runtimeSyncedAt,
+          },
+        })
+
+        if (didSync) {
+          logVoiceInbound(VOICE_INBOUND_EVENTS.BOLNA_SYNC_OK, {
+            callSid,
+            agentId: agent.id,
+            tenantId: agent.tenantId,
+          })
+        }
+
+        logVoiceInbound(VOICE_INBOUND_EVENTS.BOLNA_STREAM_MINTED, {
+          callSid,
+          agentId: agent.id,
+          tenantId: agent.tenantId,
+        })
+
+        twiml.connect({ action: connectStatusUrl, method: 'POST' }).stream({
+          url: prepared.streamUrl,
+          track: 'inbound_track',
+        })
+
+        logVoiceInbound(VOICE_INBOUND_EVENTS.BOLNA_CONNECT_STREAM, {
+          callSid,
+          agentId: agent.id,
+          tenantId: agent.tenantId,
+        })
+
+        return new NextResponse(twiml.toString(), {
+          headers: { 'Content-Type': 'text/xml', 'Cache-Control': 'no-cache' },
+        })
       }
-    });
 
-    console.log('[Twilio] Call record created:', call.id);
+      const audit = bolnaFallbackAuditEntry(prepared.reason)
+      await prisma.voiceAgentCall.update({
+        where: { id: call.id },
+        data: { runtime: VOICE_CALL_RUNTIME.BOLNA_FALLBACK_GATHER },
+      })
+      await prisma.voiceAgentCallMetadata.upsert({
+        where: { callId: call.id },
+        create: { callId: call.id, actionsExecuted: [audit] as any },
+        update: { actionsExecuted: [audit] as any },
+      })
 
-    // ===== GENERATE TWIML RESPONSE =====
-    const twiml = new VoiceResponse();
+      logVoiceInbound(VOICE_INBOUND_EVENTS.BOLNA_SYNC_FAILED, {
+        callSid,
+        agentId: agent.id,
+        tenantId: agent.tenantId,
+        reason: prepared.reason,
+        detail: prepared.detail,
+      })
+      logVoiceInbound(VOICE_INBOUND_EVENTS.BOLNA_FALLBACK_GATHER, {
+        callSid,
+        agentId: agent.id,
+        tenantId: agent.tenantId,
+        runtime: VOICE_CALL_RUNTIME.BOLNA_FALLBACK_GATHER,
+        reason: prepared.reason,
+        detail: prepared.detail,
+      })
 
-    // Greeting: prefer 3-tab workflow.greeting, then legacy nodes, then description
-    let greeting: string;
-    const workflow = agent.workflow as { greeting?: string; nodes?: Array<{ type: string; data?: { text?: string } }> } | null;
-    if (workflow?.greeting && String(workflow.greeting).trim()) {
-      greeting = String(workflow.greeting).substring(0, 500);
-    } else {
-      const greetingNode = workflow?.nodes?.find((n) => n.type === 'greeting');
-      if (greetingNode?.data?.text && String(greetingNode.data.text).trim()) {
-        greeting = String(greetingNode.data.text).substring(0, 500);
-      } else if (agent.description?.trim()) {
-        greeting = agent.description.substring(0, 200);
-      } else {
-        greeting = `Hello, you've reached ${agent.name}. How can I help you?`;
-      }
+      const greeting = prependOutboundDisclosure(resolveGreeting(agentRow), policyFlags.disclosureText)
+      appendNativeGatherTwiml(twiml, origin, agent, greeting)
+      return new NextResponse(twiml.toString(), {
+        headers: { 'Content-Type': 'text/xml', 'Cache-Control': 'no-cache' },
+      })
     }
 
-    const sayLanguage = agent.language === 'hi' ? 'hi-IN' : agent.language === 'en' ? 'en-US' : (agent.language as string);
-    twiml.say({
-      voice: 'alice',
-      language: sayLanguage
-    }, greeting);
+    logVoiceInbound(VOICE_INBOUND_EVENTS.NATIVE_GATHER, {
+      callSid,
+      agentId: agent.id,
+      tenantId: agent.tenantId,
+      runtime: VOICE_CALL_RUNTIME.NATIVE,
+    })
 
-    const speechHandlerUrl = `${request.nextUrl.origin}/api/v1/voice-agents/twilio/speech-handler`;
-    const wsUrl = process.env.TELEPHONY_WEBSOCKET_URL;
-
-    if (wsUrl) {
-      // Real-time: connect to WebSocket stream
-      twiml.connect({
-        action: `${request.nextUrl.origin}/api/v1/voice-agents/twilio/connect-status`,
-        method: 'POST'
-      }).stream({
-        url: `${wsUrl}?callSid=${callSid}&agentId=${agent.id}`,
-        track: 'inbound_track'
-      });
-    } else {
-      // Phase 1 MVP: no WebSocket — use Gather (speech) → speech-handler → LLM + TTS → Play → loop
-      twiml.gather({
-        input: ['speech'],
-        action: speechHandlerUrl,
-        method: 'POST',
-        language: sayLanguage,
-        speechTimeout: 2,
-        timeout: 5,
-      });
-      twiml.redirect(speechHandlerUrl);
-    }
+    const greeting = prependOutboundDisclosure(resolveGreeting(agentRow), policyFlags.disclosureText)
+    appendNativeGatherTwiml(twiml, origin, agent, greeting)
 
     return new NextResponse(twiml.toString(), {
-      headers: { 
-        'Content-Type': 'text/xml',
-        'Cache-Control': 'no-cache'
-      }
-    });
-
+      headers: { 'Content-Type': 'text/xml', 'Cache-Control': 'no-cache' },
+    })
   } catch (error) {
-    console.error('[Twilio Webhook] Error:', error);
-    const twiml = new VoiceResponse();
-    twiml.say({
-      voice: 'alice',
-      language: 'en-US'
-    }, 'Sorry, something went wrong. Please try again later.');
+    console.error('[Twilio Webhook] Error:', error)
+    const twiml = new VoiceResponse()
+    twiml.say(
+      { voice: 'alice', language: 'en-US' },
+      'Sorry, something went wrong. Please try again later.',
+    )
     return new NextResponse(twiml.toString(), {
       status: 500,
-      headers: { 'Content-Type': 'text/xml' }
-    });
+      headers: { 'Content-Type': 'text/xml' },
+    })
   }
 }
 
-// Handle GET requests (Twilio status callback when call ends).
-// In Twilio console, set the number's "Status callback URL" to this same webhook URL (GET) to receive completed/failed.
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const callSid = searchParams.get('CallSid');
-  const callStatus = searchParams.get('CallStatus');
-  const callDuration = searchParams.get('CallDuration');
-
-  console.log('[Twilio Status] Call status update:', {
-    callSid,
-    callStatus,
-    callDuration,
-    timestamp: new Date().toISOString()
-  });
+  const searchParams = request.nextUrl.searchParams
+  const callSid = searchParams.get('CallSid')
+  const callStatus = searchParams.get('CallStatus')
+  const callDuration = searchParams.get('CallDuration')
 
   if (callSid) {
     try {
-      const durationSec = callDuration ? parseInt(callDuration, 10) : undefined;
+      const durationSec = callDuration ? parseInt(callDuration, 10) : undefined
       await prisma.voiceAgentCall.updateMany({
         where: { callSid },
         data: {
-          status: callStatus === 'completed' ? 'completed' :
-                  callStatus === 'in-progress' ? 'in-progress' :
-                  callStatus === 'failed' ? 'failed' : 'ringing',
-          endTime: callStatus === 'completed' || callStatus === 'failed'
-            ? new Date()
-            : undefined,
-          ...(durationSec !== undefined && !isNaN(durationSec) && { durationSeconds: durationSec })
-        }
-      });
+          status:
+            callStatus === 'completed'
+              ? 'completed'
+              : callStatus === 'in-progress'
+                ? 'in-progress'
+                : callStatus === 'failed'
+                  ? 'failed'
+                  : 'ringing',
+          endTime:
+            callStatus === 'completed' || callStatus === 'failed' ? new Date() : undefined,
+          ...(durationSec !== undefined &&
+            !isNaN(durationSec) && { durationSeconds: durationSec }),
+        },
+      })
       if (callStatus === 'completed') {
         try {
-          await syncVoiceCallToCrm(callSid);
+          await syncVoiceCallToCrm(callSid)
         } catch (crmError) {
-          console.error('[Twilio Status] CRM sync failed:', crmError);
+          console.error('[Twilio Status] CRM sync failed:', crmError)
         }
       }
     } catch (error) {
-      console.error('[Twilio Status] Error updating call:', error);
+      console.error('[Twilio Status] Error updating call:', error)
     }
   }
 
-  return new NextResponse('OK', { status: 200 });
+  return new NextResponse('OK', { status: 200 })
 }

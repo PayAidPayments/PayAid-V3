@@ -4,13 +4,14 @@ import { requireModuleAccess } from '@/lib/middleware/auth'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { tenantId, userId } = await requireModuleAccess(request, 'ai-studio')
 
     const { offer } = await request.json()
-    const agentId = params.id
+    const agentId = id
 
     // Verify agent exists and belongs to tenant
     const agent = await prisma.voiceAgent.findUnique({

@@ -302,6 +302,8 @@ model Tenant {
   voiceAgentCampaigns          VoiceAgentCampaign[]
   voiceAgentSquads             VoiceAgentSquad[]
   voiceAgentExperiments        VoiceAgentExperiment[]
+  voiceAgentTrainingPacks      VoiceAgentTrainingPack[]
+  voiceDemoSessions           VoiceDemoSession[]
   // Productivity Suite Relations
   spreadsheets                 Spreadsheet[]
   documents                    Document[]
@@ -3081,6 +3083,10 @@ model VoiceAgent {
   functions            Json? // Function calling configuration
   compliance           Json? // Compliance settings (DND, consent, etc.)
   workflow             Json? // Agent Builder flow: { nodes: [], edges: [] } (Greeting, Intent, CRM Lookup, Response, Actions, End)
+  voiceRuntime         String                  @default("native") // "native" (legacy <Gather> loop) | "bolna" (real-time sidecar). See docs/VOICE_AGENT_BOLNA_INTEGRATION_PLAN.md
+  bolnaAgentId         String? // ID returned by Bolna when the agent JSON is upserted into the sidecar
+  runtimeSyncedAt      DateTime? // Last successful sync to the active runtime
+  publishedTrainingPackVersion Int? // Last published approved training pack version (browser QA → phone)
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
   tenant               Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -3088,11 +3094,57 @@ model VoiceAgent {
   campaigns            VoiceAgentCampaign[]
   squadMembers         VoiceAgentSquadMember[]
   experiments          VoiceAgentExperiment[]
+  trainingPack         VoiceAgentTrainingPack?
+  demoSessions         VoiceDemoSession[]
 
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, language])
   @@index([phoneNumber])
+}
+
+model VoiceAgentTrainingPack {
+  id                  String    @id @default(cuid())
+  voiceAgentId        String    @unique
+  tenantId            String
+  draftJson           Json      @default("{}")
+  approvedJson        Json?
+  version             Int       @default(0)
+  submittedAt         DateTime?
+  submittedByUserId   String?
+  approvedAt          DateTime?
+  approvedByUserId    String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  agent               VoiceAgent @relation(fields: [voiceAgentId], references: [id], onDelete: Cascade)
+  tenant              Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, voiceAgentId])
+}
+
+model VoiceDemoSession {
+  id                         String    @id @default(cuid())
+  tenantId                   String
+  voiceAgentId               String
+  trainingPackVersionAtStart Int       @default(0)
+  channel                    String    @default("browser")
+  status                     String    @default("active")
+  transcriptJson             Json      @default("[]")
+  outcomeCode                String?
+  metadataJson               Json?
+  qaFlagsJson                Json?
+  qaChecklistJson            Json?
+  qaSubmittedAt              DateTime?
+  qaSubmittedByUserId        String?
+  createdAt                  DateTime  @default(now())
+  endedAt                    DateTime?
+  agent                      VoiceAgent @relation(fields: [voiceAgentId], references: [id], onDelete: Cascade)
+  tenant                     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([voiceAgentId])
+  @@index([tenantId, createdAt])
 }
 
 model VoiceAgentCampaign {
@@ -3105,6 +3157,8 @@ model VoiceAgentCampaign {
   status          String                     @default("draft") // draft, scheduled, running, paused, completed
   autoRemoveDnd   Boolean                   @default(true)
   paceCallsPerMin Int                       @default(10) // Sequential dialer: max calls per minute
+  triggerSource   String                    @default("manual") // manual, website_lead, crm_stage, missed_call, marketing_lead, escalation_callback
+  businessHoursJson Json?                   // { timezone, days[], start, end } — null = dial anytime
   scheduledAt     DateTime?
   startedAt       DateTime?
   completedAt     DateTime?

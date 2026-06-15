@@ -7,10 +7,12 @@
  */
 
 const BHASHINI_API_URL = 'https://tts-api.bhashini.ai/v1/synthesize'
-const BHASHINI_API_KEY = process.env.BHASHINI_API_KEY || ''
+// Some operator setups currently store this key under SARVAM_API_KEY.
+const BHASHINI_API_KEY = process.env.BHASHINI_API_KEY || process.env.SARVAM_API_KEY || ''
 
 // Language code mapping (ISO 639-1 to Bhashini language codes)
 const LANGUAGE_MAP: Record<string, string> = {
+  'en': 'en', // English
   'hi': 'hi', // Hindi
   'ta': 'ta', // Tamil
   'te': 'te', // Telugu
@@ -28,6 +30,7 @@ const LANGUAGE_MAP: Record<string, string> = {
 
 // Available voices per language
 const VOICE_OPTIONS: Record<string, string[]> = {
+  'en': ['en-IN-Standard-A', 'en-IN-Standard-B'],
   'hi': ['hi-IN-Standard-A', 'hi-IN-Standard-B', 'hi-IN-Standard-C', 'hi-IN-Standard-D'],
   'ta': ['ta-IN-Standard-A', 'ta-IN-Standard-B'],
   'te': ['te-IN-Standard-A', 'te-IN-Standard-B'],

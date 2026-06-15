@@ -2,73 +2,125 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Phone, Plus, History, BarChart3, Settings, FileText, ShieldCheck, LayoutDashboard, Megaphone, MessageSquare, Headphones } from 'lucide-react'
+import { Phone, Plus, History, BarChart3, Settings, FileText, ShieldCheck, LayoutDashboard, Megaphone, MessageSquare, Radio, Headphones, Inbox, Scale } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { useVoiceCapability } from '@/lib/hooks/useVoiceCapability'
+import type { VoiceCapability } from '@/lib/voice-agent/rbac'
 
 interface VoiceAgentsSidebarProps {
   tenantId: string
 }
 
+const LIVE_DEMO_ENABLED = process.env.NEXT_PUBLIC_VOICE_BROWSER_LIVE_DEMO === '1'
+
 export function VoiceAgentsSidebar({ tenantId }: VoiceAgentsSidebarProps) {
   const pathname = usePathname()
+  const canConfigure = useVoiceCapability('configure')
+  const canOperate = useVoiceCapability('operate')
+  const canListen = useVoiceCapability('listen')
+
+  const canSee = (min: VoiceCapability) => {
+    if (min === 'configure') return canConfigure
+    if (min === 'operate') return canOperate
+    return canListen
+  }
 
   const menuItems = [
     {
       name: 'Agents',
       href: `/voice-agents/${tenantId}/Home`,
       icon: Phone,
+      minCapability: 'listen' as VoiceCapability,
     },
     {
       name: 'Create Agent',
       href: `/voice-agents/${tenantId}/create`,
       icon: Plus,
+      minCapability: 'configure' as VoiceCapability,
     },
     {
       name: 'Studio',
       href: `/voice-agents/${tenantId}/studio`,
       icon: LayoutDashboard,
+      minCapability: 'configure' as VoiceCapability,
     },
     {
-      name: 'Demo',
+      name: 'Browser demo',
       href: `/voice-agents/${tenantId}/Demo`,
-      icon: Headphones,
+      icon: MessageSquare,
+      minCapability: 'operate' as VoiceCapability,
     },
+    ...(LIVE_DEMO_ENABLED
+      ? [
+          {
+            name: 'Live voice',
+            href: `/voice-agents/${tenantId}/LiveDemo`,
+            icon: Radio,
+            minCapability: 'operate' as VoiceCapability,
+          },
+        ]
+      : []),
     {
       name: 'Call History',
       href: `/voice-agents/${tenantId}/Calls`,
       icon: History,
+      minCapability: 'listen' as VoiceCapability,
     },
     {
       name: 'Campaigns',
       href: `/voice-agents/${tenantId}/Campaigns`,
       icon: Megaphone,
+      minCapability: 'operate' as VoiceCapability,
     },
     {
       name: 'Transcripts',
       href: `/voice-agents/${tenantId}/Transcripts`,
       icon: MessageSquare,
+      minCapability: 'listen' as VoiceCapability,
     },
     {
       name: 'Analytics',
       href: `/voice-agents/${tenantId}/Analytics`,
       icon: BarChart3,
+      minCapability: 'listen' as VoiceCapability,
+    },
+    {
+      name: 'Supervisor',
+      href: `/voice-agents/${tenantId}/Monitor`,
+      icon: Headphones,
+      minCapability: 'listen' as VoiceCapability,
+    },
+    {
+      name: 'Inbox',
+      href: `/voice-agents/${tenantId}/Inbox`,
+      icon: Inbox,
+      minCapability: 'listen' as VoiceCapability,
+    },
+    {
+      name: 'Compliance',
+      href: `/voice-agents/${tenantId}/Compliance`,
+      icon: Scale,
+      minCapability: 'configure' as VoiceCapability,
     },
     {
       name: 'DND Scrub',
       href: `/voice-agents/${tenantId}/DND-Scrub`,
       icon: ShieldCheck,
+      minCapability: 'configure' as VoiceCapability,
     },
     {
       name: 'Knowledge Base',
       href: `/voice-agents/${tenantId}/KnowledgeBase`,
       icon: FileText,
+      minCapability: 'configure' as VoiceCapability,
     },
     {
       name: 'Settings',
       href: `/voice-agents/${tenantId}/Settings`,
       icon: Settings,
+      minCapability: 'configure' as VoiceCapability,
     },
-  ]
+  ].filter((item) => canSee(item.minCapability))
 
   return (
     <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
@@ -80,7 +132,9 @@ export function VoiceAgentsSidebar({ tenantId }: VoiceAgentsSidebarProps) {
       <nav className="flex-1 p-4 space-y-1">
         {menuItems.map((item) => {
           const Icon = item.icon
-          const isActive = pathname === item.href
+          const isActive =
+            pathname === item.href ||
+            (item.href.includes('/LiveDemo') && pathname?.includes('/LiveDemo'))
           return (
             <Link
               key={item.href}

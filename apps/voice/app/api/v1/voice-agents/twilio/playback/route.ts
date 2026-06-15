@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   if (!buffer) {
     return new NextResponse('Not found', { status: 404 })
   }
-  return new NextResponse(buffer, {
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'audio/wav',
       'Cache-Control': 'no-store, max-age=0',

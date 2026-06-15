@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { AppShell } from '@/components/modules/AppShell'
+import { VoiceAppShell } from '@/components/voice-agent/VoiceAppShell'
 import { VoiceAgentsSidebar } from '@/components/voice-agent/VoiceAgentsSidebar'
 
 const topBarItemsFor = (tenantId: string) => [
@@ -10,6 +10,8 @@ const topBarItemsFor = (tenantId: string) => [
   { name: 'Campaigns', href: `/voice-agents/${tenantId}/Campaigns` },
   { name: 'Transcripts', href: `/voice-agents/${tenantId}/Transcripts` },
   { name: 'Analytics', href: `/voice-agents/${tenantId}/Analytics` },
+  { name: 'Supervisor', href: `/voice-agents/${tenantId}/Monitor` },
+  { name: 'Inbox', href: `/voice-agents/${tenantId}/Inbox` },
 ]
 
 export default function VoiceAgentsTenantLayout({
@@ -21,13 +23,12 @@ export default function VoiceAgentsTenantLayout({
   const tenantId = params.tenantId as string
 
   return (
-    <AppShell
-      moduleId="voice-agents"
+    <VoiceAppShell
       moduleName="Voice Agents"
       topBarItems={topBarItemsFor(tenantId)}
       sidebar={<VoiceAgentsSidebar tenantId={tenantId} />}
     >
       {children}
-    </AppShell>
+    </VoiceAppShell>
   )
 }

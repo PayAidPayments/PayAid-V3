@@ -19,9 +19,10 @@ const addMemberSchema = z.object({
 // POST /api/v1/voice-agents/squads/[id]/members - Add member
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await authenticateRequest(request)
     if (!user || !user.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -30,7 +31,7 @@ export async function POST(
     // Verify squad belongs to tenant
     const squad = await prisma.voiceAgentSquad.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId: user.tenantId,
       },
     })
@@ -56,7 +57,7 @@ export async function POST(
 
     const member = await prisma.voiceAgentSquadMember.create({
       data: {
-        squadId: params.id,
+        squadId: id,
         agentId: validated.agentId,
         priority: validated.priority,
         conditions: validated.conditions ?? Prisma.JsonNull,
@@ -86,9 +87,10 @@ export async function POST(
 // GET /api/v1/voice-agents/squads/[id]/members - List members
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await authenticateRequest(request)
     if (!user || !user.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -96,7 +98,7 @@ export async function GET(
 
     const squad = await prisma.voiceAgentSquad.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId: user.tenantId,
       },
     })
@@ -106,7 +108,7 @@ export async function GET(
     }
 
     const members = await prisma.voiceAgentSquadMember.findMany({
-      where: { squadId: params.id },
+      where: { squadId: id },
       include: {
         agent: true,
       },

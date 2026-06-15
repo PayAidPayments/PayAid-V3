@@ -6,8 +6,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
-import { authenticateRequest } from '@/lib/middleware/auth'
+import { handleVoiceAccessError, requireVoiceAccess } from '@/lib/voice-agent/rbac'
 import { checkDndBatch, normalizePhoneForDnd } from '@/lib/dnd'
+import { pickupNextCampaignContact } from '@/lib/voice-agent/campaign-dialer'
 
 async function getCampaignOr404(tenantId: string, id: string) {
   return prisma.voiceAgentCampaign.findFirst({
@@ -21,13 +22,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await authenticateRequest(request)
-    if (!user?.tenantId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { tenantId } = await requireVoiceAccess(request, 'operate')
 
     const { id } = await params
-    const campaign = await getCampaignOr404(user.tenantId, id)
+    const campaign = await getCampaignOr404(tenantId, id)
     if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
@@ -77,11 +75,22 @@ export async function POST(
       include: { agent: { select: { id: true, name: true } } },
     })
 
+    let firstDial = null
+    if (process.env.VOICE_AUTO_DIAL_ON_START === '1') {
+      firstDial = await pickupNextCampaignContact(prisma, {
+        tenantId,
+        campaignId: id,
+      })
+    }
+
     return NextResponse.json({
-      message: 'Campaign started. Outbound calls will be placed by the dialer.',
+      message: 'Campaign started. Use POST …/campaigns/[id]/tick to place outbound calls.',
       campaign: updated,
+      firstDial,
     })
   } catch (error) {
+    const denied = handleVoiceAccessError(error)
+    if (denied) return denied
     console.error('[Campaigns] Start error:', error)
     return NextResponse.json({ error: 'Failed to start campaign' }, { status: 500 })
   }

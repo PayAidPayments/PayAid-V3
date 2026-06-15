@@ -6,6 +6,7 @@
 
 const SARVAM_CHAT_URL = 'https://api.sarvam.ai/v1/chat/completions'
 const SARVAM_TTS_URL = 'https://api.sarvam.ai/text-to-speech'
+const SARVAM_STT_URL = 'https://api.sarvam.ai/speech-to-text'
 
 const LANG_TO_BCP47: Record<string, string> = {
   en: 'en-IN',
@@ -367,4 +368,79 @@ export async function sarvamTts(
   }
   const arrayBuffer = await res.arrayBuffer()
   return Buffer.from(arrayBuffer)
+}
+
+export type SarvamSttMode = 'transcribe' | 'translate' | 'verbatim' | 'translit' | 'codemix'
+
+function mimeToSttFilename(mime?: string): string {
+  const m = (mime || '').toLowerCase()
+  if (m.includes('webm')) return 'utterance.webm'
+  if (m.includes('wav')) return 'utterance.wav'
+  if (m.includes('mpeg') || m.includes('mp3')) return 'utterance.mp3'
+  if (m.includes('ogg')) return 'utterance.ogg'
+  if (m.includes('mp4') || m.includes('m4a')) return 'utterance.m4a'
+  return 'utterance.webm'
+}
+
+/** Map short or BCP-47 language codes to Sarvam STT `language_code`. */
+export function toSarvamSttLanguageCode(language?: string): string | undefined {
+  const raw = (language || '').trim()
+  if (!raw) return undefined
+  if (raw.includes('-')) return LANG_TO_BCP47[raw] || raw
+  return LANG_TO_BCP47[raw] || `${raw}-IN`
+}
+
+function bcp47ToShortLanguage(code?: string | null): string {
+  const raw = (code || '').trim()
+  if (!raw) return 'en'
+  const short = raw.split('-')[0]?.toLowerCase()
+  return short || 'en'
+}
+
+/**
+ * Sarvam Saaras STT — REST transcribe (best for utterances under ~30s).
+ * Supports WebM/MP3/WAV and other formats listed in Sarvam docs.
+ */
+export async function sarvamStt(
+  audio: Buffer,
+  options?: {
+    mime?: string
+    language?: string
+    mode?: SarvamSttMode
+    signal?: AbortSignal
+  },
+): Promise<{ text: string; language: string; service: 'sarvam-stt' }> {
+  const apiKey = getApiKey()
+  if (!apiKey) throw new Error('SARVAM_API_KEY not set')
+  if (!audio.byteLength) {
+    return { text: '', language: options?.language || 'en', service: 'sarvam-stt' }
+  }
+
+  const form = new FormData()
+  const blob = new Blob([new Uint8Array(audio)], { type: options?.mime || 'audio/webm' })
+  form.append('file', blob, mimeToSttFilename(options?.mime))
+  form.append('model', 'saaras:v3')
+  form.append('mode', options?.mode || 'transcribe')
+  const languageCode = toSarvamSttLanguageCode(options?.language)
+  if (languageCode) form.append('language_code', languageCode)
+
+  const res = await fetch(SARVAM_STT_URL, {
+    method: 'POST',
+    headers: { 'api-subscription-key': apiKey },
+    body: form,
+    signal: options?.signal,
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Sarvam STT failed (${res.status}): ${err}`)
+  }
+
+  const data = (await res.json()) as {
+    transcript?: string
+    language_code?: string | null
+  }
+  const text = (data.transcript || '').trim()
+  const language = bcp47ToShortLanguage(data.language_code) || options?.language || 'en'
+  return { text, language, service: 'sarvam-stt' }
 }

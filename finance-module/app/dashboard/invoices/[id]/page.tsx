@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { format } from 'date-fns'
+import { VoiceFinanceCollectionsPanel } from '@/components/voice-agent/VoiceFinanceCollectionsPanel'
 
 // Number to words converter for Indian currency
 function numberToWords(amount: number): string {
@@ -159,6 +160,7 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="space-y-6">
+      <VoiceFinanceCollectionsPanel metadata={(invoice as { metadata?: unknown }).metadata} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Invoice {invoice.invoiceNumber}</h1>

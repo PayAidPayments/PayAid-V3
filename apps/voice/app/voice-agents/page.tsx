@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
-import { PageLoading } from '@/components/ui/loading'
+import { VoiceAgentsEntryLoader } from '@/components/voice-agent/VoiceAgentsEntryLoader'
 
 const REHYDRATE_WAIT_MS = 200  // Give Zustand persist time to restore auth from localStorage
 const MAX_WAIT_MS = 5000       // Don't show loading forever
@@ -27,15 +27,17 @@ export default function VoiceAgentsModulePage() {
   useEffect(() => {
     if (!ready) return
 
+    const loginHref = '/login?redirect=' + encodeURIComponent('/voice-agents')
+
     if (!isAuthenticated) {
-      router.push('/login')
+      router.push(loginHref)
       return
     }
 
     if (tenant?.id) {
       router.push(`/voice-agents/${tenant.id}/Home/`)
     } else {
-      router.push('/login')
+      router.push(loginHref)
     }
   }, [ready, isAuthenticated, tenant?.id, router])
 
@@ -47,6 +49,6 @@ export default function VoiceAgentsModulePage() {
     return () => clearTimeout(maxTimer)
   }, [])
 
-  return <PageLoading message="Loading Voice Agents..." fullScreen={true} />
+  return <VoiceAgentsEntryLoader />
 }
 

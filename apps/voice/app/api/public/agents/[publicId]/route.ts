@@ -5,10 +5,10 @@ export const revalidate = 60
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ publicId: string }> | { publicId: string } }
+  { params }: { params: Promise<{ publicId: string }> }
 ) {
-  const resolvedParams = params instanceof Promise ? await params : params
-  const publicId = decodeURIComponent(resolvedParams.publicId || '').trim()
+  const { publicId: rawPublicId } = await params
+  const publicId = decodeURIComponent(rawPublicId || '').trim()
 
   if (!publicId) {
     return NextResponse.json({ error: 'publicId is required' }, { status: 400 })
@@ -16,28 +16,26 @@ export async function GET(
 
   const agent = await prisma.voiceAgent.findFirst({
     where: {
-      publicId,
+      id: publicId,
       status: 'active',
     },
     select: {
-      publicId: true,
+      id: true,
       name: true,
-      theme: true,
     },
   })
 
-  if (!agent?.publicId) {
+  if (!agent?.id) {
     return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
   }
 
   return NextResponse.json({
-    publicId: agent.publicId,
+    publicId: agent.id,
     name: agent.name,
-    theme: agent.theme ?? {
+    theme: {
       color: '#2563eb',
       position: 'bottom-right',
       icon: 'mic',
     },
   })
 }
-

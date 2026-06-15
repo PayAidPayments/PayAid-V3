@@ -7,6 +7,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@payaid/db'
 import { authenticateRequest } from '@/lib/middleware/auth'
+import { handleVoiceAccessError, requireVoiceAccess } from '@/lib/voice-agent/rbac'
+import {
+  businessHoursSchema,
+  toBusinessHoursJsonInput,
+  triggerSourceSchema,
+} from '@/lib/voice-agent/campaign-schema'
 import { z } from 'zod'
 
 const createCampaignSchema = z.object({
@@ -16,6 +22,8 @@ const createCampaignSchema = z.object({
   script: z.string().optional().nullable(),
   autoRemoveDnd: z.boolean().optional().default(true),
   paceCallsPerMin: z.number().int().min(1).max(120).optional().default(10),
+  triggerSource: triggerSourceSchema.optional().default('manual'),
+  businessHours: businessHoursSchema.optional().nullable(),
 })
 
 export async function GET(request: NextRequest) {
@@ -108,16 +116,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await authenticateRequest(request)
-    if (!user?.tenantId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { tenantId } = await requireVoiceAccess(request, 'configure')
 
     const body = await request.json()
     const validated = createCampaignSchema.parse(body)
 
     const agent = await prisma.voiceAgent.findFirst({
-      where: { id: validated.agentId, tenantId: user.tenantId },
+      where: { id: validated.agentId, tenantId },
     })
     if (!agent) {
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
@@ -125,13 +130,17 @@ export async function POST(request: NextRequest) {
 
     const campaign = await prisma.voiceAgentCampaign.create({
       data: {
-        tenantId: user.tenantId,
+        tenantId,
         agentId: validated.agentId,
         name: validated.name,
         campaignType: validated.campaignType,
         script: validated.script ?? null,
         autoRemoveDnd: validated.autoRemoveDnd,
         paceCallsPerMin: validated.paceCallsPerMin,
+        triggerSource: validated.triggerSource,
+        ...(validated.businessHours !== undefined
+          ? { businessHoursJson: toBusinessHoursJsonInput(validated.businessHours) }
+          : {}),
         status: 'draft',
       },
       include: { agent: { select: { id: true, name: true } } },
@@ -139,6 +148,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(campaign)
   } catch (error) {
+    const denied = handleVoiceAccessError(error)
+    if (denied) return denied
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation failed', details: error.flatten() }, { status: 400 })
     }

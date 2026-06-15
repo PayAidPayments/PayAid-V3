@@ -11,9 +11,10 @@ import { prisma } from '@payaid/db'
 // POST /api/v1/voice-agents/experiments/[id]/pause - Pause experiment
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await authenticateRequest(request)
     if (!user || !user.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -22,7 +23,7 @@ export async function POST(
     // Verify experiment belongs to tenant
     const experiment = await prisma.voiceAgentExperiment.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId: user.tenantId,
       },
     })
@@ -32,7 +33,7 @@ export async function POST(
     }
 
     const abTesting = getABTestingFramework()
-    await abTesting.pauseExperiment(params.id)
+    await abTesting.pauseExperiment(id)
 
     return NextResponse.json({ success: true, status: 'paused' })
   } catch (error) {
