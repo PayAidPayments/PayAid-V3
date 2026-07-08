@@ -12,6 +12,8 @@ import { listSpecialistsForModule } from '@/lib/ai/specialists/registry'
 import { evaluateSpecialistPolicy } from '@/lib/ai/specialists/policy'
 import { recordSpecialistAuditEvent } from '@/lib/ai/specialists/audit'
 import type { SpecialistActionLevel } from '@/lib/ai/specialists/types'
+import { enforceAiPolicyGateway } from '@/lib/security/ai-policy'
+import { handleHrSelfServiceQuery } from '@/lib/ai/hr-self-service'
 
 const isAiDebugEnabled = () => process.env.AI_DEBUG === '1'
 
@@ -63,17 +65,36 @@ export async function POST(request: NextRequest) {
 
   try {
     // Check AI Studio module license
-    const { tenantId, userId, licensedModules, roles } = await requireModuleAccess(request, 'ai-studio')
+    const { tenantId, userId, licensedModules, roles, permissions } = await requireModuleAccess(request, 'ai-studio')
     const authPayload = await requireCanonicalAiGatewayAccess(request)
 
     const body = await request.json()
     const validated = chatSchema.parse(body)
+    const sessionId = validated.context?.sessionId || crypto.randomUUID()
+
+    const aiPolicy = await enforceAiPolicyGateway({
+      surface: 'chat',
+      route: '/api/ai/chat',
+      tenantId,
+      userId,
+      roles: roles || authPayload.roles || [],
+      prompt: validated.message,
+      sessionId,
+    })
+    if (!aiPolicy.allowed) {
+      return jsonWithTiming({
+        error: aiPolicy.blockReason,
+        code: aiPolicy.blockCode,
+        policyVersion: aiPolicy.policyVersion,
+      }, aiPolicy.rateLimited ? 429 : 403)
+    }
+
     const moduleName = validated.context?.module || 'general'
     const fallbackSpecialist = listSpecialistsForModule(moduleName)[0]
     const specialistId = validated.context?.specialistId || fallbackSpecialist?.id || 'knowledge-specialist'
     const actionLevel = (validated.context?.actionLevel || 'read') as SpecialistActionLevel
     const approvalConfirmed = Boolean(validated.context?.approvalConfirmed)
-    const sessionId = validated.context?.sessionId || crypto.randomUUID()
+    const message = aiPolicy.sanitizedPrompt
 
     const policy = evaluateSpecialistPolicy({
       specialistId,
@@ -94,7 +115,7 @@ export async function POST(request: NextRequest) {
           module: moduleName,
           actionLevel,
           sessionId,
-          prompt: validated.message,
+          prompt: message,
           permissionResult: 'denied',
           reason: policy.reason,
           result: 'blocked',
@@ -121,7 +142,7 @@ export async function POST(request: NextRequest) {
           module: moduleName,
           actionLevel,
           sessionId,
-          prompt: validated.message,
+          prompt: message,
           permissionResult: 'denied',
           reason,
           result: 'blocked',
@@ -137,6 +158,51 @@ export async function POST(request: NextRequest) {
       }, 409)
     }
 
+    const mergedLicensedModules = Array.from(new Set([...(licensedModules || []), ...(authPayload.modules || [])]))
+    const hrSelfServiceResult = await handleHrSelfServiceQuery({
+      tenantId,
+      userId,
+      roles: roles || authPayload.roles || [],
+      permissions: permissions || authPayload.permissions || [],
+      licensedModules: mergedLicensedModules,
+      message,
+    })
+
+    if (hrSelfServiceResult.handled && hrSelfServiceResult.message) {
+      await recordSpecialistAuditEvent({
+        tenantId,
+        userId,
+        event: {
+          eventType: 'specialist.response.completed',
+          specialistId,
+          specialistName: policy.specialist?.name || specialistId,
+          module: moduleName,
+          actionLevel,
+          sessionId,
+          prompt: message,
+          permissionResult: 'granted',
+          contextSources: hrSelfServiceResult.contextSources || ['hr_self_service_tool'],
+          reason: hrSelfServiceResult.auditReason || hrSelfServiceResult.reasonCode,
+          result: hrSelfServiceResult.reasonCode ? 'blocked' : 'success',
+          latencyMs: Date.now() - startedAt,
+        },
+      })
+
+      return jsonWithTiming({
+        message: hrSelfServiceResult.message,
+        cached: false,
+        usage: undefined,
+        service: 'hr-self-service',
+        tool: hrSelfServiceResult.toolName,
+        fallbackReason: hrSelfServiceResult.reasonCode,
+        specialist: {
+          id: specialistId,
+          name: policy.specialist?.name || specialistId,
+          actionLevel,
+        },
+      })
+    }
+
     await recordSpecialistAuditEvent({
       tenantId,
       userId,
@@ -147,7 +213,7 @@ export async function POST(request: NextRequest) {
         module: moduleName,
         actionLevel,
         sessionId,
-        prompt: validated.message,
+        prompt: message,
         permissionResult: 'granted',
       },
     })
@@ -159,7 +225,7 @@ export async function POST(request: NextRequest) {
       'sex', 'intimate', 'private', 'personal problem', 'personal issue'
     ]
     
-    const lowerMessage = validated.message.toLowerCase()
+    const lowerMessage = message.toLowerCase()
     const isPersonalQuery = personalKeywords.some(keyword => lowerMessage.includes(keyword))
     
     if (isPersonalQuery) {
@@ -173,7 +239,7 @@ export async function POST(request: NextRequest) {
           module: moduleName,
           actionLevel,
           sessionId,
-          prompt: validated.message,
+          prompt: message,
           permissionResult: 'granted',
           reason: 'business-only filter',
           result: 'success',
@@ -193,7 +259,7 @@ export async function POST(request: NextRequest) {
     // Get business context with actual data (pass user message to extract client info)
     let businessContext = ''
     try {
-      businessContext = await getBusinessContext(tenantId, validated.message)
+      businessContext = await getBusinessContext(tenantId, message)
     } catch (contextError) {
       console.error('Error getting business context:', contextError)
       // Continue with empty context rather than failing completely
@@ -202,7 +268,7 @@ export async function POST(request: NextRequest) {
 
     const businessProfileMissing = businessContext.includes('BUSINESS_PROFILE_MISSING: true')
     const asksForBusinessAdvice = /(industry|business|market|customer|proposal|post|pitch|plan|strategy|campaign|brand|offering|product|service|logo)/i.test(
-      validated.message
+      message
     )
     if (businessProfileMissing && asksForBusinessAdvice) {
       return jsonWithTiming({
@@ -222,7 +288,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Analyze if we have enough context to provide an accurate response
-    const contextAnalysis = analyzePromptContext(validated.message, {
+    const contextAnalysis = analyzePromptContext(message, {
       hasBusinessData: businessContext.length > 100,
       hasRelevantContact: businessContext.includes('RELEVANT CLIENT/COMPANY INFORMATION'),
       hasRelevantDeal: businessContext.includes('RELATED DEAL'),
@@ -245,7 +311,7 @@ export async function POST(request: NextRequest) {
           module: moduleName,
           actionLevel,
           sessionId,
-          prompt: validated.message,
+          prompt: message,
           permissionResult: 'granted',
           reason: 'clarification required',
           result: 'success',
@@ -262,10 +328,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Build user message with context
-    const userMessage = buildUserMessage(validated.message, businessContext, contextAnalysis)
+    const userMessage = buildUserMessage(message, businessContext, contextAnalysis)
 
     // Check cache only for exact matches (skip cache for now to ensure fresh AI responses)
-    // const cachedResponse = await semanticCache.get(validated.message)
+    // const cachedResponse = await semanticCache.get(message)
     // if (cachedResponse) {
     //   return NextResponse.json({
     //     message: cachedResponse,
@@ -280,7 +346,7 @@ export async function POST(request: NextRequest) {
     
     // Debug logging is opt-in to keep hot-path logging light in production.
     aiDebugLog('🤖 AI Request:', {
-      message: validated.message.substring(0, 200),
+      message: message.substring(0, 200),
       hasBusinessContext: !!businessContext,
       contextLength: businessContext.length,
     })
@@ -438,7 +504,7 @@ export async function POST(request: NextRequest) {
             console.error('❌ All AI services failed, using rule-based:', openAIError)
             // Use rule-based fallback with business context (don't cache this)
             response = {
-              message: getHelpfulResponse(validated.message, businessContext),
+              message: getHelpfulResponse(message, businessContext),
               usage: undefined,
             }
             usedService = 'rule-based'
@@ -450,7 +516,7 @@ export async function POST(request: NextRequest) {
     // Only cache real AI responses, not rule-based fallbacks
     if (usedService !== 'rule-based' && response.message) {
       try {
-        await semanticCache.set(validated.message, response.message)
+        await semanticCache.set(message, response.message)
       } catch (cacheError) {
         console.error('Cache error (non-critical):', cacheError)
       }
@@ -461,7 +527,7 @@ export async function POST(request: NextRequest) {
       mediumPriorityQueue.add('log-ai-interaction', {
         userId: userId,
         tenantId: tenantId,
-        query: validated.message,
+        query: message,
         response: response.message,
         module: validated.context?.module || 'general',
       })
@@ -480,7 +546,7 @@ export async function POST(request: NextRequest) {
         module: moduleName,
         actionLevel,
         sessionId,
-        prompt: validated.message,
+        prompt: message,
         permissionResult: 'granted',
         contextSources: ['business_context', 'module_context'],
         result: 'success',
