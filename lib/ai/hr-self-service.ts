@@ -122,7 +122,7 @@ function hasPrivilegedCrossEmployeeAccess(roles: string[], permissions: string[]
     PRIVILEGED_ROLE_MARKERS.some((marker) => role.includes(marker))
   )
   const permissionAllows = normalizedPermissions.some((permission) =>
-    permission.includes('hr:read') || permission.includes('hr:ess:read') || permission.includes('employee:read')
+    permission.includes('hr:read') || permission.includes('employee:read')
   )
   return roleAllows || permissionAllows
 }
