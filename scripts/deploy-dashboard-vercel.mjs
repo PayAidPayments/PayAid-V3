@@ -148,9 +148,13 @@ for (const name of ['.vercelignore']) {
 }
 
 const dashVercel = path.join(root, 'apps', 'dashboard', '.vercel', 'project.json')
+const dashVercelJson = path.join(root, 'apps', 'dashboard', 'vercel.json')
 if (existsSync(dashVercel)) {
-  mkdirSync(path.join(workDir, 'apps', 'dashboard', '.vercel'), { recursive: true })
-  copyFileSync(dashVercel, path.join(workDir, 'apps', 'dashboard', '.vercel', 'project.json'))
+  mkdirSync(path.join(workDir, '.vercel'), { recursive: true })
+  copyFileSync(dashVercel, path.join(workDir, '.vercel', 'project.json'))
+}
+if (existsSync(dashVercelJson)) {
+  copyFileSync(dashVercelJson, path.join(workDir, 'vercel.json'))
 }
 
 const liveDemo = path.join(workDir, 'apps', 'dashboard', 'app', 'voice-agents', '[tenantId]', 'LiveDemo', 'page.tsx')
@@ -159,7 +163,7 @@ if (!existsSync(liveDemo)) {
   process.exit(1)
 }
 
-const deployArgs = ['deploy', '--prod', '--yes', '--archive=tgz', '--cwd', 'apps/dashboard']
+const deployArgs = ['deploy', '--prod', '--yes', '--archive=tgz']
 console.log(JSON.stringify({ step: 'vercel-deploy', cwd: workDir, tokenMode: tokenOk ? 'env' : 'cli-auth' }, null, 2))
 
 const deployEnv = {

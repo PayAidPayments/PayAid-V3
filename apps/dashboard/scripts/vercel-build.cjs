@@ -3,6 +3,7 @@
  * while applying the same reliability defaults as the previous inline env chain.
  */
 const { spawnSync } = require('node:child_process')
+const path = require('node:path')
 
 function setDefault(name, value) {
   if (process.env[name] === undefined || process.env[name] === '') {
@@ -25,9 +26,12 @@ setDefault('VERCEL_ALLOW_WEBPACK_FALLBACK', '1')
 // process is not SIGKILLâ€™d during compile (heap alone is not total RSS).
 setDefault('NODE_OPTIONS', '--max-old-space-size=5120')
 
+const appRoot = path.resolve(__dirname, '..')
+
 const result = spawnSync('npm', ['run', 'build'], {
   stdio: 'inherit',
   shell: true,
+  cwd: appRoot,
   env: process.env,
 })
 
