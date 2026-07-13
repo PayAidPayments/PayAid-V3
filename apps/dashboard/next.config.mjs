@@ -40,6 +40,20 @@ const nextConfig = {
   // Next.js 16 does not accept outputFileTracing: false; when triage env is set, strip TraceEntryPointsPlugin below.
   outputFileTracingRoot: rootDir,
   transpilePackages: ['@payaid/db', '@payaid/social', '@payaid/ai'],
+  async rewrites() {
+    const voiceOrigin = (
+      process.env.VOICE_MODULE_URL ||
+      process.env.VOICE_API_ORIGIN ||
+      (process.env.NODE_ENV === 'production' ? 'https://voice-six-xi.vercel.app' : 'http://localhost:3003')
+    ).replace(/\/$/, '')
+    return [
+      { source: '/api/v1/voice-agents/:path*', destination: `${voiceOrigin}/api/v1/voice-agents/:path*` },
+      { source: '/api/public/agents/:path*', destination: `${voiceOrigin}/api/public/agents/:path*` },
+      { source: '/api/tts', destination: `${voiceOrigin}/api/tts` },
+      { source: '/api/voice/ping', destination: `${voiceOrigin}/api/voice/ping` },
+      { source: '/embed.js', destination: `${voiceOrigin}/embed.js` },
+    ]
+  },
   async redirects() {
     return [
       { source: '/marketing/:tenantId/Social-Media/Create-Post', destination: '/marketing/:tenantId/Studio', permanent: true },
@@ -59,8 +73,8 @@ const nextConfig = {
     // This avoids worker SIGKILL/OOM in large monorepo compiles.
     ...(isVercel
       ? {
-          // Keep memory optimizations enabled, but allow Next to choose worker count
-          // from available memory so page-data collection is not forced to a single worker.
+          // Cap SSG concurrency on 8 GB Vercel builders (1155+ routes OOM with 4 workers).
+          staticGenerationMaxConcurrency: 1,
           memoryBasedWorkersCount: true,
           webpackMemoryOptimizations: true,
           webpackBuildWorker: false,
@@ -75,6 +89,8 @@ const nextConfig = {
     }
     config.resolve.alias = config.resolve.alias || {}
     config.resolve.alias['@'] = path.resolve(__dirname, '../..')
+    config.resolve.alias['@dashboard'] = path.resolve(__dirname, 'app')
+    config.resolve.alias['@app'] = path.resolve(__dirname, 'app')
     if (disableOutputFileTracingForBuildTriage && isServer) {
       config.plugins = (config.plugins || []).filter(
         (p) => p?.constructor?.name !== 'TraceEntryPointsPlugin'
