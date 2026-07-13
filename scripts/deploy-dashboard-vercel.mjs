@@ -164,9 +164,9 @@ if (existsSync(dashVercelJson)) {
   copyFileSync(dashVercelJson, path.join(workDir, 'vercel.json'))
 }
 
-const liveDemo = path.join(workDir, 'apps', 'dashboard', 'app', 'voice-agents', '[tenantId]', 'LiveDemo', 'page.tsx')
-if (!existsSync(liveDemo)) {
-  console.error(JSON.stringify({ ok: false, error: 'LiveDemo page missing in deploy bundle', liveDemo }, null, 2))
+const voiceDemoPage = path.join(workDir, 'apps', 'dashboard', 'app', 'voice-agents', '[tenantId]', 'Demo', 'page.tsx')
+if (!existsSync(voiceDemoPage)) {
+  console.error(JSON.stringify({ ok: false, error: 'Voice demo page missing in deploy bundle', voiceDemoPage }, null, 2))
   process.exit(1)
 }
 
