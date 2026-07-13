@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { ClientRoot } from "./ClientRoot";
+import { ClientRoot } from '@dashboard/ClientRoot'
+
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 // Keep dashboard routes request-time rendered to avoid long/stuck
 // static page-data collection on constrained Vercel builders.
@@ -33,6 +36,8 @@ export default function RootLayout({
         {/* Early TLS + socket for Spline hero (viewer on unpkg, scene on spline.design) */}
         <link rel="preconnect" href="https://unpkg.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://prod.spline.design" crossOrigin="anonymous" />
+        {/* Instant homepage hero paint — small same-scene poster (~15KB) */}
+        <link rel="preload" as="image" href="/hero-spline-poster.webp" type="image/webp" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -56,7 +61,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-sans">
+      <body className={inter.className}>
         <ClientRoot>{children}</ClientRoot>
       </body>
     </html>

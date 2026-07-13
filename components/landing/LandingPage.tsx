@@ -29,7 +29,30 @@ import Image from 'next/image'
 import { Logo } from '@/components/brand/Logo'
 const LottieHero = dynamic(() => import('@/components/landing/LottieHero'), {
   ssr: false,
-  loading: () => <div className="h-full w-full animate-pulse rounded-2xl bg-slate-100" />,
+  loading: () => (
+    <div className="relative flex h-full min-h-[500px] w-full flex-col overflow-hidden rounded-2xl border border-purple-200 bg-[#e8e8e8] shadow-sm lg:min-h-[min(85vh,880px)]">
+      <div className="relative h-full min-h-[500px] w-full flex-1 lg:min-h-[min(85vh,880px)]">
+        <Image
+          src="/hero-spline-poster.webp"
+          alt="PayAid AI Assistant"
+          fill
+          sizes="(max-width: 1024px) 100vw, 50vw"
+          className="object-cover object-center"
+          priority
+        />
+        <div
+          className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 flex max-h-[75%] items-end justify-center bg-gradient-to-t from-[#060210]/100 via-[#1c0c38]/100 to-[#3a2266]/95 px-6 pb-5 pt-10"
+        >
+          <p
+            className="text-center text-sm font-semibold leading-snug tracking-wide text-white md:text-base"
+            style={{ textShadow: '0 1px 6px rgba(0,0,0,0.4)' }}
+          >
+            AI that tracks activity and suggests the right outcome.
+          </p>
+        </div>
+      </div>
+    </div>
+  ),
 })
 import { 
   ChevronDown, 
