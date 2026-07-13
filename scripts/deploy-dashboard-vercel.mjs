@@ -101,6 +101,7 @@ const DEPLOY_PATHS = [
   'contexts',
   'apps/dashboard',
   'packages',
+  'modules',
   'lib',
   'types',
   'components',
@@ -117,29 +118,35 @@ const DEPLOY_PATHS = [
   'public/hero-spline-poster.jpg',
 ]
 
+const deployRef = process.env.DASHBOARD_DEPLOY_GIT_REF || 'HEAD'
+
 if (existsSync(workDir) && process.env.DASHBOARD_DEPLOY_SKIP_RM !== '1') {
   rmSync(workDir, { recursive: true, force: true })
 }
 mkdirSync(workDir, { recursive: true })
 
-console.log(JSON.stringify({ step: 'fs-copy', workDir, paths: DEPLOY_PATHS.length }, null, 2))
+console.log(JSON.stringify({ step: 'git-archive', workDir, ref: deployRef, paths: DEPLOY_PATHS.length }, null, 2))
+
+const tarPath = path.join(workDir, '.deploy-archive.tar')
+const archive = spawnSync(
+  'git',
+  ['archive', '--format=tar', `--output=${tarPath}`, deployRef, '--', ...DEPLOY_PATHS],
+  { cwd: root, stdio: 'inherit' }
+)
+if (archive.status !== 0) {
+  console.error(JSON.stringify({ ok: false, error: 'git archive failed', ref: deployRef }, null, 2))
+  process.exit(archive.status ?? 1)
+}
+
+const extract = spawnSync('tar', ['-xf', tarPath, '-C', workDir], { cwd: root, stdio: 'inherit', shell: true })
+if (extract.status !== 0) {
+  console.error(JSON.stringify({ ok: false, error: 'tar extract failed' }, null, 2))
+  process.exit(extract.status ?? 1)
+}
+rmSync(tarPath, { force: true })
 
 for (const rel of DEPLOY_PATHS) {
-  const src = path.join(root, rel)
-  const dest = path.join(workDir, rel)
-  if (!existsSync(src)) {
-    console.warn(JSON.stringify({ warning: 'missing path, skipped', rel }, null, 2))
-    continue
-  }
-  mkdirSync(path.dirname(dest), { recursive: true })
-  if (process.platform === 'win32' && statSync(src).isDirectory()) {
-    copyWithRobocopy(src, dest)
-  } else if (statSync(src).isDirectory()) {
-    copyTreeFiltered(src, dest)
-  } else {
-    copyFileSync(src, dest)
-  }
-  console.log(JSON.stringify({ step: 'copied', rel }, null, 2))
+  console.log(JSON.stringify({ step: 'archived', rel }, null, 2))
 }
 
 for (const name of ['.vercelignore']) {
