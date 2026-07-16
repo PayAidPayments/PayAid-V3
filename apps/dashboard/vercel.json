@@ -1,6 +1,5 @@
 {
   "installCommand": "npm install --legacy-peer-deps --no-audit --no-fund",
   "buildCommand": "node apps/dashboard/scripts/vercel-build.cjs",
-  "framework": null,
-  "outputDirectory": "apps/dashboard/.next-vercel-build"
+  "framework": "nextjs"
 }

@@ -4,7 +4,7 @@
  * Avoids multi-hour tgz walks from "Cursor Projects" on Windows.
  */
 import { spawnSync } from 'node:child_process'
-import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync, symlinkSync } from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -155,16 +155,44 @@ for (const name of ['.vercelignore']) {
 }
 
 const dashVercel = path.join(root, 'apps', 'dashboard', '.vercel', 'project.json')
-const dashVercelJson = path.join(root, 'apps', 'dashboard', 'vercel.json')
+const dashAppDir = path.join(workDir, 'apps', 'dashboard')
 if (existsSync(dashVercel)) {
   mkdirSync(path.join(workDir, '.vercel'), { recursive: true })
   copyFileSync(dashVercel, path.join(workDir, '.vercel', 'project.json'))
 }
-if (existsSync(dashVercelJson)) {
-  copyFileSync(dashVercelJson, path.join(workDir, 'vercel.json'))
-}
 
-const voiceDemoPage = path.join(workDir, 'apps', 'dashboard', 'app', 'voice-agents', '[tenantId]', 'Demo', 'page.tsx')
+// Monorepo-root Next.js detection for Vercel framework=nextjs (no project Root Directory).
+function ensureJunction(linkPath, targetPath) {
+  if (existsSync(linkPath)) return
+  try {
+    symlinkSync(targetPath, linkPath, process.platform === 'win32' ? 'junction' : 'dir')
+    console.log(JSON.stringify({ step: 'symlink', linkPath, targetPath }, null, 2))
+  } catch (err) {
+    console.error(JSON.stringify({ ok: false, error: 'symlink failed', linkPath, targetPath, message: String(err) }, null, 2))
+    process.exit(1)
+  }
+}
+ensureJunction(path.join(workDir, 'app'), path.join(dashAppDir, 'app'))
+ensureJunction(path.join(workDir, 'public'), path.join(dashAppDir, 'public'))
+writeFileSync(
+  path.join(workDir, 'next.config.mjs'),
+  "export { default } from './apps/dashboard/next.config.mjs'\n"
+)
+
+writeFileSync(
+  path.join(workDir, 'vercel.json'),
+  `${JSON.stringify(
+    {
+      installCommand: 'npm install --legacy-peer-deps --no-audit --no-fund',
+      buildCommand: 'node apps/dashboard/scripts/vercel-build.cjs',
+      framework: 'nextjs',
+    },
+    null,
+    2
+  )}\n`
+)
+
+const voiceDemoPage = path.join(dashAppDir, 'app', 'voice-agents', '[tenantId]', 'Demo', 'page.tsx')
 if (!existsSync(voiceDemoPage)) {
   console.error(JSON.stringify({ ok: false, error: 'Voice demo page missing in deploy bundle', voiceDemoPage }, null, 2))
   process.exit(1)
