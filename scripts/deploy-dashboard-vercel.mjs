@@ -83,6 +83,11 @@ function copyTreeFiltered(src, dest) {
   mkdirSync(path.dirname(dest), { recursive: true })
   copyFileSync(src, dest)
 }
+
+function replaceTreeFiltered(src, dest) {
+  if (existsSync(dest)) rmSync(dest, { recursive: true, force: true })
+  copyTreeFiltered(src, dest)
+}
 const teamId = process.env.VERCEL_ORG_ID || 'team_HDFXYTmGsacYZEuYsr6sPTpQ'
 const projectId = process.env.VERCEL_DASHBOARD_PROJECT_ID || 'prj_bJ5BclTw72V6QFlsmGtR6BLTqqdx'
 const vercelJs = path.join(root, 'node_modules', 'vercel', 'dist', 'vc.js')
@@ -160,6 +165,35 @@ if (existsSync(dashVercel)) {
   mkdirSync(path.join(workDir, '.vercel'), { recursive: true })
   copyFileSync(dashVercel, path.join(workDir, '.vercel', 'project.json'))
 }
+
+// Vercel framework=nextjs expects app/, public/, and next.config at the upload root.
+// Physically copy dashboard routes/assets to the monorepo root in the deploy bundle.
+const dashApp = path.join(dashAppDir, 'app')
+const dashPublic = path.join(dashAppDir, 'public')
+const rootApp = path.join(workDir, 'app')
+const rootPublic = path.join(workDir, 'public')
+const dashMiddleware = path.join(dashAppDir, 'middleware.ts')
+const rootMiddleware = path.join(workDir, 'middleware.ts')
+
+replaceTreeFiltered(dashApp, rootApp)
+console.log(JSON.stringify({ step: 'copied', from: 'apps/dashboard/app', to: 'app' }, null, 2))
+
+mkdirSync(rootPublic, { recursive: true })
+if (existsSync(dashPublic)) {
+  copyTreeFiltered(dashPublic, rootPublic)
+  console.log(JSON.stringify({ step: 'merged', from: 'apps/dashboard/public', to: 'public' }, null, 2))
+}
+
+if (existsSync(dashMiddleware)) {
+  copyFileSync(dashMiddleware, rootMiddleware)
+  console.log(JSON.stringify({ step: 'copied', from: 'apps/dashboard/middleware.ts', to: 'middleware.ts' }, null, 2))
+}
+
+writeFileSync(
+  path.join(workDir, 'next.config.mjs'),
+  "export { default } from './apps/dashboard/next.config.mjs'\n"
+)
+console.log(JSON.stringify({ step: 'wrote', file: 'next.config.mjs' }, null, 2))
 
 // Deploy from monorepo root with framework=nextjs. Build mirrors apps/dashboard/.next
 // to repo-root .next so the Vercel Next builder can serve routes (not static .next files).
