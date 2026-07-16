@@ -22,9 +22,9 @@ setDefault('NEXT_BUILD_ALLOW_ALTERNATE_RETRY', '1')
 setDefault('NEXT_BUILD_CLEAR_STALE_LOCK', '1')
 setDefault('NEXT_BUILD_TRIAGE_DISABLE_OUTPUT_FILE_TRACING', '1')
 setDefault('VERCEL_ALLOW_WEBPACK_FALLBACK', '1')
-// Vercel â€œlargeâ€ workers are 8GB RAM; reserve headroom for webpack/native so the
-// process is not SIGKILLâ€™d during compile (heap alone is not total RSS).
-setDefault('NODE_OPTIONS', '--max-old-space-size=5120')
+// Vercel “large” workers are 8GB RAM. Keep V8 heap below ~3.5GB so native/webpack
+// RSS still has headroom — 5120 previously correlated with silent mid-compile kills.
+setDefault('NODE_OPTIONS', '--max-old-space-size=3584')
 
 const appRoot = path.resolve(__dirname, '..')
 
