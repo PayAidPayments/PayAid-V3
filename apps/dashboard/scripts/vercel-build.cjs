@@ -17,13 +17,13 @@ setDefault('NEXT_BUILD_DIST_DIR', '.next-vercel-build')
 setDefault('NEXT_BUILD_TIMEOUT_MS', '0')
 setDefault('NEXT_BUILD_KILL_GRACE_MS', '15000')
 setDefault('NEXT_BUILD_HEARTBEAT_MS', '60000')
-setDefault('NEXT_BUILD_PREFERRED_MODE', 'webpack')
-setDefault('NEXT_BUILD_ALLOW_ALTERNATE_RETRY', '1')
+// Webpack repeatedly OOM-kills mid-compile on 8GB workers; prefer Turbopack first.
+setDefault('NEXT_BUILD_PREFERRED_MODE', 'turbopack')
+setDefault('NEXT_BUILD_ALLOW_ALTERNATE_RETRY', '0')
 setDefault('NEXT_BUILD_CLEAR_STALE_LOCK', '1')
 setDefault('NEXT_BUILD_TRIAGE_DISABLE_OUTPUT_FILE_TRACING', '1')
-setDefault('VERCEL_ALLOW_WEBPACK_FALLBACK', '1')
-// Vercel “large” workers are 8GB RAM. Keep V8 heap below ~3.5GB so native/webpack
-// RSS still has headroom — 5120 previously correlated with silent mid-compile kills.
+setDefault('VERCEL_ALLOW_WEBPACK_FALLBACK', '0')
+// Keep V8 heap modest so native/turbopack RSS still has headroom on 8GB builders.
 setDefault('NODE_OPTIONS', '--max-old-space-size=3584')
 
 const appRoot = path.resolve(__dirname, '..')
