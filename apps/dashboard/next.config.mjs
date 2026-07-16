@@ -26,6 +26,14 @@ try {
 const nextConfig = {
   reactStrictMode: true,
   ...(customDistDir ? { distDir: customDistDir } : {}),
+  // Turbopack does not use webpack resolve.alias — mirror tsconfig paths here.
+  turbopack: {
+    resolveAlias: {
+      '@dashboard': path.resolve(__dirname, 'app'),
+      '@app': path.resolve(__dirname, 'app'),
+      '@': rootDir,
+    },
+  },
   // Turbopack currently struggles with Bull's server-relative child-process imports.
   // Keep Bull external so app-route/instrumentation bundles do not attempt to resolve
   // node_modules/bull/lib/process/* at build time.

@@ -8,11 +8,11 @@ const Providers = dynamic(() => import('./providers').then((m) => m.Providers), 
   ssr: false,
 })
 
-function useMinimalShell(): boolean {
+/** Routes that skip the provider graph entirely (marketing/auth shells only). */
+function useSkipProviders(): boolean {
   const pathname = usePathname()
   // On first client render pathname can be temporarily unavailable.
-  // Default to full provider shell to avoid rendering react-query hooks
-  // before QueryClientProvider is mounted.
+  // Default to mounting Providers so /home/* never renders without ThemeProvider.
   if (!pathname) return false
   const path = pathname.split('?')[0].replace(/\/+$/, '') || '/'
   if (path === '/') return true
@@ -22,8 +22,8 @@ function useMinimalShell(): boolean {
 }
 
 export function ClientRoot({ children }: { children: React.ReactNode }) {
-  const minimal = useMinimalShell()
-  if (minimal) return children
+  const skipProviders = useSkipProviders()
+  if (skipProviders) return children
 
   return <Providers>{children}</Providers>
 }

@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ClientRoot } from '@dashboard/ClientRoot'
+import { ClientRoot } from './ClientRoot'
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
