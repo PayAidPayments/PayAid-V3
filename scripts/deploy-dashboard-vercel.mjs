@@ -4,7 +4,7 @@
  * Avoids multi-hour tgz walks from "Cursor Projects" on Windows.
  */
 import { spawnSync } from 'node:child_process'
-import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync, symlinkSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -161,24 +161,8 @@ if (existsSync(dashVercel)) {
   copyFileSync(dashVercel, path.join(workDir, '.vercel', 'project.json'))
 }
 
-// Monorepo-root Next.js detection for Vercel framework=nextjs (no project Root Directory).
-function ensureJunction(linkPath, targetPath) {
-  if (existsSync(linkPath)) return
-  try {
-    symlinkSync(targetPath, linkPath, process.platform === 'win32' ? 'junction' : 'dir')
-    console.log(JSON.stringify({ step: 'symlink', linkPath, targetPath }, null, 2))
-  } catch (err) {
-    console.error(JSON.stringify({ ok: false, error: 'symlink failed', linkPath, targetPath, message: String(err) }, null, 2))
-    process.exit(1)
-  }
-}
-ensureJunction(path.join(workDir, 'app'), path.join(dashAppDir, 'app'))
-ensureJunction(path.join(workDir, 'public'), path.join(dashAppDir, 'public'))
-writeFileSync(
-  path.join(workDir, 'next.config.mjs'),
-  "export { default } from './apps/dashboard/next.config.mjs'\n"
-)
-
+// Deploy from monorepo root with framework=nextjs. Build mirrors apps/dashboard/.next
+// to repo-root .next so the Vercel Next builder can serve routes (not static .next files).
 writeFileSync(
   path.join(workDir, 'vercel.json'),
   `${JSON.stringify(
