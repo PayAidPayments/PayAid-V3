@@ -4,7 +4,17 @@
  * Avoids multi-hour tgz walks from "Cursor Projects" on Windows.
  */
 import { spawnSync } from 'node:child_process'
-import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import {
+  copyFileSync,
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -154,6 +164,21 @@ for (const rel of DEPLOY_PATHS) {
   console.log(JSON.stringify({ step: 'archived', rel }, null, 2))
 }
 
+// Overlay local deploy/build scripts so uncommitted packaging fixes ship immediately.
+const overlayFiles = [
+  'apps/dashboard/scripts/vercel-build.cjs',
+  'apps/dashboard/vercel.json',
+  'apps/dashboard/next.config.mjs',
+]
+for (const rel of overlayFiles) {
+  const src = path.join(root, rel)
+  const dest = path.join(workDir, rel)
+  if (!existsSync(src)) continue
+  mkdirSync(path.dirname(dest), { recursive: true })
+  copyFileSync(src, dest)
+  console.log(JSON.stringify({ step: 'overlay', rel }, null, 2))
+}
+
 for (const name of ['.vercelignore']) {
   const src = path.join(root, name)
   if (existsSync(src)) copyFileSync(src, path.join(workDir, name))
@@ -178,6 +203,28 @@ const rootMiddleware = path.join(workDir, 'middleware.ts')
 replaceTreeFiltered(dashApp, rootApp)
 console.log(JSON.stringify({ step: 'copied', from: 'apps/dashboard/app', to: 'app' }, null, 2))
 
+// Moving apps/dashboard/app to root/app changes the depth of legacy relative
+// imports that intentionally climbed five levels back to the monorepo root.
+// Rewrite only those known root-component imports in the deploy copy.
+const rootComponentImportFiles = [
+  'dashboard/decisions/page.tsx',
+  'dashboard/deals/page.tsx',
+  'dashboard/contacts/page.tsx',
+  'dashboard/compliance/page.tsx',
+  'dashboard/collaboration/page.tsx',
+]
+for (const rel of rootComponentImportFiles) {
+  const file = path.join(rootApp, rel)
+  if (!existsSync(file)) continue
+  const source = readFileSync(file, 'utf8')
+  const rewritten = source.replace(
+    /(['"])\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/components\//g,
+    '$1@/components/'
+  )
+  writeFileSync(file, rewritten)
+  console.log(JSON.stringify({ step: 'rewrote-root-imports', rel: `app/${rel}` }, null, 2))
+}
+
 mkdirSync(rootPublic, { recursive: true })
 if (existsSync(dashPublic)) {
   copyTreeFiltered(dashPublic, rootPublic)
@@ -195,8 +242,8 @@ writeFileSync(
 )
 console.log(JSON.stringify({ step: 'wrote', file: 'next.config.mjs' }, null, 2))
 
-// Deploy from monorepo root with framework=nextjs. Build mirrors apps/dashboard/.next
-// to repo-root .next so the Vercel Next builder can serve routes (not static .next files).
+// Deploy from monorepo root with framework=nextjs. Build runs at this root so `.next`
+// is created in-place (mirroring apps/dashboard/.next broke Vercel packaging).
 writeFileSync(
   path.join(workDir, 'vercel.json'),
   `${JSON.stringify(

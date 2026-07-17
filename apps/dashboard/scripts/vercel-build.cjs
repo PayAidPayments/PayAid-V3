@@ -1,10 +1,10 @@
 /**
- * Vercel build entrypoint: keeps `vercel.json` `buildCommand` under the 256-char API limit
- * while applying the same reliability defaults as the previous inline env chain.
+ * Vercel build entrypoint for monorepo-root Next.js deploys.
  *
- * Deploy uploads the monorepo root with framework=nextjs. The deploy bundle copies
- * apps/dashboard/app + public to the upload root; we still compile in apps/dashboard,
- * then mirror `.next` to the monorepo root where Vercel's Next builder expects it.
+ * The deploy bundle copies apps/dashboard/{app,public,middleware} to the upload
+ * root and writes a root next.config.mjs. Build must run at that root so `.next`
+ * is created in-place — mirroring apps/dashboard/.next broke Vercel packaging
+ * (ENOENT /node_modules/client-only).
  */
 const { spawnSync } = require('node:child_process')
 const fs = require('node:fs')
@@ -30,26 +30,38 @@ setDefault('NODE_OPTIONS', '--max-old-space-size=3584')
 const appRoot = path.resolve(__dirname, '..')
 const monorepoRoot = path.resolve(appRoot, '../..')
 
-const result = spawnSync('npm', ['run', 'build'], {
+const rootApp = path.join(monorepoRoot, 'app')
+const rootConfig = path.join(monorepoRoot, 'next.config.mjs')
+if (!fs.existsSync(rootApp)) {
+  console.error(`[vercel-build] missing root app/ at ${rootApp} — deploy bundle must copy apps/dashboard/app`)
+  process.exit(1)
+}
+if (!fs.existsSync(rootConfig)) {
+  console.error(`[vercel-build] missing root next.config.mjs at ${rootConfig}`)
+  process.exit(1)
+}
+
+const preferred = String(process.env.NEXT_BUILD_PREFERRED_MODE || 'turbopack').toLowerCase()
+const modeFlag = preferred === 'webpack' ? '--webpack' : '--turbopack'
+const nextBin = require.resolve('next/dist/bin/next', { paths: [monorepoRoot, appRoot] })
+
+console.log(`[vercel-build] building at monorepo root: next build ${modeFlag}`)
+const result = spawnSync(process.execPath, [nextBin, 'build', modeFlag], {
   stdio: 'inherit',
-  shell: true,
-  cwd: appRoot,
+  cwd: monorepoRoot,
   env: process.env,
 })
 
 if ((result.status ?? 1) !== 0) {
+  console.error(`[vercel-build] next build failed with status ${result.status}`)
   process.exit(result.status ?? 1)
 }
 
-const builtNext = path.join(appRoot, process.env.NEXT_BUILD_DIST_DIR || '.next')
-const rootNext = path.join(monorepoRoot, '.next')
-if (!fs.existsSync(builtNext)) {
-  console.error(`[vercel-build] missing build output: ${builtNext}`)
+const rootNext = path.join(monorepoRoot, process.env.NEXT_BUILD_DIST_DIR || '.next')
+if (!fs.existsSync(rootNext)) {
+  console.error(`[vercel-build] missing build output: ${rootNext}`)
   process.exit(1)
 }
 
-fs.rmSync(rootNext, { recursive: true, force: true })
-fs.cpSync(builtNext, rootNext, { recursive: true })
-console.log(`[vercel-build] mirrored ${builtNext} -> ${rootNext}`)
-
+console.log(`[vercel-build] ok: ${rootNext}`)
 process.exit(0)
