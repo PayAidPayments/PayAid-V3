@@ -63,10 +63,20 @@ const nextConfig = {
     ]
   },
   async redirects() {
+    // Voice Agent UI pages live only in the voice app. The dashboard proxies voice
+    // APIs (see rewrites above) but not the UI routes, so /voice-agents/* 404s here.
+    // Forward the UI to the voice deployment so both hosts resolve to the same app.
+    const voiceOrigin = (
+      process.env.VOICE_MODULE_URL ||
+      process.env.VOICE_API_ORIGIN ||
+      (process.env.NODE_ENV === 'production' ? 'https://voice-six-xi.vercel.app' : 'http://localhost:3003')
+    ).replace(/\/$/, '')
     return [
       { source: '/marketing/:tenantId/Social-Media/Create-Post', destination: '/marketing/:tenantId/Studio', permanent: true },
       { source: '/marketing/:tenantId/Social-Media/Create-Image', destination: '/marketing/:tenantId/Studio', permanent: true },
       { source: '/marketing/:tenantId/Social-Media/Schedule', destination: '/marketing/:tenantId/Studio', permanent: true },
+      { source: '/voice-agents', destination: `${voiceOrigin}/voice-agents`, permanent: false },
+      { source: '/voice-agents/:path*', destination: `${voiceOrigin}/voice-agents/:path*`, permanent: false },
     ]
   },
   experimental: {

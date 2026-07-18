@@ -1,11 +1,39 @@
 /** Edge middleware: tenant from path (no DB). Named middleware.ts to avoid Next 16 proxy NFT rename bugs on Vercel. */
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import {
+  CANONICAL_APP_HOSTS,
+  type CanonicalProductModule,
+} from '@/lib/config/canonical-app-hosts'
+import { shouldRedirectToCanonicalApp } from '@/lib/utils/canonical-module-url'
 
 const DASHBOARD_PATH = '/dashboard'
 
+const CANONICAL_MODULE_REDIRECTS: CanonicalProductModule[] = [
+  'crm',
+  'finance',
+  'marketing',
+  'hr',
+  'projects',
+  'sales',
+  'leads',
+  'website-builder',
+  'voice',
+]
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  for (const module of CANONICAL_MODULE_REDIRECTS) {
+    if (shouldRedirectToCanonicalApp(module, pathname, request.nextUrl.origin)) {
+      const envKey = CANONICAL_APP_HOSTS[module].envOriginKey
+      const redirectUrl = new URL(
+        `${pathname}${request.nextUrl.search}`,
+        process.env[envKey]!
+      )
+      return NextResponse.redirect(redirectUrl, 307)
+    }
+  }
   const segments = pathname.split('/').filter(Boolean)
   const tenantRouteKeyFromPath = segments[1] ?? ''
 
@@ -46,7 +74,12 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/settings')
 
   // Keep expired-trial users on billing/checkout/settings until they upgrade.
-  if (decodedToken?.billingStatus === 'payment_required' && !isSubscriptionPath) {
+  // Light dev: skip so module work is not blocked without billing APIs.
+  if (
+    process.env.PAYAID_DEV_LIGHT !== '1' &&
+    decodedToken?.billingStatus === 'payment_required' &&
+    !isSubscriptionPath
+  ) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = tenantBillingPath
     redirectUrl.search = ''
