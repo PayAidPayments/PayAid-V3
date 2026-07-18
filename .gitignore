@@ -66,6 +66,8 @@ next-env.d.ts
 !/prisma/migrations/20260420130000_idx_task_tenant_priority_due/migration.sql
 !/prisma/migrations/20260503120000_webhook_retry_fields/
 !/prisma/migrations/20260503120000_webhook_retry_fields/migration.sql
+!/prisma/migrations/20260709120000_marketing_command_center_phase_c/
+!/prisma/migrations/20260709120000_marketing_command_center_phase_c/migration.sql
 
 # separate module repositories (already in their own repos)
 /repositories.vercel

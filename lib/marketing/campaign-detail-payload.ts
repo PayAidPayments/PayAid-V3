@@ -46,6 +46,10 @@ export type CampaignDetailPayload = {
     updatedAt: string
     scheduledFor: string | null
     sentAt: string | null
+    budgetInr: number | null
+    spendInr: number
+    hardCap: boolean
+    playbookSlug: string | null
   }
   summary: {
     audienceCount: number
@@ -316,6 +320,10 @@ export async function buildCampaignDetailPayload(
       updatedAt: campaign.updatedAt.toISOString(),
       scheduledFor: campaign.scheduledFor?.toISOString() ?? null,
       sentAt: campaign.sentAt?.toISOString() ?? null,
+      budgetInr: campaign.budgetInr,
+      spendInr: campaign.spendInr,
+      hardCap: campaign.hardCap,
+      playbookSlug: campaign.playbookSlug,
     },
     summary: {
       audienceCount: recipientCount,

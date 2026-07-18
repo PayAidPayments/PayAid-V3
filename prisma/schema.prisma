@@ -274,6 +274,14 @@ model Tenant {
   segments                     Segment[]
   socialMediaAccounts          SocialMediaAccount[]
   socialPosts                  SocialPost[]
+  marketingPosts               MarketingPost[]
+  marketingPlaybooks           MarketingPlaybook[]
+  marketingSettings            MarketingSettings?
+  channelAccounts              ChannelAccount[]
+  contentItems                 ContentItem[]
+  mediaAssets                  MediaAsset[]
+  channelEvents                ChannelEvent[]
+  socialActivityEvents         SocialActivityEvent[]
   subscription                 Subscription?
   suppliers                    Supplier[]
   machines                     Machine[]
@@ -306,6 +314,7 @@ model Tenant {
   voiceAgentExperiments        VoiceAgentExperiment[]
   voiceAgentTrainingPacks      VoiceAgentTrainingPack[]
   voiceDemoSessions           VoiceDemoSession[]
+  voiceCrmLinks               VoiceCrmLink[]
   // Productivity Suite Relations
   spreadsheets                 Spreadsheet[]
   documents                    Document[]
@@ -1909,6 +1918,12 @@ model Campaign {
   clicked            Int                 @default(0)
   bounced            Int                 @default(0)
   unsubscribed       Int                 @default(0)
+  playbookSlug       String?
+  budgetInr          Int?
+  spendInr           Int                 @default(0)
+  hardCap            Boolean             @default(false)
+  audienceRef        String?
+  contentRef         String?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   tenantId           String
@@ -1921,6 +1936,7 @@ model Campaign {
   @@index([tenantId, status])
   @@index([tenantId, type])
   @@index([tenantId, createdAt])
+  @@index([tenantId, type, status])
 }
 
 /// CRM Sales Automation — tenant-defined outreach programs (separate from marketing `Campaign` broadcasts).
@@ -3261,19 +3277,41 @@ model VoiceAgentCallMetadata {
 
 // Real-time call messages/transcripts (for streaming transcripts)
 model CallMessage {
-  id         String   @id @default(cuid())
-  callId     String
-  role       String // "user", "assistant", "system"
-  content    String   @db.Text
-  isPartial  Boolean  @default(false) // Is this a partial/interim transcript?
-  confidence Float? // STT confidence score (0.0 to 1.0)
-  timestamp  DateTime @default(now())
+  id              String   @id @default(cuid())
+  callId          String
+  role            String // "user", "assistant", "system"
+  content         String   @db.Text
+  isPartial       Boolean  @default(false) // Is this a partial/interim transcript?
+  interruptedFlag Boolean  @default(false) // Blueprint VoiceTurn.interrupted_flag (barge-in)
+  confidence      Float? // STT confidence score (0.0 to 1.0)
+  timestamp       DateTime @default(now())
 
   call VoiceAgentCall @relation(fields: [callId], references: [id], onDelete: Cascade)
 
   @@index([callId])
   @@index([timestamp])
   @@index([callId, timestamp])
+}
+
+/// Maps voice sessions/calls to CRM entities (blueprint CRMLink).
+model VoiceCrmLink {
+  id              String   @id @default(cuid())
+  tenantId        String
+  voiceSessionId  String?
+  voiceCallId     String?
+  entityType      String // contact, interaction, lead, case, invoice, deal
+  entityId        String
+  matchConfidence Float?   @default(1)
+  createMode      String // matched, created, inbox_only, bundle_ref
+  syncStatus      String   @default("linked") // linked, pending, failed
+  metadataJson    Json?
+  createdAt       DateTime @default(now())
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, voiceSessionId])
+  @@index([tenantId, voiceCallId])
+  @@index([tenantId, entityType, entityId])
 }
 
 // Multi-Agent Orchestration (Squads)
@@ -3523,6 +3561,7 @@ model KnowledgeDocument {
   title          String
   description    String?
   category       String?
+  metadata       Json?
   tags           String[]
   fileUrl        String
   fileName       String
@@ -4814,6 +4853,157 @@ model ScheduledPost {
   @@index([tenantId, scheduledAt])
   @@index([accountId])
   @@index([status, scheduledAt])
+}
+
+/// Unified marketing post for Studio: one row per channel. Dispatched via Bull social-post-dispatch.
+model MarketingPost {
+  id           String    @id @default(cuid())
+  tenantId     String
+  campaignId   String?
+  channel      String
+  content      String
+  mediaIds     String[]  @default([])
+  scheduledFor DateTime?
+  status       String    @default("DRAFT")
+  metadata     Json?
+  segmentId    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, channel])
+  @@index([tenantId, status])
+  @@index([tenantId, scheduledFor])
+  @@index([status, scheduledFor])
+}
+
+model MarketingPlaybook {
+  id          String   @id @default(cuid())
+  tenantId    String?
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  channels    String[] @default([])
+  goal        String?
+  config      Json     @default("{}")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+}
+
+model MarketingSettings {
+  id                  String   @id @default(cuid())
+  tenantId            String   @unique
+  monthlyBudgetInr    Int?
+  waMonthlyBudgetInr  Int?
+  emailMonthlyBudgetInr Int?
+  smsMonthlyBudgetInr Int?
+  dailyContactCap     Int?
+  weeklyContactCap    Int?
+  quietHoursStart     Int?
+  quietHoursEnd       Int?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model ChannelAccount {
+  id        String   @id @default(cuid())
+  tenantId  String
+  type      String
+  provider  String
+  config    Json     @default("{}")
+  status    String   @default("disconnected")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, type])
+}
+
+model ContentItem {
+  id        String   @id @default(cuid())
+  tenantId  String
+  title     String
+  body      String?
+  type      String
+  channels  String[] @default([])
+  goal      String?
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, type])
+}
+
+model MediaAsset {
+  id        String   @id @default(cuid())
+  tenantId  String
+  url       String
+  type      String
+  width     Int?
+  height    Int?
+  duration  Int?
+  tags      String[] @default([])
+  createdAt DateTime @default(now())
+  createdBy String?
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, type])
+}
+
+model ChannelEvent {
+  id           String   @id @default(cuid())
+  tenantId     String
+  channelType  String
+  campaignId   String?
+  socialPostId String?
+  eventType    String
+  timestamp    DateTime @default(now())
+  meta         Json     @default("{}")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, channelType, eventType, timestamp])
+}
+
+/// Ingested social webhook activity (Meta/LinkedIn) for inbox + mentions.
+model SocialActivityEvent {
+  id              String   @id @default(cuid())
+  tenantId        String
+  source          String?
+  platform        String
+  providerEventId String?
+  accountId       String?
+  action          String
+  actorName       String?
+  actorHandle     String?
+  actorAvatar     String?
+  objectType      String?
+  objectId        String?
+  objectText      String?
+  eventAt         DateTime @default(now())
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, platform])
+  @@index([tenantId, action])
+  @@index([tenantId, eventAt])
+  @@index([tenantId, platform, providerEventId])
 }
 
 model EmailAccount {

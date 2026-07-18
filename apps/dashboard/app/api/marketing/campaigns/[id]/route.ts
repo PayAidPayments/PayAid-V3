@@ -1,71 +1,80 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db/prisma'
+import { z } from 'zod'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import { buildCampaignDetailPayload } from '@/lib/marketing/campaign-detail-payload'
+import { prisma } from '@/lib/db/prisma'
 
-// GET /api/marketing/campaigns/[id] - Get a single campaign
+const patchCampaignSchema = z.object({
+  budgetInr: z.number().int().min(0).nullable().optional(),
+  spendInr: z.number().int().min(0).optional(),
+  hardCap: z.boolean().optional(),
+  playbookSlug: z.string().max(120).nullable().optional(),
+})
+
+// GET /api/marketing/campaigns/[id] - Get a single campaign (detail payload)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-  const resolvedParams = await params
-    // Check CRM module license (marketing campaigns are part of CRM)
+    const resolvedParams = await params
     const { tenantId } = await requireModuleAccess(request, 'marketing')
 
-    const campaign = await prisma.campaign.findFirst({
-      where: {
-        id: resolvedParams.id,
-        tenantId: tenantId,
-      },
-    })
-
-    if (!campaign) {
+    const payload = await buildCampaignDetailPayload(resolvedParams.id, tenantId)
+    if (!payload) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
-    // Format analytics
-    const analytics = campaign.status === 'sent' && campaign.sent > 0 ? {
-      sent: campaign.sent,
-      delivered: campaign.delivered,
-      opened: campaign.opened,
-      clicked: campaign.clicked,
-      bounced: campaign.bounced,
-      unsubscribed: campaign.unsubscribed,
-      openRate: campaign.delivered > 0 ? (campaign.opened / campaign.delivered) * 100 : 0,
-      clickRate: campaign.delivered > 0 ? (campaign.clicked / campaign.delivered) * 100 : 0,
-      clickThroughRate: campaign.opened > 0 ? (campaign.clicked / campaign.opened) * 100 : 0,
-    } : null
-
-    return NextResponse.json({
-      id: campaign.id,
-      name: campaign.name,
-      type: campaign.type,
-      status: campaign.status,
-      subject: campaign.subject,
-      content: campaign.content,
-      recipientCount: campaign.recipientCount,
-      contactIds: campaign.contactIds,
-      // Expose metrics at top level — UI and older clients expect these (not only nested in analytics)
-      sent: campaign.sent,
-      delivered: campaign.delivered,
-      opened: campaign.opened,
-      clicked: campaign.clicked,
-      bounced: campaign.bounced,
-      unsubscribed: campaign.unsubscribed,
-      createdAt: campaign.createdAt.toISOString(),
-      sentAt: campaign.sentAt?.toISOString(),
-      scheduledFor: campaign.scheduledFor?.toISOString(),
-      analytics,
-    })
+    return NextResponse.json(payload)
   } catch (error) {
-    // Handle license errors
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }
     console.error('Get campaign error:', error)
-    return NextResponse.json(
-      { error: 'Failed to get campaign' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to get campaign' }, { status: 500 })
+  }
+}
+
+// PATCH /api/marketing/campaigns/[id] - Update spend / budget fields
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const resolvedParams = await params
+    const { tenantId } = await requireModuleAccess(request, 'marketing')
+
+    const body = await request.json()
+    const validated = patchCampaignSchema.parse(body)
+
+    const existing = await prisma.campaign.findFirst({
+      where: { id: resolvedParams.id, tenantId },
+      select: { id: true },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
+    }
+
+    await prisma.campaign.update({
+      where: { id: resolvedParams.id },
+      data: {
+        ...(validated.budgetInr !== undefined ? { budgetInr: validated.budgetInr } : {}),
+        ...(validated.spendInr !== undefined ? { spendInr: validated.spendInr } : {}),
+        ...(validated.hardCap !== undefined ? { hardCap: validated.hardCap } : {}),
+        ...(validated.playbookSlug !== undefined ? { playbookSlug: validated.playbookSlug } : {}),
+      },
+    })
+
+    const payload = await buildCampaignDetailPayload(resolvedParams.id, tenantId)
+    return NextResponse.json({ success: true, campaign: payload })
+  } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 })
+    }
+    console.error('Patch campaign error:', error)
+    return NextResponse.json({ error: 'Failed to update campaign' }, { status: 500 })
   }
 }

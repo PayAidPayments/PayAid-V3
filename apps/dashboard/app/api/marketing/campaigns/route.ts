@@ -13,6 +13,9 @@ const createCampaignSchema = z.object({
   segmentId: z.string().optional(),
   contactIds: z.array(z.string()).optional(),
   scheduledFor: z.string().datetime().optional(),
+  budgetInr: z.number().int().min(0).optional(),
+  spendInr: z.number().int().min(0).optional(),
+  playbookSlug: z.string().max(120).optional(),
 })
 
 // GET /api/marketing/campaigns - List all campaigns
@@ -73,6 +76,10 @@ export async function GET(request: NextRequest) {
         createdAt: campaign.createdAt.toISOString(),
         sentAt: campaign.sentAt?.toISOString(),
         scheduledFor: campaign.scheduledFor?.toISOString(),
+        budgetInr: campaign.budgetInr,
+        spendInr: campaign.spendInr,
+        hardCap: campaign.hardCap,
+        playbookSlug: campaign.playbookSlug,
         analytics,
       }
     })
@@ -248,6 +255,9 @@ export async function POST(request: NextRequest) {
         recipientCount: contactIds.length,
         scheduledFor: validated.scheduledFor ? new Date(validated.scheduledFor) : null,
         status: validated.scheduledFor ? 'scheduled' : 'draft',
+        budgetInr: validated.budgetInr ?? null,
+        spendInr: validated.spendInr ?? 0,
+        playbookSlug: validated.playbookSlug ?? null,
       },
     })
 

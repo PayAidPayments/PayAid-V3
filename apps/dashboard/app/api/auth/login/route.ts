@@ -533,10 +533,18 @@ async function handleLogin(request: NextRequest) {
       responseMessage = 'An error occurred during login. Please wait a moment and try again. If the problem persists, contact support.'
     }
     
+    const isDbError =
+      errorMessage.includes('Database') ||
+      errorMessage.includes('database') ||
+      errorMessage.includes('P1001') ||
+      errorMessage.includes('P2025') ||
+      errorMessage.includes('connection pool')
+
     return NextResponse.json(
       { 
         error: 'Login failed',
         message: responseMessage,
+        ...(isDbError && { healthCheck: '/api/health' }),
         ...(isDev && {
           step,
           errorName,

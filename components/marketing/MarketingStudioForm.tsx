@@ -10,6 +10,8 @@ import {
   getWorkspaceDefaultChannels,
   type StudioWorkspaceMode,
 } from '@/lib/marketing/studio-workspace'
+import type { InboxReplyContext } from '@/lib/marketing/inbox-reply'
+import { studioChannelForInboxItem } from '@/lib/marketing/inbox-reply'
 import { useAuthStore } from '@/lib/stores/auth'
 
 const GOALS = [
@@ -703,6 +705,7 @@ export function MarketingStudioForm({
   socialAccounts,
   initialAuditPostId,
   workspaceMode = 'social',
+  inboxReply,
 }: {
   tenantId: string
   brandName?: string
@@ -710,6 +713,7 @@ export function MarketingStudioForm({
   socialAccounts?: Array<{ id: string; platform: string; accountName: string }>
   initialAuditPostId?: string
   workspaceMode?: StudioWorkspaceMode
+  inboxReply?: InboxReplyContext
 }) {
   const router = useRouter()
   const { token } = useAuthStore()
@@ -737,6 +741,19 @@ export function MarketingStudioForm({
   const [audience, setAudience] = useState<string>('all_contacts')
   const [channels, setChannels] = useState<string[]>(getWorkspaceDefaultChannels(workspaceMode))
   const [prompt, setPrompt] = useState('')
+  const inboxReplyApplied = useRef(false)
+  useEffect(() => {
+    if (!inboxReply || inboxReplyApplied.current) return
+    inboxReplyApplied.current = true
+    if (inboxReply.preview?.trim()) {
+      setPrompt(inboxReply.preview.trim())
+    }
+    const ch = studioChannelForInboxItem({
+      source: inboxReply.source,
+      channel: inboxReply.channel || inboxReply.source,
+    })
+    setChannels([ch])
+  }, [inboxReply])
   const [primaryLink, setPrimaryLink] = useState('')
   const [ctaLabel, setCtaLabel] = useState<string>('Learn more')
   const [emailHtmlMode, setEmailHtmlMode] = useState(false)

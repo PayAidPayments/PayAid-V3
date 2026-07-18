@@ -3,26 +3,9 @@ import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 
-type MarketingPostRow = { channel: string | null; status: string | null }
-
-/** MarketingPost may be absent from generated Prisma client until migrations ship — never throw. */
-async function safeMarketingPosts(tenantId: string): Promise<MarketingPostRow[]> {
-  try {
-    const delegate = (prisma as unknown as { marketingPost?: { findMany: (args: object) => Promise<MarketingPostRow[]> } })
-      .marketingPost
-    if (!delegate?.findMany) return []
-    return await delegate.findMany({
-      where: { tenantId },
-      select: { channel: true, status: true },
-    })
-  } catch {
-    return []
-  }
-}
-
 /**
  * GET /api/marketing/dashboard/enriched
- * Data-rich metrics: ₹ revenue, GST compliance, channel breakdown, funnel, campaign health.
+ * Data-rich metrics: ₹ revenue, spend, GST compliance, channel breakdown, funnel, campaign health.
  * Uses Campaign, MarketingPost, Invoice, Deal, Contact. Cached 30s.
  */
 async function getEnrichedData(tenantId: string) {
@@ -30,7 +13,7 @@ async function getEnrichedData(tenantId: string) {
   const thirtyDaysAgo = new Date(now)
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-  const [campaigns, invoices, wonDeals, contacts, marketingPosts] = await Promise.all([
+  const [campaigns, invoices, wonDeals, contacts, marketingPosts, marketingSettings, qualifiedLeads, qualifiedLeads30d] = await Promise.all([
     prisma.campaign.findMany({
       where: { tenantId, status: 'sent' },
     }),
@@ -43,7 +26,36 @@ async function getEnrichedData(tenantId: string) {
       select: { value: true, actualCloseDate: true, createdAt: true },
     }),
     prisma.contact.count({ where: { tenantId, status: 'active' } }),
-    safeMarketingPosts(tenantId),
+    prisma.marketingPost.findMany({
+      where: { tenantId },
+      select: { channel: true, status: true },
+    }).catch(() => []),
+    prisma.marketingSettings.findUnique({ where: { tenantId } }).catch(() => null),
+    prisma.contact.count({
+      where: {
+        tenantId,
+        status: 'active',
+        OR: [
+          { leadScore: { gte: 50 } },
+          { nurtureStage: 'hot' },
+          { likelyToBuy: true },
+          { deals: { some: { stage: { in: ['proposal', 'negotiation'] } } } },
+        ],
+      },
+    }),
+    prisma.contact.count({
+      where: {
+        tenantId,
+        status: 'active',
+        createdAt: { gte: thirtyDaysAgo },
+        OR: [
+          { leadScore: { gte: 50 } },
+          { nurtureStage: 'hot' },
+          { likelyToBuy: true },
+          { deals: { some: { stage: { in: ['proposal', 'negotiation'] } } } },
+        ],
+      },
+    }),
   ])
 
   const totalReach = campaigns.reduce((s, c) => s + c.sent, 0)
@@ -84,9 +96,16 @@ async function getEnrichedData(tenantId: string) {
     sms: totalSent > 0 ? Math.round((marketingRevenue * byType.sms) / totalSent) : 0,
   }
 
-  // RoI: revenue / spend (spend not tracked; use placeholder)
-  const estimatedSpend = Math.max(1, Math.round(marketingRevenue / 5))
-  const roi = marketingRevenue > 0 ? Math.round((marketingRevenue / estimatedSpend) * 10) / 10 : 0
+  // Spend: tracked spendInr on campaigns; fallback to budgetInr; then estimate only if neither exists.
+  const trackedSpend = campaigns.reduce((s, c) => s + (c.spendInr ?? 0), 0)
+  const budgetSpend = campaigns.reduce((s, c) => s + (c.budgetInr ?? 0), 0)
+  const settingsBudget = marketingSettings?.monthlyBudgetInr ?? 0
+  const marketingSpend =
+    trackedSpend > 0 ? trackedSpend : budgetSpend > 0 ? budgetSpend : settingsBudget > 0 ? settingsBudget : 0
+  const spendIsEstimated = marketingSpend === 0 && marketingRevenue > 0
+  const spendForRoi = marketingSpend > 0 ? marketingSpend : Math.max(1, Math.round(marketingRevenue / 5))
+  const roi = marketingRevenue > 0 ? Math.round((marketingRevenue / spendForRoi) * 10) / 10 : 0
+  const roas = marketingSpend > 0 && marketingRevenue > 0 ? Math.round((marketingRevenue / marketingSpend) * 10) / 10 : roi
   const avgRevenuePerLead = leadsGenerated > 0 ? Math.round(marketingRevenue / leadsGenerated) : 0
 
   // GST compliance (invoices with GST fields)
@@ -111,12 +130,6 @@ async function getEnrichedData(tenantId: string) {
     facebook: totalChannel > 0 ? Math.round((sentByChannel.whatsapp / totalChannel) * 100) * 0.6 : 0,
     linkedin: totalChannel > 0 ? Math.round((sentByChannel.email / totalChannel) * 100) * 0.2 : 0,
   }
-  if (totalChannel === 0) {
-    channelBreakdownPct.whatsapp = 47
-    channelBreakdownPct.email = 19
-    channelBreakdownPct.facebook = 28
-    channelBreakdownPct.linkedin = 6
-  }
 
   // Campaign health (open rate bands)
   let optimal = 0
@@ -136,11 +149,6 @@ async function getEnrichedData(tenantId: string) {
     optimalPct: totalCampaigns > 0 ? Math.round((optimal / totalCampaigns) * 100) : 0,
     underperformPct: totalCampaigns > 0 ? Math.round((underperform / totalCampaigns) * 100) : 0,
     failingPct: totalCampaigns > 0 ? Math.round((failing / totalCampaigns) * 100) : 0,
-  }
-  if (totalCampaigns === 0) {
-    campaignHealth.optimalPct = 84
-    campaignHealth.underperformPct = 12
-    campaignHealth.failingPct = 4
   }
 
   // Audience
@@ -189,10 +197,15 @@ async function getEnrichedData(tenantId: string) {
     revenueGrowth,
     avgRevenuePerMonth: marketingRevenue > 0 ? Math.round(marketingRevenue / 12) : 0,
     leadsGenerated,
+    qualifiedLeads,
+    qualifiedLeads30d,
     conversionRate,
     totalReach,
     avgPerReach: totalReach > 0 ? Math.round((marketingRevenue / totalReach) * 100) / 100 : 0,
+    marketingSpend,
+    spendIsEstimated,
     roi,
+    roas,
     gstCompliantPct,
     gstCompliantCount,
     gstTotalInvoices: totalInvoices,

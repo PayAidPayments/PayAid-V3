@@ -43,6 +43,20 @@ export async function GET() {
 
   const isHealthy = checks.database.configured && checks.jwt.configured && dbConnected
 
+  const dbUrl = process.env.DATABASE_URL || ''
+  const hints: string[] = []
+  if (!dbConnected && dbUrl.includes('pooler.supabase.com')) {
+    if (dbUrl.includes(':5432')) {
+      hints.push('On Vercel, use Supabase transaction pooler port 6543 with ?pgbouncer=true&sslmode=require')
+    }
+    if (checks.database.error?.includes("Can't reach database")) {
+      hints.push('Check if Supabase project is paused or DATABASE_URL host is reachable')
+    }
+  }
+  if (!checks.database.configured) {
+    hints.push('Set DATABASE_URL in Vercel → Project → Settings → Environment Variables')
+  }
+
   return NextResponse.json(
     {
       status: isHealthy ? 'healthy' : 'unhealthy',
@@ -51,8 +65,10 @@ export async function GET() {
         database: {
           ...checks.database,
           connected: dbConnected,
+          poolerMode: dbUrl.includes(':6543') ? 'transaction' : dbUrl.includes(':5432') ? 'session' : 'unknown',
         },
       },
+      hints: hints.length > 0 ? hints : undefined,
       timestamp: new Date().toISOString(),
     },
     {

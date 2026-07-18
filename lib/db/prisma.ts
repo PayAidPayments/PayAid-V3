@@ -99,10 +99,16 @@ function createPrismaClient(): PrismaClient {
     url.searchParams.set('connect_timeout', isSupabasePooler ? '15' : '3')
   }
 
-  // Supabase pooler: respect the port in DATABASE_URL (do not override).
-  // - Port 5432 = Session mode (fewer connections; use if 6543 is unreachable or project paused).
-  // - Port 6543 = Transaction mode (more concurrent connections; use when reachable).
+  // Supabase pooler: respect explicit session mode; on Vercel prefer transaction mode (6543).
   if (url.hostname.includes('pooler.supabase.com')) {
+    const useSessionPooler = process.env.DATABASE_USE_SESSION_POOLER === '1'
+    const onVercel = process.env.VERCEL === '1'
+    if (!useSessionPooler && onVercel && (url.port === '5432' || url.port === '')) {
+      url.port = '6543'
+      if (isDevelopment()) {
+        console.log('[PRISMA] Vercel: switched Supabase pooler to transaction mode (port 6543)')
+      }
+    }
     if (!url.searchParams.has('pgbouncer')) {
       url.searchParams.set('pgbouncer', 'true')
     }

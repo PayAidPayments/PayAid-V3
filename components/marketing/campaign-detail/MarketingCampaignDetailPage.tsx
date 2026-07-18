@@ -11,6 +11,7 @@ import type { CampaignDetailPayload } from '@/lib/marketing/campaign-detail-payl
 import { CampaignDetailHeader } from './CampaignDetailHeader'
 import { CampaignKpiGrid } from './CampaignKpiGrid'
 import { CampaignDetailTabs } from './CampaignDetailTabs'
+import { CampaignSpendPanel } from './CampaignSpendPanel'
 
 function CampaignDetailSkeleton() {
   return (
@@ -107,6 +108,7 @@ export default function MarketingCampaignDetailPage() {
         onRetry={onSend}
       />
       <CampaignKpiGrid payload={payload} />
+      <CampaignSpendPanel tenantId={tenantId} campaignId={id} payload={payload} />
       <CampaignDetailTabs payload={payload} activeTab={campaignTab} onTabChange={setCampaignTab} />
     </div>
   )
