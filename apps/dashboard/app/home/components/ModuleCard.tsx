@@ -77,11 +77,12 @@ function ModuleCardComponent({ module, icon: _Icon, metrics }: ModuleCardProps) 
     return module.url;
   };
   
+  // Solid darker backgrounds + white text so labels stay readable (Badge default also uses text-white).
   const statusConfig = {
-    active: { label: "Active", className: "bg-success-light text-success border border-success/30", style: {} },
-    "coming-soon": { label: "Coming Soon", className: "bg-warning-light text-warning border border-warning/30", style: {} },
-    beta: { label: "Beta", className: "bg-info-light text-info border border-info/30", style: {} },
-    deprecated: { label: "Deprecated", className: "bg-gray-100 text-gray-700 border border-gray-300", style: {} }
+    active: { label: "Active", className: "bg-emerald-700 text-white border-transparent", style: {} },
+    "coming-soon": { label: "Coming Soon", className: "bg-amber-700 text-white border-transparent", style: {} },
+    beta: { label: "Beta", className: "bg-sky-700 text-white border-transparent", style: {} },
+    deprecated: { label: "Deprecated", className: "bg-gray-600 text-white border-transparent", style: {} }
   };
 
   // Default to "active" if status is missing or invalid

@@ -1,17 +1,17 @@
 'use client'
 
-import { Header } from '../components/Header'
-import { HeroSection } from '../components/HeroSection'
-import { PinnedModules } from '../components/PinnedModules'
-import { TodayAISummary } from '../components/TodayAISummary'
-import { ModuleGrid } from '../components/ModuleGrid'
+import { Header } from '@dashboard/home/components/Header'
+import { HeroSection } from '@dashboard/home/components/HeroSection'
+import { PinnedModules } from '@dashboard/home/components/PinnedModules'
+import { TodayAISummary, type BriefingItem } from '@dashboard/home/components/TodayAISummary'
+import { ModuleGrid } from '@dashboard/home/components/ModuleGrid'
 import { NewsSidebar } from '@/components/news/NewsSidebar'
 import Link from 'next/link'
 import { useCallback, useEffect, useLayoutEffect, useState, useRef } from 'react'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useParams, useRouter } from 'next/navigation'
 import { PAYAID_MODULES } from '@/lib/config/payaid-modules.config'
-import { getAuthFromStorage } from '../lib/auth-storage'
+import { getAuthFromStorage } from '@dashboard/home/lib/auth-storage'
 import { getTenantRouteKey } from '@/lib/utils/tenant-route-key'
 
 interface HomeSummaryKPIs {
@@ -32,21 +32,39 @@ interface HomeSummary {
   degraded?: boolean
 }
 
-function buildBriefingFallback(kpis: HomeSummaryKPIs): string[] {
-  const bullets: string[] = []
+function buildBriefingFallback(kpis: HomeSummaryKPIs, tenantRouteKey: string): BriefingItem[] {
+  const bullets: BriefingItem[] = []
   if (kpis.openDeals > 0) {
     const lakhs = (kpis.openDealsValue / 1_00_000).toFixed(1)
-    bullets.push(`${kpis.openDeals} open deal${kpis.openDeals === 1 ? '' : 's'} in the pipeline (₹${lakhs} L).`)
+    bullets.push({
+      text: `${kpis.openDeals} open deal${kpis.openDeals === 1 ? '' : 's'} in the pipeline (₹${lakhs} L).`,
+      href: `/crm/${tenantRouteKey}/Deals`,
+    })
   }
   if (kpis.pendingInvoices > 0 || kpis.overdueInvoices > 0) {
     const lakhs = (kpis.pendingInvoicesTotal / 1_00_000).toFixed(1)
-    bullets.push(`Invoices: ${kpis.pendingInvoices} pending (₹${lakhs} L)${kpis.overdueInvoices > 0 ? `, ${kpis.overdueInvoices} overdue.` : '.'}`)
+    bullets.push({
+      text: `Invoices: ${kpis.pendingInvoices} pending (₹${lakhs} L)${kpis.overdueInvoices > 0 ? `, ${kpis.overdueInvoices} overdue.` : '.'}`,
+      href: `/finance/${tenantRouteKey}/Invoices`,
+    })
   }
   if (kpis.overdueTasks > 0) {
-    bullets.push(`${kpis.overdueTasks} task${kpis.overdueTasks === 1 ? '' : 's'} not yet completed.`)
+    bullets.push({
+      text: `${kpis.overdueTasks} task${kpis.overdueTasks === 1 ? '' : 's'} not yet completed.`,
+      href: `/crm/${tenantRouteKey}/Tasks`,
+    })
+  }
+  if (kpis.activeEmployees > 0) {
+    bullets.push({
+      text: `${kpis.activeEmployees} active employee${kpis.activeEmployees === 1 ? '' : 's'} on the team.`,
+      href: `/hr/${tenantRouteKey}/Employees`,
+    })
   }
   if (bullets.length === 0) {
-    bullets.push('No urgent items. Add deals, invoices, or tasks in CRM, Finance, or Projects to see your daily briefing here.')
+    bullets.push({
+      text: 'No urgent items. Add deals, invoices, or tasks in CRM, Finance, or Projects to see your daily briefing here.',
+      href: `/crm/${tenantRouteKey}/Deals`,
+    })
   }
   return bullets.slice(0, 4)
 }
@@ -56,8 +74,11 @@ export default function TenantHomePage() {
   const [summary, setSummary] = useState<HomeSummary | null>(null)
   const [summaryLoading, setSummaryLoading] = useState(true)
   const [summaryError, setSummaryError] = useState(false)
-  const [briefingBullets, setBriefingBullets] = useState<string[]>([])
+  const [briefingBullets, setBriefingBullets] = useState<BriefingItem[]>([])
   const [briefingLoading, setBriefingLoading] = useState(true)
+  const [seedingSample, setSeedingSample] = useState(false)
+  const [seedMessage, setSeedMessage] = useState<string | null>(null)
+  const sampleSeedAttempted = useRef(false)
   const params = useParams()
   const router = useRouter()
   const { tenant, token } = useAuthStore()
@@ -194,6 +215,57 @@ export default function TenantHomePage() {
       .finally(() => setSummaryLoading(false))
   }, [dataTenantId])
 
+  const fetchBriefing = useCallback(() => {
+    if (!dataTenantId) {
+      setBriefingLoading(false)
+      return
+    }
+    const authToken = useAuthStore.getState().token ?? (typeof window !== 'undefined' ? getAuthFromStorage().token : null)
+    if (!authToken) {
+      setBriefingLoading(false)
+      return
+    }
+    setBriefingLoading(true)
+    fetch(`/api/home/briefing?tenantId=${encodeURIComponent(dataTenantId)}`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.items && Array.isArray(data.items)) {
+          setBriefingBullets(data.items)
+        } else if (data?.bullets && Array.isArray(data.bullets)) {
+          setBriefingBullets(data.bullets.map((text: string) => ({ text: String(text) })))
+        }
+      })
+      .catch(() => {})
+      .finally(() => setBriefingLoading(false))
+  }, [dataTenantId])
+
+  const seedSampleData = useCallback(async () => {
+    const authToken = useAuthStore.getState().token ?? (typeof window !== 'undefined' ? getAuthFromStorage().token : null)
+    if (!dataTenantId || !authToken || seedingSample) return
+    setSeedingSample(true)
+    setSeedMessage(null)
+    try {
+      const res = await fetch(`/api/home/seed-sample-data?tenantId=${encodeURIComponent(dataTenantId)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        setSeedMessage(data?.error || 'Could not load sample data. Try again.')
+        return
+      }
+      setSeedMessage('Sample data loaded. Refreshing overview…')
+      fetchSummary()
+      fetchBriefing()
+    } catch {
+      setSeedMessage('Could not load sample data. Try again.')
+    } finally {
+      setSeedingSample(false)
+    }
+  }, [dataTenantId, seedingSample, fetchSummary, fetchBriefing])
+
   useEffect(() => {
     if (!hasCheckedAuth) return
     const id = globalThis.setTimeout(() => {
@@ -215,30 +287,33 @@ export default function TenantHomePage() {
   }, [hasCheckedAuth, summary, summaryLoading, tenantParam, tenant?.id, fetchSummary])
 
   useEffect(() => {
-    const id = globalThis.setTimeout(() => {
-      if (!dataTenantId || !hasCheckedAuth) {
-        setBriefingLoading(false)
-        return
-      }
-      const authToken = useAuthStore.getState().token ?? (typeof window !== 'undefined' ? getAuthFromStorage().token : null)
-      if (!authToken) {
-        setBriefingLoading(false)
-        return
-      }
-      setBriefingLoading(true)
-      fetch(`/api/home/briefing?tenantId=${encodeURIComponent(dataTenantId)}`, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data?.bullets && Array.isArray(data.bullets)) setBriefingBullets(data.bullets)
-        })
-        .catch(() => {})
-        .finally(() => setBriefingLoading(false))
-    }, 0)
+    if (!hasCheckedAuth) return
+    const id = globalThis.setTimeout(() => fetchBriefing(), 0)
     return () => globalThis.clearTimeout(id)
-  }, [dataTenantId, hasCheckedAuth])
+  }, [hasCheckedAuth, fetchBriefing])
 
+  // Auto-seed additive sample data once when overview is empty on demo tenants (never deletes).
+  useEffect(() => {
+    if (!hasCheckedAuth || summaryLoading || summaryError || !summary?.kpis || sampleSeedAttempted.current) return
+    const k = summary.kpis
+    const empty =
+      k.openDeals === 0 &&
+      k.pendingInvoices === 0 &&
+      k.activeEmployees === 0 &&
+      k.overdueTasks === 0 &&
+      k.products === 0
+    if (!empty) return
+    const t = tenantFromAuthOrStorage
+    const isDemo =
+      !!t &&
+      (/demo/i.test(t.slug || '') ||
+        /demo/i.test(t.subdomain || '') ||
+        /demo/i.test(t.name || '') ||
+        /demo/i.test(tenantParam || ''))
+    if (!isDemo) return
+    sampleSeedAttempted.current = true
+    void seedSampleData()
+  }, [hasCheckedAuth, summaryLoading, summaryError, summary, seedSampleData, tenantFromAuthOrStorage, tenantParam])
   if (!mounted || !hasCheckedAuth) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -263,7 +338,7 @@ export default function TenantHomePage() {
         {/* Hero row: 3 fixed metric cards (show loading, then 0 or values; never blank) */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Link
-            href={`/crm/${tenantRouteKey}/Deals`}
+            href={`/crm/${tenantRouteKey}/Tasks`}
             className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm px-5 py-4 hover:shadow-md hover:-translate-y-px transition-all duration-150 h-28 flex flex-col justify-center"
           >
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Today&apos;s overview</p>
@@ -325,6 +400,15 @@ export default function TenantHomePage() {
             <button type="button" onClick={() => fetchSummary()} className="underline font-medium hover:no-underline">
               Retry
             </button>
+            {' · '}
+            <button
+              type="button"
+              onClick={() => void seedSampleData()}
+              disabled={seedingSample}
+              className="underline font-medium hover:no-underline disabled:opacity-60"
+            >
+              {seedingSample ? 'Loading sample data…' : 'Load sample data'}
+            </button>
           </p>
         )}
         {summary?.degraded && (
@@ -333,7 +417,19 @@ export default function TenantHomePage() {
             <button type="button" onClick={() => fetchSummary()} className="underline font-medium hover:no-underline">
               Retry
             </button>
+            {' · '}
+            <button
+              type="button"
+              onClick={() => void seedSampleData()}
+              disabled={seedingSample}
+              className="underline font-medium hover:no-underline disabled:opacity-60"
+            >
+              {seedingSample ? 'Loading sample data…' : 'Load sample data'}
+            </button>
           </p>
+        )}
+        {seedMessage && (
+          <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">{seedMessage}</p>
         )}
         {!summaryLoading && !summaryError && summary?.kpis && !summary.degraded &&
           summary.kpis.openDeals === 0 &&
@@ -342,13 +438,27 @@ export default function TenantHomePage() {
           summary.kpis.overdueTasks === 0 && (
           <div className="rounded-2xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 px-5 py-4 mb-6">
             <p className="text-sm text-slate-600 dark:text-slate-300">
-              No activity yet. Add your first{' '}
-              <Link href={`/crm/${tenantRouteKey}/Deals`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">deal</Link>
-              ,{' '}
-              <Link href={`/finance/${tenantRouteKey}/Invoices`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">invoice</Link>
-              , or{' '}
-              <Link href={`/hr/${tenantRouteKey}/Employees`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">employee</Link>
-              {' '}to see your overview here.
+              {seedingSample ? (
+                'Loading sample tasks, deals, invoices, and employees…'
+              ) : (
+                <>
+                  No activity yet. Add your first{' '}
+                  <Link href={`/crm/${tenantRouteKey}/Deals`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">deal</Link>
+                  ,{' '}
+                  <Link href={`/finance/${tenantRouteKey}/Invoices`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">invoice</Link>
+                  , or{' '}
+                  <Link href={`/hr/${tenantRouteKey}/Employees`} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">employee</Link>
+                  {' '}to see your overview here.
+                  {' '}
+                  <button
+                    type="button"
+                    onClick={() => void seedSampleData()}
+                    className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    Or load sample data
+                  </button>
+                </>
+              )}
             </p>
           </div>
         )}
@@ -361,7 +471,7 @@ export default function TenantHomePage() {
               briefingBullets.length > 0
                 ? briefingBullets
                 : !briefingLoading && summary?.kpis
-                  ? buildBriefingFallback(summary.kpis)
+                  ? buildBriefingFallback(summary.kpis, tenantRouteKey)
                   : []
             }
             loading={briefingLoading}
@@ -372,7 +482,7 @@ export default function TenantHomePage() {
         <PinnedModules
           tenantId={tenantRouteKey}
           moduleSummaries={summary?.moduleSummaries}
-          availableModuleIds={PAYAID_MODULES.filter((m) => m.id !== 'home').map((m) => m.id)}
+          availableModuleIds={PAYAID_MODULES.filter((m) => m.id !== 'home' && m.id !== 'productivity').map((m) => m.id)}
         />
 
         {/* At a glance: compact KPI strip (when we have data; hide when loading or error) */}

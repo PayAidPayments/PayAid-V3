@@ -1,6 +1,6 @@
 'use client';
 
-import { ModuleCard } from './ModuleCard';
+import { ModuleCard } from '@dashboard/home/components/ModuleCard'
 import { Loading } from '@/components/ui/loading';
 import { useState, useEffect, useMemo } from 'react';
 import { useAuthStore } from '@/lib/stores/auth';
@@ -85,9 +85,10 @@ export function ModuleGrid({ moduleSummaries }: { moduleSummaries?: Record<strin
   const categories = useMemo(() => {
     if (!mounted || modules.length === 0) return [];
     
-    // Use the same filtering logic as allAvailableModules to ensure counts match
+    // Use the same filtering logic as allAvailableModules to ensure counts match.
+    // Hide the Workspace Tools hub card — individual Sheets/Docs/etc. cards cover that suite.
     const allNonIndustryModules = modules.filter((m: any) => 
-      m.category !== 'industry' && m.status !== 'deprecated'
+      m.category !== 'industry' && m.status !== 'deprecated' && m.id !== 'productivity'
     );
     
     // If not authenticated or userData not loaded yet, show all modules (will be filtered once data loads)
@@ -143,9 +144,10 @@ export function ModuleGrid({ moduleSummaries }: { moduleSummaries?: Record<strin
   const allAvailableModules = useMemo(() => {
     if (!mounted || modules.length === 0) return [];
     
-    // Exclude industries and deprecated modules (keep coming-soon modules visible)
+    // Exclude industries, deprecated modules, and the Workspace Tools hub card
+    // (individual Sheets/Docs/Drive/Slides/Meet/PDF cards remain; keep coming-soon visible)
     let filteredModules = modules.filter((m: any) => 
-      m.category !== 'industry' && m.status !== 'deprecated'
+      m.category !== 'industry' && m.status !== 'deprecated' && m.id !== 'productivity'
     );
     
     // Check if tenant is in trial period

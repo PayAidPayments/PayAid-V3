@@ -245,7 +245,7 @@ export const modules: ModuleConfig[] = [
     color: "#F59E0B"
   },
 
-  // Productivity (top-level module: PayAid Sheets, Docs, Slides, Drive, Meet, PDF via tabs)
+  // Productivity suite landing (kept for /productivity routes & licensing; hidden from home module grid)
   {
     id: "productivity",
     name: "Workspace Tools",
@@ -256,7 +256,7 @@ export const modules: ModuleConfig[] = [
     category: "productivity",
     color: "#059669"
   },
-  // Sub-tools are accessed via /productivity/[tenantId]/[tool] tabs (not in main nav)
+  // Individual tools shown on Command Center (Coming Soon until shipped)
   {
     id: "spreadsheet",
     name: "PayAid Sheets",
