@@ -19,7 +19,12 @@ function cp(src, dest) {
   console.log(`[git-vercel-build] copied ${path.relative(root, src)} -> ${path.relative(root, dest)}`)
 }
 
-cp(path.join(root, 'apps/dashboard/app'), path.join(root, 'app'))
+const dashApp = path.join(root, 'apps/dashboard/app')
+cp(dashApp, path.join(root, 'app'))
+// Prevent Next from compiling both root/app and apps/dashboard/app (broken @/ aliases).
+fs.rmSync(dashApp, { recursive: true, force: true })
+console.log('[git-vercel-build] removed apps/dashboard/app after flatten')
+
 const dashPublic = path.join(root, 'apps/dashboard/public')
 const rootPublic = path.join(root, 'public')
 if (fs.existsSync(dashPublic)) {
