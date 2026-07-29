@@ -1,18 +1,36 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { ModuleSwitcher } from '@/components/ModuleSwitcher'
 import { cn } from '@/lib/utils/cn'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Settings, LogOut, User, ChevronDown, Newspaper, MoreVertical, AlertTriangle, CreditCard } from 'lucide-react'
-import { NotificationBell } from '@/components/NotificationBell'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { GlobalSearch } from '@/components/layout/GlobalSearch'
 import { useQueryClient } from '@tanstack/react-query'
 import { getAuthHeaders } from '@/lib/hooks/use-api'
+
+const GlobalSearch = dynamic(
+  () => import('@/components/layout/GlobalSearch').then((m) => ({ default: m.GlobalSearch })),
+  { ssr: false }
+)
+const NotificationBell = dynamic(
+  () => import('@/components/NotificationBell').then((m) => ({ default: m.NotificationBell })),
+  { ssr: false }
+)
+const ModuleSwitcher = dynamic(
+  () => import('@/components/ModuleSwitcher').then((m) => ({ default: m.ModuleSwitcher })),
+  { ssr: false }
+)
+const VoiceModuleSwitcher = dynamic(
+  () =>
+    import('@/components/voice-agent/VoiceModuleSwitcher').then((m) => ({
+      default: m.VoiceModuleSwitcher,
+    })),
+  { ssr: false }
+)
 
 interface TopBarItem {
   name: string
@@ -26,9 +44,23 @@ interface ModuleTopBarProps {
   items: TopBarItem[]
   logo?: React.ReactNode
   maxVisibleItems?: number // Number of items to show before "More" menu
+  /** compact: voice-focused shell — no global search, notifications, or news (smaller dev bundle). */
+  density?: 'full' | 'compact'
+  /** voice: lightweight link to PayAid home instead of full ModuleSwitcher. */
+  switcherMode?: 'full' | 'voice'
 }
 
-export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItems = 5 }: ModuleTopBarProps) {
+export function ModuleTopBar({
+  moduleId,
+  moduleName,
+  items,
+  logo,
+  maxVisibleItems = 5,
+  density = 'full',
+  switcherMode = 'full',
+}: ModuleTopBarProps) {
+  const isCompact = density === 'compact'
+  const useVoiceSwitcher = switcherMode === 'voice' || (isCompact && moduleId === 'voice-agents')
   const pathname = usePathname()
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -92,7 +124,7 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
     return '/home'
   }
 
-  // Fetch news unread count
+  // Fetch news unread count - deferred off critical path
   useEffect(() => {
     // Keep local dev responsive during QA by avoiding background unread polling.
     if (process.env.NODE_ENV !== 'production') return
@@ -117,10 +149,14 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
     }
 
     if (token) {
-      fetchNewsCount()
-      // Refresh every 5 minutes
+      // Defer initial fetch until after first paint (2s delay)
+      const initialTimeout = setTimeout(fetchNewsCount, 2000)
+      // Refresh every 5 minutes after initial fetch
       const interval = setInterval(fetchNewsCount, 5 * 60 * 1000)
-      return () => clearInterval(interval)
+      return () => {
+        clearTimeout(initialTimeout)
+        clearInterval(interval)
+      }
     }
   }, [token])
 
@@ -133,8 +169,9 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
     }
   }
 
+  // Fetch trial status - deferred off critical path
   useEffect(() => {
-    if (!token || !tenant?.id) return
+    if (isCompact || !token || !tenant?.id) return
 
     const fetchTrialStatus = async () => {
       try {
@@ -153,13 +190,18 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
       }
     }
 
-    fetchTrialStatus()
+    // Defer initial fetch until after first paint (2s delay)
+    const initialTimeout = setTimeout(fetchTrialStatus, 2000)
+    // Refresh every 60 seconds after initial fetch
     const id = window.setInterval(fetchTrialStatus, 60_000)
-    return () => window.clearInterval(id)
-  }, [token, tenant?.id])
+    return () => {
+      clearTimeout(initialTimeout)
+      window.clearInterval(id)
+    }
+  }, [isCompact, token, tenant?.id])
 
   useEffect(() => {
-    if (trialBillingStatus !== 'payment_required' || !tenant?.id) return
+    if (isCompact || trialBillingStatus !== 'payment_required' || !tenant?.id) return
     const billingPath = `/finance/${tenant.id}/Billing`
     const isAllowedPath =
       pathname?.startsWith(billingPath) ||
@@ -169,14 +211,14 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
     if (!isAllowedPath) {
       router.replace(billingPath)
     }
-  }, [trialBillingStatus, tenant?.id, pathname, router])
+  }, [isCompact, trialBillingStatus, tenant?.id, pathname, router])
 
   const showTrialBanner =
     trialBillingStatus === 'payment_required' ||
     (trialBillingStatus === 'trialing' && isTrialActive && typeof trialDaysLeft === 'number' && trialDaysLeft <= 5)
 
   const warmCrmRouteData = (href: string) => {
-    if (!token) return
+    if (isCompact || !token) return
     const m = href.match(/^\/crm\/([^/]+)\/(Leads|Contacts|Deals)\/?$/)
     const tenantIdFromHref = m?.[1]
     const entity = m?.[2]
@@ -372,12 +414,12 @@ export function ModuleTopBar({ moduleId, moduleName, items, logo, maxVisibleItem
 
         {/* Right: Global Search, Theme Toggle, Notifications, Module Switcher, News, Profile */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          <GlobalSearch />
+          {!isCompact && <GlobalSearch />}
           <ThemeToggle />
-          <NotificationBell />
-          <ModuleSwitcher />
-          
-          {user && (user.role === 'admin' || user.role === 'owner') && (
+          {!isCompact && <NotificationBell />}
+          {useVoiceSwitcher ? <VoiceModuleSwitcher /> : <ModuleSwitcher />}
+
+          {!isCompact && user && (user.role === 'admin' || user.role === 'owner') && (
             <button
               onClick={handleNewsClick}
               className="relative p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"

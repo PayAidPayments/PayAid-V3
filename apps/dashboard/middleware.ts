@@ -5,9 +5,14 @@ import {
   CANONICAL_APP_HOSTS,
   type CanonicalProductModule,
 } from '@/lib/config/canonical-app-hosts'
-import { shouldRedirectToCanonicalApp } from '@/lib/utils/canonical-module-url'
+import {
+  appendVoiceSsoParams,
+  getCanonicalAppOrigin,
+  shouldRedirectToCanonicalApp,
+} from '@/lib/utils/canonical-module-url'
 
 const DASHBOARD_PATH = '/dashboard'
+const DEFAULT_VOICE_ORIGIN = 'https://voice-six-xi.vercel.app'
 
 const CANONICAL_MODULE_REDIRECTS: CanonicalProductModule[] = [
   'crm',
@@ -21,10 +26,65 @@ const CANONICAL_MODULE_REDIRECTS: CanonicalProductModule[] = [
   'voice',
 ]
 
+function resolveVoiceOrigin(): string {
+  return (
+    process.env.NEXT_PUBLIC_VOICE_APP_URL?.trim() ||
+    process.env.VOICE_MODULE_URL?.trim() ||
+    process.env.VOICE_API_ORIGIN?.trim() ||
+    getCanonicalAppOrigin('voice') ||
+    DEFAULT_VOICE_ORIGIN
+  ).replace(/\/$/, '')
+}
+
+/**
+ * Always hop /voice-agents → voice host with SSO query params from the
+ * dashboard `token` cookie so CRM→Voice does not force a second login.
+ */
+function redirectVoiceAgentsWithSso(request: NextRequest): NextResponse | null {
+  const { pathname } = request.nextUrl
+  if (pathname !== '/voice-agents' && !pathname.startsWith('/voice-agents/')) {
+    return null
+  }
+
+  const voiceOrigin = resolveVoiceOrigin()
+  try {
+    if (new URL(voiceOrigin).origin === request.nextUrl.origin) {
+      return null
+    }
+  } catch {
+    /* continue with default hop */
+  }
+
+  // Already carrying SSO — preserve and forward.
+  if (request.nextUrl.searchParams.has('sso_token')) {
+    const redirectUrl = new URL(`${pathname}${request.nextUrl.search}`, voiceOrigin)
+    return NextResponse.redirect(redirectUrl, 307)
+  }
+
+  const token = getTokenFromRequest(request)
+  const decoded = token ? safeDecodeToken(token) : null
+  const tenantId = String(decoded?.tenantId || decoded?.tenant_id || '')
+  const userId = String(decoded?.userId || decoded?.user_id || decoded?.sub || '')
+
+  if (token && tenantId && userId) {
+    return NextResponse.redirect(
+      appendVoiceSsoParams(voiceOrigin, pathname, request.nextUrl.search, token, tenantId, userId),
+      307
+    )
+  }
+
+  const fallback = new URL(`${pathname}${request.nextUrl.search}`, voiceOrigin)
+  return NextResponse.redirect(fallback, 307)
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  const voiceSsoRedirect = redirectVoiceAgentsWithSso(request)
+  if (voiceSsoRedirect) return voiceSsoRedirect
+
   for (const module of CANONICAL_MODULE_REDIRECTS) {
+    if (module === 'voice') continue // handled above with SSO
     if (shouldRedirectToCanonicalApp(module, pathname, request.nextUrl.origin)) {
       const envKey = CANONICAL_APP_HOSTS[module].envOriginKey
       const redirectUrl = new URL(
@@ -120,6 +180,8 @@ export const config = {
     '/communication/:path*',
     '/productivity/:path*',
     '/settings/:path*',
+    '/voice-agents',
+    '/voice-agents/:path*',
   ],
 }
 

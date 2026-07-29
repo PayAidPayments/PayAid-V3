@@ -30,6 +30,17 @@ export function VoiceAgentLiveDemoWorkspace() {
   const [agent, setAgent] = useState<Agent | null>(null)
   const [loading, setLoading] = useState(!!agentId)
   const [fetchError, setFetchError] = useState<string | null>(null)
+  const [ssoPending, setSsoPending] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return new URLSearchParams(window.location.search).has('sso_token')
+  })
+
+  // Allow SSOHydration (providers) one tick to set the token before gating login.
+  useEffect(() => {
+    if (!ssoPending) return
+    const id = window.setTimeout(() => setSsoPending(false), 400)
+    return () => window.clearTimeout(id)
+  }, [ssoPending])
 
   useEffect(() => {
     if (!agentId || !token) {
@@ -62,6 +73,14 @@ export function VoiceAgentLiveDemoWorkspace() {
           </Link>
           .
         </p>
+      </div>
+    )
+  }
+
+  if (!token && ssoPending) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
       </div>
     )
   }

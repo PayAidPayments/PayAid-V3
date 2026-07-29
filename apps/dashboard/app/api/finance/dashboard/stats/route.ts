@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
 import { verifyToken } from '@/lib/auth/jwt'
+import { createServerTiming, withCachedJson } from '@/lib/performance/api-server-timing'
 
 // GET /api/finance/dashboard/stats - Get Finance dashboard statistics
 // Optional query: ?tenantId=xxx — when user is super_admin, stats for that tenant; otherwise JWT tenant is used.
 export async function GET(request: NextRequest) {
+  const timing = createServerTiming()
+  
   try {
+    timing.start('auth')
     const { tenantId: jwtTenantId } = await requireModuleAccess(request, 'finance')
+    timing.end('auth')
     const url = request.nextUrl
     const tenantIdFromQuery = url.searchParams.get('tenantId')
 
@@ -95,6 +100,11 @@ export async function GET(request: NextRequest) {
       // Continue anyway for other errors
     }
 
+    const cacheKey = `finance:dashboard:stats:${tenantId}`
+    
+    const stats = await withCachedJson(cacheKey, 60, async () => {
+      timing.start('db')
+      
     // Get current date for calculations
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -333,58 +343,67 @@ export async function GET(request: NextRequest) {
     const twelveMonthsAgo = new Date(now)
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
 
-    const monthlyRevenue = await prisma.$queryRaw<Array<{ month: string; revenue: number }>>`
-      SELECT 
-        TO_CHAR("paidAt", 'Mon YYYY') as month,
-        COALESCE(SUM("total"), 0)::float as revenue
-      FROM "Invoice"
-      WHERE "tenantId" = ${tenantId}
-        AND "status" = 'paid'
-        AND "paidAt" IS NOT NULL
-        AND "paidAt" >= ${twelveMonthsAgo}
-      GROUP BY TO_CHAR("paidAt", 'Mon YYYY')
-      ORDER BY MIN("paidAt") ASC
-    `.catch(() => [])
-
     // AR aging: unpaid invoices by days overdue (0–30, 31–60, 60+)
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const d30 = new Date(today); d30.setDate(d30.getDate() - 30)
     const d60 = new Date(today); d60.setDate(d60.getDate() - 60)
-    const ar0_30Agg = await prisma.invoice.aggregate({
-      where: {
-        tenantId,
-        status: { in: ['sent', 'pending', 'overdue'] },
-        dueDate: { not: null, gte: d30, lt: today },
-      },
-      _sum: { total: true },
-    }).catch(() => ({ _sum: { total: 0 } }))
-    const ar31_60Agg = await prisma.invoice.aggregate({
-      where: {
-        tenantId,
-        status: { in: ['sent', 'pending', 'overdue'] },
-        dueDate: { not: null, gte: d60, lt: d30 },
-      },
-      _sum: { total: true },
-    }).catch(() => ({ _sum: { total: 0 } }))
-    const ar60PlusAgg = await prisma.invoice.aggregate({
-      where: {
-        tenantId,
-        status: { in: ['sent', 'pending', 'overdue'] },
-        dueDate: { not: null, lt: d60 },
-      },
-      _sum: { total: true },
-    }).catch(() => ({ _sum: { total: 0 } }))
-    const arAging = {
-      bucket0_30: Number(ar0_30Agg._sum?.total ?? 0),
-      bucket31_60: Number(ar31_60Agg._sum?.total ?? 0),
-      bucket60Plus: Number(ar60PlusAgg._sum?.total ?? 0),
-    }
 
     // AP aging: POs by expectedDeliveryDate buckets (due today, next 7d, next 30d)
     const dueTodayEnd = new Date(today); dueTodayEnd.setDate(dueTodayEnd.getDate() + 1)
     const due7dEnd = new Date(today); due7dEnd.setDate(due7dEnd.getDate() + 8)
     const due30dEnd = new Date(today); due30dEnd.setDate(due30dEnd.getDate() + 31)
-    const [apDueTodayAgg, apDue7dAgg, apDue30dAgg] = await Promise.all([
+
+    // Parallelize second-wave queries (aging, monthly revenue, groupBy)
+    const [
+      monthlyRevenue,
+      ar0_30Agg,
+      ar31_60Agg,
+      ar60PlusAgg,
+      apDueTodayAgg,
+      apDue7dAgg,
+      apDue30dAgg,
+      invoicesByStatus,
+    ] = await Promise.all([
+      prisma.$queryRaw<Array<{ month: string; revenue: number }>>`
+        SELECT 
+          TO_CHAR("paidAt", 'Mon YYYY') as month,
+          COALESCE(SUM("total"), 0)::float as revenue
+        FROM "Invoice"
+        WHERE "tenantId" = ${tenantId}
+          AND "status" = 'paid'
+          AND "paidAt" IS NOT NULL
+          AND "paidAt" >= ${twelveMonthsAgo}
+        GROUP BY TO_CHAR("paidAt", 'Mon YYYY')
+        ORDER BY MIN("paidAt") ASC
+      `.catch(() => []),
+
+      prisma.invoice.aggregate({
+        where: {
+          tenantId,
+          status: { in: ['sent', 'pending', 'overdue'] },
+          dueDate: { not: null, gte: d30, lt: today },
+        },
+        _sum: { total: true },
+      }).catch(() => ({ _sum: { total: 0 } })),
+
+      prisma.invoice.aggregate({
+        where: {
+          tenantId,
+          status: { in: ['sent', 'pending', 'overdue'] },
+          dueDate: { not: null, gte: d60, lt: d30 },
+        },
+        _sum: { total: true },
+      }).catch(() => ({ _sum: { total: 0 } })),
+
+      prisma.invoice.aggregate({
+        where: {
+          tenantId,
+          status: { in: ['sent', 'pending', 'overdue'] },
+          dueDate: { not: null, lt: d60 },
+        },
+        _sum: { total: true },
+      }).catch(() => ({ _sum: { total: 0 } })),
+
       prisma.purchaseOrder.aggregate({
         where: {
           tenantId,
@@ -393,6 +412,7 @@ export async function GET(request: NextRequest) {
         },
         _sum: { total: true },
       }).catch(() => ({ _sum: { total: 0 } })),
+
       prisma.purchaseOrder.aggregate({
         where: {
           tenantId,
@@ -401,6 +421,7 @@ export async function GET(request: NextRequest) {
         },
         _sum: { total: true },
       }).catch(() => ({ _sum: { total: 0 } })),
+
       prisma.purchaseOrder.aggregate({
         where: {
           tenantId,
@@ -409,20 +430,26 @@ export async function GET(request: NextRequest) {
         },
         _sum: { total: true },
       }).catch(() => ({ _sum: { total: 0 } })),
+
+      prisma.invoice.groupBy({
+        by: ['status'],
+        where: { tenantId },
+        _count: { id: true },
+        _sum: { total: true },
+      }).catch(() => []),
     ])
+
+    const arAging = {
+      bucket0_30: Number(ar0_30Agg._sum?.total ?? 0),
+      bucket31_60: Number(ar31_60Agg._sum?.total ?? 0),
+      bucket60Plus: Number(ar60PlusAgg._sum?.total ?? 0),
+    }
+
     const apAging = {
       dueToday: Number(apDueTodayAgg._sum?.total ?? 0),
       due7d: Number(apDue7dAgg._sum?.total ?? 0),
       due30d: Number(apDue30dAgg._sum?.total ?? 0),
     }
-
-    // Invoices by status
-    const invoicesByStatus = await prisma.invoice.groupBy({
-      by: ['status'],
-      where: { tenantId },
-      _count: { id: true },
-      _sum: { total: true },
-    }).catch(() => [])
 
     // Calculate profit (revenue - expenses)
     const revenueThisMonthValue = Number(revenueThisMonth._sum.total || 0)
@@ -455,18 +482,12 @@ export async function GET(request: NextRequest) {
 
     const bankRecPct = 98 // stub
 
-    // Log results for debugging
-    console.log('[FINANCE_DASHBOARD] Stats fetched successfully:', {
-      tenantId,
-      totalInvoices,
-      totalRevenue: totalRevenue._sum.total || 0,
-      purchaseOrders,
-    })
-    
     const overdueAmount = Number(overdueAmountAgg._sum?.total ?? 0)
     const vendorsDueAmount = Number(vendorsDueAmountAgg._sum?.total ?? 0)
 
-    return NextResponse.json({
+    timing.end('db')
+
+    return {
       totalInvoices,
       invoicesThisMonth,
       invoicesLastMonth,
@@ -513,6 +534,21 @@ export async function GET(request: NextRequest) {
       bankRecPct,
       creditNotesCount: creditNotesCount ?? 0,
       debitNotesCount: debitNotesCount ?? 0,
+    }
+    }, timing)
+
+    // Log results for debugging
+    console.log('[FINANCE_DASHBOARD] Stats fetched successfully:', {
+      tenantId,
+      totalInvoices: stats.totalInvoices,
+      totalRevenue: stats.totalRevenue,
+      purchaseOrders: stats.purchaseOrders,
+    })
+
+    return NextResponse.json(stats, {
+      headers: {
+        'Server-Timing': timing.toHeaders(),
+      },
     })
   } catch (error: any) {
     console.error('[FINANCE_DASHBOARD] Error fetching stats:', {
@@ -559,6 +595,7 @@ export async function GET(request: NextRequest) {
       {
         error: 'Failed to fetch finance dashboard stats',
         message: error?.message,
+        degraded: true,
         totalInvoices: 0,
         invoicesThisMonth: 0,
         invoicesLastMonth: 0,
@@ -595,7 +632,7 @@ export async function GET(request: NextRequest) {
         creditNotesCount: 0,
         debitNotesCount: 0,
       },
-      { status: 500 }
+      { status: 200 }
     )
   }
 }

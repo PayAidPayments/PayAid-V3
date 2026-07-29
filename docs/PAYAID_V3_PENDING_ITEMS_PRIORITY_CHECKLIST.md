@@ -256,12 +256,199 @@ Golden deployment (preserve unless regression): `voice-5ljnsioga-payaid-projects
 
 ---
 
+## Active Track - P1 Platform Spine (2026-07-18)
+
+**Canonical board:** `docs/P1_PLATFORM_SPINE_AUDIT_AND_EXECUTION_BOARD.md`  
+**Principle:** Shared operating spine before cosmetic module Homes. Order: P1-A → P1-B → P1-C → P1-D → P1-E. Defer P2/P3/P4 depth until P1 scorecard advances.
+
+### Scorecard baseline (2026-07-18)
+- Shared graph: Partial (0.5)
+- Events / guaranteed emission: Partial (0.5)
+- Automation backbone: Partial (0.5)
+- Forms / attribution / SLA: Partial (0.5)
+- CRM GA closure: Partial (0.5)
+- **P1 overall: 50%**
+
+### P1-A Shared business graph
+- [x] **P1-A1** Canonical `BUSINESS_GRAPH_ENTITIES` enum on `BusinessEntityRef` + M0 coverage
+- [x] **P1-A2** Marketing create schemas use `EntityIdSchema` (cuid|uuid)
+- [x] **P1-A3** Money-path FKs (`Deal.accountId`, `Invoice.dealId`, `Project.dealId`)
+- [x] **P1-A4** Persist `Task.linkedTo` + inventory `relatedEntity`
+- [x] **P1-A5** Graph resolve API (neighbors by `BusinessEntityRef`)
+- [x] **P1-A6** Support + Voice on shared ref model
+
+### P1-B Event contracts
+- [x] **P1-B1** Expand taxonomy with CRM/comms/appointment events + payload versioning
+- [x] **P1-B2** Enforce taxonomy on outbox enqueue + queue `addJob`
+- [x] **P1-B3** Wire critical producers to reliable outbox (B3.1: payment.received + task.completed + failure mode; **2026-07-27:** policy-driven httpApi + invoice mark-paid)
+- [x] **P1-B4** Idempotency keys + transactional outbox semantics
+- [x] **P1-B5** Single-bus policy (outbox source of truth; voice bridge)
+
+### P1-C Automation backbone
+- [x] **P1-C1** Unify `lib/workflow` vs `lib/automation` (canonical backbone + adapters)
+- [x] **P1-C2** Retries + workflow DLQ + redrive (run history + DLQ UI + redrive API)
+- [x] **P1-C3** Cross-module action catalog (draft-first where required)
+- [x] **P1-C4** Real builder + run-history UI (no fake KPIs)
+
+### P1-D Forms / attribution / routing / SLA
+- [x] **P1-D1** UTM + first/last-touch attribution on forms + sales pages
+- [x] **P1-D2** Intake contract capture→enrich→qualify→assign + events
+- [x] **P1-D3** Production SLA breach → notify/escalate
+- [x] **P1-D4** Channel backlinks (Marketing/Comms/Voice/Support → same pipeline)
+
+### P1-E CRM GA closure
+- [x] **P1-E1** Day 5 A4 mass-transfer fix + audit pass (**hosted Done 2026-07-20** — 7/7; A4 transferred:1)
+- [x] **P1-E2** Days 6–10 runbook queue (partial — automation green; manual Days 8–10 pending)
+- [x] **P1-E3** SOLO-T11 product GO/NO-GO (decision record ready; awaiting Product signoff)
+- [x] **P1-E4** Speed SLO meet or formal revision (baseline refreshed 325/389/261 p95; Option B recommended; awaiting signoff)
+
+Ops pack: `docs/evidence/closure/2026-07-20-p1-e-ops-readiness-pack.md`
+
+---
+
+## P0 - Enterprise AI runtime security (platform-wide)
+
+Normative standard: `docs/ai/AI_RUNTIME_SECURITY_STANDARD.md` · ADR: `docs/adr/2026-07-20-ai-runtime-security.md`  
+Board: workspace canvas `ai-runtime-security-board.canvas.tsx`
+
+### Phase A — Inventory + risk map
+- [x] **Inventory all AI surfaces** (chat, studio, voice, RAG, cofounder, workflows, chatbot, predictors) mapped to code paths
+- [x] **Risk matrix by surface** published (see standard + canvas)
+- [x] **Gap analysis vs 8-stage runtime contract** (partial foundation in `lib/ai/platform` + `lib/security/ai-policy`)
+- [ ] **Route coverage report script** (`scripts/ai-route-policy-coverage.mjs`) — fail CI when LLM routes skip gateway
+
+### Phase B — Shared contracts
+- [x] **AiRuntimeRunner** (`lib/ai/platform/runtime/ai-runtime-runner.ts`) — 8 stages mandatory
+- [x] **Reflection + RiskAnalysis schemas** (`lib/ai/platform/runtime/schemas.ts`)
+- [x] **wrapAiRoute()** (`lib/security/ai-policy/wrap-ai-route.ts`)
+- [x] **Expand AiSurface + AI_TOOL_INVENTORY** (voice/finance/HR/payroll tools + args schemas)
+- [x] **CI route coverage gate** (`scripts/ai-route-policy-coverage.mjs` + baseline)
+- [x] **First migration batch** — langchain + form-suggestions (`wrapAiRoute`); chat + cofounder (`prepareAiRuntime`)
+- [x] **RAG groundedness helper** (`lib/ai/platform/rag/groundedness.ts`)
+- [ ] **SafePromptBuilder** + migrate freeform prompts into registry *(Phase D — primary paths done; stretch remains)*
+- [x] **LLM route coverage burn-down** — uncovered=0; grandfather empty; global strict ON (C5 closed)
+
+### Phase C — Enforcement
+- [x] **wrapAiRoute()** on first-batch LLM entry points (chat/cofounder later full-wrapped in C3)
+- [x] **Batch 2 studio/analytics/predictors + knowledge grounding** (coverage 22.8%)
+- [x] **Unify voice tool-gateway with central inventory** (bridge + optional inventory check)
+- [x] **RAG groundedness + trust levels** (doc/qa + knowledge/query)
+- [x] **Memory retention policy + Redis Phase 1 adapter** (Phase 2–3 / export-delete still stretch)
+- [x] **Workflow engine AI steps must use runner**
+- [x] **Batch C3:** decisions/actions approve + google-image + predictors + chat/cofounder full wrap
+- [x] **Batch C4:** co-worker, nanobanana/logo, agent verticals, audio, generate-message; decision type→tool map; API-key scope→roles
+- [x] **Batch C5 CLOSED:** coverage 100%; ai uncovered=0; no grandfathered gaps remaining
+- [x] **Enable STRICT_MODULES=chatbots,knowledge** in CI (`check:ai-route-coverage`)
+- [x] **Enable STRICT_MODULES=ai** (ai uncovered = 0; coverage 100%)
+- [x] **Global AI_ROUTE_COVERAGE_STRICT=1** (uncovered=0 / highRiskUncovered=0 semantics)
+- [x] **Redis session memory Phase 1** — store adapter + opt-in Redis backend
+- [ ] **STRICT_WRAP / legacy→wrapAiRoute burn-down** *(stretch polish — 19 legacy prepare paths; deferred)*
+- [x] **Redis Phase 2–3 / D2** — shared pool, chat/cofounder async APIs, isolation smoke, export/delete
+- [x] **Visitor chatbot session memory wire**
+- [ ] **Production default `AI_SESSION_MEMORY_BACKEND=redis`** when TCP Redis confirmed *(ops — Redis not ready locally)*
+- [x] **AI_PROMPT_STRICT=1 in CI** *(post D1 soak)*
+
+### Phase D — Governance hardening
+- [x] **SafePromptBuilder** + prompt registry on primary chat/cofounder/workflow paths (`smoke:ai-prompt-d1`)
+- [x] **AI_PROMPT_STRICT=1** in CI *(post-soak; job env in `ai-security.yml`)*
+- [x] **Session memory D2** — shared Redis pool, async chat/cofounder wire, isolation + export/delete (`smoke:ai-memory-d2`)
+- [x] **Visitor chatbot session memory** — `/api/chatbots/[id]/chat` async tenant-scoped APIs
+- [x] **OWASP LLM red-team suite** in CI (`smoke:ai-redteam` + `.github/workflows/ai-security.yml`)
+- [x] **Red-team checklist** (`docs/ai/AI_REDTEAM_CHECKLIST.md`)
+- [x] **Memory export/delete ops** + retention policy updated
+- [ ] **RAG trust policy** (operator-facing) + broader grounding adoption
+- [ ] **Tool policy matrix** (operator-facing)
+- [ ] **Model/provider inventory (AIBOM)**
+- [x] **Phase B smoke** (`npm run smoke:ai-runtime-phase-b`) + jest specs under `__tests__/ai/`
+- [x] **Cross-tenant leakage tests** (static CI: `check:ai-tenant-leakage`; session memory isolation in `smoke:ai-memory-d2`)
+- [x] **Unsafe tool-call + approval bypass tests** (enterprise smoke + red-team)
+- [x] **Groundedness / hallucination fixtures** (red-team LLM09 + groundedness helper)
+
+### Phase E — Docs + governance
+- [x] **AI runtime security standard** + ADR
+- [x] **Route coverage baseline** (`docs/ai/ai-route-coverage-baseline.json` — empty grandfather)
+- [ ] **Tool policy matrix** (operator-facing)
+- [x] **Memory retention policy** (+ Redis Phase 1)
+- [ ] **RAG trust policy**
+- [ ] **Model/provider inventory (AIBOM)**
+- [x] **Red-team checklist** (`docs/ai/AI_REDTEAM_CHECKLIST.md`)
+
+### Mandatory enterprise rollout gates (go/no-go)
+- [x] Universal policy coverage on all in-scope LLM routes *(C5: uncovered=0; wrap or prepare; global strict ON)*
+- [x] Deny-by-default tools + high-risk approval *(inventory expanded; enforcement via runner)*
+- [x] Draft-first for payments/payroll/bulk outbound/delete/RBAC/compliance *(tool defs)*
+- [x] Tenant isolation leakage tests green *(static CI + session memory D2 isolation smoke)*
+- [ ] RAG grounding + citations for factual answers *(helper ready; not universal yet)*
+- [ ] Audit completeness (allow/block/tool/approval)
+- [x] OWASP LLM red-team CI required *(D3: `smoke:ai-redteam` + ai-security workflow)*
+
+---
+
 ## Update log (append-only)
+
+- `2026-07-29` - **Backend speed pass + Voice SSO (in progress / code ready)** - Instrumented summary APIs (HR/Finance/CRM/Home/trial-status) with Server-Timing + multiLayerCache; default lite HR/CRM stats; briefing soft-fails 200 + AI 1.5s timeout; deferred news/notifications chrome; middleware SSO hop for /voice-agents (removed naked next.config redirect); 
+pm run perf:live-modules gate. Prod demo seed blocked: pooler Prisma hang + seed-via-api hung � need direct Supabase URI or SQL Editor scripts/supabase-seed-demo-home-data.sql. Note: live CRM/HR/Finance already had non-zero data; Home zeros were largely failed APIs.
 
 Add one line per meaningful change:
 
 - `YYYY-MM-DD` ? **Item** ? status change ? link to PR/commit/test run/evidence (if available)
 
+- `2026-07-29` — **Home/HR/CRM lite+fast API callers + defaults** — Wired `useHRSummary` `lite=1`, Command Center briefing `fast=1`, CRM Home `lite=1` then `chartsOnly=1`. HR summary API defaults lite unless `full=1`; CRM stats defaults lite unless `full=1` / `chartsOnly=1` / `lite=0`. Demo seed: `DATABASE_URL` present (pooler); TCP OK; Prisma tenant lookup timed out 20s — `seed:demo-home-data:safe` FAIL; full `seed:demo-business` / `validate:demo-data` not run. **Next: direct Supabase URI (not pooler) then re-seed/validate.**
+- `2026-07-29` — **Release readiness: canonical smoke unblocked + single gate** — Default `CANONICAL_STAGING_BASE_URL=https://payaid-v3.vercel.app`; smoke no longer BLOCKED (executed). Fail classified `fail_staging_legacy_api_shims` (needs hosted `CANONICAL_MODULE_API_ONLY=1` + redeploy). Locked `npm run release:readiness` (PASS/FAIL/BLOCKED/SKIP). Suite artifact overall FAIL 4/5. Prisma schema mirror identical; migrations cutover still incomplete. Evidence: `docs/evidence/closure/2026-07-29-release-readiness-canonical-smoke.md`. **Next: redeploy canonical-only → green release:readiness, then P2 Sales Pages→CRM.**
+- `2026-07-28` — **Post-BD-10 validation/hardening** — Contract freeze on. Targeted smokes: website helper gates PASS; voice LiveDemo no-404 PASS (compliance skipped no DB); P1-B3 PASS; architecture-hygiene release gate PASS; bridge hardening smoke PASS (`scripts/smoke-bd10-bridge-hardening.mjs`). Canonical UI surface smoke BLOCKED (missing staging BASE_URL). Evidence: `docs/evidence/closure/2026-07-28-post-bd10-validation-hardening.md`. **Next: P2 revenue loops / release ops (not contract digs).**
+- `2026-07-28` — **BD-10 leftovers closed** — Grouped remaining **29** diagnostics; fixed highest-reuse adapters first (`asInputJsonValue`, legacy website JSON, ChannelBacklink `ok === false`, voice compliance via `industrySettings`, voice tool inventory union, entity-ref + outbox + inbox/route leftovers). No schema widen; BD-03…09 untouched. Evidence: `docs/evidence/closure/2026-07-28-bd10-leftovers.md`. Remaining **0**. Burn-down packages BD-01…10 complete pending optional passive full tsc confirm.
+- `2026-07-28` — **Passive typecheck inventory landed** — `docs/evidence/closure/2026-07-28-typecheck-inventory-passive-post-bd08.txt` (**29** `error TS`; **0** projects/milestones). Board remaining **29**. Overlapped BD-09; confirms projects cluster cleared. **Next: BD-10 leftovers.**
+- `2026-07-28` — **BD-09 projects/milestones closed** — Bridged live Prisma (no schema widen): Project billing/delivery fields in `notes` (`project-live-contract.ts`); task phase/milestone via tags (`task-plan-tags.ts`); TimeEntry invoice link via `description` (`time-entry-invoice-bridge.ts`); handoff rollup uses milestone tags. Evidence: `docs/evidence/closure/2026-07-28-bd09-projects-live-contract.md`. Remaining **29** (68−39). **Next: BD-10 leftovers.** BD-03…08 stay closed — do not reopen.
+- `2026-07-28` — **BD-08 website closed** — Replaced nonexistent `Website.linkedLandingPageId` with `LandingPage.contentJson.legacyWebsiteId` bridge helper; narrowed `ChannelBacklinkResult.reason` via `if (!result.ok)` (whatsapp/support/marketing). Evidence: `docs/evidence/closure/2026-07-28-bd08-website-live-contract.md`. Remaining **68** (81−13). **Next: BD-09 projects/milestones.** BD-03…07 stay closed — do not reopen.
+- `2026-07-27` — **BD-07 SLA closed** — Aligned SLA helpers/routes to live Contact/Alert Prisma contract (no schema widen): `nextFollowUp` + derived deadlines; alert extras in title/message; CRM `requireModuleAccess` auth. Evidence: `docs/evidence/closure/2026-07-27-bd07-sla-live-contract.md`. Remaining **81** (104−23). **Next: BD-08 website.**
+- `2026-07-27` — **Passive typecheck stable count** — `2026-07-27-typecheck-inventory-passive-post-bd05.txt` completed with **104** remaining (`AI`/`resolve-neighbors`/`deals` clusters **0**). Appended to BD-03/05 + BD-06 evidence notes. Board remaining **104**. Next still BD-07 SLA.
+- `2026-07-27` — **BD-06 closed (shared-shape AI unknown JSON)** — `wrapAiRoute`/`AiRoutePolicyMeta<TBody>` schema-linked body inference; `lib/ai/json-narrow.ts`; removed dead `workflow_trigger` CFA; refactored highest-reuse AI/video/text/form/langchain/workflow + social webhook metadata + workflow engine JSON. Evidence: `docs/evidence/closure/2026-07-27-bd06-ai-unknown-json.md`. Projected remaining **~109–113**. Full typecheck passive-only. **Next: BD-07 SLA (then website/projects/leftovers).** BD-03/BD-05 remain verified closed — do not reopen.
+- `2026-07-27` — **BD-03 + BD-05 verified closed; BD-06 started** — Verified closure by current-tree shared-contract alignment (no further resolve-neighbors / deal-include digs). Evidence: `docs/evidence/closure/2026-07-27-bd03-bd05-inventory-delta.md`. Remaining board **150**. Full typecheck rerun is passive-only. **BD-06:** shared `wrapAiRoute` body inference + `lib/ai/json-narrow.ts` for ~37 AI unknown JSON diagnostics (not file-by-file).
+- `2026-07-27` — **BD-03 + BD-05 closed (inventory-diff)** — BD-03 redefine: `resolve-neighbors` shared-contract (−47 → **160**). BD-05 CRM Deal hot path (−10 → **150**). Full `typecheck:dashboard` still stalls on host; DMMF + IDE diagnostics confirm fields. Evidence: `docs/evidence/closure/2026-07-27-bd03-bd05-inventory-delta.md`. Board: `docs/V3_DASHBOARD_TS_BURNDOWN_BOARD_2026-07-27.md`. **Next: BD-06 AI unknown JSON.**
+- `2026-07-27` — **BD-02 Lead* Prisma ownership (option 2)** — Decision: dashboard must not compile against missing Lead* models; exclude `app/api/lead-intelligence/**` from `tsconfig.typecheck.json`. Removed fake `leadQuery` shim. Matrix: `docs/evidence/closure/2026-07-27-bd-02-lead-prisma-ownership-matrix.md`. Inventory-diff remaining **207** (baseline 288; BD-02 Δ **−79**). Full tsc stalled on host. **Next: BD-03 imports or BD-05 CRM deals; later restore Lead* in packages/db and re-include LI.**
+- `2026-07-27` — **BD-01 + BD-02 typecheck burn-down** — BD-01: fixed AI image `sanitizedPrompt` TDZ (−2 TS2448). BD-02 superseded by ownership gate above (prior throw-shim withdrawn). Board: `docs/V3_DASHBOARD_TS_BURNDOWN_BOARD_2026-07-27.md`.
+- `2026-07-27` — **TS burn-down board + hygiene daily guardrails** — Inventory baseline 288 errors (`docs/evidence/closure/2026-07-27-dashboard-typecheck-inventory.txt`); board `docs/V3_DASHBOARD_TS_BURNDOWN_BOARD_2026-07-27.md` (BD-01…BD-10). Expanded `check:architecture-hygiene` (MUST_STAY_HIDDEN, no canonical `/dashboard/*` core links, TS escape-hatch-only, v2 redirect-only); fixed projects/social/root next configs + modules.config core URLs. Gate PASS. **Next: execute BD-01→BD-10; then Prisma migrations cutover; then P2 revenue loops.**
+- `2026-07-27` — **V3 completion lane: spine + nav honesty (no UI breadth)** — Locked board `docs/V3_COMPLETION_EXECUTION_BOARD_2026-07-27.md`. Module Switcher `navVisibility` hides AI duplicates/shells; Lead Intelligence primary standalone; Support/Contracts/II/thin productivity hidden. CRM /Pipeline -> /Deals. B3 policy-driven emits + invoice mark-paid payment.received. Smoke: `node scripts/validate-p1-b3.mjs`. Evidence: `docs/evidence/closure/2026-07-27-p1-b3-emission-honesty.md`. **Next: P2 revenue loops; Finance canonical depth; no shell expansion.**
+- `2026-07-27` — **Architecture hygiene correction stack** — Prisma: packages/db canonical write + root mirror + check:prisma-schema-canonical (synced 414 models). TS: dashboard/finance/hr/leads/sales/website-builder fail on errors unless PAYAID_ALLOW_TS_BUILD_ERRORS=1. Routes: /website-builder-v2 + legacy /dashboard/{crm,finance,hr,...} redirects. LI: hidden from Module Switcher; top bar M1-only; CRM Account discovery labeled bootstrap. Board: docs/V3_ARCHITECTURE_HYGIENE_BOARD_2026-07-27.md. **Next: TS burn-down if Vercel fails; migrations cutover to packages/db; then P2 revenue loops.**
+- `2026-07-25` — **CTO demo-hardening (no new product scope)** — Stub Homes redirect to AI Studio (`ai-chat`/`ai-insights`/`knowledge-rag` → Chat/Insights/Knowledge); Voice sidebar `comingSoon` removed; Finance Invoices/Accounting/GST hubs re-exported (shallow — still prefer do-not-demo Finance); runbook `docs/DEMO_CTO_RUNBOOK_2026-07-26.md`. Prefight: AI leakage/enterprise/prompt/memory PASS; voice text-first FAIL (sidecar/WSS); WB runtime blocked (missing env); local `db:seed` PASS. Hosts: use `payaid-v3.vercel.app` + `voice-six-xi` + `crm-nine-dun`; avoid stale `payaid-*` 404s. **Next: deploy dashboard/finance fixes before demo; verify hosted demo data; Voice only if sidecar healthy.**
+- `2026-07-25` — **AI_PROMPT_STRICT=1 + visitor chatbot memory** — D1 soak green → job-level `AI_PROMPT_STRICT=1` + `smoke:ai-prompt-d1` in `ai-security.yml`. Parity choice: visitor chatbot (Redis URL not confirmed locally). Wired `/api/chatbots/[id]/chat` to async tenant-scoped session memory. D4/D5 still deferred. **Next: Redis production default when TCP Redis confirmed; otherwise optional D4/D5.**
+- `2026-07-25` — **D3 red-team CI shipped** — OWASP LLM fixture matrix + behavioral suite (`smoke:ai-redteam`), operator checklist `docs/ai/AI_REDTEAM_CHECKLIST.md`, GitHub Actions workflow `.github/workflows/ai-security.yml` (coverage + leakage + enterprise + redteam). D1 soak/`AI_PROMPT_STRICT` remains parallel. **Next: optional D4 wrap polish or D5 docs; flip AI_PROMPT_STRICT after soak.**
+- `2026-07-25` — **D2 memory safety shipped** — Shared Redis pool (`getRedisClient`), metrics/fail-open alerts, chat+cofounder async tenant session memory + history, export/delete API `/api/ai/session-memory`, isolation smoke `npm run smoke:ai-memory-d2`. D1 soak/`AI_PROMPT_STRICT` remains parallel optional. **Next: D3 red-team CI.**
+- `2026-07-24` — **D1 SafePromptBuilder shipped** — Versioned registry (`chat.base`, `cofounder.base`, `agent.*` seed, `workflow.ai.step`) + SafePromptBuilder with system/developer/tenant/user+untrusted layers, allowlisted variables, injection rescan, templateId audit/trace logging. Wired chat, cofounder, workflow AI. Smoke: `npm run smoke:ai-prompt-d1`. Strict-wrap deferred. **Next: D2 Redis Phase 2–3 (or soak then AI_PROMPT_STRICT=1).**
+- `2026-07-23` — **C5 closed / Phase D opened** — Coverage burn-down complete (100%, uncovered=0). Checklist + board updated: C5 not pending. Stretch only: STRICT_WRAP polish, Redis 2–3, SafePrompt/registry, red-team CI. Plan: `docs/ai/PHASE_D_GOVERNANCE_HARDENING_PLAN.md`. Recommend Phase D prompt/memory/red-team before optional strict-wrap.
+- `2026-07-23` — **Global strict ON + Redis Phase 1** — Second consecutive clean coverage/smoke (100%, highRiskUncovered=0). Enabled `AI_ROUTE_COVERAGE_STRICT=1` (uncovered=0 semantics; legacy prepare still allowed). Shipped session memory `SessionMemoryStore` with opt-in Redis (`AI_SESSION_MEMORY_BACKEND=redis`). Optional `STRICT_WRAP` for future zero-legacy. **Next: wire async tenant session APIs on chat/cofounder; optional legacy→wrap burn-down.**
+- `2026-07-23` — **Phase C5 (grandfather burn-down)** — Studio image/image-to-*/STT/TTS, generate-post, website/generate, decisions, insights, analyze-industry, specialists/activity wrapped or prepare-gated; non-LLM CRUD/ops exempted. Coverage **56.4% → 100%** (55 routes; ai uncovered **0**). Enabled `STRICT_MODULES=ai`. Grandfather baseline empty. Global strict still OFF (need 2 consecutive clean sprints; C5 = 1/2).
+- `2026-07-23` — **Phase C4 (coverage breadth)** — Migrated co-worker commands/suggestions, logo, nanobanana edit/fuse, agent stubs+retail-inventory, audio asr/tts, generate-message, suggestions; exempted workflow CRUD + text/tts aliases. Inventory: 1:1 `DECISION_TYPE_TO_TOOL` + `resolveAuthRoles` for API keys. Email tokens now target `approve-email`. Global strict still OFF. **Next: C5 toward 50%+ / STRICT_MODULES=ai when ai≥50%.**
+- `2026-07-23` — **Phase C3 (agency burn-down)** — Migrated actions/execute, decisions approve + approve-email, google-ai-studio/generate-image, forecast/what-if/advanced insights+recommendations; chat+cofounder full `wrapAiRoute`+finalize. Inventory: `create_task`, `create_deal`, `ai_decision_execute`. CI: `STRICT_MODULES=chatbots,knowledge` on `check:ai-route-coverage`; `check:ai-tenant-leakage`; Redis session plan. High-risk uncovered → **0**. Global strict still OFF. **Next: C4 toward 50% (co-worker, nanobanana, agents).**
+- `2026-07-21` — **Phase C batch 2 (studio/analytics/RAG)** — Migrated text generate/classify/embed, sentiment, nl-query, analytics nl-query, video(+from-image), image generate trio, voice/process, knowledge/query (groundedness+citations). Coverage **8.6% → 22.8%** (wrapped=11 legacy=10 uncovered=71); high-risk uncovered **8 → 4**. Enterprise smoke `npm run smoke:ai-enterprise-security`. Multi-root scanner includes knowledge. **Next: C3 decisions/actions + predictors toward 50%.** Do not enable global strict yet.
+- `2026-07-21` — **Phase C batch 1 (coverage expansion)** — Migrated website chatbot (`enforceVisitorAiRuntime`), workflow AI steps (`runAiRuntime` in workflow-engine), `/api/ai/workflows/generate` (wrapAiRoute), `/api/ai/doc/qa` (groundedness + citations), voice tool bridge to inventory. Multi-root coverage scanner (ai + chatbots + agents), per-module strict mode, burn-down board + memory policy. Coverage **8.4% → ~9%+** (93 LLM routes after exempt markers). Smoke: `npm run smoke:ai-runtime-phase-c`. **Next: C2 studio media/analytics batch.**
+- `2026-07-21` — **Phase B AI runtime enforcement landed** — `AiRuntimeRunner` (8-stage), `wrapAiRoute()`, shared reflection/risk schemas, expanded `AI_TOOL_INVENTORY` (payment/payroll/WA bulk/invoice/role tools + args schemas), RAG `assessGroundedness`, CI `check:ai-route-coverage` + baseline (84 routes; wrapped=2 legacy=2 uncovered=80 / 4.8%). First batch: `/api/ai/langchain`, `/api/ai/form-suggestions` wrapped; `/api/ai/chat`, `/api/ai/cofounder` on `prepareAiRuntime`. Smoke: `npm run smoke:ai-runtime-phase-b`. Evidence: `docs/evidence/ai-security/ai-route-policy-coverage.json`. **Next: migrate website chatbot + workflow AI nodes; raise coverage.**
+- `2026-07-20` — **Enterprise AI runtime security standard (Phase A + E kickoff)** — Platform-wide inventory + risk matrix + gap map against existing `lib/security/ai-policy` + `lib/ai/platform`; published normative `docs/ai/AI_RUNTIME_SECURITY_STANDARD.md`, ADR `docs/adr/2026-07-20-ai-runtime-security.md`, and interactive board canvas. Confirmed policy gateway wired on chat/cofounder/langchain/form-suggestions only (~4 of ~84 `/api/ai` routes). **Next: Phase B AiRuntimeRunner + wrapAiRoute CI coverage.** Evidence: checklist P0 section above; canvas `ai-runtime-security-board.canvas.tsx`.
+- `2026-07-20` — **P1 consolidation scorecard + eng honesty pass** — Authoritative scorecard `docs/P1_PLATFORM_SPINE_SCORECARD_2026-07-20.md` (~85%). Closed overclaims: D3 Contact SLA deadline cols + migration + cron; D4 fingerprints + WA/meta/LI/email-click/support POST wiring; A6 demo fallback removed + tickets POST; C2 automation-retries cron route. B4 confirmed Done (no reopen). Smokes: D3 32, D4 30, A6 22, C2 15, B4 18. Evidence: `docs/evidence/closure/2026-07-20-p1-consolidation-engineering-pass.md`. **Still eng-open: B3/B3.1 soft emission.** **Next: B3 honesty pass or Product AC revision, then conditional P2.**
+- `2026-07-20` — **P1-E1 hosted A4 PASS + E4 baseline** — Day 5 audit 7/7 on `payaid-v3.vercel.app`; A4 `200` `transferred:1` (deploy not needed). Auth baseline n=25 warmup 3: contacts **325** / deals **389** / tasks **261** ms p95. Evidence: `docs/evidence/closure/2026-07-20-p1-e1-hosted-a4-pass.md`, `2026-07-20T11-22-27-024Z-crm-day5-audit-verification-automation.json`, `2026-07-20T11-23-03-860Z-crm-auth-baseline-run.md`. Queue #6 **Completed**. **Next: Product E3/E4 signoffs + manual Days 8–10.**
+- `2026-07-20` — **P1-E ops readiness pack** — Engineering-ready handoff: re-validated E1 13/13 + E2 7/7 + days6-10 automation PASS; Deal list index align (`idx_deal_tenant_created_desc` / `20260720180000_p1_e4_deal_list_index`); T11 + E4 + execution log + board synced. Evidence: `docs/evidence/closure/2026-07-20-p1-e-ops-readiness-pack.md`; umbrella `scripts/validate-p1-e.mjs`. **Blocked (not inventable):** deploy + `CRM_LOGIN_*` for hosted A4; Product signoffs for E3/E4; manual Days 8–10. **Next: ops deploy → Product GO path.**
+- `2026-07-20` — **P1-C2 DLQ + redrive** — `listAutomationDlq` / `redriveAutomationRun` / `processDueAutomationRetries`; APIs `/api/automation/dlq`, `/runs/[id]/redrive`, `/retries/process`; DLQ UI + Runs redrive. Evidence: `docs/evidence/closure/2026-07-20-p1-c2-dlq-redrive.md`; smoke `validate-p1-c2.mjs` 13/13; M0 4/4. **Next: P1-E Product/ops gates**.
+- `2026-07-20` — **P1-C4 builder + run-history UI** — Home live KPIs (no fake zeros); Workflows builder; Runs; Approvals; Templates; tenant AppShell nav No-404; `lib/automation/ui-client.ts`. Evidence: `docs/evidence/closure/2026-07-20-p1-c4-builder-run-history-ui.md`; smoke `validate-p1-c4.mjs` 17/17; M0 2/2. **Next: P1-C2 redrive/DLQ or P1-E Product gates**.
+- `2026-07-20` — **P1-C3 cross-module action catalog** — `AUTOMATION_ACTION_CATALOG` (email/WA/SMS/CRM/task/webhook/finance_followup); draft-first for outbound; SendGrid + queued outbound handlers; engine wiring. Evidence: `docs/evidence/closure/2026-07-20-p1-c3-action-catalog.md`; smoke `validate-p1-c3.mjs` 20/20; M0 6/6. **Next: P1-C4**.
+- `2026-07-20` — **P1-B5 single-bus policy** — ADR Accepted (`docs/adr/2026-07-20-p1-b5-single-bus-policy.md`); `lib/events/single-bus-policy.ts` + producer checklist; voice `domain_writer_bridge` helper. Evidence: `docs/evidence/closure/2026-07-20-p1-b5-single-bus-policy.md`; smoke `validate-p1-b5.mjs` 16/16; M0 6/6. **Next: P1-C3**.
+- `2026-07-20` — **P1-B4 outbox idempotency + transactional enqueue** — `OutboxIdempotency` unique `(tenantId, dedupeKey)`; `writeOutboxEventTransactional` + `dispatchOutboxQueueJob`; `tx`/`deferDispatch` options; recon `idempotentHitCount` + `reconGreen`. Evidence: `docs/evidence/closure/2026-07-20-p1-b4-outbox-idempotency.md`; smoke `validate-p1-b4.mjs` 18/18; M0 15/15. **Next: P1-B5**.
+- `2026-07-20` — **P1-A6 support + voice on graph** — `SupportCase` model + migration; `VoiceCrmLink` graph columns dual-write; `voice-crm-ref-mapper`; resolve neighbors for `ticket`/`call`; support tickets API DB read + demo fallback; voice bundle + backlink wiring. Evidence: `docs/evidence/closure/2026-07-20-p1-a6-support-voice-graph.md`; smoke `validate-p1-a6.mjs` 20/20; M0 5/5. **Next: P1-B4**.
+- `2026-07-20` — **P1-A5 graph resolve API** — `resolveGraphNeighbors` for contact/account/deal/invoice/project/task; `GET /api/business-graph/resolve`; contact detail `includeGraph=1`. Evidence: `docs/evidence/closure/2026-07-20-p1-a5-graph-resolve-api.md`; smoke `validate-p1-a5.mjs` 13/13; M0 5/5. **Next: P1-A6**.
+- `2026-07-20` — **P1-E2 Days 6–10 closure pack** — Restored T06–T10 runbooks; `run-crm-ga-days6-10-automation.mjs` 21/21 PASS; Day 7 unit tests 4/4 PASS. Evidence: `docs/evidence/closure/2026-07-20-p1-e2-days6-10-closure-pack.md`. **Next: manual Days 8–10, hosted Day 5 A4 re-run (valid creds), E3/E4 Product signoffs.**
+- `2026-07-20` — **P1-E1/E3/E4** — E1: A4 FK fix code-verified (`validate-p1-e1.mjs` 13/13); Queue #6 updated to Code-Done/Deploy-Pending. E3: SOLO-T11 decision record template → `docs/CRM_GA_SOLO_T11_DECISION_RECORD_2026-07-20.md`. E4: SLO revision doc → `docs/CRM_GA_SPEED_SLO_REVISION_2026-07-20.md` (Option B: p95 ≤ 600ms recommended). **Blocking: E2 runbook execution, Product signoffs for E3/E4, next Vercel deploy for E1 hosted re-run.**
+- `2026-07-20` — **P1-D4 channel backlinks** — `lib/crm/channel-backlinks/` (adapter + support); voice `crm-sync.ts` wired + fallback; `whatsapp/crm-sync.ts` `handleWhatsAppInbound`; `lib/marketing/campaign-crm-backlink.ts`. Evidence: `docs/evidence/closure/2026-07-20-p1-d4-channel-backlinks.md`; smoke `validate-p1-d4.mjs` 22/22 PASS. **Next: P1-E1**.
+- `2026-07-20` — **P1-D3 production SLA breach/escalate** — `lib/crm/sla/` (contract, detector, deadline-setter, reporting); `lead.sla_breached` + `lead.sla_escalated` taxonomy + payload schemas; `/api/sla/breaches` + `/api/sla/check`; `setSlaDeadlines` wired in `processInboundLead`. Evidence: `docs/evidence/closure/2026-07-20-p1-d3-sla-breach-notify-escalate.md`; smoke `validate-p1-d3.mjs` 28/28 PASS. **Next: P1-D4**.
+- `2026-07-20` — **P1-D2 intake contract + events** — `intake-contract.ts`; `lead.received`/`lead.qualified`/`lead.created` from `processInboundLead`; smoke `validate-p1-d2.mjs`. Evidence: `docs/evidence/closure/2026-07-20-p1-d2-intake-contract-events.md`. **Next: P1-D3**.
+- `2026-07-20` — **P1-D1 attribution** — UTM contract + first/last-touch on Contact/FormSubmission; form + sales-page capture wired to inbound. Evidence: `docs/evidence/closure/2026-07-20-p1-d1-attribution-routing.md`; smoke `validate-p1-d1.mjs`. **Next: P1-D2**.
+- `2026-07-20` — **P1-B3.1 + P1-C2 (foundation)** — `payment.received` + `task.completed` emission; `PAYAID_EVENT_EMIT_FAILURE_MODE`; `GET /api/automation/runs` + failure audit. Evidence: `docs/evidence/closure/2026-07-20-p1-b31-emission-deepening.md`, `...-p1-c2-run-history-retries.md`; smoke `validate-p1-b31-c2.mjs`. **Next: P1-D1**.
+- `2026-07-20` — **P1-C1 unify automation engines** — `lib/automation-backbone/` (trigger contract, run model, `dispatchAutomationTrigger`, legacy + event adapters); priority flows wired; inventory `docs/evidence/closure/2026-07-20-p1-c1-automation-engine-inventory.md`; smoke `validate-p1-c1.mjs`. **Next: P1-B3.1**.
+- `2026-07-20` — **P1-B2 + P1-A4 + P1-B3 (priority)** — Outbox enqueue validates taxonomy/envelope/payload (`lib/events/validate-outbox-enqueue.ts`); Task/StockTransfer linked columns + migration; `emitBusinessEvent` soft-wired on deal create/stage, invoice create, CRM task create. Evidence: `docs/evidence/closure/2026-07-20-p1-b2-outbox-taxonomy-enforcement.md`, `...-p1-a4-linked-entity-persistence.md`, `...-p1-b3-reliable-emission-priority.md`. Smokes: `validate-p1-b2|a4|b3.mjs`. **Next: P1-C1**.
+- `2026-07-20` — **P1-A3 money-path FKs closed** — `Deal.accountId`, `Invoice.dealId`, `Project.dealId` (nullable + indexes + migration); tenant-scoped API wiring; evidence `docs/evidence/closure/2026-07-20-p1-a3-money-path-fks.md`; smoke `node scripts/validate-p1-a3.mjs`. Backfill deferred.
+- `2026-07-20` — **P1-B1 CRM event taxonomy closed (schema-first)** — `CRM_BUSINESS_EVENT_TYPES` + `lib/events/crm-event-payloads.ts`; gap list `docs/evidence/closure/2026-07-20-p1-b1-crm-event-taxonomy.md`; smoke `node scripts/validate-p1-b1.mjs`. Producer wiring remains P1-B3.
+- `2026-07-20` — **P1-A1 + P1-A2 closed** — Canonical `BUSINESS_GRAPH_ENTITIES` on `BusinessEntityRef`; marketing create schemas on `EntityIdSchema`; M0 tests + evidence `docs/evidence/closure/2026-07-18-p1-a1-a2-business-graph-contracts.md`. Trackers/canvas synced. Next was P1-A3 (now done).
+- `2026-07-18` — **P1 Platform Spine locked + audit/board + P1-A1/A2 started** — Execution model: P1 spine → P2 revenue loops → P3 finance/delivery → P4 intelligence/shells. Audit + board: `docs/P1_PLATFORM_SPINE_AUDIT_AND_EXECUTION_BOARD.md` (scorecard baseline 50%). Shipped: `BUSINESS_GRAPH_ENTITIES` enum on `BusinessEntityRef`; marketing create schemas on `EntityIdSchema`; M0 contract tests extended. Next: P1-A3 money-path FKs, then P1-B1 taxonomy expansion.
+- `2026-07-23` — **Supabase Advisor RLS gap (projects/marketing tables) completed** — Enabled RLS + `service_role` ALL policies on `ServicePackage`, `ProjectPhase`, `ProjectMilestone`, `ServiceSlaIncident`, `SocialActivityEvent`. Evidence: `prisma/migrations/enable_rls_advisor_2026_07_23.sql`. Re-run Security Advisor to confirm clear.
+- `2026-07-23` — **Supabase Advisor RLS gap (projects/marketing tables) completed** — Enabled RLS + `service_role` ALL policies on `ServicePackage`, `ProjectPhase`, `ProjectMilestone`, `ServiceSlaIncident`, `SocialActivityEvent`. Evidence: `prisma/migrations/enable_rls_advisor_2026_07_23.sql`. Re-run Security Advisor to confirm clear.
 - `2026-07-18` — **Dashboard↔Voice LiveDemo redirect live (completed via project routes)** — Production `/voice-agents` + `/voice-agents/*` on `payaid-v3.vercel.app` and `pay-aid-v3.vercel.app` now **307** to `https://voice-six-xi.vercel.app/voice-agents/...` (query preserved). Code path remains in `apps/dashboard/next.config.mjs` + canonical hosts/middleware (GitHub commit `0ed3e65b` on `feat/projects-maturation-batch`); full dashboard git deploy hit `BUILD_EXCEEDED_MAXIMUM_TIME`, so live fix used Vercel **project routing rules** (dest-based redirects) on `dashboard` + `pay-aid-v3` projects without rebuild. Keep `VOICE_UI_REDIRECT_TO_CANONICAL=0` on voice to avoid loops. Follow-up: land next.config redirects in a successful dashboard deploy when build time/cache allows.
 - `2026-07-17` — **Dashboard↔Voice interlink (code ready, deploy pending)** — `payaid-v3.../voice-agents/...` 404s because voice UI lives only on the voice app. Wired dual redirect path: (1) `apps/dashboard/next.config.mjs` redirects `/voice-agents` + `/voice-agents/:path*` → `VOICE_MODULE_URL`/`https://voice-six-xi.vercel.app`, (2) added `voice` to canonical module hosts + middleware `CANONICAL_MODULE_REDIRECTS` via `NEXT_PUBLIC_VOICE_APP_URL`. Set dashboard env `NEXT_PUBLIC_VOICE_APP_URL` + `VOICE_MODULE_URL`, set voice `VOICE_UI_REDIRECT_TO_CANONICAL=0` (no reverse loop), fixed dashboard project `buildCommand` to monorepo-root `node apps/dashboard/scripts/vercel-build.cjs`. **Superseded 2026-07-18** by project-route redirects (see above); next.config deploy still pending for code-path parity.
 - `2026-07-17` — **Production login JWT_SECRET fix (completed)** — `/api/health` showed `jwt.configured=false` on `payaid-v3.vercel.app` (auth config error). Set `JWT_SECRET` on `dashboard` / `payaid-v3` / `pay-aid-v3`, redeployed dashboard production, and aliased `payaid-v3.vercel.app` + `pay-aid-v3.vercel.app` to healthy deployment `dpl_E8U6PypuksuJCTNUx1tMZmukRqrq`. Verified health `jwt.configured=true` and login returns normal 401 for bad credentials (not config error).
@@ -1317,6 +1504,9 @@ Add one line per meaningful change:
 - `2026-07-09` - **Marketing unified inbox + DB health hints (in progress)** - Added `lib/marketing/unified-inbox.ts` merging `SocialActivityEvent`, inbound `WhatsappMessage`, and inbox `EmailMessage`; command-center + `GET /api/marketing/home/unified-inbox`; Marketing Home **Unified Engagement Inbox** (5 channel counts + cross-channel feed); `/api/health` returns Supabase pooler hints; login errors include `healthCheck: /api/health` for DB failures. Remaining: production migrate + deploy. Evidence: `lib/marketing/unified-inbox.ts`, `apps/dashboard/app/api/marketing/home/unified-inbox/route.ts`, `apps/dashboard/app/api/health/route.ts`.
 - `2026-07-09` - **Marketing inbox draft-first reply + Studio route (in progress)** - `POST /api/marketing/home/inbox-reply-draft` creates `MarketingPost` DRAFT with reply metadata; `lib/marketing/inbox-reply.ts` builds Studio deep links; `apps/dashboard/app/marketing/[tenantId]/Studio/page.tsx` hosts `MarketingStudioForm` with inbox prefill; Command Center **Draft reply** CTA per inbox row. Remaining: production migrate/deploy, WA/email demo seed rows. Evidence: `apps/dashboard/app/api/marketing/home/inbox-reply-draft/route.ts`, `apps/dashboard/app/marketing/[tenantId]/Studio/page.tsx`, `components/marketing/home/MarketingCommandCenter.tsx`.
 - `2026-07-09` - **Marketing Channels page + unified inbox demo seed (in progress)** - Added `apps/dashboard/app/marketing/[tenantId]/Social-Media/page.tsx` (account status, posts list, social listening feed); demo seed now creates qualified CRM contacts, inbound WhatsApp messages, and inbox email messages for unified inbox KPIs. Remaining: production migrate/deploy with latest schema. Evidence: `apps/dashboard/app/marketing/[tenantId]/Social-Media/page.tsx`, `apps/dashboard/app/api/marketing/demo/seed/route.ts`.
+- `2026-07-21` - **Marketing Command Center production ship (completed)** - Dashboard production READY on Vercel (`dpl_HVHHjLhWajcDLr4SHpGfg9bVktoc`, https://dashboard-sigma-ebon-42.vercel.app, `/api/health` healthy). Root `tsconfig` gained `baseUrl` + `@dashboard/*`/`@app/*` so Turbopack resolves monorepo-root builds. Phase C schema applied on production DB via Vercel-network migrate job: `MarketingPost`, `MarketingPlaybook`, `MarketingSettings`, `ChannelAccount`, `SocialActivityEvent`, and Campaign `spendInr`/`budgetInr` verified present; migration `20260709120000_marketing_command_center_phase_c` recorded applied. Note: full `prisma migrate deploy` history still has divergent/failed older voice migrations (resolved/rolled back as needed); Phase C MCC tables are live. Evidence: deploy inspector `dpl_HVHHjLhWajcDLr4SHpGfg9bVktoc`, migrate verify job logs (53/53 Phase C statements ok).
 - `2026-07-10` - **HR ESS demo-data + policy KB grounding (in progress)** - Extended demo seeding to populate ESS-visible HR data (leave balances, attendance, payslips) and tenant policy documents/chunks in Knowledge Base, added leave-policy/leave-balance defaults in all-sample seed path, and updated HR self-service AI routing to answer policy questions from tenant KB before fallback to structured leave-policy records. Evidence: `prisma/seeds/demo/demo-business-master-seed.ts`, `prisma/seed-all-sample-data.ts`, `lib/ai/hr-self-service.ts`, `__tests__/ai/hr-self-service.test.ts`.
 - `2026-07-12` - **HR policy KB hardening (metadata + citations + access controls) (in progress)** - Added policy metadata normalization (`effectiveDate`, `version`, `owner`, `visibility`, `status`) on knowledge docs, enforced approved-only policy retrieval with deprecated-only and no-approved fallbacks, added employee-safe visibility/category gating for policy retrieval, and returned source citations (title/version/effectiveDate/section/chunk) in `/api/ai/chat` HR policy responses. Extended ESS summary API/UI with attendance summary, upcoming leave/holiday, and employee-visible policy quick links from approved docs. Evidence: `lib/knowledge/policy-metadata.ts`, `lib/ai/hr-self-service.ts`, `apps/dashboard/app/api/knowledge/documents/upload/route.ts`, `apps/dashboard/app/api/knowledge/documents/route.ts`, `apps/dashboard/app/api/ai/chat/route.ts`, `apps/hr/app/api/hr/ess/me/route.ts`, `apps/hr/app/hr/[tenantId]/ESS/page.tsx`, `__tests__/ai/hr-self-service.test.ts`, `prisma/schema.prisma`.
+- `2026-07-21` - **P1 public-route performance hardening (in progress)** - Mounted Speed Insights on `/` + `/login` via `PublicRumRoot` while keeping ModuleShell skipped; removed global Spline/unpkg preconnects from dashboard root layout (scoped to `LottieHero`); SSR hero shell `LandingHeroSSR` + client-only interactive landing chunk; slim `MinimalAuthGate` for `/crm` `/home` `/sales` entry (no PageLoading shell); dashboard package now declares `@vercel/speed-insights` + `@vercel/analytics`; CSS marketing/app split plan documented at `apps/dashboard/app/_perf/css-split-plan.ts`. Remaining: deploy + re-measure field metrics; Tailwind CSS route-group split; below-fold LandingPage island extract; authenticated CRM/Voice/Sales lab re-measure. Evidence: `apps/dashboard/app/ClientRoot.tsx`, `PublicRumRoot.tsx`, `page.tsx`, `layout.tsx`, `components/landing/LandingHeroSSR.tsx`, `components/auth/MinimalAuthGate.tsx`.
+- `2026-07-29` - **Chrome API deferral + live speed gate (completed)** - Deferred NewsSidebar, Header, and ModuleTopBar news/trial-status fetches off critical path (2s delay + only when sidebar open); increased NotificationBell staleTime and refetch intervals to reduce load; created `scripts/perf/live-module-speed-gate.mjs` with `npm run perf:live-modules` to measure TTFB/time-to-useful for Home, CRM, Marketing, HR, Finance, and Notifications APIs against configurable budget (default 8000ms), writing evidence to `docs/evidence/perf/` and exiting non-zero on threshold breach or 500 errors. Evidence: `components/news/NewsSidebar.tsx`, `components/layout/header.tsx`, `components/modules/ModuleTopBar.tsx`, `components/NotificationBell.tsx`, `scripts/perf/live-module-speed-gate.mjs`, `package.json`.
 

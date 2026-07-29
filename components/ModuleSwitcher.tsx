@@ -15,6 +15,7 @@ import {
   LayoutGrid,
   Bell,
   Settings,
+  Search,
   type LucideIcon,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -61,6 +62,7 @@ const iconMap: Record<string, LucideIcon | typeof RupeeIcon> = {
   GraduationCap: Megaphone,
   Calendar: Megaphone,
   Headphones: Megaphone,
+  Search,
   Bell,
   Settings,
 }
@@ -97,11 +99,35 @@ export function ModuleSwitcher({ currentModule }: { currentModule?: string }) {
   const currentModuleData = primaryModulesVisible.find((m) => m.id === currentModule)
 
   const handleModuleSwitch = (mod: PayAidModuleConfig) => {
-    const token = useAuthStore.getState().token
-    const targetUrl = tenantId ? getModuleHomeUrl(mod.id, tenantId) : mod.basePath
-    if (token && typeof window !== 'undefined') {
+    const { token, user, tenant } = useAuthStore.getState()
+    let targetUrl = tenantId ? getModuleHomeUrl(mod.id, tenantId) : mod.basePath
+    
+    // For cross-host navigation (external voice app), append SSO query params
+    if (token && user && tenant && typeof window !== 'undefined') {
       sessionStorage.setItem('sso_token', token)
+      
+      try {
+        const urlObj = new URL(targetUrl, window.location.origin)
+        const isExternal = urlObj.origin !== window.location.origin
+        
+        // If external URL (voice app on different host), append SSO params
+        if (isExternal) {
+          urlObj.searchParams.set('sso_token', token)
+          urlObj.searchParams.set('tenant_id', tenant.id)
+          urlObj.searchParams.set('user_id', user.id)
+          targetUrl = urlObj.toString()
+          
+          // Use window.location.href for cross-origin navigation
+          window.location.href = targetUrl
+          setOpen(false)
+          setMoreOpen(false)
+          return
+        }
+      } catch (err) {
+        // Not a valid URL, proceed with router.push
+      }
     }
+    
     router.push(targetUrl)
     setOpen(false)
     setMoreOpen(false)

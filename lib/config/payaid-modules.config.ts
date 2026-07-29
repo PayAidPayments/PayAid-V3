@@ -1,3 +1,5 @@
+import { buildCanonicalModuleUrl, buildCanonicalModuleUrlWithSSO } from '@/lib/utils/canonical-module-url'
+
 /**
  * PayAid V3 — Single source of truth for module registry.
  * Replaces scattered definitions in modules.config.ts and moduleRegistry.ts for navigation.
@@ -11,6 +13,13 @@
  */
 
 export type ModuleTier = 'primary' | 'secondary' | 'ai'
+
+/**
+ * Nav honesty: only `shown` modules appear in Module Switcher.
+ * Hidden modules keep routes/licenses for deep links and redirects,
+ * but must not clutter operator navigation until the workflow is real.
+ */
+export type ModuleNavVisibility = 'shown' | 'hidden'
 
 export type SecondaryGroup =
   | 'growth'
@@ -33,6 +42,12 @@ export interface PayAidModuleConfig {
   secondaryGroup?: SecondaryGroup
   /** Home route suffix after basePath/tenantId (default 'Home') */
   homeSegment?: string
+  /** Default `shown`. Use `hidden` for placeholders, duplicates, and demo-only shells. */
+  navVisibility?: ModuleNavVisibility
+}
+
+function isNavShown(mod: PayAidModuleConfig): boolean {
+  return (mod.navVisibility ?? 'shown') === 'shown'
 }
 
 export const PAYAID_MODULES: PayAidModuleConfig[] = [
@@ -53,6 +68,17 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     basePath: '/crm',
     tier: 'primary',
     icon: 'Users',
+  },
+  {
+    id: 'lead-intelligence',
+    label: 'Lead Intelligence',
+    description: 'Standalone discovery product (provider-first; not CRM)',
+    basePath: '/lead-intelligence',
+    tier: 'secondary',
+    icon: 'Search',
+    secondaryGroup: 'growth',
+    // Keep module structure + deep links; hide from prod nav until provider-first discovery is real
+    navVisibility: 'hidden',
   },
   {
     id: 'sales',
@@ -122,6 +148,8 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     tier: 'secondary',
     icon: 'Sparkles',
     secondaryGroup: 'ai',
+    // Canonical entry is AI Workspace; keep route for deep links only
+    navVisibility: 'hidden',
   },
   {
     id: 'ai-chat',
@@ -131,6 +159,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     tier: 'secondary',
     icon: 'MessageSquare',
     secondaryGroup: 'ai',
+    navVisibility: 'hidden',
   },
   {
     id: 'ai-insights',
@@ -140,6 +169,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     tier: 'secondary',
     icon: 'Lightbulb',
     secondaryGroup: 'ai',
+    navVisibility: 'hidden',
   },
   {
     id: 'website-builder',
@@ -158,6 +188,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     tier: 'secondary',
     icon: 'Palette',
     secondaryGroup: 'ai',
+    navVisibility: 'hidden',
   },
   {
     id: 'knowledge-rag',
@@ -167,6 +198,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     tier: 'secondary',
     icon: 'BookOpen',
     secondaryGroup: 'ai',
+    navVisibility: 'hidden',
   },
   {
     id: 'voice-agents',
@@ -214,6 +246,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     tier: 'secondary',
     icon: 'FileEdit',
     secondaryGroup: 'productivity',
+    navVisibility: 'hidden',
   },
   {
     id: 'drive',
@@ -223,6 +256,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     tier: 'secondary',
     icon: 'Folder',
     secondaryGroup: 'productivity',
+    navVisibility: 'hidden',
   },
   {
     id: 'meet',
@@ -232,6 +266,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     tier: 'secondary',
     icon: 'Video',
     secondaryGroup: 'productivity',
+    navVisibility: 'hidden',
   },
   {
     id: 'pdf',
@@ -241,6 +276,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     tier: 'secondary',
     icon: 'FileText',
     secondaryGroup: 'productivity',
+    navVisibility: 'hidden',
   },
   {
     id: 'slides',
@@ -250,6 +286,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     tier: 'secondary',
     icon: 'Presentation',
     secondaryGroup: 'productivity',
+    navVisibility: 'hidden',
   },
   // Intelligence
   {
@@ -260,6 +297,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     tier: 'secondary',
     icon: 'TrendingUp',
     secondaryGroup: 'intelligence',
+    navVisibility: 'hidden',
   },
   {
     id: 'analytics',
@@ -285,6 +323,8 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     basePath: '/contracts',
     tier: 'primary',
     icon: 'FileText',
+    // Partial lifecycle — hide until generation/approval/signature loop is real
+    navVisibility: 'hidden',
   },
   {
     id: 'compliance',
@@ -294,6 +334,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     tier: 'secondary',
     icon: 'ShieldCheck',
     secondaryGroup: 'operations',
+    navVisibility: 'hidden',
   },
   {
     id: 'lms',
@@ -303,6 +344,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     tier: 'secondary',
     icon: 'GraduationCap',
     secondaryGroup: 'operations',
+    navVisibility: 'hidden',
   },
   {
     id: 'appointments',
@@ -341,6 +383,8 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     basePath: '/support',
     tier: 'primary',
     icon: 'Headphones',
+    // Spine lives inside CRM/comms for now — hide standalone Support tile
+    navVisibility: 'hidden',
   },
   {
     id: 'help-center',
@@ -350,6 +394,7 @@ export const PAYAID_MODULES: PayAidModuleConfig[] = [
     tier: 'secondary',
     icon: 'BookOpen',
     secondaryGroup: 'support',
+    navVisibility: 'hidden',
   },
 ]
 
@@ -364,11 +409,11 @@ const SECONDARY_GROUP_LABELS: Record<SecondaryGroup, string> = {
 }
 
 export function getPrimaryModules(): PayAidModuleConfig[] {
-  return PAYAID_MODULES.filter((m) => m.tier === 'primary')
+  return PAYAID_MODULES.filter((m) => m.tier === 'primary' && isNavShown(m))
 }
 
 export function getSecondaryModules(): PayAidModuleConfig[] {
-  return PAYAID_MODULES.filter((m) => m.tier === 'secondary')
+  return PAYAID_MODULES.filter((m) => m.tier === 'secondary' && isNavShown(m))
 }
 
 export function getSecondaryModulesByGroup(): Record<SecondaryGroup, PayAidModuleConfig[]> {
@@ -384,7 +429,7 @@ export function getSecondaryModulesByGroup(): Record<SecondaryGroup, PayAidModul
   ]
   for (const g of groupOrder) {
     groups[g] = PAYAID_MODULES.filter(
-      (m) => m.tier === 'secondary' && m.secondaryGroup === g
+      (m) => m.tier === 'secondary' && m.secondaryGroup === g && isNavShown(m)
     )
   }
   return groups
@@ -398,11 +443,31 @@ export function getModuleById(id: string): PayAidModuleConfig | undefined {
   return PAYAID_MODULES.find((m) => m.id === id)
 }
 
-/** Build module home URL: e.g. /crm/{tenantRouteKey}/Home */
+/** Build module home URL: e.g. /crm/{tenantRouteKey}/Home (canonical app origin when env is set). */
 export function getModuleHomeUrl(moduleId: string, tenantRouteKey: string): string {
   const mod = getModuleById(moduleId)
   if (!mod) return `/home/${tenantRouteKey}`
   const segment = mod.homeSegment ?? 'Home'
   const path = mod.basePath.replace(/^\//, '')
-  return segment ? `/${path}/${tenantRouteKey}/${segment}` : `/${path}/${tenantRouteKey}`
+  const pathname = segment ? `/${path}/${tenantRouteKey}/${segment}` : `/${path}/${tenantRouteKey}`
+
+  if (
+    moduleId === 'crm' ||
+    moduleId === 'finance' ||
+    moduleId === 'marketing' ||
+    moduleId === 'hr' ||
+    moduleId === 'projects' ||
+    moduleId === 'sales' ||
+    moduleId === 'website-builder' ||
+    moduleId === 'voice-agents' ||
+    moduleId === 'voice'
+  ) {
+    return buildCanonicalModuleUrlWithSSO(moduleId as any, pathname, tenantRouteKey)
+  }
+
+  if (moduleId === 'lead-intelligence' || moduleId === 'leads') {
+    return buildCanonicalModuleUrlWithSSO('leads', `/lead-intelligence/${tenantRouteKey}/Home`, tenantRouteKey)
+  }
+
+  return pathname
 }

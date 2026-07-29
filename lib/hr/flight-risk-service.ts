@@ -147,6 +147,7 @@ export interface HighRiskSummaryItem {
 /**
  * Get top high-risk employees for dashboard summary.
  * Limits work by only checking up to checkLimit employees, then returning top maxResults.
+ * Optimized: batches attendance and market salary queries to avoid N+1.
  */
 export async function getHighRiskEmployees(
   tenantId: string,
@@ -160,10 +161,102 @@ export async function getHighRiskEmployees(
     select: { id: true, firstName: true, lastName: true, ctcAnnualInr: true, joiningDate: true, designationId: true },
   })
 
+  if (employees.length === 0) return []
+
+  const employeeIds = employees.map((e) => e.id)
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+  // Batch attendance for all employees at once
+  const allAttendance = await prisma.attendanceRecord.findMany({
+    where: { employeeId: { in: employeeIds }, tenantId, date: { gte: thirtyDaysAgo } },
+  })
+  const attendanceByEmployee = new Map<string, typeof allAttendance>()
+  for (const record of allAttendance) {
+    if (!attendanceByEmployee.has(record.employeeId)) {
+      attendanceByEmployee.set(record.employeeId, [])
+    }
+    attendanceByEmployee.get(record.employeeId)!.push(record)
+  }
+
+  // Batch market salary by designation (group unique designations)
+  const uniqueDesignations = [...new Set(employees.map((e) => e.designationId).filter(Boolean))] as string[]
+  const marketSalaryByDesignation = new Map<string, number>()
+  
+  // Limit concurrency to 5 at a time for market salary queries
+  const batchSize = 5
+  for (let i = 0; i < uniqueDesignations.length; i += batchSize) {
+    const batch = uniqueDesignations.slice(i, i + batchSize)
+    const results = await Promise.all(
+      batch.map(async (designationId) => {
+        const agg = await prisma.employee.aggregate({
+          where: { tenantId, designationId, status: 'ACTIVE', ctcAnnualInr: { not: null } },
+          _avg: { ctcAnnualInr: true },
+          _count: { id: true },
+        })
+        const avg = agg._avg.ctcAnnualInr ? Number(agg._avg.ctcAnnualInr) : null
+        const market = avg != null && agg._count.id >= 2 ? Math.round(avg * 1.1) : null
+        return { designationId, market }
+      })
+    )
+    for (const { designationId, market } of results) {
+      if (market !== null) {
+        marketSalaryByDesignation.set(designationId, market)
+      }
+    }
+  }
+
   const results: FlightRiskForEmployee[] = []
 
   for (const emp of employees) {
-    const factors = await gatherFactorsForEmployee(emp.id, tenantId, emp)
+    const factors: FlightRiskFactors = {}
+
+    // Performance review (try-catch for optional model)
+    try {
+      const performanceReviewDelegate = (prisma as any).performanceReview
+      if (performanceReviewDelegate && typeof performanceReviewDelegate.findFirst === 'function') {
+        const latestReview = await performanceReviewDelegate.findFirst({
+          where: { employeeId: emp.id, tenantId },
+          orderBy: { createdAt: 'desc' },
+        })
+        if (latestReview) {
+          factors.lastPerformanceRating = (latestReview as { overallRating?: number }).overallRating ?? undefined
+          factors.performanceTrend = 'STABLE'
+        }
+      }
+    } catch {
+      // PerformanceReview model may not exist; skip
+    }
+
+    // Attendance (from batched map)
+    const attendanceRecords = attendanceByEmployee.get(emp.id) || []
+    if (attendanceRecords.length > 0) {
+      const presentCount = attendanceRecords.filter((r) => r.status === 'PRESENT').length
+      factors.attendanceRate = (presentCount / attendanceRecords.length) * 100
+      factors.lateArrivalsCount = attendanceRecords.filter((r) => r.isLate).length
+      factors.absentDaysCount = attendanceRecords.filter((r) => r.status === 'ABSENT').length
+    }
+
+    factors.engagementScore = 75
+
+    // Market salary (from batched map)
+    if (emp.ctcAnnualInr) {
+      const current = Number(emp.ctcAnnualInr)
+      factors.currentSalary = current
+      const marketFromMap = emp.designationId ? marketSalaryByDesignation.get(emp.designationId) : null
+      factors.marketSalary = marketFromMap ?? current * 1.2
+      factors.salaryGap = ((factors.marketSalary - factors.currentSalary) / factors.marketSalary) * 100
+    }
+
+    if (emp.joiningDate) {
+      const monthsSinceJoining = Math.floor(
+        (Date.now() - new Date(emp.joiningDate).getTime()) / (1000 * 60 * 60 * 24 * 30)
+      )
+      factors.monthsInCompany = monthsSinceJoining
+    }
+    factors.monthsInCurrentRole = factors.monthsInCompany
+    factors.monthsSinceLastRaise = 12
+
     const result = calculateFlightRisk(factors)
     if (result.riskScore >= minRiskScore) {
       results.push({

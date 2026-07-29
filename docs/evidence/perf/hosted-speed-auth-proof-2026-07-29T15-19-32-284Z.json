@@ -1,0 +1,114 @@
+{
+  "measuredAt": "2026-07-29T15:18:12.758Z",
+  "base": "https://payaid-v3.vercel.app",
+  "voice": "https://voice-six-xi.vercel.app",
+  "budgetMs": 8000,
+  "login": {
+    "status": 200,
+    "ms": 4940,
+    "hasToken": true,
+    "tenantId": "cmjptk2mw0000aocw31u48n64"
+  },
+  "apis": [
+    {
+      "label": "home-summary",
+      "status": 200,
+      "ms": 5242,
+      "overBudget": false,
+      "serverTiming": null,
+      "degraded": true,
+      "error": null
+    },
+    {
+      "label": "home-briefing",
+      "status": 200,
+      "ms": 4846,
+      "overBudget": false,
+      "serverTiming": null,
+      "degraded": false,
+      "error": null
+    },
+    {
+      "label": "crm-stats-lite",
+      "status": 200,
+      "ms": 6396,
+      "overBudget": false,
+      "serverTiming": null,
+      "degraded": false,
+      "error": null
+    },
+    {
+      "label": "deals",
+      "status": 200,
+      "ms": 7149,
+      "overBudget": false,
+      "serverTiming": null,
+      "degraded": false,
+      "error": null
+    },
+    {
+      "label": "hr-summary",
+      "status": 200,
+      "ms": 24182,
+      "overBudget": true,
+      "serverTiming": null,
+      "degraded": false,
+      "error": null
+    },
+    {
+      "label": "finance-stats",
+      "status": 200,
+      "ms": 12848,
+      "overBudget": true,
+      "serverTiming": null,
+      "degraded": false,
+      "error": null
+    },
+    {
+      "label": "trial-status",
+      "status": 200,
+      "ms": 1462,
+      "overBudget": false,
+      "serverTiming": null,
+      "degraded": false,
+      "error": null
+    },
+    {
+      "label": "notifications",
+      "status": 200,
+      "ms": 3211,
+      "overBudget": false,
+      "serverTiming": null,
+      "degraded": false,
+      "error": null
+    },
+    {
+      "label": "news",
+      "status": 200,
+      "ms": 2480,
+      "overBudget": false,
+      "serverTiming": null,
+      "degraded": false,
+      "error": null
+    }
+  ],
+  "voiceHop": {
+    "ssoLandingStatus": 200,
+    "ssoLandingMs": 2506,
+    "voiceMeStatus": 200,
+    "voiceMeMs": 4128,
+    "voiceMeOk": true
+  },
+  "chrome": {
+    "notificationsMs": 3211,
+    "newsMs": 2480,
+    "note": "Deferral is client-side (2s delay / open-only). This proves endpoints are healthy, not that UI deferred."
+  },
+  "summary": {
+    "pass": false,
+    "failures": [
+      "hr-summary 24182ms > 8000ms budget",
+      "finance-stats 12848ms > 8000ms budget"
+    ]
+  }
+}

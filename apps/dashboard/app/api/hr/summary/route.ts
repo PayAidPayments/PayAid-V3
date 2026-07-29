@@ -2,23 +2,37 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/license'
 import { getHighRiskEmployees } from '@/lib/hr/flight-risk-service'
+import { createServerTiming, withCachedJson } from '@/lib/performance/api-server-timing'
 
 /**
- * GET /api/hr/summary
- * Get comprehensive HR summary for dashboard and KPI cards
+ * GET /api/hr/summary?lite=1 | ?full=1
+ * Get comprehensive HR summary for dashboard and KPI cards.
+ * Defaults to lite (skips expensive flight-risk) unless ?full=1.
  */
 export async function GET(request: NextRequest) {
+  const timing = createServerTiming()
+  
   try {
+    timing.start('auth')
     const { tenantId } = await requireModuleAccess(request, 'hr')
+    timing.end('auth')
+    
+    const url = request.nextUrl
+    // Default lite for fast dashboard paint; opt into full with ?full=1
+    const lite = url.searchParams.get('full') !== '1'
 
-    const now = new Date()
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+    const cacheKey = `hr:summary:${tenantId}:${lite ? 'lite' : 'full'}`
+    
+    const summary = await withCachedJson(cacheKey, 60, async () => {
+      timing.start('db')
+      
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
 
-    // Fetch all data in parallel
-    const [
-      totalEmployees,
-      activeEmployees,
+      // Fetch all data in parallel
+      const [
+        activeEmployees,
       contractors,
       onLeaveToday,
       nextPayrollCycle,
@@ -28,22 +42,14 @@ export async function GET(request: NextRequest) {
       flightRisks,
       aiInsights,
       trends,
-    ] = await Promise.all([
-      // Total active employees
-      prisma.employee.count({
-        where: {
-          tenantId,
-          status: 'ACTIVE',
-        },
-      }).catch(() => 0),
-
-      // Active employees count
-      prisma.employee.count({
-        where: {
-          tenantId,
-          status: 'ACTIVE',
-        },
-      }).catch(() => 0),
+      ] = await Promise.all([
+        // Active employees count (removed duplicate totalEmployees)
+        prisma.employee.count({
+          where: {
+            tenantId,
+            status: 'ACTIVE',
+          },
+        }).catch(() => 0),
 
       // Contractors count (assuming contractors have a different status or type)
       prisma.employee.count({
@@ -104,13 +110,15 @@ export async function GET(request: NextRequest) {
       Promise.resolve({ score: 98, lastFiled: 'TDS ₹1.8L' }),
 
       // Engagement data (mock - would come from surveys/feedback)
-      Promise.resolve({ avgEngagement: 82, okrCompletion: 76, trainingDue: 8 }),
+        Promise.resolve({ avgEngagement: 82, okrCompletion: 76, trainingDue: 8 }),
 
-      // Flight risks (real: top 5 high-risk employees) - catch to avoid findFirst/undefined errors
-      getHighRiskEmployees(tenantId, { checkLimit: 25, minRiskScore: 40, maxResults: 5 }).catch((err) => {
-        console.error('HR summary: getHighRiskEmployees failed', err?.message ?? err)
-        return []
-      }),
+        // Flight risks: lite mode uses cheaper settings or skips entirely
+        lite
+          ? Promise.resolve([])
+          : getHighRiskEmployees(tenantId, { checkLimit: 8, minRiskScore: 50, maxResults: 3 }).catch((err) => {
+              console.error('HR summary: getHighRiskEmployees failed', err?.message ?? err)
+              return []
+            }),
 
       // AI insights (mock)
       Promise.resolve([
@@ -159,10 +167,12 @@ export async function GET(request: NextRequest) {
       nextPayrollAmount = activeEmployees * 50000
     }
 
-    // Calculate arrears (mock)
-    const arrears = 12000
+      // Calculate arrears (mock)
+      const arrears = 12000
 
-    const summary: any = {
+      timing.end('db')
+
+      return {
       headcount: activeEmployees,
       contractors: contractors || 12,
       turnover,
@@ -182,22 +192,61 @@ export async function GET(request: NextRequest) {
       healthScore: 78,
       healthScoreChange: 2,
       aiInsights,
-      attritionTrend: trends.attritionTrend,
-      hiringVelocityTrend: trends.hiringVelocityTrend,
-      payrollCostTrend: trends.payrollCostTrend,
-    }
+        attritionTrend: trends.attritionTrend,
+        hiringVelocityTrend: trends.hiringVelocityTrend,
+        payrollCostTrend: trends.payrollCostTrend,
+      }
+    }, timing)
 
-    return NextResponse.json(summary)
+    return NextResponse.json(summary, {
+      headers: {
+        'Server-Timing': timing.toHeaders(),
+      },
+    })
   } catch (error: any) {
-    console.error('HR summary error:', error)
+    console.error('HR summary error:', error, timing.toLogMeta())
 
     if (error && typeof error === 'object' && 'moduleId' in error) {
       return handleLicenseError(error)
     }
 
+    // Soft-fail: return zeros instead of 500 when possible (keep auth 401/403)
+    if (error?.status === 401 || error?.status === 403) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: error?.message },
+        { status: error.status }
+      )
+    }
+
     return NextResponse.json(
-      { error: 'Failed to fetch HR summary', message: error?.message },
-      { status: 500 }
+      {
+        error: 'Failed to fetch HR summary',
+        message: error?.message,
+        degraded: true,
+        headcount: 0,
+        contractors: 0,
+        turnover: 0,
+        absentToday: 0,
+        nextPayroll: '',
+        nextPayrollAmount: 0,
+        complianceScore: 0,
+        pendingReimbursements: 0,
+        pendingReimbursementsAmount: 0,
+        arrears: 0,
+        avgEngagement: 0,
+        okrCompletion: 0,
+        trainingDue: 0,
+        flightRisks: [],
+        hiringVelocity: 0,
+        overtimeRisk: {},
+        healthScore: 0,
+        healthScoreChange: 0,
+        aiInsights: [],
+        attritionTrend: [],
+        hiringVelocityTrend: [],
+        payrollCostTrend: [],
+      },
+      { status: 200 }
     )
   }
 }

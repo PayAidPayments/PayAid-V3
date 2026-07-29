@@ -447,8 +447,8 @@ export function NewsSidebar() {
       
       return apiData
     },
-    // In local dev, only fetch when sidebar is explicitly opened.
-    enabled: !!token && (!isDev || isOpen),
+    // Only fetch when sidebar is explicitly opened (all environments) - defer off critical path
+    enabled: !!token && isOpen,
     refetchInterval: isDev ? false : getRefetchInterval(), // Dynamic refetch interval
     refetchOnWindowFocus: false,
     retry: false, // Don't retry on 503 errors

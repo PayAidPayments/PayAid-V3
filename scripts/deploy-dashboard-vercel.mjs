@@ -18,9 +18,12 @@ import {
 import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
+import dotenv from 'dotenv'
 import { resolveVercelToken } from './voice-agent/read-vercel-cli-token.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+dotenv.config({ path: path.join(root, '.env.local'), quiet: true })
+dotenv.config({ path: path.join(root, '.env'), quiet: true })
 const workDir =
   process.env.VERCEL_DASHBOARD_DEPLOY_WORKDIR ||
   (process.platform === 'win32' ? 'D:\\Temp\\payaid-dashboard-deploy' : path.join(os.tmpdir(), 'payaid-dashboard-deploy'))
@@ -70,12 +73,25 @@ function copyWithRobocopy(src, dest) {
   mkdirSync(path.dirname(dest), { recursive: true })
   const xd = listSkipDirNames(src)
   console.log(JSON.stringify({ step: 'robocopy', src, dest, excludeDirs: xd.length }, null, 2))
-  const args = [src, dest, '/E', '/NFL', '/NDL', '/NJH', '/NJS', '/nc', '/ns', '/np', '/XD', ...xd]
+  // /MT multithreaded copy — single-threaded robocopy crawls for many minutes on this repo.
+  const args = [src, dest, '/E', '/MT:16', '/NFL', '/NDL', '/NJH', '/NJS', '/nc', '/ns', '/np', '/XD', ...xd]
   const result = spawnSync('robocopy', args, { stdio: 'inherit', shell: false })
   const code = result.status ?? 1
   if (!ROBOCOPY_EXIT_OK.has(code)) {
     console.error(JSON.stringify({ ok: false, error: 'robocopy failed', src, dest, code }, null, 2))
     process.exit(code)
+  }
+}
+
+/** Windows directory junction — instant staging; vercel --archive=tgz follows junctions. */
+function linkWithJunction(src, dest) {
+  mkdirSync(path.dirname(dest), { recursive: true })
+  if (existsSync(dest)) rmSync(dest, { recursive: true, force: true })
+  console.log(JSON.stringify({ step: 'junction', src, dest }, null, 2))
+  const result = spawnSync('cmd', ['/c', 'mklink', '/J', dest, src], { stdio: 'inherit', shell: false })
+  if ((result.status ?? 1) !== 0) {
+    console.error(JSON.stringify({ ok: false, error: 'mklink /J failed', src, dest, code: result.status }, null, 2))
+    process.exit(result.status ?? 1)
   }
 }
 
@@ -111,7 +127,8 @@ if (!existsSync(vercelJs)) {
 const DEPLOY_PATHS = [
   'package.json',
   'package-lock.json',
-  'scripts',
+  // Root scripts/ is intentionally omitted — Windows staging of this folder is pathologically
+  // slow, and postinstall is replaced below with `npx prisma generate` in installCommand.
   'prisma',
   'contexts',
   'apps/dashboard',
@@ -134,34 +151,95 @@ const DEPLOY_PATHS = [
 ]
 
 const deployRef = process.env.DASHBOARD_DEPLOY_GIT_REF || 'HEAD'
+// Robocopy can hang indefinitely on Windows (AV / lock stalls). Prefer Node copy of the live tree
+// so uncommitted P1 fixes ship. Opt into robocopy, junctions, or git-archive via env when needed.
+const useRobocopy = process.env.DASHBOARD_DEPLOY_USE_ROBOCOPY === '1'
+const useJunctions = process.env.DASHBOARD_DEPLOY_USE_JUNCTIONS === '1'
+const useGitArchive = process.env.DASHBOARD_DEPLOY_USE_GIT_ARCHIVE === '1'
 
 if (existsSync(workDir) && process.env.DASHBOARD_DEPLOY_SKIP_RM !== '1') {
+  console.log(JSON.stringify({ step: 'rm-workdir', workDir }, null, 2))
   rmSync(workDir, { recursive: true, force: true })
 }
 mkdirSync(workDir, { recursive: true })
 
-console.log(JSON.stringify({ step: 'git-archive', workDir, ref: deployRef, paths: DEPLOY_PATHS.length }, null, 2))
+if (useJunctions) {
+  console.log(JSON.stringify({ step: 'fs-junctions', workDir, paths: DEPLOY_PATHS.length }, null, 2))
+  for (const rel of DEPLOY_PATHS) {
+    const src = path.join(root, rel)
+    const dest = path.join(workDir, rel)
+    if (!existsSync(src)) {
+      console.warn(JSON.stringify({ warning: 'missing path, skipped', rel }, null, 2))
+      continue
+    }
+    if (statSync(src).isDirectory()) {
+      linkWithJunction(src, dest)
+    } else {
+      mkdirSync(path.dirname(dest), { recursive: true })
+      copyFileSync(src, dest)
+      console.log(JSON.stringify({ step: 'copied', rel }, null, 2))
+    }
+  }
+} else if (useRobocopy) {
+  console.log(JSON.stringify({ step: 'fs-copy-robocopy', workDir, paths: DEPLOY_PATHS.length }, null, 2))
+  for (const rel of DEPLOY_PATHS) {
+    const src = path.join(root, rel)
+    const dest = path.join(workDir, rel)
+    if (!existsSync(src)) {
+      console.warn(JSON.stringify({ warning: 'missing path, skipped', rel }, null, 2))
+      continue
+    }
+    mkdirSync(path.dirname(dest), { recursive: true })
+    if (statSync(src).isDirectory()) {
+      copyWithRobocopy(src, dest)
+    } else {
+      copyFileSync(src, dest)
+    }
+    console.log(JSON.stringify({ step: 'copied', rel }, null, 2))
+  }
+} else if (useGitArchive) {
+  console.log(JSON.stringify({ step: 'git-archive', workDir, ref: deployRef, paths: DEPLOY_PATHS.length }, null, 2))
 
-const tarPath = path.join(workDir, '.deploy-archive.tar')
-const archive = spawnSync(
-  'git',
-  ['archive', '--format=tar', `--output=${tarPath}`, deployRef, '--', ...DEPLOY_PATHS],
-  { cwd: root, stdio: 'inherit' }
-)
-if (archive.status !== 0) {
-  console.error(JSON.stringify({ ok: false, error: 'git archive failed', ref: deployRef }, null, 2))
-  process.exit(archive.status ?? 1)
-}
+  const tarPath = path.join(workDir, '.deploy-archive.tar')
+  const archive = spawnSync(
+    'git',
+    ['archive', '--format=tar', `--output=${tarPath}`, deployRef, '--', ...DEPLOY_PATHS],
+    { cwd: root, stdio: 'inherit' }
+  )
+  if (archive.status !== 0) {
+    console.error(JSON.stringify({ ok: false, error: 'git archive failed', ref: deployRef }, null, 2))
+    process.exit(archive.status ?? 1)
+  }
 
-const extract = spawnSync('tar', ['-xf', tarPath, '-C', workDir], { cwd: root, stdio: 'inherit', shell: true })
-if (extract.status !== 0) {
-  console.error(JSON.stringify({ ok: false, error: 'tar extract failed' }, null, 2))
-  process.exit(extract.status ?? 1)
-}
-rmSync(tarPath, { force: true })
+  const extract = spawnSync('tar', ['-xf', tarPath, '-C', workDir], { cwd: root, stdio: 'inherit', shell: true })
+  if (extract.status !== 0) {
+    console.error(JSON.stringify({ ok: false, error: 'tar extract failed' }, null, 2))
+    process.exit(extract.status ?? 1)
+  }
+  rmSync(tarPath, { force: true })
 
-for (const rel of DEPLOY_PATHS) {
-  console.log(JSON.stringify({ step: 'archived', rel }, null, 2))
+  for (const rel of DEPLOY_PATHS) {
+    console.log(JSON.stringify({ step: 'archived', rel }, null, 2))
+  }
+} else {
+  // Default: Node filtered copy of the working tree (includes uncommitted P1 fixes).
+  console.log(JSON.stringify({ step: 'fs-copy-node', workDir, paths: DEPLOY_PATHS.length }, null, 2))
+  for (const rel of DEPLOY_PATHS) {
+    const src = path.join(root, rel)
+    const dest = path.join(workDir, rel)
+    if (!existsSync(src)) {
+      console.warn(JSON.stringify({ warning: 'missing path, skipped', rel }, null, 2))
+      continue
+    }
+    console.log(JSON.stringify({ step: 'copying', rel }, null, 2))
+    mkdirSync(path.dirname(dest), { recursive: true })
+    if (statSync(src).isDirectory()) {
+      copyTreeFiltered(src, dest)
+    } else {
+      copyFileSync(src, dest)
+    }
+    console.log(JSON.stringify({ step: 'copied', rel }, null, 2))
+  }
 }
 
 // Overlay local deploy/build scripts so uncommitted packaging fixes ship immediately.
@@ -169,6 +247,8 @@ const overlayFiles = [
   'apps/dashboard/scripts/vercel-build.cjs',
   'apps/dashboard/vercel.json',
   'apps/dashboard/next.config.mjs',
+  'apps/dashboard/middleware.ts',
+  'lib/config/canonical-app-hosts.ts',
 ]
 for (const rel of overlayFiles) {
   const src = path.join(root, rel)
@@ -186,9 +266,36 @@ for (const name of ['.vercelignore']) {
 
 const dashVercel = path.join(root, 'apps', 'dashboard', '.vercel', 'project.json')
 const dashAppDir = path.join(workDir, 'apps', 'dashboard')
+// Always pin workdir link to the deploy target. Local apps/dashboard/.vercel may point at
+// a different project (e.g. "dashboard") while VERCEL_DASHBOARD_PROJECT_ID targets payaid-v3.
+mkdirSync(path.join(workDir, '.vercel'), { recursive: true })
+writeFileSync(
+  path.join(workDir, '.vercel', 'project.json'),
+  `${JSON.stringify(
+    {
+      projectId,
+      orgId: teamId,
+      projectName:
+        process.env.VERCEL_DASHBOARD_PROJECT_NAME ||
+        (projectId === 'prj_b0mffvUPCoPODjLDiqCdcJEME7D6' ? 'payaid-v3' : 'dashboard'),
+    },
+    null,
+    2
+  )}\n`
+)
 if (existsSync(dashVercel)) {
-  mkdirSync(path.join(workDir, '.vercel'), { recursive: true })
-  copyFileSync(dashVercel, path.join(workDir, '.vercel', 'project.json'))
+  console.log(
+    JSON.stringify(
+      {
+        step: 'pinned-vercel-project',
+        fromLocal: dashVercel,
+        projectId,
+        orgId: teamId,
+      },
+      null,
+      2
+    )
+  )
 }
 
 // Vercel framework=nextjs expects app/, public/, and next.config at the upload root.
@@ -200,35 +307,48 @@ const rootPublic = path.join(workDir, 'public')
 const dashMiddleware = path.join(dashAppDir, 'middleware.ts')
 const rootMiddleware = path.join(workDir, 'middleware.ts')
 
-replaceTreeFiltered(dashApp, rootApp)
-console.log(JSON.stringify({ step: 'copied', from: 'apps/dashboard/app', to: 'app' }, null, 2))
+// NOTE: vercel --archive=tgz does not dereference Windows junctions (uploads ~empty stubs).
+// Prefer robocopy (/MT) for real file staging. Junctions are only for local dry-runs.
+if (useRobocopy || useJunctions) {
+  if (existsSync(rootApp)) rmSync(rootApp, { recursive: true, force: true })
+  copyWithRobocopy(dashApp, rootApp)
+  console.log(JSON.stringify({ step: 'copied', from: 'apps/dashboard/app', to: 'app' }, null, 2))
+  mkdirSync(rootPublic, { recursive: true })
+  if (existsSync(dashPublic)) {
+    copyWithRobocopy(dashPublic, rootPublic)
+    console.log(JSON.stringify({ step: 'merged', from: 'apps/dashboard/public', to: 'public' }, null, 2))
+  }
+} else {
+  replaceTreeFiltered(dashApp, rootApp)
+  console.log(JSON.stringify({ step: 'copied', from: 'apps/dashboard/app', to: 'app' }, null, 2))
 
-// Moving apps/dashboard/app to root/app changes the depth of legacy relative
-// imports that intentionally climbed five levels back to the monorepo root.
-// Rewrite only those known root-component imports in the deploy copy.
-const rootComponentImportFiles = [
-  'dashboard/decisions/page.tsx',
-  'dashboard/deals/page.tsx',
-  'dashboard/contacts/page.tsx',
-  'dashboard/compliance/page.tsx',
-  'dashboard/collaboration/page.tsx',
-]
-for (const rel of rootComponentImportFiles) {
-  const file = path.join(rootApp, rel)
-  if (!existsSync(file)) continue
-  const source = readFileSync(file, 'utf8')
-  const rewritten = source.replace(
-    /(['"])\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/components\//g,
-    '$1@/components/'
-  )
-  writeFileSync(file, rewritten)
-  console.log(JSON.stringify({ step: 'rewrote-root-imports', rel: `app/${rel}` }, null, 2))
-}
+  // Moving apps/dashboard/app to root/app changes the depth of legacy relative
+  // imports that intentionally climbed five levels back to the monorepo root.
+  // Rewrite only those known root-component imports in the deploy copy.
+  const rootComponentImportFiles = [
+    'dashboard/decisions/page.tsx',
+    'dashboard/deals/page.tsx',
+    'dashboard/contacts/page.tsx',
+    'dashboard/compliance/page.tsx',
+    'dashboard/collaboration/page.tsx',
+  ]
+  for (const rel of rootComponentImportFiles) {
+    const file = path.join(rootApp, rel)
+    if (!existsSync(file)) continue
+    const source = readFileSync(file, 'utf8')
+    const rewritten = source.replace(
+      /(['"])\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/components\//g,
+      '$1@/components/'
+    )
+    writeFileSync(file, rewritten)
+    console.log(JSON.stringify({ step: 'rewrote-root-imports', rel: `app/${rel}` }, null, 2))
+  }
 
-mkdirSync(rootPublic, { recursive: true })
-if (existsSync(dashPublic)) {
-  copyTreeFiltered(dashPublic, rootPublic)
-  console.log(JSON.stringify({ step: 'merged', from: 'apps/dashboard/public', to: 'public' }, null, 2))
+  mkdirSync(rootPublic, { recursive: true })
+  if (existsSync(dashPublic)) {
+    copyTreeFiltered(dashPublic, rootPublic)
+    console.log(JSON.stringify({ step: 'merged', from: 'apps/dashboard/public', to: 'public' }, null, 2))
+  }
 }
 
 if (existsSync(dashMiddleware)) {
@@ -248,7 +368,9 @@ writeFileSync(
   path.join(workDir, 'vercel.json'),
   `${JSON.stringify(
     {
-      installCommand: 'npm install --legacy-peer-deps --no-audit --no-fund',
+      // Ignore package.json postinstall (needs root scripts/ which we omit from the bundle).
+      installCommand:
+        'npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts && npx prisma generate --schema=prisma/schema.prisma',
       buildCommand: 'node apps/dashboard/scripts/vercel-build.cjs',
       framework: 'nextjs',
     },
