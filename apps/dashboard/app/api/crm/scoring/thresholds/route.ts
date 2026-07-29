@@ -15,7 +15,11 @@ const thresholdSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
-    const thresholds = await prisma.leadScoreThreshold.findMany({
+    const leadScoreThreshold = (prisma as any).leadScoreThreshold
+    if (!leadScoreThreshold) {
+      return NextResponse.json({ success: true, thresholds: [], degraded: true })
+    }
+    const thresholds = await leadScoreThreshold.findMany({
       where: { tenantId },
       orderBy: [{ minValue: 'asc' }],
     })
@@ -54,7 +58,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const threshold = await prisma.leadScoreThreshold.create({
+    const leadScoreThreshold = (prisma as any).leadScoreThreshold
+    if (!leadScoreThreshold) {
+      return NextResponse.json(
+        { success: false, error: 'Lead score thresholds are not available yet' },
+        { status: 501 }
+      )
+    }
+    const threshold = await leadScoreThreshold.create({
       data: { tenantId, ...parsed },
     })
     if (idempotencyKey) {

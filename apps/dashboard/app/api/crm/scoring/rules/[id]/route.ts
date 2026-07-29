@@ -32,7 +32,14 @@ export async function PATCH(
     const body = await request.json()
     const parsed = updateRuleSchema.parse(body)
 
-    const rule = await prisma.leadScoreRule.updateMany({
+    const leadScoreRule = (prisma as any).leadScoreRule
+    if (!leadScoreRule) {
+      return NextResponse.json(
+        { success: false, error: 'Lead score rules are not available yet' },
+        { status: 501 }
+      )
+    }
+    const rule = await leadScoreRule.updateMany({
       where: { id, tenantId },
       data: parsed,
     })
@@ -41,7 +48,7 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'Rule not found' }, { status: 404 })
     }
 
-    const updated = await prisma.leadScoreRule.findFirst({ where: { id, tenantId } })
+    const updated = await leadScoreRule.findFirst({ where: { id, tenantId } })
     if (idempotencyKey && updated) {
       await markIdempotentRequest(tenantId, userId, `crm:scoring_rule:update:${id}:${idempotencyKey}`, {
         rule_id: updated.id,

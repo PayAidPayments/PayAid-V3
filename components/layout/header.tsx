@@ -18,7 +18,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const profileMenuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
-  // Fetch news unread count
+  // Fetch news unread count - deferred off critical path
   useEffect(() => {
     // Keep local dev responsive during QA by avoiding background unread polling.
     if (process.env.NODE_ENV !== 'production') return
@@ -43,10 +43,14 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     }
 
     if (token) {
-      fetchNewsCount()
-      // Refresh every 5 minutes
+      // Defer initial fetch until after first paint (2s delay)
+      const initialTimeout = setTimeout(fetchNewsCount, 2000)
+      // Refresh every 5 minutes after initial fetch
       const interval = setInterval(fetchNewsCount, 5 * 60 * 1000)
-      return () => clearInterval(interval)
+      return () => {
+        clearTimeout(initialTimeout)
+        clearInterval(interval)
+      }
     }
   }, [token])
 
