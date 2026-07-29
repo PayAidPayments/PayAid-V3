@@ -37,6 +37,12 @@ if (fs.existsSync(mw)) {
   fs.copyFileSync(mw, path.join(root, 'middleware.ts'))
   console.log('[git-vercel-build] copied middleware.ts')
 }
+// Next 16 rejects having both middleware.ts and proxy.ts at the project root.
+const proxyPath = path.join(root, 'proxy.ts')
+if (fs.existsSync(path.join(root, 'middleware.ts')) && fs.existsSync(proxyPath)) {
+  fs.rmSync(proxyPath, { force: true })
+  console.log('[git-vercel-build] removed root proxy.ts (middleware.ts wins for Voice SSO)')
+}
 fs.writeFileSync(
   path.join(root, 'next.config.mjs'),
   "export { default } from './apps/dashboard/next.config.mjs'\n"
