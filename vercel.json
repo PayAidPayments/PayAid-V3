@@ -1,5 +1,5 @@
 {
-  "installCommand": "npm install --legacy-peer-deps --no-audit --no-fund",
-  "buildCommand": "cd apps/dashboard && node scripts/vercel-build.cjs",
+  "installCommand": "npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts && npx prisma generate --schema=prisma/schema.prisma",
+  "buildCommand": "node scripts/git-vercel-dashboard-build.cjs",
   "framework": "nextjs"
 }
