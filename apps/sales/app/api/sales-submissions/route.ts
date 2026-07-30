@@ -35,7 +35,7 @@ const retrySchema = z.object({
   entryId: z.string().min(1),
 })
 
-// Public ingestion endpoint for published sales pages (dashboard twin).
+// Public ingestion endpoint for published sales pages (Sales host).
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
