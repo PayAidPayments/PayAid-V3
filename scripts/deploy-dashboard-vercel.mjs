@@ -243,17 +243,24 @@ if (useJunctions) {
 }
 
 // Overlay local deploy/build scripts so uncommitted packaging fixes ship immediately.
+// Required overlays must exist in the checkout — silent skip caused hosted module-not-found.
 const overlayFiles = [
-  'apps/dashboard/scripts/vercel-build.cjs',
-  'apps/dashboard/vercel.json',
-  'apps/dashboard/next.config.mjs',
-  'apps/dashboard/middleware.ts',
-  'lib/config/canonical-app-hosts.ts',
+  { rel: 'apps/dashboard/scripts/vercel-build.cjs', required: true },
+  { rel: 'apps/dashboard/vercel.json', required: false },
+  { rel: 'apps/dashboard/next.config.mjs', required: true },
+  { rel: 'apps/dashboard/middleware.ts', required: true },
+  { rel: 'lib/config/canonical-app-hosts.ts', required: true },
 ]
-for (const rel of overlayFiles) {
+for (const { rel, required } of overlayFiles) {
   const src = path.join(root, rel)
   const dest = path.join(workDir, rel)
-  if (!existsSync(src)) continue
+  if (!existsSync(src)) {
+    if (required) {
+      console.error(JSON.stringify({ ok: false, error: 'required overlay missing', rel }, null, 2))
+      process.exit(1)
+    }
+    continue
+  }
   mkdirSync(path.dirname(dest), { recursive: true })
   copyFileSync(src, dest)
   console.log(JSON.stringify({ step: 'overlay', rel }, null, 2))
