@@ -24,13 +24,11 @@ const out = {
   salesNoQueuedStub: !salesRoute.includes("crmSync: 'queued'"),
   dashboardImportsBridge: dashboardRoute.includes('processSalesPageSubmission'),
   dashboardBridgeV2: dashboardRoute.includes("'landing-page-bridge-v2'"),
-  bridgeWritesLog: bridge.includes("submissionLog") && bridge.includes('processInboundLead'),
+  bridgeWritesLog: bridge.includes('submissionLog') && bridge.includes('prisma.contact'),
   bridgeList: bridge.includes('listSalesPageSubmissions'),
   bridgeRetry: bridge.includes('retrySalesPageSubmission'),
+  bridgeNoInboundImport: !bridge.includes('inbound-orchestration'),
   submissionsUi: submissionsPage.includes('Retry CRM sync') && submissionsPage.includes('crmSyncStatus'),
-  sharedOrchestrationPresent: fs.existsSync(
-    path.join(root, 'lib/crm/inbound-orchestration/process-inbound-lead.ts')
-  ),
   kickoffDoc: fs.existsSync(
     path.join(root, 'docs/evidence/closure/2026-07-29-p2-kickoff-sales-pages-crm.md')
   ),

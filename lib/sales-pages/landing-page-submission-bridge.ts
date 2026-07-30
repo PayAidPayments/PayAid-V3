@@ -1,11 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/db/prisma'
-import {
-  INBOUND_ORCHESTRATION_SYSTEM_USER_ID,
-  processInboundLead,
-} from '@/lib/crm/inbound-orchestration'
-import { parseUtmAttribution, deriveAttributionChannel } from '@/lib/attribution/utm-contract'
-import { utmToInboundSource } from '@/lib/attribution/touch-persistence'
+
 export type SalesSubmissionCrmStatus = 'received' | 'normalized' | 'crm_synced' | 'failed'
 
 export type SalesSubmissionLogEntry = {
@@ -52,22 +47,18 @@ function readLog(contentJson: unknown): SalesSubmissionLogEntry[] {
   return raw.filter((row) => row && typeof row === 'object') as SalesSubmissionLogEntry[]
 }
 
-async function writeLog(pageId: string, contentJson: unknown, entry: SalesSubmissionLogEntry) {
-  const content = asRecord(contentJson)
-  const next = [entry, ...readLog(contentJson)].slice(0, MAX_LOG)
-  await prisma.landingPage.update({
-    where: { id: pageId },
-    data: {
-      contentJson: {
-        ...content,
-        [LOG_KEY]: next,
-      },
-      conversions: { increment: 1 },
-    },
-  })
-  return next
+function deriveChannel(attribution?: Record<string, unknown> | null): string {
+  if (!attribution) return 'sales_page'
+  const medium = String(attribution.medium || attribution.utm_medium || '').trim()
+  const source = String(attribution.source || attribution.utm_source || '').trim()
+  return medium || source || 'sales_page'
 }
 
+/**
+ * Hosted-safe Sales Pages → CRM bridge (slim-deploy compatible).
+ * Creates/merges Contact directly via Prisma + persists submissionLog on LandingPage.
+ * Does not import inbound-orchestration/attribution graphs (missing on some deploy bases).
+ */
 export async function processSalesPageSubmission(input: {
   salesPageId: string
   formId?: string
@@ -85,12 +76,12 @@ export async function processSalesPageSubmission(input: {
     return { ok: false as const, status: 404 as const, error: 'Published sales page not found' }
   }
 
-  const attribution = parseUtmAttribution({
+  const attribution = {
     ...(input.attribution || {}),
     landingPageUrl:
       (input.attribution?.landingPageUrl as string | undefined) ?? `sales-page:${pageItem.slug}`,
     capturedAt: new Date().toISOString(),
-  })
+  }
 
   const lead = extractLeadFromPayload(input.payload)
   let contactId: string | null = null
@@ -104,50 +95,76 @@ export async function processSalesPageSubmission(input: {
     error = 'Submission payload missing name/email/phone'
   } else {
     try {
-      const inboundSource = utmToInboundSource(attribution ?? {}, {
-        sourceChannel: 'sales_page',
-        sourceAsset: pageItem.id,
-        sourceRef: input.formId,
-        capturedBy: INBOUND_ORCHESTRATION_SYSTEM_USER_ID,
-        rawMetadata: {
-          utm: attribution,
-          ctaEvent: input.ctaEvent,
-          payload: input.payload,
-        },
-      })
-      const inbound = await processInboundLead({
-        tenantId: pageItem.tenantId,
-        actorUserId: INBOUND_ORCHESTRATION_SYSTEM_USER_ID,
-        dedupePolicy: 'merge_existing',
-        mergeExistingFields: 'fill_empty_only',
-        source: inboundSource,
-        legacySourceLabel: 'sales_page',
-        contact: {
-          name: lead.name,
-          email: lead.email ?? null,
-          phone: lead.phone ?? null,
-          type: 'lead',
-          stage: 'prospect',
-          status: 'active',
-          attributionChannel: deriveAttributionChannel(attribution ?? {}),
-        },
-        touchLastContactedAt: true,
-      })
-      if (inbound.ok) {
-        contactId = inbound.contact.id
-        ownerId = inbound.contact.assignedToId ?? null
-        leadScore = typeof inbound.contact.leadScore === 'number' ? inbound.contact.leadScore : null
-        crmSyncStatus = 'crm_synced'
-      } else {
-        crmSyncStatus = 'failed'
-        error =
-          typeof inbound.error === 'string'
-            ? inbound.error
-            : inbound.error?.message || inbound.error?.code || 'Inbound orchestration failed'
+      const email = lead.email ? String(lead.email).trim().toLowerCase() : null
+      const phone = lead.phone ? String(lead.phone).trim() : null
+      let existing = null as { id: string; assignedToId: string | null; leadScore: number } | null
+      if (email) {
+        existing = await prisma.contact.findFirst({
+          where: { tenantId: pageItem.tenantId, email },
+          select: { id: true, assignedToId: true, leadScore: true },
+        })
       }
+      if (!existing && phone) {
+        existing = await prisma.contact.findFirst({
+          where: { tenantId: pageItem.tenantId, phone },
+          select: { id: true, assignedToId: true, leadScore: true },
+        })
+      }
+
+      if (existing) {
+        const updated = await prisma.contact.update({
+          where: { id: existing.id },
+          data: {
+            name: lead.name,
+            email: email ?? undefined,
+            phone: phone ?? undefined,
+            source: 'sales_page',
+            attributionChannel: deriveChannel(attribution),
+            lastContactedAt: new Date(),
+            sourceData: {
+              salesPageId: pageItem.id,
+              formId: input.formId ?? null,
+              attribution,
+              ctaEvent: input.ctaEvent ?? null,
+              bridge: 'landing-page-bridge-v2',
+            },
+          },
+          select: { id: true, assignedToId: true, leadScore: true },
+        })
+        contactId = updated.id
+        ownerId = updated.assignedToId
+        leadScore = updated.leadScore
+      } else {
+        const created = await prisma.contact.create({
+          data: {
+            tenantId: pageItem.tenantId,
+            name: lead.name,
+            email,
+            phone,
+            type: 'lead',
+            stage: 'prospect',
+            status: 'active',
+            source: 'sales_page',
+            attributionChannel: deriveChannel(attribution),
+            lastContactedAt: new Date(),
+            sourceData: {
+              salesPageId: pageItem.id,
+              formId: input.formId ?? null,
+              attribution,
+              ctaEvent: input.ctaEvent ?? null,
+              bridge: 'landing-page-bridge-v2',
+            },
+          },
+          select: { id: true, assignedToId: true, leadScore: true },
+        })
+        contactId = created.id
+        ownerId = created.assignedToId
+        leadScore = created.leadScore
+      }
+      crmSyncStatus = 'crm_synced'
     } catch (e) {
       crmSyncStatus = 'failed'
-      error = e instanceof Error ? e.message : 'Inbound orchestration threw'
+      error = e instanceof Error ? e.message : 'CRM contact write failed'
     }
   }
 
@@ -156,7 +173,7 @@ export async function processSalesPageSubmission(input: {
     submittedAt: new Date().toISOString(),
     formId: input.formId,
     payload: input.payload,
-    attribution: attribution as Record<string, unknown> | null,
+    attribution,
     ctaEvent: (input.ctaEvent as Record<string, unknown> | undefined) ?? null,
     crmSyncStatus,
     contactId,
@@ -165,9 +182,8 @@ export async function processSalesPageSubmission(input: {
     leadScore,
   }
 
-  // On retry, replace prior row; on fresh submit, prepend + bump conversions.
+  const content = asRecord(pageItem.contentJson)
   if (input.existingEntryId) {
-    const content = asRecord(pageItem.contentJson)
     const prior = readLog(pageItem.contentJson).filter((row) => row.id !== input.existingEntryId)
     await prisma.landingPage.update({
       where: { id: pageItem.id },
@@ -179,7 +195,16 @@ export async function processSalesPageSubmission(input: {
       },
     })
   } else {
-    await writeLog(pageItem.id, pageItem.contentJson, entry)
+    await prisma.landingPage.update({
+      where: { id: pageItem.id },
+      data: {
+        contentJson: {
+          ...content,
+          [LOG_KEY]: [entry, ...readLog(pageItem.contentJson)].slice(0, MAX_LOG),
+        },
+        conversions: { increment: 1 },
+      },
+    })
   }
 
   return {
