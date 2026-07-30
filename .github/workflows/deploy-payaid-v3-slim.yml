@@ -1,0 +1,73 @@
+# One-shot / on-demand: slim monorepo bundle → payaid-v3 production.
+# Avoids Windows CLI pack hangs and uses Linux runners for vercel --archive=tgz.
+name: Deploy payaid-v3 slim (prod)
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Branch or SHA to deploy
+        required: true
+        default: fix/hosted-speed-auth-2026-07-29
+      allow_ts_build_errors:
+        description: Set PAYAID_ALLOW_TS_BUILD_ERRORS=1 for this ship
+        required: true
+        default: '1'
+        type: choice
+        options:
+          - '1'
+          - '0'
+
+concurrency:
+  group: deploy-payaid-v3-slim
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || 'team_HDFXYTmGsacYZEuYsr6sPTpQ' }}
+      VERCEL_DASHBOARD_PROJECT_ID: prj_b0mffvUPCoPODjLDiqCdcJEME7D6
+      VERCEL_DASHBOARD_PROJECT_NAME: payaid-v3
+      VERCEL_DASHBOARD_DEPLOY_WORKDIR: ${{ github.workspace }}/.deploy-payaid-v3
+      PAYAID_ALLOW_TS_BUILD_ERRORS: ${{ inputs.allow_ts_build_errors }}
+      # Prefer filtered Node copy of the checked-out tree (includes branch fixes).
+      DASHBOARD_DEPLOY_USE_GIT_ARCHIVE: '0'
+      DASHBOARD_DEPLOY_USE_ROBOCOPY: '0'
+      DASHBOARD_DEPLOY_USE_JUNCTIONS: '0'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref }}
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install root deps (vercel CLI)
+        run: npm ci --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+
+      - name: Verify Vercel token
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "VERCEL_TOKEN secret missing"
+            exit 1
+          fi
+          curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" https://api.vercel.com/v2/user >/dev/null
+          echo "vercel token ok"
+
+      - name: Deploy slim bundle to payaid-v3 production
+        run: node scripts/deploy-dashboard-vercel.mjs
+
+      - name: List latest deployments
+        if: always()
+        run: |
+          curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v6/deployments?projectId=prj_b0mffvUPCoPODjLDiqCdcJEME7D6&teamId=${VERCEL_ORG_ID}&limit=3" \
+            | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const j=JSON.parse(d);console.log(JSON.stringify((j.deployments||[]).map(x=>({uid:x.uid,state:x.readyState,url:x.url,ref:x.meta&&x.meta.githubCommitRef})),null,2))})"
