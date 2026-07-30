@@ -51,7 +51,8 @@ jobs:
           cache: npm
 
       - name: Install root deps (vercel CLI)
-        run: npm ci --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+        # Prefer install over ci: feature-branch lockfile can drift vs package.json on this lane.
+        run: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
 
       - name: Verify Vercel token
         run: |
