@@ -16,7 +16,12 @@ const createRuleSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const { tenantId } = await requireModuleAccess(request, 'crm')
-    const rules = await prisma.leadScoreRule.findMany({
+    // Model not yet in shared Prisma schema; keep route compilable until schema lands.
+    const leadScoreRule = (prisma as any).leadScoreRule
+    if (!leadScoreRule) {
+      return NextResponse.json({ success: true, rules: [], degraded: true })
+    }
+    const rules = await leadScoreRule.findMany({
       where: { tenantId },
       orderBy: [{ category: 'asc' }, { key: 'asc' }],
     })
@@ -45,7 +50,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const parsed = createRuleSchema.parse(body)
 
-    const rule = await prisma.leadScoreRule.create({
+    const leadScoreRule = (prisma as any).leadScoreRule
+    if (!leadScoreRule) {
+      return NextResponse.json(
+        { success: false, error: 'Lead score rules are not available yet' },
+        { status: 501 }
+      )
+    }
+    const rule = await leadScoreRule.create({
       data: {
         tenantId,
         key: parsed.key,

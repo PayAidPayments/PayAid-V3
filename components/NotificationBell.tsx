@@ -67,22 +67,23 @@ export function NotificationBell() {
       return response.json()
     },
     // Back off polling when database is unavailable:
-    // - Normal: 30 seconds
-    // - After 1-2 503s: 60 seconds
-    // - After 3+ 503s: 120 seconds (2 minutes)
+    // - Normal: 60 seconds (increased from 30 to reduce load)
+    // - After 1-2 503s: 120 seconds
+    // - After 3+ 503s: 240 seconds (4 minutes)
     refetchInterval:
       !token
         ? false
         : isDev
           ? false
           : consecutive503Errors === 0
-            ? 30000
+            ? 60000
             : consecutive503Errors <= 2
-              ? 60000
-              : 120000,
+              ? 120000
+              : 240000,
     enabled: !!token,
     refetchOnWindowFocus: false,
-    staleTime: isDev ? 5 * 60 * 1000 : 30 * 1000,
+    refetchOnMount: false, // Don't refetch if data is fresh
+    staleTime: isDev ? 5 * 60 * 1000 : 60 * 1000, // Increased from 30s to 60s in prod
     retry: false, // Don't retry on 401/503 errors
   })
 
