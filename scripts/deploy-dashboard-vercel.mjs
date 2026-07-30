@@ -374,9 +374,10 @@ writeFileSync(
         'npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts && npx prisma generate --schema=prisma/schema.prisma',
       // Webpack is more reliable than Turbopack for this monorepo production bundle.
       // Emergency only: set PAYAID_ALLOW_TS_BUILD_ERRORS=1 for one ship when unrelated TS drift blocks P1.
+      // Prefer turbopack on Hobby — webpack OOM'd (8GB) on the slim Linux upload path.
       buildCommand: allowTsBuildErrors
-        ? 'PAYAID_ALLOW_TS_BUILD_ERRORS=1 NEXT_BUILD_PREFERRED_MODE=webpack node apps/dashboard/scripts/vercel-build.cjs'
-        : 'NEXT_BUILD_PREFERRED_MODE=webpack node apps/dashboard/scripts/vercel-build.cjs',
+        ? 'PAYAID_ALLOW_TS_BUILD_ERRORS=1 NEXT_BUILD_PREFERRED_MODE=turbopack node apps/dashboard/scripts/vercel-build.cjs'
+        : 'NEXT_BUILD_PREFERRED_MODE=turbopack node apps/dashboard/scripts/vercel-build.cjs',
       framework: 'nextjs',
     },
     null,
