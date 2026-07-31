@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { prisma } from '@/lib/db/prisma'
+import { requireModuleAccess, handleLicenseError } from '@/lib/middleware/auth'
+import {
+  listSalesPageSubmissions,
+  processSalesPageSubmission,
+  retrySalesPageSubmission,
+} from '@/lib/sales-pages/landing-page-submission-bridge'
 
 const submissionSchema = z.object({
   salesPageId: z.string().min(1),
@@ -25,37 +30,59 @@ const submissionSchema = z.object({
     .optional(),
 })
 
-// Public ingestion endpoint for published sales pages.
-// NOTE: Bridge mode persists telemetry on LandingPage until canonical sales_submission tables are introduced.
+const retrySchema = z.object({
+  action: z.literal('retry'),
+  entryId: z.string().min(1),
+})
+
+// Public ingestion endpoint for published sales pages (dashboard twin).
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const validated = submissionSchema.parse(body)
 
-    const pageItem = await prisma.landingPage.findFirst({
-      where: { id: validated.salesPageId, status: 'PUBLISHED' },
-      select: { id: true, tenantId: true, slug: true },
-    })
-
-    if (!pageItem) {
-      return NextResponse.json({ error: 'Published sales page not found' }, { status: 404 })
+    if (body?.action === 'retry') {
+      const { tenantId } = await requireModuleAccess(request, 'sales')
+      const validated = retrySchema.parse(body)
+      const result = await retrySalesPageSubmission(tenantId, validated.entryId)
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: result.status })
+      }
+      return NextResponse.json(
+        {
+          success: true,
+          status: 'retried',
+          contactId: result.contactId,
+          entry: result.entry,
+          events: ['sales_submission.received', 'sales_submission.crm_synced'],
+          compatibility: { mode: 'landing-page-bridge-v2' },
+        },
+        { status: 202 }
+      )
     }
 
-    // Bridge behavior: increment conversion metrics on landing page.
-    await prisma.landingPage.update({
-      where: { id: pageItem.id },
-      data: { conversions: { increment: 1 } },
+    const validated = submissionSchema.parse(body)
+    const result = await processSalesPageSubmission({
+      salesPageId: validated.salesPageId,
+      formId: validated.formId,
+      payload: validated.payload,
+      attribution: validated.attribution,
+      ctaEvent: validated.ctaEvent,
     })
 
-    // Placeholder response that callers can already integrate against.
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status })
+    }
+
     return NextResponse.json(
       {
         success: true,
         status: 'received',
+        contactId: result.contactId,
+        entryId: result.entry.id,
+        crmSyncStatus: result.entry.crmSyncStatus,
         events: ['sales_submission.received'],
-        crmSync: 'queued',
-        automation: 'queued',
-        compatibility: { mode: 'landing-page-bridge' },
+        attributionPersisted: result.attributionPersisted,
+        compatibility: { mode: 'landing-page-bridge-v2' },
       },
       { status: 202 }
     )
@@ -63,7 +90,27 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 })
     }
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
     console.error('Create sales submission error:', error)
     return NextResponse.json({ error: 'Failed to process sales submission' }, { status: 500 })
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { tenantId } = await requireModuleAccess(request, 'sales')
+    const { searchParams } = request.nextUrl
+    const pageId = searchParams.get('pageId') || undefined
+    const limit = Number(searchParams.get('limit') || '50')
+    const submissions = await listSalesPageSubmissions(tenantId, { pageId, limit })
+    return NextResponse.json({ submissions })
+  } catch (error) {
+    if (error && typeof error === 'object' && 'moduleId' in error) {
+      return handleLicenseError(error)
+    }
+    console.error('List sales submissions error:', error)
+    return NextResponse.json({ error: 'Failed to list sales submissions' }, { status: 500 })
   }
 }
