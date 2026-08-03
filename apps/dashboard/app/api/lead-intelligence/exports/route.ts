@@ -9,6 +9,16 @@ import {
 import { writeLeadAuditEvent } from '@/lib/lead-intelligence/audit'
 import { trackLeadIntelligenceEvent } from '@/lib/lead-intelligence/telemetry'
 
+type LeadExportJobClient = {
+  findMany: (args: Record<string, unknown>) => Promise<Array<Record<string, any>>>
+  create: (args: Record<string, unknown>) => Promise<Record<string, any>>
+}
+
+function leadExportJobs(): LeadExportJobClient | null {
+  const client = (prisma as unknown as { leadExportJob?: LeadExportJobClient }).leadExportJob
+  return client ?? null
+}
+
 function escapeCsv(value: unknown): string {
   const text = value == null ? '' : String(value)
   if (text.includes('"') || text.includes(',') || text.includes('\n')) {
@@ -32,7 +42,11 @@ function toCsv(rows: Array<Record<string, unknown>>): string {
 export async function GET(request: NextRequest) {
   try {
     const { tenantId, userId } = await requireModuleAccess(request, 'lead-intelligence')
-    const jobs = await prisma.leadExportJob.findMany({
+    const exportJobs = leadExportJobs()
+    if (!exportJobs) {
+      return NextResponse.json({ ok: true, items: [], warning: 'lead_export_unavailable' })
+    }
+    const jobs = await exportJobs.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
       take: 100,
@@ -106,7 +120,19 @@ export async function POST(request: NextRequest) {
       query: { q: query.q, industry: query.industry, country: query.country, limit: query.limit },
     }
 
-    const job = await prisma.leadExportJob.create({
+    const exportJobs = leadExportJobs()
+    if (!exportJobs) {
+      return NextResponse.json({
+        ok: true,
+        jobId: null,
+        filename: `lead-intelligence-companies-${new Date().toISOString().slice(0, 10)}.csv`,
+        csv,
+        rowCount: normalized.length,
+        warning: 'lead_export_unavailable',
+      })
+    }
+
+    const job = await exportJobs.create({
       data: {
         tenantId,
         initiatedById: userId,
@@ -149,7 +175,9 @@ export async function POST(request: NextRequest) {
         query: auditCtx.query ?? null,
       }
       try {
-        const failedJob = await prisma.leadExportJob.create({
+        const failedExportJobs = leadExportJobs()
+        if (!failedExportJobs) return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 })
+        const failedJob = await failedExportJobs.create({
           data: {
             tenantId: auditCtx.tenantId,
             initiatedById: auditCtx.userId,
