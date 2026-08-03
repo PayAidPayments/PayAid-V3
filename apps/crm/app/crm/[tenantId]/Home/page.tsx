@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
-import { CrmHomeDashboard } from '@crm/crm/[tenantId]/Home/CrmHomeDashboard'
+import { CrmHomeDashboard } from './CrmHomeDashboard'
 import { DashboardSkeleton } from '@/components/modules/dashboard'
 
 interface DashboardStats {

@@ -28,7 +28,16 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import type { EnrichedData, AnalyticsData, CampaignRow, CommandCenterData } from '@/lib/marketing/marketing-home-types'
-import { parseUnifiedInboxItemId } from '@/lib/marketing/inbox-reply'
+
+function parseUnifiedInboxItemId(id: string): {
+  source: 'social' | 'whatsapp' | 'email'
+  entityId: string
+} {
+  if (id.startsWith('social-')) return { source: 'social', entityId: id.slice(7) }
+  if (id.startsWith('wa-')) return { source: 'whatsapp', entityId: id.slice(3) }
+  if (id.startsWith('email-')) return { source: 'email', entityId: id.slice(6) }
+  return { source: 'social', entityId: id }
+}
 import {
   ModuleDashboardShell,
   DashboardEmptyState,
