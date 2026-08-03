@@ -122,9 +122,9 @@ const projectDetailInclude = {
       sortOrder: true,
     },
   },
-} satisfies Prisma.ProjectInclude
+} as const
 
-// GET /api/projects/[id] — single project for detail UI (tasks, team, time)
+// GET /api/projects/[id] ΓÇö single project for detail UI (tasks, team, time)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -135,7 +135,7 @@ export async function GET(
 
     const project = await prisma.project.findFirst({
       where: { id, tenantId },
-      include: projectDetailInclude,
+      include: projectDetailInclude as any,
     })
 
     if (!project) {
@@ -195,7 +195,7 @@ export async function GET(
   }
 }
 
-// PATCH /api/projects/[id] — delivery/portfolio fields + status, progress, priority, name, description
+// PATCH /api/projects/[id] ΓÇö delivery/portfolio fields + status, progress, priority, name, description
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
