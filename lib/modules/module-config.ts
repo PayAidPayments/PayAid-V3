@@ -1,35 +1,53 @@
 /**
  * Universal Module Configuration
- * Defines gradient colors, icons, and settings for all 28 PayAid V3 modules
+ * Defines gradient colors, icons, and settings for PayAid V3 modules
  */
 
 import {
-  Users, Briefcase, Scale, ShoppingCart, Building2, BarChart3,
-  FileText, Calendar, Megaphone, Package, GraduationCap, Stethoscope,
-  Factory, Wrench, Palette, Globe, BookOpen, Video, Music, Camera,
-  Car, Plane, UtensilsCrossed, Shirt, Home, Zap, Bot, Target, Newspaper
+  Users,
+  Briefcase,
+  Scale,
+  ShoppingCart,
+  Building2,
+  BarChart3,
+  FileText,
+  Megaphone,
+  Package,
+  GraduationCap,
+  Stethoscope,
+  Factory,
+  Home,
+  Bot,
+  Newspaper,
+  FolderKanban,
+  MessageSquare,
+  Headset,
+  Globe,
+  Sparkles,
+  Table,
+  FileEdit,
+  Presentation,
+  Folder,
+  Video,
+  FileType,
+  Layout,
 } from 'lucide-react'
 
 export interface ModuleConfig {
   id: string
   name: string
-  gradientFrom: string // Tailwind class
-  gradientTo: string // Tailwind class
+  gradientFrom: string
+  gradientTo: string
   icon: React.ComponentType<{ className?: string }>
   description?: string
 }
 
-/**
- * Module configurations for all 28 PayAid V3 modules
- * Each module has unique gradient colors while maintaining brand consistency
- */
 export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
-  // Core Business Modules
   home: {
     id: 'home',
     name: 'Home',
-    gradientFrom: 'from-purple-500',
-    gradientTo: 'to-purple-700',
+    gradientFrom: 'from-slate-700',
+    gradientTo: 'to-slate-900',
     icon: Home,
     description: 'Central hub for all modules',
   },
@@ -44,15 +62,15 @@ export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
   finance: {
     id: 'finance',
     name: 'Finance',
-    gradientFrom: 'from-gold-500',
-    gradientTo: 'to-gold-700',
+    gradientFrom: 'from-amber-500',
+    gradientTo: 'to-amber-700',
     icon: Scale,
     description: 'Financial management and accounting',
   },
   sales: {
     id: 'sales',
     name: 'Sales',
-    gradientFrom: 'from-success',
+    gradientFrom: 'from-emerald-500',
     gradientTo: 'to-emerald-700',
     icon: Briefcase,
     description: 'Sales and e-commerce',
@@ -60,8 +78,8 @@ export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
   hr: {
     id: 'hr',
     name: 'HR',
-    gradientFrom: 'from-info',
-    gradientTo: 'to-blue-700',
+    gradientFrom: 'from-sky-500',
+    gradientTo: 'to-sky-700',
     icon: Users,
     description: 'Human Resources management',
   },
@@ -76,7 +94,7 @@ export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
   analytics: {
     id: 'analytics',
     name: 'Analytics',
-    gradientFrom: 'from-purple-600',
+    gradientFrom: 'from-indigo-500',
     gradientTo: 'to-indigo-700',
     icon: BarChart3,
     description: 'Business analytics and insights',
@@ -84,8 +102,8 @@ export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
   marketing: {
     id: 'marketing',
     name: 'Marketing',
-    gradientFrom: 'from-pink-500',
-    gradientTo: 'to-rose-600',
+    gradientFrom: 'from-rose-500',
+    gradientTo: 'to-rose-700',
     icon: Megaphone,
     description: 'Marketing campaigns and automation',
   },
@@ -94,7 +112,7 @@ export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     name: 'Projects',
     gradientFrom: 'from-cyan-500',
     gradientTo: 'to-cyan-700',
-    icon: FileText,
+    icon: FolderKanban,
     description: 'Project management',
   },
   communication: {
@@ -102,10 +120,25 @@ export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     name: 'Communication',
     gradientFrom: 'from-blue-500',
     gradientTo: 'to-blue-700',
-    icon: Users,
+    icon: MessageSquare,
     description: 'Team communication',
   },
-  // Industry-Specific Modules
+  support: {
+    id: 'support',
+    name: 'Support',
+    gradientFrom: 'from-teal-500',
+    gradientTo: 'to-teal-700',
+    icon: Headset,
+    description: 'Customer support and tickets',
+  },
+  'website-builder': {
+    id: 'website-builder',
+    name: 'Website Builder',
+    gradientFrom: 'from-violet-500',
+    gradientTo: 'to-violet-700',
+    icon: Globe,
+    description: 'Build and publish websites',
+  },
   education: {
     id: 'education',
     name: 'Education',
@@ -138,7 +171,6 @@ export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     icon: ShoppingCart,
     description: 'Retail store management',
   },
-  // Additional Modules
   'ai-studio': {
     id: 'ai-studio',
     name: 'AI Studio',
@@ -150,24 +182,273 @@ export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
   'industry-intelligence': {
     id: 'industry-intelligence',
     name: 'Industry Intelligence',
-    gradientFrom: 'from-purple-600',
-    gradientTo: 'to-indigo-700',
+    gradientFrom: 'from-indigo-600',
+    gradientTo: 'to-indigo-800',
     icon: Newspaper,
     description: 'Industry news, trends, and business intelligence',
   },
-  // Add more modules as needed...
+  productivity: {
+    id: 'productivity',
+    name: 'Productivity',
+    gradientFrom: 'from-slate-600',
+    gradientTo: 'to-slate-800',
+    icon: Sparkles,
+    description: 'Docs, sheets, slides, meet, PDF, and drive',
+  },
+  spreadsheet: {
+    id: 'spreadsheet',
+    name: 'Sheets',
+    gradientFrom: 'from-teal-500',
+    gradientTo: 'to-teal-700',
+    icon: Table,
+    description: 'Spreadsheets with formulas and charts',
+  },
+  sheets: {
+    id: 'sheets',
+    name: 'Sheets',
+    gradientFrom: 'from-teal-500',
+    gradientTo: 'to-teal-700',
+    icon: Table,
+    description: 'Spreadsheets with formulas and charts',
+  },
+  docs: {
+    id: 'docs',
+    name: 'Docs',
+    gradientFrom: 'from-blue-500',
+    gradientTo: 'to-blue-700',
+    icon: FileEdit,
+    description: 'Documents and collaboration',
+  },
+  slides: {
+    id: 'slides',
+    name: 'Slides',
+    gradientFrom: 'from-amber-500',
+    gradientTo: 'to-amber-700',
+    icon: Presentation,
+    description: 'Presentations and decks',
+  },
+  drive: {
+    id: 'drive',
+    name: 'Drive',
+    gradientFrom: 'from-emerald-500',
+    gradientTo: 'to-emerald-700',
+    icon: Folder,
+    description: 'Cloud files and folders',
+  },
+  meet: {
+    id: 'meet',
+    name: 'Meet',
+    gradientFrom: 'from-rose-500',
+    gradientTo: 'to-rose-700',
+    icon: Video,
+    description: 'Video meetings',
+  },
+  pdf: {
+    id: 'pdf',
+    name: 'PDF',
+    gradientFrom: 'from-slate-500',
+    gradientTo: 'to-slate-700',
+    icon: FileType,
+    description: 'PDF tools',
+  },
+  builder: {
+    id: 'builder',
+    name: 'Document Builder',
+    gradientFrom: 'from-violet-500',
+    gradientTo: 'to-violet-700',
+    icon: Layout,
+    description: 'Generate documents from CRM and Finance data',
+  },
+  contracts: {
+    id: 'contracts',
+    name: 'Contracts',
+    gradientFrom: 'from-slate-600',
+    gradientTo: 'to-slate-800',
+    icon: FileText,
+    description: 'Contract management',
+  },
+  workflow: {
+    id: 'workflow',
+    name: 'Workflow',
+    gradientFrom: 'from-indigo-500',
+    gradientTo: 'to-indigo-700',
+    icon: Building2,
+    description: 'Automation and workflows',
+  },
+  'workflow-automation': {
+    id: 'workflow-automation',
+    name: 'Workflow Automation',
+    gradientFrom: 'from-indigo-500',
+    gradientTo: 'to-indigo-700',
+    icon: Building2,
+    description: 'Builder, runs, and approvals',
+  },
+  agriculture: {
+    id: 'agriculture',
+    name: 'Agriculture',
+    gradientFrom: 'from-lime-600',
+    gradientTo: 'to-lime-800',
+    icon: Building2,
+    description: 'Agriculture operations',
+  },
+  automotive: {
+    id: 'automotive',
+    name: 'Automotive',
+    gradientFrom: 'from-slate-600',
+    gradientTo: 'to-slate-800',
+    icon: Building2,
+    description: 'Automotive dealership and service',
+  },
+  beauty: {
+    id: 'beauty',
+    name: 'Beauty',
+    gradientFrom: 'from-pink-500',
+    gradientTo: 'to-pink-700',
+    icon: Building2,
+    description: 'Beauty and salon management',
+  },
+  construction: {
+    id: 'construction',
+    name: 'Construction',
+    gradientFrom: 'from-orange-600',
+    gradientTo: 'to-orange-800',
+    icon: Building2,
+    description: 'Construction project operations',
+  },
+  ecommerce: {
+    id: 'ecommerce',
+    name: 'Ecommerce',
+    gradientFrom: 'from-emerald-500',
+    gradientTo: 'to-emerald-700',
+    icon: ShoppingCart,
+    description: 'Online store operations',
+  },
+  events: {
+    id: 'events',
+    name: 'Events',
+    gradientFrom: 'from-fuchsia-500',
+    gradientTo: 'to-fuchsia-700',
+    icon: Building2,
+    description: 'Event management',
+  },
+  'field-service': {
+    id: 'field-service',
+    name: 'Field Service',
+    gradientFrom: 'from-cyan-600',
+    gradientTo: 'to-cyan-800',
+    icon: Building2,
+    description: 'Field service operations',
+  },
+  'financial-services': {
+    id: 'financial-services',
+    name: 'Financial Services',
+    gradientFrom: 'from-amber-600',
+    gradientTo: 'to-amber-800',
+    icon: Scale,
+    description: 'Financial services operations',
+  },
+  hospitality: {
+    id: 'hospitality',
+    name: 'Hospitality',
+    gradientFrom: 'from-teal-500',
+    gradientTo: 'to-teal-700',
+    icon: Building2,
+    description: 'Hospitality and hotels',
+  },
+  legal: {
+    id: 'legal',
+    name: 'Legal',
+    gradientFrom: 'from-slate-700',
+    gradientTo: 'to-slate-900',
+    icon: FileText,
+    description: 'Legal practice management',
+  },
+  lms: {
+    id: 'lms',
+    name: 'LMS',
+    gradientFrom: 'from-indigo-500',
+    gradientTo: 'to-indigo-700',
+    icon: GraduationCap,
+    description: 'Learning management',
+  },
+  logistics: {
+    id: 'logistics',
+    name: 'Logistics',
+    gradientFrom: 'from-sky-600',
+    gradientTo: 'to-sky-800',
+    icon: Package,
+    description: 'Logistics and shipping',
+  },
+  'professional-services': {
+    id: 'professional-services',
+    name: 'Professional Services',
+    gradientFrom: 'from-violet-500',
+    gradientTo: 'to-violet-700',
+    icon: Briefcase,
+    description: 'Professional services delivery',
+  },
+  'real-estate': {
+    id: 'real-estate',
+    name: 'Real Estate',
+    gradientFrom: 'from-amber-500',
+    gradientTo: 'to-amber-700',
+    icon: Home,
+    description: 'Real estate operations',
+  },
+  restaurant: {
+    id: 'restaurant',
+    name: 'Restaurant',
+    gradientFrom: 'from-orange-500',
+    gradientTo: 'to-orange-700',
+    icon: Building2,
+    description: 'Restaurant operations',
+  },
+  wholesale: {
+    id: 'wholesale',
+    name: 'Wholesale',
+    gradientFrom: 'from-emerald-600',
+    gradientTo: 'to-emerald-800',
+    icon: Package,
+    description: 'Wholesale distribution',
+  },
+  'asset-management': {
+    id: 'asset-management',
+    name: 'Asset Management',
+    gradientFrom: 'from-slate-600',
+    gradientTo: 'to-slate-800',
+    icon: Package,
+    description: 'Asset tracking and management',
+  },
+  compliance: {
+    id: 'compliance',
+    name: 'Compliance',
+    gradientFrom: 'from-red-600',
+    gradientTo: 'to-red-800',
+    icon: Scale,
+    description: 'Compliance and policy',
+  },
+  appointments: {
+    id: 'appointments',
+    name: 'Appointments',
+    gradientFrom: 'from-sky-500',
+    gradientTo: 'to-sky-700',
+    icon: Users,
+    description: 'Appointment requests and scheduling',
+  },
+  'knowledge-rag': {
+    id: 'knowledge-rag',
+    name: 'Knowledge',
+    gradientFrom: 'from-purple-500',
+    gradientTo: 'to-purple-700',
+    icon: Newspaper,
+    description: 'Knowledge base and RAG',
+  },
 }
 
-/**
- * Get module configuration by ID
- */
 export function getModuleConfig(moduleId: string): ModuleConfig | undefined {
   return MODULE_CONFIGS[moduleId]
 }
 
-/**
- * Get default module configuration (CRM)
- */
 export function getDefaultModuleConfig(): ModuleConfig {
   return MODULE_CONFIGS.crm
 }

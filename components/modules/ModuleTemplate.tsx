@@ -1,122 +1,79 @@
 'use client'
 
 /**
- * Universal Module Template
- * 
- * This template serves as a reference for creating new modules or updating existing ones
- * to follow the Universal Design System standards.
- * 
- * Copy this template and customize for your specific module.
+ * Thin example of a module home using ModuleDashboardShell.
+ * Prefer composing ModuleDashboardShell directly in each module Home page.
  */
 
-import { UniversalModuleLayout } from './UniversalModuleLayout'
-import { UniversalModuleHero } from './UniversalModuleHero'
-import { GlassCard } from './GlassCard'
+import { Plus } from 'lucide-react'
+import { ModuleDashboardShell, DashboardEmptyState } from './dashboard'
 import { getModuleConfig } from '@/lib/modules/module-config'
 import { formatINRForDisplay } from '@/lib/utils/formatINR'
 
 interface ModuleTemplateProps {
   tenantId: string
-  // Add module-specific props here
+  moduleId?: string
 }
 
-export default function ModuleTemplatePage({ tenantId }: ModuleTemplateProps) {
-  // Get module configuration
-  const moduleConfig = getModuleConfig('crm') // Replace with your module ID
-  
-  // Fetch module-specific data
-  // const [data, setData] = useState(null)
-  // useEffect(() => { ... }, [tenantId])
+export default function ModuleTemplatePage({
+  tenantId,
+  moduleId = 'crm',
+}: ModuleTemplateProps) {
+  const moduleConfig = getModuleConfig(moduleId)
 
   if (!moduleConfig) {
     return <div>Module configuration not found</div>
   }
 
-  // Define top bar navigation items
-  const topBarItems = [
-    { name: 'Home', href: `/${moduleConfig.id}/${tenantId}/Home` },
-    { name: 'Item 1', href: `/${moduleConfig.id}/${tenantId}/Item1` },
-    { name: 'Item 2', href: `/${moduleConfig.id}/${tenantId}/Item2` },
-    // Add more items...
-  ]
-
-  // Define hero metrics (4 cards)
-  const heroMetrics = [
-    {
-      label: 'Metric 1',
-      value: '100', // Use formatINRForDisplay() for currency
-      change: 15,
-      trend: 'up' as const,
-      color: 'purple' as const,
-    },
-    {
-      label: 'Metric 2',
-      value: formatINRForDisplay(450000), // Currency example
-      change: 12,
-      trend: 'up' as const,
-      color: 'gold' as const,
-    },
-    {
-      label: 'Metric 3',
-      value: '50',
-      change: -5,
-      trend: 'down' as const,
-      color: 'info' as const,
-    },
-    {
-      label: 'Metric 4',
-      value: '25',
-      change: 8,
-      trend: 'up' as const,
-      color: 'success' as const,
-    },
-  ]
-
   return (
-    <UniversalModuleLayout
+    <ModuleDashboardShell
       moduleId={moduleConfig.id}
-      moduleName={moduleConfig.name}
-      topBarItems={topBarItems}
+      title={`${moduleConfig.name} Dashboard`}
+      subtitle={moduleConfig.description}
+      moduleIcon={<moduleConfig.icon className="w-7 h-7" />}
+      kpis={[
+        { label: 'Metric 1', value: 100, change: 15, trend: 'up', tone: 'purple' },
+        {
+          label: 'Metric 2',
+          value: formatINRForDisplay(450000),
+          change: 12,
+          trend: 'up',
+          tone: 'gold',
+        },
+        { label: 'Metric 3', value: 50, change: 5, trend: 'down', tone: 'info' },
+        { label: 'Metric 4', value: 25, change: 8, trend: 'up', tone: 'success' },
+      ]}
+      insight={{
+        text: 'Replace this strip with a module-specific AI or trend summary.',
+        status: 'ready',
+      }}
+      actions={[
+        {
+          label: 'Primary action',
+          href: `/${moduleConfig.id}/${tenantId}/Home`,
+          icon: <Plus className="w-4 h-4" />,
+        },
+        {
+          label: 'Secondary',
+          href: `/${moduleConfig.id}/${tenantId}/Home`,
+          variant: 'secondary',
+        },
+      ]}
+      secondaryTitle="Secondary band"
+      secondaryDescription="One chart, work queue, or recent list — not all three."
+      secondary={
+        <DashboardEmptyState
+          title="No items yet"
+          description="Wire real data here. Keep this band to a single purpose."
+          actionLabel="Get started"
+          actionHref={`/${moduleConfig.id}/${tenantId}/Home`}
+        />
+      }
     >
-      {/* Hero Section - Standardized */}
-      <UniversalModuleHero
-        moduleName={moduleConfig.name}
-        moduleIcon={<moduleConfig.icon className="w-8 h-8" />}
-        gradientFrom={moduleConfig.gradientFrom}
-        gradientTo={moduleConfig.gradientTo}
-        metrics={heroMetrics}
-        subtitle={moduleConfig.description}
-      />
-
-      {/* Content Sections - 32px gap between sections */}
-      <div className="p-6 space-y-8">
-        {/* Section 1 */}
-        <GlassCard>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Section Title</h2>
-          <p className="text-gray-600">Content goes here...</p>
-        </GlassCard>
-
-        {/* Section 2 */}
-        <GlassCard delay={0.1}>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Another Section</h2>
-          <p className="text-gray-600">More content...</p>
-        </GlassCard>
-
-        {/* Add more sections as needed */}
-      </div>
-    </UniversalModuleLayout>
+      <p className="text-xs text-slate-500">
+        See <code className="text-[11px]">docs/ai/module-dashboard-uniformity.md</code> for the 5-band
+        contract.
+      </p>
+    </ModuleDashboardShell>
   )
 }
-
-/**
- * USAGE INSTRUCTIONS:
- * 
- * 1. Copy this file to your module directory
- * 2. Replace 'crm' with your module ID in getModuleConfig()
- * 3. Update topBarItems with your module's navigation
- * 4. Update heroMetrics with your module's key metrics
- * 5. Add your module-specific content sections using GlassCard
- * 6. Ensure all currency values use formatINRForDisplay()
- * 7. Follow the 32px gap spacing between sections
- * 8. Use module-specific gradient from module-config.ts
- */

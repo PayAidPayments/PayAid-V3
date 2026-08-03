@@ -3,16 +3,23 @@
 import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { useAuthStore } from '@/lib/stores/auth'
 import {
   FolderKanban,
   Clock,
   Target,
   CheckCircle2,
+  Plus,
+  ListTodo,
 } from 'lucide-react'
-import { PageLoading } from '@/components/ui/loading'
-import { UniversalModuleHero } from '@/components/modules/UniversalModuleHero'
+import {
+  ModuleDashboardShell,
+  DashboardEmptyState,
+  DashboardSkeleton,
+  type DashboardKpi,
+  type DashboardAction,
+} from '@/components/modules/dashboard'
 import { getModuleConfig } from '@/lib/modules/module-config'
+import { useAuthStore } from '@/lib/stores/auth'
 import type { ProjectsHomeChartStats } from './ProjectsHomeCharts'
 
 const ProjectsHomeCharts = dynamic(
@@ -20,16 +27,7 @@ const ProjectsHomeCharts = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="p-6 space-y-8 animate-pulse">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="h-[360px] rounded-xl bg-gray-200/80 dark:bg-gray-800/80" />
-          <div className="h-[360px] rounded-xl bg-gray-200/80 dark:bg-gray-800/80" />
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="h-[280px] rounded-xl bg-gray-200/80 dark:bg-gray-800/80" />
-          <div className="h-[280px] rounded-xl bg-gray-200/80 dark:bg-gray-800/80" />
-        </div>
-      </div>
+      <div className="h-[320px] rounded-xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
     ),
   }
 )
@@ -49,6 +47,7 @@ export default function ProjectsDashboardPage() {
   const [stats, setStats] = useState<ProjectsDashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const moduleConfig = getModuleConfig('projects')
 
   useEffect(() => {
     fetchDashboardStats()
@@ -59,28 +58,25 @@ export default function ProjectsDashboardPage() {
       setLoading(true)
       setError(null)
       const token = useAuthStore.getState().token
-
       if (!token) {
         setLoading(false)
         return
       }
 
       const response = await fetch('/api/projects/dashboard/stats', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       })
 
       if (response.ok) {
         const data = await response.json()
         setStats(data)
       } else {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.message || 'Failed to fetch dashboard stats')
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'An unexpected error occurred while fetching data.'
-      console.error('Failed to fetch dashboard stats:', err)
+      const message =
+        err instanceof Error ? err.message : 'An unexpected error occurred while fetching data.'
       setError(message)
       setStats({
         totalProjects: 0,
@@ -99,69 +95,98 @@ export default function ProjectsDashboardPage() {
     }
   }
 
-  if (loading) {
-    return <PageLoading message="Loading Projects dashboard..." fullScreen={true} />
-  }
-
-  const moduleConfig = getModuleConfig('projects')
-  if (!moduleConfig) {
-    return <div>Module configuration not found</div>
-  }
+  if (loading) return <DashboardSkeleton />
+  if (!moduleConfig) return <div>Module configuration not found</div>
 
   const completionRate =
     stats && stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0
 
-  const heroMetrics = [
+  const kpis: DashboardKpi[] = [
     {
-      label: 'Total Projects',
+      label: 'Total projects',
       value: stats?.totalProjects || 0,
-      change: stats?.activeProjects
-        ? Math.round((stats.activeProjects / stats.totalProjects) * 100)
-        : 0,
-      trend: 'up' as const,
+      change: stats?.totalProjects
+        ? Math.round(((stats.activeProjects || 0) / Math.max(stats.totalProjects, 1)) * 100)
+        : undefined,
+      trend: 'up',
       icon: <FolderKanban className="w-5 h-5" />,
-      color: 'purple' as const,
+      tone: 'purple',
+      href: `/projects/${tenantId}/Projects`,
     },
     {
-      label: 'Active Projects',
+      label: 'Active',
       value: stats?.activeProjects || 0,
       icon: <Target className="w-5 h-5" />,
-      color: 'success' as const,
+      tone: 'success',
+      href: `/projects/${tenantId}/Projects?status=active`,
     },
     {
-      label: 'Total Tasks',
+      label: 'Tasks',
       value: stats?.totalTasks || 0,
-      change: completionRate,
-      trend: 'up' as const,
+      change: completionRate || undefined,
+      trend: 'up',
       icon: <CheckCircle2 className="w-5 h-5" />,
-      color: 'info' as const,
+      tone: 'info',
+      href: `/projects/${tenantId}/Tasks`,
     },
     {
-      label: 'Time Logged',
+      label: 'Time logged',
       value: stats?.totalTimeLogged ? `${Math.round(stats.totalTimeLogged)}h` : '0h',
       icon: <Clock className="w-5 h-5" />,
-      color: 'gold' as const,
+      tone: 'gold',
     },
   ]
 
+  const actions: DashboardAction[] = [
+    {
+      label: 'New project',
+      href: `/projects/${tenantId}/Projects/new`,
+      icon: <Plus className="w-4 h-4" />,
+    },
+    {
+      label: 'Tasks',
+      href: `/projects/${tenantId}/Tasks`,
+      icon: <ListTodo className="w-4 h-4" />,
+      variant: 'secondary',
+    },
+    {
+      label: 'Time entries',
+      href: `/projects/${tenantId}/Time`,
+      variant: 'secondary',
+    },
+  ]
+
+  const hasProjects = (stats?.totalProjects || 0) > 0
+
   return (
-    <div className="w-full -mx-2 sm:-mx-0">
-      <UniversalModuleHero
-        moduleName="Projects"
-        moduleIcon={<moduleConfig.icon className="w-8 h-8" />}
-        gradientFrom={moduleConfig.gradientFrom}
-        gradientTo={moduleConfig.gradientTo}
-        metrics={heroMetrics}
-      />
-
-      {error && (
-        <div className="mx-2 sm:mx-0 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg dark:bg-red-950/30 dark:border-red-800">
-          <p className="text-red-700 dark:text-red-300 font-medium">Error:</p>
-          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
-        </div>
-      )}
-
-      {stats ? <ProjectsHomeCharts tenantId={tenantId} stats={stats} /> : null}
-    </div>
+    <ModuleDashboardShell
+      moduleId="projects"
+      title="Projects"
+      moduleIcon={<moduleConfig.icon className="w-7 h-7" />}
+      error={error}
+      kpis={kpis}
+      insight={{
+        text: hasProjects
+          ? `${stats?.activeProjects || 0} active projects · ${completionRate}% task completion · ${stats?.totalTimeLogged ? Math.round(stats.totalTimeLogged) : 0}h logged.`
+          : 'No projects yet. Create a project to unlock status charts and recent activity.',
+        status: hasProjects ? 'ready' : 'unavailable',
+      }}
+      actions={actions}
+      secondaryTitle="Projects by status"
+      secondaryDescription="Primary portfolio chart — recent lists live under Projects"
+      secondary={
+        stats && hasProjects ? (
+          <ProjectsHomeCharts tenantId={tenantId} stats={stats} compact />
+        ) : (
+          <DashboardEmptyState
+            icon={<FolderKanban />}
+            title="No projects yet"
+            description="Create your first project to see status distribution here."
+            actionLabel="New project"
+            actionHref={`/projects/${tenantId}/Projects/new`}
+          />
+        )
+      }
+    />
   )
 }

@@ -1,0 +1,136 @@
+{
+  "timestamp": "2026-08-03T07:33:44.743Z",
+  "baseUrl": "https://payaid-v3.vercel.app",
+  "budgetProfile": "tiered",
+  "budgetMsLite": 8000,
+  "budgetMsDashboard": 20000,
+  "budgetMs": 8000,
+  "summary": {
+    "total": 11,
+    "passed": 11,
+    "failed": 0
+  },
+  "results": [
+    {
+      "name": "Home Summary",
+      "url": "https://payaid-v3.vercel.app/api/home/summary",
+      "status": 200,
+      "statusText": "OK",
+      "elapsed": 12733,
+      "error": null,
+      "budget": 20000,
+      "budgetProfile": "tiered",
+      "withinBudget": true
+    },
+    {
+      "name": "Home Briefing",
+      "url": "https://payaid-v3.vercel.app/api/home/briefing",
+      "status": 200,
+      "statusText": "OK",
+      "elapsed": 12188,
+      "error": null,
+      "budget": 20000,
+      "budgetProfile": "tiered",
+      "withinBudget": true
+    },
+    {
+      "name": "CRM Dashboard Stats (lite)",
+      "url": "https://payaid-v3.vercel.app/api/crm/dashboard/stats?lite=1&tenantId=cmjptk2mw0000aocw31u48n64",
+      "status": 200,
+      "statusText": "OK",
+      "elapsed": 4427,
+      "error": null,
+      "budget": 8000,
+      "budgetProfile": "tiered",
+      "withinBudget": true
+    },
+    {
+      "name": "Marketing Dashboard",
+      "url": "https://payaid-v3.vercel.app/api/marketing/dashboard/enriched?tenantId=cmjptk2mw0000aocw31u48n64",
+      "status": 200,
+      "statusText": "OK",
+      "elapsed": 465,
+      "error": null,
+      "budget": 8000,
+      "budgetProfile": "tiered",
+      "withinBudget": true
+    },
+    {
+      "name": "HR Summary (lite)",
+      "url": "https://payaid-v3.vercel.app/api/hr/summary?tenantId=cmjptk2mw0000aocw31u48n64",
+      "status": 200,
+      "statusText": "OK",
+      "elapsed": 10410,
+      "error": null,
+      "budget": 20000,
+      "budgetProfile": "tiered",
+      "withinBudget": true
+    },
+    {
+      "name": "Finance Dashboard Stats",
+      "url": "https://payaid-v3.vercel.app/api/finance/dashboard/stats?tenantId=cmjptk2mw0000aocw31u48n64",
+      "status": 200,
+      "statusText": "OK",
+      "elapsed": 18311,
+      "error": null,
+      "budget": 20000,
+      "budgetProfile": "tiered",
+      "withinBudget": true
+    },
+    {
+      "name": "Projects Dashboard Stats",
+      "url": "https://payaid-v3.vercel.app/api/projects/dashboard/stats?tenantId=cmjptk2mw0000aocw31u48n64",
+      "status": 200,
+      "statusText": "OK",
+      "elapsed": 5265,
+      "error": null,
+      "budget": 20000,
+      "budgetProfile": "tiered",
+      "withinBudget": true
+    },
+    {
+      "name": "Sales Dashboard Stats",
+      "url": "https://payaid-v3.vercel.app/api/sales/dashboard/stats?tenantId=cmjptk2mw0000aocw31u48n64",
+      "status": 200,
+      "statusText": "OK",
+      "elapsed": 12129,
+      "error": null,
+      "budget": 20000,
+      "budgetProfile": "tiered",
+      "withinBudget": true
+    },
+    {
+      "name": "Analytics Health Score",
+      "url": "https://payaid-v3.vercel.app/api/analytics/health-score?tenantId=cmjptk2mw0000aocw31u48n64",
+      "status": 200,
+      "statusText": "OK",
+      "elapsed": 2013,
+      "error": null,
+      "budget": 20000,
+      "budgetProfile": "tiered",
+      "withinBudget": true
+    },
+    {
+      "name": "Analytics Advanced Sales",
+      "url": "https://payaid-v3.vercel.app/api/analytics/advanced/sales?period=month&tenantId=cmjptk2mw0000aocw31u48n64",
+      "status": 200,
+      "statusText": "OK",
+      "elapsed": 1778,
+      "error": null,
+      "budget": 20000,
+      "budgetProfile": "tiered",
+      "withinBudget": true
+    },
+    {
+      "name": "Notifications",
+      "url": "https://payaid-v3.vercel.app/api/notifications?limit=50",
+      "status": 200,
+      "statusText": "OK",
+      "elapsed": 3438,
+      "error": null,
+      "budget": 8000,
+      "budgetProfile": "tiered",
+      "withinBudget": true
+    }
+  ]
+}

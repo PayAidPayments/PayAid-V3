@@ -1,0 +1,266 @@
+{
+  "timestamp": "2026-08-03T07:30:23.094Z",
+  "baseUrl": "https://payaid-v3.vercel.app",
+  "tenantId": "cmjptk2mw0000aocw31u48n64",
+  "loginOk": true,
+  "summary": {
+    "total": 23,
+    "passed": 22,
+    "failed": 1
+  },
+  "results": [
+    {
+      "moduleId": "crm",
+      "route": "/crm/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/crm/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "hr",
+      "route": "/hr/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/hr/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "finance",
+      "route": "/finance/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/finance/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "projects",
+      "route": "/projects/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/projects/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "sales",
+      "route": "/sales/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/sales/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "marketing",
+      "route": "/marketing/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/marketing/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "support",
+      "route": "/support/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/support/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": true,
+      "htmlSso": false,
+      "ok": false,
+      "note": "next_404"
+    },
+    {
+      "moduleId": "inventory",
+      "route": "/inventory/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/inventory/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "analytics",
+      "route": "/analytics/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/analytics/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "communication",
+      "route": "/communication/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/communication/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "productivity",
+      "route": "/productivity/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/productivity/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "docs",
+      "route": "/docs/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/docs/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "spreadsheet",
+      "route": "/spreadsheet/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/spreadsheet/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "slides",
+      "route": "/slides/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/slides/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "meet",
+      "route": "/meet/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/meet/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "pdf",
+      "route": "/pdf/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/pdf/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "drive",
+      "route": "/drive/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/drive/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "workflow-automation",
+      "route": "/workflow-automation/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/workflow-automation/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "website-builder",
+      "route": "/website-builder/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/website-builder/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "education",
+      "route": "/education/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/education/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "healthcare",
+      "route": "/healthcare/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/healthcare/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "appointments",
+      "route": "/appointments/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/appointments/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    },
+    {
+      "moduleId": "contracts",
+      "route": "/contracts/cmjptk2mw0000aocw31u48n64/Home",
+      "url": "https://payaid-v3.vercel.app/contracts/cmjptk2mw0000aocw31u48n64/Home",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "notFound": false,
+      "htmlSso": false,
+      "ok": true,
+      "note": "html_shell"
+    }
+  ]
+}

@@ -13,8 +13,15 @@
  *   PERF_BASE_URL=https://payaid-v3.vercel.app \
  *   PERF_TEST_EMAIL=admin@demo.com \
  *   PERF_TEST_PASSWORD=Test@1234 \
+ *   PERF_BUDGET_PROFILE=tiered|uniform \
  *   PERF_API_BUDGET_MS=8000 \
+ *   PERF_DASHBOARD_BUDGET_MS=20000 \
  *   npm run perf:live-modules
+ *
+ * Default profile `tiered` (2026-07-30 Product revision):
+ *   - lite/chrome paths: 8s
+ *   - dashboard summaries: 20s
+ * Set PERF_BUDGET_PROFILE=uniform to force a single PERF_API_BUDGET_MS for all.
  */
 
 import { performance } from 'node:perf_hooks'
@@ -28,7 +35,26 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const BASE_URL = process.env.PERF_BASE_URL || 'https://payaid-v3.vercel.app'
 const EMAIL = process.env.PERF_TEST_EMAIL || 'admin@demo.com'
 const PASSWORD = process.env.PERF_TEST_PASSWORD || 'Test@1234'
+const BUDGET_PROFILE = (process.env.PERF_BUDGET_PROFILE || 'tiered').toLowerCase()
 const API_BUDGET_MS = parseInt(process.env.PERF_API_BUDGET_MS || '8000', 10)
+const DASHBOARD_BUDGET_MS = parseInt(process.env.PERF_DASHBOARD_BUDGET_MS || '20000', 10)
+
+/** Names measured as dashboard summaries under the tiered profile. */
+const DASHBOARD_SUMMARY_NAMES = new Set([
+  'Home Summary',
+  'Home Briefing',
+  'HR Summary (lite)',
+  'Finance Dashboard Stats',
+  'Projects Dashboard Stats',
+  'Sales Dashboard Stats',
+  'Analytics Health Score',
+  'Analytics Advanced Sales',
+])
+
+function budgetFor(name) {
+  if (BUDGET_PROFILE === 'uniform') return API_BUDGET_MS
+  return DASHBOARD_SUMMARY_NAMES.has(name) ? DASHBOARD_BUDGET_MS : API_BUDGET_MS
+}
 
 // ANSI colors
 const RED = '\x1b[31m'
@@ -103,6 +129,8 @@ async function measureAPI(name, url, options = {}) {
   const status = response?.status || 0
   const statusText = response?.statusText || 'ERROR'
 
+  const budgetMs = options.budgetMs ?? budgetFor(name)
+
   // Collect result
   const result = {
     name,
@@ -111,8 +139,9 @@ async function measureAPI(name, url, options = {}) {
     statusText,
     elapsed: Math.round(elapsed),
     error,
-    budget: API_BUDGET_MS,
-    withinBudget: elapsed <= API_BUDGET_MS && status !== 500,
+    budget: budgetMs,
+    budgetProfile: BUDGET_PROFILE,
+    withinBudget: elapsed <= budgetMs && status > 0 && status < 500,
   }
 
   results.push(result)
@@ -123,14 +152,14 @@ async function measureAPI(name, url, options = {}) {
   const budgetSymbol = result.withinBudget ? '✓' : '✗'
 
   console.log(`  Status: ${statusColor}${status} ${statusText}${RESET}`)
-  console.log(`  Time: ${budgetColor}${elapsed.toFixed(0)}ms ${budgetSymbol}${RESET} (budget: ${API_BUDGET_MS}ms)`)
+  console.log(`  Time: ${budgetColor}${elapsed.toFixed(0)}ms ${budgetSymbol}${RESET} (budget: ${budgetMs}ms, profile: ${BUDGET_PROFILE})`)
 
   if (error) {
     console.log(`  ${RED}Error: ${error}${RESET}`)
   }
 
   if (!result.withinBudget) {
-    console.log(`  ${RED}${BOLD}FAILED: ${elapsed > API_BUDGET_MS ? 'Exceeded budget' : 'Server error'}${RESET}`)
+    console.log(`  ${RED}${BOLD}FAILED: ${elapsed > budgetMs ? 'Exceeded budget' : 'Server error'}${RESET}`)
     exitCode = 1
   }
 
@@ -143,6 +172,7 @@ async function testModuleAPIs() {
   console.log(`${BOLD}${BLUE}═══════════════════════════════════════════${RESET}`)
   console.log(`${BOLD}${BLUE}   PayAid V3 Live Module Speed Gate${RESET}`)
   console.log(`${BOLD}${BLUE}═══════════════════════════════════════════${RESET}`)
+  console.log(`  Budget profile: ${BUDGET_PROFILE} (lite/chrome ${API_BUDGET_MS}ms; dashboard ${DASHBOARD_BUDGET_MS}ms)`)
   console.log()
 
   await login()
@@ -172,6 +202,17 @@ async function testModuleAPIs() {
   // Finance
   if (tenantId) {
     await measureAPI('Finance Dashboard Stats', `/api/finance/dashboard/stats?tenantId=${tenantId}`)
+  }
+
+  // Projects / Sales / Analytics (Wave 1–2 dashboard homes)
+  if (tenantId) {
+    await measureAPI('Projects Dashboard Stats', `/api/projects/dashboard/stats?tenantId=${tenantId}`)
+    await measureAPI('Sales Dashboard Stats', `/api/sales/dashboard/stats?tenantId=${tenantId}`)
+    await measureAPI('Analytics Health Score', `/api/analytics/health-score?tenantId=${tenantId}`)
+    await measureAPI(
+      'Analytics Advanced Sales',
+      `/api/analytics/advanced/sales?period=month&tenantId=${tenantId}`
+    )
   }
 
   // Notifications (chrome)
@@ -220,6 +261,9 @@ async function testModuleAPIs() {
   const evidence = {
     timestamp: new Date().toISOString(),
     baseUrl: BASE_URL,
+    budgetProfile: BUDGET_PROFILE,
+    budgetMsLite: API_BUDGET_MS,
+    budgetMsDashboard: DASHBOARD_BUDGET_MS,
     budgetMs: API_BUDGET_MS,
     summary: {
       total,

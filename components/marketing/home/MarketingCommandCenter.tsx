@@ -29,6 +29,12 @@ import {
 import { cn } from '@/lib/utils/cn'
 import type { EnrichedData, AnalyticsData, CampaignRow, CommandCenterData } from '@/lib/marketing/marketing-home-types'
 import { parseUnifiedInboxItemId } from '@/lib/marketing/inbox-reply'
+import {
+  ModuleDashboardShell,
+  DashboardEmptyState,
+  type DashboardKpi,
+  type DashboardAction,
+} from '@/components/modules/dashboard'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -1129,90 +1135,106 @@ export function MarketingCommandCenter({
     }
   }
 
+  const overview = analytics?.overview
+  const shellKpis: DashboardKpi[] = [
+    {
+      label: 'Attributed revenue',
+      value: fmt(enriched?.marketingRevenue),
+      change: enriched?.revenueGrowth,
+      trend: (enriched?.revenueGrowth || 0) >= 0 ? 'up' : 'down',
+      tone: 'success',
+      icon: <TrendingUp className="w-5 h-5" />,
+    },
+    {
+      label: 'Leads generated',
+      value: fmtNum(enriched?.leadsGenerated),
+      tone: 'purple',
+      icon: <Target className="w-5 h-5" />,
+    },
+    {
+      label: 'Open rate',
+      value: overview ? pct(overview.openRate) : '—',
+      tone: 'gold',
+      icon: <BarChart3 className="w-5 h-5" />,
+    },
+    {
+      label: 'Campaigns',
+      value: fmtNum(overview?.totalCampaigns),
+      tone: 'info',
+      icon: <Megaphone className="w-5 h-5" />,
+      href: `/marketing/${tenantId}/Campaigns`,
+    },
+  ]
+
+  const shellActions: DashboardAction[] = [
+    {
+      label: 'Compose',
+      href: `/marketing/${tenantId}/Studio`,
+      icon: <PenLine className="w-4 h-4" />,
+    },
+    {
+      label: 'Campaigns',
+      href: `/marketing/${tenantId}/Campaigns`,
+      variant: 'secondary',
+    },
+    {
+      label: 'Analytics',
+      href: `/marketing/${tenantId}/Analytics`,
+      icon: <BarChart3 className="w-4 h-4" />,
+      variant: 'secondary',
+    },
+    {
+      label: 'Segments',
+      href: `/marketing/${tenantId}/Segments`,
+      variant: 'secondary',
+    },
+  ]
+
+  const insightText = hasAnyCampaignData
+    ? `Marketing attributed ${fmt(enriched?.marketingRevenue)} with ${fmtNum(overview?.totalCampaigns)} campaigns. Open rate ${overview ? pct(overview.openRate) : '—'}.`
+    : 'Your Marketing Command Center is ready. Send a campaign or seed demo data to unlock live KPIs.'
+
   return (
-    <div className="space-y-5 pb-8">
-      {/* Page header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">Marketing Command Center</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{today}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={`/marketing/${tenantId}/Studio`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium shadow-sm hover:shadow-md transition-all"
-          >
-            <PenLine className="w-4 h-4" /> Compose
-          </Link>
-          <Link
-            href={`/marketing/${tenantId}/Analytics`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
-          >
-            <BarChart3 className="w-4 h-4" /> Analytics
-          </Link>
-        </div>
-      </div>
-
-      {/* A — KPI strip */}
-      <KpiStrip enriched={enriched} analytics={analytics} />
-
-      {/* B — Campaign performance */}
-      <CampaignPerformance tenantId={tenantId} analytics={analytics} campaigns={campaigns} />
-
-      {/* C + E — Publishing workflow & AI recommendations (side by side on wide screens) */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <PublishingWorkflow tenantId={tenantId} commandCenter={commandCenter} />
-        <AIRecommendations tenantId={tenantId} enriched={enriched} analytics={analytics} />
-      </div>
-
-      {/* D — Channel intelligence */}
-      <ChannelIntelligence enriched={enriched} analytics={analytics} />
-
-      {/* G — Calendar */}
-      <MarketingCalendar tenantId={tenantId} commandCenter={commandCenter} />
-
-      {/* H + I — Best time + segments */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <BestTimeToPost commandCenter={commandCenter} />
-        <AudienceSegments tenantId={tenantId} commandCenter={commandCenter} />
-      </div>
-
-      {/* F — Engagement inbox + Activity feed */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <EngagementInbox tenantId={tenantId} commandCenter={commandCenter} />
-        <ActivityFeed tenantId={tenantId} campaigns={campaigns} />
-      </div>
-
-      {/* Phase B teaser — honest about what's real vs mocked */}
-      {!hasAnyCampaignData && (
-        <div className="rounded-2xl border border-dashed border-violet-300 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-900/10 p-6 text-center space-y-3">
-          <Sparkles className="w-8 h-8 text-violet-400 mx-auto" />
-          <p className="text-sm font-semibold text-violet-800 dark:text-violet-300">Your Marketing Command Center is ready</p>
-          <p className="text-xs text-violet-600 dark:text-violet-400 max-w-lg mx-auto">
-            Send your first campaign to unlock AI recommendations, channel intelligence, and real-time pipeline attribution. Start with a WhatsApp broadcast to your top segment.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <Link
-              href={`/marketing/${tenantId}/Studio`}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-sm transition-all"
-            >
-              Launch first campaign <ArrowRight className="w-4 h-4" />
-            </Link>
-            <button
-              type="button"
-              onClick={seedDemoData}
-              disabled={seeding}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 text-sm font-semibold hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all disabled:opacity-60"
-            >
-              {seeding ? 'Seeding…' : 'Seed demo data'}
-            </button>
+    <ModuleDashboardShell
+      moduleId="marketing"
+      title="Marketing"
+      subtitle={today}
+      kpis={shellKpis}
+      insight={{
+        text: insightText,
+        status: hasAnyCampaignData ? 'ready' : 'unavailable',
+        href: `/marketing/${tenantId}/Analytics`,
+        hrefLabel: 'More insights',
+      }}
+      actions={shellActions}
+      secondaryTitle="Campaign performance"
+      secondaryDescription="Primary campaign trend — channel and calendar detail live under Analytics / Studio"
+      secondary={
+        hasAnyCampaignData ? (
+          <CampaignPerformance tenantId={tenantId} analytics={analytics} campaigns={campaigns} />
+        ) : (
+          <div className="space-y-4">
+            <DashboardEmptyState
+              icon={<Sparkles />}
+              title="No campaigns yet"
+              description="Send your first campaign to unlock AI recommendations and channel intelligence."
+              actionLabel="Launch first campaign"
+              actionHref={`/marketing/${tenantId}/Studio`}
+            />
+            <div className="flex flex-wrap items-center justify-center gap-2 pb-2">
+              <button
+                type="button"
+                onClick={seedDemoData}
+                disabled={seeding}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900 disabled:opacity-60"
+              >
+                {seeding ? 'Seeding…' : 'Seed demo data'}
+              </button>
+              {seedError ? <p className="text-xs text-red-500 w-full text-center">{seedError}</p> : null}
+            </div>
           </div>
-          {seedError && <p className="text-xs text-red-500">{seedError}</p>}
-          <p className="text-[10px] text-violet-500/80 max-w-md mx-auto">
-            Demo seed creates 3 campaigns + social posts (skipped if data already exists). In production set PAYAID_ALLOW_DEMO_SEED=1.
-          </p>
-        </div>
-      )}
-    </div>
+        )
+      }
+    />
   )
 }
