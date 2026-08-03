@@ -899,7 +899,7 @@ export default function CRMDashboardPage() {
   return (
     <CrmHomeDashboard
       tenantId={tenantId || ''}
-      userName={user?.name}
+      userName={user?.name ?? undefined}
       loading={loading}
       error={error}
       stats={safeStats}
