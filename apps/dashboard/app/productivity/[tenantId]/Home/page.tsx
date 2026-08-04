@@ -30,6 +30,8 @@ const TOOLS = [
   { slug: 'builder', name: 'Builder', description: 'Document builder', icon: FileDown, href: 'builder' },
 ] as const
 
+type ToolHref = (typeof TOOLS)[number]['href']
+
 export default function ProductivityHomePage() {
   const params = useParams()
   const tenantId = (params?.tenantId as string) || ''
@@ -65,6 +67,16 @@ export default function ProductivityHomePage() {
     },
   ]
 
+  const toolUrls: Record<ToolHref, string> = {
+    builder: `/productivity/${tenantId}/builder`,
+    sheets: `/spreadsheet/${tenantId}/Home`,
+    docs: `/docs/${tenantId}/Home`,
+    slides: `/slides/${tenantId}/Home`,
+    drive: `/drive/${tenantId}/Home`,
+    meet: `/meet/${tenantId}/Home`,
+    pdf: `/pdf/${tenantId}/Home`,
+  }
+
   return (
     <ModuleDashboardShell
       moduleId="productivity"
@@ -82,22 +94,7 @@ export default function ProductivityHomePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {TOOLS.map((tool) => {
             const Icon = tool.icon
-            const url =
-              tool.href === 'builder'
-                ? `/productivity/${tenantId}/builder`
-                : tool.href === 'sheets'
-                  ? `/spreadsheet/${tenantId}/Home`
-                  : tool.href === 'docs'
-                    ? `/docs/${tenantId}/Home`
-                    : tool.href === 'slides'
-                      ? `/slides/${tenantId}/Home`
-                      : tool.href === 'drive'
-                        ? `/drive/${tenantId}/Home`
-                        : tool.href === 'meet'
-                          ? `/meet/${tenantId}/Home`
-                          : tool.href === 'pdf'
-                            ? `/pdf/${tenantId}/Home`
-                            : `/productivity/${tenantId}/${tool.href}`
+            const url = toolUrls[tool.href]
             return (
               <Link
                 key={tool.slug}
