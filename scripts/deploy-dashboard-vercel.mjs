@@ -249,8 +249,9 @@ const overlayFiles = [
   { rel: 'apps/dashboard/vercel.json', required: false },
   { rel: 'apps/dashboard/next.config.mjs', required: true },
   { rel: 'apps/dashboard/middleware.ts', required: true },
-  { rel: 'lib/config/canonical-app-hosts.ts', required: true },
-  { rel: 'components/voice-agent/VoiceModuleSwitcher.tsx', required: true },
+  // Optional: present on some feature branches / local trees, not always on main.
+  { rel: 'lib/config/canonical-app-hosts.ts', required: false },
+  { rel: 'components/voice-agent/VoiceModuleSwitcher.tsx', required: false },
 ]
 for (const { rel, required } of overlayFiles) {
   const src = path.join(root, rel)
