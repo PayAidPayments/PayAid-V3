@@ -55,8 +55,8 @@ jobs:
         # Main package.json does not declare vercel; install CLI explicitly for deploy-dashboard-vercel.mjs.
         run: |
           npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
-          npm install vercel@47.2.2 --no-save --no-audit --no-fund --legacy-peer-deps
-          test -f node_modules/vercel/dist/vc.js
+          npm install vercel@latest --no-save --no-audit --no-fund --legacy-peer-deps
+          ls node_modules/vercel/dist/vc.js node_modules/vercel/build/vc.js 2>/dev/null | head -1 | grep -q .
 
       - name: Verify Vercel token
         run: |

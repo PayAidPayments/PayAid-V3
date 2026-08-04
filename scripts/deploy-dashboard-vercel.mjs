@@ -116,10 +116,15 @@ function replaceTreeFiltered(src, dest) {
 }
 const teamId = process.env.VERCEL_ORG_ID || 'team_HDFXYTmGsacYZEuYsr6sPTpQ'
 const projectId = process.env.VERCEL_DASHBOARD_PROJECT_ID || 'prj_bJ5BclTw72V6QFlsmGtR6BLTqqdx'
-const vercelJs = path.join(root, 'node_modules', 'vercel', 'dist', 'vc.js')
+const vercelCandidates = [
+  path.join(root, 'node_modules', 'vercel', 'dist', 'vc.js'),
+  path.join(root, 'node_modules', 'vercel', 'build', 'vc.js'),
+  path.join(root, 'node_modules', 'vercel', 'dist', 'index.js'),
+]
+const vercelJs = vercelCandidates.find((p) => existsSync(p))
 
-if (!existsSync(vercelJs)) {
-  console.error(JSON.stringify({ ok: false, error: 'Run npm install at repo root first' }, null, 2))
+if (!vercelJs) {
+  console.error(JSON.stringify({ ok: false, error: 'Run npm install at repo root first', lookedFor: vercelCandidates }, null, 2))
   process.exit(1)
 }
 
