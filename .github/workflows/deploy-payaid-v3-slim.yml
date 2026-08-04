@@ -52,7 +52,11 @@ jobs:
 
       - name: Install root deps (vercel CLI)
         # Prefer install over ci: feature-branch lockfile can drift vs package.json on this lane.
-        run: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+        # Main package.json does not declare vercel; install CLI explicitly for deploy-dashboard-vercel.mjs.
+        run: |
+          npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+          npm install vercel@41.4.0 --no-save --no-audit --no-fund --legacy-peer-deps
+          test -f node_modules/vercel/dist/vc.js
 
       - name: Verify Vercel token
         run: |
