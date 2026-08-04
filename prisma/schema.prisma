@@ -397,7 +397,12 @@ model Tenant {
   leadProviderUsage            LeadProviderUsage[]
   leadAuditEvents              LeadAuditEvent[]
   marketingPosts               MarketingPost[]
+
+  // --- merged from local Projects maturation schema ---
+  servicePackages              ServicePackage[]
+  serviceSlaIncidents          ServiceSlaIncident[]
 }
+
 
 
 // Phase 1B No-Code Agent Builder
@@ -1034,7 +1039,11 @@ model Contact {
   // Performance indexes for 10,000+ users
   @@index([tenantId, status, createdAt(sort: Desc)], name: "idx_contact_tenant_status_created")
   @@index([tenantId, status], name: "idx_contact_list_covering") // Replaces unnamed duplicate
+
+  // --- merged from local Projects maturation schema ---
+  servicePackages       ServicePackage[]          @relation("ServicePackageClient")
 }
+
 
 /// Append-only trace of inbound orchestration runs (CRM Automation execution logs).
 model InboundOrchestrationLog {
@@ -1282,7 +1291,11 @@ model Deal {
   @@index([tenantId, stage, value(sort: Desc)], name: "idx_deal_tenant_stage_value")
   /// List API: WHERE tenantId = ? ORDER BY createdAt DESC (auth baseline + CRM Deals)
   @@index([tenantId, createdAt(sort: Desc)], name: "idx_deal_tenant_created_desc")
+
+  // --- merged from local Projects maturation schema ---
+  projects          Project[]
 }
+
 
 model Task {
   id              String    @id @default(cuid())
@@ -5635,7 +5648,20 @@ model Project {
   @@index([tenantId, ownerId])
   @@index([tenantId, clientId])
   @@index([code])
+
+  // --- merged from local Projects maturation schema ---
+  dealId          String?
+  servicePackageId String?
+  deal            Deal?           @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  servicePackage   ServicePackage? @relation(fields: [servicePackageId], references: [id], onDelete: SetNull)
+  phases          ProjectPhase[]
+  milestones      ProjectMilestone[]
+  slaIncidents    ServiceSlaIncident[]
+  @@index([dealId])
+  @@index([servicePackageId])
+  @@index([tenantId, dealId])
 }
+
 
 model ProjectTask {
   id              String        @id @default(cuid())
@@ -10052,4 +10078,97 @@ model MarketingPost {
   @@index([tenantId, status])
   @@index([tenantId, scheduledFor])
   @@index([status, scheduledFor])
+}
+
+// --- merged Projects maturation models ---
+
+model ServicePackage {
+  id           String    @id @default(cuid())
+  tenantId     String
+  clientId     String
+  name         String
+  billingType  String    @default("RETAINER")
+  monthlyHours Decimal?  @db.Decimal(10, 2)
+  sla          String?
+  slaPolicy    Json?
+  renewalDate  DateTime?
+  overageRules Json?
+  status       String    @default("ACTIVE")
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client       Contact   @relation("ServicePackageClient", fields: [clientId], references: [id], onDelete: Restrict)
+  projects     Project[]
+  slaIncidents ServiceSlaIncident[]
+
+  @@index([tenantId])
+  @@index([tenantId, clientId])
+  @@index([tenantId, status])
+}
+
+model ServiceSlaIncident {
+  id               String          @id @default(cuid())
+  tenantId         String
+  servicePackageId String?
+  projectId        String
+  sourceType       String
+  sourceId         String
+  severity         String
+  status           String          @default("OPEN")
+  title            String
+  detail           String?
+  detectedAt       DateTime        @default(now())
+  acknowledgedAt   DateTime?
+  acknowledgedById String?
+  resolvedAt       DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  servicePackage   ServicePackage? @relation(fields: [servicePackageId], references: [id], onDelete: SetNull)
+  project          Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([tenantId, severity, status])
+  @@index([tenantId, servicePackageId])
+  @@index([projectId])
+  @@index([tenantId, sourceType, sourceId])
+}
+
+model ProjectPhase {
+  id         String             @id @default(cuid())
+  projectId  String
+  name       String
+  sortOrder  Int                @default(0)
+  status     String             @default("ACTIVE")
+  startDate  DateTime?
+  endDate    DateTime?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  project    Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestones ProjectMilestone[]
+
+  @@index([projectId])
+}
+
+model ProjectMilestone {
+  id                    String        @id @default(cuid())
+  projectId             String
+  phaseId               String?
+  name                  String
+  dueDate               DateTime
+  sortOrder             Int           @default(0)
+  status                String        @default("PENDING")
+  approvalRequired      Boolean       @default(false)
+  approvedAt            DateTime?
+  approvedById          String?
+  billingDraftInvoiceId String?
+  billingTrigger        String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  project               Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phase                 ProjectPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([projectId, dueDate])
 }
