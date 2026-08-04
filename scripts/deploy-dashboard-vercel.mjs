@@ -401,6 +401,7 @@ if (!existsSync(voiceDemoPage)) {
 }
 
 const deployArgs = ['deploy', '--prod', '--yes', '--archive=tgz']
+if (tokenOk && token) deployArgs.push('--token', token)
 console.log(JSON.stringify({ step: 'vercel-deploy', cwd: workDir, tokenMode: tokenOk ? 'env' : 'cli-auth' }, null, 2))
 
 const deployEnv = {
