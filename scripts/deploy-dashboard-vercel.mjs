@@ -376,6 +376,35 @@ writeFileSync(
 )
 console.log(JSON.stringify({ step: 'wrote', file: 'next.config.mjs' }, null, 2))
 
+// Root scripts/ is omitted from DEPLOY_PATHS (slow on Windows). Copy only the
+// prisma retry helper so any residual npm lifecycle that still references it
+// does not fail with MODULE_NOT_FOUND. Prefer no-oping prebuild/postinstall below.
+{
+  const prismaRetryRel = 'scripts/prisma-generate-with-retry.js'
+  const prismaRetrySrc = path.join(root, prismaRetryRel)
+  if (existsSync(prismaRetrySrc)) {
+    const dest = path.join(workDir, prismaRetryRel)
+    mkdirSync(path.dirname(dest), { recursive: true })
+    copyFileSync(prismaRetrySrc, dest)
+    console.log(JSON.stringify({ step: 'copied', rel: prismaRetryRel }, null, 2))
+  }
+}
+
+// Neutralize lifecycle scripts that assume the full root scripts/ tree.
+// vercel-build.cjs must call `next build` directly (not `npm run build`);
+// prebuild would otherwise re-run prisma generate against a missing scripts tree.
+{
+  const pkgPath = path.join(workDir, 'package.json')
+  if (existsSync(pkgPath)) {
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
+    pkg.scripts = pkg.scripts || {}
+    pkg.scripts.prebuild = 'node -e "process.exit(0)"'
+    pkg.scripts.postinstall = 'node -e "process.exit(0)"'
+    writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
+    console.log(JSON.stringify({ step: 'rewrote-package-scripts', keys: ['prebuild', 'postinstall'] }, null, 2))
+  }
+}
+
 // Deploy from monorepo root with framework=nextjs. Build runs at this root so `.next`
 // is created in-place (mirroring apps/dashboard/.next broke Vercel packaging).
 const allowTsBuildErrors = process.env.PAYAID_ALLOW_TS_BUILD_ERRORS === '1'
@@ -389,6 +418,8 @@ writeFileSync(
       // Webpack is more reliable than Turbopack for this monorepo production bundle.
       // Emergency only: set PAYAID_ALLOW_TS_BUILD_ERRORS=1 for one ship when unrelated TS drift blocks P1.
       // Prefer turbopack on Hobby — webpack OOM'd (8GB) on the slim Linux upload path.
+      // vercel-build.cjs must invoke `next build` at the flattened root — not `npm run build`
+      // (npm lifecycle prebuild still expects scripts/prisma-generate-with-retry.js).
       buildCommand: allowTsBuildErrors
         ? 'PAYAID_ALLOW_TS_BUILD_ERRORS=1 NEXT_BUILD_PREFERRED_MODE=turbopack node apps/dashboard/scripts/vercel-build.cjs'
         : 'NEXT_BUILD_PREFERRED_MODE=turbopack node apps/dashboard/scripts/vercel-build.cjs',
