@@ -19,7 +19,12 @@ type LeadAuditParams = {
  */
 export async function writeLeadAuditEvent(params: LeadAuditParams): Promise<void> {
   try {
-    await prisma.leadAuditEvent.create({
+    // Model may lag generated client on some branches; keep best-effort write typed-safe.
+    const audit = (prisma as unknown as {
+      leadAuditEvent?: { create: (args: { data: Record<string, unknown> }) => Promise<unknown> }
+    }).leadAuditEvent
+    if (!audit?.create) return
+    await audit.create({
       data: {
         tenantId: params.tenantId,
         actorId: params.actorId ?? null,

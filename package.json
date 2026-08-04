@@ -5,7 +5,8 @@
   "packageManager": "npm@10.2.0",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "packages/domains/*"
   ],
   "scripts": {
     "prepare": "node -e \"if (!process.env.CI) require('child_process').execSync('husky install', {stdio:'inherit'})\"",
@@ -140,8 +141,9 @@
     "check:deals": "npx tsx scripts/check-deals.ts",
     "inspect:deployment:crm:failed": "npx vercel inspect dpl_aNUKreW6t9T5N7cQLFk8oxCPfXMo --logs",
     "inspect:deployment:crm:failed:debug": "npx vercel inspect dpl_aNUKreW6t9T5N7cQLFk8oxCPfXMo --logs --debug",
-    "dev": "npm run dev -w dashboard",
+    "dev": "npm run dev:fast",
     "dev:fast": "npm run dev:fast -w dashboard",
+    "dev:full": "npm run dev -w dashboard",
     "dev:3002": "next dev -p 3002 --webpack",
     "dev:turbo": "node node_modules/turbo/bin/turbo dev --filter=dashboard",
     "dev:websocket": "tsx server/websocket-voice-server.ts",
@@ -467,7 +469,10 @@
     "deploy:voice": "vercel --prod --cwd apps/voice",
     "deploy:dashboard": "vercel --prod --yes --archive=tgz",
     "diagnose:dashboard:build": "node scripts/diagnose-next-build.mjs --app apps/dashboard",
-    "diagnose:build": "node scripts/diagnose-next-build.mjs"
+    "diagnose:build": "node scripts/diagnose-next-build.mjs",
+    "check:module-dashboard-homes": "node scripts/check-module-dashboard-homes.cjs",
+    "check:module-dashboard-uniformity": "node scripts/check-module-dashboard-uniformity.cjs",
+    "check:module-dashboard-homes-hosted": "node scripts/check-module-dashboard-homes-hosted.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.958.0",
