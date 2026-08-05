@@ -472,7 +472,8 @@
     "diagnose:build": "node scripts/diagnose-next-build.mjs",
     "check:module-dashboard-homes": "node scripts/check-module-dashboard-homes.cjs",
     "check:module-dashboard-uniformity": "node scripts/check-module-dashboard-uniformity.cjs",
-    "check:module-dashboard-homes-hosted": "node scripts/check-module-dashboard-homes-hosted.mjs"
+    "check:module-dashboard-homes-hosted": "node scripts/check-module-dashboard-homes-hosted.mjs",
+    "smoke:p3-projects-delivery-thin-ui-contract": "node scripts/smoke-p3-projects-delivery-thin-ui-contract.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.958.0",
