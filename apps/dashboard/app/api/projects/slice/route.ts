@@ -12,6 +12,9 @@ import { z } from 'zod'
  * Product: planning | active | completed | cancelled
  * DB: PLANNING | IN_PROGRESS | COMPLETED | CANCELLED
  * No full PM / phase-milestone-task rebuild. No Finance/Voice/Appointments reopen.
+ *
+ * Explicit `select` avoids Prisma reading schema columns (e.g. dealId) that may
+ * not exist yet on Ready DB — main list hub 500s for the same reason.
  */
 
 const PRODUCT_STATUSES = ['planning', 'active', 'completed', 'cancelled'] as const
@@ -38,6 +41,24 @@ const ALLOWED: Record<ProductStatus, ProductStatus[]> = {
   completed: [],
   cancelled: [],
 }
+
+/** Columns known-safe for thin slice on Ready (omit dealId / phase extras). */
+const SLICE_SELECT = {
+  id: true,
+  tenantId: true,
+  name: true,
+  code: true,
+  status: true,
+  clientId: true,
+  description: true,
+  notes: true,
+  priority: true,
+  progress: true,
+  actualStartDate: true,
+  actualEndDate: true,
+  createdAt: true,
+  updatedAt: true,
+} as const
 
 function toProduct(db: string): ProductStatus {
   return DB_TO_PRODUCT[db] || 'planning'
@@ -115,6 +136,7 @@ export async function GET(request: NextRequest) {
         tenantId,
         ...(clientId ? { clientId } : {}),
       },
+      select: SLICE_SELECT,
       orderBy: { createdAt: 'desc' },
       take: limit,
     })
@@ -140,6 +162,7 @@ export async function POST(request: NextRequest) {
       const data = statusSchema.parse(body)
       const existing = await prisma.project.findFirst({
         where: { id: data.projectId, tenantId },
+        select: SLICE_SELECT,
       })
       if (!existing) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
       assertTransition(existing.status, data.status)
@@ -156,6 +179,7 @@ export async function POST(request: NextRequest) {
             ? { progress: 100, actualEndDate: existing.actualEndDate || new Date() }
             : {}),
         },
+        select: SLICE_SELECT,
       })
 
       return NextResponse.json({ ok: true, project: view(project) })
@@ -192,6 +216,7 @@ export async function POST(request: NextRequest) {
         ownerId: userId || undefined,
         tags: ['p3-delivery-slice'],
       },
+      select: SLICE_SELECT,
     })
 
     if (userId) {
