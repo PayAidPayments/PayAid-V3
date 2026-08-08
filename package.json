@@ -473,7 +473,12 @@
     "check:module-dashboard-homes": "node scripts/check-module-dashboard-homes.cjs",
     "check:module-dashboard-uniformity": "node scripts/check-module-dashboard-uniformity.cjs",
     "check:module-dashboard-homes-hosted": "node scripts/check-module-dashboard-homes-hosted.mjs",
-    "smoke:p3-projects-delivery-thin-ui-contract": "node scripts/smoke-p3-projects-delivery-thin-ui-contract.mjs"
+    "smoke:p3-projects-delivery-slice": "node scripts/smoke-p3-projects-delivery-slice.mjs",
+    "smoke:p3-projects-delivery-slice-hosted": "node scripts/smoke-p3-projects-delivery-slice-hosted.mjs",
+    "smoke:p3-projects-delivery-slice-contract": "node scripts/smoke-p3-projects-delivery-slice-contract.mjs",
+    "smoke:p4-support-tickets-slice": "node scripts/smoke-p4-support-tickets-slice.mjs",
+    "smoke:p4-support-tickets-slice-hosted": "node scripts/smoke-p4-support-tickets-slice-hosted.mjs",
+    "smoke:p4-support-tickets-slice-contract": "node scripts/smoke-p4-support-tickets-slice-contract.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.958.0",
