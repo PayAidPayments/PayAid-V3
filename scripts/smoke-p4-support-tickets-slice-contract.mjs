@@ -38,6 +38,7 @@ check('slim-safe + product status mapping', () => {
   assert.match(src, /p4-support-tickets-smallest/)
   assert.match(src, /new:\s*\['open',\s*'closed'\]/)
   assert.match(src, /open:\s*\['resolved',\s*'closed'\]/)
+  assert.match(src, /\$queryRaw/)
   assert.doesNotMatch(src, /WAHA|WATI|generate-payment-link|@\/lib\/events\/taxonomy/i)
 })
 

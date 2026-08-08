@@ -10,6 +10,11 @@ import { z } from 'zod'
 /**
  * P4 Support tickets — smallest useful slice (slim-deploy safe).
  * Product/DB: new → open → resolved|closed
+ *
+ * Uses $queryRaw / $executeRaw against "SupportCase" because Ready's
+ * generated Prisma client may predate the SupportCase delegate
+ * (model exists in schema; table applied via controlled-reconcile).
+ *
  * No live send · no SLA/assignment/KB/Unibox · no closed-lane reopen.
  */
 
@@ -23,20 +28,20 @@ const ALLOWED: Record<ProductStatus, ProductStatus[]> = {
   closed: [],
 }
 
-const SLICE_SELECT = {
-  id: true,
-  tenantId: true,
-  ticketNumber: true,
-  subject: true,
-  description: true,
-  contactId: true,
-  status: true,
-  priority: true,
-  channel: true,
-  assignedToId: true,
-  createdAt: true,
-  updatedAt: true,
-} as const
+type TicketRow = {
+  id: string
+  tenantId: string
+  ticketNumber: string
+  subject: string
+  description: string | null
+  contactId: string | null
+  status: string
+  priority: string
+  channel: string
+  assignedToId: string | null
+  createdAt: Date
+  updatedAt: Date
+}
 
 function toProduct(db: string): ProductStatus {
   if (db === 'pending') return 'open'
@@ -54,7 +59,7 @@ const createSchema = z.object({
   subject: z.string().min(1).optional(),
   description: z.string().optional(),
   contactId: z.string().optional(),
-  customerId: z.string().optional(), // alias → contactId
+  customerId: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
   channel: z.enum(['email', 'chat', 'phone', 'whatsapp', 'web']).optional(),
 })
@@ -68,25 +73,7 @@ async function requireSupportAccess(request: NextRequest) {
   return requireAnyModuleAccess(request, ['support', 'crm'])
 }
 
-async function nextTicketNumber(tenantId: string): Promise<string> {
-  const count = await prisma.supportCase.count({ where: { tenantId } })
-  return `TKT-${String(count + 1).padStart(4, '0')}`
-}
-
-function view(row: {
-  id: string
-  tenantId: string
-  ticketNumber: string
-  subject: string
-  description: string | null
-  contactId: string | null
-  status: string
-  priority: string
-  channel: string
-  assignedToId: string | null
-  createdAt: Date
-  updatedAt: Date
-}) {
+function view(row: TicketRow) {
   return {
     id: row.id,
     tenantId: row.tenantId,
@@ -104,21 +91,42 @@ function view(row: {
   }
 }
 
+function cuidLike() {
+  const rand = Math.random().toString(36).slice(2, 10)
+  return `p4tkt_${Date.now().toString(36)}_${rand}`
+}
+
+async function nextTicketNumber(tenantId: string): Promise<string> {
+  const rows = await prisma.$queryRaw<Array<{ count: bigint }>>`
+    SELECT COUNT(*)::bigint AS count FROM "SupportCase" WHERE "tenantId" = ${tenantId}
+  `
+  const count = Number(rows[0]?.count || 0)
+  return `TKT-${String(count + 1).padStart(4, '0')}`
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { tenantId } = await requireSupportAccess(request)
     const contactId = request.nextUrl.searchParams.get('contactId') || undefined
     const limit = Math.min(parseInt(request.nextUrl.searchParams.get('limit') || '50', 10) || 50, 100)
 
-    const rows = await prisma.supportCase.findMany({
-      where: {
-        tenantId,
-        ...(contactId ? { contactId } : {}),
-      },
-      select: SLICE_SELECT,
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-    })
+    const rows = contactId
+      ? await prisma.$queryRaw<TicketRow[]>`
+          SELECT id, "tenantId", "ticketNumber", subject, description, "contactId",
+                 status, priority, channel, "assignedToId", "createdAt", "updatedAt"
+          FROM "SupportCase"
+          WHERE "tenantId" = ${tenantId} AND "contactId" = ${contactId}
+          ORDER BY "createdAt" DESC
+          LIMIT ${limit}
+        `
+      : await prisma.$queryRaw<TicketRow[]>`
+          SELECT id, "tenantId", "ticketNumber", subject, description, "contactId",
+                 status, priority, channel, "assignedToId", "createdAt", "updatedAt"
+          FROM "SupportCase"
+          WHERE "tenantId" = ${tenantId}
+          ORDER BY "createdAt" DESC
+          LIMIT ${limit}
+        `
 
     return NextResponse.json({
       ok: true,
@@ -139,20 +147,30 @@ export async function POST(request: NextRequest) {
 
     if (body?.action === 'status') {
       const data = statusSchema.parse(body)
-      const existing = await prisma.supportCase.findFirst({
-        where: { id: data.ticketId, tenantId },
-        select: SLICE_SELECT,
-      })
+      const existingRows = await prisma.$queryRaw<TicketRow[]>`
+        SELECT id, "tenantId", "ticketNumber", subject, description, "contactId",
+               status, priority, channel, "assignedToId", "createdAt", "updatedAt"
+        FROM "SupportCase"
+        WHERE id = ${data.ticketId} AND "tenantId" = ${tenantId}
+        LIMIT 1
+      `
+      const existing = existingRows[0]
       if (!existing) return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
       assertTransition(existing.status, data.status)
 
-      const ticket = await prisma.supportCase.update({
-        where: { id: existing.id },
-        data: { status: data.status },
-        select: SLICE_SELECT,
-      })
-
-      return NextResponse.json({ ok: true, ticket: view(ticket) })
+      await prisma.$executeRaw`
+        UPDATE "SupportCase"
+        SET status = ${data.status}, "updatedAt" = NOW()
+        WHERE id = ${existing.id}
+      `
+      const updated = await prisma.$queryRaw<TicketRow[]>`
+        SELECT id, "tenantId", "ticketNumber", subject, description, "contactId",
+               status, priority, channel, "assignedToId", "createdAt", "updatedAt"
+        FROM "SupportCase"
+        WHERE id = ${existing.id}
+        LIMIT 1
+      `
+      return NextResponse.json({ ok: true, ticket: view(updated[0]) })
     }
 
     const data = createSchema.parse(body)
@@ -173,23 +191,31 @@ export async function POST(request: NextRequest) {
     const subject =
       (data.subject || '').trim() || `P4 Support Ticket ${new Date().toISOString().slice(0, 10)}`
     const ticketNumber = await nextTicketNumber(tenantId)
+    const id = cuidLike()
+    const description = (data.description || 'P4 support tickets thin slice').slice(0, 2000)
+    const priority = data.priority || 'medium'
+    const channel = data.channel || 'web'
+    const metadata = JSON.stringify({ slice: 'p4-support-tickets-smallest' })
 
-    const ticket = await prisma.supportCase.create({
-      data: {
-        tenantId,
-        ticketNumber,
-        subject: subject.slice(0, 200),
-        description: (data.description || 'P4 support tickets thin slice').slice(0, 2000),
-        contactId: contactId || undefined,
-        status: 'new',
-        priority: data.priority || 'medium',
-        channel: data.channel || 'web',
-        metadata: { slice: 'p4-support-tickets-smallest' },
-      },
-      select: SLICE_SELECT,
-    })
+    await prisma.$executeRaw`
+      INSERT INTO "SupportCase" (
+        id, "tenantId", "ticketNumber", subject, description, "contactId",
+        status, priority, channel, metadata, "createdAt", "updatedAt"
+      ) VALUES (
+        ${id}, ${tenantId}, ${ticketNumber}, ${subject.slice(0, 200)}, ${description},
+        ${contactId}, 'new', ${priority}, ${channel}, ${metadata}::jsonb, NOW(), NOW()
+      )
+    `
 
-    return NextResponse.json({ ok: true, ticket: view(ticket) }, { status: 201 })
+    const created = await prisma.$queryRaw<TicketRow[]>`
+      SELECT id, "tenantId", "ticketNumber", subject, description, "contactId",
+             status, priority, channel, "assignedToId", "createdAt", "updatedAt"
+      FROM "SupportCase"
+      WHERE id = ${id}
+      LIMIT 1
+    `
+
+    return NextResponse.json({ ok: true, ticket: view(created[0]) }, { status: 201 })
   } catch (error: unknown) {
     if (error instanceof LicenseError) return handleLicenseError(error)
     if (error instanceof z.ZodError) {
