@@ -73,7 +73,9 @@ const buildEnv = {
   // Force webpack: turbopack fails on flattened monorepo + bull edge traces.
   NEXT_BUILD_PREFERRED_MODE: 'webpack',
   VERCEL_ALLOW_WEBPACK_FALLBACK: '1',
-  NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=6144',
+  // Keep heap under ~3.5GB on Vercel preview (2 cores / 8 GB). 6144 OOMs with SIGKILL
+  // and no Error line during "Creating an optimized production build".
+  NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=3584',
 }
 
 console.log('[git-vercel-build] invoking vercel-build with NEXT_BUILD_PREFERRED_MODE=webpack')
