@@ -1,0 +1,36 @@
+{
+  "_note": "PayAid customer-facing Business Specialist Pack divisions. In-product only. Never expose docs/ai/nexus internal agents here. Module IDs must align with lib/modules/catalog.ts ALL_LICENSE_MODULE_IDS (support surfaces use communication).",
+  "pack": "customer",
+  "divisions": {
+    "sales": {
+      "label": "Sales",
+      "icon": "TrendingUp",
+      "color": "#10B981",
+      "primaryModules": ["sales", "crm"]
+    },
+    "finance": {
+      "label": "Finance",
+      "icon": "DollarSign",
+      "color": "#22C55E",
+      "primaryModules": ["finance"]
+    },
+    "marketing": {
+      "label": "Marketing",
+      "icon": "Megaphone",
+      "color": "#F97316",
+      "primaryModules": ["marketing"]
+    },
+    "support": {
+      "label": "Support",
+      "icon": "LifeBuoy",
+      "color": "#84CC16",
+      "primaryModules": ["communication"]
+    },
+    "success": {
+      "label": "Customer Success",
+      "icon": "HeartHandshake",
+      "color": "#06B6D4",
+      "primaryModules": ["crm", "sales"]
+    }
+  }
+}

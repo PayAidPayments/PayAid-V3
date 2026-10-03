@@ -1,0 +1,226 @@
+{
+  "_note": "Customer specialist registry with entitlement headers. actionMode: advise|draft. Customer agents never send/pay/post autonomously. evaluate via lib/ai/customer-specialists/evaluate-entitlement.ts. Module IDs from lib/modules/catalog.ts.",
+  "pack": "customer",
+  "entitlementHeaderVersion": "2026-10-03-v1",
+  "agents": [
+    {
+      "slug": "sales-discovery-coach",
+      "name": "Discovery Coach",
+      "division": "sales",
+      "actionMode": "draft",
+      "approvalPolicy": "draft-first",
+      "summary": "Structures discovery questions and qualification notes for a lead or deal.",
+      "entitlement": {
+        "modulesAny": ["sales", "crm"],
+        "modulesAll": [],
+        "minRoles": ["member", "manager", "admin", "owner"],
+        "denyWithoutModule": true,
+        "dataRead": ["crm.contacts", "crm.leads", "sales.deals"],
+        "draftTypes": ["discovery_call_plan", "qualification_notes"],
+        "forbiddenCapabilities": ["send", "write", "execute", "delete", "admin"],
+        "auditRequired": true
+      }
+    },
+    {
+      "slug": "sales-deal-strategist",
+      "name": "Deal Strategist",
+      "division": "sales",
+      "actionMode": "draft",
+      "approvalPolicy": "draft-first",
+      "summary": "Scores deal risk and drafts a win plan. Does not change CRM stage.",
+      "entitlement": {
+        "modulesAny": ["sales", "crm"],
+        "modulesAll": [],
+        "minRoles": ["member", "manager", "admin", "owner"],
+        "denyWithoutModule": true,
+        "dataRead": ["crm.contacts", "sales.deals", "crm.interactions"],
+        "draftTypes": ["deal_scorecard", "win_plan"],
+        "forbiddenCapabilities": ["send", "write", "execute", "delete", "admin"],
+        "auditRequired": true
+      }
+    },
+    {
+      "slug": "sales-pipeline-analyst",
+      "name": "Pipeline Analyst",
+      "division": "sales",
+      "actionMode": "advise",
+      "approvalPolicy": "read-only",
+      "summary": "Summarizes pipeline health and forecast risks from allowed deal data.",
+      "entitlement": {
+        "modulesAny": ["sales"],
+        "modulesAll": [],
+        "minRoles": ["member", "manager", "admin", "owner"],
+        "denyWithoutModule": true,
+        "dataRead": ["sales.deals", "analytics.pipeline"],
+        "draftTypes": [],
+        "forbiddenCapabilities": ["send", "write", "execute", "delete", "admin"],
+        "auditRequired": true
+      }
+    },
+    {
+      "slug": "sales-proposal-strategist",
+      "name": "Proposal Strategist",
+      "division": "sales",
+      "actionMode": "draft",
+      "approvalPolicy": "draft-first",
+      "summary": "Drafts proposal narrative and pricing talking points. Never sends to the customer.",
+      "entitlement": {
+        "modulesAny": ["sales", "crm"],
+        "modulesAll": [],
+        "minRoles": ["member", "manager", "admin", "owner"],
+        "denyWithoutModule": true,
+        "dataRead": ["crm.contacts", "sales.deals", "finance.quotes"],
+        "draftTypes": ["proposal_draft", "pricing_talking_points"],
+        "forbiddenCapabilities": ["send", "write", "execute", "delete", "admin"],
+        "auditRequired": true
+      }
+    },
+    {
+      "slug": "finance-bookkeeper",
+      "name": "Bookkeeper",
+      "division": "finance",
+      "actionMode": "draft",
+      "approvalPolicy": "guarded-ops",
+      "summary": "Drafts invoice/checklist content for GST-aware finance workflows. Requires human approval before any ledger write.",
+      "entitlement": {
+        "modulesAny": ["finance"],
+        "modulesAll": [],
+        "minRoles": ["manager", "admin", "owner"],
+        "denyWithoutModule": true,
+        "dataRead": ["finance.invoices", "finance.contacts", "crm.contacts"],
+        "draftTypes": ["invoice_draft", "month_end_checklist"],
+        "forbiddenCapabilities": ["send", "execute", "delete", "admin"],
+        "auditRequired": true,
+        "requiresApprovalBefore": ["write", "send"]
+      }
+    },
+    {
+      "slug": "finance-fpa-analyst",
+      "name": "FP&A Analyst",
+      "division": "finance",
+      "actionMode": "draft",
+      "approvalPolicy": "draft-first",
+      "summary": "Drafts forecast and variance commentary from finance metrics. No payment execution.",
+      "entitlement": {
+        "modulesAny": ["finance"],
+        "modulesAll": [],
+        "minRoles": ["manager", "admin", "owner"],
+        "denyWithoutModule": true,
+        "dataRead": ["finance.invoices", "finance.reports", "analytics.finance"],
+        "draftTypes": ["forecast_commentary", "variance_brief"],
+        "forbiddenCapabilities": ["send", "write", "execute", "delete", "admin"],
+        "auditRequired": true
+      }
+    },
+    {
+      "slug": "marketing-content-creator",
+      "name": "Content Creator",
+      "division": "marketing",
+      "actionMode": "draft",
+      "approvalPolicy": "draft-first",
+      "summary": "Drafts campaign copy and content calendars. Never publishes.",
+      "entitlement": {
+        "modulesAny": ["marketing"],
+        "modulesAll": [],
+        "minRoles": ["member", "manager", "admin", "owner"],
+        "denyWithoutModule": true,
+        "dataRead": ["marketing.campaigns", "marketing.content"],
+        "draftTypes": ["campaign_copy", "content_calendar"],
+        "forbiddenCapabilities": ["send", "write", "execute", "delete", "admin"],
+        "auditRequired": true
+      }
+    },
+    {
+      "slug": "marketing-email-strategist",
+      "name": "Email Strategist",
+      "division": "marketing",
+      "actionMode": "draft",
+      "approvalPolicy": "external-actions",
+      "summary": "Drafts lifecycle email sequences. Send remains approval-gated.",
+      "entitlement": {
+        "modulesAny": ["marketing"],
+        "modulesAll": [],
+        "minRoles": ["manager", "admin", "owner"],
+        "denyWithoutModule": true,
+        "dataRead": ["marketing.campaigns", "crm.contacts"],
+        "draftTypes": ["email_sequence_draft", "subject_line_variants"],
+        "forbiddenCapabilities": ["send", "execute", "delete", "admin"],
+        "auditRequired": true,
+        "requiresApprovalBefore": ["send"]
+      }
+    },
+    {
+      "slug": "marketing-seo-specialist",
+      "name": "SEO Specialist",
+      "division": "marketing",
+      "actionMode": "advise",
+      "approvalPolicy": "read-only",
+      "summary": "Advises on SEO structure and content gaps. Does not mutate live pages.",
+      "entitlement": {
+        "modulesAny": ["marketing"],
+        "modulesAll": [],
+        "minRoles": ["member", "manager", "admin", "owner"],
+        "denyWithoutModule": true,
+        "dataRead": ["marketing.content", "website.pages"],
+        "draftTypes": [],
+        "forbiddenCapabilities": ["send", "write", "execute", "delete", "admin"],
+        "auditRequired": true
+      }
+    },
+    {
+      "slug": "support-responder",
+      "name": "Support Responder",
+      "division": "support",
+      "actionMode": "draft",
+      "approvalPolicy": "draft-first",
+      "summary": "Drafts support replies for tickets. Does not send to the customer.",
+      "entitlement": {
+        "modulesAny": ["communication"],
+        "modulesAll": [],
+        "minRoles": ["member", "manager", "admin", "owner"],
+        "denyWithoutModule": true,
+        "dataRead": ["support.tickets", "crm.contacts", "communication.threads"],
+        "draftTypes": ["support_reply_draft"],
+        "forbiddenCapabilities": ["send", "execute", "delete", "admin"],
+        "auditRequired": true,
+        "requiresApprovalBefore": ["send", "write"]
+      }
+    },
+    {
+      "slug": "support-executive-summary-generator",
+      "name": "Executive Summary Generator",
+      "division": "support",
+      "actionMode": "draft",
+      "approvalPolicy": "draft-first",
+      "summary": "Drafts stakeholder summaries from support/ops metrics.",
+      "entitlement": {
+        "modulesAny": ["communication", "analytics"],
+        "modulesAll": [],
+        "minRoles": ["manager", "admin", "owner"],
+        "denyWithoutModule": true,
+        "dataRead": ["support.tickets", "analytics.support"],
+        "draftTypes": ["executive_summary_draft"],
+        "forbiddenCapabilities": ["send", "write", "execute", "delete", "admin"],
+        "auditRequired": true
+      }
+    },
+    {
+      "slug": "success-customer-success-manager",
+      "name": "Customer Success Manager",
+      "division": "success",
+      "actionMode": "advise",
+      "approvalPolicy": "read-only",
+      "summary": "Advises on health, renewals, and expansion signals. No autonomous outreach.",
+      "entitlement": {
+        "modulesAny": ["crm", "sales"],
+        "modulesAll": [],
+        "minRoles": ["member", "manager", "admin", "owner"],
+        "denyWithoutModule": true,
+        "dataRead": ["crm.contacts", "sales.deals", "support.tickets"],
+        "draftTypes": [],
+        "forbiddenCapabilities": ["send", "write", "execute", "delete", "admin"],
+        "auditRequired": true
+      }
+    }
+  ]
+}
