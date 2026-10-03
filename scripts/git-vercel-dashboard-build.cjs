@@ -67,18 +67,47 @@ if (fs.existsSync(path.join(root, 'middleware.ts')) && fs.existsSync(proxyPath))
 }
 fs.writeFileSync(path.join(root, 'next.config.mjs'), "export { default } from './apps/dashboard/next.config.mjs'\n")
 
+// Drop non-dashboard workspaces / docs from the checkout so Next + webpack/turbopack
+// scan less on 2-core / 8GB preview builders (confirmed OOM with webpack + 3584).
+const prunePaths = [
+  'apps/crm',
+  'apps/hr',
+  'apps/finance',
+  'apps/leads',
+  'apps/marketing',
+  'apps/platform',
+  'apps/projects',
+  'apps/voice',
+  'apps/inventory',
+  '__tests__',
+  'docs',
+  '.tools',
+  'archive',
+  'uploads',
+  'artifacts',
+  'coverage',
+  'playwright-report',
+  'test-results',
+]
+for (const rel of prunePaths) {
+  const full = path.join(root, rel)
+  if (!fs.existsSync(full)) continue
+  fs.rmSync(full, { recursive: true, force: true })
+  console.log(`[git-vercel-build] pruned ${rel}`)
+}
+
 const buildEnv = {
   ...process.env,
   PAYAID_ALLOW_TS_BUILD_ERRORS: '1',
-  // Force webpack: turbopack fails on flattened monorepo + bull edge traces.
-  NEXT_BUILD_PREFERRED_MODE: 'webpack',
-  VERCEL_ALLOW_WEBPACK_FALLBACK: '1',
-  // Keep heap under ~3.5GB on Vercel preview (2 cores / 8 GB). 6144 OOMs with SIGKILL
-  // and no Error line during "Creating an optimized production build".
-  NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=3584',
+  PAYAID_DISABLE_OPTIMIZE_PACKAGE_IMPORTS: '1',
+  // Match main Git path: turbopack (vercel-build default). Forcing webpack on this
+  // flattened Git preview OOMs on 8GB with SIGKILL after ~5m and no Error line.
+  NEXT_BUILD_PREFERRED_MODE: 'turbopack',
+  NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=3072',
+  NEXT_TELEMETRY_DISABLED: '1',
 }
 
-console.log('[git-vercel-build] invoking vercel-build with NEXT_BUILD_PREFERRED_MODE=webpack')
+console.log('[git-vercel-build] invoking vercel-build with NEXT_BUILD_PREFERRED_MODE=turbopack')
 const result = spawnSync(process.execPath, [path.join(root, 'apps/dashboard/scripts/vercel-build.cjs')], {
   cwd: root,
   stdio: 'inherit',
