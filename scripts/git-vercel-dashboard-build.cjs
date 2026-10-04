@@ -185,6 +185,15 @@ if (fs.existsSync(instrumentationPath)) {
   console.log('[git-vercel-build] stubbed instrumentation.ts for preview build')
 }
 
+// Package-level turbopack alias for bull is unreliable; replace the queue module so
+// nothing imports node_modules/bull (import trace was lib/queue/bull.ts → invoices).
+const bullQueuePath = path.join(root, 'lib/queue/bull.ts')
+const bullQueueStub = path.join(root, 'scripts/stubs/bull-queue-preview.ts')
+if (fs.existsSync(bullQueuePath) && fs.existsSync(bullQueueStub)) {
+  fs.copyFileSync(bullQueueStub, bullQueuePath)
+  console.log('[git-vercel-build] replaced lib/queue/bull.ts with preview stub (no bull import)')
+}
+
 const buildEnv = {
   ...process.env,
   PAYAID_ALLOW_TS_BUILD_ERRORS: '1',
