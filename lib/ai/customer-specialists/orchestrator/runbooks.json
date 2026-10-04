@@ -1,0 +1,27 @@
+{
+  "_note": "Customer-facing product flow runbooks for the thin orchestrator (Phase 4). Distinct from internal docs/ai/nexus/runbooks.json.",
+  "pack": "customer",
+  "maxAttempts": 3,
+  "runbooks": [
+    {
+      "slug": "sales-follow-up",
+      "title": "Sales follow-up draft",
+      "summary": "Discovery plan, deal scorecard, and proposal draft. Never sends.",
+      "moduleIds": ["sales", "crm"],
+      "requiresApproval": false,
+      "agents": [
+        "sales-discovery-coach",
+        "sales-deal-strategist",
+        "sales-proposal-strategist"
+      ]
+    },
+    {
+      "slug": "gst-invoice-draft",
+      "title": "GST invoice draft",
+      "summary": "Bookkeeper GST invoice draft pending finance approval. Not issued, paid, or filed.",
+      "moduleIds": ["finance"],
+      "requiresApproval": true,
+      "agents": ["finance-bookkeeper"]
+    }
+  ]
+}

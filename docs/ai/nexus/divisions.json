@@ -1,0 +1,36 @@
+{
+  "_note": "PayAid internal NEXUS divisions (Cursor-facing Dev Specialist Pack only). Customer specialists are out of scope for Phase 1. Consumed by docs/ai/nexus/runbooks.json and docs/ai/nexus/README.md. Do not install these into the in-product business specialist pack.",
+  "pack": "internal",
+  "divisions": {
+    "product": {
+      "label": "Product",
+      "icon": "Compass",
+      "color": "#D946EF",
+      "mission": "Frame outcomes, scope, and acceptance before coding."
+    },
+    "platform": {
+      "label": "Platform",
+      "icon": "Boxes",
+      "color": "#3B82F6",
+      "mission": "Protect schema, contracts, tenancy, and cross-module integrity."
+    },
+    "delivery": {
+      "label": "Delivery",
+      "icon": "Wrench",
+      "color": "#0EA5E9",
+      "mission": "Implement domain work with module-specific rules."
+    },
+    "quality": {
+      "label": "Quality",
+      "icon": "FlaskConical",
+      "color": "#F59E0B",
+      "mission": "Prove routes, regressions, and review findings with evidence."
+    },
+    "reliability": {
+      "label": "Reliability",
+      "icon": "Shield",
+      "color": "#EF4444",
+      "mission": "Incident response, performance, and production readiness."
+    }
+  }
+}

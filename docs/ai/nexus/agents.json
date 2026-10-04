@@ -1,0 +1,186 @@
+{
+  "_note": "Internal Dev Specialist Pack registry. Slugs are stable IDs used by runbooks.json. actionMode for internal pack is advise|gate (not customer draft/approve).",
+  "pack": "internal",
+  "agents": [
+    {
+      "slug": "product-strategist",
+      "name": "PayAid Product Strategist",
+      "division": "product",
+      "actionMode": "gate",
+      "when": "Always first for meaningful work",
+      "skills": [],
+      "promptHint": "docs/ai/specialist-execution-template.md#a-product-strategist"
+    },
+    {
+      "slug": "sprint-prioritizer",
+      "name": "Sprint Prioritizer",
+      "division": "product",
+      "actionMode": "advise",
+      "when": "Break a multi-day ticket into ordered tasks with acceptance checks",
+      "skills": [],
+      "promptHint": "docs/ai/nexus/handoff-templates.md#sprint-prioritizer"
+    },
+    {
+      "slug": "feedback-synthesizer",
+      "name": "Feedback Synthesizer",
+      "division": "product",
+      "actionMode": "advise",
+      "when": "Turn user/operator feedback into ranked product changes",
+      "skills": [],
+      "promptHint": "docs/ai/nexus/handoff-templates.md#feedback-synthesizer"
+    },
+    {
+      "slug": "platform-architect",
+      "name": "Platform Architect",
+      "division": "platform",
+      "actionMode": "gate",
+      "when": "Required when 2+ modules are touched, or schema/API contracts change",
+      "skills": ["tenant-scope-multi-tenant-guardrails"],
+      "promptHint": "docs/ai/specialist-execution-template.md#b-platform-architect-if-2-modules"
+    },
+    {
+      "slug": "software-architect",
+      "name": "Software Architect",
+      "division": "platform",
+      "actionMode": "advise",
+      "when": "Deep design trade-offs, DDD boundaries, or multi-step architecture decisions",
+      "skills": [],
+      "promptHint": "docs/ai/nexus/handoff-templates.md#software-architect"
+    },
+    {
+      "slug": "database-optimizer",
+      "name": "Database Optimizer",
+      "division": "platform",
+      "actionMode": "advise",
+      "when": "Schema design, indexes, slow queries, migration sequencing",
+      "skills": ["prisma-migration-discipline"],
+      "promptHint": "docs/ai/nexus/handoff-templates.md#database-optimizer"
+    },
+    {
+      "slug": "crm-specialist",
+      "name": "CRM Specialist",
+      "division": "delivery",
+      "actionMode": "advise",
+      "when": "CRM contacts, pipeline, interactions, lead flows",
+      "skills": [],
+      "promptHint": "docs/ai/specialist-execution-template.md#c-domain-specialist-pick-one-or-more"
+    },
+    {
+      "slug": "marketing-specialist",
+      "name": "Marketing Specialist",
+      "division": "delivery",
+      "actionMode": "advise",
+      "when": "Marketing Command Center, campaigns, social, content surfaces",
+      "skills": [],
+      "promptHint": "docs/ai/specialist-execution-template.md#c-domain-specialist-pick-one-or-more"
+    },
+    {
+      "slug": "finance-gst-specialist",
+      "name": "Finance and GST Specialist",
+      "division": "delivery",
+      "actionMode": "gate",
+      "when": "Invoices, GST, accounting, billing, finance APIs",
+      "skills": ["tenant-scope-multi-tenant-guardrails"],
+      "promptHint": "docs/ai/specialist-execution-template.md#c-domain-specialist-pick-one-or-more"
+    },
+    {
+      "slug": "workflow-automation-specialist",
+      "name": "Workflow Automation Specialist",
+      "division": "delivery",
+      "actionMode": "advise",
+      "when": "Workflow builder, automation runs, draft-first outbound triggers",
+      "skills": [],
+      "promptHint": "docs/ai/specialist-execution-template.md#c-domain-specialist-pick-one-or-more"
+    },
+    {
+      "slug": "ux-cleanup-specialist",
+      "name": "UX Cleanup Specialist",
+      "division": "delivery",
+      "actionMode": "advise",
+      "when": "UI consistency, empty states, shell/nav cleanup",
+      "skills": [],
+      "promptHint": "docs/ai/specialist-execution-template.md#c-domain-specialist-pick-one-or-more"
+    },
+    {
+      "slug": "speed-auditor",
+      "name": "Speed Auditor",
+      "division": "reliability",
+      "actionMode": "gate",
+      "when": "Performance-sensitive features, summary APIs, heavy pages",
+      "skills": [],
+      "promptHint": "docs/ai/nexus/runbooks/performance-pass.md"
+    },
+    {
+      "slug": "no-404-qa",
+      "name": "No-404 QA Specialist",
+      "division": "quality",
+      "actionMode": "gate",
+      "when": "Any new or changed route, button, or page",
+      "skills": ["smoke-test-source-path-verification"],
+      "promptHint": "docs/ai/specialist-execution-template.md#d-no-404-qa-specialist"
+    },
+    {
+      "slug": "evidence-collector",
+      "name": "Evidence Collector",
+      "division": "quality",
+      "actionMode": "gate",
+      "when": "Capture screenshots, command output, and proof artifacts for gates",
+      "skills": ["repo-audit-implementation-verification"],
+      "promptHint": "docs/ai/nexus/handoff-templates.md#evidence-collector"
+    },
+    {
+      "slug": "api-tester",
+      "name": "API Tester",
+      "division": "quality",
+      "actionMode": "gate",
+      "when": "API contract, auth, tenant scope, and status-code verification",
+      "skills": [],
+      "promptHint": "docs/ai/nexus/handoff-templates.md#api-tester"
+    },
+    {
+      "slug": "code-reviewer",
+      "name": "Code Review Specialist",
+      "division": "quality",
+      "actionMode": "gate",
+      "when": "Required before shipping any significant merge",
+      "skills": ["repo-audit-implementation-verification"],
+      "promptHint": "docs/ai/specialist-execution-template.md#e-code-review-specialist"
+    },
+    {
+      "slug": "reality-checker",
+      "name": "Reality Checker",
+      "division": "quality",
+      "actionMode": "gate",
+      "when": "Final release authority; defaults to NOT READY without evidence",
+      "skills": ["pilot-release-gate-go-no-go"],
+      "promptHint": "docs/ai/nexus/runbooks/release.md"
+    },
+    {
+      "slug": "sre",
+      "name": "SRE",
+      "division": "reliability",
+      "actionMode": "advise",
+      "when": "SLOs, deploy health, observability, capacity, rollback readiness",
+      "skills": [],
+      "promptHint": "docs/ai/nexus/handoff-templates.md#sre"
+    },
+    {
+      "slug": "incident-response-commander",
+      "name": "Incident Response Commander",
+      "division": "reliability",
+      "actionMode": "gate",
+      "when": "Production incidents from detection through post-mortem",
+      "skills": [],
+      "promptHint": "docs/ai/nexus/runbooks/production-incident.md"
+    },
+    {
+      "slug": "agents-orchestrator",
+      "name": "PayAid Agents Orchestrator",
+      "division": "product",
+      "actionMode": "gate",
+      "when": "Select runbook, enforce order, block ship on missing gates",
+      "skills": [],
+      "promptHint": "docs/ai/nexus/README.md#how-to-run-a-ticket"
+    }
+  ]
+}
