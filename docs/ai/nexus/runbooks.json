@@ -1,0 +1,177 @@
+{
+  "_note": "Machine-readable internal NEXUS runbooks. agents[] entries are slugs from docs/ai/nexus/agents.json. activation: always | if-condition | as-needed | post-fix. Missing required gate => ship blocked (see docs/ai/nexus/ship-gate.md).",
+  "pack": "internal",
+  "defaultOrchestrator": "agents-orchestrator",
+  "runbooks": [
+    {
+      "slug": "new-page-or-route",
+      "title": "New page or route",
+      "mode": "NEXUS-Sprint",
+      "duration": "1-5 days",
+      "summary": "Ship a new or changed route/button/page with No-404 and code review gates.",
+      "doc": "docs/ai/nexus/runbooks/new-page-or-route.md",
+      "shipBlockedWithout": ["product-strategist", "no-404-qa", "code-reviewer"],
+      "roster": [
+        {
+          "group": "Core",
+          "activation": "always",
+          "agents": [
+            "agents-orchestrator",
+            "product-strategist",
+            "no-404-qa",
+            "code-reviewer"
+          ]
+        },
+        {
+          "group": "Platform",
+          "activation": "if-2-plus-modules",
+          "agents": ["platform-architect"]
+        },
+        {
+          "group": "Delivery",
+          "activation": "as-needed",
+          "agents": [
+            "crm-specialist",
+            "marketing-specialist",
+            "finance-gst-specialist",
+            "workflow-automation-specialist",
+            "ux-cleanup-specialist"
+          ]
+        },
+        {
+          "group": "Evidence",
+          "activation": "always",
+          "agents": ["evidence-collector"]
+        }
+      ]
+    },
+    {
+      "slug": "schema-or-billing-change",
+      "title": "Schema or billing change",
+      "mode": "NEXUS-Sprint",
+      "duration": "2-10 days",
+      "summary": "Schema, Prisma, finance, GST, or billing changes with tenancy and review gates.",
+      "doc": "docs/ai/nexus/runbooks/schema-or-billing-change.md",
+      "shipBlockedWithout": [
+        "product-strategist",
+        "platform-architect",
+        "finance-gst-specialist",
+        "code-reviewer"
+      ],
+      "requiredSkills": [
+        "prisma-migration-discipline",
+        "tenant-scope-multi-tenant-guardrails"
+      ],
+      "roster": [
+        {
+          "group": "Core",
+          "activation": "always",
+          "agents": [
+            "agents-orchestrator",
+            "product-strategist",
+            "platform-architect",
+            "finance-gst-specialist",
+            "database-optimizer",
+            "code-reviewer"
+          ]
+        },
+        {
+          "group": "Quality",
+          "activation": "as-needed",
+          "agents": ["api-tester", "no-404-qa", "evidence-collector"]
+        }
+      ]
+    },
+    {
+      "slug": "performance-pass",
+      "title": "Performance pass",
+      "mode": "NEXUS-Micro",
+      "duration": "0.5-3 days",
+      "summary": "Diagnose and improve performance-sensitive pages or APIs with evidence.",
+      "doc": "docs/ai/nexus/runbooks/performance-pass.md",
+      "shipBlockedWithout": ["speed-auditor", "evidence-collector", "code-reviewer"],
+      "roster": [
+        {
+          "group": "Core",
+          "activation": "always",
+          "agents": [
+            "agents-orchestrator",
+            "product-strategist",
+            "speed-auditor",
+            "platform-architect",
+            "evidence-collector",
+            "code-reviewer"
+          ]
+        },
+        {
+          "group": "Support",
+          "activation": "as-needed",
+          "agents": ["database-optimizer", "api-tester", "sre"]
+        }
+      ]
+    },
+    {
+      "slug": "release",
+      "title": "Release",
+      "mode": "NEXUS-Micro",
+      "duration": "hours",
+      "summary": "Final go/no-go. Reality Checker defaults to NOT READY without evidence.",
+      "doc": "docs/ai/nexus/runbooks/release.md",
+      "shipBlockedWithout": ["reality-checker", "code-reviewer"],
+      "requiredSkills": ["pilot-release-gate-go-no-go"],
+      "roster": [
+        {
+          "group": "Core",
+          "activation": "always",
+          "agents": [
+            "agents-orchestrator",
+            "reality-checker",
+            "evidence-collector",
+            "code-reviewer"
+          ]
+        },
+        {
+          "group": "Conditional gates",
+          "activation": "as-needed",
+          "agents": ["no-404-qa", "speed-auditor", "api-tester", "sre"]
+        }
+      ]
+    },
+    {
+      "slug": "production-incident",
+      "title": "Production incident",
+      "mode": "NEXUS-Micro",
+      "duration": "minutes to hours",
+      "summary": "Detect, contain, fix, verify, and write a post-mortem for production incidents.",
+      "doc": "docs/ai/nexus/runbooks/production-incident.md",
+      "shipBlockedWithout": ["incident-response-commander", "evidence-collector"],
+      "roster": [
+        {
+          "group": "P0 response",
+          "activation": "always",
+          "agents": [
+            "agents-orchestrator",
+            "incident-response-commander",
+            "sre",
+            "platform-architect"
+          ]
+        },
+        {
+          "group": "Domain owner",
+          "activation": "as-needed",
+          "agents": [
+            "crm-specialist",
+            "marketing-specialist",
+            "finance-gst-specialist",
+            "workflow-automation-specialist"
+          ]
+        },
+        {
+          "group": "Verification and post-mortem",
+          "activation": "post-fix",
+          "agents": ["evidence-collector", "api-tester", "code-reviewer", "product-strategist"]
+        }
+      ]
+    }
+  ]
+}

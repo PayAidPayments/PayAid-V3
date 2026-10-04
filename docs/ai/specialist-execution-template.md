@@ -12,10 +12,14 @@ This template turns `AGENTS.md` into a repeatable execution workflow you can run
 - New route/button/page in scope: Yes/No
 - Performance-sensitive: Yes/No
 - Compliance/outbound flow: Yes/No
+- NEXUS runbook slug: `new-page-or-route` | `schema-or-billing-change` | `performance-pass` | `release` | `production-incident`
+
+Catalog: `docs/ai/nexus/README.md`
 
 ## 2) Required specialist routing
 
-Use this routing exactly as written:
+Use the selected runbook roster in `docs/ai/nexus/runbooks.json` as the source of truth.
+If no runbook is selected yet, use this default order:
 
 1. Product Strategist (always for meaningful work)
 2. Platform Architect (required if 2+ modules)
@@ -106,15 +110,19 @@ For each selected project skill, add:
 
 ## 5) Ship gate (all must be Yes)
 
+- NEXUS runbook slug recorded:
 - Product acceptance criteria satisfied:
 - Platform impact validated (or N/A):
 - Domain specialist checks complete:
 - Selected project skill checks complete:
 - No-404 QA pass:
 - Code review findings resolved or accepted:
+- Reality Checker READY (for `release` runbook, or N/A):
 - Checklist/doc updates done:
 
 If any item is "No", do not ship.
+
+Full blocker rules: `docs/ai/nexus/ship-gate.md`.
 
 ## 6) 30-minute smoke drill (to prove AGENTS is working)
 

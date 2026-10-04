@@ -31,13 +31,25 @@ Prompt templates:
 
 ## Customer-Facing Business Specialist Pack
 
-Primary location: `docs/ai/payaid-specialists.md`
+Primary location: `docs/ai/customer/` (Phase 2 catalog + entitlement headers)
+
+Human entry points:
+- `docs/ai/payaid-specialists.md`
+- `docs/ai/payaid-specialist-router.md`
+- `docs/ai/payaid-specialist-permissions.md`
+- `docs/ai/agent-routing-matrix.md`
+
+Runtime evaluator: `lib/ai/customer-specialists/`  
+Product flows (Phase 3): `docs/ai/customer/flows.md`  
+Thin orchestrator + approval UX (Phase 4): `docs/ai/customer/orchestrator.md` · `/ai-studio/[tenantId]/Flows`  
+Integrity checks: `npm run check:customer-specialists` · `npm run check:customer-flows` · `npm run check:customer-orchestrator`
 
 Design principles:
 - Every specialist is module-aware and entitlement-aware.
 - Specialists only access tenant data allowed by subscription and role.
 - Sensitive actions are draft-first or require approval.
 - All actions must be logged for auditability.
+- Missing module/role fails closed (agent not invoked).
 
 ## Routing Rules
 
@@ -59,14 +71,38 @@ Design principles:
 
 To operationalize this file on real tickets, use:
 
+- `docs/ai/nexus/README.md` (Phase 1 internal NEXUS catalog + five runbooks)
 - `docs/ai/specialist-execution-template.md`
 - `docs/ai/internal-workflow.md`
+
+Pick one internal runbook slug before coding:
+
+- `new-page-or-route`
+- `schema-or-billing-change`
+- `performance-pass`
+- `release`
+- `production-incident`
+
+Integrity check: `npm run check:nexus-runbooks`
 
 ## UI Implementation Conventions
 
 - For clipboard interactions, prefer shared `CopyAction` patterns over page-local clipboard/timer code.
 - Use `COPY_ACTION_PRESETS` defaults before adding one-off copy UI behavior.
 - Reference: `docs/ai/copy-ui-pattern-guideline.md`
+
+## Architecture Hygiene (non-negotiable)
+
+Hard rules — enforce in CI and code review (see `docs/V3_ARCHITECTURE_HYGIENE_BOARD_2026-07-27.md`):
+
+- **One schema:** edit `packages/db/prisma/schema.prisma`, then `npm run sync:prisma-schema-mirror`. Never drift from root mirror.
+- **One router truth:** decoupled `/{module}/{tenant}/…` paths; no new `/dashboard/*` feature homes.
+- **One builder / one AI workspace:** no parallel `website-builder-v2` or duplicate AI entry tiles.
+- **Zero production placeholders:** keep incomplete shells `navVisibility: 'hidden'` / `coming-soon`.
+- **Lead Intelligence:** standalone structure OK; stay hidden from Module Switcher until provider-first discovery is real.
+- **Build safety:** do not set `ignoreBuildErrors: true`; emergency only via `PAYAID_ALLOW_TS_BUILD_ERRORS=1`.
+
+Gate: `npm run check:architecture-hygiene` (also `release:gate:architecture-hygiene`, workflow `architecture-hygiene.yml`).
 
 ## Automation Env-Flag Convention
 
