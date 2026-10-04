@@ -67,6 +67,20 @@ if (fs.existsSync(path.join(root, 'middleware.ts')) && fs.existsSync(proxyPath))
 }
 fs.writeFileSync(path.join(root, 'next.config.mjs'), "export { default } from './apps/dashboard/next.config.mjs'\n")
 
+// Root tsconfig maps @dashboard/* → ./apps/dashboard/app/*; after flatten that tree is
+// gone (copied to ./app). Turbopack resolves via tsconfig paths and fails with
+// "Can't resolve '@dashboard/home/...'". Point aliases at the flattened app/.
+const tsconfigPath = path.join(root, 'tsconfig.json')
+if (fs.existsSync(tsconfigPath)) {
+  const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf8'))
+  tsconfig.compilerOptions = tsconfig.compilerOptions || {}
+  tsconfig.compilerOptions.paths = tsconfig.compilerOptions.paths || {}
+  tsconfig.compilerOptions.paths['@dashboard/*'] = ['./app/*']
+  tsconfig.compilerOptions.paths['@app/*'] = ['./app/*']
+  fs.writeFileSync(tsconfigPath, `${JSON.stringify(tsconfig, null, 2)}\n`)
+  console.log('[git-vercel-build] rewrote tsconfig paths @dashboard/* and @app/* -> ./app/*')
+}
+
 // Drop non-dashboard workspaces / docs from the checkout so Next + webpack/turbopack
 // scan less on 2-core / 8GB preview builders (confirmed OOM with webpack + 3584).
 const prunePaths = [
