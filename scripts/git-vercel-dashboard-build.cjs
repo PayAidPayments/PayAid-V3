@@ -194,6 +194,21 @@ if (fs.existsSync(bullQueuePath) && fs.existsSync(bullQueueStub)) {
   console.log('[git-vercel-build] replaced lib/queue/bull.ts with preview stub (no bull import)')
 }
 
+// email-queue / whatsapp-queue / model-training-queue still `import … from 'bull'`.
+// Replace the installed package so Turbopack never analyzes bull's fork(master.js).
+const bullPkgDir = path.join(root, 'node_modules', 'bull')
+const bullNoopSrc = path.join(root, 'scripts/stubs/bull-noop.cjs')
+if (fs.existsSync(bullNoopSrc)) {
+  fs.rmSync(bullPkgDir, { recursive: true, force: true })
+  fs.mkdirSync(bullPkgDir, { recursive: true })
+  fs.writeFileSync(
+    path.join(bullPkgDir, 'package.json'),
+    `${JSON.stringify({ name: 'bull', version: '0.0.0-preview-stub', main: 'index.js' }, null, 2)}\n`
+  )
+  fs.copyFileSync(bullNoopSrc, path.join(bullPkgDir, 'index.js'))
+  console.log('[git-vercel-build] replaced node_modules/bull with noop package stub')
+}
+
 const buildEnv = {
   ...process.env,
   PAYAID_ALLOW_TS_BUILD_ERRORS: '1',
