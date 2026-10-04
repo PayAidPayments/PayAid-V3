@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 /**
- * Git-based Vercel entry: flatten apps/dashboard into monorepo root, then build.
- * Used when deploying from GitHub (no CLI staging workdir).
+ * Git-based Vercel entry for payaid-v3 previews.
+ * Flatten dashboard app → root, slim route surface, neutralize bull, then turbopack build.
  */
 const { spawnSync } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
 
 const root = process.cwd()
+
+function log(msg) {
+  console.log(`[git-vercel-build] ${msg}`)
+}
 
 function cp(src, dest) {
   if (!fs.existsSync(src)) {
@@ -16,17 +20,17 @@ function cp(src, dest) {
   }
   if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true })
   fs.cpSync(src, dest, { recursive: true })
-  console.log(`[git-vercel-build] copied ${path.relative(root, src)} -> ${path.relative(root, dest)}`)
+  log(`copied ${path.relative(root, src)} -> ${path.relative(root, dest)}`)
 }
 
-const dashApp = path.join(root, 'apps/dashboard/app')
-const rootApp = path.join(root, 'app')
-cp(dashApp, rootApp)
-// Prevent Next from compiling both root/app and apps/dashboard/app (broken @/ aliases).
-fs.rmSync(dashApp, { recursive: true, force: true })
-console.log('[git-vercel-build] removed apps/dashboard/app after flatten')
+function rmIfExists(rel) {
+  const full = path.join(root, rel)
+  if (!fs.existsSync(full)) return false
+  fs.rmSync(full, { recursive: true, force: true })
+  log(`pruned ${rel}`)
+  return true
+}
 
-// Moving apps/dashboard/app -> root/app changes relative depth for legacy imports.
 function rewriteDeepComponentImports(dir) {
   if (!fs.existsSync(dir)) return
   for (const name of fs.readdirSync(dir)) {
@@ -41,10 +45,35 @@ function rewriteDeepComponentImports(dir) {
     const rewritten = source.replace(/(['"])\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/components\//g, '$1@/components/')
     if (rewritten !== source) {
       fs.writeFileSync(full, rewritten)
-      console.log(`[git-vercel-build] rewrote-root-imports ${path.relative(root, full)}`)
+      log(`rewrote-root-imports ${path.relative(root, full)}`)
     }
   }
 }
+
+function walkDirs(dir, out = []) {
+  if (!fs.existsSync(dir)) return out
+  for (const name of fs.readdirSync(dir)) {
+    const full = path.join(dir, name)
+    let st
+    try {
+      st = fs.statSync(full)
+    } catch {
+      continue
+    }
+    if (st.isDirectory()) {
+      out.push(full)
+      walkDirs(full, out)
+    }
+  }
+  return out
+}
+
+// --- flatten ---
+const dashApp = path.join(root, 'apps/dashboard/app')
+const rootApp = path.join(root, 'app')
+cp(dashApp, rootApp)
+fs.rmSync(dashApp, { recursive: true, force: true })
+log('removed apps/dashboard/app after flatten')
 rewriteDeepComponentImports(rootApp)
 
 const dashPublic = path.join(root, 'apps/dashboard/public')
@@ -52,32 +81,28 @@ const rootPublic = path.join(root, 'public')
 if (fs.existsSync(dashPublic)) {
   fs.mkdirSync(rootPublic, { recursive: true })
   fs.cpSync(dashPublic, rootPublic, { recursive: true })
-  console.log('[git-vercel-build] merged apps/dashboard/public -> public')
+  log('merged apps/dashboard/public -> public')
 }
+
 const mw = path.join(root, 'apps/dashboard/middleware.ts')
 if (fs.existsSync(mw)) {
   fs.copyFileSync(mw, path.join(root, 'middleware.ts'))
-  console.log('[git-vercel-build] copied middleware.ts')
+  log('copied middleware.ts')
 }
-// Next 16 rejects having both middleware.ts and proxy.ts at the project root.
 const proxyPath = path.join(root, 'proxy.ts')
 if (fs.existsSync(path.join(root, 'middleware.ts')) && fs.existsSync(proxyPath)) {
   fs.rmSync(proxyPath, { force: true })
-  console.log('[git-vercel-build] removed root proxy.ts (middleware.ts wins for Voice SSO)')
+  log('removed root proxy.ts (middleware.ts wins for Voice SSO)')
 }
-// Wrap dashboard next.config so preview builds can alias `bull` → noop stub.
-// Turbopack fails on bull's fork(master.js); webpack of the full app OOMs on 8GB.
-const bullStubRel = './scripts/stubs/bull-noop.cjs'
+
+// Keep next.config simple — path aliases + drop bull/ioredis externals so stubs resolve.
 fs.writeFileSync(
   path.join(root, 'next.config.mjs'),
-  `import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import base from './apps/dashboard/next.config.mjs'
+  `import base from './apps/dashboard/next.config.mjs'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const bullStub = path.join(__dirname, 'scripts/stubs/bull-noop.cjs')
-
-const serverExternalPackages = (base.serverExternalPackages || []).filter((p) => p !== 'bull' && p !== 'ioredis')
+const serverExternalPackages = (base.serverExternalPackages || []).filter(
+  (p) => p !== 'bull' && p !== 'ioredis'
+)
 
 /** @type {import('next').NextConfig} */
 const config = {
@@ -92,28 +117,15 @@ const config = {
       '@app': './app',
       '@app/*': './app/*',
       '@/*': './*',
-      bull: '${bullStubRel}',
     },
-  },
-  webpack: (webpackConfig, ctx) => {
-    const nextConfig = typeof base.webpack === 'function' ? base.webpack(webpackConfig, ctx) : webpackConfig
-    nextConfig.resolve = nextConfig.resolve || {}
-    nextConfig.resolve.alias = {
-      ...(nextConfig.resolve.alias || {}),
-      bull: bullStub,
-    }
-    return nextConfig
   },
 }
 
 export default config
 `
 )
-console.log('[git-vercel-build] wrote next.config.mjs with bull noop alias for preview')
+log('wrote next.config.mjs for flattened preview')
 
-// Root tsconfig maps @dashboard/* → ./apps/dashboard/app/*; after flatten that tree is
-// gone (copied to ./app). Turbopack resolves via tsconfig paths and fails with
-// "Can't resolve '@dashboard/home/...'". Point aliases at the flattened app/.
 const tsconfigPath = path.join(root, 'tsconfig.json')
 if (fs.existsSync(tsconfigPath)) {
   const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf8'))
@@ -122,12 +134,11 @@ if (fs.existsSync(tsconfigPath)) {
   tsconfig.compilerOptions.paths['@dashboard/*'] = ['./app/*']
   tsconfig.compilerOptions.paths['@app/*'] = ['./app/*']
   fs.writeFileSync(tsconfigPath, `${JSON.stringify(tsconfig, null, 2)}\n`)
-  console.log('[git-vercel-build] rewrote tsconfig paths @dashboard/* and @app/* -> ./app/*')
+  log('rewrote tsconfig paths @dashboard/* and @app/* -> ./app/*')
 }
 
-// Drop non-dashboard workspaces / docs from the checkout so Next + webpack/turbopack
-// scan less on 2-core / 8GB preview builders (confirmed OOM with webpack + 3584).
-const prunePaths = [
+// Drop sibling workspaces / docs
+for (const rel of [
   'apps/crm',
   'apps/hr',
   'apps/finance',
@@ -146,59 +157,129 @@ const prunePaths = [
   'coverage',
   'playwright-report',
   'test-results',
+]) {
+  rmIfExists(rel)
+}
+
+// Slim app/ to specialist preview surface only (cuts compile graph on 8GB builders).
+const keepAppFiles = new Set([
+  'layout.tsx',
+  'page.tsx',
+  'globals.css',
+  'ClientRoot.tsx',
+  'providers.tsx',
+  'ProvidersLoader.tsx',
+  'PublicRumRoot.tsx',
+  'ModuleShell.tsx',
+  'loading.tsx',
+  'error.tsx',
+  'not-found.tsx',
+  'instrumentation-client.ts',
+  'favicon.ico',
+  'icon.png',
+  'icon.ico',
+  'apple-icon.png',
+])
+const keepAppDirs = new Set(['home', 'ai-studio', 'login', 'signup', 'register', 'forgot-password', 'api'])
+for (const name of fs.readdirSync(rootApp)) {
+  const full = path.join(rootApp, name)
+  const st = fs.statSync(full)
+  if (st.isDirectory()) {
+    if (!keepAppDirs.has(name)) {
+      fs.rmSync(full, { recursive: true, force: true })
+      log(`pruned app/${name}`)
+    }
+  } else if (!keepAppFiles.has(name)) {
+    fs.rmSync(full, { force: true })
+    log(`pruned app/${name}`)
+  }
+}
+
+const apiDir = path.join(rootApp, 'api')
+if (fs.existsSync(apiDir)) {
+  for (const name of fs.readdirSync(apiDir)) {
+    if (name === 'ai' || name === 'auth') continue
+    fs.rmSync(path.join(apiDir, name), { recursive: true, force: true })
+    log(`pruned app/api/${name}`)
+  }
+  const apiAi = path.join(apiDir, 'ai')
+  if (fs.existsSync(apiAi)) {
+    for (const name of fs.readdirSync(apiAi)) {
+      if (name === 'customer-flows') continue
+      fs.rmSync(path.join(apiAi, name), { recursive: true, force: true })
+      log(`pruned app/api/ai/${name}`)
+    }
+  }
+}
+
+// Stub instrumentation (no job auto-init)
+fs.writeFileSync(
+  path.join(root, 'instrumentation.ts'),
+  `/** Git/Vercel preview stub — skips Bull job auto-init. */\n` +
+    `export async function register() {\n` +
+    `  if (process.env.NEXT_RUNTIME !== 'nodejs') return\n` +
+    `  console.log('[instrumentation] git-vercel stub — background job auto-init skipped')\n` +
+    `}\n`
+)
+log('stubbed instrumentation.ts')
+
+// Replace queue modules that import bull (do not rely on package alias alone).
+const queueStubs = [
+  ['lib/queue/bull.ts', 'scripts/stubs/bull-queue-preview.ts'],
+  ['lib/queue/email-queue.ts', 'scripts/stubs/email-queue-preview.ts'],
+  ['lib/queue/whatsapp-queue.ts', 'scripts/stubs/whatsapp-queue-preview.ts'],
+  ['lib/queue/model-training-queue.ts', 'scripts/stubs/model-training-queue-preview.ts'],
 ]
-for (const rel of prunePaths) {
-  const full = path.join(root, rel)
-  if (!fs.existsSync(full)) continue
-  fs.rmSync(full, { recursive: true, force: true })
-  console.log(`[git-vercel-build] pruned ${rel}`)
+for (const [destRel, srcRel] of queueStubs) {
+  const dest = path.join(root, destRel)
+  const src = path.join(root, srcRel)
+  if (!fs.existsSync(src)) {
+    console.error(`[git-vercel-build] missing stub ${srcRel}`)
+    process.exit(1)
+  }
+  if (fs.existsSync(dest)) {
+    fs.copyFileSync(src, dest)
+    log(`replaced ${destRel} with preview stub`)
+  }
 }
 
-// Turbopack cannot resolve bull's child_process fork of master.js ("server relative
-// imports are not implemented yet"). Webpack can externalize bull, but still OOMs if
-// we also compile model-training + instrumentation queue graphs. Drop those surfaces
-// for Git preview builds only.
-const previewPruneAppPaths = [
-  'app/api/ai/models',
-  // Heavy surfaces not required to validate customer-specialist Flows preview.
-  'app/website-builder-v2',
-  'app/voice-agents',
-  'app/ai-influencer',
-  'app/lead-intelligence',
-]
-for (const rel of previewPruneAppPaths) {
-  const full = path.join(root, rel)
-  if (!fs.existsSync(full)) continue
-  fs.rmSync(full, { recursive: true, force: true })
-  console.log(`[git-vercel-build] pruned preview-only ${rel}`)
-}
-const instrumentationPath = path.join(root, 'instrumentation.ts')
-if (fs.existsSync(instrumentationPath)) {
-  fs.writeFileSync(
-    instrumentationPath,
-    `/** Git/Vercel preview stub — skips Bull job auto-init (turbopack/webpack bull fork). */\n` +
-      `export async function register() {\n` +
-      `  if (process.env.NEXT_RUNTIME !== 'nodejs') return\n` +
-      `  console.log('[instrumentation] git-vercel stub — background job auto-init skipped')\n` +
-      `}\n`
-  )
-  console.log('[git-vercel-build] stubbed instrumentation.ts for preview build')
-}
-
-// Package-level turbopack alias for bull is unreliable; replace the queue module so
-// nothing imports node_modules/bull (import trace was lib/queue/bull.ts → invoices).
-const bullQueuePath = path.join(root, 'lib/queue/bull.ts')
-const bullQueueStub = path.join(root, 'scripts/stubs/bull-queue-preview.ts')
-if (fs.existsSync(bullQueuePath) && fs.existsSync(bullQueueStub)) {
-  fs.copyFileSync(bullQueueStub, bullQueuePath)
-  console.log('[git-vercel-build] replaced lib/queue/bull.ts with preview stub (no bull import)')
-}
-
-// email-queue / whatsapp-queue / model-training-queue still `import … from 'bull'`.
-// Replace the installed package so Turbopack never analyzes bull's fork(master.js).
-const bullPkgDir = path.join(root, 'node_modules', 'bull')
+// Replace every installed bull package copy under node_modules.
 const bullNoopSrc = path.join(root, 'scripts/stubs/bull-noop.cjs')
-if (fs.existsSync(bullNoopSrc)) {
+if (!fs.existsSync(bullNoopSrc)) {
+  console.error('[git-vercel-build] missing scripts/stubs/bull-noop.cjs')
+  process.exit(1)
+}
+const nm = path.join(root, 'node_modules')
+let bullReplaced = 0
+for (const dir of walkDirs(nm)) {
+  if (path.basename(dir) !== 'bull') continue
+  // only package roots that look like bull (have package.json name bull or bull folder under node_modules)
+  const pkgJson = path.join(dir, 'package.json')
+  let isBullPkg = false
+  if (fs.existsSync(pkgJson)) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgJson, 'utf8'))
+      isBullPkg = pkg.name === 'bull'
+    } catch {
+      isBullPkg = false
+    }
+  } else if (path.basename(path.dirname(dir)) === 'node_modules') {
+    isBullPkg = true
+  }
+  if (!isBullPkg) continue
+  fs.rmSync(dir, { recursive: true, force: true })
+  fs.mkdirSync(dir, { recursive: true })
+  fs.writeFileSync(
+    path.join(dir, 'package.json'),
+    `${JSON.stringify({ name: 'bull', version: '0.0.0-preview-stub', main: 'index.js' }, null, 2)}\n`
+  )
+  fs.copyFileSync(bullNoopSrc, path.join(dir, 'index.js'))
+  bullReplaced += 1
+  log(`replaced ${path.relative(root, dir)} with noop package`)
+}
+if (bullReplaced === 0) {
+  // Ensure at least root node_modules/bull exists as stub (import may still resolve)
+  const bullPkgDir = path.join(nm, 'bull')
   fs.rmSync(bullPkgDir, { recursive: true, force: true })
   fs.mkdirSync(bullPkgDir, { recursive: true })
   fs.writeFileSync(
@@ -206,20 +287,41 @@ if (fs.existsSync(bullNoopSrc)) {
     `${JSON.stringify({ name: 'bull', version: '0.0.0-preview-stub', main: 'index.js' }, null, 2)}\n`
   )
   fs.copyFileSync(bullNoopSrc, path.join(bullPkgDir, 'index.js'))
-  console.log('[git-vercel-build] replaced node_modules/bull with noop package stub')
+  log('created root node_modules/bull noop package')
 }
+
+const masterJs = path.join(nm, 'bull', 'lib', 'process', 'master.js')
+if (fs.existsSync(masterJs)) {
+  console.error('[git-vercel-build] FATAL: bull master.js still present after stub — aborting')
+  process.exit(1)
+}
+log('verified node_modules/bull has no lib/process/master.js')
+
+// Required files for customer-flow routes
+for (const rel of [
+  'lib/security/redact-sensitive.ts',
+  'lib/security/ai-policy/wrap-ai-route.ts',
+  'lib/automation/ui-client.ts',
+  'app/api/ai/customer-flows/orchestrate/route.ts',
+  'app/ai-studio',
+]) {
+  if (!fs.existsSync(path.join(root, rel))) {
+    console.error(`[git-vercel-build] FATAL: required path missing after slim: ${rel}`)
+    process.exit(1)
+  }
+}
+log('verified required specialist preview paths exist')
 
 const buildEnv = {
   ...process.env,
   PAYAID_ALLOW_TS_BUILD_ERRORS: '1',
   PAYAID_DISABLE_OPTIMIZE_PACKAGE_IMPORTS: '1',
-  // Turbopack + bull noop stub: avoids webpack 8GB OOM and turbopack bull fork errors.
   NEXT_BUILD_PREFERRED_MODE: 'turbopack',
   NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=3072',
   NEXT_TELEMETRY_DISABLED: '1',
 }
 
-console.log('[git-vercel-build] invoking vercel-build with NEXT_BUILD_PREFERRED_MODE=turbopack')
+log('invoking vercel-build with NEXT_BUILD_PREFERRED_MODE=turbopack')
 const result = spawnSync(process.execPath, [path.join(root, 'apps/dashboard/scripts/vercel-build.cjs')], {
   cwd: root,
   stdio: 'inherit',
