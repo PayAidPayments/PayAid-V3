@@ -13,6 +13,12 @@ export type AiSurface =
   | 'sentiment'
   | 'langchain'
   | 'kb_retrieval'
+  | 'website_chatbot'
+  | 'workflow_ai'
+  | 'studio_media'
+  | 'predictor'
+  | 'voice_agent'
+  | 'doc_qa'
 
 export interface AiPolicyInput {
   surface: AiSurface
@@ -78,6 +84,9 @@ export interface AiAuditRecord {
   policyReason?: string
   injectionRiskScore?: number
   injectionFlags?: string[]
+  /** Prompt registry template used for composition (D1) */
+  promptTemplateId?: string
+  promptTemplateVersion?: string
   authContext?: {
     roles?: string[]
   }

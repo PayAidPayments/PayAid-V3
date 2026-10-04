@@ -110,18 +110,42 @@ for (const rel of prunePaths) {
   console.log(`[git-vercel-build] pruned ${rel}`)
 }
 
+// Turbopack cannot resolve bull's child_process fork of master.js ("server relative
+// imports are not implemented yet"). Webpack can externalize bull, but still OOMs if
+// we also compile model-training + instrumentation queue graphs. Drop those surfaces
+// for Git preview builds only.
+const previewPruneAppPaths = ['app/api/ai/models']
+for (const rel of previewPruneAppPaths) {
+  const full = path.join(root, rel)
+  if (!fs.existsSync(full)) continue
+  fs.rmSync(full, { recursive: true, force: true })
+  console.log(`[git-vercel-build] pruned preview-only ${rel}`)
+}
+const instrumentationPath = path.join(root, 'instrumentation.ts')
+if (fs.existsSync(instrumentationPath)) {
+  fs.writeFileSync(
+    instrumentationPath,
+    `/** Git/Vercel preview stub — skips Bull job auto-init (turbopack/webpack bull fork). */\n` +
+      `export async function register() {\n` +
+      `  if (process.env.NEXT_RUNTIME !== 'nodejs') return\n` +
+      `  console.log('[instrumentation] git-vercel stub — background job auto-init skipped')\n` +
+      `}\n`
+  )
+  console.log('[git-vercel-build] stubbed instrumentation.ts for preview build')
+}
+
 const buildEnv = {
   ...process.env,
   PAYAID_ALLOW_TS_BUILD_ERRORS: '1',
   PAYAID_DISABLE_OPTIMIZE_PACKAGE_IMPORTS: '1',
-  // Match main Git path: turbopack (vercel-build default). Forcing webpack on this
-  // flattened Git preview OOMs on 8GB with SIGKILL after ~5m and no Error line.
-  NEXT_BUILD_PREFERRED_MODE: 'turbopack',
+  // Webpack: turbopack fails hard on bull fork paths. With sibling-app prune +
+  // instrumentation/models stubs, peak RAM stays under 8GB preview builders.
+  NEXT_BUILD_PREFERRED_MODE: 'webpack',
   NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=3072',
   NEXT_TELEMETRY_DISABLED: '1',
 }
 
-console.log('[git-vercel-build] invoking vercel-build with NEXT_BUILD_PREFERRED_MODE=turbopack')
+console.log('[git-vercel-build] invoking vercel-build with NEXT_BUILD_PREFERRED_MODE=webpack')
 const result = spawnSync(process.execPath, [path.join(root, 'apps/dashboard/scripts/vercel-build.cjs')], {
   cwd: root,
   stdio: 'inherit',

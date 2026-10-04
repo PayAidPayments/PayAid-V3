@@ -2,8 +2,7 @@
  * Immutable AI policy audit trail (prompt, policy decision, tool context).
  */
 
-import { prisma } from '@/lib/db/prisma'
-import { redactSensitive } from '@/lib/integrations/security'
+import { redactSensitive } from '@/lib/security/redact-sensitive'
 import type { AiAuditRecord } from './types'
 
 const PROMPT_PREVIEW_MAX = 500
@@ -15,6 +14,8 @@ function preview(text: string | undefined, max: number): string | undefined {
 }
 
 export async function recordAiPolicyAudit(event: AiAuditRecord): Promise<void> {
+  if (process.env.AI_AUDIT_DISABLED === '1') return
+
   const payload = redactSensitive({
     surface: event.surface,
     route: event.route,
@@ -30,11 +31,14 @@ export async function recordAiPolicyAudit(event: AiAuditRecord): Promise<void> {
     policyReason: event.policyReason,
     injectionRiskScore: event.injectionRiskScore,
     injectionFlags: event.injectionFlags,
+    promptTemplateId: event.promptTemplateId,
+    promptTemplateVersion: event.promptTemplateVersion,
     authContext: event.authContext,
     recordedAt: new Date().toISOString(),
   })
 
   try {
+    const { prisma } = await import('@/lib/db/prisma')
     await prisma.auditLog.create({
       data: {
         tenantId: event.tenantId,
