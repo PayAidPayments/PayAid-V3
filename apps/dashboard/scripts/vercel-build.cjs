@@ -33,13 +33,25 @@ const rootApp = path.join(monorepoRoot, 'app')
 const rootConfig = path.join(monorepoRoot, 'next.config.mjs')
 const rootPublic = path.join(monorepoRoot, 'public')
 const rootMiddleware = path.join(monorepoRoot, 'middleware.ts')
+const rootProxy = path.join(monorepoRoot, 'proxy.ts')
+const legacyNextConfigJs = path.join(monorepoRoot, 'next.config.js')
+const legacyNextConfigCjs = path.join(monorepoRoot, 'next.config.cjs')
 const dashApp = path.join(appRoot, 'app')
 const dashPublic = path.join(appRoot, 'public')
 const dashMiddleware = path.join(appRoot, 'middleware.ts')
 
 function ensureRootNextSurface() {
   const marker = path.join(rootApp, 'ai-studio')
-  const alreadyReady = fs.existsSync(rootConfig) && fs.existsSync(marker)
+  const middlewareProxyConflict =
+    fs.existsSync(rootMiddleware) && fs.existsSync(rootProxy)
+  const hasLegacyConfig =
+    fs.existsSync(legacyNextConfigJs) || fs.existsSync(legacyNextConfigCjs)
+  const alreadyReady =
+    fs.existsSync(rootConfig) &&
+    fs.existsSync(marker) &&
+    !middlewareProxyConflict &&
+    !hasLegacyConfig
+
   if (alreadyReady) {
     console.log('[vercel-build] root Next surface already present')
     return
@@ -59,8 +71,24 @@ function ensureRootNextSurface() {
     fs.cpSync(dashPublic, rootPublic, { recursive: true })
   }
 
-  if (fs.existsSync(dashMiddleware)) {
+  // Next.js 16 rejects having both middleware.ts and proxy.ts.
+  // Prefer existing root proxy.ts; only copy dashboard middleware when no proxy exists.
+  if (fs.existsSync(rootProxy)) {
+    if (fs.existsSync(rootMiddleware)) {
+      fs.rmSync(rootMiddleware, { force: true })
+    }
+    console.log('[vercel-build] keeping root proxy.ts; skipped middleware.ts')
+  } else if (fs.existsSync(dashMiddleware)) {
     fs.copyFileSync(dashMiddleware, rootMiddleware)
+    console.log('[vercel-build] copied apps/dashboard/middleware.ts → middleware.ts')
+  }
+
+  // Prefer next.config.mjs; retire legacy root next.config.js/cjs so Next does not load both.
+  for (const legacy of [legacyNextConfigJs, legacyNextConfigCjs]) {
+    if (!fs.existsSync(legacy)) continue
+    const bak = `${legacy}.vercel-bak`
+    fs.renameSync(legacy, bak)
+    console.log(`[vercel-build] renamed ${path.basename(legacy)} → ${path.basename(bak)}`)
   }
 
   fs.writeFileSync(
